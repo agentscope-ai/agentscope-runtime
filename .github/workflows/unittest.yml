@@ -34,7 +34,7 @@ jobs:
       run: |
         export PIP_DEFAULT_TIMEOUT=100
         pip install -q -e ".[dev]"
-        pip install pytest coverage
+        pip install pytest pytest-cov coverage
 
     - name: Run tests with coverage
       run: |
