@@ -1,4 +1,4 @@
-name: Run Python Unit Tests
+name: runtime Unit Tests
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [self-hosted, ubuntu-latest, windows-latest, macos-13]
+        os: [ubuntu-latest, windows-latest, macos-13]
         python-version: ['3.10']
 
     steps:
@@ -32,6 +32,7 @@ jobs:
 
     - name: Install dependencies
       run: |
+        export PIP_DEFAULT_TIMEOUT=100
         pip install -q -e ".[dev]"
         pip install pytest coverage
 
