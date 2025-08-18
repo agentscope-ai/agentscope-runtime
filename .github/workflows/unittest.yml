@@ -31,14 +31,17 @@ jobs:
         pip install setuptools==78.1.1 wheel==0.45.1
 
     - name: Set PYTHONPATH
-      run: echo "PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/src" >> $GITHUB_ENV
+      run:
+          echo $PYTHONPATH
+          echo "PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/src" >> $GITHUB_ENV
 
     - name: Install dependencies
       run: |
         export PIP_DEFAULT_TIMEOUT=100
         pip install -q -e ".[dev]"
-        pip install pytest pytest-cov coverage
-        pip install steel langgraph a2a
+        pip install -e .
+        pip install -e ".[sandbox]"
+        pip install pytest pytest-cov coverage steel langgraph a2a
 
     - name: Debug installed packages and paths
       run: |
