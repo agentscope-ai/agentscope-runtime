@@ -35,6 +35,7 @@ jobs:
         export PIP_DEFAULT_TIMEOUT=100
         pip install -q -e ".[dev]"
         pip install pytest pytest-cov coverage
+        pip install steel langgraph a2a
 
     - name: Run tests with coverage
       run: |
