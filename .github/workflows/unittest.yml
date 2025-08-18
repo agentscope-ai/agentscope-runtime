@@ -41,7 +41,7 @@ jobs:
         pip install -e .
         pip install -e ".[sandbox]"
         pip install agentscope==1.0.0
-        pip install steel
+        pip install 'steel-sdk>=0.1.0'
         pip install pytest pytest-cov coverage steel langgraph a2a
 
     - name: Debug installed packages and paths
