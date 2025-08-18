@@ -32,7 +32,6 @@ jobs:
 
     - name: Set PYTHONPATH
       run:
-          echo $PYTHONPATH
           echo "PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/src" >> $GITHUB_ENV
 
     - name: Install dependencies
@@ -41,6 +40,8 @@ jobs:
         pip install -q -e ".[dev]"
         pip install -e .
         pip install -e ".[sandbox]"
+        pip install agentscope==1.0.0
+        pip install steel-sdk== 0.7.0
         pip install pytest pytest-cov coverage steel langgraph a2a
 
     - name: Debug installed packages and paths
