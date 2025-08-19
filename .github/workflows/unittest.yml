@@ -53,6 +53,12 @@ jobs:
         pip list
         echo $PYTHONPATH
 
+    - name: Set OpenAI API Key
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        echo "OpenAI API Key is set"
+
     - name: Run tests with coverage
       run: |
         pytest --cov=agentscope_runtime tests/
