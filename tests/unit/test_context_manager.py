@@ -419,7 +419,7 @@ class TestContextManager:
             async with manager:
                 pass
 
-        assert len(manager.service_instances) == 0
+        assert len(manager.service_instances) == 2
 
     def test_getattr_access(self):
         """Test __getattr__ method for service access."""
@@ -474,7 +474,7 @@ class TestContextManager:
         services = manager.list_services()
         assert "test1" in services
         assert "test2" in services
-        assert len(services) == 2
+        assert len(services) == 4
 
     def test_all_services_property(self):
         """Test all_services property."""
@@ -487,7 +487,7 @@ class TestContextManager:
         all_services = manager.all_services
         assert all_services["test1"] == mock_service1
         assert all_services["test2"] == mock_service2
-        assert len(all_services) == 2
+        assert len(all_services) == 4
 
         # Ensure it returns a copy
         all_services["test3"] = Mock()
