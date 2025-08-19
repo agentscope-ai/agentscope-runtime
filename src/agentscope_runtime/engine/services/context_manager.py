@@ -51,7 +51,7 @@ class ContextManager(ServiceManager):
     def __init__(
         self,
         context_composer_cls=ContextComposer,
-        session_history_service: SessionHistoryService = None,
+        session_history_service = None,
         memory_service: MemoryService = None,
     ):
         self._context_composer_cls = context_composer_cls
