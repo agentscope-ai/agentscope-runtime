@@ -43,6 +43,8 @@ jobs:
         pip install agentscope==1.0.0
         pip install 'steel-sdk==0.7.0'
         pip install 'a2a-sdk>=0.3.0'
+        pip install 'agno>=1.7.5'
+        pip install 'pytest-asyncio>=0.23.0'
         pip install "agentscope-runtime[sandbox]"
         pip install pytest pytest-cov coverage langgraph
 
