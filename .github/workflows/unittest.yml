@@ -41,8 +41,10 @@ jobs:
         pip install -e .
         pip install -e ".[sandbox]"
         pip install agentscope==1.0.0
-        pip install 'steel-sdk>=0.1.0'
-        pip install pytest pytest-cov coverage steel langgraph a2a
+        pip install 'steel-sdk==0.7.0'
+        pip install 'a2a-sdk>=0.3.0'
+        pip install "agentscope-runtime[sandbox]"
+        pip install pytest pytest-cov coverage langgraph
 
     - name: Debug installed packages and paths
       run: |
