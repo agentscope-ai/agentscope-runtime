@@ -200,7 +200,8 @@ class TestContextManager:
         manager = ContextManager()
 
         assert isinstance(
-            manager._session_history_service, InMemorySessionHistoryService
+            manager._session_history_service,
+            InMemorySessionHistoryService,
         )
         assert isinstance(manager._memory_service, InMemoryMemoryService)
         assert len(manager.service_instances) == 2
@@ -565,6 +566,7 @@ class TestCreateContextManager:
         async with create_context_manager() as manager:
             assert isinstance(manager, ContextManager)
             assert isinstance(
-                manager._session_history_service, InMemorySessionHistoryService
+                manager._session_history_service,
+                InMemorySessionHistoryService,
             )
             assert isinstance(manager._memory_service, InMemoryMemoryService)
