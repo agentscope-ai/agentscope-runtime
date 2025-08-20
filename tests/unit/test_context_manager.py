@@ -17,8 +17,14 @@ from agentscope_runtime.engine.services.context_manager import (
     ContextManager,
     create_context_manager,
 )
-from agentscope_runtime.engine.services.memory_service import MemoryService
-from agentscope_runtime.engine.services.session_history_service import Session
+from agentscope_runtime.engine.services.memory_service import (
+    MemoryService,
+    InMemoryMemoryService,
+)
+from agentscope_runtime.engine.services.session_history_service import (
+    Session,
+    InMemorySessionHistoryService,
+)
 from agentscope_runtime.engine.services.session_history_service import (
     SessionHistoryService,
 )
@@ -193,9 +199,12 @@ class TestContextManager:
         """Test ContextManager initialization without services."""
         manager = ContextManager()
 
-        assert manager._session_history_service is None
-        assert manager._memory_service is None
-        assert len(manager.service_instances) == 0
+        assert isinstance(
+            manager._session_history_service,
+            InMemorySessionHistoryService,
+        )
+        assert isinstance(manager._memory_service, InMemoryMemoryService)
+        assert len(manager.service_instances) == 2
 
     @pytest.mark.asyncio
     async def test_compose_context(
@@ -419,7 +428,7 @@ class TestContextManager:
             async with manager:
                 pass
 
-        assert len(manager.service_instances) == 0
+        assert len(manager.service_instances) == 2
 
     def test_getattr_access(self):
         """Test __getattr__ method for service access."""
@@ -474,7 +483,7 @@ class TestContextManager:
         services = manager.list_services()
         assert "test1" in services
         assert "test2" in services
-        assert len(services) == 2
+        assert len(services) == 4
 
     def test_all_services_property(self):
         """Test all_services property."""
@@ -487,7 +496,7 @@ class TestContextManager:
         all_services = manager.all_services
         assert all_services["test1"] == mock_service1
         assert all_services["test2"] == mock_service2
-        assert len(all_services) == 2
+        assert len(all_services) == 4
 
         # Ensure it returns a copy
         all_services["test3"] = Mock()
@@ -556,5 +565,8 @@ class TestCreateContextManager:
         """Test create_context_manager function without services."""
         async with create_context_manager() as manager:
             assert isinstance(manager, ContextManager)
-            assert manager._session_history_service is None
-            assert manager._memory_service is None
+            assert isinstance(
+                manager._session_history_service,
+                InMemorySessionHistoryService,
+            )
+            assert isinstance(manager._memory_service, InMemoryMemoryService)

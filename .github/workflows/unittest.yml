@@ -1,0 +1,66 @@
+name: runtime Unit Tests
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+        python-version: [ '3.10' ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Update setuptools
+        run: |
+          pip install --upgrade pip
+          pip install setuptools==78.1.1 wheel==0.45.1
+
+      - name: Set PYTHONPATH
+        run:
+          echo "PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/src" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          export PIP_DEFAULT_TIMEOUT=100
+          pip install -q -e ".[dev]"
+          pip install -e .
+          pip install -e ".[sandbox]"
+          pip install agentscope==1.0.0
+          pip install 'steel-sdk==0.7.0'
+          pip install 'a2a-sdk>=0.3.0'
+          pip install 'agno>=1.7.5'
+          pip install 'pytest-asyncio>=0.23.0'
+          pip install "agentscope-runtime[sandbox]"
+          pip install pytest pytest-cov coverage langgraph
+
+      - name: Debug installed packages and paths
+        run: |
+          pip list
+          echo $PYTHONPATH
+
+      - name: Run tests with coverage
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+        run: |
+          pytest --cov=agentscope_runtime tests/
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
