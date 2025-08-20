@@ -32,6 +32,7 @@ dev = [
     "pre-commit>=4.2.0",
     "jupyter-book>=1.0.4.post1",
     "furo>=2025.7.19",
+    "sphinx-autoapi"
 ]
 
 sandbox = [

@@ -21,13 +21,22 @@ parts:
       - file: en/environment_manager.md
   - file: en/tracing.md
   - file: en/demohouse.md
+  - file: en/api/index.md
+    title: "API Reference"
+    sections:
+    - file: en/api/sandbox.md
+      title: "Sandbox"
+    - file: en/api/engine.md
+      title: "Engine"
   - file: en/contribute.md
     sections:
     - file: en/README.md
+
 - caption: 简介
   chapters:
     - file: zh/intro.md
       title: "0. 介绍"
+
 - caption: 中文
   numbered: 1
   chapters:
@@ -48,6 +57,13 @@ parts:
       - file: zh/environment_manager.md
   - file: zh/tracing.md
   - file: zh/demohouse.md
+  - file: zh/api/index.md
+    title: "API 参考"
+    sections:
+    - file: zh/api/sandbox.md
+      title: "Sandbox"
+    - file: zh/api/engine.md
+      title: "Engine"
   - file: zh/contribute.md
     sections:
-      - file: zh/README.md
+    - file: zh/README.md
