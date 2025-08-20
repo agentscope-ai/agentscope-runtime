@@ -445,7 +445,6 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 
 <span class="c1"># Sandbox Manager settings</span>
 <span class="nv">DEFAULT_SANDBOX_TYPE</span><span class="o">=</span>base
-<span class="nv">WORKDIR</span><span class="o">=</span>/workspace
 <span class="nv">POOL_SIZE</span><span class="o">=</span><span class="m">10</span>
 <span class="nv">AUTO_CLEANUP</span><span class="o">=</span>True
 <span class="nv">CONTAINER_PREFIX_KEY</span><span class="o">=</span>agent-runtime-container-
@@ -536,37 +535,32 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 <td><p><code class="docutils literal notranslate"><span class="pre">base</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">base</span></code>, <code class="docutils literal notranslate"><span class="pre">filesystem</span></code>, <code class="docutils literal notranslate"><span class="pre">browser</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">WORKDIR</span></code></p></td>
-<td><p>Container working directory</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">/workspace</span></code></p></td>
-<td><p>Must be an absolute path</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">POOL_SIZE</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">POOL_SIZE</span></code></p></td>
 <td><p>Pre-warmed container pool size</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
 <td><p>Cached containers for faster startup. The <code class="docutils literal notranslate"><span class="pre">POOL_SIZE</span></code> parameter controls how many containers are pre-created and cached in a ready-to-use state. When users request a new sandbox, the system will first try to allocate from this pre-warmed pool, significantly reducing startup time compared to creating containers from scratch. For example, with <code class="docutils literal notranslate"><span class="pre">POOL_SIZE=10</span></code>, the system maintains 10 ready containers that can be instantly assigned to new requests.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AUTO_CLEANUP</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AUTO_CLEANUP</span></code></p></td>
 <td><p>Automatic container cleanup</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">True</span></code></p></td>
 <td><p>All sandboxes will be released after the server is closed if set to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CONTAINER_PREFIX_KEY</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CONTAINER_PREFIX_KEY</span></code></p></td>
 <td><p>Container name prefix</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">agent-runtime-container-</span></code></p></td>
 <td><p>For identification</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CONTAINER_DEPLOYMENT</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CONTAINER_DEPLOYMENT</span></code></p></td>
 <td><p>Container runtime</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">docker</span></code></p></td>
 <td><p>Currently, <code class="docutils literal notranslate"><span class="pre">docker</span></code> and <code class="docutils literal notranslate"><span class="pre">k8s</span></code> are supported</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DEFAULT_MOUNT_DIR</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DEFAULT_MOUNT_DIR</span></code></p></td>
 <td><p>Default mount directory</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">sessions_mount_dir</span></code></p></td>
 <td><p>For persistent storage path where the <code class="docutils literal notranslate"><span class="pre">/workspace</span></code> file is stored</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">PORT_RANGE</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PORT_RANGE</span></code></p></td>
 <td><p>Available port range</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">[49152,59152]</span></code></p></td>
 <td><p>For service port allocation</p></td>

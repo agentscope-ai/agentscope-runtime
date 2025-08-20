@@ -445,7 +445,6 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 
 <span class="c1"># 沙盒管理器设置</span>
 <span class="nv">DEFAULT_SANDBOX_TYPE</span><span class="o">=</span>base
-<span class="nv">WORKDIR</span><span class="o">=</span>/workspace
 <span class="nv">POOL_SIZE</span><span class="o">=</span><span class="m">10</span>
 <span class="nv">AUTO_CLEANUP</span><span class="o">=</span>True
 <span class="nv">CONTAINER_PREFIX_KEY</span><span class="o">=</span>agent-runtime-container-
@@ -536,37 +535,32 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 <td><p><code class="docutils literal notranslate"><span class="pre">base</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">base</span></code>, <code class="docutils literal notranslate"><span class="pre">filesystem</span></code>, <code class="docutils literal notranslate"><span class="pre">browser</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">WORKDIR</span></code></p></td>
-<td><p>容器工作目录</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">/workspace</span></code></p></td>
-<td><p>必须是绝对路径</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">POOL_SIZE</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">POOL_SIZE</span></code></p></td>
 <td><p>预热容器池大小</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
 <td><p>缓存的容器以实现更快启动。<code class="docutils literal notranslate"><span class="pre">POOL_SIZE</span></code> 参数控制预创建并缓存在就绪状态的容器数量。当用户请求新沙箱时，系统将首先尝试从这个预热池中分配，相比从零开始创建容器显著减少启动时间。例如，使用 <code class="docutils literal notranslate"><span class="pre">POOL_SIZE=10</span></code>，系统维护 10 个就绪容器，可以立即分配给新请求</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AUTO_CLEANUP</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AUTO_CLEANUP</span></code></p></td>
 <td><p>自动容器清理</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">True</span></code></p></td>
 <td><p>如果设置为 <code class="docutils literal notranslate"><span class="pre">True</span></code>，服务器关闭后将释放所有沙箱。</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CONTAINER_PREFIX_KEY</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CONTAINER_PREFIX_KEY</span></code></p></td>
 <td><p>容器名称前缀</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">agent-runtime-container-</span></code></p></td>
 <td><p>用于标识</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CONTAINER_DEPLOYMENT</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CONTAINER_DEPLOYMENT</span></code></p></td>
 <td><p>容器运行时</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">docker</span></code></p></td>
 <td><p>目前支持<code class="docutils literal notranslate"><span class="pre">docker</span></code>和<code class="docutils literal notranslate"><span class="pre">k8s</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DEFAULT_MOUNT_DIR</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DEFAULT_MOUNT_DIR</span></code></p></td>
 <td><p>默认挂载目录</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">sessions_mount_dir</span></code></p></td>
 <td><p>用于持久存储路径，存储<code class="docutils literal notranslate"><span class="pre">/workspace</span></code> 文件</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">PORT_RANGE</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PORT_RANGE</span></code></p></td>
 <td><p>可用端口范围</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">[49152,59152]</span></code></p></td>
 <td><p>用于服务端口分配</p></td>
