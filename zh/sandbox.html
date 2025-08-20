@@ -409,7 +409,7 @@
 <h2>前提条件<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>当前沙箱环境默认使用Docker进行隔离。我们计划在未来版本中扩展对Kubernetes (K8s) 和第三方托管解决方案的支持。</p>
+<p>当前的沙箱环境默认使用 Docker 进行隔离。此外，我们还支持 Kubernetes (K8s) 作为远程服务后端。未来，我们计划在即将发布的版本中加入更多第三方托管解决方案。</p>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -421,6 +421,7 @@
 </div>
 <ul class="simple">
 <li><p>Docker</p></li>
+<li><p>（可选，仅支持远程模式）Kubernetes</p></li>
 </ul>
 </section>
 <section id="id3">
@@ -797,6 +798,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <li><p>将计算密集型任务分离到专用服务器</p></li>
 <li><p>多个客户端共享同一沙箱环境</p></li>
 <li><p>在资源受限的本地机器上开发，同时在高性能服务器上执行</p></li>
+<li><p>K8S集群部署沙盒服务</p></li>
 </ul>
 <p>有关sandbox-server的更高级用法，请参阅<a class="reference internal" href="sandbox_advanced.html"><span class="doc">工具沙箱高级用法</span></a>了解详细说明。</p>
 </div>
@@ -1048,7 +1050,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-08-15</div>
+              Last updated on 2025-08-20</div>
           </div>
           <div class="right-details">
             <div class="icons">

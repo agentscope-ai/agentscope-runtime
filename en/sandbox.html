@@ -409,7 +409,7 @@
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The current sandbox environment uses Docker for isolation by default. We plan to expand support for Kubernetes (K8s) and third-party hosting solutions in future releases.</p>
+<p>The current sandbox environment utilizes Docker for default isolation. In addition, we offer support for Kubernetes (K8s) as a remote service backend. Looking ahead, we plan to incorporate more third-party hosting solutions in future releases.</p>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -421,6 +421,7 @@
 </div>
 <ul class="simple">
 <li><p>Docker</p></li>
+<li><p>(Optional,  remote mode only) Kubernetes</p></li>
 </ul>
 </section>
 <section id="setup">
@@ -797,6 +798,7 @@ Tools behave like regular Python functions, making them easy to use and integrat
 <li><p>Separating comput-intensive tasks to dedicated servers</p></li>
 <li><p>Multiple clients sharing the same sandbox environment</p></li>
 <li><p>Developing on resource-constrained local machines while executing on high-performance servers</p></li>
+<li><p>Deploy sandbox server with K8S</p></li>
 </ul>
 <p>For more advanced usage of sandbox-server, please refer to <a class="reference internal" href="sandbox_advanced.html"><span class="doc">Advanced Usage of Tool Sandbox</span></a> for detailed instructions.</p>
 </div>
@@ -1049,7 +1051,7 @@ Tools behave like regular Python functions, making them easy to use and integrat
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-08-15</div>
+              Last updated on 2025-08-20</div>
           </div>
           <div class="right-details">
             <div class="icons">
