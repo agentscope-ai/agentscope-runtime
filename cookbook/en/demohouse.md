@@ -40,7 +40,7 @@ Explore a variety of demos showcasing the use of AgentScope Runtime to build age
         </div>
     </a>
     <a class="gallery-item"
-       href="https://github.com/agentscope-ai/agentscope-runtime/tree/main/demohouse/multiuser_chatbot">
+       href="https://github.com/agentscope-ai/agentscope-runtime/tree/main/demohouse/chatbot">
         <div class="gallery-item-card">
             <div class="gallery-item-card-image-container">
                 <img class="gallery-item-card-img"
