@@ -17,8 +17,14 @@ from agentscope_runtime.engine.services.context_manager import (
     ContextManager,
     create_context_manager,
 )
-from agentscope_runtime.engine.services.memory_service import MemoryService, InMemoryMemoryService
-from agentscope_runtime.engine.services.session_history_service import Session, InMemorySessionHistoryService
+from agentscope_runtime.engine.services.memory_service import (
+    MemoryService,
+    InMemoryMemoryService,
+)
+from agentscope_runtime.engine.services.session_history_service import (
+    Session,
+    InMemorySessionHistoryService,
+)
 from agentscope_runtime.engine.services.session_history_service import (
     SessionHistoryService,
 )
@@ -193,7 +199,9 @@ class TestContextManager:
         """Test ContextManager initialization without services."""
         manager = ContextManager()
 
-        assert isinstance(manager._session_history_service, InMemorySessionHistoryService)
+        assert isinstance(
+            manager._session_history_service, InMemorySessionHistoryService
+        )
         assert isinstance(manager._memory_service, InMemoryMemoryService)
         assert len(manager.service_instances) == 2
 
@@ -556,5 +564,7 @@ class TestCreateContextManager:
         """Test create_context_manager function without services."""
         async with create_context_manager() as manager:
             assert isinstance(manager, ContextManager)
-            assert isinstance(manager._session_history_service, InMemorySessionHistoryService)
+            assert isinstance(
+                manager._session_history_service, InMemorySessionHistoryService
+            )
             assert isinstance(manager._memory_service, InMemoryMemoryService)
