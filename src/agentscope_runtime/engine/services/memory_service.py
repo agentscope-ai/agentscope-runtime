@@ -58,8 +58,8 @@ class MemoryService(ServiceWithLifecycleManager):
         Args:
             user_id: The user id.
             messages: The user query or the query with history messages,
-            both in the format of list of messages.  If messages is a list,
-            the search will be based on the content of the last message.
+                both in the format of list of messages.  If messages is a list,
+                the search will be based on the content of the last message.
             filters: The filters used to search memory
         """
 
