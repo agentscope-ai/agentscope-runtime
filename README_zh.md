@@ -162,6 +162,7 @@ with BaseSandbox() as box:
 - **[💡 概念](https://runtime.agentscope.io/zh/concept.html)**: 核心概念和架构概述
 - **[🚀 快速开始](https://runtime.agentscope.io/zh/quickstart.html)**: 快速入门教程
 - **[🏠 展示厅](https://runtime.agentscope.io/zh/demohouse.html)**: 丰富的示例项目
+- **[📋 API 参考](https://runtime.agentscope.io/zh/api/index.html)**: 完整的API文档
 
 ---
 

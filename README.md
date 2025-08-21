@@ -165,6 +165,7 @@ with BaseSandbox() as box:
 - **[💡 Concept](https://runtime.agentscope.io/en/concept.html)**: Core concepts and architecture overview
 - **[🚀 Quick Start](https://runtime.agentscope.io/en/quickstart.html)**: Quick start tutorial
 - **[🏠 Demo House](https://runtime.agentscope.io/en/demohouse.html)**: Rich example projects
+- **[📋 API Reference](https://runtime.agentscope.io/en/api/index.html)**: Complete API documentation
 
 ---
 
