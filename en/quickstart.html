@@ -490,7 +490,7 @@
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>For utilizing other LLM and agent implementations from other framework, please refer to <a class="reference internal" href="#agentscope-agent"><span class="std std-ref">AgentScope Agent</span></a>, <a class="reference internal" href="#agno-agent"><span class="std std-ref">Agno Agent</span></a> and <a class="reference internal" href="#langgraph-agent"><span class="std std-ref">LangGraph Agent</span></a>.</p>
+<p>For utilizing other LLM and agent implementations from other framework, please refer to <a class="reference internal" href="#agentscope-agent"><span class="std std-ref">AgentScope Agent</span></a>, <a class="reference internal" href="#agno-agent"><span class="std std-ref">Agno Agent</span></a>, <a class="reference internal" href="#autogen-agent"><span class="std std-ref">AutoGen Agent</span></a>, and <a class="reference internal" href="#langgraph-agent"><span class="std std-ref">LangGraph Agent</span></a>.</p>
 </div>
 <section id="optional-with-agentscope-agent">
 <span id="agentscope-agent"></span><h4>(Optional) With AgentScope Agent<a class="headerlink" href="#optional-with-agentscope-agent" title="Link to this heading">¶</a></h4>
@@ -552,6 +552,38 @@
 <span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ Agno agent created successfully&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="optional-with-autogen-agent">
+<span id="autogen-agent"></span><h4>(Optional) With AutoGen Agent<a class="headerlink" href="#optional-with-autogen-agent" title="Link to this heading">¶</a></h4>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you want to use Agent from AutoGen, you should install AutoGen via:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[autogen]&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">autogen_agentchat.agents</span><span class="w"> </span><span class="kn">import</span> <span class="n">AssistantAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">autogen_ext.models.openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIChatCompletionClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.autogen_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutogenAgent</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">AutogenAgent</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">OpenAIChatCompletionClient</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">agent_config</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;system_message&quot;</span><span class="p">:</span> <span class="s2">&quot;You&#39;re a helpful assistant&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="n">agent_builder</span><span class="o">=</span><span class="n">AssistantAgent</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ AutoGen agent created successfully&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1003,6 +1035,7 @@ After deployment, you can access the service at <code class="docutils literal no
 <li><a class="reference internal" href="#step-2-create-llm-agent">Step 2: Create LLM Agent</a><ul>
 <li><a class="reference internal" href="#optional-with-agentscope-agent">(Optional) With AgentScope Agent</a></li>
 <li><a class="reference internal" href="#optional-with-agno-agent">(Optional) With Agno Agent</a></li>
+<li><a class="reference internal" href="#optional-with-autogen-agent">(Optional) With AutoGen Agent</a></li>
 <li><a class="reference internal" href="#optional-with-langgraph-agent">(Optional) With LangGraph Agent</a></li>
 </ul>
 </li>
