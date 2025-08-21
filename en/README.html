@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="欢迎来到AgentScope Runtime Cookbook" href="../zh/intro.html" /><link rel="prev" title="10. How to Contribute" href="contribute.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="API Reference" href="api/index.html" /><link rel="prev" title="10. How to Contribute" href="contribute.html" />
         <link rel="prefetch" href="../_static/logo.svg" as="image" />
 
     <link rel="shortcut icon" href="../_static/logo.svg"/><!-- Generated with Sphinx 7.4.7 and Furo 2025.07.19 -->
@@ -263,8 +263,8 @@
 
         // Define which captions should be displayed based on the selected language
         const languageMapping = {
-            'en': ['English'],
-            'zh': ['简介', '中文']
+            'en': ['English', 'API Reference' ],
+            'zh': ['简介', '中文', 'API 参考']
         };
 
         const visibleCaptions = languageMapping[lang] || [];
@@ -334,6 +334,14 @@
 </ul>
 </li>
 </ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/sandbox.html">Sandbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/engine.html">Engine</a></li>
+</ul>
+</li>
+</ul>
 <p class="caption" role="heading"><span class="caption-text">简介</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../zh/intro.html">0. 介绍</a></li>
@@ -343,25 +351,33 @@
 <li class="toctree-l1"><a class="reference internal" href="../zh/install.html">1. 安装</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../zh/concept.html">2. 概念</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../zh/quickstart.html">3. 快速开始</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/sandbox.html">4. 工具沙箱</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of 4. 工具沙箱</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/sandbox.html">4. 工具沙箱</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of 4. 工具沙箱</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../zh/sandbox_advanced.html">工具沙箱高级用法</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zh/training_sandbox.html">训练用沙箱</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../zh/react_agent.html">5. 部署配备工具沙箱的ReAct智能体</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/protocol.html">6. Agent API 协议规范</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of 6. Agent API 协议规范</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/protocol.html">6. Agent API 协议规范</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of 6. Agent API 协议规范</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../zh/a2a_support.html">A2A 协议支持文档</a></li>
 </ul>
 </li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/manager.html">7. 管理器模块（Manager Module）</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of 7. 管理器模块（Manager Module）</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/manager.html">7. 管理器模块（Manager Module）</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of 7. 管理器模块（Manager Module）</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../zh/context_manager.html">上下文管理器 (Context Manager)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zh/environment_manager.html">环境管理器（Environment Manager）</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../zh/tracing.html">8. 执行轨迹追踪</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../zh/demohouse.html">9. Demo 展示厅</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/contribute.html">10. 如何贡献</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of 10. 如何贡献</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/contribute.html">10. 如何贡献</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of 10. 如何贡献</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../zh/README.html">参与贡献Cookbook</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API 参考</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/api/index.html">API 参考</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of API 参考</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../zh/api/sandbox.html">Sandbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zh/api/engine.html">Engine</a></li>
 </ul>
 </li>
 </ul>
@@ -491,12 +507,12 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../zh/intro.html">
+          <a class="next-page" href="api/index.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">欢迎来到AgentScope Runtime Cookbook</div>
+                <div class="title">API Reference</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -520,7 +536,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-08-20</div>
+              Last updated on 2025-08-21</div>
           </div>
           <div class="right-details">
             <div class="icons">
