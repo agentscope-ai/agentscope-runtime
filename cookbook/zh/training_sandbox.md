@@ -50,7 +50,7 @@ pip install "agentscope-runtime[sandbox]"
 
 ```bash
 # 拉取并标记Appworld ARM64架构镜像
-docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm agentscope/runtime-sandbox-appworld:latest-arm
+docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64 && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm agentscope/runtime-sandbox-appworld:latest-arm
 
 # 拉取并标记 Appworld X86_64 架构镜像
 docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest agentscope/runtime-sandbox-appworld:latest
@@ -80,7 +80,7 @@ with TrainingSandbox() as box:
 以appworld为例：
 
 ```bash
-docker build -f src/agentscope_runtime/sandbox/box/training_box/environments/appworld/Dockerfile     -t agentscope/runtime-sandbox-appworld:v0.0.1     .
+docker build -f src/agentscope_runtime/sandbox/box/training_box/environments/appworld/Dockerfile     -t agentscope/runtime-sandbox-appworld:latest     .
 ```
 
 ## 训练样本使用

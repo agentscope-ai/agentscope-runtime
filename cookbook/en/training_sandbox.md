@@ -58,7 +58,7 @@ All Docker images are hosted on Alibaba Cloud Container Registry (ACR) for optim
 
 ```bash
 # Pull and tag Appworld ARM64 architecture image
-docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm agentscope/runtime-sandbox-appworld:latest-arm
+docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64 && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm agentscope/runtime-sandbox-appworld:latest-arm
 
 # Pull and tag Appworld X86_64 architecture image
 docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest agentscope/runtime-sandbox-appworld:latest
@@ -89,7 +89,7 @@ For training sandboxes, different datasets use different Dockerfiles, located at
 For Appworld:
 
 ```bash
-docker build -f src/agentscope_runtime/sandbox/box/training_box/environments/appworld/Dockerfile     -t agentscope/runtime-sandbox-appworld:v0.0.1     .
+docker build -f src/agentscope_runtime/sandbox/box/training_box/environments/appworld/Dockerfile     -t agentscope/runtime-sandbox-appworld:latest     .
 ```
 
 ## Utilize Training Sample from Sandbox
