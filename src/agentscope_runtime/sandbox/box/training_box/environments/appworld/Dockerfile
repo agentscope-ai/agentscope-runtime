@@ -19,7 +19,15 @@ RUN apt-get update && apt-get install -y \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh -O /tmp/miniconda.sh && \
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        MINICONDA=Miniconda3-latest-Linux-x86_64.sh; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        MINICONDA=Miniconda3-latest-Linux-aarch64.sh; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
+    wget https://repo.anaconda.com/miniconda/${MINICONDA} -O /tmp/miniconda.sh && \
     chmod +x /tmp/miniconda.sh && \
     bash /tmp/miniconda.sh -b -p /opt/conda && \
     rm /tmp/miniconda.sh
