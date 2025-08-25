@@ -35,7 +35,7 @@ class TrainingSandbox(Sandbox):
         timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
-        box_type: Optional[SandboxType] = SandboxType.APPWORLD
+        box_type: SandboxType = SandboxType.APPWORLD,
     ):
         """
         Initialize the Training Sandbox.
@@ -212,8 +212,6 @@ class TrainingSandbox(Sandbox):
         )
 
 
-
-
 @SandboxRegistry.register(
     f"agentscope/runtime-sandbox-appworld:{get_image_tag()}",
     sandbox_type=SandboxType.APPWORLD,
@@ -272,11 +270,11 @@ class BFCLSandbox(TrainingSandbox):
     """
 
     def __init__(
-            self,
-            sandbox_id: Optional[str] = None,
-            timeout: int = 3000,
-            base_url: Optional[str] = None,
-            bearer_token: Optional[str] = None,
+        self,
+        sandbox_id: Optional[str] = None,
+        timeout: int = 3000,
+        base_url: Optional[str] = None,
+        bearer_token: Optional[str] = None,
     ):
         """
         Initialize the Training Sandbox.
@@ -313,11 +311,11 @@ class WebShopSandbox(TrainingSandbox):
     """
 
     def __init__(
-            self,
-            sandbox_id: Optional[str] = None,
-            timeout: int = 3000,
-            base_url: Optional[str] = None,
-            bearer_token: Optional[str] = None,
+        self,
+        sandbox_id: Optional[str] = None,
+        timeout: int = 3000,
+        base_url: Optional[str] = None,
+        bearer_token: Optional[str] = None,
     ):
         """
         Initialize the Training Sandbox.

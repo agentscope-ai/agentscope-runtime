@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from agentscope_runtime.sandbox.box.training_box.training_box import (
-    APPWorldSandbox
+    APPWorldSandbox,
 )
 
 with APPWorldSandbox() as box:
