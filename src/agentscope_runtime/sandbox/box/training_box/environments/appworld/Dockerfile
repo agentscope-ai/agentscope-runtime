@@ -19,10 +19,21 @@ RUN apt-get update && apt-get install -y \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh -O /tmp/miniconda.sh && \
+# install conda
+
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        MINICONDA=Miniconda3-latest-Linux-x86_64.sh; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        MINICONDA=Miniconda3-latest-Linux-aarch64.sh; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
+    wget https://repo.anaconda.com/miniconda/${MINICONDA} -O /tmp/miniconda.sh && \
     chmod +x /tmp/miniconda.sh && \
     bash /tmp/miniconda.sh -b -p /opt/conda && \
     rm /tmp/miniconda.sh
+
 
 # Optionally, add conda to PATH
 ENV PATH="/opt/conda/bin:${PATH}"
@@ -51,18 +62,19 @@ RUN /opt/conda/envs/appworld/bin/appworld install
 
 ENV APPWORLD_ROOT=/agentscope_runtime/appworld/
 
-RUN /opt/conda/envs/appworld/bin/appworld download data
-
-RUN mv /agentscope_runtime/data /agentscope_runtime/appworld/
+#
+#RUN /opt/conda/envs/appworld/bin/appworld download data
+#
+#RUN mv /agentscope_runtime/data /agentscope_runtime/appworld/
 # If download fails, you may get the data from this source and move it locally by commenting two lines above and uncommenting the following lines
 
-# RUN wget -O appworld_data.zip "https://dail-wlcb.oss-accelerate.aliyuncs.com/eric.czq/appworld_data.zip"
+RUN wget -O appworld_data.zip "https://dail-wlcb.oss-accelerate.aliyuncs.com/eric.czq/appworld_data.zip"
 
-# RUN mkdir -p /agentscope_runtime/appworld && \
-#     mkdir /tmp/unziptemp && \
-#     unzip appworld_data.zip -d /tmp/unziptemp && \
-#     mv /tmp/unziptemp/*/* /agentscope_runtime/appworld && \
-#     rm -rf /tmp/unziptemp
+RUN mkdir -p /agentscope_runtime/appworld && \
+     mkdir /tmp/unziptemp && \
+     unzip appworld_data.zip -d /tmp/unziptemp && \
+     mv /tmp/unziptemp/*/* /agentscope_runtime/appworld && \
+     rm -rf /tmp/unziptemp
 
 
 ENV PYTHONPATH=/agentscope_runtime:$PYTHONPATH

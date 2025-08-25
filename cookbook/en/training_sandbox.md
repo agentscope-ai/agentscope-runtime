@@ -89,7 +89,7 @@ For training sandboxes, different datasets use different Dockerfiles, located at
 For Appworld:
 
 ```bash
-docker build -f src/agentscope_runtime/sandbox/box/training_box/environments/appworld/Dockerfile     -t agentscope/runtime-sandbox-appworld:v0.0.1     .
+docker build -f src/agentscope_runtime/sandbox/box/training_box/environments/appworld/Dockerfile     -t agentscope/runtime-sandbox-appworld:latest     .
 ```
 
 ## Utilize Training Sample from Sandbox

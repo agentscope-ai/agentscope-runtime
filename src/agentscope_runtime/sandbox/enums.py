@@ -66,3 +66,5 @@ class SandboxType(DynamicEnum):
     BROWSER = "browser"
     FILESYSTEM = "filesystem"
     APPWORLD = "appworld"
+    BFCL = "bfcl"
+    WEBSHOP = "webshop"

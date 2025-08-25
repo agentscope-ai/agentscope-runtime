@@ -80,7 +80,7 @@ with TrainingSandbox() as box:
 以appworld为例：
 
 ```bash
-docker build -f src/agentscope_runtime/sandbox/box/training_box/environments/appworld/Dockerfile     -t agentscope/runtime-sandbox-appworld:v0.0.1     .
+docker build -f src/agentscope_runtime/sandbox/box/training_box/environments/appworld/Dockerfile     -t agentscope/runtime-sandbox-appworld:latest     .
 ```
 
 ## 训练样本使用
