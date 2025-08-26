@@ -438,14 +438,6 @@
 
 <div class="viewcode-block" id="TrainingSandbox">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.TrainingSandbox">[docs]</a>
-<span class="nd">@SandboxRegistry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">&quot;agentscope/runtime-sandbox-appworld:</span><span class="si">{</span><span class="n">get_image_tag</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-    <span class="n">sandbox_type</span><span class="o">=</span><span class="n">SandboxType</span><span class="o">.</span><span class="n">APPWORLD</span><span class="p">,</span>
-    <span class="n">runtime_config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;shm_size&quot;</span><span class="p">:</span> <span class="s2">&quot;5.06gb&quot;</span><span class="p">},</span>
-    <span class="n">security_level</span><span class="o">=</span><span class="s2">&quot;medium&quot;</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;appworld Sandbox&quot;</span><span class="p">,</span>
-<span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">TrainingSandbox</span><span class="p">(</span><span class="n">Sandbox</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Training Sandbox class for managing and executing training-related tasks.</span>
@@ -462,6 +454,7 @@
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">,</span>
         <span class="n">base_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">bearer_token</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">box_type</span><span class="p">:</span> <span class="n">SandboxType</span> <span class="o">=</span> <span class="n">SandboxType</span><span class="o">.</span><span class="n">APPWORLD</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize the Training Sandbox.</span>
@@ -477,7 +470,7 @@
             <span class="n">timeout</span><span class="p">,</span>
             <span class="n">base_url</span><span class="p">,</span>
             <span class="n">bearer_token</span><span class="p">,</span>
-            <span class="n">SandboxType</span><span class="o">.</span><span class="n">APPWORLD</span><span class="p">,</span>
+            <span class="n">box_type</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
@@ -656,6 +649,129 @@
         <span class="p">)</span></div>
 </div>
 
+
+
+<span class="nd">@SandboxRegistry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;agentscope/runtime-sandbox-appworld:</span><span class="si">{</span><span class="n">get_image_tag</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">sandbox_type</span><span class="o">=</span><span class="n">SandboxType</span><span class="o">.</span><span class="n">APPWORLD</span><span class="p">,</span>
+    <span class="n">runtime_config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;shm_size&quot;</span><span class="p">:</span> <span class="s2">&quot;5.06gb&quot;</span><span class="p">},</span>
+    <span class="n">security_level</span><span class="o">=</span><span class="s2">&quot;medium&quot;</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;appworld Sandbox&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">APPWorldSandbox</span><span class="p">(</span><span class="n">TrainingSandbox</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Training Sandbox class for managing and executing training-related tasks.</span>
+
+<span class="sd">    This class provides methods to create, manage, and interact with</span>
+<span class="sd">    training environment instances using specialized tool calls.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sandbox_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">,</span>
+        <span class="n">base_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">bearer_token</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the Training Sandbox.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sandbox_id (Optional[str]): Unique identifier for the sandbox.</span>
+<span class="sd">            timeout (int): Maximum time allowed for sandbox operations.</span>
+<span class="sd">            base_url (Optional[str]): Base URL for sandbox API.</span>
+<span class="sd">            bearer_token (Optional[str]): Authentication token for API access.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">sandbox_id</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="p">,</span>
+            <span class="n">base_url</span><span class="p">,</span>
+            <span class="n">bearer_token</span><span class="p">,</span>
+            <span class="n">SandboxType</span><span class="o">.</span><span class="n">APPWORLD</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="nd">@SandboxRegistry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;agentscope/runtime-sandbox-bfcl:</span><span class="si">{</span><span class="n">get_image_tag</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">sandbox_type</span><span class="o">=</span><span class="n">SandboxType</span><span class="o">.</span><span class="n">BFCL</span><span class="p">,</span>
+    <span class="n">runtime_config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;shm_size&quot;</span><span class="p">:</span> <span class="s2">&quot;5.06gb&quot;</span><span class="p">},</span>
+    <span class="n">security_level</span><span class="o">=</span><span class="s2">&quot;medium&quot;</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;bfcl Sandbox&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BFCLSandbox</span><span class="p">(</span><span class="n">TrainingSandbox</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Training Sandbox class for managing and executing training-related tasks.</span>
+
+<span class="sd">    This class provides methods to create, manage, and interact with</span>
+<span class="sd">    training environment instances using specialized tool calls.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sandbox_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">,</span>
+        <span class="n">base_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">bearer_token</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the Training Sandbox.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sandbox_id (Optional[str]): Unique identifier for the sandbox.</span>
+<span class="sd">            timeout (int): Maximum time allowed for sandbox operations.</span>
+<span class="sd">            base_url (Optional[str]): Base URL for sandbox API.</span>
+<span class="sd">            bearer_token (Optional[str]): Authentication token for API access.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">sandbox_id</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="p">,</span>
+            <span class="n">base_url</span><span class="p">,</span>
+            <span class="n">bearer_token</span><span class="p">,</span>
+            <span class="n">SandboxType</span><span class="o">.</span><span class="n">BFCL</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="nd">@SandboxRegistry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;agentscope/runtime-sandbox-webshop:</span><span class="si">{</span><span class="n">get_image_tag</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">sandbox_type</span><span class="o">=</span><span class="n">SandboxType</span><span class="o">.</span><span class="n">BFCL</span><span class="p">,</span>
+    <span class="n">runtime_config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;shm_size&quot;</span><span class="p">:</span> <span class="s2">&quot;5.06gb&quot;</span><span class="p">},</span>
+    <span class="n">security_level</span><span class="o">=</span><span class="s2">&quot;medium&quot;</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;webshop Sandbox&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">WebShopSandbox</span><span class="p">(</span><span class="n">TrainingSandbox</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Training Sandbox class for managing and executing training-related tasks.</span>
+
+<span class="sd">    This class provides methods to create, manage, and interact with</span>
+<span class="sd">    training environment instances using specialized tool calls.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sandbox_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">,</span>
+        <span class="n">base_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">bearer_token</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the Training Sandbox.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sandbox_id (Optional[str]): Unique identifier for the sandbox.</span>
+<span class="sd">            timeout (int): Maximum time allowed for sandbox operations.</span>
+<span class="sd">            base_url (Optional[str]): Base URL for sandbox API.</span>
+<span class="sd">            bearer_token (Optional[str]): Authentication token for API access.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">sandbox_id</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="p">,</span>
+            <span class="n">base_url</span><span class="p">,</span>
+            <span class="n">bearer_token</span><span class="p">,</span>
+            <span class="n">SandboxType</span><span class="o">.</span><span class="n">BFCL</span><span class="p">,</span>
+        <span class="p">)</span>
 </pre></div>
         </article>
       </div>
@@ -673,7 +789,7 @@
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-08-22</div>
+              Last updated on 2025-08-26</div>
           </div>
           <div class="right-details">
             <div class="icons">

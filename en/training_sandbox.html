@@ -460,7 +460,7 @@ Docker images from our repository:</p>
 <p>All Docker images are hosted on Alibaba Cloud Container Registry (ACR) for optimal performance and reliability worldwide. Images are pulled from ACR and tagged with standard names for seamless integration with the AgentScope runtime environment.</p>
 </div>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Pull and tag Appworld ARM64 architecture image</span>
-docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm<span class="w"> </span>agentscope/runtime-sandbox-appworld:latest-arm
+docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm<span class="w"> </span>agentscope/runtime-sandbox-appworld:latest-arm
 
 <span class="c1"># Pull and tag Appworld X86_64 architecture image</span>
 docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest<span class="w"> </span>agentscope/runtime-sandbox-appworld:latest
@@ -490,7 +490,7 @@ Please refer to <a class="reference internal" href="sandbox_advanced.html"><span
 <p>For training sandboxes, different datasets use different Dockerfiles, located at
 <code class="docutils literal notranslate"><span class="pre">src/agentscope_runtime/sandbox/box/training_box/environments/{dataset_name}</span></code>.</p>
 <p>For Appworld:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>src/agentscope_runtime/sandbox/box/training_box/environments/appworld/Dockerfile<span class="w">     </span>-t<span class="w"> </span>agentscope/runtime-sandbox-appworld:v0.0.1<span class="w">     </span>.
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>src/agentscope_runtime/sandbox/box/training_box/environments/appworld/Dockerfile<span class="w">     </span>-t<span class="w"> </span>agentscope/runtime-sandbox-appworld:latest<span class="w">     </span>.
 </pre></div>
 </div>
 </section>
@@ -655,7 +655,7 @@ Instances will be auto-released in 5 minutes.</p>
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-08-22</div>
+              Last updated on 2025-08-26</div>
           </div>
           <div class="right-details">
             <div class="icons">

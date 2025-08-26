@@ -452,7 +452,7 @@ Agent在执行复杂多步骤任务的能力。</p></li>
 <p>所有Docker镜像都托管在阿里云容器镜像服务(ACR)上，以在全球范围内实现可获取和可靠性。镜像从ACR拉取后使用标准名称重命名，以与AgentScope Runtime无缝集成。</p>
 </div>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 拉取并标记Appworld ARM64架构镜像</span>
-docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm<span class="w"> </span>agentscope/runtime-sandbox-appworld:latest-arm
+docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm<span class="w"> </span>agentscope/runtime-sandbox-appworld:latest-arm
 
 <span class="c1"># 拉取并标记 Appworld X86_64 架构镜像</span>
 docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest<span class="w"> </span>agentscope/runtime-sandbox-appworld:latest
@@ -482,7 +482,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <p>对于训练用沙箱，不同数据集使用不同的DockerFile，其路径在
 <code class="docutils literal notranslate"><span class="pre">src/agentscope_runtime/sandbox/box/training_box/environments/{dataset_name}</span></code>下</p>
 <p>以appworld为例：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>src/agentscope_runtime/sandbox/box/training_box/environments/appworld/Dockerfile<span class="w">     </span>-t<span class="w"> </span>agentscope/runtime-sandbox-appworld:v0.0.1<span class="w">     </span>.
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>src/agentscope_runtime/sandbox/box/training_box/environments/appworld/Dockerfile<span class="w">     </span>-t<span class="w"> </span>agentscope/runtime-sandbox-appworld:latest<span class="w">     </span>.
 </pre></div>
 </div>
 </section>
@@ -635,7 +635,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-08-22</div>
+              Last updated on 2025-08-26</div>
           </div>
           <div class="right-details">
             <div class="icons">
