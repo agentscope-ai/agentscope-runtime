@@ -1,0 +1,45 @@
+# Flask Web Framework and Extensions
+Flask
+Flask-Cors
+Flask-SQLAlchemy
+Flask-Login
+Werkzeug
+
+# Environment and Configuration
+python-dotenv
+
+# HTTP Requests and API Integration
+requests
+
+# AI and ML Dependencies
+openai
+dashscope
+
+# Document Processing
+Pillow
+pdf2image
+
+# Scientific Computing for Embeddings
+numpy
+faiss-cpu
+
+# Testing Framework
+pytest
+pytest-flask
+
+# AgentScope and AgentScope Runtime
+# agentscope-runtime==0.1.0
+agentscope
+
+# AgentScope Runtime Extensions for specific frameworks
+# Uncomment as needed:
+# agentscope-runtime[agentscope]  # For AgentScope integration
+# agentscope-runtime[sandbox]    # For sandbox capabilities
+# agentscope-runtime[autogen]    # For AutoGen integration
+# agentscope-runtime[langgraph]  # For LangGraph integration
+
+# Note: Some packages might require system dependencies:
+# - pdf2image requires poppler-utils on Linux or poppler on macOS
+# - For production, consider using faiss-gpu instead of faiss-cpu for better performance
+
+steel

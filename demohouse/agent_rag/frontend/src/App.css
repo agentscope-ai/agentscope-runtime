@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8fafc;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+}
+
+/* Ant Design overrides for清新风格 */
+.ant-tabs-tab {
+  font-weight: 500;
+}
+
+.ant-list-item {
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.ant-list-item:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  transform: translateY(-1px);
+}
+
+.ant-card {
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.ant-btn-primary {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  border: none;
+}
+
+.ant-btn-primary:hover {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+}
+
+.ant-progress-inner {
+  border-radius: 4px;
+}
+
+.ant-tag {
+  border-radius: 12px;
+  padding: 0 12px;
+}
+
+/* Add this to your existing App.css after the current content */
+
+/* Markdown styling for AI messages */
+.ai-message {
+  line-height: 1.7;
+  font-size: 14px;
+  color: #374151;
+}
+
+.ai-message h1 {
+  font-size: 1.8em;
+  color: #1f2937;
+  margin: 24px 0 16px 0;
+  font-weight: 700;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 8px;
+}
+
+.ai-message h2 {
+  font-size: 1.5em;
+  color: #2563eb;
+  margin: 20px 0 12px 0;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-message h3 {
+  font-size: 1.25em;
+  color: #374151;
+  margin: 16px 0 10px 0;
+  font-weight: 500;
+}
+
+.ai-message strong {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.ai-message p {
+  margin: 12px 0;
+  line-height: 1.6;
+}
+
+.ai-message ul, .ai-message ol {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+.ai-message li {
+  margin: 6px 0;
+  line-height: 1.5;
+}
+
+.ai-message blockquote {
+  border-left: 4px solid #3b82f6;
+  margin: 16px 0;
+  padding: 12px 0 12px 20px;
+  background-color: #f8fafc;
+  border-radius: 0 6px 6px 0;
+  font-style: italic;
+  color: #4b5563;
+}
+
+.ai-message code {
+  background-color: #f3f4f6;
+  color: #dc2626;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.ai-message pre {
+  background-color: #1f2937;
+  color: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+.ai-message pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* Message container styling */
+.message-ai {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 12px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  position: relative;
+}
+
+.message-ai::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  border-radius: 12px 12px 0 0;
+}
+
+.message-user {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0;
+  margin-left: 60px;
+}
