@@ -310,10 +310,10 @@ class BfclEnv(BaseEnv):
         state_msg = self.transition(
             action,
             params=params or {},
-        )  
+        )
         terminated = self._is_terminated(
             state_msg.simple_dict["content"],
-        )  
+        )
         reward = self.evaluate(params={"sparse": True}) if terminated else 0.0
         return {
             "state": [state_msg.simple_dict],
@@ -334,7 +334,7 @@ class BfclEnv(BaseEnv):
 
         self.conversation_history.append(
             assistant_entry,
-        ) 
+        )
 
         if self.env_handler is None or self.original_test_entry is None:
             raise RuntimeError(
@@ -344,10 +344,9 @@ class BfclEnv(BaseEnv):
             self.conversation_history,
             self.original_test_entry,
         )
-        new_tool_calls: list[ToolCall] = []
         next_msg_content = ""
 
-        for idx, msg in enumerate(env_resp.get("messages", [])):
+        for _idx, msg in enumerate(env_resp.get("messages", [])):
             self.conversation_history.append(msg)
             if msg["role"] == "tool":
                 next_msg_content += tool_message_to_qwen_text(msg)
@@ -357,9 +356,7 @@ class BfclEnv(BaseEnv):
             elif msg["role"] == "env":
                 next_msg_content = msg.get("content", "")
 
-        return (
-            StateMessage(role="user", content=next_msg_content)
-        )
+        return StateMessage(role="user", content=next_msg_content)
 
     def evaluate(
         self,
@@ -378,7 +375,7 @@ class BfclEnv(BaseEnv):
             "total_output_tokens": self.total_output_tokens,
             "completed": self._is_terminated(
                 self.conversation_history[-1]["content"],
-            ),  ### changed by czy0721
+            ),
             "original_test_entry": self.original_test_entry,
         }
         sparse = (params or {}).get("sparse", False)
@@ -439,7 +436,7 @@ class BfclEnv(BaseEnv):
 
         Args:
             split: Dataset split, either 'train' or 'test'
-            params: Parameters to filter dataset (currently supports 'category')
+            params: Parameters to filter dataset(currently supports 'category')
 
         Returns:
             List of query id

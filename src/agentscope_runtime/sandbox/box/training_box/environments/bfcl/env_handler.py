@@ -1,7 +1,7 @@
+# -*- coding: utf-8 -*-
 import json
-import time
 import os
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any
 import warnings
 import tempfile
 from pathlib import Path
@@ -25,7 +25,9 @@ from bfcl_eval.eval_checker.eval_runner import (
     multi_turn_runner,
     ast_file_runner,
 )
-from bfcl_eval.eval_checker.eval_runner_helper import record_result, record_cost_latency
+from bfcl_eval.eval_checker.eval_runner_helper import (
+    record_cost_latency,
+)
 from bfcl_eval.utils import (
     is_multi_turn,
     is_relevance_or_irrelevance,
@@ -34,11 +36,10 @@ from bfcl_eval.utils import (
 )
 
 
-
 # monkey patch to locate a possible answer path.
 # users are expected to set this path manually in EnvHandler.
 POSSIBLE_ANSWER_PATH = Path(
-    os.path.join(__file__, "..", "..", "..", "..", "data", "possible_answer")
+    os.path.join(__file__, "..", "..", "..", "..", "data", "possible_answer"),
 ).resolve()
 
 
@@ -50,7 +51,9 @@ class EnvHandler:
     """
 
     def __init__(
-        self, model_name: str = "env_handler", answer_path: Path = POSSIBLE_ANSWER_PATH
+        self,
+        model_name: str = "env_handler",
+        answer_path: Path = POSSIBLE_ANSWER_PATH,
     ):
         """
         Initialize the environment handler.
@@ -66,19 +69,25 @@ class EnvHandler:
         self._answer_path = answer_path
         if not self._answer_path.exists():
             raise ValueError(
-                f"Answer path {self._answer_path} does not exist. Please refer to README.md for more information."
+                f"Answer path {self._answer_path} does not exist. Please refer\
+                      to README.md for more information.",
             )
 
     def interact(
-        self, messages: List[Dict[str, Any]], test_entry: Dict[str, Any], **kwargs
+        self,
+        messages: List[Dict[str, Any]],
+        test_entry: Dict[str, Any],
+        **_kwargs,
     ) -> Dict[str, Any]:
         """
         Process one step in the conversation.
         Both single turn and multi turn are supported.
 
         Args:
-            messages: List of conversation messages, with the last one being assistant response
-            test_entry: Test entry containing initial_config, involved_classes, question etc.
+            messages: List of conversation messages, with the last one being
+            assistant response
+            test_entry: Test entry containing initial_config, involved_classes,
+              question etc.
             **kwargs: Additional arguments for compatibility
 
         Returns:
@@ -92,25 +101,32 @@ class EnvHandler:
 
             if messages[-1]["role"] != "assistant":
                 return self._create_error_response(
-                    "Last message must be from assistant"
+                    "Last message must be from assistant",
                 )
 
-            if "tool_calls" in messages[-1] and len(messages[-1]["tool_calls"]) > 0:
+            if (
+                "tool_calls" in messages[-1]
+                and len(messages[-1]["tool_calls"]) > 0
+            ):
                 try:
                     tool_calls = messages[-1]["tool_calls"]
-                    decoded_calls = self._convert_tool_calls_to_execution_format(
-                        tool_calls
+                    decoded_calls = (
+                        self._convert_tool_calls_to_execution_format(
+                            tool_calls,
+                        )
                     )
                     print(f"decoded_calls: {decoded_calls}")
-                    # todo 实现decode_execute，返回prm
-                    # if self.decode_execute(decoded_calls):
                     if is_empty_execute_response(decoded_calls):
                         warnings.warn(
-                            f"is_empty_execute_response: {is_empty_execute_response(decoded_calls)}"
+                            f"is_empty_execute_response: \
+                                {is_empty_execute_response(decoded_calls)}",
                         )
                         return self._handle_user_turn(test_entry, current_turn)
                     return self._handle_tool_calls(
-                        tool_calls, decoded_calls, test_entry, current_turn
+                        tool_calls,
+                        decoded_calls,
+                        test_entry,
+                        current_turn,
                     )
                 except Exception as e:
                     warnings.warn(f"处理工具调用时发生错误: {str(e)}")
@@ -122,7 +138,9 @@ class EnvHandler:
             return self._create_error_response(f"处理请求时发生错误: {str(e)}")
 
     def _get_current_turn(
-        self, messages: List[Dict[str, Any]], test_entry: Dict[str, Any]
+        self,
+        messages: List[Dict[str, Any]],
+        test_entry: Dict[str, Any],
     ) -> int:
         """
         Get the current turn number in the conversation.
@@ -163,7 +181,8 @@ class EnvHandler:
             model_name=self.model_name,
             test_entry_id=test_entry["id"],
             long_context=(
-                "long_context" in test_entry["id"] or "composite" in test_entry["id"]
+                "long_context" in test_entry["id"]
+                or "composite" in test_entry["id"]
             ),
             is_evaL_run=False,
         )
@@ -171,10 +190,13 @@ class EnvHandler:
         return self._create_tool_response(tool_calls, execution_results)
 
     def _handle_user_turn(
-        self, test_entry: Dict[str, Any], current_turn: int
+        self,
+        test_entry: Dict[str, Any],
+        current_turn: int,
     ) -> Dict[str, Any]:
         """
-        Handle user turn by returning appropriate content from test_entry["question"].
+        Handle user turn by returning appropriate content from
+        test_entry["question"].
         For non-first turns, processes user query and tools.
 
         Args:
@@ -191,16 +213,19 @@ class EnvHandler:
             holdout_function = test_entry.get("holdout_function", {})
 
             if str(current_turn) in holdout_function:
-                test_entry["function"].extend(holdout_function[str(current_turn)])
+                test_entry["function"].extend(
+                    holdout_function[str(current_turn)],
+                )
                 tools = self._compile_tools(test_entry)
                 assert (
                     len(questions[current_turn]) == 0
                 ), "Holdout turn should not have user message."
+                default_prompt = DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_FC
                 current_turn_message = [
                     {
                         "role": "user",
-                        "content": DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_FC,
-                    }
+                        "content": default_prompt,
+                    },
                 ]
                 return self._create_user_response(current_turn_message, tools)
             if current_turn >= len(questions):
@@ -226,13 +251,21 @@ class EnvHandler:
         functions: list = test_entry["function"]
         test_category: str = test_entry["id"].rsplit("_", 1)[0]
 
-        functions = _func_doc_language_specific_pre_processing(functions, test_category)
-        tools = convert_to_tool(functions, GORILLA_TO_OPENAPI, self.model_style)
+        functions = _func_doc_language_specific_pre_processing(
+            functions,
+            test_category,
+        )
+        tools = convert_to_tool(
+            functions,
+            GORILLA_TO_OPENAPI,
+            self.model_style,
+        )
 
         return tools
 
     def _convert_tool_calls_to_execution_format(
-        self, tool_calls: List[Dict[str, Any]]
+        self,
+        tool_calls: List[Dict[str, Any]],
     ) -> List[str]:
         """
         Convert OpenAI format tool calls to execution format.
@@ -256,16 +289,20 @@ class EnvHandler:
                 else:
                     args_dict = arguments
 
-                args_str = ", ".join([f"{k}={repr(v)}" for k, v in args_dict.items()])
+                args_str = ", ".join(
+                    [f"{k}={repr(v)}" for k, v in args_dict.items()],
+                )
                 execution_list.append(f"{function_name}({args_str})")
 
             except Exception as e:
-                execution_list.append(f"{function_name}()")
+                execution_list.append(f"{function_name}(), {str(e)}")
 
         return execution_list
 
     def _create_tool_response(
-        self, tool_calls: List[Dict[str, Any]], execution_results: List[str]
+        self,
+        tool_calls: List[Dict[str, Any]],
+        execution_results: List[str],
     ) -> Dict[str, Any]:
         """
         Create response for tool calls.
@@ -278,19 +315,23 @@ class EnvHandler:
             Response containing tool execution results
         """
         tool_messages = []
-        for i, (tool_call, result) in enumerate(zip(tool_calls, execution_results)):
+        for i, (tool_call, result) in enumerate(
+            zip(tool_calls, execution_results),
+        ):
             tool_messages.append(
                 {
                     "role": "tool",
                     "content": result,
                     "tool_call_id": tool_call.get("id", f"call_{i}"),
-                }
+                },
             )
 
         return {"messages": tool_messages}
 
     def _create_user_response(
-        self, question_turn: List[Dict[str, Any]], tools: List[Dict[str, Any]]
+        self,
+        question_turn: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
     ) -> Dict[str, Any]:
         """
         Create response containing user message.
@@ -308,7 +349,10 @@ class EnvHandler:
                 user_content = msg["content"]
                 break
 
-        return {"messages": [{"role": "user", "content": user_content}], "tools": tools}
+        return {
+            "messages": [{"role": "user", "content": user_content}],
+            "tools": tools,
+        }
 
     def _create_completion_response(self) -> Dict[str, Any]:
         """
@@ -317,7 +361,11 @@ class EnvHandler:
         Returns:
             Response with completion message
         """
-        return {"messages": [{"role": "env", "content": "[CONVERSATION_COMPLETED]"}]}
+        return {
+            "messages": [
+                {"role": "env", "content": "[CONVERSATION_COMPLETED]"},
+            ],
+        }
 
     def _create_error_response(self, error_message: str) -> Dict[str, Any]:
         """
@@ -329,7 +377,11 @@ class EnvHandler:
         Returns:
             Response containing error message
         """
-        return {"messages": [{"role": "env", "content": f"[ERROR] {error_message}"}]}
+        return {
+            "messages": [
+                {"role": "env", "content": f"[ERROR] {error_message}"},
+            ],
+        }
 
     def decode_execute(self, result):
         """
@@ -348,7 +400,8 @@ class EnvHandler:
         Evaluate function for single test case.
 
         Args:
-            test_entry: Test entry containing conversation_result and original_test_entry
+            test_entry: Test entry containing conversation_result and
+            original_test_entry
                 Expected format:
                 {
                     "test_id": str,
@@ -366,7 +419,10 @@ class EnvHandler:
         """
         try:
             conversation_result = test_entry
-            original_test_entry = conversation_result.get("original_test_entry", {})
+            original_test_entry = conversation_result.get(
+                "original_test_entry",
+                {},
+            )
 
             if not conversation_result or not original_test_entry:
                 return self._create_eval_error_result(
@@ -375,41 +431,49 @@ class EnvHandler:
                 )
 
             test_id = conversation_result.get("test_id", "unknown")
-            messages = conversation_result.get("messages", [])
-
             category = test_id.rsplit("_", 1)[0] if "_" in test_id else test_id
 
             model_name = self.model_name
-            # from bfcl_eval.model_handler.api_inference.qwq import QwenAPIHandler
-            from bfcl_eval.model_handler.api_inference.qwen import QwenAPIHandler #### qwq->qwen
-
+            from bfcl_eval.model_handler.api_inference.qwen import (
+                QwenAPIHandler,
+            )
 
             handler = QwenAPIHandler(
-                self.model_name, temperature=1.0
-            )  # FIXME: magic number
+                self.model_name,
+                temperature=1.0,
+            )
 
             model_result_data = self._convert_conversation_to_eval_format(
-                conversation_result, original_test_entry
+                conversation_result,
+                original_test_entry,
             )
 
             prompt_data = [original_test_entry]
 
             state = {"leaderboard_table": {}}
             record_cost_latency(
-                state["leaderboard_table"], model_name, [model_result_data]
+                state["leaderboard_table"],
+                model_name,
+                [model_result_data],
             )
 
             if is_relevance_or_irrelevance(category):
                 accuracy, total_count = self._eval_relevance_test(
-                    handler, model_result_data, prompt_data, model_name, category
+                    handler,
+                    model_result_data,
+                    prompt_data,
+                    model_name,
+                    category,
                 )
             else:
-                # Find the corresponding possible answer file
-
                 possible_answer_file = find_file_by_category(
-                    category, self._answer_path
+                    category,
+                    self._answer_path,
                 )
-                possible_answer = load_file(possible_answer_file, sort_by_id=True)
+                possible_answer = load_file(
+                    possible_answer_file,
+                    sort_by_id=True,
+                )
                 possible_answer = [
                     item for item in possible_answer if item["id"] == test_id
                 ]
@@ -431,9 +495,6 @@ class EnvHandler:
                         model_name,
                         category,
                     )
-            # print(f"model_result_data: {model_result_data}")
-            # print(f"possible_answer: {possible_answer}") if possible_answer else None
-
             result = {
                 "valid": True,
                 "accuracy": accuracy,
@@ -442,8 +503,14 @@ class EnvHandler:
                 "test_category": category,
                 "test_id": test_id,
                 "model_name": model_name,
-                "input_tokens": conversation_result.get("total_input_tokens", 0),
-                "output_tokens": conversation_result.get("total_output_tokens", 0),
+                "input_tokens": conversation_result.get(
+                    "total_input_tokens",
+                    0,
+                ),
+                "output_tokens": conversation_result.get(
+                    "total_output_tokens",
+                    0,
+                ),
                 "turn_count": conversation_result.get("turn_count", 0),
                 "completed": conversation_result.get("completed", False),
             }
@@ -458,12 +525,17 @@ class EnvHandler:
                 f"Evaluation failed: {str(e)}",
                 test_entry.get(
                     "test_id",
-                    test_entry.get("conversation_result", {}).get("test_id", "unknown"),
+                    test_entry.get("conversation_result", {}).get(
+                        "test_id",
+                        "unknown",
+                    ),
                 ),
             )
 
     def _create_eval_error_result(
-        self, error_message: str, test_id: str
+        self,
+        error_message: str,
+        test_id: str,
     ) -> Dict[str, Any]:
         """
         Create standardized error result for evaluation.
@@ -486,7 +558,12 @@ class EnvHandler:
         }
 
     def _eval_relevance_test(
-        self, handler, model_result_data, prompt_data, model_name, test_category
+        self,
+        handler,
+        model_result_data,
+        prompt_data,
+        model_name,
+        test_category,
     ):
         """
         Evaluate relevance/irrelevance test.
@@ -512,7 +589,10 @@ class EnvHandler:
                 score_dir=score_dir,
             )
             self._capture_and_print_score_files(
-                score_dir, model_name, test_category, "relevance"
+                score_dir,
+                model_name,
+                test_category,
+                "relevance",
             )
             return accuracy, total_count
 
@@ -551,7 +631,10 @@ class EnvHandler:
                 score_dir=score_dir,
             )
             self._capture_and_print_score_files(
-                score_dir, model_name, test_category, "multi_turn"
+                score_dir,
+                model_name,
+                test_category,
+                "multi_turn",
             )
             return accuracy, total_count
 
@@ -581,7 +664,10 @@ class EnvHandler:
         language = "Python"
         if "java" in test_category.lower():
             language = "Java"
-        elif "js" in test_category.lower() or "javascript" in test_category.lower():
+        elif (
+            "js" in test_category.lower()
+            or "javascript" in test_category.lower()
+        ):
             language = "JavaScript"
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -597,12 +683,19 @@ class EnvHandler:
                 score_dir=score_dir,
             )
             self._capture_and_print_score_files(
-                score_dir, model_name, test_category, "single_turn"
+                score_dir,
+                model_name,
+                test_category,
+                "single_turn",
             )
             return accuracy, total_count
 
     def _capture_and_print_score_files(
-        self, score_dir: Path, model_name: str, test_category: str, eval_type: str
+        self,
+        score_dir: Path,
+        model_name: str,
+        test_category: str,
+        eval_type: str,
     ):
         """
         Capture and print contents of score files written to score_dir.
@@ -614,16 +707,8 @@ class EnvHandler:
             eval_type: Type of evaluation (relevance/multi_turn/single_turn)
         """
         try:
-            # print(f"\n=== {eval_type.upper()} Evaluation Result Files ===")
-            # print(f"Model: {model_name}")
-            # print(f"Test Category: {test_category}")
-            # print(f"Evaluation Type: {eval_type}")
-
             for file_path in score_dir.rglob("*"):
                 if file_path.is_file():
-                    relative_path = file_path.relative_to(score_dir)
-                    # print(f"\n--- File: {relative_path} ---")
-
                     try:
                         with open(file_path, "r", encoding="utf-8") as f:
                             content = f.read()
@@ -643,27 +728,30 @@ class EnvHandler:
                                         parsed = json.loads(line)
                                         formatted_lines.append(
                                             json.dumps(
-                                                parsed, ensure_ascii=False, indent=2
-                                            )
+                                                parsed,
+                                                ensure_ascii=False,
+                                                indent=2,
+                                            ),
                                         )
                                 content = "\n".join(formatted_lines)
                             except json.JSONDecodeError:
                                 pass
 
-                        # print(content)
-
                     except UnicodeDecodeError:
-                        print(f"[Binary file, size: {file_path.stat().st_size} bytes]")
+                        print(
+                            f"[Binary file, size: {file_path.stat().st_size}\
+                                  bytes]",
+                        )
                     except Exception as e:
                         print(f"[Error reading file: {str(e)}]")
-
-            # print(f"=== {eval_type.upper()} Evaluation Result Files End ===\n")
 
         except Exception as e:
             print(f"Error capturing evaluation result files: {str(e)}")
 
     def _convert_conversation_to_eval_format(
-        self, conversation_result: Dict[str, Any], original_test_entry: Dict[str, Any]
+        self,
+        conversation_result: Dict[str, Any],
+        original_test_entry: Dict[str, Any],
     ) -> Dict[str, Any]:
         """
         Convert conversation history to evaluation format.
@@ -678,7 +766,9 @@ class EnvHandler:
         test_id = conversation_result.get("test_id", "unknown")
         messages = conversation_result.get("messages", [])
 
-        test_category = test_id.rsplit("_", 1)[0] if "_" in test_id else test_id
+        test_category = (
+            test_id.rsplit("_", 1)[0] if "_" in test_id else test_id
+        )
 
         if is_multi_turn(test_category):
             turns_data = self._extract_multi_turn_responses(messages)
@@ -689,14 +779,21 @@ class EnvHandler:
             "id": test_id,
             "result": turns_data,
             "latency": conversation_result.get("total_latency", 0),
-            "input_token_count": conversation_result.get("total_input_tokens", 0),
-            "output_token_count": conversation_result.get("total_output_tokens", 0),
+            "input_token_count": conversation_result.get(
+                "total_input_tokens",
+                0,
+            ),
+            "output_token_count": conversation_result.get(
+                "total_output_tokens",
+                0,
+            ),
         }
 
         return model_result_data
 
     def _extract_multi_turn_responses(
-        self, messages: List[Dict[str, Any]]
+        self,
+        messages: List[Dict[str, Any]],
     ) -> List[List[str]]:
         """
         Extract multi-turn responses from conversation messages.
@@ -723,10 +820,15 @@ class EnvHandler:
                 while i < len(messages) and messages[i]["role"] == "assistant":
                     assistant_msg = messages[i]
 
-                    if "tool_calls" in assistant_msg and assistant_msg["tool_calls"]:
+                    if (
+                        "tool_calls" in assistant_msg
+                        and assistant_msg["tool_calls"]
+                    ):
                         for tool_call in assistant_msg["tool_calls"]:
-                            formatted_call = self._format_single_tool_call_for_eval(
-                                tool_call
+                            formatted_call = (
+                                self._format_single_tool_call_for_eval(
+                                    tool_call,
+                                )
                             )
                             if formatted_call:
                                 current_turn_responses.append(formatted_call)
@@ -743,7 +845,10 @@ class EnvHandler:
 
         return turns_data
 
-    def _extract_single_turn_response(self, messages: List[Dict[str, Any]]) -> str:
+    def _extract_single_turn_response(
+        self,
+        messages: List[Dict[str, Any]],
+    ) -> str:
         """
         Extract single-turn response from conversation messages.
 
@@ -758,18 +863,25 @@ class EnvHandler:
                 if "tool_calls" in message and message["tool_calls"]:
                     formatted_calls = []
                     for tool_call in message["tool_calls"]:
-                        formatted_call = self._format_single_tool_call_for_eval(
-                            tool_call
+                        formatted_call = (
+                            self._format_single_tool_call_for_eval(
+                                tool_call,
+                            )
                         )
                         if formatted_call:
                             formatted_calls.append(formatted_call)
-                    return "\n".join(formatted_calls) if formatted_calls else ""
+                    return (
+                        "\n".join(formatted_calls) if formatted_calls else ""
+                    )
                 elif message.get("content"):
                     return message["content"]
 
         return ""
 
-    def _format_single_tool_call_for_eval(self, tool_call: Dict[str, Any]) -> str:
+    def _format_single_tool_call_for_eval(
+        self,
+        tool_call: Dict[str, Any],
+    ) -> str:
         """
         Format a single tool call into string representation for evaluation.
 
@@ -789,11 +901,13 @@ class EnvHandler:
             else:
                 args_dict = arguments
 
-            args_str = ", ".join([f"{k}={repr(v)}" for k, v in args_dict.items()])
+            args_str = ", ".join(
+                [f"{k}={repr(v)}" for k, v in args_dict.items()],
+            )
             return f"{function_name}({args_str})"
 
         except Exception as e:
-            return f"{function_name}()"
+            return f"{function_name}, {str(e)}"
 
 
 def env_step(
@@ -816,4 +930,3 @@ def env_step(
     """
     handler = EnvHandler(model)
     return handler.interact(messages, test_entry, **kwargs)
-
