@@ -21,24 +21,19 @@ result = bfcl_task_preprocess(
 
 """
 
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional
 import json
-import pandas as pd
 import random
-import yaml
 from pathlib import Path
 
-from bfcl_eval.constants.category_mapping import TEST_COLLECTION_MAPPING
 from bfcl_eval.constants.eval_config import (
     PROMPT_PATH,
-    MULTI_TURN_FUNC_DOC_PATH,
 )
 from bfcl_eval.eval_checker.eval_runner_helper import load_file
 from bfcl_eval.utils import (
     parse_test_category_argument,
     populate_test_cases_with_predefined_functions,
 )
-from bfcl_eval.model_handler.local_inference.qwen_fc import QwenFCHandler
 
 
 TEST_FILE_MAPPING = {
@@ -96,7 +91,7 @@ def bfcl_task_preprocess(
         try:
             test_categories_resolved = parse_test_category_argument(categories)
         except Exception as e:
-            print(f"Error: Invalid test categories - {e}")
+            print(f"Error: Invalid test categories - {str(e)}")
             return {}
 
         print(f"Selected test categories: {test_categories_resolved}")
@@ -131,19 +126,12 @@ def bfcl_task_preprocess(
             {len(all_test_cases_by_category)} categories",
     )
 
-    # model_handler = QwenFCHandler(
-    #     model_name="qwen-fc-72b-instruct",
-    #     temperature=0.0,
-    # )
-
-    # Process test cases by category
     all_processed_cases = []
     processed_cases_by_category = {}
 
     for category, test_cases in all_test_cases_by_category.items():
         print(f"Processing category: {category}")
 
-        # Process multi-turn for this category
         category_processed_cases = (
             populate_test_cases_with_predefined_functions(test_cases)
         )
@@ -159,7 +147,6 @@ def bfcl_task_preprocess(
             cases in total",
     )
 
-    # Split data
     if enable_shuffle:
         random.shuffle(all_processed_cases)
     train_size = int(len(all_processed_cases) * train_ratio)
@@ -170,15 +157,13 @@ def bfcl_task_preprocess(
             {len(test_cases)} test cases",
     )
 
-    result = {"train": train_cases, "test": test_cases}
+    case_result = {"train": train_cases, "test": test_cases}
 
-    # Save combined files
     if output_dir:
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
         test_categories_str = "_".join(test_categories)
 
-        # 保存完整数据集
         full_jsonl_path = (
             output_path / f"{test_categories_str}_processed.jsonl"
         )
@@ -187,7 +172,6 @@ def bfcl_task_preprocess(
                 f.write(json.dumps(case, ensure_ascii=False) + "\n")
         print(f"Full dataset saved to: {full_jsonl_path}")
 
-        # 保存数据集 ID 信息
         split_ids = {
             "train": [
                 case.get("id", idx) for idx, case in enumerate(train_cases)
@@ -202,7 +186,7 @@ def bfcl_task_preprocess(
             json.dump(split_ids, f, ensure_ascii=False, indent=2)
         print(f"Split IDs saved to: {split_ids_path}")
 
-    return result
+    return case_result
 
 
 if __name__ == "__main__":
@@ -217,9 +201,9 @@ if __name__ == "__main__":
         "python",
     ]
 
-    for test_categories in category_list:
+    for bfcl_category in category_list:
         result = bfcl_task_preprocess(
-            test_categories=[test_categories],
+            test_categories=[bfcl_category],
             train_ratio=0.5,
             output_dir="./bfcl/multi_turn",
         )

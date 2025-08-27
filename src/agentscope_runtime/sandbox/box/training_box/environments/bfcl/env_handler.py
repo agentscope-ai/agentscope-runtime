@@ -129,18 +129,18 @@ class EnvHandler:
                         current_turn,
                     )
                 except Exception as e:
-                    warnings.warn(f"处理工具调用时发生错误: {str(e)}")
+                    warnings.warn(f"Tool use error: {str(e)}")
                     return self._handle_user_turn(test_entry, current_turn)
             else:
                 return self._handle_user_turn(test_entry, current_turn)
 
         except Exception as e:
-            return self._create_error_response(f"处理请求时发生错误: {str(e)}")
+            return self._create_error_response(f"Request error: {str(e)}")
 
     def _get_current_turn(
         self,
         messages: List[Dict[str, Any]],
-        test_entry: Dict[str, Any],
+        _test_entry: Dict[str, Any],
     ) -> int:
         """
         Get the current turn number in the conversation.
@@ -160,7 +160,7 @@ class EnvHandler:
         tool_calls: List[Dict[str, Any]],
         decoded_calls: list[str],
         test_entry: Dict[str, Any],
-        current_turn: int,
+        _current_turn: int,
     ) -> Dict[str, Any]:
         """
         Handle tool calls from assistant.
@@ -693,9 +693,9 @@ class EnvHandler:
     def _capture_and_print_score_files(
         self,
         score_dir: Path,
-        model_name: str,
-        test_category: str,
-        eval_type: str,
+        _model_name: str,
+        _test_category: str,
+        _eval_type: str,
     ):
         """
         Capture and print contents of score files written to score_dir.
@@ -719,8 +719,6 @@ class EnvHandler:
                             or content.strip().startswith("[")
                         ):
                             try:
-                                import json
-
                                 lines = content.strip().split("\n")
                                 formatted_lines = []
                                 for line in lines:
@@ -751,7 +749,7 @@ class EnvHandler:
     def _convert_conversation_to_eval_format(
         self,
         conversation_result: Dict[str, Any],
-        original_test_entry: Dict[str, Any],
+        _original_test_entry: Dict[str, Any],
     ) -> Dict[str, Any]:
         """
         Convert conversation history to evaluation format.
