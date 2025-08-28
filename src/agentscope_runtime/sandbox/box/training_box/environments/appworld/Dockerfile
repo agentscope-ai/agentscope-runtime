@@ -32,6 +32,7 @@ RUN ARCH=$(uname -m) && \
     bash /tmp/miniconda.sh -b -p /opt/conda && \
     rm /tmp/miniconda.sh
 
+
 # Optionally, add conda to PATH
 ENV PATH="/opt/conda/bin:${PATH}"
 
@@ -59,18 +60,19 @@ RUN /opt/conda/envs/appworld/bin/appworld install
 
 ENV APPWORLD_ROOT=/agentscope_runtime/appworld/
 
-RUN /opt/conda/envs/appworld/bin/appworld download data
-
-RUN mv /agentscope_runtime/data /agentscope_runtime/appworld/
+#
+#RUN /opt/conda/envs/appworld/bin/appworld download data
+#
+#RUN mv /agentscope_runtime/data /agentscope_runtime/appworld/
 # If download fails, you may get the data from this source and move it locally by commenting two lines above and uncommenting the following lines
 
-# RUN wget -O appworld_data.zip "https://dail-wlcb.oss-accelerate.aliyuncs.com/eric.czq/appworld_data.zip"
+RUN wget -O appworld_data.zip "https://dail-wlcb.oss-accelerate.aliyuncs.com/eric.czq/appworld_data.zip"
 
-# RUN mkdir -p /agentscope_runtime/appworld && \
-#     mkdir /tmp/unziptemp && \
-#     unzip appworld_data.zip -d /tmp/unziptemp && \
-#     mv /tmp/unziptemp/*/* /agentscope_runtime/appworld && \
-#     rm -rf /tmp/unziptemp
+RUN mkdir -p /agentscope_runtime/appworld && \
+     mkdir /tmp/unziptemp && \
+     unzip appworld_data.zip -d /tmp/unziptemp && \
+     mv /tmp/unziptemp/*/* /agentscope_runtime/appworld && \
+     rm -rf /tmp/unziptemp
 
 
 ENV PYTHONPATH=/agentscope_runtime:$PYTHONPATH

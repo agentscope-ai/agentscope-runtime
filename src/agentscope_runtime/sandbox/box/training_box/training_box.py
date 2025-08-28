@@ -7,6 +7,7 @@ with specific configuration and tool calling methods.
 """
 import platform
 from typing import Dict, Optional
+import os
 
 from ...registry import SandboxRegistry
 from ...enums import SandboxType
@@ -21,14 +22,6 @@ def get_image_tag() -> str:
     return IMAGE_TAG
 
 
-@SandboxRegistry.register(
-    f"agentscope/runtime-sandbox-appworld:{get_image_tag()}",
-    sandbox_type=SandboxType.APPWORLD,
-    runtime_config={"shm_size": "5.06gb"},
-    security_level="medium",
-    timeout=30,
-    description="appworld Sandbox",
-)
 class TrainingSandbox(Sandbox):
     """
     Training Sandbox class for managing and executing training-related tasks.
@@ -43,6 +36,7 @@ class TrainingSandbox(Sandbox):
         timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
+        box_type: SandboxType = SandboxType.APPWORLD,
     ):
         """
         Initialize the Training Sandbox.
@@ -58,7 +52,7 @@ class TrainingSandbox(Sandbox):
             timeout,
             base_url,
             bearer_token,
-            SandboxType.APPWORLD,
+            box_type,
         )
 
     def create_instance(
@@ -216,4 +210,139 @@ class TrainingSandbox(Sandbox):
             arguments={
                 "instance_id": instance_id,
             },
+        )
+
+
+@SandboxRegistry.register(
+    f"agentscope/runtime-sandbox-appworld:{get_image_tag()}",
+    sandbox_type=SandboxType.APPWORLD,
+    runtime_config={"shm_size": "5.06gb"},
+    security_level="medium",
+    timeout=30,
+    description="appworld Sandbox",
+)
+class APPWorldSandbox(TrainingSandbox):
+    """
+    Training Sandbox class for managing and executing training-related tasks.
+
+    This class provides methods to create, manage, and interact with
+    training environment instances using specialized tool calls.
+    """
+
+    def __init__(
+        self,
+        sandbox_id: Optional[str] = None,
+        timeout: int = 3000,
+        base_url: Optional[str] = None,
+        bearer_token: Optional[str] = None,
+    ):
+        """
+        Initialize the Training Sandbox.
+
+        Args:
+            sandbox_id (Optional[str]): Unique identifier for the sandbox.
+            timeout (int): Maximum time allowed for sandbox operations.
+            base_url (Optional[str]): Base URL for sandbox API.
+            bearer_token (Optional[str]): Authentication token for API access.
+        """
+        super().__init__(
+            sandbox_id,
+            timeout,
+            base_url,
+            bearer_token,
+            SandboxType.APPWORLD,
+        )
+
+
+DATASET_SUB_TYPE=os.environ.get("DATASET_SUB_TYPE", "multi_turn")
+
+@SandboxRegistry.register(
+    f"agentscope/runtime-sandbox-bfcl:{get_image_tag()}",
+    sandbox_type=SandboxType.BFCL,
+    runtime_config={"shm_size": "8.06gb"},
+    security_level="medium",
+
+    
+
+
+    environment={"OPENAI_API_KEY":os.environ.get("OPENAI_API_KEY"),
+                 "BFCL_DATA_PATH":f"/agentscope_runtime/training_box/bfcl/multi_turn/{DATASET_SUB_TYPE}_processed.jsonl",
+                 "BFCL_SPLID_ID_PATH":f"/agentscope_runtime/training_box/bfcl/multi_turn/{DATASET_SUB_TYPE}_split_ids.json"
+                 },
+                        #["all","all_scoring","multi_turn","single_turn",
+                        # "live","non_live","non_python","python"]
+    timeout=30,
+    description="bfcl Sandbox",
+)
+class BFCLSandbox(TrainingSandbox):
+    """
+    Training Sandbox class for managing and executing training-related tasks.
+
+    This class provides methods to create, manage, and interact with
+    training environment instances using specialized tool calls.
+    """
+
+    def __init__(
+        self,
+        sandbox_id: Optional[str] = None,
+        timeout: int = 3000,
+        base_url: Optional[str] = None,
+        bearer_token: Optional[str] = None,
+    ):
+        """
+        Initialize the Training Sandbox.
+
+        Args:
+            sandbox_id (Optional[str]): Unique identifier for the sandbox.
+            timeout (int): Maximum time allowed for sandbox operations.
+            base_url (Optional[str]): Base URL for sandbox API.
+            bearer_token (Optional[str]): Authentication token for API access.
+        """
+        super().__init__(
+            sandbox_id,
+            timeout,
+            base_url,
+            bearer_token,
+            SandboxType.BFCL,
+        )
+
+
+@SandboxRegistry.register(
+    f"agentscope/runtime-sandbox-webshop:{get_image_tag()}",
+    sandbox_type=SandboxType.WEBSHOP,
+    runtime_config={"shm_size": "5.06gb"},
+    security_level="medium",
+    timeout=30,
+    description="webshop Sandbox",
+)
+class WebShopSandbox(TrainingSandbox):
+    """
+    Training Sandbox class for managing and executing training-related tasks.
+
+    This class provides methods to create, manage, and interact with
+    training environment instances using specialized tool calls.
+    """
+
+    def __init__(
+        self,
+        sandbox_id: Optional[str] = None,
+        timeout: int = 3000,
+        base_url: Optional[str] = None,
+        bearer_token: Optional[str] = None,
+    ):
+        """
+        Initialize the Training Sandbox.
+
+        Args:
+            sandbox_id (Optional[str]): Unique identifier for the sandbox.
+            timeout (int): Maximum time allowed for sandbox operations.
+            base_url (Optional[str]): Base URL for sandbox API.
+            bearer_token (Optional[str]): Authentication token for API access.
+        """
+        super().__init__(
+            sandbox_id,
+            timeout,
+            base_url,
+            bearer_token,
+            SandboxType.BFCL,
         )

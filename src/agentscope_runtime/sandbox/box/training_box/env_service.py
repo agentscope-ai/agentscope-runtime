@@ -749,4 +749,4 @@ if __name__ == "__main__":
         sys.exit(1)
 
     print(f"Starting server on {args.portal}:{args.port}")
-    uvicorn.run(app, host=args.portal, port=args.port)
+    uvicorn.run(app, host=args.portal, port=args.port,log_level="error")
