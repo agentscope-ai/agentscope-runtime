@@ -254,23 +254,24 @@ class APPWorldSandbox(TrainingSandbox):
         )
 
 
-DATASET_SUB_TYPE=os.environ.get("DATASET_SUB_TYPE", "multi_turn")
+DATASET_SUB_TYPE = os.environ.get("DATASET_SUB_TYPE", "multi_turn")
+
 
 @SandboxRegistry.register(
     f"agentscope/runtime-sandbox-bfcl:{get_image_tag()}",
     sandbox_type=SandboxType.BFCL,
     runtime_config={"shm_size": "8.06gb"},
     security_level="medium",
-
-    
-
-
-    environment={"OPENAI_API_KEY":os.environ.get("OPENAI_API_KEY"),
-                 "BFCL_DATA_PATH":f"/agentscope_runtime/training_box/bfcl/multi_turn/{DATASET_SUB_TYPE}_processed.jsonl",
-                 "BFCL_SPLID_ID_PATH":f"/agentscope_runtime/training_box/bfcl/multi_turn/{DATASET_SUB_TYPE}_split_ids.json"
-                 },
-                        #["all","all_scoring","multi_turn","single_turn",
-                        # "live","non_live","non_python","python"]
+    environment={
+        "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY"),
+        "BFCL_DATA_PATH": f"/agentscope_runtime/training_box/bfcl/multi_turn/"
+        f"{DATASET_SUB_TYPE}_processed.jsonl",
+        "BFCL_SPLID_ID_PATH": f"/agentscope_runtime/training_box/"
+        f"bfcl/multi_turn/"
+        f"{DATASET_SUB_TYPE}_split_ids.json",
+    },
+    # ["all","all_scoring","multi_turn","single_turn",
+    # "live","non_live","non_python","python"]
     timeout=30,
     description="bfcl Sandbox",
 )
