@@ -27,6 +27,8 @@ Sandbox主要用于训练评测的功能。训练沙箱的数据主要基于公�
 
 + [APPWorld](https://github.com/StonyBrookNLP/appworld): APPWorld 是一个高效的测试环境，用于测试和评估AI
   Agent在执行复杂多步骤任务的能力。
++ [BFCL](https://github.com/ShishirPatil/gorilla): APPWorld 是一个高效的测试环境，用于测试和评估AI
+  Agent在执行复杂多步骤任务的能力。
 
 ## 安装
 
@@ -38,7 +40,8 @@ Sandbox主要用于训练评测的功能。训练沙箱的数据主要基于公�
 pip install "agentscope-runtime[sandbox]"
 ```
 
-### 拉取所需的镜像
+### Appworld 案例
+#### 拉取所需的镜像
 
 请按照以下步骤从我们的仓库拉取并标记必要的训练用沙盒Docker镜像：
 
@@ -50,27 +53,25 @@ pip install "agentscope-runtime[sandbox]"
 
 ```bash
 # 拉取并标记Appworld ARM64架构镜像
-docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64 && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm agentscope/runtime-sandbox-appworld:latest-arm
+docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64 && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64 agentscope/runtime-sandbox-appworld:latest-arm64
 
 # 拉取并标记 Appworld X86_64 架构镜像
 docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest agentscope/runtime-sandbox-appworld:latest
 ```
 
-### 验证安装
+#### 验证安装
 
 您可以通过调用`get_env_profile`来验证一切设置是否正确，如果正确将返回数据集ID：
 
-```{code-cell}
-from agentscope_runtime.sandbox.box.training_box.training_box import (
-    TrainingSandbox,
-)
+```python
+from agentscope_runtime.sandbox.box.training_box.training_box import APPWorldSandbox
 
-with TrainingSandbox() as box:
-    profile_list = box.get_env_profile(env_type="appworld", split="train")
-    print(profile_list[0])
+box = APPWorldSandbox()
+profile_list = box.get_env_profile(env_type="appworld", split="train")
+print(profile_list[0])
 ```
 
-### （可选）从头构建Docker镜像
+#### （可选）从头构建Docker镜像
 
 如果您更倾向于在本地自己通过`Dockerfile`构建镜像或需要自定义修改，可以从头构建它们。请参阅 {doc}`sandbox_advanced` 了解详细说明。
 
@@ -83,17 +84,17 @@ with TrainingSandbox() as box:
 docker build -f src/agentscope_runtime/sandbox/box/training_box/environments/appworld/Dockerfile     -t agentscope/runtime-sandbox-appworld:latest     .
 ```
 
-## 训练样本使用
+#### 训练样本使用
 
 您可以创建某一个具体的训练用沙箱（默认为`Appworld`），随后可以并行创建多个不同的训练样本，并且分别执行、评测。
 
-### 查看数据集样本
+#### 查看数据集样本
 
 构建Docker镜像后，我们可以首先查看数据集样本。
 
 例如，我们可以使用 get_env_profile 方法获取训练ID列表。
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox.box.training_box.training_box import (
     TrainingSandbox,
 )
@@ -105,14 +106,14 @@ profile_list = box.get_env_profile(env_type='appworld',split='train')
 print(profile_list)
 ```
 
-### 创建训练样本
+#### 创建训练样本
 
 以取训练集中的第1个query为例，可以通过`create_instance`创建1个训练实例（Instance)，并分配了一个实例ID（Instance ID）。
 一个Query可以创建多个实例，一个实例唯一对应一个训练样本（基于您创建时，指定的样本ID）
 其中，训练集提供的prompt (`system prompt`) 和 实际问题 (`user prompt`) 均会以`Message List`返回，具体位置于返回值的`state`
 中
 
-```{code-cell}
+```python
 
 
 profile_list = box.get_env_profile(env_type="appworld", split="train")
@@ -127,12 +128,12 @@ print(f"Created instance {instance_id} with query: {query}")
 
 ```
 
-### 使用训练样本
+#### 使用训练样本
 
 使用`step`方法，并指定具体的`instance_id`和`action`，可以得到环境内反馈结果。
 该方法目前仅支持输入Message格式，建议以` "role": "assistant"` 方式输入。
 
-```{code-cell}
+```python
 action = {
         "role": "assistant",
         "content": "```python\nprint('hello appworld!!')\n```",
@@ -146,21 +147,144 @@ print(result)
 
 ```
 
-### 评测训练样本
+#### 评测训练样本
 
 使用`evaluate`方法，并评测某个实例的状态，并获取`Reward`。不同的数据集可能含有额外的测评参数，通过`params`传入。
 
-```{code-cell}
+```python
 score = box.evaluate(instance_id, messages={}, params={"sparse": True})
 print(f"Evaluation score: {score}")
 ```
 
-### 释放训练样本
+#### 释放训练样本
 
 为了减少内存开销，建议在使用完样本后使用`release_instance`方法。
 同时，在训练用沙箱运行期间，每5分钟亦会定期清除非活跃实例。
 
-```{code-cell}
+```python
 success = box.release_instance(instance_id)
 print(f"Instance released: {success}")
+```
+
+### BFCL案例
+
+#### 拉取所需的镜像
+请按照以下步骤从我们的仓库拉取并标记必要的训练用沙盒Docker镜像：
+
+```{note}
+**镜像来源：阿里云容器镜像服务**
+
+所有Docker镜像都托管在阿里云容器镜像服务(ACR)上，以在全球范围内实现可获取和可靠性。镜像从ACR拉取后使用标准名称重命名，以与AgentScope Runtime无缝集成。
+```
+
+```bash
+# 拉取并标记Appworld ARM64架构镜像
+docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest-arm64 && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest-arm64 agentscope/runtime-sandbox-bfcl:latest-arm64
+
+# 拉取并标记 Appworld X86_64 架构镜像
+docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest agentscope/runtime-sandbox-bfcl:latest
+```
+
+<details><summary> (可选) 建立自己的Docker镜像</summary>
+在根目录跑以下代码：
+
+```bash
+docker build -f src/agentscope_runtime/sandbox/box/training_box/environments/bfcl/Dockerfile     -t agentscope/runtime-sandbox-bfcl:latest .
+```
+
+</details>
+
+#### 初始化
+BFCL 有多个子数据库 *all, all_scoring, multi_turn, single_turn, live， non_live, non_python, python*.在初始化沙盒前请选择一个数据库，然后填上自己的openai_api_key。
+
+
+```python
+import os
+os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY")
+os.environ["DATASET_SUB_TYPE"] = "multi_turn"
+# os.environ["DATASET_SUB_TYPE"] can be one of the following: "all","all_scoring","multi_turn","single_turn","live","non_live","non_python","python" 
+
+from agentscope_runtime.sandbox.box.training_box.training_box import BFCLSandbox
+
+#initialize sandbox
+box = BFCLSandbox()
+profile_list = box.get_env_profile(env_type="bfcl")
+init_response = box.create_instance(
+    env_type="bfcl",
+    task_id=profile_list[0],
+)
+inst_id = init_response["info"]["instance_id"]
+query = init_response["state"]
+```
+
+#### 使用训练样本
+参考以下模拟的对话：
+<details><summary>模拟对话</summary>
+
+```python
+ASSISTANT_MESSAGES = [
+    # ── Turn-1 ──
+    {
+        "role": "assistant",
+        "content": '<tool_call>\n{"name": "cd", "arguments": {"folder": "document"}}\n</tool_call>\n<tool_call>\n{"name": "mkdir", "arguments": {"dir_name": "temp"}}\n</tool_call>\n<tool_call>\n{"name": "mv", "arguments": {"source": "final_report.pdf", "destination": "temp"}}\n</tool_call>'
+    },
+    {
+        "role": "assistant",
+        "content": 'ok.1'
+    },
+    # ── Turn-2 ──
+    {
+        "role": "assistant",
+        "content": '<tool_call>\n{"name": "cd", "arguments": {"folder": "temp"}}\n</tool_call>\n<tool_call>\n{"name": "grep", "arguments": {"file_name": "final_report.pdf", "pattern": "budget analysis"}}\n</tool_call>'
+    },
+    {
+        "role": "assistant",
+        "content": 'ok.2'
+    },
+    # ── Turn-3 ──
+    {
+        "role": "assistant",
+        "content": '<tool_call>\n{"name": "sort", "arguments": {"file_name": "final_report.pdf"}}\n</tool_call>'
+    },
+    {
+        "role": "assistant",
+        "content": 'ok.2'
+    },
+    # ── Turn-4 ──
+    {
+        "role": "assistant",
+        "content": '<tool_call>\n{"name": "cd", "arguments": {"folder": ".."}}\n</tool_call>\n<tool_call>\n{"name": "mv", "arguments": {"source": "previous_report.pdf", "destination": "temp"}}\n</tool_call>\n<tool_call>\n{"name": "cd", "arguments": {"folder": "temp"}}\n</tool_call>\n<tool_call>\n{"name": "diff", "arguments": {"file_name1": "final_report.pdf", "file_name2": "previous_report.pdf"}}\n</tool_call>'
+    },
+    {
+        "role": "assistant",
+        "content": 'ok.2'
+    },
+]
+```
+
+</details>
+
+```python
+for turn_no, msg in enumerate(ASSISTANT_MESSAGES, 1):
+    res = box.step(
+        inst_id,
+        msg
+    )
+    print(
+        f"\n[TURN {turn_no}] term={res['is_terminated']} "
+        f"reward={res['reward']}\n state: {res.get('state', {})}"
+    )
+    if res["is_terminated"]:
+        break
+```
+
+#### 评估实例
+```python
+score = box.evaluate(inst_id, params={"sparse": True})
+print(f"\n[RESULT] sparse_score = {score}")
+
+```
+#### 释放实例
+```python
+box.release_instance(inst_id)
 ```
