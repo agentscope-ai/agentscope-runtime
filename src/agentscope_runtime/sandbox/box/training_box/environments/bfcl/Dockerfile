@@ -71,11 +71,13 @@ WORKDIR /agentscope_runtime/training_box
 # Environment variables
 ENV PYTHONPATH=/agentscope_runtime:$PYTHONPATH
 ENV ENV_PATH=/agentscope_runtime/training_box
+
 ENV DATASET_NAME=$DATASET_SUB_TYPE
 
-# Dynamically use DATASET_NAME in the derived paths
+# Dynamically use DATASET_SUB_TYPE in the derived paths
 ENV BFCL_DATA_PATH=${ENV_PATH}/bfcl/multi_turn/${DATASET_NAME}_processed.jsonl
 ENV BFCL_SPLID_ID_PATH=${ENV_PATH}/bfcl/multi_turn/${DATASET_NAME}_split_ids.json
+
 
 # Existing vars
 ENV OPENAI_API_KEY=$OPENAI_API_KEY
