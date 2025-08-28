@@ -64,13 +64,11 @@ docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtim
 您可以通过调用`get_env_profile`来验证一切设置是否正确，如果正确将返回数据集ID：
 
 ```python
-from agentscope_runtime.sandbox.box.training_box.training_box import (
-    TrainingSandbox,
-)
+from agentscope_runtime.sandbox.box.training_box.training_box import APPWorldSandbox
 
-with TrainingSandbox() as box:
-    profile_list = box.get_env_profile(env_type="appworld", split="train")
-    print(profile_list[0])
+box = APPWorldSandbox()
+profile_list = box.get_env_profile(env_type="appworld", split="train")
+print(profile_list[0])
 ```
 
 #### （可选）从头构建Docker镜像

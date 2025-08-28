@@ -70,13 +70,11 @@ docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtim
 You can verify that everything is set up correctly by calling `get_env_profile`. If success, you can get a training ID:
 
 ```python
-from agentscope_runtime.sandbox.box.training_box.training_box import (
-    APPWorldSandbox,
-)
+from agentscope_runtime.sandbox.box.training_box.training_box import APPWorldSandbox
 
-with APPWorldSandbox() as box:
-    profile_list = box.get_env_profile(env_type="appworld", split="train")
-    print(profile_list[0])
+box = APPWorldSandbox() 
+profile_list = box.get_env_profile(env_type="appworld", split="train")
+print(profile_list[0])
 ```
 
 #### (Optional) Build the Docker Image from Scratch

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from agentscope_runtime.sandbox.box.training_box.training_box import (
-    APPWorldSandbox,
-)
+from agentscope_runtime.sandbox.box.training_box.training_box import APPWorldSandbox
+
 
 with APPWorldSandbox() as box:
     profile_list = box.get_env_profile(env_type="appworld", split="train")

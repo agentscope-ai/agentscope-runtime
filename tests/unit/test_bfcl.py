@@ -1,6 +1,6 @@
 import os
-os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY")
-os.environ["DATASET_SUB_TYPE"] = "multi_turn"
+os.environ["OPENAI_API_KEY"] = "123"#,os.environ.get("OPENAI_API_KEY","")
+os.environ["DATASET_SUB_TYPE"] = "single_turn"
 from agentscope_runtime.sandbox.box.training_box.training_box import (
     BFCLSandbox
 )
@@ -47,7 +47,7 @@ with BFCLSandbox() as box:
     profile_list = box.get_env_profile(env_type="bfcl")
     init_response = box.create_instance(
         env_type="bfcl",
-        task_id=profile_list[0],
+        task_id=profile_list[0],params={"model_name": "gt-script"}
     )
     print("init state", init_response)
     inst_id = init_response["info"]["instance_id"]
@@ -65,7 +65,7 @@ with BFCLSandbox() as box:
         if res["is_terminated"]:
             break
 
-    score = box.evaluate(inst_id, params={"sparse": True})
+    score = box.evaluate(inst_id, params={"sparse": False})
     print(f"\n[RESULT] sparse_score = {score}")
 
     box.release_instance(inst_id)
