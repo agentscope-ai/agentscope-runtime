@@ -73,6 +73,7 @@ class EnvHandler:
                       to README.md for more information.",
             )
 
+    # pylint: disable=too-many-return-statements
     def interact(
         self,
         messages: List[Dict[str, Any]],
@@ -122,6 +123,7 @@ class EnvHandler:
                                 {is_empty_execute_response(decoded_calls)}",
                         )
                         return self._handle_user_turn(test_entry, current_turn)
+
                     return self._handle_tool_calls(
                         tool_calls,
                         decoded_calls,
@@ -690,6 +692,7 @@ class EnvHandler:
             )
             return accuracy, total_count
 
+    # pylint: disable=too-many-nested-blocks
     def _capture_and_print_score_files(
         self,
         score_dir: Path,
@@ -789,6 +792,7 @@ class EnvHandler:
 
         return model_result_data
 
+    # pylint: disable=too-many-nested-blocks
     def _extract_multi_turn_responses(
         self,
         messages: List[Dict[str, Any]],

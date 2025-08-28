@@ -372,7 +372,6 @@ class BfclEnv(BaseEnv):
     @staticmethod
     def get_query_list(
         split: str = "train",
-        _params={"category": ["multi_turn"]},
     ):
         path = os.getenv("BFCL_SPLID_ID_PATH")
         if path is None:

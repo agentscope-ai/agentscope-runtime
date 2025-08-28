@@ -72,7 +72,7 @@ You can verify that everything is set up correctly by calling `get_env_profile`.
 ```python
 from agentscope_runtime.sandbox.box.training_box.training_box import APPWorldSandbox
 
-box = APPWorldSandbox() 
+box = APPWorldSandbox()
 profile_list = box.get_env_profile(env_type="appworld", split="train")
 print(profile_list[0])
 ```
@@ -215,16 +215,16 @@ docker build -f src/agentscope_runtime/sandbox/box/training_box/environments/bfc
 
 #### Initialize
 BFCL has multiple sub-dataset *all, all_scoring, multi_turn, single_turn, live， non_live, non_python, python*.
-Please determine which subset to test before initializing the sandbox where OPENAPI_API_KEY is required for the evaluaton process.  
+Please determine which subset to test before initializing the sandbox where OPENAPI_API_KEY is required for the evaluaton process.
 
 
 ```python
 
-#determined the subset and pass the openaikey if you need to step and evalaute samples. 
+#determined the subset and pass the openaikey if you need to step and evalaute samples.
 import os
 os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY")
 os.environ["DATASET_SUB_TYPE"] = "multi_turn"
-# os.environ["DATASET_SUB_TYPE"] can be one of the following: "all","all_scoring","multi_turn","single_turn","live","non_live","non_python","python" 
+# os.environ["DATASET_SUB_TYPE"] can be one of the following: "all","all_scoring","multi_turn","single_turn","live","non_live","non_python","python"
 
 from agentscope_runtime.sandbox.box.training_box.training_box import BFCLSandbox
 
