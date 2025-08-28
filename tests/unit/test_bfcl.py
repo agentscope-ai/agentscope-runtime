@@ -1,5 +1,5 @@
 import os
-os.environ["OPENAI_API_KEY"] = "sk-8aea8510fde3483981256623c393018e"
+os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY")
 os.environ["DATASET_SUB_TYPE"] = "multi_turn"
 from agentscope_runtime.sandbox.box.training_box.training_box import (
     BFCLSandbox
