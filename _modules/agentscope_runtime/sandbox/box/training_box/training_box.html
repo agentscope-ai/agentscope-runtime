@@ -422,6 +422,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">...registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxRegistry</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxType</span>
@@ -692,11 +693,24 @@
         <span class="p">)</span>
 
 
+<span class="n">DATASET_SUB_TYPE</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;DATASET_SUB_TYPE&quot;</span><span class="p">,</span> <span class="s2">&quot;multi_turn&quot;</span><span class="p">)</span>
+
+
 <span class="nd">@SandboxRegistry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
     <span class="sa">f</span><span class="s2">&quot;agentscope/runtime-sandbox-bfcl:</span><span class="si">{</span><span class="n">get_image_tag</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
     <span class="n">sandbox_type</span><span class="o">=</span><span class="n">SandboxType</span><span class="o">.</span><span class="n">BFCL</span><span class="p">,</span>
-    <span class="n">runtime_config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;shm_size&quot;</span><span class="p">:</span> <span class="s2">&quot;5.06gb&quot;</span><span class="p">},</span>
+    <span class="n">runtime_config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;shm_size&quot;</span><span class="p">:</span> <span class="s2">&quot;8.06gb&quot;</span><span class="p">},</span>
     <span class="n">security_level</span><span class="o">=</span><span class="s2">&quot;medium&quot;</span><span class="p">,</span>
+    <span class="n">environment</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;BFCL_DATA_PATH&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;/agentscope_runtime/training_box/bfcl/multi_turn/&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">DATASET_SUB_TYPE</span><span class="si">}</span><span class="s2">_processed.jsonl&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;BFCL_SPLID_ID_PATH&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;/agentscope_runtime/training_box/&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;bfcl/multi_turn/&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">DATASET_SUB_TYPE</span><span class="si">}</span><span class="s2">_split_ids.json&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="c1"># [&quot;all&quot;,&quot;all_scoring&quot;,&quot;multi_turn&quot;,&quot;single_turn&quot;,</span>
+    <span class="c1"># &quot;live&quot;,&quot;non_live&quot;,&quot;non_python&quot;,&quot;python&quot;]</span>
     <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
     <span class="n">description</span><span class="o">=</span><span class="s2">&quot;bfcl Sandbox&quot;</span><span class="p">,</span>
 <span class="p">)</span>
@@ -735,7 +749,7 @@
 
 <span class="nd">@SandboxRegistry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
     <span class="sa">f</span><span class="s2">&quot;agentscope/runtime-sandbox-webshop:</span><span class="si">{</span><span class="n">get_image_tag</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-    <span class="n">sandbox_type</span><span class="o">=</span><span class="n">SandboxType</span><span class="o">.</span><span class="n">BFCL</span><span class="p">,</span>
+    <span class="n">sandbox_type</span><span class="o">=</span><span class="n">SandboxType</span><span class="o">.</span><span class="n">WEBSHOP</span><span class="p">,</span>
     <span class="n">runtime_config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;shm_size&quot;</span><span class="p">:</span> <span class="s2">&quot;5.06gb&quot;</span><span class="p">},</span>
     <span class="n">security_level</span><span class="o">=</span><span class="s2">&quot;medium&quot;</span><span class="p">,</span>
     <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
@@ -789,7 +803,7 @@
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-08-26</div>
+              Last updated on 2025-08-29</div>
           </div>
           <div class="right-details">
             <div class="icons">

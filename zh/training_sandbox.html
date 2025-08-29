@@ -432,6 +432,8 @@ Sandbox主要用于训练评测的功能。训练沙箱的数据主要基于公�
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/StonyBrookNLP/appworld">APPWorld</a>: APPWorld 是一个高效的测试环境，用于测试和评估AI
 Agent在执行复杂多步骤任务的能力。</p></li>
+<li><p><a class="reference external" href="https://github.com/ShishirPatil/gorilla">BFCL</a>: APPWorld 是一个高效的测试环境，用于测试和评估AI
+Agent在执行复杂多步骤任务的能力。</p></li>
 </ul>
 </section>
 <section id="id3">
@@ -443,8 +445,10 @@ Agent在执行复杂多步骤任务的能力。</p></li>
 </pre></div>
 </div>
 </section>
+<section id="appworld">
+<h3>Appworld 案例<a class="headerlink" href="#appworld" title="Link to this heading">¶</a></h3>
 <section id="id5">
-<h3>拉取所需的镜像<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<h4>拉取所需的镜像<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h4>
 <p>请按照以下步骤从我们的仓库拉取并标记必要的训练用沙盒Docker镜像：</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -452,7 +456,7 @@ Agent在执行复杂多步骤任务的能力。</p></li>
 <p>所有Docker镜像都托管在阿里云容器镜像服务(ACR)上，以在全球范围内实现可获取和可靠性。镜像从ACR拉取后使用标准名称重命名，以与AgentScope Runtime无缝集成。</p>
 </div>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 拉取并标记Appworld ARM64架构镜像</span>
-docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm<span class="w"> </span>agentscope/runtime-sandbox-appworld:latest-arm
+docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64<span class="w"> </span>agentscope/runtime-sandbox-appworld:latest-arm64
 
 <span class="c1"># 拉取并标记 Appworld X86_64 架构镜像</span>
 docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest<span class="w"> </span>agentscope/runtime-sandbox-appworld:latest
@@ -460,24 +464,18 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </div>
 </section>
 <section id="id6">
-<h3>验证安装<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<h4>验证安装<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h4>
 <p>您可以通过调用<code class="docutils literal notranslate"><span class="pre">get_env_profile</span></code>来验证一切设置是否正确，如果正确将返回数据集ID：</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.box.training_box.training_box</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">TrainingSandbox</span><span class="p">,</span>
-<span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.box.training_box.training_box</span><span class="w"> </span><span class="kn">import</span> <span class="n">APPWorldSandbox</span>
 
-<span class="k">with</span> <span class="n">TrainingSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
-    <span class="n">profile_list</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">get_env_profile</span><span class="p">(</span><span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;appworld&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">profile_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">box</span> <span class="o">=</span> <span class="n">APPWorldSandbox</span><span class="p">()</span>
+<span class="n">profile_list</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">get_env_profile</span><span class="p">(</span><span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;appworld&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">profile_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </pre></div>
-</div>
-</div>
 </div>
 </section>
 <section id="docker">
-<h3>（可选）从头构建Docker镜像<a class="headerlink" href="#docker" title="Link to this heading">¶</a></h3>
+<h4>（可选）从头构建Docker镜像<a class="headerlink" href="#docker" title="Link to this heading">¶</a></h4>
 <p>如果您更倾向于在本地自己通过<code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code>构建镜像或需要自定义修改，可以从头构建它们。请参阅 <a class="reference internal" href="sandbox_advanced.html"><span class="doc">工具沙箱高级用法</span></a> 了解详细说明。</p>
 <p>对于训练用沙箱，不同数据集使用不同的DockerFile，其路径在
 <code class="docutils literal notranslate"><span class="pre">src/agentscope_runtime/sandbox/box/training_box/environments/{dataset_name}</span></code>下</p>
@@ -486,16 +484,14 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </pre></div>
 </div>
 </section>
-</section>
 <section id="id7">
-<h2>训练样本使用<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h2>
+<h4>训练样本使用<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h4>
 <p>您可以创建某一个具体的训练用沙箱（默认为<code class="docutils literal notranslate"><span class="pre">Appworld</span></code>），随后可以并行创建多个不同的训练样本，并且分别执行、评测。</p>
+</section>
 <section id="id8">
-<h3>查看数据集样本<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
+<h4>查看数据集样本<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h4>
 <p>构建Docker镜像后，我们可以首先查看数据集样本。</p>
 <p>例如，我们可以使用 get_env_profile 方法获取训练ID列表。</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.box.training_box.training_box</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">TrainingSandbox</span><span class="p">,</span>
 <span class="p">)</span>
@@ -507,18 +503,15 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <span class="nb">print</span><span class="p">(</span><span class="n">profile_list</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-</div>
 </section>
 <section id="id9">
-<h3>创建训练样本<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
+<h4>创建训练样本<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h4>
 <p>以取训练集中的第1个query为例，可以通过<code class="docutils literal notranslate"><span class="pre">create_instance</span></code>创建1个训练实例（Instance)，并分配了一个实例ID（Instance ID）。
 一个Query可以创建多个实例，一个实例唯一对应一个训练样本（基于您创建时，指定的样本ID）
 其中，训练集提供的prompt (<code class="docutils literal notranslate"><span class="pre">system</span> <span class="pre">prompt</span></code>) 和 实际问题 (<code class="docutils literal notranslate"><span class="pre">user</span> <span class="pre">prompt</span></code>) 均会以<code class="docutils literal notranslate"><span class="pre">Message</span> <span class="pre">List</span></code>返回，具体位置于返回值的<code class="docutils literal notranslate"><span class="pre">state</span></code>
 中</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
+
 <span class="n">profile_list</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">get_env_profile</span><span class="p">(</span><span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;appworld&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
 <span class="n">init_response</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">create_instance</span><span class="p">(</span>
         <span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;appworld&quot;</span><span class="p">,</span>
@@ -528,17 +521,14 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <span class="n">query</span> <span class="o">=</span> <span class="n">init_response</span><span class="p">[</span><span class="s2">&quot;state&quot;</span><span class="p">]</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created instance </span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2"> with query: </span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
+
 </pre></div>
-</div>
-</div>
 </div>
 </section>
 <section id="id10">
-<h3>使用训练样本<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
+<h4>使用训练样本<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h4>
 <p>使用<code class="docutils literal notranslate"><span class="pre">step</span></code>方法，并指定具体的<code class="docutils literal notranslate"><span class="pre">instance_id</span></code>和<code class="docutils literal notranslate"><span class="pre">action</span></code>，可以得到环境内反馈结果。
 该方法目前仅支持输入Message格式，建议以<code class="docutils literal notranslate"> <span class="pre">&quot;role&quot;:</span> <span class="pre">&quot;assistant&quot;</span></code> 方式输入。</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">action</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
         <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;```python</span><span class="se">\n</span><span class="s2">print(&#39;hello appworld!!&#39;)</span><span class="se">\n</span><span class="s2">```&quot;</span><span class="p">,</span>
@@ -549,35 +539,147 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
         <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">,</span>
     <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
 </pre></div>
-</div>
-</div>
 </div>
 </section>
 <section id="id11">
-<h3>评测训练样本<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
+<h4>评测训练样本<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h4>
 <p>使用<code class="docutils literal notranslate"><span class="pre">evaluate</span></code>方法，并评测某个实例的状态，并获取<code class="docutils literal notranslate"><span class="pre">Reward</span></code>。不同的数据集可能含有额外的测评参数，通过<code class="docutils literal notranslate"><span class="pre">params</span></code>传入。</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">score</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">instance_id</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="p">{},</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;sparse&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Evaluation score: </span><span class="si">{</span><span class="n">score</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-</div>
 </section>
 <section id="id12">
-<h3>释放训练样本<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
+<h4>释放训练样本<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h4>
 <p>为了减少内存开销，建议在使用完样本后使用<code class="docutils literal notranslate"><span class="pre">release_instance</span></code>方法。
 同时，在训练用沙箱运行期间，每5分钟亦会定期清除非活跃实例。</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">success</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">release_instance</span><span class="p">(</span><span class="n">instance_id</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Instance released: </span><span class="si">{</span><span class="n">success</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+</section>
+<section id="bfcl">
+<h3>BFCL案例<a class="headerlink" href="#bfcl" title="Link to this heading">¶</a></h3>
+<section id="id13">
+<h4>拉取所需的镜像<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h4>
+<p>请按照以下步骤从我们的仓库拉取并标记必要的训练用沙盒Docker镜像：</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>镜像来源：阿里云容器镜像服务</strong></p>
+<p>所有Docker镜像都托管在阿里云容器镜像服务(ACR)上，以在全球范围内实现可获取和可靠性。镜像从ACR拉取后使用标准名称重命名，以与AgentScope Runtime无缝集成。</p>
 </div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 拉取并标记Appworld ARM64架构镜像</span>
+docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest-arm64<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest-arm64<span class="w"> </span>agentscope/runtime-sandbox-bfcl:latest-arm64
+
+<span class="c1"># 拉取并标记 Appworld X86_64 架构镜像</span>
+docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest<span class="w"> </span>agentscope/runtime-sandbox-bfcl:latest
+</pre></div>
 </div>
+<details><summary> (可选) 建立自己的Docker镜像</summary>
+在根目录跑以下代码：
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>src/agentscope_runtime/sandbox/box/training_box/environments/bfcl/Dockerfile<span class="w">     </span>-t<span class="w"> </span>agentscope/runtime-sandbox-bfcl:latest<span class="w"> </span>.
+</pre></div>
+</div>
+</details>
+</section>
+<section id="id14">
+<h4>初始化<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h4>
+<p>BFCL 有多个子数据库 <em>all, all_scoring, multi_turn, single_turn, live， non_live, non_python, python</em>.在初始化沙盒前请选择一个数据库，然后填上自己的openai_api_key。</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">)</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;DATASET_SUB_TYPE&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;multi_turn&quot;</span>
+<span class="c1"># os.environ[&quot;DATASET_SUB_TYPE&quot;] can be one of the following: &quot;all&quot;,&quot;all_scoring&quot;,&quot;multi_turn&quot;,&quot;single_turn&quot;,&quot;live&quot;,&quot;non_live&quot;,&quot;non_python&quot;,&quot;python&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.box.training_box.training_box</span><span class="w"> </span><span class="kn">import</span> <span class="n">BFCLSandbox</span>
+
+<span class="c1">#initialize sandbox</span>
+<span class="n">box</span> <span class="o">=</span> <span class="n">BFCLSandbox</span><span class="p">()</span>
+<span class="n">profile_list</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">get_env_profile</span><span class="p">(</span><span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;bfcl&quot;</span><span class="p">)</span>
+<span class="n">init_response</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">create_instance</span><span class="p">(</span>
+    <span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;bfcl&quot;</span><span class="p">,</span>
+    <span class="n">task_id</span><span class="o">=</span><span class="n">profile_list</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="n">inst_id</span> <span class="o">=</span> <span class="n">init_response</span><span class="p">[</span><span class="s2">&quot;info&quot;</span><span class="p">][</span><span class="s2">&quot;instance_id&quot;</span><span class="p">]</span>
+<span class="n">query</span> <span class="o">=</span> <span class="n">init_response</span><span class="p">[</span><span class="s2">&quot;state&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="id15">
+<h4>使用训练样本<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h4>
+<p>参考以下模拟的对话：</p>
+<details><summary>模拟对话</summary>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ASSISTANT_MESSAGES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="c1"># ── Turn-1 ──</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s1">&#39;&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;cd&quot;, &quot;arguments&quot;: {&quot;folder&quot;: &quot;document&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;</span><span class="se">\n</span><span class="s1">&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;mkdir&quot;, &quot;arguments&quot;: {&quot;dir_name&quot;: &quot;temp&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;</span><span class="se">\n</span><span class="s1">&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;mv&quot;, &quot;arguments&quot;: {&quot;source&quot;: &quot;final_report.pdf&quot;, &quot;destination&quot;: &quot;temp&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;&#39;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s1">&#39;ok.1&#39;</span>
+    <span class="p">},</span>
+    <span class="c1"># ── Turn-2 ──</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s1">&#39;&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;cd&quot;, &quot;arguments&quot;: {&quot;folder&quot;: &quot;temp&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;</span><span class="se">\n</span><span class="s1">&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;grep&quot;, &quot;arguments&quot;: {&quot;file_name&quot;: &quot;final_report.pdf&quot;, &quot;pattern&quot;: &quot;budget analysis&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;&#39;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s1">&#39;ok.2&#39;</span>
+    <span class="p">},</span>
+    <span class="c1"># ── Turn-3 ──</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s1">&#39;&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;sort&quot;, &quot;arguments&quot;: {&quot;file_name&quot;: &quot;final_report.pdf&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;&#39;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s1">&#39;ok.2&#39;</span>
+    <span class="p">},</span>
+    <span class="c1"># ── Turn-4 ──</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s1">&#39;&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;cd&quot;, &quot;arguments&quot;: {&quot;folder&quot;: &quot;..&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;</span><span class="se">\n</span><span class="s1">&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;mv&quot;, &quot;arguments&quot;: {&quot;source&quot;: &quot;previous_report.pdf&quot;, &quot;destination&quot;: &quot;temp&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;</span><span class="se">\n</span><span class="s1">&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;cd&quot;, &quot;arguments&quot;: {&quot;folder&quot;: &quot;temp&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;</span><span class="se">\n</span><span class="s1">&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;diff&quot;, &quot;arguments&quot;: {&quot;file_name1&quot;: &quot;final_report.pdf&quot;, &quot;file_name2&quot;: &quot;previous_report.pdf&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;&#39;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s1">&#39;ok.2&#39;</span>
+    <span class="p">},</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</details>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">turn_no</span><span class="p">,</span> <span class="n">msg</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ASSISTANT_MESSAGES</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">step</span><span class="p">(</span>
+        <span class="n">inst_id</span><span class="p">,</span>
+        <span class="n">msg</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[TURN </span><span class="si">{</span><span class="n">turn_no</span><span class="si">}</span><span class="s2">] term=</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;is_terminated&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;reward=</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;reward&#39;</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2"> state: </span><span class="si">{</span><span class="n">res</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;state&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{})</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;is_terminated&quot;</span><span class="p">]:</span>
+        <span class="k">break</span>
+</pre></div>
+</div>
+</section>
+<section id="id16">
+<h4>评估实例<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">score</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">inst_id</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;sparse&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[RESULT] sparse_score = </span><span class="si">{</span><span class="n">score</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+</pre></div>
+</div>
+</section>
+<section id="id17">
+<h4>释放实例<a class="headerlink" href="#id17" title="Link to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">box</span><span class="o">.</span><span class="n">release_instance</span><span class="p">(</span><span class="n">inst_id</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
 </section>
 </section>
 </section>
@@ -635,7 +737,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-08-26</div>
+              Last updated on 2025-08-29</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -674,17 +776,26 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <li><a class="reference internal" href="#id2">背景介绍</a></li>
 <li><a class="reference internal" href="#id3">安装</a><ul>
 <li><a class="reference internal" href="#id4">安装依赖项</a></li>
+<li><a class="reference internal" href="#appworld">Appworld 案例</a><ul>
 <li><a class="reference internal" href="#id5">拉取所需的镜像</a></li>
 <li><a class="reference internal" href="#id6">验证安装</a></li>
 <li><a class="reference internal" href="#docker">（可选）从头构建Docker镜像</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#id7">训练样本使用</a><ul>
+<li><a class="reference internal" href="#id7">训练样本使用</a></li>
 <li><a class="reference internal" href="#id8">查看数据集样本</a></li>
 <li><a class="reference internal" href="#id9">创建训练样本</a></li>
 <li><a class="reference internal" href="#id10">使用训练样本</a></li>
 <li><a class="reference internal" href="#id11">评测训练样本</a></li>
 <li><a class="reference internal" href="#id12">释放训练样本</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#bfcl">BFCL案例</a><ul>
+<li><a class="reference internal" href="#id13">拉取所需的镜像</a></li>
+<li><a class="reference internal" href="#id14">初始化</a></li>
+<li><a class="reference internal" href="#id15">使用训练样本</a></li>
+<li><a class="reference internal" href="#id16">评估实例</a></li>
+<li><a class="reference internal" href="#id17">释放实例</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

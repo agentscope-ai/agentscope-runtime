@@ -432,10 +432,9 @@ training, tools for dataset calling, and real-time Reward verification.</p>
 <p>The Training Sandbox primarily implements high-concurrency data calling through Ray, supporting external Agents to
 create, execute, and evaluate instances for different samples after sandbox creation.</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://github.com/StonyBrookNLP/appworld">APPWorld</a>: APPWorld is an advanced, high-fidelity environment designed to
-test and evaluate autonomous AI agents’ ability to perform complex, multi-step tasks using realistic APIs and user
-scenarios. It serves as a crucial testing ground for the AI agents, allowing them to learn and adapt to real-world
-scenarios.</p></li>
+<li><p><a class="reference external" href="https://github.com/StonyBrookNLP/appworld">APPWorld</a>: APPWorld is an advanced, high-fidelity environment designed to test and evaluate autonomous AI agents’ ability to perform complex, multi-step tasks using realistic APIs and user
+scenarios. It serves as a crucial testing ground for the AI agents, allowing them to learn and adapt to real-world scenarios.</p></li>
+<li><p><a class="reference external" href="https://github.com/ShishirPatil/gorilla">BFCL</a>: Berkeley Function Calling Leaderboard (BFCL) is the first comprehensive and executable function call evaluation dedicated to assessing Large Language Models’ (LLMs) ability to invoke functions. Unlike previous evaluations, BFCL accounts for various forms of function calls, diverse scenarios, and executability.</p></li>
 </ul>
 </section>
 <section id="install">
@@ -447,9 +446,10 @@ scenarios.</p></li>
 </pre></div>
 </div>
 </section>
-</section>
+<section id="appworld-example">
+<h3>Appworld Example<a class="headerlink" href="#appworld-example" title="Link to this heading">¶</a></h3>
 <section id="prepare-docker-image">
-<h2>Prepare Docker Image<a class="headerlink" href="#prepare-docker-image" title="Link to this heading">¶</a></h2>
+<h4>Prepare Docker Image<a class="headerlink" href="#prepare-docker-image" title="Link to this heading">¶</a></h4>
 <p>Pull the image from DockerHub. Suppose you failed to pull the Docker image from DockerHub. In that case, we also provide
 a script for building the Docker image locally.</p>
 <p>To ensure a complete sandbox experience with all features enabled, follow the steps below to pull and tag the necessary
@@ -460,31 +460,30 @@ Docker images from our repository:</p>
 <p>All Docker images are hosted on Alibaba Cloud Container Registry (ACR) for optimal performance and reliability worldwide. Images are pulled from ACR and tagged with standard names for seamless integration with the AgentScope runtime environment.</p>
 </div>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Pull and tag Appworld ARM64 architecture image</span>
-docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm<span class="w"> </span>agentscope/runtime-sandbox-appworld:latest-arm
+docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64<span class="w"> </span>agentscope/runtime-sandbox-appworld:latest-arm64
 
 <span class="c1"># Pull and tag Appworld X86_64 architecture image</span>
 docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest<span class="w"> </span>agentscope/runtime-sandbox-appworld:latest
 </pre></div>
 </div>
+</section>
 <section id="verify-installation">
-<h3>Verify Installation<a class="headerlink" href="#verify-installation" title="Link to this heading">¶</a></h3>
+<h4>Verify Installation<a class="headerlink" href="#verify-installation" title="Link to this heading">¶</a></h4>
 <p>You can verify that everything is set up correctly by calling <code class="docutils literal notranslate"><span class="pre">get_env_profile</span></code>. If success, you can get a training ID:</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.box.training_box.training_box</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">TrainingSandbox</span><span class="p">,</span>
-<span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.box.training_box.training_box</span><span class="w"> </span><span class="kn">import</span> <span class="n">APPWorldSandbox</span>
 
-<span class="k">with</span> <span class="n">TrainingSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
-    <span class="n">profile_list</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">get_env_profile</span><span class="p">(</span><span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;appworld&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">profile_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="o">&lt;&lt;&lt;&lt;&lt;&lt;&lt;</span> <span class="n">HEAD</span>
+<span class="n">box</span> <span class="o">=</span> <span class="n">APPWorldSandbox</span><span class="p">()</span>
+<span class="o">=======</span>
+<span class="n">box</span> <span class="o">=</span> <span class="n">APPWorldSandbox</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;&gt;&gt;&gt;&gt;</span> <span class="n">upstream</span><span class="o">/</span><span class="n">add_bfcl_box</span>
+<span class="n">profile_list</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">get_env_profile</span><span class="p">(</span><span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;appworld&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">profile_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </pre></div>
 </div>
-</div>
-</div>
 </section>
-<section id="optional-built-the-docker-images-from-scratch">
-<h3>(Optional) Built the Docker Images from Scratch<a class="headerlink" href="#optional-built-the-docker-images-from-scratch" title="Link to this heading">¶</a></h3>
+<section id="optional-build-the-docker-image-from-scratch">
+<h4>(Optional) Build the Docker Image from Scratch<a class="headerlink" href="#optional-build-the-docker-image-from-scratch" title="Link to this heading">¶</a></h4>
 <p>f you prefer to build images locally via <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code> or need custom modifications, you can build them from scratch.
 Please refer to <a class="reference internal" href="sandbox_advanced.html"><span class="doc">Advanced Usage of Tool Sandbox</span></a> for detailed instructions.</p>
 <p>For training sandboxes, different datasets use different Dockerfiles, located at
@@ -494,43 +493,32 @@ Please refer to <a class="reference internal" href="sandbox_advanced.html"><span
 </pre></div>
 </div>
 </section>
-</section>
-<section id="utilize-training-sample-from-sandbox">
-<h2>Utilize Training Sample from Sandbox<a class="headerlink" href="#utilize-training-sample-from-sandbox" title="Link to this heading">¶</a></h2>
-<p>You can create a specific training sandbox (default is <code class="docutils literal notranslate"><span class="pre">Appworld</span></code>), then create multiple different training samples in
-parallel, and execute and evaluate them separately.</p>
 <section id="review-dataset-sample">
-<h3>Review Dataset Sample<a class="headerlink" href="#review-dataset-sample" title="Link to this heading">¶</a></h3>
+<h4>Review Dataset Sample<a class="headerlink" href="#review-dataset-sample" title="Link to this heading">¶</a></h4>
 <p>After building the Docker image, we first review the dataset samples.</p>
 <p>For example, we can use the <code class="docutils literal notranslate"><span class="pre">get_env_profile</span></code>  method to get a list of training IDs.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.box.training_box.training_box</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">TrainingSandbox</span><span class="p">,</span>
+    <span class="n">APPWorldSandbox</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="c1">#create training sandbox</span>
-<span class="n">box</span> <span class="o">=</span> <span class="n">TrainingSandbox</span><span class="p">()</span>
+<span class="n">box</span> <span class="o">=</span> <span class="n">APPWorldSandbox</span><span class="p">()</span>
 
 <span class="n">profile_list</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">get_env_profile</span><span class="p">(</span><span class="n">env_type</span><span class="o">=</span><span class="s1">&#39;appworld&#39;</span><span class="p">,</span><span class="n">split</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">profile_list</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-</div>
-</section>
 </section>
 <section id="get-training-sample-query">
-<h2>Get training Sample Query<a class="headerlink" href="#get-training-sample-query" title="Link to this heading">¶</a></h2>
+<h4>Get Training Sample Query<a class="headerlink" href="#get-training-sample-query" title="Link to this heading">¶</a></h4>
 <p>We can select one task from the training set as an example and display its query along with the system prompt using
 the “create_instance” method.</p>
 <p>The initial state will include a unique ID for the newly created instance of the query, and we can generate additional
 instances for parallel training.</p>
 <p>The prompt (<code class="docutils literal notranslate"><span class="pre">system</span> <span class="pre">prompt</span></code>) and actual question (<code class="docutils literal notranslate"><span class="pre">user</span> <span class="pre">prompt</span></code>) provided by the training set will be returned as a
 <code class="docutils literal notranslate"><span class="pre">Message</span> <span class="pre">List</span></code>, located in the state of the return value.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">profile_list</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">get_env_profile</span><span class="p">(</span><span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;appworld&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
+<span class="n">profile_list</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">get_env_profile</span><span class="p">(</span><span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;appworld&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
 <span class="n">init_response</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">create_instance</span><span class="p">(</span>
         <span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;appworld&quot;</span><span class="p">,</span>
         <span class="n">task_id</span><span class="o">=</span><span class="n">profile_list</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
@@ -538,19 +526,16 @@ instances for parallel training.</p>
 <span class="n">instance_id</span> <span class="o">=</span> <span class="n">init_response</span><span class="p">[</span><span class="s2">&quot;info&quot;</span><span class="p">][</span><span class="s2">&quot;instance_id&quot;</span><span class="p">]</span>
 <span class="n">query</span> <span class="o">=</span> <span class="n">init_response</span><span class="p">[</span><span class="s2">&quot;state&quot;</span><span class="p">]</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created instance </span><span class="si">{</span><span class="n">instance_id</span><span class="si">}</span><span class="s2"> with query: </span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
 </pre></div>
-</div>
-</div>
 </div>
 </section>
 <section id="agent-action-step">
-<h2>Agent Action Step<a class="headerlink" href="#agent-action-step" title="Link to this heading">¶</a></h2>
+<h4>Agent Action Step<a class="headerlink" href="#agent-action-step" title="Link to this heading">¶</a></h4>
 <p>We first feed the initial state information to the LLM agent and then load the response back to the Sandbox. This form
 of transmission can be repeated using the step method. Instance_id is required to identify different sessions during the
 training or inference processing. A basic reward is provided after each step.</p>
 <p>This method currently only supports input in <code class="docutils literal notranslate"><span class="pre">Message</span></code> format, recommended to input with <code class="docutils literal notranslate"><span class="pre">&quot;role&quot;:</span> <span class="pre">&quot;assistant&quot;</span></code>.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">action</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
         <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;```python</span><span class="se">\n</span><span class="s2">print(&#39;hello appworld!!&#39;)</span><span class="se">\n</span><span class="s2">```&quot;</span><span class="p">,</span>
@@ -561,17 +546,14 @@ training or inference processing. A basic reward is provided after each step.</p
         <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">,</span>
     <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
 </pre></div>
-</div>
-</div>
 </div>
 </section>
 <section id="eval-trajectory">
-<h2>Eval Trajectory<a class="headerlink" href="#eval-trajectory" title="Link to this heading">¶</a></h2>
+<h4>Eval Trajectory<a class="headerlink" href="#eval-trajectory" title="Link to this heading">¶</a></h4>
 <p>Use the <code class="docutils literal notranslate"><span class="pre">evaluate</span></code> method to assess the status of an instance and obtain a <code class="docutils literal notranslate"><span class="pre">Reward</span></code>. Different datasets may have
 additional evaluation parameters, passed through <code class="docutils literal notranslate"><span class="pre">params</span></code>.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">action</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
         <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;```python</span><span class="se">\n</span><span class="s2">print(&#39;hello appworld!!&#39;)</span><span class="se">\n</span><span class="s2">```&quot;</span><span class="p">,</span>
@@ -584,21 +566,146 @@ additional evaluation parameters, passed through <code class="docutils literal n
 <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-</div>
 </section>
 <section id="release-sample">
-<h2>Release Sample<a class="headerlink" href="#release-sample" title="Link to this heading">¶</a></h2>
+<h4>Release Sample<a class="headerlink" href="#release-sample" title="Link to this heading">¶</a></h4>
 <p>You are also allowed to release the cases manually using the release method if needed.
 Instances will be auto-released in 5 minutes.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">success</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">release_instance</span><span class="p">(</span><span class="n">instance_id</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Instance released: </span><span class="si">{</span><span class="n">success</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+</section>
+<section id="bfcl-example">
+<h3>BFCL Example<a class="headerlink" href="#bfcl-example" title="Link to this heading">¶</a></h3>
+<section id="id1">
+<h4>Prepare Docker Image<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h4>
+<p>Pull the image from DockerHub. Suppose you failed to pull the Docker image from DockerHub. In that case, we also provide
+a script for building the Docker image locally.</p>
+<p>To ensure a complete sandbox experience with all features enabled, follow the steps below to pull and tag the necessary
+Docker images from our repository:</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>Image Source: Alibaba Cloud Container Registry</strong></p>
+<p>All Docker images are hosted on Alibaba Cloud Container Registry (ACR) for optimal performance and reliability worldwide. Images are pulled from ACR and tagged with standard names for seamless integration with the AgentScope runtime environment.</p>
 </div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Pull and tag BFCL ARM64 architecture image</span>
+docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest-arm64<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest-arm64<span class="w"> </span>agentscope/runtime-sandbox-bfcl:latest-arm64
+
+<span class="c1"># Pull and tag BFCL X86 architecture image</span>
+docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest<span class="w"> </span>agentscope/runtime-sandbox-bfcl:latest
+</pre></div>
 </div>
+<details><summary> (Optional) Building your own docker image</summary>
+At the root folder, run the following code:
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>src/agentscope_runtime/sandbox/box/training_box/environments/bfcl/Dockerfile<span class="w">     </span>-t<span class="w"> </span>agentscope/runtime-sandbox-bfcl:latest<span class="w"> </span>.
+</pre></div>
+</div>
+</details>
+</section>
+<section id="initialize">
+<h4>Initialize<a class="headerlink" href="#initialize" title="Link to this heading">¶</a></h4>
+<p>BFCL has multiple sub-dataset <em>all, all_scoring, multi_turn, single_turn, live， non_live, non_python, python</em>.
+Please determine which subset to test before initializing the sandbox where OPENAPI_API_KEY is required for the evaluaton process.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
+<span class="c1">#determined the subset and pass the openaikey if you need to step and evalaute samples.</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">)</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;DATASET_SUB_TYPE&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;multi_turn&quot;</span>
+<span class="c1"># os.environ[&quot;DATASET_SUB_TYPE&quot;] can be one of the following: &quot;all&quot;,&quot;all_scoring&quot;,&quot;multi_turn&quot;,&quot;single_turn&quot;,&quot;live&quot;,&quot;non_live&quot;,&quot;non_python&quot;,&quot;python&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.box.training_box.training_box</span><span class="w"> </span><span class="kn">import</span> <span class="n">BFCLSandbox</span>
+
+<span class="c1">#initialize sandbox</span>
+<span class="n">box</span> <span class="o">=</span> <span class="n">BFCLSandbox</span><span class="p">()</span>
+<span class="n">profile_list</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">get_env_profile</span><span class="p">(</span><span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;bfcl&quot;</span><span class="p">)</span>
+<span class="n">init_response</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">create_instance</span><span class="p">(</span>
+    <span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;bfcl&quot;</span><span class="p">,</span>
+    <span class="n">task_id</span><span class="o">=</span><span class="n">profile_list</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="n">inst_id</span> <span class="o">=</span> <span class="n">init_response</span><span class="p">[</span><span class="s2">&quot;info&quot;</span><span class="p">][</span><span class="s2">&quot;instance_id&quot;</span><span class="p">]</span>
+<span class="n">query</span> <span class="o">=</span> <span class="n">init_response</span><span class="p">[</span><span class="s2">&quot;state&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h4>Agent Action Step<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h4>
+<p>The following messages are a simulated sample to start the action step:</p>
+<details>
+<summary>Click to show messages</summary>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
+<span class="n">ASSISTANT_MESSAGES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="c1"># ── Turn-1 ──</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s1">&#39;&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;cd&quot;, &quot;arguments&quot;: {&quot;folder&quot;: &quot;document&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;</span><span class="se">\n</span><span class="s1">&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;mkdir&quot;, &quot;arguments&quot;: {&quot;dir_name&quot;: &quot;temp&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;</span><span class="se">\n</span><span class="s1">&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;mv&quot;, &quot;arguments&quot;: {&quot;source&quot;: &quot;final_report.pdf&quot;, &quot;destination&quot;: &quot;temp&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;&#39;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s1">&#39;ok.1&#39;</span>
+    <span class="p">},</span>
+    <span class="c1"># ── Turn-2 ──</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s1">&#39;&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;cd&quot;, &quot;arguments&quot;: {&quot;folder&quot;: &quot;temp&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;</span><span class="se">\n</span><span class="s1">&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;grep&quot;, &quot;arguments&quot;: {&quot;file_name&quot;: &quot;final_report.pdf&quot;, &quot;pattern&quot;: &quot;budget analysis&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;&#39;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s1">&#39;ok.2&#39;</span>
+    <span class="p">},</span>
+    <span class="c1"># ── Turn-3 ──</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s1">&#39;&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;sort&quot;, &quot;arguments&quot;: {&quot;file_name&quot;: &quot;final_report.pdf&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;&#39;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s1">&#39;ok.2&#39;</span>
+    <span class="p">},</span>
+    <span class="c1"># ── Turn-4 ──</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s1">&#39;&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;cd&quot;, &quot;arguments&quot;: {&quot;folder&quot;: &quot;..&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;</span><span class="se">\n</span><span class="s1">&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;mv&quot;, &quot;arguments&quot;: {&quot;source&quot;: &quot;previous_report.pdf&quot;, &quot;destination&quot;: &quot;temp&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;</span><span class="se">\n</span><span class="s1">&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;cd&quot;, &quot;arguments&quot;: {&quot;folder&quot;: &quot;temp&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;</span><span class="se">\n</span><span class="s1">&lt;tool_call&gt;</span><span class="se">\n</span><span class="s1">{&quot;name&quot;: &quot;diff&quot;, &quot;arguments&quot;: {&quot;file_name1&quot;: &quot;final_report.pdf&quot;, &quot;file_name2&quot;: &quot;previous_report.pdf&quot;}}</span><span class="se">\n</span><span class="s1">&lt;/tool_call&gt;&#39;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s1">&#39;ok.2&#39;</span>
+    <span class="p">},</span>
+<span class="p">]</span>
+
+</pre></div>
+</div>
+</details>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">turn_no</span><span class="p">,</span> <span class="n">msg</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ASSISTANT_MESSAGES</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">step</span><span class="p">(</span>
+        <span class="n">inst_id</span><span class="p">,</span>
+        <span class="n">msg</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[TURN </span><span class="si">{</span><span class="n">turn_no</span><span class="si">}</span><span class="s2">] term=</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;is_terminated&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;reward=</span><span class="si">{</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;reward&#39;</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2"> state: </span><span class="si">{</span><span class="n">res</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;state&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{})</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;is_terminated&quot;</span><span class="p">]:</span>
+        <span class="k">break</span>
+</pre></div>
+</div>
+</section>
+<section id="evaluate">
+<h4>Evaluate<a class="headerlink" href="#evaluate" title="Link to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">score</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">inst_id</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;sparse&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[RESULT] sparse_score = </span><span class="si">{</span><span class="n">score</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+</pre></div>
+</div>
+</section>
+<section id="release-instance">
+<h4>Release Instance<a class="headerlink" href="#release-instance" title="Link to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">box</span><span class="o">.</span><span class="n">release_instance</span><span class="p">(</span><span class="n">inst_id</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
 </section>
 </section>
 
@@ -655,7 +762,7 @@ Instances will be auto-released in 5 minutes.</p>
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-08-26</div>
+              Last updated on 2025-08-29</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -694,21 +801,27 @@ Instances will be auto-released in 5 minutes.</p>
 <li><a class="reference internal" href="#background">Background</a></li>
 <li><a class="reference internal" href="#install">Install</a><ul>
 <li><a class="reference internal" href="#install-dependency">Install Dependency</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#prepare-docker-image">Prepare Docker Image</a><ul>
+<li><a class="reference internal" href="#appworld-example">Appworld Example</a><ul>
+<li><a class="reference internal" href="#prepare-docker-image">Prepare Docker Image</a></li>
 <li><a class="reference internal" href="#verify-installation">Verify Installation</a></li>
-<li><a class="reference internal" href="#optional-built-the-docker-images-from-scratch">(Optional) Built the Docker Images from Scratch</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#utilize-training-sample-from-sandbox">Utilize Training Sample from Sandbox</a><ul>
+<li><a class="reference internal" href="#optional-build-the-docker-image-from-scratch">(Optional) Build the Docker Image from Scratch</a></li>
 <li><a class="reference internal" href="#review-dataset-sample">Review Dataset Sample</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#get-training-sample-query">Get training Sample Query</a></li>
+<li><a class="reference internal" href="#get-training-sample-query">Get Training Sample Query</a></li>
 <li><a class="reference internal" href="#agent-action-step">Agent Action Step</a></li>
 <li><a class="reference internal" href="#eval-trajectory">Eval Trajectory</a></li>
 <li><a class="reference internal" href="#release-sample">Release Sample</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#bfcl-example">BFCL Example</a><ul>
+<li><a class="reference internal" href="#id1">Prepare Docker Image</a></li>
+<li><a class="reference internal" href="#initialize">Initialize</a></li>
+<li><a class="reference internal" href="#id2">Agent Action Step</a></li>
+<li><a class="reference internal" href="#evaluate">Evaluate</a></li>
+<li><a class="reference internal" href="#release-instance">Release Instance</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
