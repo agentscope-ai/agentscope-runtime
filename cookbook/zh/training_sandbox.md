@@ -200,9 +200,9 @@ BFCL 有多个子数据库 *all, all_scoring, multi_turn, single_turn, live， n
 
 ```python
 import os
-os.environ["OPENAI_API_KEY"] = "sk-XXX"
+os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY")
 os.environ["DATASET_SUB_TYPE"] = "multi_turn"
-# os.environ["DATASET_SUB_TYPE"] can be one of the following: "all","all_scoring","multi_turn","single_turn","live","non_live","non_python","python" 
+# os.environ["DATASET_SUB_TYPE"] can be one of the following: "all","all_scoring","multi_turn","single_turn","live","non_live","non_python","python"
 
 from agentscope_runtime.sandbox.box.training_box.training_box import BFCLSandbox
 

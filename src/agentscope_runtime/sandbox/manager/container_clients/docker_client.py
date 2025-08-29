@@ -279,6 +279,7 @@ class DockerClient(BaseClient):
                         f"Failed to pull from default registry: {e}",
                     )
                     logger.debug("Trying to pull from ACR fallback...")
+                    print("image is " + image)
                     pull_success = self._try_pull_from_acr(image)
 
                 if not pull_success:

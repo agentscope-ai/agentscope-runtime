@@ -73,6 +73,10 @@ class EnvHandler:
                       to README.md for more information.",
             )
 
+<<<<<<< HEAD
+=======
+    # pylint: disable=too-many-return-statements
+>>>>>>> upstream/add_bfcl_box
     def interact(
         self,
         messages: List[Dict[str, Any]],
@@ -97,6 +101,7 @@ class EnvHandler:
             current_turn = self._get_current_turn(messages, test_entry)
 
             if not messages:
+<<<<<<< HEAD
                 result = self._handle_user_turn(test_entry, current_turn)
 
             else:
@@ -147,6 +152,48 @@ class EnvHandler:
             result = self._create_error_response(f"Request error: {e}")
 
         return result
+=======
+                return self._handle_user_turn(test_entry, current_turn)
+
+            if messages[-1]["role"] != "assistant":
+                return self._create_error_response(
+                    "Last message must be from assistant",
+                )
+
+            if (
+                "tool_calls" in messages[-1]
+                and len(messages[-1]["tool_calls"]) > 0
+            ):
+                try:
+                    tool_calls = messages[-1]["tool_calls"]
+                    decoded_calls = (
+                        self._convert_tool_calls_to_execution_format(
+                            tool_calls,
+                        )
+                    )
+                    print(f"decoded_calls: {decoded_calls}")
+                    if is_empty_execute_response(decoded_calls):
+                        warnings.warn(
+                            f"is_empty_execute_response: \
+                                {is_empty_execute_response(decoded_calls)}",
+                        )
+                        return self._handle_user_turn(test_entry, current_turn)
+
+                    return self._handle_tool_calls(
+                        tool_calls,
+                        decoded_calls,
+                        test_entry,
+                        current_turn,
+                    )
+                except Exception as e:
+                    warnings.warn(f"Tool use error: {str(e)}")
+                    return self._handle_user_turn(test_entry, current_turn)
+            else:
+                return self._handle_user_turn(test_entry, current_turn)
+
+        except Exception as e:
+            return self._create_error_response(f"Request error: {str(e)}")
+>>>>>>> upstream/add_bfcl_box
 
     def _get_current_turn(
         self,
@@ -701,6 +748,10 @@ class EnvHandler:
             )
             return accuracy, total_count
 
+<<<<<<< HEAD
+=======
+    # pylint: disable=too-many-nested-blocks
+>>>>>>> upstream/add_bfcl_box
     def _capture_and_print_score_files(
         self,
         score_dir: Path,
@@ -717,6 +768,7 @@ class EnvHandler:
             test_category: Category of the test
             eval_type: Type of evaluation (relevance/multi_turn/single_turn)
         """
+<<<<<<< HEAD
         for path in score_dir.rglob("*"):
             if not path.is_file():
                 continue
@@ -742,6 +794,47 @@ class EnvHandler:
                     )
                 except json.JSONDecodeError:
                     pass
+=======
+        try:
+            for file_path in score_dir.rglob("*"):
+                if file_path.is_file():
+                    try:
+                        with open(file_path, "r", encoding="utf-8") as f:
+                            content = f.read()
+
+                        if (
+                            file_path.suffix == ".json"
+                            or content.strip().startswith("{")
+                            or content.strip().startswith("[")
+                        ):
+                            try:
+                                lines = content.strip().split("\n")
+                                formatted_lines = []
+                                for line in lines:
+                                    if line.strip():
+                                        parsed = json.loads(line)
+                                        formatted_lines.append(
+                                            json.dumps(
+                                                parsed,
+                                                ensure_ascii=False,
+                                                indent=2,
+                                            ),
+                                        )
+                                content = "\n".join(formatted_lines)
+                            except json.JSONDecodeError:
+                                pass
+
+                    except UnicodeDecodeError:
+                        print(
+                            f"[Binary file, size: {file_path.stat().st_size}\
+                                  bytes]",
+                        )
+                    except Exception as e:
+                        print(f"[Error reading file: {str(e)}]")
+
+        except Exception as e:
+            print(f"Error capturing evaluation result files: {str(e)}")
+>>>>>>> upstream/add_bfcl_box
 
     def _convert_conversation_to_eval_format(
         self,
@@ -786,6 +879,10 @@ class EnvHandler:
 
         return model_result_data
 
+<<<<<<< HEAD
+=======
+    # pylint: disable=too-many-nested-blocks
+>>>>>>> upstream/add_bfcl_box
     def _extract_multi_turn_responses(
         self,
         messages: List[Dict[str, Any]],
@@ -803,6 +900,7 @@ class EnvHandler:
         current_turn_responses = []
 
         i = 0
+<<<<<<< HEAD
 
         while i < len(messages):
             if messages[i]["role"] != "user":
@@ -829,6 +927,40 @@ class EnvHandler:
                 while i < len(messages) and messages[i]["role"] == "tool":
                     i += 1
 
+=======
+        while i < len(messages):
+            message = messages[i]
+
+            if message["role"] == "user":
+                if current_turn_responses:
+                    turns_data.append(current_turn_responses)
+                    current_turn_responses = []
+
+                i += 1
+                while i < len(messages) and messages[i]["role"] == "assistant":
+                    assistant_msg = messages[i]
+
+                    if (
+                        "tool_calls" in assistant_msg
+                        and assistant_msg["tool_calls"]
+                    ):
+                        for tool_call in assistant_msg["tool_calls"]:
+                            formatted_call = (
+                                self._format_single_tool_call_for_eval(
+                                    tool_call,
+                                )
+                            )
+                            if formatted_call:
+                                current_turn_responses.append(formatted_call)
+
+                    i += 1
+
+                    while i < len(messages) and messages[i]["role"] == "tool":
+                        i += 1
+            else:
+                i += 1
+
+>>>>>>> upstream/add_bfcl_box
         if current_turn_responses:
             turns_data.append(current_turn_responses)
 
