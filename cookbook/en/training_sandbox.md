@@ -73,7 +73,7 @@ You can verify that everything is set up correctly by calling `get_env_profile`.
 from agentscope_runtime.sandbox.box.training_box.training_box import APPWorldSandbox
 
 <<<<<<< HEAD
-box = APPWorldSandbox() 
+box = APPWorldSandbox()
 =======
 box = APPWorldSandbox()
 >>>>>>> upstream/add_bfcl_box

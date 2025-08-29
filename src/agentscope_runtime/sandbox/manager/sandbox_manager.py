@@ -367,7 +367,6 @@ class SandboxManager:
         environment = {
             **(config.environment if config.environment else {}),
             **(environment if environment else {}),
-            
         }
 
         for key, value in environment.items():
@@ -600,14 +599,10 @@ class SandboxManager:
         enable_browser = "browser" in container_model.version
 
         # TODO: remake docker name
-<<<<<<< HEAD
-        if "appworld" or 'bfcl' in container_model.version:
-=======
         if (
             "sandbox-appworld" in container_model.version
-            or "sandbox-appworld" in container_model.version
+            or "sandbox-bfcl" in container_model.version
         ):
->>>>>>> upstream/add_bfcl_box
             return TrainingSandboxClient(
                 base_url=f"http://localhost:{container_model.ports[0]}",
             ).__enter__()
