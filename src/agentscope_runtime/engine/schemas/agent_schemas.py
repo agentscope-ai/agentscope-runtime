@@ -12,7 +12,7 @@ except ImportError:
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, field_validator
-from openai.types.chat import ChatCompletion, ChatCompletionChunk
+from openai.types.chat import ChatCompletionChunk
 
 
 class MessageType:
@@ -228,13 +228,7 @@ class Content(Event):
     def from_chat_completion_chunk(
         chunk: ChatCompletionChunk,
         index: Optional[int] = None,
-    ) -> Optional[
-        Union[
-            "TextContent",
-            "DataContent",
-            "ImageContent",
-        ]
-    ]:
+    ) -> Optional[Union["TextContent", "DataContent", "ImageContent"]]:
         if not chunk.choices:
             return None
 
