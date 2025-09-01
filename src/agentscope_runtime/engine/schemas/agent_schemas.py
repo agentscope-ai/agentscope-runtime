@@ -81,7 +81,7 @@ class FunctionParameters(BaseModel):
 
 class FunctionTool(BaseModel):
     """
-    Model class for function object.
+    Model class for message tool.
     """
 
     name: str
@@ -100,7 +100,7 @@ class FunctionTool(BaseModel):
 
 class Tool(BaseModel):
     """
-    Model class for tool call.
+    Model class for assistant message tool call.
     """
 
     type: Optional[str] = "function"
@@ -241,15 +241,18 @@ class Content(Event):
         elif chunk.choices[0].delta.tool_calls:
             # TODO: support multiple tool calls output
             tool_call = chunk.choices[0].delta.tool_calls[0]
-            return DataContent(
-                delta=True,
-                data={
-                    "call_id": tool_call.id,
-                    "name": tool_call.function.name,
-                    "arguments": tool_call.function.arguments,
-                },
-                index=index,
-            )
+            if tool_call.function is not None:
+                return DataContent(
+                    delta=True,
+                    data={
+                        "call_id": tool_call.id,
+                        "name": tool_call.function.name,
+                        "arguments": tool_call.function.arguments,
+                    },
+                    index=index,
+                )
+            else:
+                return None
         else:
             return None
 
@@ -382,7 +385,7 @@ class Message(Event):
                 elif content["type"] == "text":
                     _content = TextContent(text=content["text"])
                 else:
-                    _content = TextContent(data=content["text"])
+                    _content = DataContent(data=content["text"])
                 _content_list.append(_content)
             _message = Message(
                 type=MessageType.MESSAGE,
