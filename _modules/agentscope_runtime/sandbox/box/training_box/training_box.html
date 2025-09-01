@@ -702,7 +702,7 @@
     <span class="n">runtime_config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;shm_size&quot;</span><span class="p">:</span> <span class="s2">&quot;8.06gb&quot;</span><span class="p">},</span>
     <span class="n">security_level</span><span class="o">=</span><span class="s2">&quot;medium&quot;</span><span class="p">,</span>
     <span class="n">environment</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
         <span class="s2">&quot;BFCL_DATA_PATH&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;/agentscope_runtime/training_box/bfcl/multi_turn/&quot;</span>
         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">DATASET_SUB_TYPE</span><span class="si">}</span><span class="s2">_processed.jsonl&quot;</span><span class="p">,</span>
         <span class="s2">&quot;BFCL_SPLID_ID_PATH&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;/agentscope_runtime/training_box/&quot;</span>
@@ -803,7 +803,7 @@
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-08-29</div>
+              Last updated on 2025-09-01</div>
           </div>
           <div class="right-details">
             <div class="icons">
