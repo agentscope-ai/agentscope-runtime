@@ -45,7 +45,7 @@ jobs:
       - name: Install dependencies
         run: |
           export PIP_DEFAULT_TIMEOUT=300
-          pip install -q -e ".[dev,sandbox,agentscope,langgraph,agno,a2a,autogen]"
+          pip install -q -e ".[dev,sandbox,agentscope,langgraph,agno,a2a,autogen,langchain_rag]"
 
       - name: Run tests with coverage
         env:
