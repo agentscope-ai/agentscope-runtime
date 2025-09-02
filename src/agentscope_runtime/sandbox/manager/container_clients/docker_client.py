@@ -234,7 +234,9 @@ class DockerClient(BaseClient):
                 logger.debug(f"Failed to remove original tag: {e}")
             return True
         except Exception as e:
-            logger.error(f"Failed to pull from ACR: {e}")
+            logger.error(
+                f"Failed to pull from ACR: {e}, {traceback.format_exc()}",
+            )
             return False
 
     def create(
@@ -279,7 +281,7 @@ class DockerClient(BaseClient):
                         f"Failed to pull from default registry: {e}",
                     )
                     logger.debug("Trying to pull from ACR fallback...")
-                    print("image is " + image)
+
                     pull_success = self._try_pull_from_acr(image)
 
                 if not pull_success:
