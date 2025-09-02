@@ -66,3 +66,9 @@ autogen = [
     "autogen-agentchat>=0.7.4",
     "autogen-ext[openai]>=0.7.4",
 ]
+
+langchain_rag=[
+    "langchain>=0.3.25",
+    "pymilvus>=2.6.0",
+    "langchain_milvus"
+]
