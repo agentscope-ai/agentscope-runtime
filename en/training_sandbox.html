@@ -472,11 +472,8 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <p>You can verify that everything is set up correctly by calling <code class="docutils literal notranslate"><span class="pre">get_env_profile</span></code>. If success, you can get a training ID:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.box.training_box.training_box</span><span class="w"> </span><span class="kn">import</span> <span class="n">APPWorldSandbox</span>
 
-<span class="o">&lt;&lt;&lt;&lt;&lt;&lt;&lt;</span> <span class="n">HEAD</span>
+
 <span class="n">box</span> <span class="o">=</span> <span class="n">APPWorldSandbox</span><span class="p">()</span>
-<span class="o">=======</span>
-<span class="n">box</span> <span class="o">=</span> <span class="n">APPWorldSandbox</span><span class="p">()</span>
-<span class="o">&gt;&gt;&gt;&gt;&gt;&gt;&gt;</span> <span class="n">upstream</span><span class="o">/</span><span class="n">add_bfcl_box</span>
 <span class="n">profile_list</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">get_env_profile</span><span class="p">(</span><span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;appworld&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">profile_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </pre></div>
