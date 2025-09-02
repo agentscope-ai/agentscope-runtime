@@ -113,7 +113,7 @@ print(profile_list)
 #### Get Training Sample Query
 
 We can select one task from the training set as an example and display its query along with the system prompt using
-the "create_instance" method.
+the `create_instance` method.
 
 The initial state will include a unique ID for the newly created instance of the query, and we can generate additional
 instances for parallel training.
