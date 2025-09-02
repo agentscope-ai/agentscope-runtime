@@ -457,6 +457,18 @@
 </ul>
 <p>与 <code class="docutils literal notranslate"><span class="pre">SessionHistoryService</span></code>一样，优先使用具体实现，如<code class="docutils literal notranslate"><span class="pre">InMemoryMemoryService</span></code>。详细信息请参见<a class="reference internal" href="#memory-service-zh"><span class="std std-ref">这里</span></a></p>
 </section>
+<section id="ragservice">
+<h3>RAGService<a class="headerlink" href="#ragservice" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">RAGService</span></code> 是一个基本类，用于提供检索增强生成（RAG）功能。当最终用户提出请求时，代理可能需要从知识库中检索相关信息。知识库可以是数据库或文档集合。<code class="docutils literal notranslate"><span class="pre">RAGService</span></code> 包含以下方法：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">retrieve</span></code>：从知识库中检索相关信息。</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">LangChainRAGService</span></code> 是 <code class="docutils literal notranslate"><span class="pre">RAGService</span></code> 的具体实现，它使用 LangChain 从 Milvus 中检索相关信息。可以通过以下方式初始化：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">uri</span></code>：Milvus 的 URI，可以是本地文件（例如 <code class="docutils literal notranslate"><span class="pre">.\xxx.db</span></code>）或远程 URL（例如 <code class="docutils literal notranslate"><span class="pre">http://localhost:19530</span></code>）。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">docs</span></code>：要索引的文档。</p></li>
+</ul>
+</section>
 </section>
 <section id="id2">
 <h2>上下文管理器的生命周期<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
@@ -1077,7 +1089,7 @@
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-09-01</div>
+              Last updated on 2025-09-02</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -1117,6 +1129,7 @@
 <li><a class="reference internal" href="#services">服务 (Services)</a><ul>
 <li><a class="reference internal" href="#sessionhistoryservice">SessionHistoryService</a></li>
 <li><a class="reference internal" href="#memoryservice">MemoryService</a></li>
+<li><a class="reference internal" href="#ragservice">RAGService</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#id2">上下文管理器的生命周期</a><ul>

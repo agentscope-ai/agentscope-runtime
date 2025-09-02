@@ -465,6 +465,22 @@ The memory service will store it so that the agent can use it in the next conver
 </ul>
 <p>Like <code class="docutils literal notranslate"><span class="pre">SessionHistoryService</span></code>, prefer using a concrete implementation such as <code class="docutils literal notranslate"><span class="pre">InMemoryMemoryService</span></code>. For details, see <a class="reference internal" href="#memory-service"><span class="std std-ref">here</span></a></p>
 </section>
+<section id="ragservice">
+<h3>RAGService<a class="headerlink" href="#ragservice" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">RAGService</span></code> is a basic class to provide retrieval augmented generation (RAG) capabilities.
+When asked by an end-user, the agent may need to retrieve relevant information from the knowledge base.
+The knowledge base can be a database or a collection of documents.
+The <code class="docutils literal notranslate"><span class="pre">RAGService</span></code> contains the following methods:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">retrieve</span></code>: retrieve relevant information from the knowledge base</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">LangChainRAGService</span></code> is a concrete implementation of <code class="docutils literal notranslate"><span class="pre">RAGService</span></code> that uses LangChain to retrieve relevant information from Milvus.
+It can be initialized by:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">uri</span></code> the Milvus URI, either a local file (<code class="docutils literal notranslate"><span class="pre">.\xxx.db</span></code>) or a remote URL (<code class="docutils literal notranslate"><span class="pre">http://localhost:19530</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">docs</span></code> the documents to be indexed.</p></li>
+</ul>
+</section>
 </section>
 <section id="life-cycle-of-a-context-manager">
 <h2>Life-cycle of a context manager<a class="headerlink" href="#life-cycle-of-a-context-manager" title="Link to this heading">¶</a></h2>
@@ -1091,7 +1107,7 @@ Other complicated search algorithms could be used to replace the simple method b
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-09-01</div>
+              Last updated on 2025-09-02</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -1131,6 +1147,7 @@ Other complicated search algorithms could be used to replace the simple method b
 <li><a class="reference internal" href="#services">Services</a><ul>
 <li><a class="reference internal" href="#sessionhistoryservice">SessionHistoryService</a></li>
 <li><a class="reference internal" href="#memoryservice">MemoryService</a></li>
+<li><a class="reference internal" href="#ragservice">RAGService</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#life-cycle-of-a-context-manager">Life-cycle of a context manager</a><ul>
