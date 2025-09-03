@@ -516,7 +516,8 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">register_service</span><span class="p">(</span><span class="s2">&quot;session&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_history_service</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">register_service</span><span class="p">(</span><span class="s2">&quot;memory&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_memory_service</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">register_service</span><span class="p">(</span><span class="s2">&quot;rag&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rag_service</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rag_service</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_service</span><span class="p">(</span><span class="s2">&quot;rag&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rag_service</span><span class="p">)</span>
 
 <div class="viewcode-block" id="ContextManager.compose_context">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.services.context_manager.ContextManager.compose_context">[docs]</a>
@@ -609,7 +610,7 @@
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-09-02</div>
+              Last updated on 2025-09-03</div>
           </div>
           <div class="right-details">
             <div class="icons">
