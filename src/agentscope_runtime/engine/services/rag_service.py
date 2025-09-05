@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from typing import Optional
-
 from .base import ServiceWithLifecycleManager
 from ..schemas.agent_schemas import Message, MessageType
 
@@ -30,6 +28,16 @@ class RAGService(ServiceWithLifecycleManager):
     async def retrieve(self, query: str, k: int = 1) -> list[str]:
         raise NotImplementedError
 
+    async def start(self) -> None:
+        """Starts the service."""
+
+    async def stop(self) -> None:
+        """Stops the service."""
+
+    async def health(self) -> bool:
+        """Checks the health of the service."""
+        return True
+
 
 DEFAULT_URI = "milvus_demo.db"
 
@@ -41,46 +49,31 @@ class LangChainRAGService(RAGService):
 
     def __init__(
         self,
-        uri: Optional[str] = None,
-        docs: Optional[list[str]] = None,
+        vectorstore=None,
+        embedding=None,
     ):
-        from langchain_community.embeddings import DashScopeEmbeddings
-        from langchain_milvus import Milvus
+        # set default embedding alg.
+        if embedding is None:
+            from langchain_community.embeddings import DashScopeEmbeddings
 
-        self.Milvus = Milvus
-        self.embeddings = DashScopeEmbeddings()
-        self.vectorstore = None
-
-        if uri:
-            self.uri = uri
-            self.from_db()
-        elif docs:
-            self.uri = DEFAULT_URI
-            self.from_docs(docs)
+            self.embeddings = DashScopeEmbeddings()
         else:
-            docs = []
-            self.uri = DEFAULT_URI
-            self.from_docs(docs)
+            self.embeddings = embedding
 
-    def from_docs(self, docs=None):
-        if docs is None:
-            docs = []
+        # set default vectorstore class.
+        if vectorstore is None:
+            from langchain_milvus import Milvus
 
-        self.vectorstore = self.Milvus.from_documents(
-            documents=docs,
-            embedding=self.embeddings,
-            connection_args={
-                "uri": self.uri,
-            },
-            drop_old=False,
-        )
-
-    def from_db(self):
-        self.vectorstore = self.Milvus(
-            embedding_function=self.embeddings,
-            connection_args={"uri": self.uri},
-            index_params={"index_type": "FLAT", "metric_type": "L2"},
-        )
+            self.vectorstore = Milvus.from_documents(
+                [],
+                embedding=self.embeddings,
+                connection_args={
+                    "uri": DEFAULT_URI,
+                },
+                drop_old=False,
+            )
+        else:
+            self.vectorstore = vectorstore
 
     async def retrieve(self, query: str, k: int = 1) -> list[str]:
         if self.vectorstore is None:
@@ -99,3 +92,62 @@ class LangChainRAGService(RAGService):
     async def health(self) -> bool:
         """Checks the health of the service."""
         return True
+
+
+class LlamaIndexRAGService(RAGService):
+    """
+    RAG Service using LlamaIndex
+    """
+
+    def __init__(
+        self,
+        vectorstore=None,
+        embedding=None,
+    ):
+        # set default embedding alg.
+        if embedding is None:
+            from langchain_community.embeddings import DashScopeEmbeddings
+
+            self.embeddings = DashScopeEmbeddings()
+        else:
+            self.embeddings = embedding
+
+        # set default vectorstore.
+        if vectorstore is None:
+            from llama_index.core import VectorStoreIndex
+            from llama_index.core.schema import Document
+            from llama_index.vector_stores.milvus import MilvusVectorStore
+
+            # Create empty documents list for initialization
+            documents = [Document(text="")]
+
+            # Initialize Milvus vector store
+            self.vector_store = MilvusVectorStore(
+                uri=DEFAULT_URI,
+                overwrite=False,
+            )
+
+            # Create index
+            self.index = VectorStoreIndex.from_documents(
+                documents=documents,
+                embed_model=self.embeddings,
+                vector_store=self.vector_store,
+            )
+        else:
+            self.index = vectorstore
+
+    async def retrieve(self, query: str, k: int = 1) -> list[str]:
+        if self.index is None:
+            raise ValueError(
+                "Index not initialized.",
+            )
+
+        # Create query engine and query
+        query_engine = self.index.as_retriever(similarity_top_k=k)
+        response = query_engine.retrieve(query)
+
+        # Extract text from nodes
+        if len(response) > 0:
+            return [node.node.get_content() for node in response]
+        else:
+            return [""]

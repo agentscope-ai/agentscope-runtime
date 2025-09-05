@@ -73,3 +73,12 @@ langchain_rag=[
     "langchain-community>=0.3.27",
     "langchain-milvus>=0.2.1",
 ]
+
+llamaindex_rag=[
+    "llama-index>=0.13.4",
+    "pymilvus>=2.6.0",
+    "llama-index-vector-stores-milvus>=0.9.1",
+    "llama-index-readers-web>=0.5.1",
+    "llama-index-embeddings-langchain>=0.4.0",
+     "langchain-community>=0.3.27",
+]

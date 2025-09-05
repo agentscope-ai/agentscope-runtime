@@ -56,12 +56,14 @@ kernelspec:
 与 `SessionHistoryService`一样，优先使用具体实现，如`InMemoryMemoryService`。详细信息请参见{ref}`这里 <memory-service-zh>`
 
 ### RAGService
-`RAGService` 是一个基本类，用于提供检索增强生成（RAG）功能。当最终用户提出请求时，代理可能需要从知识库中检索相关信息。知识库可以是数据库或文档集合。`RAGService` 包含以下方法：
+`RAGService` 是一个基本的类，用于提供检索增强生成（RAG）功能。当最终用户提出请求时，代理可能需要从知识库中检索相关信息。知识库可以是数据库或文档集合。`RAGService` 包含以下方法：
 - `retrieve`：从知识库中检索相关信息。
 
-`LangChainRAGService` 是 `RAGService` 的具体实现，它使用 LangChain 从 Milvus 中检索相关信息。可以通过以下方式初始化：
-- `uri`：Milvus 的 URI，可以是本地文件（例如 `.\xxx.db`）或远程 URL（例如 `http://localhost:19530`）。
-- `docs`：要索引的文档。
+`LangChainRAGService` 是 `RAGService` 的具体实现，它使用 LangChain 来检索相关信息。可以通过以下方式初始化：
+- `vectorstore`：要索引的向量存储。具体来说，它可以是 LangChain 的 `VectorStore` 实例。
+- `embedding`：用于索引的嵌入模型。
+
+阅读 {ref}`RAGService <rag-service-zh>` 获取更多信息。
 
 ## 上下文管理器的生命周期
 
