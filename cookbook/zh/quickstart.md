@@ -143,6 +143,8 @@ agent = AgnoAgent(
 print("✅ Agno agent created successfully")
 ```
 
+(autogen-agent-zh)=
+
 #### （可选）使用AutoGen Agent
 
 ````{note}

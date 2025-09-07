@@ -86,6 +86,7 @@ sphinx:
         - "sidebar/scroll-start.html"
         - "sidebar/brand.html"
         - "language-switch.html"
+        - "version-switch.html"
         - "sidebar/search.html"
         - "sidebar/navigation.html"
         - "sidebar/ethical-ads.html"

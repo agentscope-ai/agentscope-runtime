@@ -195,6 +195,33 @@ async def health_check():
     )
 
 
+def setup_logging(log_level: str):
+    """Setup logging configuration based on log level"""
+    # Convert string to logging level
+    level_mapping = {
+        "DEBUG": logging.DEBUG,
+        "INFO": logging.INFO,
+        "WARNING": logging.WARNING,
+        "ERROR": logging.ERROR,
+        "CRITICAL": logging.CRITICAL,
+    }
+
+    level = level_mapping.get(log_level.upper(), logging.INFO)
+
+    # Reconfigure logging
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        force=True,  # This will reconfigure existing loggers
+    )
+
+    # Update the logger for this module
+    global logger
+    logger.setLevel(level)
+
+    logger.info(f"Logging level set to {log_level.upper()}")
+
+
 def main():
     """Main entry point for the Runtime Manager Service"""
     import argparse
@@ -203,7 +230,17 @@ def main():
 
     parser = argparse.ArgumentParser(description="Runtime Manager Service")
     parser.add_argument("--config", type=str, help="Path to config file")
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="INFO",
+        help="Set the logging level (default: INFO)",
+    )
     args = parser.parse_args()
+
+    # Setup logging based on command line argument
+    setup_logging(args.log_level)
 
     if args.config and not os.path.exists(args.config):
         raise FileNotFoundError(

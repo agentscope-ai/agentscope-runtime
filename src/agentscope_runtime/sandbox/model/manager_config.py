@@ -114,10 +114,8 @@ class SandboxManagerEnvConfig(BaseModel):
 
     @model_validator(mode="after")
     def check_settings(cls, self):
-        if not self.default_mount_dir:
-            raise ValueError("default_mount_dir must be set")
-
-        os.makedirs(self.default_mount_dir, exist_ok=True)
+        if self.default_mount_dir:
+            os.makedirs(self.default_mount_dir, exist_ok=True)
 
         if self.file_system == "oss":
             required_oss_fields = [
@@ -164,12 +162,3 @@ class SandboxManagerEnvConfig(BaseModel):
                     )
 
         return self
-
-
-DEFAULT_LOCAL_MANAGER_CONFIG = SandboxManagerEnvConfig(
-    file_system="local",
-    redis_enabled=False,
-    container_deployment="docker",
-    pool_size=0,
-    default_mount_dir="sessions_mount_dir",
-)
