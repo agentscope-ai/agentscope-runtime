@@ -1,15 +1,41 @@
-from typing import Optional, Dict, Any
+import os
+from typing import Optional, Dict, Any, List
 
 from .memory_service import MemoryService
+from ..schemas.agent_schemas import Message
 
 
 class ReMePersonalMemoryService(MemoryService):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        """
+        FLOW_EMBEDDING_API_KEY=sk-xxxx
+        FLOW_EMBEDDING_BASE_URL=https://xxxx/v1
+        
+        FLOW_LLM_API_KEY=sk-xxxx
+        FLOW_LLM_BASE_URL=https://xxxx/v1
+        """
+
+        for key in ["FLOW_EMBEDDING_API_KEY",
+                    "FLOW_EMBEDDING_BASE_URL",
+                    "FLOW_LLM_API_KEY",
+                    "FLOW_LLM_BASE_URL"]:
+            if os.getenv(key) is None:
+                raise ValueError(f"{key} is not set")
 
         from reme_ai.service.personal_memory_service import PersonalMemoryService
         self.service = PersonalMemoryService()
+
+    @staticmethod
+    def transform_message(message: Message) -> dict:
+        return {
+            "role": message.role,
+            "content": message.content[0].text,
+        }
+
+    def transform_messages(self, messages: List[Message]) -> List[dict]:
+        return [self.transform_message(message) for message in messages]
 
     async def start(self) -> None:
         return await self.service.start()
@@ -26,7 +52,7 @@ class ReMePersonalMemoryService(MemoryService):
             messages: list,
             session_id: Optional[str] = None,
     ) -> None:
-        return await self.service.add_memory(user_id, messages, session_id)
+        return await self.service.add_memory(user_id, self.transform_messages(messages), session_id)
 
     async def search_memory(
             self,
@@ -34,7 +60,7 @@ class ReMePersonalMemoryService(MemoryService):
             messages: list,
             filters: Optional[Dict[str, Any]] = None,
     ) -> list:
-        return await self.service.search_memory(user_id, messages, filters)
+        return await self.service.search_memory(user_id, self.transform_messages(messages), filters)
 
     async def list_memory(
             self,
