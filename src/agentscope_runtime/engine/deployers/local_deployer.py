@@ -401,25 +401,32 @@ class LocalDeployManager(DeployManager):
 
     async def deploy(
         self,
-        func: Callable,
+        runner: "Runner" = None,
         endpoint_path: str = "/process",
+        stream: bool = True,
         request_model: Optional[Type] = AgentRequest,
         response_type: str = "sse",
         before_start: Optional[Callable] = None,
         after_finish: Optional[Callable] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
+        # Backward compatibility parameters
+        func: Optional[Callable] = None,
         **kwargs: Any,
     ) -> Dict[str, str]:
         """
         Deploy the agent as a FastAPI service (asynchronous version).
 
         Args:
-            func: Custom processing function
+            runner: Complete Runner object (new approach)
             endpoint_path: API endpoint path for the processing function
+            stream: Enable streaming response (used when runner is provided)
             request_model: Pydantic model for request validation
             response_type: Response type - "json", "sse", or "text"
             before_start: Callback function called before server starts
             after_finish: Callback function called after server finishes
+            protocol_adapters: protocol adapters
+            # Backward compatibility
+            func: Custom processing function (deprecated, use runner instead)
             **kwargs: Additional keyword arguments passed to callbacks
 
         Returns:
@@ -429,11 +436,31 @@ class LocalDeployManager(DeployManager):
         Raises:
             RuntimeError: If deployment fails
         """
+        # Handle backward compatibility
+        if runner is not None and func is not None:
+            raise ValueError("Cannot specify both runner and func parameters")
+        elif runner is not None:
+            # New pattern: use runner with appropriate method based on stream setting
+            if stream:
+                actual_func = runner.stream_query
+                actual_response_type = "sse"
+            else:
+                actual_func = runner.query
+                actual_response_type = "json"
+        elif func is not None:
+            # Legacy pattern: use provided func
+            actual_func = func
+            actual_response_type = response_type
+        else:
+            raise ValueError(
+                "Either runner or func parameter must be provided",
+            )
+
         return await self._deploy_async(
-            func=func,
+            func=actual_func,
             endpoint_path=endpoint_path,
             request_model=request_model,
-            response_type=response_type,
+            response_type=actual_response_type,
             before_start=before_start,
             after_finish=after_finish,
             protocol_adapters=protocol_adapters,

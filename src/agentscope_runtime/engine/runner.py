@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import uuid
-from typing import Optional, List, AsyncGenerator, Any
+from typing import Optional, List, AsyncGenerator, Any, Union, Dict
 
 from openai.types.chat import ChatCompletion
 
@@ -49,30 +49,65 @@ class Runner:
         endpoint_path: str = "/process",
         stream: bool = True,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
+        # New parameters following _agent_engines.py create method pattern
+        requirements: Optional[Union[str, List[str]]] = None,
+        user_code_path: Optional[str] = None,
+        base_image: str = "python:3.9-slim",
+        environment: Optional[Dict[str, str]] = None,
+        runtime_config: Optional[Dict] = None,
+        **kwargs,
     ):
         """
         Deploys the agent as a service.
 
         Args:
-            protocol_adapters: protocol adapters
             deploy_manager: Deployment manager to handle service deployment
             endpoint_path: API endpoint path for the processing function
             stream: If start a streaming service
+            protocol_adapters: protocol adapters
+            requirements: PyPI dependencies (following _agent_engines.py pattern)
+            user_code_path: User code directory/file path
+            base_image: Docker base image (for containerized deployment)
+            environment: Environment variables dict
+            runtime_config: Runtime configuration dict
+            **kwargs: Additional arguments passed to deployment manager
         Returns:
             URL of the deployed service
 
         Raises:
             RuntimeError: If deployment fails
         """
-        if stream:
-            deploy_func = self.stream_query
+        # Check if deploy_manager supports runner-based deployment
+        if (
+            hasattr(deploy_manager, "deploy")
+            and "runner" in deploy_manager.deploy.__code__.co_varnames
+        ):
+            # New pattern: pass complete runner object
+            deploy_result = await deploy_manager.deploy(
+                runner=self,
+                endpoint_path=endpoint_path,
+                stream=stream,
+                protocol_adapters=protocol_adapters,
+                requirements=requirements,
+                user_code_path=user_code_path,
+                base_image=base_image,
+                environment=environment,
+                runtime_config=runtime_config,
+                **kwargs,
+            )
         else:
-            deploy_func = self.query
-        deploy_result = await deploy_manager.deploy(
-            deploy_func,
-            endpoint_path=endpoint_path,
-            protocol_adapters=protocol_adapters,
-        )
+            # Backward compatibility: pass deploy_func for existing deployers
+            if stream:
+                deploy_func = self.stream_query
+            else:
+                deploy_func = self.query
+            deploy_result = await deploy_manager.deploy(
+                deploy_func,
+                endpoint_path=endpoint_path,
+                protocol_adapters=protocol_adapters,
+                **kwargs,
+            )
+
         self._deploy_managers[deploy_manager.deploy_id] = deploy_result
         return deploy_result
 
