@@ -232,15 +232,16 @@ class Content(Event):
         if not chunk.choices:
             return None
 
-        if chunk.choices[0].delta.content is not None:
+        choice = chunk.choices[0]
+        if choice.delta.content is not None:
             return TextContent(
                 delta=True,
-                text=chunk.choices[0].delta.content,
+                text=choice.delta.content,
                 index=index,
             )
-        elif chunk.choices[0].delta.tool_calls:
+        elif choice.delta.tool_calls:
             # TODO: support multiple tool calls output
-            tool_call = chunk.choices[0].delta.tool_calls[0]
+            tool_call = choice.delta.tool_calls[0]
             if tool_call.function is not None:
                 return DataContent(
                     delta=True,
