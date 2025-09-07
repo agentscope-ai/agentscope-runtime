@@ -2,12 +2,14 @@
 # pylint: disable=redefined-outer-name, protected-access, too-many-branches
 import logging
 import os
+import json
 import secrets
 import inspect
 import traceback
 
 from functools import wraps
 from typing import Optional, Dict
+from urllib.parse import urlparse, urlunparse
 
 import shortuuid
 import requests
@@ -15,7 +17,6 @@ import requests
 from ..model import (
     ContainerModel,
     SandboxManagerEnvConfig,
-    DEFAULT_LOCAL_MANAGER_CONFIG,
 )
 from ..enums import SandboxType
 from ..registry import SandboxRegistry
@@ -81,7 +82,7 @@ def remote_wrapper(
 class SandboxManager:
     def __init__(
         self,
-        config: SandboxManagerEnvConfig = DEFAULT_LOCAL_MANAGER_CONFIG,
+        config: Optional[SandboxManagerEnvConfig] = None,
         base_url=None,
         bearer_token=None,
         default_type: SandboxType | str = SandboxType.BASE,
@@ -96,9 +97,20 @@ class SandboxManager:
                 self.http_session.headers.update(
                     {"Authorization": f"Bearer {bearer_token}"},
                 )
+            # Remote mode, return directly
+            return
         else:
             self.http_session = None
             self.base_url = None
+
+        if not config:
+            config = SandboxManagerEnvConfig(
+                file_system="local",
+                redis_enabled=False,
+                container_deployment="docker",
+                pool_size=0,
+                default_mount_dir="sessions_mount_dir",
+            )
 
         self.default_type = SandboxType(default_type)
         self.workdir = "/workspace"
@@ -106,9 +118,7 @@ class SandboxManager:
         self.config = config
         self.pool_size = self.config.pool_size
         self.prefix = self.config.container_prefix_key
-        self.default_mount_dir = (
-            self.config.default_mount_dir or "sessions_mount_dir"
-        )
+        self.default_mount_dir = self.config.default_mount_dir
         self.storage_folder = (
             self.config.storage_folder or self.default_mount_dir
         )
@@ -197,8 +207,35 @@ class SandboxManager:
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            logger.error(f"Error making request: {e}")
-            return {"data": f"Error: {e}"}
+            error_components = [
+                f"HTTP {response.status_code} Error: {str(e)}",
+            ]
+
+            try:
+                server_response = response.json()
+                if "detail" in server_response:
+                    error_components.append(
+                        f"Server Detail: {server_response['detail']}",
+                    )
+                elif "error" in server_response:
+                    error_components.append(
+                        f"Server Error: {server_response['error']}",
+                    )
+                else:
+                    error_components.append(
+                        f"Server Response: {server_response}",
+                    )
+            except (ValueError, json.JSONDecodeError):
+                if response.text:
+                    error_components.append(
+                        f"Server Response: {response.text}",
+                    )
+
+            error = " | ".join(error_components)
+
+            logger.error(f"Error making request: {error}")
+
+            return {"data": f"Error: {error}"}
 
         return response.json()
 
@@ -380,20 +417,24 @@ class SandboxManager:
         short_uuid = shortuuid.ShortUUID(alphabet=alphabet).uuid()
         session_id = str(short_uuid)
 
-        if mount_dir is None:
-            mount_dir = os.path.join(self.default_mount_dir, session_id)
-            os.makedirs(mount_dir, exist_ok=True)
+        if not mount_dir:
+            if self.default_mount_dir:
+                mount_dir = os.path.join(self.default_mount_dir, session_id)
+                os.makedirs(mount_dir, exist_ok=True)
 
-        if not os.path.isabs(mount_dir):
-            mount_dir = os.path.abspath(mount_dir)
+        if mount_dir:
+            if not os.path.isabs(mount_dir):
+                mount_dir = os.path.abspath(mount_dir)
 
         if storage_path is None:
-            storage_path = self.storage.path_join(
-                self.storage_folder,
-                session_id,
-            )
+            if self.storage_folder:
+                storage_path = self.storage.path_join(
+                    self.storage_folder,
+                    session_id,
+                )
 
-        self.storage.download_folder(storage_path, mount_dir)
+        if mount_dir and storage_path:
+            self.storage.download_folder(storage_path, mount_dir)
 
         try:
             # Check for an existing container with the same name
@@ -407,14 +448,17 @@ class SandboxManager:
             runtime_token = secrets.token_hex(16)
 
             # Prepare volume bindings if a mount directory is provided
-            volume_bindings = {
-                mount_dir: {
-                    "bind": self.workdir,
-                    "mode": "rw",
-                },
-            }
+            if mount_dir:
+                volume_bindings = {
+                    mount_dir: {
+                        "bind": self.workdir,
+                        "mode": "rw",
+                    },
+                }
+            else:
+                volume_bindings = {}
 
-            _id, ports = self.client.create(
+            _id, ports, ip = self.client.create(
                 image,
                 name=container_name,
                 ports=["80/tcp"],  # Nginx
@@ -443,16 +487,16 @@ class SandboxManager:
                 session_id=session_id,
                 container_id=_id,
                 container_name=container_name,
-                base_url=f"http://localhost:{ports[0]}/fastapi",
-                browser_url=f"http://localhost:{ports[0]}/steel-api"
+                base_url=f"http://{ip}:{ports[0]}/fastapi",
+                browser_url=f"http://{ip}:{ports[0]}/steel-api"
                 f"/{runtime_token}",
-                front_browser_ws=f"ws://localhost:"
+                front_browser_ws=f"ws://{ip}:"
                 f"{ports[0]}/steel-api/"
                 f"{runtime_token}/v1/sessions/cast",
-                client_browser_ws=f"ws://localhost:"
+                client_browser_ws=f"ws://{ip}:"
                 f"{ports[0]}/steel-api/{runtime_token}/&sessionId"
                 f"={BROWSER_SESSION_ID}",
-                artifacts_sio=f"http://localhost:{ports[0]}/v1",
+                artifacts_sio=f"http://{ip}:{ports[0]}/v1",
                 ports=[ports[0]],
                 mount_dir=str(mount_dir),
                 storage_path=storage_path,
@@ -498,10 +542,11 @@ class SandboxManager:
             logger.debug(f"Container for {identity} destroyed.")
 
             # Upload to storage
-            self.storage.upload_folder(
-                container_info.mount_dir,
-                container_info.storage_path,
-            )
+            if container_info.mount_dir and container_info.storage_path:
+                self.storage.upload_folder(
+                    container_info.mount_dir,
+                    container_info.storage_path,
+                )
 
             return True
         except Exception as e:
@@ -603,8 +648,20 @@ class SandboxManager:
             "sandbox-appworld" in container_model.version
             or "sandbox-bfcl" in container_model.version
         ):
+            parsed = urlparse(container_model.base_url)
+            base_url = urlunparse(
+                (
+                    parsed.scheme,
+                    parsed.netloc,
+                    "",
+                    "",
+                    "",
+                    "",
+                ),
+            )
+
             return TrainingSandboxClient(
-                base_url=f"http://localhost:{container_model.ports[0]}",
+                base_url=base_url,
             ).__enter__()
 
         return SandboxHttpClient(

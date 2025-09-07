@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=too-many-branches
+import os
 import time
 import hashlib
 import traceback
@@ -89,7 +90,9 @@ class KubernetesClient(BaseClient):
             runtime_config = {}
 
         container_name = name or "main-container"
+
         # Container specification
+        # TODO: use image from docker registry first
         container = client.V1Container(
             name=container_name,
             image=f"agentscope-registry.ap-southeast-1.cr.aliyuncs.com"
@@ -244,6 +247,7 @@ class KubernetesClient(BaseClient):
             )
 
             exposed_ports = []
+            pod_node_ip = "localhost"
             # Auto-create services for exposed ports (like Docker's port
             # mapping)
             if ports:
@@ -259,19 +263,22 @@ class KubernetesClient(BaseClient):
                         parsed_ports,
                     )
                     if service_created:
-                        exposed_ports = self._get_service_node_ports(name)
+                        (
+                            exposed_ports,
+                            pod_node_ip,
+                        ) = self._get_service_node_ports(name)
             logger.debug(
                 f"Pod '{name}' created with exposed ports: {exposed_ports}",
             )
 
             if not self.wait_for_pod_ready(name, timeout=60):
                 logger.error(f"Pod '{name}' failed to become ready")
-                return None, None
+                return None, None, None
 
-            return name, exposed_ports
+            return name, exposed_ports, pod_node_ip
         except Exception as e:
             logger.error(f"An error occurred: {e}, {traceback.format_exc()}")
-            return None, None
+            return None, None, None
 
     def start(self, container_id):
         """
@@ -510,7 +517,10 @@ class KubernetesClient(BaseClient):
             service = client.V1Service(
                 api_version="v1",
                 kind="Service",
-                metadata=client.V1ObjectMeta(name=service_name),
+                metadata=client.V1ObjectMeta(
+                    name=service_name,
+                    namespace=self.namespace,
+                ),
                 spec=service_spec,
             )
 
@@ -540,11 +550,56 @@ class KubernetesClient(BaseClient):
             )
 
             node_ports = []
+            pod_node_ip = self._get_pod_node_ip(pod_name)
+
             for port in service_info.spec.ports:
                 if port.node_port:
                     node_ports.append(port.node_port)
 
-            return node_ports
+            return node_ports, pod_node_ip
         except Exception as e:
             logger.error(f"Failed to get node port: {e}")
+            return None
+
+    def _get_pod_node_ip(self, pod_name):
+        """Get the IP of the node where the pod is running"""
+
+        # Check if we are running in Colima, where pod runs in VM
+        docker_host = os.getenv("DOCKER_HOST", "")
+        if "colima" in docker_host.lower():
+            return "localhost"
+
+        try:
+            pod = self.v1.read_namespaced_pod(
+                name=pod_name,
+                namespace=self.namespace,
+            )
+
+            node_name = pod.spec.node_name
+            if not node_name:
+                logger.warning(
+                    f"Pod {pod_name} is not scheduled to any node yet",
+                )
+                return None
+
+            node = self.v1.read_node(name=node_name)
+
+            external_ip = None
+            internal_ip = None
+
+            for address in node.status.addresses:
+                if address.type == "ExternalIP":
+                    external_ip = address.address
+                elif address.type == "InternalIP":
+                    internal_ip = address.address
+
+            result_ip = external_ip or internal_ip
+            logger.debug(
+                f"Using IP: {result_ip} (external: {external_ip}, internal:"
+                f" {internal_ip})",
+            )
+            return result_ip
+
+        except Exception as e:
+            logger.error(f"Failed to get pod node IP: {e}")
             return None

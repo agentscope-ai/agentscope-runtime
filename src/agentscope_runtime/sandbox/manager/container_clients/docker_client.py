@@ -217,9 +217,12 @@ class DockerClient(BaseClient):
             acr_registry = "agentscope-registry.ap-southeast-1.cr.aliyuncs.com"
             acr_image = f"{acr_registry}/{image}"
 
-            logger.debug(f"Attempting to pull from ACR: {acr_image}")
+            logger.info(
+                f"Attempting to pull from ACR: {acr_image}, it might take "
+                f"several minutes.",
+            )
             self.client.images.pull(acr_image)
-            logger.debug(f"Successfully pulled image from ACR: {acr_image}")
+            logger.info(f"Successfully pulled image from ACR: {acr_image}")
 
             # Retag the image
             acr_img_obj = self.client.images.get(acr_image)
@@ -234,7 +237,9 @@ class DockerClient(BaseClient):
                 logger.debug(f"Failed to remove original tag: {e}")
             return True
         except Exception as e:
-            logger.error(f"Failed to pull from ACR: {e}")
+            logger.error(
+                f"Failed to pull from ACR: {e}, {traceback.format_exc()}",
+            )
             return False
 
     def create(
@@ -263,11 +268,15 @@ class DockerClient(BaseClient):
                 self.client.images.get(image)
                 logger.debug(f"Image '{image}' found locally.")
             except docker.errors.ImageNotFound:
-                logger.debug(
+                logger.info(
                     f"Image '{image}' not found locally. "
                     f"Attempting to pull it...",
                 )
                 try:
+                    logger.info(
+                        f"Attempting to pull: {image}, "
+                        f"it might take several minutes.",
+                    )
                     self.client.images.pull(image)
                     logger.debug(
                         f"Image '{image}' successfully pulled from default "
@@ -278,8 +287,8 @@ class DockerClient(BaseClient):
                     logger.warning(
                         f"Failed to pull from default registry: {e}",
                     )
-                    logger.debug("Trying to pull from ACR fallback...")
-                    print("image is " + image)
+                    logger.warning("Trying to pull from ACR fallback...")
+
                     pull_success = self._try_pull_from_acr(image)
 
                 if not pull_success:
@@ -287,11 +296,11 @@ class DockerClient(BaseClient):
                         f"Failed to pull image '{image}' from both "
                         f"default and ACR",
                     )
-                    return False
+                    return None, None, None
 
             except docker.errors.APIError as e:
                 logger.error(f"Error occurred while checking the image: {e}")
-                return False
+                return None, None, None
 
             # Create and run the container
             container = self.client.containers.run(
@@ -305,10 +314,10 @@ class DockerClient(BaseClient):
             )
             container.reload()
             _id = container.id
-            return _id, list(port_mapping.values())
+            return _id, list(port_mapping.values()), "localhost"
         except Exception as e:
             logger.error(f"An error occurred: {e}, {traceback.format_exc()}")
-            return None, None
+            return None, None, None
 
     def start(self, container_id):
         """Start a Docker container."""

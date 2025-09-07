@@ -9,6 +9,15 @@
             <a href="#" class="language-option" onclick="switchLanguage('zh')">中文</a>
         </div>
     </div>
+
+    <div class="language-selector">
+        <button class="language-button" onclick="toggleVersionMenu()">
+            <span id="current-version">loading...</span>
+            <span class="dropdown-arrow"></span>
+        </button>
+        <div class="language-menu" id="version-menu">
+        </div>
+    </div>
 </div>
 
 <script>

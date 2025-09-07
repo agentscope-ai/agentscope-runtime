@@ -178,10 +178,10 @@ print(f"Instance released: {success}")
 ```
 
 ```bash
-# 拉取并标记Appworld ARM64架构镜像
+# 拉取并标记BFCL ARM64架构镜像
 docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest-arm64 && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest-arm64 agentscope/runtime-sandbox-bfcl:latest-arm64
 
-# 拉取并标记 Appworld X86_64 架构镜像
+# 拉取并标记 BFCL X86_64 架构镜像
 docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest agentscope/runtime-sandbox-bfcl:latest
 ```
 

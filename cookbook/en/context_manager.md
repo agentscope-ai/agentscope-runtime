@@ -59,6 +59,20 @@ The `MemoryService` contains the following methods:
 
 Like `SessionHistoryService`, prefer using a concrete implementation such as `InMemoryMemoryService`. For details, see {ref}`here <memory-service>`
 
+### RAGService
+
+The `RAGService` is a basic class to provide retrieval augmented generation (RAG) capabilities.
+When asked by an end-user, the agent may need to retrieve relevant information from the knowledge base.
+The knowledge base can be a database or a collection of documents.
+The `RAGService` contains the following methods:
+- `retrieve`: retrieve relevant information from the knowledge base
+
+The `LangChainRAGService` is a concrete implementation of `RAGService` that uses LangChain to retrieve relevant information from Milvus.
+It can be initialized by:
+- `uri` the Milvus URI, either a local file (`.\xxx.db`) or a remote URL (`http://localhost:19530`).
+- `docs` the documents to be indexed.
+
+
 ## Life-cycle of a context manager
 The context manager can be initialized by two ways:
 
