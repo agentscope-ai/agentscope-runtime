@@ -34,9 +34,21 @@ class ReMePersonalMemoryService(MemoryService):
 
     @staticmethod
     def transform_message(message: Message) -> dict:
+        # Validate that message.content is a non-empty list and has a 'text' attribute
+        content_text = None
+        if (
+            hasattr(message, "content")
+            and isinstance(message.content, list)
+            and len(message.content) > 0
+            and hasattr(message.content[0], "text")
+        ):
+            content_text = message.content[0].text
+        else:
+            # Optionally, raise an error or log a warning here
+            content_text = None
         return {
             "role": message.role,
-            "content": message.content[0].text,
+            "content": content_text,
         }
 
     def transform_messages(self, messages: List[Message]) -> List[dict]:
