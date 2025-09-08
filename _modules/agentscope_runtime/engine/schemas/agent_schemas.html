@@ -501,7 +501,7 @@
 <span class="c1"># type: ignore</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">TypeAlias</span><span class="p">,</span> <span class="n">Annotated</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
 
 <span class="k">try</span><span class="p">:</span>
@@ -511,6 +511,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">uuid4</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">field_validator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">openai.types.chat</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChatCompletionChunk</span>
 
 
 <div class="viewcode-block" id="MessageType">
@@ -528,7 +529,19 @@
     <span class="n">MCP_TOOL_CALL</span> <span class="o">=</span> <span class="s2">&quot;mcp_call&quot;</span>
     <span class="n">MCP_APPROVAL_RESPONSE</span> <span class="o">=</span> <span class="s2">&quot;mcp_approval_response&quot;</span>
     <span class="n">HEARTBEAT</span> <span class="o">=</span> <span class="s2">&quot;heartbeat&quot;</span>
-    <span class="n">ERROR</span> <span class="o">=</span> <span class="s2">&quot;error&quot;</span></div>
+    <span class="n">ERROR</span> <span class="o">=</span> <span class="s2">&quot;error&quot;</span>
+
+<div class="viewcode-block" id="MessageType.all_values">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.MessageType.all_values">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">all_values</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;return all constants values in MessageType&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">value</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="p">]</span></div>
+</div>
 
 
 
@@ -547,7 +560,8 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">Role</span><span class="p">:</span>
     <span class="n">ASSISTANT</span> <span class="o">=</span> <span class="s2">&quot;assistant&quot;</span>
     <span class="n">USER</span> <span class="o">=</span> <span class="s2">&quot;user&quot;</span>
-    <span class="n">SYSTEM</span> <span class="o">=</span> <span class="s2">&quot;system&quot;</span></div>
+    <span class="n">SYSTEM</span> <span class="o">=</span> <span class="s2">&quot;system&quot;</span>
+    <span class="n">TOOL</span> <span class="o">=</span> <span class="s2">&quot;tool&quot;</span></div>
 
 
 
@@ -586,7 +600,7 @@
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.FunctionTool">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">FunctionTool</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Model class for prompt message tool.</span>
+<span class="sd">    Model class for message tool.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -608,10 +622,10 @@
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.Tool">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Tool</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Model class for assistant prompt message tool call.</span>
+<span class="sd">    Model class for assistant message tool call.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="nb">type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;function&quot;</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The type of the tool. Currently, only `function` is supported.&quot;&quot;&quot;</span>
 
     <span class="n">function</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FunctionTool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -763,14 +777,50 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether this content is a delta.&quot;&quot;&quot;</span>
 
     <span class="n">msg_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;message unique id&quot;&quot;&quot;</span></div>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;message unique id&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Content.from_chat_completion_chunk">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.Content.from_chat_completion_chunk">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_chat_completion_chunk</span><span class="p">(</span>
+        <span class="n">chunk</span><span class="p">:</span> <span class="n">ChatCompletionChunk</span><span class="p">,</span>
+        <span class="n">index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="s2">&quot;TextContent&quot;</span><span class="p">,</span> <span class="s2">&quot;DataContent&quot;</span><span class="p">,</span> <span class="s2">&quot;ImageContent&quot;</span><span class="p">]]:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">chunk</span><span class="o">.</span><span class="n">choices</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">choice</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">choices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">choice</span><span class="o">.</span><span class="n">delta</span><span class="o">.</span><span class="n">content</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">TextContent</span><span class="p">(</span>
+                <span class="n">delta</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="n">choice</span><span class="o">.</span><span class="n">delta</span><span class="o">.</span><span class="n">content</span><span class="p">,</span>
+                <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">choice</span><span class="o">.</span><span class="n">delta</span><span class="o">.</span><span class="n">tool_calls</span><span class="p">:</span>
+            <span class="c1"># TODO: support multiple tool calls output</span>
+            <span class="n">tool_call</span> <span class="o">=</span> <span class="n">choice</span><span class="o">.</span><span class="n">delta</span><span class="o">.</span><span class="n">tool_calls</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">tool_call</span><span class="o">.</span><span class="n">function</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">DataContent</span><span class="p">(</span>
+                    <span class="n">delta</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+                        <span class="s2">&quot;call_id&quot;</span><span class="p">:</span> <span class="n">tool_call</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">tool_call</span><span class="o">.</span><span class="n">function</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                        <span class="s2">&quot;arguments&quot;</span><span class="p">:</span> <span class="n">tool_call</span><span class="o">.</span><span class="n">function</span><span class="o">.</span><span class="n">arguments</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+</div>
 
 
 
 <div class="viewcode-block" id="ImageContent">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.ImageContent">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ImageContent</span><span class="p">(</span><span class="n">Content</span><span class="p">):</span>
-    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">ContentType</span><span class="o">.</span><span class="n">IMAGE</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="n">ContentType</span><span class="o">.</span><span class="n">IMAGE</span><span class="p">]</span> <span class="o">=</span> <span class="n">ContentType</span><span class="o">.</span><span class="n">IMAGE</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The type of the content part.&quot;&quot;&quot;</span>
 
     <span class="n">image_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -781,7 +831,7 @@
 <div class="viewcode-block" id="TextContent">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.TextContent">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">TextContent</span><span class="p">(</span><span class="n">Content</span><span class="p">):</span>
-    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">ContentType</span><span class="o">.</span><span class="n">TEXT</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="n">ContentType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">]</span> <span class="o">=</span> <span class="n">ContentType</span><span class="o">.</span><span class="n">TEXT</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The type of the content part.&quot;&quot;&quot;</span>
 
     <span class="n">text</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -792,12 +842,26 @@
 <div class="viewcode-block" id="DataContent">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.DataContent">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DataContent</span><span class="p">(</span><span class="n">Content</span><span class="p">):</span>
-    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">ContentType</span><span class="o">.</span><span class="n">DATA</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="n">ContentType</span><span class="o">.</span><span class="n">DATA</span><span class="p">]</span> <span class="o">=</span> <span class="n">ContentType</span><span class="o">.</span><span class="n">DATA</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The type of the content part.&quot;&quot;&quot;</span>
 
     <span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The data content.&quot;&quot;&quot;</span></div>
 
+
+
+<span class="n">AgentRole</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span>
+    <span class="n">Role</span><span class="o">.</span><span class="n">ASSISTANT</span><span class="p">,</span>
+    <span class="n">Role</span><span class="o">.</span><span class="n">SYSTEM</span><span class="p">,</span>
+    <span class="n">Role</span><span class="o">.</span><span class="n">USER</span><span class="p">,</span>
+    <span class="n">Role</span><span class="o">.</span><span class="n">TOOL</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<span class="n">AgentContent</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span>
+    <span class="n">Union</span><span class="p">[</span><span class="n">TextContent</span><span class="p">,</span> <span class="n">ImageContent</span><span class="p">,</span> <span class="n">DataContent</span><span class="p">],</span>
+    <span class="n">Field</span><span class="p">(</span><span class="n">discriminator</span><span class="o">=</span><span class="s2">&quot;type&quot;</span><span class="p">),</span>
+<span class="p">]</span>
 
 
 <div class="viewcode-block" id="Message">
@@ -815,13 +879,11 @@
     <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">RunStatus</span><span class="o">.</span><span class="n">Created</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The status of the message. in_progress, completed, or incomplete&quot;&quot;&quot;</span>
 
-    <span class="n">role</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">role</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AgentRole</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The role of the messages author, should be in `user`,`system`,</span>
 <span class="sd">    &#39;assistant&#39;.&quot;&quot;&quot;</span>
 
-    <span class="n">content</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
-        <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TextContent</span><span class="p">,</span> <span class="n">ImageContent</span><span class="p">,</span> <span class="n">DataContent</span><span class="p">]]</span>
-    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">content</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">AgentContent</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The contents of the message.&quot;&quot;&quot;</span>
 
     <span class="n">code</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -829,6 +891,157 @@
 
     <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The error message of the message.&quot;&quot;&quot;</span>
+
+    <span class="n">usage</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;response usage for output&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Message.from_openai_message">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.Message.from_openai_message">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_openai_message</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">BaseModel</span><span class="p">,</span> <span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;Message&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a message object from an openai message.&quot;&quot;&quot;</span>
+
+        <span class="c1"># in case message is a Message object</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">Message</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">message</span>
+
+        <span class="c1"># make sure operation on dict object</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">BaseModel</span><span class="p">):</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
+
+        <span class="c1"># in case message is a Message format dict</span>
+        <span class="k">if</span> <span class="s2">&quot;type&quot;</span> <span class="ow">in</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">message</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">all_values</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">Message</span><span class="p">(</span><span class="o">**</span><span class="n">message</span><span class="p">)</span>
+
+        <span class="c1"># handle message in openai message format</span>
+        <span class="k">if</span> <span class="n">message</span><span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">Role</span><span class="o">.</span><span class="n">ASSISTANT</span> <span class="ow">and</span> <span class="s2">&quot;tool_calls&quot;</span> <span class="ow">in</span> <span class="n">message</span><span class="p">:</span>
+            <span class="n">_content_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">tool_call</span> <span class="ow">in</span> <span class="n">message</span><span class="p">[</span><span class="s2">&quot;tool_calls&quot;</span><span class="p">]:</span>
+                <span class="n">_content</span> <span class="o">=</span> <span class="n">DataContent</span><span class="p">(</span>
+                    <span class="n">data</span><span class="o">=</span><span class="n">FunctionCall</span><span class="p">(</span>
+                        <span class="n">call_id</span><span class="o">=</span><span class="n">tool_call</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span>
+                        <span class="n">name</span><span class="o">=</span><span class="n">tool_call</span><span class="p">[</span><span class="s2">&quot;function&quot;</span><span class="p">][</span><span class="s2">&quot;name&quot;</span><span class="p">],</span>
+                        <span class="n">arguments</span><span class="o">=</span><span class="n">tool_call</span><span class="p">[</span><span class="s2">&quot;function&quot;</span><span class="p">][</span><span class="s2">&quot;arguments&quot;</span><span class="p">],</span>
+                    <span class="p">)</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(),</span>
+                <span class="p">)</span>
+                <span class="n">_content_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_content</span><span class="p">)</span>
+            <span class="n">_message</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span>
+                <span class="nb">type</span><span class="o">=</span><span class="n">MessageType</span><span class="o">.</span><span class="n">FUNCTION_CALL</span><span class="p">,</span>
+                <span class="n">content</span><span class="o">=</span><span class="n">_content_list</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">message</span><span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">Role</span><span class="o">.</span><span class="n">TOOL</span><span class="p">:</span>
+            <span class="n">_content</span> <span class="o">=</span> <span class="n">DataContent</span><span class="p">(</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">FunctionCallOutput</span><span class="p">(</span>
+                    <span class="n">call_id</span><span class="o">=</span><span class="n">message</span><span class="p">[</span><span class="s2">&quot;tool_call_id&quot;</span><span class="p">],</span>
+                    <span class="n">output</span><span class="o">=</span><span class="n">message</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">],</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(),</span>
+            <span class="p">)</span>
+            <span class="n">_message</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span>
+                <span class="nb">type</span><span class="o">=</span><span class="n">MessageType</span><span class="o">.</span><span class="n">FUNCTION_CALL_OUTPUT</span><span class="p">,</span>
+                <span class="n">content</span><span class="o">=</span><span class="p">[</span><span class="n">_content</span><span class="p">],</span>
+            <span class="p">)</span>
+        <span class="c1"># mainly focus on matching content</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">message</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">_content</span> <span class="o">=</span> <span class="n">TextContent</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">message</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">])</span>
+            <span class="n">_message</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span>
+                <span class="nb">type</span><span class="o">=</span><span class="n">MessageType</span><span class="o">.</span><span class="n">MESSAGE</span><span class="p">,</span>
+                <span class="n">role</span><span class="o">=</span><span class="n">message</span><span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">],</span>
+                <span class="n">content</span><span class="o">=</span><span class="p">[</span><span class="n">_content</span><span class="p">],</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_content_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">content</span> <span class="ow">in</span> <span class="n">message</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">content</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;image_url&quot;</span><span class="p">:</span>
+                    <span class="n">_content</span> <span class="o">=</span> <span class="n">ImageContent</span><span class="p">(</span>
+                        <span class="n">image_url</span><span class="o">=</span><span class="n">content</span><span class="p">[</span><span class="s2">&quot;image_url&quot;</span><span class="p">][</span><span class="s2">&quot;url&quot;</span><span class="p">],</span>
+                    <span class="p">)</span>
+                <span class="k">elif</span> <span class="n">content</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span>
+                    <span class="n">_content</span> <span class="o">=</span> <span class="n">TextContent</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">content</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">_content</span> <span class="o">=</span> <span class="n">DataContent</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">content</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">])</span>
+                <span class="n">_content_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_content</span><span class="p">)</span>
+            <span class="n">_message</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span>
+                <span class="nb">type</span><span class="o">=</span><span class="n">MessageType</span><span class="o">.</span><span class="n">MESSAGE</span><span class="p">,</span>
+                <span class="n">role</span><span class="o">=</span><span class="n">message</span><span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">],</span>
+                <span class="n">content</span><span class="o">=</span><span class="n">_content_list</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">_message</span></div>
+
+
+<div class="viewcode-block" id="Message.get_text_content">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.Message.get_text_content">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_text_content</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extract the first text content from the message.</span>
+
+<span class="sd">        :return: First text string found in the content, or None if no text</span>
+<span class="sd">        content</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">content</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">TextContent</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">item</span><span class="o">.</span><span class="n">text</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="Message.get_image_content">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.Message.get_image_content">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_image_content</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extract all image content (URLs or base64 data) from the message.</span>
+
+<span class="sd">        :return: List of image URLs or base64 encoded strings found in the</span>
+<span class="sd">        content</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">images</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">content</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">images</span>
+
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">ImageContent</span><span class="p">):</span>
+                <span class="n">images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">image_url</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">images</span></div>
+
+
+<div class="viewcode-block" id="Message.get_audio_content">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.Message.get_audio_content">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_audio_content</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extract all audio content (URLs or base64 data) from the message.</span>
+
+<span class="sd">        :return: List of audio URLs or base64 encoded strings found in the</span>
+<span class="sd">        content</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">audios</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">content</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">audios</span>
+
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;input_audio&quot;</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span>
+                    <span class="n">item</span><span class="p">,</span>
+                    <span class="s2">&quot;input_audio&quot;</span><span class="p">,</span>
+                <span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">input_audio</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">):</span>
+                        <span class="n">audios</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">input_audio</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">input_audio</span><span class="p">,</span> <span class="s2">&quot;base64_data&quot;</span><span class="p">):</span>
+                        <span class="c1"># Construct data URL for audio</span>
+                        <span class="n">format_type</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+                            <span class="n">item</span><span class="o">.</span><span class="n">input_audio</span><span class="p">,</span>
+                            <span class="s2">&quot;format&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;mp3&quot;</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="n">audios</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;data:</span><span class="si">{</span><span class="n">format_type</span><span class="si">}</span><span class="s2">;base64,&quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">item</span><span class="o">.</span><span class="n">input_audio</span><span class="o">.</span><span class="n">base64_data</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">audios</span></div>
+
 
 <div class="viewcode-block" id="Message.add_delta_content">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.Message.add_delta_content">[docs]</a>
@@ -1097,7 +1310,7 @@
 
 <div class="viewcode-block" id="convert_to_openai_messages">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.convert_to_openai_messages">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">convert_to_openai_messages</span><span class="p">(</span><span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Message</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">convert_to_openai_messages</span><span class="p">(</span><span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Message</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Convert a generic message protocol to a model-specific protocol.</span>
 <span class="sd">    Args:</span>
@@ -1167,7 +1380,7 @@
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-09-06</div>
+              Last updated on 2025-09-08</div>
           </div>
           <div class="right-details">
             <div class="icons">

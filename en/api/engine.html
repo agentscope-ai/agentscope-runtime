@@ -1772,6 +1772,12 @@ session’s history.</p></li>
 <span class="sig-name descname"><span class="pre">ERROR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'error'</span></em></dt>
 <dd></dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">all_values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#MessageType.all_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>return all constants values in MessageType</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -1817,6 +1823,11 @@ session’s history.</p></li>
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">SYSTEM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'system'</span></em></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">TOOL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'tool'</span></em></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1906,7 +1917,7 @@ session’s history.</p></li>
 <dt class="sig sig-object py">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">FunctionTool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#FunctionTool"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
-<p>Model class for prompt message tool.</p>
+<p>Model class for message tool.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1945,9 +1956,9 @@ when and how to call the function.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">Tool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#Tool"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">Tool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'function'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#Tool"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
-<p>Model class for assistant prompt message tool call.</p>
+<p>Model class for assistant message tool call.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -2248,6 +2259,22 @@ the arguments in your code before calling your function.</p>
 <dd><p>message unique id</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_chat_completion_chunk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chunk</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#Content.from_chat_completion_chunk"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>chunk</strong> (<em>ChatCompletionChunk</em>)</p></li>
+<li><p><strong>index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>TextContent</em> | <em>DataContent</em> | <em>ImageContent</em> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em></dt>
@@ -2267,7 +2294,7 @@ the arguments in your code before calling your function.</p>
 <li><p><strong>object</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p></li>
 <li><p><strong>status</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
 <li><p><strong>error</strong> (<em>Error</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p></li>
+<li><p><strong>type</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.13)"><em>Literal</em></a><em>[</em><em>'image'</em><em>]</em>)</p></li>
 <li><p><strong>index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em> | </em><em>None</em>)</p></li>
 <li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em> | </em><em>None</em>)</p></li>
 <li><p><strong>msg_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
@@ -2277,7 +2304,7 @@ the arguments in your code before calling your function.</p>
 </dl>
 <dl class="py attribute">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em></dt>
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.13)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'image'</span></span><span class="p"><span class="pre">]</span></span></em></dt>
 <dd><p>The type of the content part.</p>
 </dd></dl>
 
@@ -2306,7 +2333,7 @@ the arguments in your code before calling your function.</p>
 <li><p><strong>object</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p></li>
 <li><p><strong>status</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
 <li><p><strong>error</strong> (<em>Error</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p></li>
+<li><p><strong>type</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.13)"><em>Literal</em></a><em>[</em><em>'text'</em><em>]</em>)</p></li>
 <li><p><strong>index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em> | </em><em>None</em>)</p></li>
 <li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em> | </em><em>None</em>)</p></li>
 <li><p><strong>msg_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
@@ -2316,7 +2343,7 @@ the arguments in your code before calling your function.</p>
 </dl>
 <dl class="py attribute">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em></dt>
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.13)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'text'</span></span><span class="p"><span class="pre">]</span></span></em></dt>
 <dd><p>The type of the content part.</p>
 </dd></dl>
 
@@ -2345,7 +2372,7 @@ the arguments in your code before calling your function.</p>
 <li><p><strong>object</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p></li>
 <li><p><strong>status</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
 <li><p><strong>error</strong> (<em>Error</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p></li>
+<li><p><strong>type</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.13)"><em>Literal</em></a><em>[</em><em>'data'</em><em>]</em>)</p></li>
 <li><p><strong>index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a><em> | </em><em>None</em>)</p></li>
 <li><p><strong>delta</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em> | </em><em>None</em>)</p></li>
 <li><p><strong>msg_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
@@ -2355,7 +2382,7 @@ the arguments in your code before calling your function.</p>
 </dl>
 <dl class="py attribute">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em></dt>
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.13)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'data'</span></span><span class="p"><span class="pre">]</span></span></em></dt>
 <dd><p>The type of the content part.</p>
 </dd></dl>
 
@@ -2375,7 +2402,7 @@ the arguments in your code before calling your function.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">Message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object='message'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status='created'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type='message'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">content=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">code=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#Message"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">Message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object='message'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status='created'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type='message'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">content=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">code=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#Message"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -2386,10 +2413,11 @@ the arguments in your code before calling your function.</p>
 <li><p><strong>error</strong> (<em>Error</em><em> | </em><em>None</em>)</p></li>
 <li><p><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p></li>
 <li><p><strong>type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p></li>
-<li><p><strong>role</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
-<li><p><strong>content</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><em>List</em></a><em>[</em><em>TextContent</em><em> | </em><em>ImageContent</em><em> | </em><em>DataContent</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>role</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.13)"><em>Literal</em></a><em>[</em><em>'assistant'</em><em>, </em><em>'system'</em><em>, </em><em>'user'</em><em>, </em><em>'tool'</em><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>content</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><em>List</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Annotated" title="(in Python v3.13)"><em>Annotated</em></a><em>[</em><em>TextContent</em><em> | </em><em>ImageContent</em><em> | </em><em>DataContent</em><em>, </em><em>FieldInfo</em><em>(</em><em>annotation=NoneType</em><em>, </em><em>required=True</em><em>, </em><em>discriminator='type'</em><em>)</em><em>]</em><em>] </em><em>| </em><em>None</em>)</p></li>
 <li><p><strong>code</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
 <li><p><strong>message</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>usage</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><em>Dict</em></a><em> | </em><em>None</em>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -2419,21 +2447,15 @@ the arguments in your code before calling your function.</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">role</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em></dt>
+<span class="sig-name descname"><span class="pre">role</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.13)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'assistant'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'system'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'user'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'tool'</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em></dt>
 <dd><p>The role of the messages author, should be in <cite>user</cite>,`system`,
 ‘assistant’.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">content</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><span class="pre">TextContent</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ImageContent</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">DataContent</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em></dt>
+<span class="sig-name descname"><span class="pre">content</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Annotated" title="(in Python v3.13)"><span class="pre">Annotated</span></a><span class="p"><span class="pre">[</span></span><span class="pre">TextContent</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ImageContent</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">DataContent</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">FieldInfo</span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">annotation</span></span><span class="o"><span class="pre">=</span></span><span class="pre">NoneType</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">required</span></span><span class="o"><span class="pre">=</span></span><span class="k"><span class="pre">True</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">discriminator</span></span><span class="o"><span class="pre">=</span></span><span class="s"><span class="pre">'type'</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em></dt>
 <dd><p>The contents of the message.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em></dt>
-<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -2446,6 +2468,77 @@ the arguments in your code before calling your function.</p>
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">message</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em></dt>
 <dd><p>The error message of the message.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">usage</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><span class="pre">Dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em></dt>
+<dd><p>response usage for output</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_openai_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#Message.from_openai_message"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Create a message object from an openai message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>message</strong> (<em>BaseModel</em><em> | </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><em>dict</em></a>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Message</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">get_text_content</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#Message.get_text_content"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Extract the first text content from the message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>First text string found in the content, or None if no text</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a> | None</p>
+</dd>
+</dl>
+<p>content</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">get_image_content</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#Message.get_image_content"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Extract all image content (URLs or base64 data) from the message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of image URLs or base64 encoded strings found in the</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><em>List</em></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a>]</p>
+</dd>
+</dl>
+<p>content</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">get_audio_content</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#Message.get_audio_content"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Extract all audio content (URLs or base64 data) from the message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of audio URLs or base64 encoded strings found in the</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><em>List</em></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a>]</p>
+</dd>
+</dl>
+<p>content</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2638,7 +2731,7 @@ parameters should return the same result.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">BaseResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object='response'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status='created'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at=1757131233</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">completed_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#BaseResponse"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">BaseResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object='response'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status='created'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at=1757302366</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">completed_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#BaseResponse"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -2722,7 +2815,7 @@ parameters should return the same result.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">AgentResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object='response'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status='created'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at=1757131233</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">completed_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#AgentResponse"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">AgentResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object='response'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status='created'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at=1757302366</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">completed_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#AgentResponse"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseResponse</span></code></p>
 <p>agent response</p>
 <dl class="field-list simple">
@@ -2952,7 +3045,7 @@ including a live request queue for real-time interaction.</p>
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-09-06</div>
+              Last updated on 2025-09-08</div>
           </div>
           <div class="right-details">
             <div class="icons">
