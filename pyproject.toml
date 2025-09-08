@@ -74,5 +74,5 @@ langchain_rag=[
     "langchain-milvus>=0.2.1",
 ]
 memory-ext = [
-    "reme-ai==0.1.7 ; python_full_version >= '3.11'",
+    "reme-ai==0.1.8 ; python_full_version >= '3.12'",
 ]
