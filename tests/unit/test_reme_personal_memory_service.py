@@ -49,7 +49,6 @@ def load_test_env():
     }
 
     for var in required_env_vars:
-        print(f"Checking environment variable: {os.getenv(var)}")
         if not os.getenv(var):
             os.environ[var] = env_defaults[var]
 
@@ -62,22 +61,17 @@ async def init_memory_service():
 
     service = None
     try:
-        print("Creating ReMePersonalMemoryService...")
         service = ReMePersonalMemoryService()
-        print("Starting service...")
         await service.start()
 
         # Check if service is healthy
-        print("Checking service health...")
         healthy = await service.health()
         if not healthy:
             pytest.skip("ReMePersonalMemoryService is not available")
 
-        print("Service is ready!")
         yield service
 
     except ImportError as e:
-        print(f"ImportError details: {e}")
         import traceback
 
         traceback.print_exc()
@@ -90,19 +84,14 @@ async def init_memory_service():
             pytest.skip(f"Missing file for ReMePersonalMemoryService: {e}")
 
     except Exception as e:
-        print(f"General error details: {e}")
         import traceback
 
         traceback.print_exc()
         pytest.skip(f"Failed to initialize ReMePersonalMemoryService: {e}")
 
     finally:
-        try:
-            if service is not None:
-                await service.stop()
-        except Exception as e:
-            print(f"Cleanup error: {e}")
-
+        if service is not None:
+            await service.stop()
 
 @pytest.mark.asyncio
 async def test_service_lifecycle(memory_service: ReMePersonalMemoryService):

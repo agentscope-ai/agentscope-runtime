@@ -4,8 +4,6 @@ import os
 
 import pytest
 import pytest_asyncio
-from dotenv import load_dotenv
-
 from agentscope_runtime.engine.schemas.agent_schemas import (
     Message,
     MessageType,
@@ -16,6 +14,7 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
 from agentscope_runtime.engine.services.reme_task_memory_service import (
     ReMeTaskMemoryService,
 )
+from dotenv import load_dotenv
 
 
 def create_message(role: str, content: str) -> Message:
@@ -49,7 +48,6 @@ def load_test_env():
     }
 
     for var in required_env_vars:
-        print(f"Checking environment variable: {os.getenv(var)}")
         if not os.getenv(var):
             os.environ[var] = env_defaults[var]
 
@@ -62,22 +60,17 @@ async def init_memory_service():
 
     service = None
     try:
-        print("Creating ReMeTaskMemoryService...")
         service = ReMeTaskMemoryService()
-        print("Starting service...")
         await service.start()
 
         # Check if service is healthy
-        print("Checking service health...")
         healthy = await service.health()
         if not healthy:
             pytest.skip("ReMeTaskMemoryService is not available")
 
-        print("Service is ready!")
         yield service
 
     except ImportError as e:
-        print(f"ImportError details: {e}")
         import traceback
 
         traceback.print_exc()
@@ -90,18 +83,14 @@ async def init_memory_service():
             pytest.skip(f"Missing file for ReMeTaskMemoryService: {e}")
 
     except Exception as e:
-        print(f"General error details: {e}")
         import traceback
 
         traceback.print_exc()
         pytest.skip(f"Failed to initialize ReMeTaskMemoryService: {e}")
 
     finally:
-        try:
-            if service is not None:
-                await service.stop()
-        except Exception as e:
-            print(f"Cleanup error: {e}")
+        if service is not None:
+            await service.stop()
 
 
 @pytest.mark.asyncio
