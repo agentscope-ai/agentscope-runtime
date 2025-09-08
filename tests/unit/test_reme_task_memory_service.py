@@ -4,6 +4,7 @@ import os
 
 import pytest
 import pytest_asyncio
+from dotenv import load_dotenv
 from agentscope_runtime.engine.schemas.agent_schemas import (
     Message,
     MessageType,
@@ -14,7 +15,6 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
 from agentscope_runtime.engine.services.reme_task_memory_service import (
     ReMeTaskMemoryService,
 )
-from dotenv import load_dotenv
 
 
 def create_message(role: str, content: str) -> Message:

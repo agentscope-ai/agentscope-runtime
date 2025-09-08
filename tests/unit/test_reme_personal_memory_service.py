@@ -93,6 +93,7 @@ async def init_memory_service():
         if service is not None:
             await service.stop()
 
+
 @pytest.mark.asyncio
 async def test_service_lifecycle(memory_service: ReMePersonalMemoryService):
     """Test service start/stop lifecycle."""
