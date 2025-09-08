@@ -34,8 +34,6 @@ class ReMePersonalMemoryService(MemoryService):
 
     @staticmethod
     def transform_message(message: Message) -> dict:
-        # Validate that message.content is a non-empty list and has a 'text' attribute
-        content_text = None
         if (
             hasattr(message, "content")
             and isinstance(message.content, list)
