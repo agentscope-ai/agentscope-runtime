@@ -37,7 +37,7 @@ def load_test_env():
         "FLOW_EMBEDDING_API_KEY",
         "FLOW_EMBEDDING_BASE_URL",
         "FLOW_LLM_API_KEY",
-        "FLOW_LLM_BASE_URL"
+        "FLOW_LLM_BASE_URL",
     ]
 
     # Set default values if not already set
@@ -45,7 +45,7 @@ def load_test_env():
         "FLOW_EMBEDDING_API_KEY": "sk-test-key",
         "FLOW_EMBEDDING_BASE_URL": "https://api.test.com/v1",
         "FLOW_LLM_API_KEY": "sk-test-key",
-        "FLOW_LLM_BASE_URL": "https://api.test.com/v1"
+        "FLOW_LLM_BASE_URL": "https://api.test.com/v1",
     }
 
     for var in required_env_vars:
@@ -55,7 +55,7 @@ def load_test_env():
 
 
 @pytest_asyncio.fixture
-async def memory_service():
+async def init_memory_service():
     """Create and setup ReMePersonalMemoryService for testing."""
     # Load environment variables
     load_test_env()
@@ -79,6 +79,7 @@ async def memory_service():
     except ImportError as e:
         print(f"ImportError details: {e}")
         import traceback
+
         traceback.print_exc()
         pytest.skip(f"Missing dependencies for ReMePersonalMemoryService: {e}")
 
@@ -91,6 +92,7 @@ async def memory_service():
     except Exception as e:
         print(f"General error details: {e}")
         import traceback
+
         traceback.print_exc()
         pytest.skip(f"Failed to initialize ReMePersonalMemoryService: {e}")
 
@@ -113,7 +115,7 @@ async def test_service_lifecycle(memory_service: ReMePersonalMemoryService):
 
 @pytest.mark.asyncio
 async def test_add_and_search_memory_no_session(
-        memory_service: ReMePersonalMemoryService,
+    memory_service: ReMePersonalMemoryService,
 ):
     """Test adding and searching memory without session ID."""
     user_id = "test_user1"
@@ -133,12 +135,14 @@ async def test_add_and_search_memory_no_session(
 
 @pytest.mark.asyncio
 async def test_add_and_search_memory_with_session(
-        memory_service: ReMePersonalMemoryService,
+    memory_service: ReMePersonalMemoryService,
 ):
     """Test adding and searching memory with session ID."""
     user_id = "test_user2"
     session_id = "session1"
-    messages = [create_message(Role.USER, "I enjoy reading science fiction books")]
+    messages = [
+        create_message(Role.USER, "I enjoy reading science fiction books"),
+    ]
 
     # Add memory with session
     await memory_service.add_memory(user_id, messages, session_id)
@@ -153,14 +157,14 @@ async def test_add_and_search_memory_with_session(
 
 @pytest.mark.asyncio
 async def test_search_memory_with_filters(
-        memory_service: ReMePersonalMemoryService,
+    memory_service: ReMePersonalMemoryService,
 ):
     """Test searching memory with filters like top_k."""
     user_id = "test_user3"
     messages = [
         create_message(Role.USER, "I like swimming"),
         create_message(Role.USER, "I enjoy running"),
-        create_message(Role.USER, "I love cycling")
+        create_message(Role.USER, "I love cycling"),
     ]
 
     # Add multiple memories
@@ -172,12 +176,10 @@ async def test_search_memory_with_filters(
     retrieved = await memory_service.search_memory(
         user_id,
         search_query,
-        filters={"top_k": 2}
+        filters={"top_k": 2},
     )
 
     assert retrieved is not None
-    # Note: ReMePersonalMemoryService may return different number than requested
-    # due to its internal implementation
 
 
 @pytest.mark.asyncio
@@ -186,7 +188,7 @@ async def test_list_memory(memory_service: ReMePersonalMemoryService):
     user_id = "test_user4"
     messages = [
         create_message(Role.USER, "I work as a software engineer"),
-        create_message(Role.USER, "I live in San Francisco")
+        create_message(Role.USER, "I live in San Francisco"),
     ]
 
     # Add memories
@@ -202,20 +204,21 @@ async def test_list_memory(memory_service: ReMePersonalMemoryService):
 
 @pytest.mark.asyncio
 async def test_list_memory_with_filters(
-        memory_service: ReMePersonalMemoryService,
+    memory_service: ReMePersonalMemoryService,
 ):
     """Test listing memory with filters."""
     user_id = "test_user5"
-    messages = [create_message(Role.USER, f"Memory item {i}") for i in range(5)]
+    messages = [
+        create_message(Role.USER, f"Memory item {i}") for i in range(5)
+    ]
 
     # Add multiple memories
     for i, msg in enumerate(messages):
         await memory_service.add_memory(user_id, [msg], f"session_{i}")
 
-    # List with filters (though ReMePersonalMemoryService may not support pagination)
     listed = await memory_service.list_memory(
         user_id,
-        filters={"page_size": 3, "page_num": 1}
+        filters={"page_size": 3, "page_num": 1},
     )
 
     assert listed is not None
@@ -224,7 +227,7 @@ async def test_list_memory_with_filters(
 
 @pytest.mark.asyncio
 async def test_delete_memory_session(
-        memory_service: ReMePersonalMemoryService,
+    memory_service: ReMePersonalMemoryService,
 ):
     """Test deleting memory by session ID."""
     user_id = "test_user6"
@@ -246,7 +249,7 @@ async def test_delete_memory_session(
 
 @pytest.mark.asyncio
 async def test_delete_memory_user(
-        memory_service: ReMePersonalMemoryService,
+    memory_service: ReMePersonalMemoryService,
 ):
     """Test deleting all memory for a user."""
     user_id = "test_user_to_delete"
@@ -254,7 +257,7 @@ async def test_delete_memory_user(
     # Add some memory
     await memory_service.add_memory(
         user_id,
-        [create_message(Role.USER, "Some memory to delete")]
+        [create_message(Role.USER, "Some memory to delete")],
     )
 
     # Delete all user memory
@@ -265,7 +268,7 @@ async def test_delete_memory_user(
 
 @pytest.mark.asyncio
 async def test_operations_on_non_existent_user(
-        memory_service: ReMePersonalMemoryService,
+    memory_service: ReMePersonalMemoryService,
 ):
     """Test operations on non-existent user."""
     user_id = "non_existent_user"
@@ -273,7 +276,7 @@ async def test_operations_on_non_existent_user(
     # Search on non-existent user should not raise errors
     retrieved = await memory_service.search_memory(
         user_id,
-        [create_message(Role.USER, "any query")]
+        [create_message(Role.USER, "any query")],
     )
 
     # Should return something (empty or error message)
@@ -290,7 +293,7 @@ async def test_operations_on_non_existent_user(
 
 @pytest.mark.asyncio
 async def test_message_format_compatibility(
-        memory_service: ReMePersonalMemoryService,
+    memory_service: ReMePersonalMemoryService,
 ):
     """Test that the service handles different message formats."""
     user_id = "test_user_formats"

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 from typing import Optional, Dict, Any, List
 
@@ -6,25 +7,29 @@ from ..schemas.agent_schemas import Message
 
 
 class ReMePersonalMemoryService(MemoryService):
+    """
+    ReMe requires the following env variables to be set:
+    FLOW_EMBEDDING_API_KEY=sk-xxxx
+    FLOW_EMBEDDING_BASE_URL=https://xxxx/v1
+    FLOW_LLM_API_KEY=sk-xxxx
+    FLOW_LLM_BASE_URL=https://xxxx/v1
+    """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        """
-        FLOW_EMBEDDING_API_KEY=sk-xxxx
-        FLOW_EMBEDDING_BASE_URL=https://xxxx/v1
-        
-        FLOW_LLM_API_KEY=sk-xxxx
-        FLOW_LLM_BASE_URL=https://xxxx/v1
-        """
-
-        for key in ["FLOW_EMBEDDING_API_KEY",
-                    "FLOW_EMBEDDING_BASE_URL",
-                    "FLOW_LLM_API_KEY",
-                    "FLOW_LLM_BASE_URL"]:
+        for key in [
+            "FLOW_EMBEDDING_API_KEY",
+            "FLOW_EMBEDDING_BASE_URL",
+            "FLOW_LLM_API_KEY",
+            "FLOW_LLM_BASE_URL",
+        ]:
             if os.getenv(key) is None:
                 raise ValueError(f"{key} is not set")
 
-        from reme_ai.service.personal_memory_service import PersonalMemoryService
+        from reme_ai.service.personal_memory_service import (
+            PersonalMemoryService,
+        )
+
         self.service = PersonalMemoryService()
 
     @staticmethod
@@ -47,31 +52,39 @@ class ReMePersonalMemoryService(MemoryService):
         return await self.service.health()
 
     async def add_memory(
-            self,
-            user_id: str,
-            messages: list,
-            session_id: Optional[str] = None,
+        self,
+        user_id: str,
+        messages: list,
+        session_id: Optional[str] = None,
     ) -> None:
-        return await self.service.add_memory(user_id, self.transform_messages(messages), session_id)
+        return await self.service.add_memory(
+            user_id,
+            self.transform_messages(messages),
+            session_id,
+        )
 
     async def search_memory(
-            self,
-            user_id: str,
-            messages: list,
-            filters: Optional[Dict[str, Any]] = None,
+        self,
+        user_id: str,
+        messages: list,
+        filters: Optional[Dict[str, Any]] = None,
     ) -> list:
-        return await self.service.search_memory(user_id, self.transform_messages(messages), filters)
+        return await self.service.search_memory(
+            user_id,
+            self.transform_messages(messages),
+            filters,
+        )
 
     async def list_memory(
-            self,
-            user_id: str,
-            filters: Optional[Dict[str, Any]] = None,
+        self,
+        user_id: str,
+        filters: Optional[Dict[str, Any]] = None,
     ) -> list:
         return await self.service.list_memory(user_id, filters)
 
     async def delete_memory(
-            self,
-            user_id: str,
-            session_id: Optional[str] = None,
+        self,
+        user_id: str,
+        session_id: Optional[str] = None,
     ) -> None:
         return await self.service.delete_memory(user_id, session_id)

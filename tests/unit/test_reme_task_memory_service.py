@@ -37,7 +37,7 @@ def load_test_env():
         "FLOW_EMBEDDING_API_KEY",
         "FLOW_EMBEDDING_BASE_URL",
         "FLOW_LLM_API_KEY",
-        "FLOW_LLM_BASE_URL"
+        "FLOW_LLM_BASE_URL",
     ]
 
     # Set default values if not already set
@@ -45,7 +45,7 @@ def load_test_env():
         "FLOW_EMBEDDING_API_KEY": "sk-test-key",
         "FLOW_EMBEDDING_BASE_URL": "https://api.test.com/v1",
         "FLOW_LLM_API_KEY": "sk-test-key",
-        "FLOW_LLM_BASE_URL": "https://api.test.com/v1"
+        "FLOW_LLM_BASE_URL": "https://api.test.com/v1",
     }
 
     for var in required_env_vars:
@@ -55,7 +55,7 @@ def load_test_env():
 
 
 @pytest_asyncio.fixture
-async def memory_service():
+async def init_memory_service():
     """Create and setup ReMeTaskMemoryService for testing."""
     # Load environment variables
     load_test_env()
@@ -79,6 +79,7 @@ async def memory_service():
     except ImportError as e:
         print(f"ImportError details: {e}")
         import traceback
+
         traceback.print_exc()
         pytest.skip(f"Missing dependencies for ReMeTaskMemoryService: {e}")
 
@@ -91,6 +92,7 @@ async def memory_service():
     except Exception as e:
         print(f"General error details: {e}")
         import traceback
+
         traceback.print_exc()
         pytest.skip(f"Failed to initialize ReMeTaskMemoryService: {e}")
 
@@ -113,17 +115,24 @@ async def test_service_lifecycle(memory_service: ReMeTaskMemoryService):
 
 @pytest.mark.asyncio
 async def test_add_and_search_task_memory_no_session(
-        memory_service: ReMeTaskMemoryService,
+    memory_service: ReMeTaskMemoryService,
 ):
     """Test adding and searching task memory without session ID."""
     user_id = "test_user1"
-    messages = [create_message(Role.USER, "I need to complete a web search task for financial news")]
+    messages = [
+        create_message(
+            Role.USER,
+            "I need to complete a web search task for financial news",
+        ),
+    ]
 
     # Add memory
     await memory_service.add_memory(user_id, messages)
 
     # Search memory
-    search_query = [create_message(Role.USER, "What tasks do I need to complete?")]
+    search_query = [
+        create_message(Role.USER, "What tasks do I need to complete?"),
+    ]
     retrieved = await memory_service.search_memory(user_id, search_query)
 
     # ReMeTaskMemoryService returns different format than Redis
@@ -133,18 +142,25 @@ async def test_add_and_search_task_memory_no_session(
 
 @pytest.mark.asyncio
 async def test_add_and_search_task_memory_with_session(
-        memory_service: ReMeTaskMemoryService,
+    memory_service: ReMeTaskMemoryService,
 ):
     """Test adding and searching task memory with session ID."""
     user_id = "test_user2"
     session_id = "session1"
-    messages = [create_message(Role.USER, "I need to analyze market trends using data analysis tools")]
+    messages = [
+        create_message(
+            Role.USER,
+            "I need to analyze market trends using data analysis tools",
+        ),
+    ]
 
     # Add memory with session
     await memory_service.add_memory(user_id, messages, session_id)
 
     # Search memory
-    search_query = [create_message(Role.USER, "What analysis tasks do I have?")]
+    search_query = [
+        create_message(Role.USER, "What analysis tasks do I have?"),
+    ]
     retrieved = await memory_service.search_memory(user_id, search_query)
 
     assert retrieved is not None
@@ -153,14 +169,20 @@ async def test_add_and_search_task_memory_with_session(
 
 @pytest.mark.asyncio
 async def test_search_task_memory_with_filters(
-        memory_service: ReMeTaskMemoryService,
+    memory_service: ReMeTaskMemoryService,
 ):
     """Test searching task memory with filters like top_k."""
     user_id = "test_user3"
     messages = [
         create_message(Role.USER, "I need to use web search tool for news"),
-        create_message(Role.USER, "I need to use code execution tool for analysis"),
-        create_message(Role.USER, "I need to use file management tool for organization")
+        create_message(
+            Role.USER,
+            "I need to use code execution tool for analysis",
+        ),
+        create_message(
+            Role.USER,
+            "I need to use file management tool for organization",
+        ),
     ]
 
     # Add multiple task memories
@@ -172,7 +194,7 @@ async def test_search_task_memory_with_filters(
     retrieved = await memory_service.search_memory(
         user_id,
         search_query,
-        filters={"top_k": 2}
+        filters={"top_k": 2},
     )
 
     assert retrieved is not None
@@ -186,7 +208,10 @@ async def test_list_task_memory(memory_service: ReMeTaskMemoryService):
     user_id = "test_user4"
     messages = [
         create_message(Role.USER, "I need to complete a data processing task"),
-        create_message(Role.USER, "I need to generate a report using visualization tools")
+        create_message(
+            Role.USER,
+            "I need to generate a report using visualization tools",
+        ),
     ]
 
     # Add task memories
@@ -202,20 +227,21 @@ async def test_list_task_memory(memory_service: ReMeTaskMemoryService):
 
 @pytest.mark.asyncio
 async def test_list_task_memory_with_filters(
-        memory_service: ReMeTaskMemoryService,
+    memory_service: ReMeTaskMemoryService,
 ):
     """Test listing task memory with filters."""
     user_id = "test_user5"
-    messages = [create_message(Role.USER, f"Task memory item {i}") for i in range(2)]
+    messages = [
+        create_message(Role.USER, f"Task memory item {i}") for i in range(2)
+    ]
 
     # Add multiple task memories
     for i, msg in enumerate(messages):
         await memory_service.add_memory(user_id, [msg], f"session_{i}")
 
-    # List with filters (though ReMeTaskMemoryService may not support pagination)
     listed = await memory_service.list_memory(
         user_id,
-        filters={"page_size": 3, "page_num": 1}
+        filters={"page_size": 3, "page_num": 1},
     )
 
     assert listed is not None
@@ -224,7 +250,7 @@ async def test_list_task_memory_with_filters(
 
 @pytest.mark.asyncio
 async def test_delete_task_memory_session(
-        memory_service: ReMeTaskMemoryService,
+    memory_service: ReMeTaskMemoryService,
 ):
     """Test deleting task memory by session ID."""
     user_id = "test_user6"
@@ -246,7 +272,7 @@ async def test_delete_task_memory_session(
 
 @pytest.mark.asyncio
 async def test_delete_task_memory_user(
-        memory_service: ReMeTaskMemoryService,
+    memory_service: ReMeTaskMemoryService,
 ):
     """Test deleting all task memory for a user."""
     user_id = "test_user_to_delete"
@@ -254,7 +280,7 @@ async def test_delete_task_memory_user(
     # Add some task memory
     await memory_service.add_memory(
         user_id,
-        [create_message(Role.USER, "Some task memory to delete")]
+        [create_message(Role.USER, "Some task memory to delete")],
     )
 
     # Delete all user memory
@@ -265,7 +291,7 @@ async def test_delete_task_memory_user(
 
 @pytest.mark.asyncio
 async def test_operations_on_non_existent_user(
-        memory_service: ReMeTaskMemoryService,
+    memory_service: ReMeTaskMemoryService,
 ):
     """Test operations on non-existent user."""
     user_id = "non_existent_user"
@@ -273,7 +299,7 @@ async def test_operations_on_non_existent_user(
     # Search on non-existent user should not raise errors
     retrieved = await memory_service.search_memory(
         user_id,
-        [create_message(Role.USER, "any task query")]
+        [create_message(Role.USER, "any task query")],
     )
 
     # Should return something (empty or error message)
@@ -290,7 +316,7 @@ async def test_operations_on_non_existent_user(
 
 @pytest.mark.asyncio
 async def test_task_message_format_compatibility(
-        memory_service: ReMeTaskMemoryService,
+    memory_service: ReMeTaskMemoryService,
 ):
     """Test that the service handles different message formats for tasks."""
     user_id = "test_user_formats"
@@ -316,16 +342,22 @@ async def test_task_message_format_compatibility(
 
 @pytest.mark.asyncio
 async def test_task_specific_scenarios(
-        memory_service: ReMeTaskMemoryService,
+    memory_service: ReMeTaskMemoryService,
 ):
     """Test task-specific scenarios that differ from personal memory."""
     user_id = "test_task_user"
-    
+
     # Test task-oriented messages
     task_messages = [
-        create_message(Role.USER, "please use web search tool to search financial news"),
+        create_message(
+            Role.USER,
+            "please use web search tool to search financial news",
+        ),
         create_message(Role.USER, "execute python code to analyze the data"),
-        create_message(Role.USER, "use file management tool to organize results")
+        create_message(
+            Role.USER,
+            "use file management tool to organize results",
+        ),
     ]
 
     # Add task memories
@@ -335,14 +367,14 @@ async def test_task_specific_scenarios(
     # Search for tool-related tasks
     tool_query = [create_message(Role.USER, "What tools should I use?")]
     tool_results = await memory_service.search_memory(user_id, tool_query)
-    
+
     assert tool_results is not None
     assert len(tool_results) > 0
 
     # Search for specific task types
     search_query = [create_message(Role.USER, "What search tasks do I have?")]
     search_results = await memory_service.search_memory(user_id, search_query)
-    
+
     assert search_results is not None
 
     # List all task memories
