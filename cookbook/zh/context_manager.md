@@ -140,6 +140,20 @@ async with create_context_manager() as manager:
     await manager.append(session, event_output=[])
 ```
 
+## 可用的记忆服务
+|            记忆类型            | 导入语句                                                                                     |                     说明                     |
+|:--------------------------:|------------------------------------------------------------------------------------------|:------------------------------------------:|
+|   InMemoryMemoryService    | `from agentscope_runtime.engine.services.memory_service import InMemoryMemoryService`    |                                            |
+|     RedisMemoryService     | `from agentscope_runtime.engine.services.redis_memory_service import RedisMemoryService` |                                            |
+| ReMe.PersonalMemoryService | `from reme_ai.service.personal_memory_service import PersonalMemoryService`              | [用户指南](https://github.com/modelscope/ReMe) |
+|   ReMe.TaskMemoryService   | `from reme_ai.service.task_memory_service import TaskMemoryService`                      | [用户指南](https://github.com/modelscope/ReMe) |
+
+### 描述
+- **InMemoryMemoryService**: 一种内存内记忆服务，无持久化存储。
+- **RedisMemoryService**: 利用 Redis 实现持久化存储的记忆服务。
+- **ReMe.PersonalMemoryService**: ReMe 的个性化记忆服务（原名 MemoryScope），支持生成、检索和共享定制化记忆。依托LLM、VectorStore，构建具备智能、上下文感知与时序感知的完整记忆系统，可无缝配置与部署强大的 AI 智能体。
+- **ReMe.TaskMemoryService**: ReMe 的任务导向型记忆服务，帮助您高效管理与调度任务相关记忆，提升任务执行的准确性与效率。依托LLM，支持在多样化任务场景中灵活创建、检索、更新与删除记忆，助您轻松构建并扩展强大的基于智能体的任务系统。
+
 (session-history-service-zh)=
 
 ## 会话历史服务详细信息
