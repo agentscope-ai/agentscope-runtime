@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=line-too-long, too-many-boolean-expressions
+# pylint:disable=too-many-nested-blocks, too-many-return-statements
+# pylint:disable=too-many-branches, unused-import, too-many-statements
+# pylint:disable=unused-variable
+
 import os
 import shutil
 import tempfile
@@ -10,10 +15,238 @@ from typing import List, Optional, Any
 from pathlib import Path
 
 
-def _find_agent_source_file(agent_name: str, caller_frame) -> str:
+def _find_agent_source_file(
+    agent_obj: Any,
+    agent_name: str,
+    caller_frame,
+) -> str:
     """
-    Find the file that contains the agent definition by analyzing the caller's imports.
+    Find the file that contains the agent instance definition (where the
+    agent variable is assigned).
+    This prioritizes finding where the agent instance was created rather
+    than where the class is defined.
     """
+
+    # Method 1: Search through the call stack to find where the agent
+    # instance was defined
+    frame = caller_frame
+    found_files = []  # Store potential files for analysis
+    agent_names_in_frames = []  # Store agent names found in each frame
+
+    while frame:
+        try:
+            frame_filename = frame.f_code.co_filename
+
+            # Skip internal/system files and focus on user code
+            if (
+                not frame_filename.endswith(".py")
+                or "site-packages" in frame_filename
+            ):
+                frame = frame.f_back
+                continue
+
+            # Check if this frame contains our agent variable
+            frame_locals = frame.f_locals
+            frame_globals = frame.f_globals
+
+            # Look for the agent object (by identity, not name) in both
+            # locals and globals
+            found_agent_name = None
+            for var_name, var_value in frame_locals.items():
+                if var_value is agent_obj:
+                    found_agent_name = var_name
+                    break
+
+            if not found_agent_name:
+                for var_name, var_value in frame_globals.items():
+                    if var_value is agent_obj:
+                        found_agent_name = var_name
+                        break
+
+            if found_agent_name:
+                # Found the frame where this agent instance exists
+                found_files.append(frame_filename)
+                agent_names_in_frames.append(found_agent_name)
+
+        except (AttributeError, TypeError):
+            # Handle any errors in frame inspection
+            pass
+
+        frame = frame.f_back
+
+    # Method 2: Analyze found files to determine which one contains the
+    # actual instance definition
+    # Reverse the order to prioritize files found later in the stack (
+    # typically user code)
+    for i, file_path in enumerate(reversed(found_files)):
+        # Get the corresponding agent name for this file
+        agent_name_in_file = agent_names_in_frames[len(found_files) - 1 - i]
+
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            # Check if this file contains an import statement for the agent
+            # If so, we should look for the original source file
+            import re
+
+            import_patterns = [
+                rf"^[^\#]*from\s+(\w+)\s+import\s+.*"
+                rf"{re.escape(agent_name_in_file)}",
+                rf"^[^\#]*from\s+([\w.]+)\s+import\s+.*"
+                rf"{re.escape(agent_name_in_file)}",
+            ]
+
+            # Check if this file imports the agent from another module
+            lines = content.split("\n")
+            for line in lines:
+                for import_pattern in import_patterns:
+                    match = re.search(import_pattern, line)
+                    if match:
+                        module_name = match.group(1)
+                        # Try to find the source module file
+                        current_dir = os.path.dirname(file_path)
+
+                        # Try different possible paths for the source module
+                        possible_paths = [
+                            os.path.join(
+                                current_dir,
+                                f"{module_name}.py",
+                            ),  # Same directory
+                            os.path.join(
+                                current_dir,
+                                module_name,
+                                "__init__.py",
+                            ),  # Package
+                            os.path.join(
+                                os.path.dirname(current_dir),
+                                f"{module_name}.py",
+                            ),  # Parent directory
+                        ]
+
+                        for source_path in possible_paths:
+                            if os.path.exists(source_path):
+                                # Check if this source file contains the
+                                # actual assignment
+                                try:
+                                    with open(
+                                        source_path,
+                                        "r",
+                                        encoding="utf-8",
+                                    ) as src_f:
+                                        src_content = src_f.read()
+
+                                    # Look for the assignment in the source
+                                    # file
+                                    assignment_patterns = [
+                                        rf"^[^\#]*{re.escape(agent_name_in_file)}\s*=\s*\w+\(",  # noqa E501
+                                        rf"^[^\#]*{re.escape(agent_name_in_file)}\s*=\s*[\w.]+\(",  # noqa E501
+                                    ]
+
+                                    src_lines = src_content.split("\n")
+                                    for src_line in src_lines:
+                                        if (
+                                            not src_line.strip()
+                                            or src_line.strip().startswith("#")
+                                            or src_line.strip().startswith(
+                                                "def ",
+                                            )
+                                            or src_line.strip().startswith(
+                                                "from ",
+                                            )
+                                            or src_line.strip().startswith(
+                                                "import ",
+                                            )
+                                            or src_line.strip().startswith(
+                                                "class ",
+                                            )
+                                        ):
+                                            continue
+
+                                        for (
+                                            assign_pattern
+                                        ) in assignment_patterns:
+                                            if re.search(
+                                                assign_pattern,
+                                                src_line,
+                                            ):
+                                                if "=" in src_line:
+                                                    left_side = src_line.split(
+                                                        "=",
+                                                    )[0]
+                                                    if (
+                                                        agent_name_in_file
+                                                        in left_side
+                                                        and "("
+                                                        not in left_side
+                                                    ):
+                                                        indent_level = len(
+                                                            src_line,
+                                                        ) - len(
+                                                            src_line.lstrip(),
+                                                        )
+                                                        if indent_level <= 4:
+                                                            return source_path
+
+                                except (OSError, UnicodeDecodeError):
+                                    continue
+                        break  # Found import, no need to check other patterns
+
+            # If no import found, check if this file itself contains the
+            # assignment
+            assignment_patterns = [
+                # direct assignment: agent_name = ClassName(
+                rf"^[^\#]*{re.escape(agent_name_in_file)}\s*=\s*\w+\(",
+                # module assignment: agent_name = module.ClassName(
+                rf"^[^\#]*{re.escape(agent_name_in_file)}\s*=\s*[\w.]+\(",
+            ]
+
+            # Look for actual variable assignment (not function parameters
+            # or imports)
+            for line_num, line in enumerate(lines):
+                stripped_line = line.strip()
+                # Skip comments, empty lines, function definitions, and imports
+                if (
+                    not stripped_line
+                    or stripped_line.startswith("#")
+                    or stripped_line.startswith("def ")
+                    or stripped_line.startswith("from ")
+                    or stripped_line.startswith("import ")
+                    or stripped_line.startswith("class ")
+                ):
+                    continue
+
+                # Check if this line contains the agent assignment
+                for pattern in assignment_patterns:
+                    if re.search(pattern, line):
+                        # Double check that this is a real assignment,
+                        # not inside function parameters by checking if the
+                        # line has '=' and the agent_name is on the left side
+                        if "=" in line:
+                            left_side = line.split("=")[0]
+                            if (
+                                agent_name_in_file in left_side
+                                and "(" not in left_side
+                            ):
+                                # Additional context check: make sure this
+                                # is not indented too much (likely inside a
+                                # function if heavily indented)
+                                indent_level = len(line) - len(line.lstrip())
+                                if (
+                                    indent_level <= 4
+                                ):  # Top level or minimal indentation
+                                    return file_path
+
+        except (OSError, UnicodeDecodeError):
+            # If we can't read the file, continue to next file
+            continue
+
+    # Method 3: If no assignment pattern found, return the first found file
+    if found_files:
+        return found_files[0]
+
+    # Method 4: Fall back to original caller-based approach if stack search
+    # fails
     caller_filename = caller_frame.f_code.co_filename
     caller_dir = os.path.dirname(caller_filename)
 
@@ -63,7 +296,8 @@ def _find_agent_source_file(agent_name: str, caller_frame) -> str:
                                     return module_path
 
             elif isinstance(node, ast.Import):
-                # Look for "import module_name" where agent might be module_name.agent_name
+                # Look for "import module_name" where agent might be
+                # module_name.agent_name
                 for alias in node.names:
                     module_name = alias.asname if alias.asname else alias.name
                     if module_name in caller_frame.f_globals:
@@ -76,7 +310,7 @@ def _find_agent_source_file(agent_name: str, caller_frame) -> str:
 
     except Exception as e:
         # If parsing fails, we'll fall back to the caller file
-        pass
+        print(e)
 
     return caller_filename
 
@@ -122,7 +356,11 @@ def package_project(
             agent_name = "agent"  # fallback name
 
         # Find the source file for the agent
-        agent_file_path = _find_agent_source_file(agent_name, caller_frame)
+        agent_file_path = _find_agent_source_file(
+            agent,
+            agent_name,
+            caller_frame,
+        )
 
         if not os.path.exists(agent_file_path):
             raise ValueError(
@@ -135,7 +373,8 @@ def package_project(
 
         # Copy extra package files
         if extras_package:
-            # Get the base directory from the caller for relative path calculation
+            # Get the base directory from the caller for relative path
+            # calculation
             caller_filename = caller_frame.f_code.co_filename
             caller_dir = os.path.dirname(caller_filename)
 
@@ -146,7 +385,8 @@ def package_project(
                         try:
                             # Try to get relative path from caller directory
                             rel_path = os.path.relpath(extra_path, caller_dir)
-                            # If the relative path goes up beyond the caller directory, just use filename
+                            # If the relative path goes up beyond the caller
+                            # directory, just use filename
                             if rel_path.startswith(".."):
                                 dest_path = os.path.join(
                                     temp_dir,
@@ -155,7 +395,8 @@ def package_project(
                             else:
                                 dest_path = os.path.join(temp_dir, rel_path)
                         except ValueError:
-                            # If relative path calculation fails (e.g., different drives on Windows)
+                            # If relative path calculation fails (e.g.,
+                            # different drives on Windows)
                             dest_path = os.path.join(
                                 temp_dir,
                                 os.path.basename(extra_path),
@@ -319,7 +560,8 @@ def create_tar_gz(
     Args:
         directory_path: Path to the directory to package
         output_path: Optional output path for the tar.gz file. If not provided,
-                    will create the tar.gz in the same parent directory as the source directory
+                    will create the tar.gz in the same parent directory as
+                    the source directory
 
     Returns:
         str: Path to the created tar.gz file
@@ -346,7 +588,8 @@ def create_tar_gz(
             for root, dirs, files in os.walk(directory_path):
                 for file in files:
                     file_path = os.path.join(root, file)
-                    # Calculate the archive name (relative to the source directory)
+                    # Calculate the archive name (relative to the source
+                    # directory)
                     arcname = os.path.relpath(file_path, directory_path)
                     tar.add(file_path, arcname=arcname)
 
@@ -366,4 +609,4 @@ def create_tar_gz(
                 os.remove(output_path)
             except OSError:
                 pass
-        raise OSError(f"Failed to create tar.gz file: {str(e)}")
+        raise OSError(f"Failed to create tar.gz file: {str(e)}") from e
