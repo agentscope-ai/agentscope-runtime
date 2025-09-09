@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-
-import os
-
+# pylint: disable=redefined-outer-name, protected-access
 import pytest
 import pytest_asyncio
 from dotenv import load_dotenv
@@ -17,6 +15,8 @@ from agentscope_runtime.engine.services.reme_personal_memory_service import (
     ReMePersonalMemoryService,
 )
 
+mock_mode: bool = True
+
 
 def create_message(role: str, content: str) -> Message:
     """Helper function to create a proper Message object."""
@@ -27,41 +27,15 @@ def create_message(role: str, content: str) -> Message:
     )
 
 
-def load_test_env():
-    """Load environment variables for testing."""
-    # Load from .env file if exists
-    load_dotenv()
-
-    # Set required environment variables for ReMePersonalMemoryService
-    required_env_vars = [
-        "FLOW_EMBEDDING_API_KEY",
-        "FLOW_EMBEDDING_BASE_URL",
-        "FLOW_LLM_API_KEY",
-        "FLOW_LLM_BASE_URL",
-    ]
-
-    # Set default values if not already set
-    env_defaults = {
-        "FLOW_EMBEDDING_API_KEY": "sk-test-key",
-        "FLOW_EMBEDDING_BASE_URL": "https://api.test.com/v1",
-        "FLOW_LLM_API_KEY": "sk-test-key",
-        "FLOW_LLM_BASE_URL": "https://api.test.com/v1",
-    }
-
-    for var in required_env_vars:
-        if not os.getenv(var):
-            os.environ[var] = env_defaults[var]
-
-
 @pytest_asyncio.fixture
-async def init_memory_service():
+async def memory_service():
     """Create and setup ReMePersonalMemoryService for testing."""
-    # Load environment variables
-    load_test_env()
-
     service = None
     try:
-        service = ReMePersonalMemoryService()
+        if not mock_mode:
+            load_dotenv()
+
+        service = ReMePersonalMemoryService(mock_mode=mock_mode)
         await service.start()
 
         # Check if service is healthy
