@@ -1,11 +1,29 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=too-many-public-methods
 from typing import Optional
+from urllib.parse import urlparse, urlunparse
 
 from ...constant import IMAGE_TAG
 from ...registry import SandboxRegistry
 from ...enums import SandboxType
 from ...box.sandbox import Sandbox
+
+
+def http_to_ws(url, use_localhost=True):
+    parsed = urlparse(url)
+    ws_scheme = "wss" if parsed.scheme == "https" else "ws"
+
+    hostname = parsed.hostname
+    if use_localhost and hostname == "127.0.0.1":
+        hostname = "localhost"
+
+    if parsed.port:
+        new_netloc = f"{hostname}:{parsed.port}"
+    else:
+        new_netloc = hostname
+
+    ws_url = urlunparse(parsed._replace(scheme=ws_scheme, netloc=new_netloc))
+    return ws_url
 
 
 @SandboxRegistry.register(
@@ -30,6 +48,10 @@ class BrowserSandbox(Sandbox):
             bearer_token,
             SandboxType.BROWSER,
         )
+
+    @property
+    def browser_ws(self):
+        return http_to_ws(f"{self.base_url}/browser/{self.sandbox_id}/cast")
 
     def browser_close(self):
         return self.call_tool("browser_close", {})

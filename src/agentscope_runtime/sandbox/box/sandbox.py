@@ -26,6 +26,7 @@ class Sandbox:
         """
         Initialize the sandbox interface.
         """
+        self.base_url = base_url
         if base_url:
             self.embed_mode = False
             self.manager_api = SandboxManager(
