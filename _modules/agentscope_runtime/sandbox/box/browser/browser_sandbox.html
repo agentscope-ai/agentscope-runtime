@@ -500,11 +500,29 @@
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="c1"># pylint: disable=too-many-public-methods</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">urlparse</span><span class="p">,</span> <span class="n">urlunparse</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">...constant</span><span class="w"> </span><span class="kn">import</span> <span class="n">IMAGE_TAG</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxRegistry</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxType</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...box.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sandbox</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">http_to_ws</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">use_localhost</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">parsed</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="n">ws_scheme</span> <span class="o">=</span> <span class="s2">&quot;wss&quot;</span> <span class="k">if</span> <span class="n">parsed</span><span class="o">.</span><span class="n">scheme</span> <span class="o">==</span> <span class="s2">&quot;https&quot;</span> <span class="k">else</span> <span class="s2">&quot;ws&quot;</span>
+
+    <span class="n">hostname</span> <span class="o">=</span> <span class="n">parsed</span><span class="o">.</span><span class="n">hostname</span>
+    <span class="k">if</span> <span class="n">use_localhost</span> <span class="ow">and</span> <span class="n">hostname</span> <span class="o">==</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">:</span>
+        <span class="n">hostname</span> <span class="o">=</span> <span class="s2">&quot;localhost&quot;</span>
+
+    <span class="k">if</span> <span class="n">parsed</span><span class="o">.</span><span class="n">port</span><span class="p">:</span>
+        <span class="n">new_netloc</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">hostname</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">parsed</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">new_netloc</span> <span class="o">=</span> <span class="n">hostname</span>
+
+    <span class="n">ws_url</span> <span class="o">=</span> <span class="n">urlunparse</span><span class="p">(</span><span class="n">parsed</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="n">ws_scheme</span><span class="p">,</span> <span class="n">netloc</span><span class="o">=</span><span class="n">new_netloc</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">ws_url</span>
 
 
 <div class="viewcode-block" id="BrowserSandbox">
@@ -534,6 +552,10 @@
             <span class="n">SandboxType</span><span class="o">.</span><span class="n">BROWSER</span><span class="p">,</span>
         <span class="p">)</span></div>
 
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">browser_ws</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">http_to_ws</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_url</span><span class="si">}</span><span class="s2">/browser/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sandbox_id</span><span class="si">}</span><span class="s2">/cast&quot;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="BrowserSandbox.browser_close">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_close">[docs]</a>
@@ -765,7 +787,7 @@
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-09-08</div>
+              Last updated on 2025-09-09</div>
           </div>
           <div class="right-details">
             <div class="icons">
