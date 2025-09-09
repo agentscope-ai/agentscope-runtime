@@ -133,6 +133,160 @@ class ImageBuilder:
             if self.build_config.cleanup_after_build:
                 await self._cleanup_build_dir(build_dir)
 
+    def _extract_runner_config(self, runner: Runner) -> Dict[str, Any]:
+        """
+        Extract runner configuration in a serializable format.
+        This approach avoids serialization issues by extracting only the essential configuration.
+        """
+        config = {
+            "runner_type": "runtime_runner",
+            "agent_config": None,
+            "context_manager_config": None,
+            "environment_manager_config": None,
+        }
+
+        # Extract agent configuration
+        if hasattr(runner, "_agent") and runner._agent:
+            agent = runner._agent
+            agent_config = {
+                "class": f"{agent.__class__.__module__}.{agent.__class__.__name__}",
+                "name": getattr(agent, "name", "default_agent"),
+                "description": getattr(agent, "description", ""),
+                "config": {},
+            }
+
+            # Extract model configuration for LLM agents
+            if hasattr(agent, "model") and agent.model:
+                model = agent.model
+                model_config = {
+                    "class": f"{model.__class__.__module__}.{model.__class__.__name__}",
+                    "config": {},
+                }
+
+                # Extract common model parameters
+                for attr in [
+                    "model_name",
+                    "api_key",
+                    "base_url",
+                    "temperature",
+                    "max_tokens",
+                ]:
+                    if hasattr(model, attr):
+                        value = getattr(model, attr)
+                        if value is not None and not callable(value):
+                            model_config["config"][attr] = value
+
+                agent_config["model"] = model_config
+
+            config["agent_config"] = agent_config
+
+        # Extract context manager configuration (basic info only)
+        if hasattr(runner, "_context_manager") and runner._context_manager:
+            cm = runner._context_manager
+            config["context_manager_config"] = {
+                "class": f"{cm.__class__.__module__}.{cm.__class__.__name__}",
+                "config": {},
+            }
+
+        # Extract environment manager configuration
+        if (
+            hasattr(runner, "_environment_manager")
+            and runner._environment_manager
+        ):
+            em = runner._environment_manager
+            config["environment_manager_config"] = {
+                "class": f"{em.__class__.__module__}.{em.__class__.__name__}",
+                "config": {},
+            }
+
+        return config
+
+    def _serialize_runner_safely(self, runner: Runner) -> Dict[str, Any]:
+        """
+        Safely serialize runner object, handling non-serializable components.
+        Extracts essential serializable parts and reconstruction info.
+        """
+        import copy
+        import pickle
+
+        try:
+            # First try direct serialization
+            test_data = pickle.dumps(runner)
+            return {"type": "direct", "data": runner}
+        except (TypeError, AttributeError) as e:
+            logger.warning(
+                f"Direct runner serialization failed: {e}, using component extraction",
+            )
+
+            # Extract serializable components
+            runner_data = {
+                "type": "components",
+                "agent": None,
+                "context_manager": None,
+                "environment_manager": None,
+                "runner_class": runner.__class__.__module__
+                + "."
+                + runner.__class__.__name__,
+            }
+
+            # Try to serialize agent
+            try:
+                if hasattr(runner, "_agent") and runner._agent:
+                    runner_data["agent"] = copy.deepcopy(runner._agent)
+            except Exception as e:
+                logger.warning(f"Failed to serialize agent: {e}")
+                # Store agent configuration instead
+                if hasattr(runner, "_agent") and runner._agent:
+                    agent = runner._agent
+                    runner_data["agent_config"] = {
+                        "name": getattr(agent, "name", "default_agent"),
+                        "description": getattr(agent, "description", ""),
+                        "class": agent.__class__.__module__
+                        + "."
+                        + agent.__class__.__name__,
+                    }
+
+                    # Try to extract LLM config if it's an LLMAgent
+                    if hasattr(agent, "model"):
+                        try:
+                            runner_data["agent_config"][
+                                "model"
+                            ] = copy.deepcopy(agent.model)
+                        except Exception:
+                            runner_data["agent_config"]["model_class"] = (
+                                agent.model.__class__.__module__
+                                + "."
+                                + agent.model.__class__.__name__
+                            )
+
+            # Try to serialize context manager
+            try:
+                if (
+                    hasattr(runner, "_context_manager")
+                    and runner._context_manager
+                ):
+                    runner_data["context_manager"] = copy.deepcopy(
+                        runner._context_manager,
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to serialize context_manager: {e}")
+                runner_data["context_manager"] = None
+
+            # Try to serialize environment manager
+            try:
+                if (
+                    hasattr(runner, "_environment_manager")
+                    and runner._environment_manager
+                ):
+                    runner_data["environment_manager"] = copy.deepcopy(
+                        runner._environment_manager,
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to serialize environment_manager: {e}")
+                runner_data["environment_manager"] = None
+
+            return runner_data
+
     def _validate_requirements_or_raise(
         self,
         requirements: Optional[Union[str, List[str]]],
@@ -217,20 +371,46 @@ class ImageBuilder:
                 os.makedirs(user_code_dest)
                 shutil.copy2(user_code_path, user_code_dest)
 
-        # Handle requirements (following _agent_engines.py pattern)
+        # Copy agentscope-runtime source code to build context
+        # Find the project root (where pyproject.toml is located)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = current_dir
+        while project_root != "/" and not os.path.exists(
+            os.path.join(project_root, "pyproject.toml"),
+        ):
+            project_root = os.path.dirname(project_root)
+
+        if os.path.exists(os.path.join(project_root, "pyproject.toml")):
+            # Copy essential project files
+            src_dir = os.path.join(project_root, "src")
+            if os.path.exists(src_dir):
+                shutil.copytree(src_dir, os.path.join(build_dir, "src"))
+
+            pyproject_file = os.path.join(project_root, "pyproject.toml")
+            shutil.copy2(pyproject_file, build_dir)
+        else:
+            logger.warning(
+                "Could not find pyproject.toml, falling back to requirements-only installation",
+            )
+
+        # Handle additional requirements (following _agent_engines.py pattern)
         req_file = os.path.join(build_dir, "requirements.txt")
         if requirements:
             with open(req_file, "w") as f:
                 f.write("\n".join(requirements))
         else:
-            # Default requirements for runner context
+            # Create empty requirements file to avoid Docker COPY errors
             with open(req_file, "w") as f:
-                f.write("fastapi\nuvicorn\npydantic\naiohttp\n")
+                f.write("# Additional requirements (none specified)\n")
+        # import cloudpickle as pickle
 
-        # Key optimization: directly serialize complete runner object
-        runner_file = os.path.join(build_dir, "runner.pkl")
-        with open(runner_file, "wb") as f:
-            pickle.dump(runner, f)
+        # New approach: extract runner configuration instead of serializing objects
+        runner_config_file = os.path.join(build_dir, "runner_config.json")
+        runner_config = self._extract_runner_config(runner)
+        with open(runner_config_file, "w") as f:
+            import json
+
+            json.dump(runner_config, f, indent=2, default=str)
 
         # Separately save deployment configuration for entrypoint use
         deploy_config_file = os.path.join(build_dir, "deploy_config.pkl")
@@ -347,7 +527,18 @@ import os
 import time
 import json
 import asyncio
+# Add user code directories to Python path for imports
 sys.path.insert(0, '/app/user_code')
+sys.path.insert(0, '/app')
+
+# Add all subdirectories in user_code to Python path
+import os
+user_code_dir = '/app/user_code'
+if os.path.exists(user_code_dir):
+    for item in os.listdir(user_code_dir):
+        item_path = os.path.join(user_code_dir, item)
+        if os.path.isdir(item_path):
+            sys.path.insert(0, item_path)
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -355,9 +546,250 @@ from fastapi.responses import StreamingResponse
 import uvicorn
 
 def load_runner():
-    """Load complete serialized runner object"""
+    """Load runner from configuration file (new approach)"""
+    import json
+    import os
+
+    # Try new config-based approach first
+    config_file = '/app/runner_config.json'
+    if os.path.exists(config_file):
+        with open(config_file, 'r') as f:
+            runner_config = json.load(f)
+        return build_runner_from_config(runner_config)
+
+    # Fallback to legacy pickle approach
     with open('/app/runner.pkl', 'rb') as f:
-        return pickle.load(f)
+        runner_data = pickle.load(f)
+
+    if isinstance(runner_data, dict) and runner_data.get('type') == 'components':
+        # Reconstruct runner from components
+        return reconstruct_runner_from_components(runner_data)
+    elif isinstance(runner_data, dict) and runner_data.get('type') == 'direct':
+        # Direct serialization
+        return runner_data['data']
+    else:
+        # Legacy format - assume it's the runner object directly
+        return runner_data
+
+def build_runner_from_config(runner_config):
+    """Build runner from configuration (new approach)"""
+    try:
+        print(f"Building runner from config: {runner_config.get('runner_type')}")
+
+        # Import necessary classes
+        from agentscope_runtime.engine.runner import Runner
+
+        # Build agent
+        agent = None
+        agent_config = runner_config.get('agent_config')
+        if agent_config:
+            agent = build_agent_from_config(agent_config)
+            print(f"Built agent: {agent.name if agent else 'Failed'}")
+
+        # Build context manager
+        context_manager = None
+        cm_config = runner_config.get('context_manager_config')
+        if cm_config:
+            context_manager = build_context_manager_from_config(cm_config)
+            print(f"Built context manager: {context_manager.__class__.__name__ if context_manager else 'Failed'}")
+
+        # Build environment manager
+        environment_manager = None
+        em_config = runner_config.get('environment_manager_config')
+        if em_config:
+            environment_manager = build_environment_manager_from_config(em_config)
+            print(f"Built environment manager: {environment_manager.__class__.__name__ if environment_manager else 'Failed'}")
+
+        # Create runner
+        runner = Runner(
+            agent=agent,
+            context_manager=context_manager,
+            environment_manager=environment_manager,
+        )
+
+        print(f"Successfully built runner from config")
+        return runner
+
+    except Exception as e:
+        print(f"Failed to build runner from config: {e}")
+        import traceback
+        traceback.print_exc()
+        raise RuntimeError(f"Runner config build failed: {e}")
+
+def build_agent_from_config(agent_config):
+    """Build agent from configuration"""
+    try:
+        # Import agent class
+        class_path = agent_config.get('class', '')
+        if not class_path:
+            return None
+
+        module_name, class_name = class_path.rsplit('.', 1)
+        module = __import__(module_name, fromlist=[class_name])
+        agent_class = getattr(module, class_name)
+
+        # Build model if present
+        model = None
+        model_config = agent_config.get('model')
+        if model_config:
+            model = build_model_from_config(model_config)
+
+        # Create agent
+        agent_kwargs = {
+            'name': agent_config.get('name', 'default_agent'),
+            'description': agent_config.get('description', ''),
+        }
+        if model:
+            agent_kwargs['model'] = model
+
+        # Add any additional config
+        config = agent_config.get('config', {})
+        agent_kwargs.update(config)
+
+        agent = agent_class(**agent_kwargs)
+        return agent
+
+    except Exception as e:
+        print(f"Failed to build agent from config: {e}")
+        return None
+
+def build_model_from_config(model_config):
+    """Build model from configuration"""
+    try:
+        # Import model class
+        class_path = model_config.get('class', '')
+        if not class_path:
+            return None
+
+        module_name, class_name = class_path.rsplit('.', 1)
+        module = __import__(module_name, fromlist=[class_name])
+        model_class = getattr(module, class_name)
+
+        # Create model with config
+        model_kwargs = model_config.get('config', {})
+        model = model_class(**model_kwargs)
+        return model
+
+    except Exception as e:
+        print(f"Failed to build model from config: {e}")
+        return None
+
+def build_context_manager_from_config(cm_config):
+    """Build context manager from configuration"""
+    try:
+        # Import context manager class
+        class_path = cm_config.get('class', '')
+        if not class_path:
+            return None
+
+        module_name, class_name = class_path.rsplit('.', 1)
+        module = __import__(module_name, fromlist=[class_name])
+        cm_class = getattr(module, class_name)
+
+        # Create with default session history service if needed
+        if 'ContextManager' in class_name:
+            from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
+            session_history_service = InMemorySessionHistoryService()
+            context_manager = cm_class(session_history_service=session_history_service)
+        else:
+            context_manager = cm_class()
+
+        return context_manager
+
+    except Exception as e:
+        print(f"Failed to build context manager from config: {e}")
+        return None
+
+def build_environment_manager_from_config(em_config):
+    """Build environment manager from configuration"""
+    try:
+        # Import environment manager class
+        class_path = em_config.get('class', '')
+        if not class_path:
+            return None
+
+        module_name, class_name = class_path.rsplit('.', 1)
+        module = __import__(module_name, fromlist=[class_name])
+        em_class = getattr(module, class_name)
+
+        # Create environment manager
+        em_kwargs = em_config.get('config', {})
+        environment_manager = em_class(**em_kwargs)
+        return environment_manager
+
+    except Exception as e:
+        print(f"Failed to build environment manager from config: {e}")
+        return None
+
+def reconstruct_runner_from_components(runner_data):
+    """Reconstruct runner object from serialized components"""
+    try:
+        # Import necessary classes
+        from agentscope_runtime.engine.runner import Runner
+
+        # Get components
+        agent = runner_data.get('agent')
+        context_manager = runner_data.get('context_manager')
+        environment_manager = runner_data.get('environment_manager')
+
+        # If agent failed to serialize, try to reconstruct from config
+        if agent is None and 'agent_config' in runner_data:
+            agent = reconstruct_agent_from_config(runner_data['agent_config'])
+
+        # Create new runner instance
+        runner = Runner(
+            agent=agent,
+            context_manager=context_manager,
+            environment_manager=environment_manager,
+        )
+
+        print(f"Successfully reconstructed runner with agent: {agent.name if agent else 'None'}")
+        return runner
+
+    except Exception as e:
+        print(f"Failed to reconstruct runner from components: {e}")
+        import traceback
+        traceback.print_exc()
+        raise RuntimeError(f"Runner reconstruction failed: {e}")
+
+def reconstruct_agent_from_config(agent_config):
+    """Reconstruct agent from configuration"""
+    try:
+        agent_class_path = agent_config.get('class', '')
+        if not agent_class_path:
+            raise ValueError("Agent class path not found in config")
+
+        # Import agent class
+        module_name, class_name = agent_class_path.rsplit('.', 1)
+        module = __import__(module_name, fromlist=[class_name])
+        agent_class = getattr(module, class_name)
+
+        # Reconstruct model if available
+        model = None
+        if 'model' in agent_config:
+            model = agent_config['model']
+        elif 'model_class' in agent_config:
+            model_class_path = agent_config['model_class']
+            model_module_name, model_class_name = model_class_path.rsplit('.', 1)
+            model_module = __import__(model_module_name, fromlist=[model_class_name])
+            model_class = getattr(model_module, model_class_name)
+            model = model_class()  # Create with default config
+
+        # Create agent instance
+        agent_kwargs = {
+            'name': agent_config.get('name', 'default_agent'),
+            'description': agent_config.get('description', ''),
+        }
+        if model:
+            agent_kwargs['model'] = model
+
+        agent = agent_class(**agent_kwargs)
+        return agent
+
+    except Exception as e:
+        print(f"Failed to reconstruct agent from config: {e}")
+        # Return None to let the caller handle gracefully
+        return None
 
 def load_deploy_config():
     """Load deployment configuration"""
@@ -526,20 +958,25 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y \\
     curl \\
+    git \\
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy the entire agentscope-runtime source
+COPY src/ ./src/
+COPY pyproject.toml .
+COPY README.md .
 
-# Copy user code, complete runner object, and deploy config
+# Install agentscope-runtime package
+RUN pip install --no-cache-dir -e .
+
+# Copy user code, runner config, and deploy config
 COPY user_code/ ./user_code/
-COPY runner.pkl .
+COPY runner_config.json .
 COPY deploy_config.pkl .
 COPY runner_entrypoint.py .
 
 # Set environment variables
-ENV PYTHONPATH=/app:/app/user_code
+ENV PYTHONPATH=/app:/app/user_code:/app/src
 ENV PYTHONUNBUFFERED=1
 
 # Expose port
