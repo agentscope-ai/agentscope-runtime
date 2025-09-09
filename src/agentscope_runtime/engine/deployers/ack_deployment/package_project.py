@@ -5,6 +5,7 @@ import tempfile
 import inspect
 import ast
 import importlib.util
+import tarfile
 from typing import List, Optional, Any
 from pathlib import Path
 
@@ -306,3 +307,63 @@ async def chat(message: str):
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
         raise e
+
+
+def create_tar_gz(
+    directory_path: str,
+    output_path: Optional[str] = None,
+) -> str:
+    """
+    Package a directory into a tar.gz file.
+
+    Args:
+        directory_path: Path to the directory to package
+        output_path: Optional output path for the tar.gz file. If not provided,
+                    will create the tar.gz in the same parent directory as the source directory
+
+    Returns:
+        str: Path to the created tar.gz file
+
+    Raises:
+        ValueError: If the directory doesn't exist
+        OSError: If there's an error creating the tar.gz file
+    """
+    if not os.path.exists(directory_path):
+        raise ValueError(f"Directory does not exist: {directory_path}")
+
+    if not os.path.isdir(directory_path):
+        raise ValueError(f"Path is not a directory: {directory_path}")
+
+    # Generate output path if not provided
+    if output_path is None:
+        dir_name = os.path.basename(os.path.normpath(directory_path))
+        parent_dir = os.path.dirname(directory_path)
+        output_path = os.path.join(parent_dir, f"{dir_name}.tar.gz")
+
+    try:
+        with tarfile.open(output_path, "w:gz") as tar:
+            # Add all contents of the directory to the tar file
+            for root, dirs, files in os.walk(directory_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    # Calculate the archive name (relative to the source directory)
+                    arcname = os.path.relpath(file_path, directory_path)
+                    tar.add(file_path, arcname=arcname)
+
+                # Also add empty directories
+                for dir_name in dirs:
+                    dir_path = os.path.join(root, dir_name)
+                    if not os.listdir(dir_path):  # Empty directory
+                        arcname = os.path.relpath(dir_path, directory_path)
+                        tar.add(dir_path, arcname=arcname)
+
+        return output_path
+
+    except Exception as e:
+        # Clean up partial file if it exists
+        if os.path.exists(output_path):
+            try:
+                os.remove(output_path)
+            except OSError:
+                pass
+        raise OSError(f"Failed to create tar.gz file: {str(e)}")
