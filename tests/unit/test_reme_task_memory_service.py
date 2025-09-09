@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=redefined-outer-name, protected-access
+# pylint: disable=redefined-outer-name, protected-access, unused-argument
+from unittest.mock import AsyncMock, patch
+
 import pytest
 import pytest_asyncio
-from dotenv import load_dotenv
-
 from agentscope_runtime.engine.schemas.agent_schemas import (
     Message,
     MessageType,
@@ -14,8 +14,6 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
 from agentscope_runtime.engine.services.reme_task_memory_service import (
     ReMeTaskMemoryService,
 )
-
-mock_mode: bool = True
 
 
 def create_message(role: str, content: str) -> Message:
@@ -28,321 +26,468 @@ def create_message(role: str, content: str) -> Message:
 
 
 @pytest_asyncio.fixture
-async def memory_service():
-    """Create and setup ReMeTaskMemoryService for testing."""
+async def mock_task_memory_service():
+    """Mock the TaskMemoryService from reme_ai."""
+    with patch(
+        "reme_ai.service.task_memory_service.TaskMemoryService",
+    ) as mock_class:
+        instance = mock_class.return_value
+        instance.start = AsyncMock()
+        instance.stop = AsyncMock()
+        instance.health = AsyncMock(return_value=True)
+        instance.add_memory = AsyncMock()
+        instance.search_memory = AsyncMock(return_value=[])
+        instance.list_memory = AsyncMock(return_value=[])
+        instance.delete_memory = AsyncMock()
+        yield instance
 
-    service = None
-    try:
-        if not mock_mode:
-            load_dotenv()
 
-        service = ReMeTaskMemoryService(mock_mode=mock_mode)
-        await service.start()
+@pytest.fixture
+def env_vars(monkeypatch):
+    """Set up required environment variables."""
+    monkeypatch.setenv("FLOW_EMBEDDING_API_KEY", "test-embedding-key")
+    monkeypatch.setenv(
+        "FLOW_EMBEDDING_BASE_URL",
+        "https://test-embedding.com/v1",
+    )
+    monkeypatch.setenv("FLOW_LLM_API_KEY", "test-llm-key")
+    monkeypatch.setenv("FLOW_LLM_BASE_URL", "https://test-llm.com/v1")
 
-        # Check if service is healthy
-        healthy = await service.health()
-        if not healthy:
-            pytest.skip("ReMeTaskMemoryService is not available")
 
-        yield service
+@pytest_asyncio.fixture
+async def memory_service(env_vars, mock_task_memory_service):
+    service = ReMeTaskMemoryService()
+    await service.start()
+    yield service
+    await service.stop()
 
-    except ImportError as e:
-        import traceback
 
-        traceback.print_exc()
-        pytest.skip(f"Missing dependencies for ReMeTaskMemoryService: {e}")
-
-    except FileNotFoundError as e:
-        if ".env not found" in str(e):
-            pytest.skip("ReMeTaskMemoryService requires .env file")
-        else:
-            pytest.skip(f"Missing file for ReMeTaskMemoryService: {e}")
-
-    except Exception as e:
-        import traceback
-
-        traceback.print_exc()
-        pytest.skip(f"Failed to initialize ReMeTaskMemoryService: {e}")
-
-    finally:
-        if service is not None:
-            await service.stop()
+@pytest.mark.asyncio
+async def test_missing_env_variables():
+    with pytest.raises(ValueError, match="FLOW_EMBEDDING_API_KEY is not set"):
+        ReMeTaskMemoryService()
 
 
 @pytest.mark.asyncio
 async def test_service_lifecycle(memory_service: ReMeTaskMemoryService):
-    """Test service start/stop lifecycle."""
+    """Test service start, stop, and health check."""
     assert await memory_service.health() is True
     await memory_service.stop()
-    # Note: ReMeTaskMemoryService.health() always returns True
-    # so we can't test the stopped state like Redis
+    # After stopping, we can't really test health since it's mocked
 
 
 @pytest.mark.asyncio
-async def test_add_and_search_task_memory_no_session(
-    memory_service: ReMeTaskMemoryService,
-):
-    """Test adding and searching task memory without session ID."""
-    user_id = "test_user1"
+async def test_transform_message():
+    """Test message transformation functionality."""
+    # Test message with text content
+    message = create_message(Role.USER, "hello world")
+    transformed = ReMeTaskMemoryService.transform_message(message)
+
+    assert transformed["role"] == Role.USER
+    assert transformed["content"] == "hello world"
+
+    # Test message with no content
+    empty_message = Message(
+        type=MessageType.MESSAGE,
+        role=Role.USER,
+        content=[],
+    )
+    transformed_empty = ReMeTaskMemoryService.transform_message(
+        empty_message,
+    )
+
+    assert transformed_empty["role"] == Role.USER
+    assert transformed_empty["content"] is None
+
+    # Test message with None content
+    none_message = Message(
+        type=MessageType.MESSAGE,
+        role=Role.USER,
+        content=None,
+    )
+    transformed_none = ReMeTaskMemoryService.transform_message(
+        none_message,
+    )
+
+    assert transformed_none["role"] == Role.USER
+    assert transformed_none["content"] is None
+
+
+@pytest.mark.asyncio
+async def test_transform_messages(memory_service: ReMeTaskMemoryService):
+    """Test transformation of multiple messages."""
     messages = [
-        create_message(
-            Role.USER,
-            "I need to complete a web search task for financial news",
-        ),
+        create_message(Role.USER, "first message"),
+        create_message(Role.ASSISTANT, "second message"),
+        create_message(Role.USER, "third message"),
     ]
 
-    # Add memory
+    transformed = memory_service.transform_messages(messages)
+
+    assert len(transformed) == 3
+    assert transformed[0]["role"] == Role.USER
+    assert transformed[0]["content"] == "first message"
+    assert transformed[1]["role"] == Role.ASSISTANT
+    assert transformed[1]["content"] == "second message"
+    assert transformed[2]["role"] == Role.USER
+    assert transformed[2]["content"] == "third message"
+
+
+@pytest.mark.asyncio
+async def test_add_memory_no_session(
+    memory_service: ReMeTaskMemoryService,
+):
+    """Test adding memory without session ID."""
+    user_id = "user1"
+    messages = [create_message(Role.USER, "hello world")]
+
     await memory_service.add_memory(user_id, messages)
 
-    # Search memory
-    search_query = [
-        create_message(Role.USER, "What tasks do I need to complete?"),
-    ]
-    retrieved = await memory_service.search_memory(user_id, search_query)
-
-    # ReMeTaskMemoryService returns different format than Redis
-    assert retrieved is not None
-    assert len(retrieved) > 0
+    # Verify the underlying service was called with transformed messages
+    memory_service.service.add_memory.assert_called_once()
+    call_args = memory_service.service.add_memory.call_args
+    assert call_args[0][0] == user_id
+    assert call_args[0][1] == [{"role": Role.USER, "content": "hello world"}]
+    assert call_args[0][2] is None  # session_id
 
 
 @pytest.mark.asyncio
-async def test_add_and_search_task_memory_with_session(
+async def test_add_memory_with_session(
     memory_service: ReMeTaskMemoryService,
 ):
-    """Test adding and searching task memory with session ID."""
-    user_id = "test_user2"
+    """Test adding memory with session ID."""
+    user_id = "user2"
     session_id = "session1"
-    messages = [
-        create_message(
-            Role.USER,
-            "I need to analyze market trends using data analysis tools",
-        ),
-    ]
+    messages = [create_message(Role.USER, "hello from session")]
 
-    # Add memory with session
     await memory_service.add_memory(user_id, messages, session_id)
 
-    # Search memory
-    search_query = [
-        create_message(Role.USER, "What analysis tasks do I have?"),
+    # Verify the underlying service was called correctly
+    memory_service.service.add_memory.assert_called_once()
+    call_args = memory_service.service.add_memory.call_args
+    assert call_args[0][0] == user_id
+    assert call_args[0][1] == [
+        {"role": Role.USER, "content": "hello from session"},
     ]
-    retrieved = await memory_service.search_memory(user_id, search_query)
-
-    assert retrieved is not None
-    assert len(retrieved) > 0
+    assert call_args[0][2] == session_id
 
 
 @pytest.mark.asyncio
-async def test_search_task_memory_with_filters(
+async def test_search_memory(memory_service: ReMeTaskMemoryService):
+    """Test searching memory."""
+    user_id = "user3"
+    messages = [create_message(Role.USER, "search query")]
+    expected_results = [{"role": "user", "content": "found message"}]
+
+    # Configure mock to return expected results
+    memory_service.service.search_memory.return_value = expected_results
+
+    results = await memory_service.search_memory(user_id, messages)
+
+    # Verify the underlying service was called correctly
+    memory_service.service.search_memory.assert_called_once()
+    call_args = memory_service.service.search_memory.call_args
+    assert call_args[0][0] == user_id
+    assert call_args[0][1] == [{"role": Role.USER, "content": "search query"}]
+    assert call_args[0][2] is None  # filters
+
+    # Verify results are returned as-is
+    assert results == expected_results
+
+
+@pytest.mark.asyncio
+async def test_search_memory_with_filters(
     memory_service: ReMeTaskMemoryService,
 ):
-    """Test searching task memory with filters like top_k."""
-    user_id = "test_user3"
-    messages = [
-        create_message(Role.USER, "I need to use web search tool for news"),
-        create_message(
-            Role.USER,
-            "I need to use code execution tool for analysis",
-        ),
-        create_message(
-            Role.USER,
-            "I need to use file management tool for organization",
-        ),
+    """Test searching memory with filters."""
+    user_id = "user4"
+    messages = [create_message(Role.USER, "search with filters")]
+    filters = {"top_k": 5}
+    expected_results = [{"role": "user", "content": "filtered result"}]
+
+    # Configure mock to return expected results
+    memory_service.service.search_memory.return_value = expected_results
+
+    results = await memory_service.search_memory(user_id, messages, filters)
+
+    # Verify the underlying service was called correctly
+    memory_service.service.search_memory.assert_called_once()
+    call_args = memory_service.service.search_memory.call_args
+    assert call_args[0][0] == user_id
+    assert call_args[0][1] == [
+        {"role": Role.USER, "content": "search with filters"},
+    ]
+    assert call_args[0][2] == filters
+
+    assert results == expected_results
+
+
+@pytest.mark.asyncio
+async def test_list_memory(memory_service: ReMeTaskMemoryService):
+    """Test listing memory."""
+    user_id = "user5"
+    expected_results = [
+        {"role": "user", "content": "message 1"},
+        {"role": "assistant", "content": "response 1"},
     ]
 
-    # Add multiple task memories
-    for i, msg in enumerate(messages):
-        await memory_service.add_memory(user_id, [msg], f"session_{i}")
+    # Configure mock to return expected results
+    memory_service.service.list_memory.return_value = expected_results
 
-    # Search with top_k filter
-    search_query = [create_message(Role.USER, "What tools do I need to use?")]
-    retrieved = await memory_service.search_memory(
+    results = await memory_service.list_memory(user_id)
+
+    # Verify the underlying service was called correctly
+    memory_service.service.list_memory.assert_called_once_with(user_id, None)
+
+    assert results == expected_results
+
+
+@pytest.mark.asyncio
+async def test_list_memory_with_filters(
+    memory_service: ReMeTaskMemoryService,
+):
+    """Test listing memory with pagination filters."""
+    user_id = "user6"
+    filters = {"page_size": 10, "page_num": 2}
+    expected_results = [{"role": "user", "content": "page 2 message"}]
+
+    # Configure mock to return expected results
+    memory_service.service.list_memory.return_value = expected_results
+
+    results = await memory_service.list_memory(user_id, filters)
+
+    # Verify the underlying service was called correctly
+    memory_service.service.list_memory.assert_called_once_with(
         user_id,
-        search_query,
-        filters={"top_k": 2},
+        filters,
     )
 
-    assert retrieved is not None
-    # Note: ReMeTaskMemoryService may return different number than requested
-    # due to its internal implementation
+    assert results == expected_results
 
 
 @pytest.mark.asyncio
-async def test_list_task_memory(memory_service: ReMeTaskMemoryService):
-    """Test listing task memory for a user."""
-    user_id = "test_user4"
-    messages = [
-        create_message(Role.USER, "I need to complete a data processing task"),
-        create_message(
-            Role.USER,
-            "I need to generate a report using visualization tools",
-        ),
-    ]
-
-    # Add task memories
-    for i, msg in enumerate(messages):
-        await memory_service.add_memory(user_id, [msg], f"session_{i}")
-
-    # List memory
-    listed = await memory_service.list_memory(user_id)
-
-    assert listed is not None
-    assert isinstance(listed, list)
-
-
-@pytest.mark.asyncio
-async def test_list_task_memory_with_filters(
+async def test_delete_memory_session(
     memory_service: ReMeTaskMemoryService,
 ):
-    """Test listing task memory with filters."""
-    user_id = "test_user5"
-    messages = [
-        create_message(Role.USER, f"Task memory item {i}") for i in range(2)
-    ]
-
-    # Add multiple task memories
-    for i, msg in enumerate(messages):
-        await memory_service.add_memory(user_id, [msg], f"session_{i}")
-
-    listed = await memory_service.list_memory(
-        user_id,
-        filters={"page_size": 3, "page_num": 1},
-    )
-
-    assert listed is not None
-    assert isinstance(listed, list)
-
-
-@pytest.mark.asyncio
-async def test_delete_task_memory_session(
-    memory_service: ReMeTaskMemoryService,
-):
-    """Test deleting task memory by session ID."""
-    user_id = "test_user6"
+    """Test deleting memory for a specific session."""
+    user_id = "user7"
     session_id = "session_to_delete"
 
-    # Add task memory
-    msg1 = create_message(Role.USER, "This task should be deleted")
-    msg2 = create_message(Role.USER, "This task should remain")
-
-    await memory_service.add_memory(user_id, [msg1], session_id)
-    await memory_service.add_memory(user_id, [msg2], "another_session")
-
-    # Delete specific session
     await memory_service.delete_memory(user_id, session_id)
 
-    # Verify deletion (note: ReMeTaskMemoryService implementation may vary)
-    # This is mainly to test that the method doesn't raise errors
-
-
-@pytest.mark.asyncio
-async def test_delete_task_memory_user(
-    memory_service: ReMeTaskMemoryService,
-):
-    """Test deleting all task memory for a user."""
-    user_id = "test_user_to_delete"
-
-    # Add some task memory
-    await memory_service.add_memory(
+    # Verify the underlying service was called correctly
+    memory_service.service.delete_memory.assert_called_once_with(
         user_id,
-        [create_message(Role.USER, "Some task memory to delete")],
+        session_id,
     )
 
-    # Delete all user memory
+
+@pytest.mark.asyncio
+async def test_delete_memory_user(memory_service: ReMeTaskMemoryService):
+    """Test deleting all memory for a user."""
+    user_id = "user_to_delete"
+
     await memory_service.delete_memory(user_id)
 
-    # This mainly tests that the method doesn't raise errors
+    # Verify the underlying service was called correctly
+    memory_service.service.delete_memory.assert_called_once_with(user_id, None)
 
 
 @pytest.mark.asyncio
-async def test_operations_on_non_existent_user(
+async def test_multiple_messages_transformation(
     memory_service: ReMeTaskMemoryService,
 ):
-    """Test operations on non-existent user."""
-    user_id = "non_existent_user"
-
-    # Search on non-existent user should not raise errors
-    retrieved = await memory_service.search_memory(
-        user_id,
-        [create_message(Role.USER, "any task query")],
-    )
-
-    # Should return something (empty or error message)
-    assert retrieved is not None
-
-    # List on non-existent user
-    listed = await memory_service.list_memory(user_id)
-    assert listed is not None
-
-    # Delete operations should not raise errors
-    await memory_service.delete_memory(user_id)
-    await memory_service.delete_memory(user_id, "some_session")
-
-
-@pytest.mark.asyncio
-async def test_task_message_format_compatibility(
-    memory_service: ReMeTaskMemoryService,
-):
-    """Test that the service handles different message formats for tasks."""
-    user_id = "test_user_formats"
-
-    # Test with Message objects
-    message_obj = create_message(Role.USER, "Task message as object")
-    await memory_service.add_memory(user_id, [message_obj])
-
-    # Test with dict format (if supported)
-    try:
-        message_dict = {"content": "Task message as dict", "role": "user"}
-        await memory_service.add_memory(user_id, [message_dict])
-    except Exception:
-        # If dict format is not supported, that's okay
-        pass
-
-    # Search should work
-    search_query = [create_message(Role.USER, "What task messages do I have?")]
-    retrieved = await memory_service.search_memory(user_id, search_query)
-
-    assert retrieved is not None
-
-
-@pytest.mark.asyncio
-async def test_task_specific_scenarios(
-    memory_service: ReMeTaskMemoryService,
-):
-    """Test task-specific scenarios that differ from personal memory."""
-    user_id = "test_task_user"
-
-    # Test task-oriented messages
-    task_messages = [
-        create_message(
-            Role.USER,
-            "please use web search tool to search financial news",
-        ),
-        create_message(Role.USER, "execute python code to analyze the data"),
-        create_message(
-            Role.USER,
-            "use file management tool to organize results",
-        ),
+    """Test adding multiple messages with different content types."""
+    user_id = "user8"
+    messages = [
+        create_message(Role.USER, "first message"),
+        create_message(Role.ASSISTANT, "assistant response"),
+        create_message(Role.USER, "follow up question"),
     ]
 
-    # Add task memories
-    for i, msg in enumerate(task_messages):
-        await memory_service.add_memory(user_id, [msg], f"task_session_{i}")
+    await memory_service.add_memory(user_id, messages, "multi_session")
 
-    # Search for tool-related tasks
-    tool_query = [create_message(Role.USER, "What tools should I use?")]
-    tool_results = await memory_service.search_memory(user_id, tool_query)
+    # Verify transformation worked correctly
+    memory_service.service.add_memory.assert_called_once()
+    call_args = memory_service.service.add_memory.call_args
+    transformed_messages = call_args[0][1]
 
-    assert tool_results is not None
-    assert len(tool_results) > 0
+    assert len(transformed_messages) == 3
+    assert transformed_messages[0] == {
+        "role": Role.USER,
+        "content": "first message",
+    }
+    assert transformed_messages[1] == {
+        "role": Role.ASSISTANT,
+        "content": "assistant response",
+    }
+    assert transformed_messages[2] == {
+        "role": Role.USER,
+        "content": "follow up question",
+    }
 
-    # Search for specific task types
-    search_query = [create_message(Role.USER, "What search tasks do I have?")]
-    search_results = await memory_service.search_memory(user_id, search_query)
 
-    assert search_results is not None
+@pytest.mark.asyncio
+async def test_empty_messages_list(memory_service: ReMeTaskMemoryService):
+    """Test handling empty messages list."""
+    user_id = "user9"
+    messages = []
 
-    # List all task memories
-    all_tasks = await memory_service.list_memory(user_id)
-    assert all_tasks is not None
-    assert isinstance(all_tasks, list)
+    await memory_service.add_memory(user_id, messages)
+
+    # Verify the underlying service was still called
+    memory_service.service.add_memory.assert_called_once()
+    call_args = memory_service.service.add_memory.call_args
+    assert call_args[0][1] == []
+
+
+@pytest.mark.asyncio
+async def test_service_error_propagation(
+    memory_service: ReMeTaskMemoryService,
+):
+    """Test that errors from the underlying service are propagated."""
+    user_id = "error_user"
+    messages = [create_message(Role.USER, "test message")]
+
+    # Configure mock to raise an exception
+    memory_service.service.add_memory.side_effect = RuntimeError(
+        "Service error",
+    )
+
+    with pytest.raises(RuntimeError, match="Service error"):
+        await memory_service.add_memory(user_id, messages)
+
+
+@pytest.mark.asyncio
+async def test_health_check_failure(env_vars, mock_task_memory_service):
+    """Test health check when service is unhealthy."""
+    mock_task_memory_service.health.return_value = False
+
+    service = ReMeTaskMemoryService()
+    await service.start()
+
+    health_status = await service.health()
+    assert health_status is False
+
+
+@pytest.mark.asyncio
+async def test_complex_message_content():
+    """Test transformation of messages with complex content structures."""
+    message = Message(
+        type=MessageType.MESSAGE,
+        role=Role.USER,
+        content=[
+            TextContent(type=ContentType.TEXT, text="first text"),
+            TextContent(type=ContentType.TEXT, text="second text"),
+        ],
+    )
+
+    transformed = ReMeTaskMemoryService.transform_message(message)
+
+    # Should only use the first text content
+    assert transformed["role"] == Role.USER
+    assert transformed["content"] == "first text"
+
+
+@pytest.mark.asyncio
+async def test_message_without_role():
+    """Test transformation of message without role."""
+    message = Message(
+        type=MessageType.MESSAGE,
+        content=[TextContent(type=ContentType.TEXT, text="no role message")],
+    )
+
+    transformed = ReMeTaskMemoryService.transform_message(message)
+
+    assert transformed["role"] is None
+    assert transformed["content"] == "no role message"
+
+
+@pytest.mark.asyncio
+async def test_concurrent_operations(
+    memory_service: ReMeTaskMemoryService,
+):
+    """Test that concurrent operations work correctly."""
+    import asyncio
+
+    user_id = "concurrent_user"
+
+    # Create multiple concurrent operations
+    tasks = [
+        memory_service.add_memory(
+            user_id,
+            [create_message(Role.USER, "message 1")],
+        ),
+        memory_service.search_memory(
+            user_id,
+            [create_message(Role.USER, "search")],
+        ),
+        memory_service.list_memory(user_id),
+    ]
+
+    # Execute all tasks concurrently
+    await asyncio.gather(*tasks)
+
+    # Verify all operations were called
+    memory_service.service.add_memory.assert_called()
+    memory_service.service.search_memory.assert_called()
+    memory_service.service.list_memory.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_service_instance_type(memory_service: ReMeTaskMemoryService):
+    """Test that the underlying service is TaskMemoryService."""
+    # The service should be mocked, so we just verify it exists
+    assert hasattr(memory_service, "service")
+    assert memory_service.service is not None
+
+
+@pytest.mark.asyncio
+async def test_task_specific_operations(memory_service: ReMeTaskMemoryService):
+    """Test operations that might be specific to task memory."""
+    user_id = "task_user"
+
+    # Test task-related message
+    task_message = create_message(Role.USER, "Complete task: analyze data")
+
+    await memory_service.add_memory(user_id, [task_message], "task_session")
+
+    # Verify the call was made with task-related content
+    memory_service.service.add_memory.assert_called_once()
+    call_args = memory_service.service.add_memory.call_args
+    assert call_args[0][0] == user_id
+    assert call_args[0][1] == [
+        {"role": Role.USER, "content": "Complete task: analyze data"},
+    ]
+    assert call_args[0][2] == "task_session"
+
+
+@pytest.mark.asyncio
+async def test_task_memory_search_with_task_filters(
+    memory_service: ReMeTaskMemoryService,
+):
+    """Test searching memory with task-specific filters."""
+    user_id = "task_search_user"
+    messages = [create_message(Role.USER, "find completed tasks")]
+    task_filters = {"task_status": "completed", "top_k": 10}
+    expected_results = [{"task_id": "123", "status": "completed"}]
+
+    # Configure mock to return expected results
+    memory_service.service.search_memory.return_value = expected_results
+
+    results = await memory_service.search_memory(
+        user_id,
+        messages,
+        task_filters,
+    )
+
+    # Verify the underlying service was called correctly
+    memory_service.service.search_memory.assert_called_once()
+    call_args = memory_service.service.search_memory.call_args
+    assert call_args[0][0] == user_id
+    assert call_args[0][1] == [
+        {"role": Role.USER, "content": "find completed tasks"},
+    ]
+    assert call_args[0][2] == task_filters
+
+    assert results == expected_results
