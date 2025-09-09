@@ -555,6 +555,9 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_ws</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_url</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Local mode</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_info</span><span class="p">()[</span><span class="s2">&quot;front_browser_ws&quot;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">http_to_ws</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_url</span><span class="si">}</span><span class="s2">/browser/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sandbox_id</span><span class="si">}</span><span class="s2">/cast&quot;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="BrowserSandbox.browser_close">
