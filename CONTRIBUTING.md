@@ -41,7 +41,7 @@ If you find yourself wishing for a feature that doesn't exist in AgentScope Runt
 
 ## Improving Documentation
 
-Please see {doc}`README`
+Please see [CONTRIBUTE_TO_COOKBOOK](https://runtime.agentscope.io/en/README.html).
 
 ## Contributing Code
 
@@ -109,4 +109,3 @@ git push origin feature/your-feature-name
 - Once approved, your PR will be merged
 
 Thank you for contributing to AgentScope Runtime!
-

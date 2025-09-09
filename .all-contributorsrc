@@ -1,0 +1,70 @@
+{
+  "projectName": "agentscope-runtime",
+  "projectOwner": "agentscope-ai",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md",
+    "README_zh.md"
+  ],
+  "imageSize": 100,
+  "commit": true,
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "rayrayraykk",
+      "name": "Weirui Kuang",
+      "avatar_url": "https://avatars.githubusercontent.com/u/39145382?v=4",
+      "profile": "https://github.com/rayrayraykk",
+      "contributions": [
+        "code",
+        "review",
+        "maintenance",
+        "projectManagement"
+      ]
+    },
+    {
+      "login": "zhilingluo",
+      "name": "Bruce Luo",
+      "avatar_url": "https://avatars.githubusercontent.com/u/7297307?v=4",
+      "profile": "http://www.bruceluo.net/",
+      "contributions": [
+        "code",
+        "review",
+        "example"
+      ]
+    },
+    {
+      "login": "zzhangpurdue",
+      "name": "Zhicheng Zhang",
+      "avatar_url": "https://avatars.githubusercontent.com/u/5746653?v=4",
+      "profile": "https://github.com/zzhangpurdue",
+      "contributions": [
+        "code",
+        "review",
+        "doc"
+      ]
+    },
+    {
+      "login": "ericczq",
+      "name": "ericczq",
+      "avatar_url": "https://avatars.githubusercontent.com/u/116273607?v=4",
+      "profile": "https://github.com/ericczq",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    },
+    {
+      "login": "qbc2016",
+      "name": "qbc",
+      "avatar_url": "https://avatars.githubusercontent.com/u/22984042?v=4",
+      "profile": "https://github.com/qbc2016",
+      "contributions": [
+        "review"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "linkToUsage": true
+}

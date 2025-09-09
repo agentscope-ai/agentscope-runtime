@@ -1,4 +1,7 @@
 <div align="center">
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-5-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 # AgentScope Runtime
 
@@ -342,3 +345,38 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ```
+
+## Contributors ✨
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/rayrayraykk"><img src="https://avatars.githubusercontent.com/u/39145382?v=4?s=100" width="100px;" alt="Weirui Kuang"/><br /><sub><b>Weirui Kuang</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=rayrayraykk" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/pulls?q=is%3Apr+reviewed-by%3Arayrayraykk" title="Reviewed Pull Requests">👀</a> <a href="#maintenance-rayrayraykk" title="Maintenance">🚧</a> <a href="#projectManagement-rayrayraykk" title="Project Management">📆</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://www.bruceluo.net/"><img src="https://avatars.githubusercontent.com/u/7297307?v=4?s=100" width="100px;" alt="Bruce Luo"/><br /><sub><b>Bruce Luo</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=zhilingluo" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/pulls?q=is%3Apr+reviewed-by%3Azhilingluo" title="Reviewed Pull Requests">👀</a> <a href="#example-zhilingluo" title="Examples">💡</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/zzhangpurdue"><img src="https://avatars.githubusercontent.com/u/5746653?v=4?s=100" width="100px;" alt="Zhicheng Zhang"/><br /><sub><b>Zhicheng Zhang</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=zzhangpurdue" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/pulls?q=is%3Apr+reviewed-by%3Azzhangpurdue" title="Reviewed Pull Requests">👀</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=zzhangpurdue" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ericczq"><img src="https://avatars.githubusercontent.com/u/116273607?v=4?s=100" width="100px;" alt="ericczq"/><br /><sub><b>ericczq</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=ericczq" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=ericczq" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/qbc2016"><img src="https://avatars.githubusercontent.com/u/22984042?v=4?s=100" width="100px;" alt="qbc"/><br /><sub><b>qbc</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/pulls?q=is%3Apr+reviewed-by%3Aqbc2016" title="Reviewed Pull Requests">👀</a></td>
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr>
+      <td align="center" size="13px" colspan="7">
+        <img src="https://raw.githubusercontent.com/all-contributors/all-contributors-cli/1b8533af435da9854653492b1327a23a4dbd0a10/assets/logo-small.svg">
+          <a href="https://all-contributors.js.org/docs/en/bot/usage">Add your contributions</a>
+        </img>
+      </td>
+    </tr>
+  </tfoot>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!

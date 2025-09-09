@@ -26,7 +26,7 @@ ENV PATH="/agentscope_runtime/venv/bin:$PATH"
 COPY src/agentscope_runtime/sandbox/box/shared/app.py ./
 COPY src/agentscope_runtime/sandbox/box/shared/routers/ ./routers/
 COPY src/agentscope_runtime/sandbox/box/shared/dependencies/ ./dependencies/
-COPY src/agentscope_runtime/sandbox/box/shared/steel-browser/ ./ext_services/steel-browser/
+COPY src/agentscope_runtime/sandbox/box/shared/third_party/steel-browser/ ./ext_services/steel-browser/
 COPY src/agentscope_runtime/sandbox/box/browser/box/ ./
 
 RUN pip install -r requirements.txt
@@ -47,10 +47,10 @@ RUN npm ci --omit=dev \
     && rm -rf node_modules/.cache
 
 WORKDIR ${WORKSPACE_DIR}
-RUN mv /sandbox/config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-RUN mv /sandbox/config/nginx.conf.template /etc/nginx/nginx.conf.template
+RUN mv /agentscope_runtime/config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+RUN mv /agentscope_runtime/config/nginx.conf.template /etc/nginx/nginx.conf.template
 RUN git init \
-    && chmod +x /sandbox/scripts/start.sh
+    && chmod +x /agentscope_runtime/scripts/start.sh
 
 COPY .gitignore ${WORKSPACE_DIR}
 
