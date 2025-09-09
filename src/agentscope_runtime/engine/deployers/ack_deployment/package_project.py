@@ -315,6 +315,81 @@ def _find_agent_source_file(
     return caller_filename
 
 
+def _extract_agent_name_from_source(
+    agent_file_path: str,
+    agent_obj: Any,
+) -> str:
+    """
+    Extract the actual variable name of the agent from the source file by
+    looking for variable assignments and trying to match the object type.
+
+    Args:
+        agent_file_path: Path to the source file containing agent definition
+        agent_obj: The agent object to match
+
+    Returns:
+        str: The variable name used in the source file, or "agent" as fallback
+    """
+    try:
+        with open(agent_file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Get the class name of the agent object
+        agent_class_name = agent_obj.__class__.__name__
+
+        lines = content.split("\n")
+        potential_names = []
+
+        for line in lines:
+            stripped_line = line.strip()
+            # Skip comments, empty lines, function definitions, and imports
+            if (
+                not stripped_line
+                or stripped_line.startswith("#")
+                or stripped_line.startswith("def ")
+                or stripped_line.startswith("from ")
+                or stripped_line.startswith("import ")
+                or stripped_line.startswith("class ")
+            ):
+                continue
+
+            # Look for variable assignment patterns: var_name = ...
+            if "=" in line:
+                left_side = line.split("=")[0].strip()
+                right_side = line.split("=", 1)[1].strip()
+
+                # Make sure it's a simple variable assignment (not inside
+                # parentheses or functions)
+                if (
+                    left_side
+                    and "(" not in left_side
+                    and left_side.isidentifier()
+                    and not left_side.startswith("_")
+                ):  # Skip private variables
+                    # Check indentation level - should be top level or
+                    # minimal indentation
+                    indent_level = len(line) - len(line.lstrip())
+                    if indent_level <= 4:  # Top level or minimal indentation
+                        # Check if the right side contains the agent class name
+                        if agent_class_name in right_side:
+                            # This is likely our agent assignment
+                            potential_names.insert(0, left_side)
+                        # # Also check for assignments that might create the
+                        # agent through constructor calls
+                        # elif "(" in right_side:
+                        #     potential_names.append(left_side)
+
+        # Return the first potential name found (prioritizing class name
+        # matches)
+        if potential_names:
+            return potential_names[0]
+
+    except (OSError, UnicodeDecodeError):
+        pass
+
+    return "agent"  # fallback
+
+
 def package_project(
     agent: Any,
     requirements: Optional[List[str]] = None,
@@ -366,6 +441,15 @@ def package_project(
             raise ValueError(
                 f"Unable to locate agent source file: {agent_file_path}",
             )
+
+        # Extract the actual agent variable name from the source file
+        actual_agent_name = _extract_agent_name_from_source(
+            agent_file_path,
+            agent,
+        )
+
+        # Use the actual name from source file for the template
+        agent_name = actual_agent_name
 
         # Copy agent file to temp directory as agent_file.py
         agent_dest_path = os.path.join(temp_dir, "agent_file.py")
