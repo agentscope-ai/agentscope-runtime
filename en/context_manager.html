@@ -657,6 +657,46 @@ The <code class="docutils literal notranslate"><span class="pre">ContextComposer
 </div>
 </div>
 </section>
+<section id="available-memory-services">
+<h2>Available Memory Services<a class="headerlink" href="#available-memory-services" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head text-center"><p>MemoryType</p></th>
+<th class="head"><p>Import</p></th>
+<th class="head text-center"><p>Note</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td class="text-center"><p>InMemoryMemoryService</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">agentscope_runtime.engine.services.memory_service</span> <span class="pre">import</span> <span class="pre">InMemoryMemoryService</span></code></p></td>
+<td class="text-center"><p></p></td>
+</tr>
+<tr class="row-odd"><td class="text-center"><p>RedisMemoryService</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">agentscope_runtime.engine.services.redis_memory_service</span> <span class="pre">import</span> <span class="pre">RedisMemoryService</span></code></p></td>
+<td class="text-center"><p></p></td>
+</tr>
+<tr class="row-even"><td class="text-center"><p>ReMe.PersonalMemoryService</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">reme_ai.service.personal_memory_service</span> <span class="pre">import</span> <span class="pre">PersonalMemoryService</span></code></p></td>
+<td class="text-center"><p><a class="reference external" href="https://github.com/modelscope/ReMe">User Guide</a></p></td>
+</tr>
+<tr class="row-odd"><td class="text-center"><p>ReMe.TaskMemoryService</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">reme_ai.service.task_memory_service</span> <span class="pre">import</span> <span class="pre">TaskMemoryService</span></code></p></td>
+<td class="text-center"><p><a class="reference external" href="https://github.com/modelscope/ReMe">User Guide</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="description">
+<h3>Description<a class="headerlink" href="#description" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>InMemoryMemoryService</strong>: An in-memory memory service without persistent storage.</p></li>
+<li><p><strong>RedisMemoryService</strong>: A memory service leveraging Redis for persistent storage.</p></li>
+<li><p><strong>ReMe.PersonalMemoryService</strong>: ReMe’s personalized memory service (formerly MemoryScope) empowers you to generate, retrieve, and share customized memories. Leveraging advanced LLM, embedding, and vector store technologies, it builds a comprehensive memory system with intelligent, context- and time-aware memory management—seamlessly enabling you to configure and deploy powerful AI agents.</p></li>
+<li><p><strong>ReMe.TaskMemoryService</strong>: ReMe’s task-oriented memory service helps you efficiently manage and schedule task-related memories, enhancing both the accuracy and efficiency of task execution. Powered by LLM capabilities, it supports flexible creation, retrieval, update, and deletion of memories across diverse task scenarios—enabling you to effortlessly build and scale robust agent-based task systems.</p></li>
+</ul>
+</section>
+</section>
 <section id="details-about-session-history-service">
 <span id="session-history-service"></span><h2>Details about Session History Service<a class="headerlink" href="#details-about-session-history-service" title="Link to this heading">¶</a></h2>
 <p>The Session History Service manages conversation sessions for users, providing a structured way to handle conversation history and message storage. Each session contains the history of a conversation and is uniquely identified by its ID.</p>
@@ -1241,6 +1281,10 @@ Other complicated search algorithms could be used to replace the simple method b
 </li>
 <li><a class="reference internal" href="#contextcomposer">ContextComposer</a></li>
 <li><a class="reference internal" href="#appending-outputs-to-context">Appending outputs to context</a></li>
+<li><a class="reference internal" href="#available-memory-services">Available Memory Services</a><ul>
+<li><a class="reference internal" href="#description">Description</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#details-about-session-history-service">Details about Session History Service</a><ul>
 <li><a class="reference internal" href="#service-overview">Service Overview</a></li>
 <li><a class="reference internal" href="#session-object-structure">Session Object Structure</a></li>
