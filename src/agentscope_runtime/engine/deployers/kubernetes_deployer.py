@@ -53,7 +53,6 @@ class KubernetesDeployer(DeployManager):
         self.k8s_config = k8s_config
         self.registry_config = registry_config
         self.image_builder = image_builder or DockerImageBuilder(
-            registry_config,
         )
         self.use_deployment = use_deployment
 
@@ -102,7 +101,7 @@ class KubernetesDeployer(DeployManager):
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         # Parameters following _agent_engines.py create method pattern
         requirements: Optional[Union[str, List[str]]] = None,
-        user_code_path: Optional[str] = None,
+        extra_packages: List[str] = [],
         base_image: str = "python:3.9-slim",
         port: int = 8090,
         replicas: int = 1,
@@ -125,7 +124,7 @@ class KubernetesDeployer(DeployManager):
             stream: Enable streaming responses
             protocol_adapters: protocol adapters
             requirements: PyPI dependencies (following _agent_engines.py pattern)
-            user_code_path: User code directory/file path
+            extra_packages: User code directory/file path
             base_image: Docker base image
             port: Container port
             replicas: Number of replicas
@@ -169,12 +168,10 @@ class KubernetesDeployer(DeployManager):
                 actual_requirements = (
                     requirements_file or requirements_list or requirements
                 )
-                actual_user_code_path = user_code_path
             elif runner is not None:
                 # New approach: use complete runner object
                 actual_func = runner
                 actual_requirements = requirements
-                actual_user_code_path = user_code_path
             else:
                 raise ValueError(
                     "Either runner or func parameter must be provided",
@@ -182,10 +179,10 @@ class KubernetesDeployer(DeployManager):
 
             # Step 1: Build image
             logger.info("Building runner image...")
-            built_image_name = await self.image_builder.build_runner_image(
+            built_image_name = self.image_builder.build_runner_image(
                 runner=actual_func,
                 requirements=actual_requirements,
-                user_code_path=actual_user_code_path,
+                extras_package=extra_packages,
                 base_image=base_image,
                 stream=stream,
                 endpoint_path=endpoint_path,
@@ -290,7 +287,7 @@ class KubernetesDeployer(DeployManager):
                 "config": {
                     "runner": runner,
                     "func": func,  # Keep for backward compatibility
-                    "user_code_path": user_code_path,
+                    "extra_packages": extra_packages,
                     "requirements_file": requirements_file,  # Legacy
                     "requirements_list": requirements_list,  # Legacy
                     "requirements": requirements,  # New format

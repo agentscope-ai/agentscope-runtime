@@ -11,6 +11,7 @@ from typing import Optional, Dict, List, Tuple, Union
 
 from agentscope_runtime.engine.runner import Runner
 from .package_project import package_project, create_tar_gz
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -184,17 +185,17 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
                 f"Invalid requirements type: {type(requirements)}",
             )
 
-    def _validate_extras_package_or_raise(
+    def _validate_extra_packages_or_raise(
         self,
-        extras_package: List[str],
+        extra_packages: List[str],
     ) -> List[str]:
-        """Validate extras_package"""
-        for package in extras_package:
+        """Validate extra_packages"""
+        for package in extra_packages:
             if not os.path.exists(package):
                 raise FileNotFoundError(
                     f"User code path not found: {package}",
                 )
-        return extras_package or []
+        return extra_packages or []
 
     def _validate_runner_or_raise(self, runner: Runner):
         """Validate runner object"""
@@ -678,7 +679,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         agent,
         image_name: str,
         requirements: Optional[List[str]] = None,
-        extras_package: Optional[List[str]] = None,
+        extra_packages: Optional[List[str]] = None,
         image_tag: str = "latest",
         registry: Optional[str] = None,
         push_to_registry: bool = False,
@@ -691,7 +692,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
             agent: The agent object to be packaged
             image_name: Name for the Docker image
             requirements: List of pip package requirements
-            extras_package: List of extra files/directories to include
+            extra_packages: List of extra files/directories to include
             image_tag: Tag for the Docker image
             registry: Docker registry URL for pushing
             push_to_registry: Whether to push the image to registry
@@ -710,7 +711,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
             temp_project_dir = package_project(
                 agent=agent,
                 requirements=requirements,
-                extras_package=extras_package,
+                extra_packages=extra_packages,
                 # caller_depth is no longer needed due to automatic stack search
             )
 
@@ -741,7 +742,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         self,
         runner: Runner,
         requirements: Optional[Union[str, List[str]]] = None,
-        extras_package: List[str] = [],
+        extra_packages: List[str] = [],
         base_image: str = "python:3.9-slim",
         image_tag: str = None,
         stream: bool = True,
@@ -755,7 +756,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         Args:
             runner: Complete Runner object with agent, environment_manager, context_manager
             requirements: PyPI dependencies
-            extras_package: User code directory/file path
+            extra_packages: User code directory/file path
             base_image: Docker base image
             image_tag: Image tag (auto-generated if None)
             stream: Enable streaming endpoint
@@ -768,8 +769,8 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         try:
             # Validation
             requirements = self._validate_requirements_or_raise(requirements)
-            extras_package = self._validate_extras_package_or_raise(
-                extras_package,
+            extra_packages = self._validate_extra_packages_or_raise(
+                extra_packages,
             )
             self._validate_runner_or_raise(runner)
 
@@ -778,7 +779,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
                 runner_hash = self._generate_runner_hash(
                     runner,
                     requirements,
-                    extras_package,
+                    extra_packages,
                 )
                 image_tag = f"runner-{runner_hash}-{int(time.time())}"
 
@@ -803,7 +804,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
                 agent=agent,
                 image_name=image_tag,
                 requirements=requirements,
-                extras_package=extras_package,
+                extra_packages=extra_packages,
                 registry=self.registry_config.registry_url,
                 push_to_registry=True,
                 base_image=base_image,
