@@ -63,6 +63,15 @@
       "contributions": [
         "review"
       ]
+    },
+    {
+      "login": "rankesterc",
+      "name": "Ran Chen",
+      "avatar_url": "https://avatars.githubusercontent.com/u/114560457?v=4",
+      "profile": "https://github.com/rankesterc",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,

@@ -57,7 +57,7 @@ langgraph = [
 ]
 
 agno = [
-    "agno>=1.7.5",
+    "agno>=1.7.5,<2.0.0",
 ]
 a2a = [
     "a2a-sdk>=0.3.0",
