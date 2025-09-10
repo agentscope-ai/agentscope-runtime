@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=too-many-branches
+import hashlib
+import logging
 import os
 import time
-import hashlib
 import traceback
-import logging
+from typing import Optional
 
 from kubernetes import client
 from kubernetes import config as k8s_config
@@ -14,12 +15,19 @@ from .base_client import BaseClient
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_IMAGE_REGISTRY = "agentscope-registry.ap-southeast-1.cr.aliyuncs.com"
+
 
 class KubernetesClient(BaseClient):
-    def __init__(self, config=None):
+    def __init__(
+        self,
+        config=None,
+        image_registry: Optional[str] = DEFAULT_IMAGE_REGISTRY,
+    ):
         self.config = config
         namespace = self.config.k8s_namespace
         kubeconfig = self.config.kubeconfig_path
+        self.image_registry = image_registry
         try:
             if kubeconfig:
                 k8s_config.load_kube_config(config_file=kubeconfig)
@@ -93,10 +101,15 @@ class KubernetesClient(BaseClient):
 
         # Container specification
         # TODO: use image from docker registry first
+
+        if not self.image_registry:
+            image = image
+        else:
+            image = f"{self.image_registry}/{image}"
+
         container = client.V1Container(
             name=container_name,
-            image=f"agentscope-registry.ap-southeast-1.cr.aliyuncs.com"
-            f"/{image}",
+            image=image,
             image_pull_policy=runtime_config.get(
                 "image_pull_policy",
                 "IfNotPresent",

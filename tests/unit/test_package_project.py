@@ -231,7 +231,7 @@ class TestPackageProject:
         extras = [extra_file, extra_dir]
 
         try:
-            result_dir = package_project(mock_agent, extras_package=extras)
+            result_dir = package_project(mock_agent, extra_packages=extras)
 
             # Check that extra files were copied
             assert os.path.exists(os.path.join(result_dir, "config.yaml"))

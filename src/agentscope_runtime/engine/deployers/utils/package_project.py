@@ -11,7 +11,8 @@ import inspect
 import ast
 import importlib.util
 import tarfile
-from typing import List, Optional, Any
+import hashlib
+from typing import List, Optional, Any, Tuple
 from pathlib import Path
 
 
@@ -390,24 +391,105 @@ def _extract_agent_name_from_source(
     return "agent"  # fallback
 
 
+def _calculate_directory_hash(directory_path: str) -> str:
+    """
+    Calculate a hash representing the entire contents of a directory.
+
+    Args:
+        directory_path: Path to the directory to hash
+
+    Returns:
+        str: SHA256 hash of the directory contents
+    """
+    hasher = hashlib.sha256()
+
+    if not os.path.exists(directory_path):
+        return ""
+
+    # Walk through directory and hash all file contents and paths
+    for root, dirs, files in sorted(os.walk(directory_path)):
+        # Sort to ensure consistent ordering
+        dirs.sort()
+        files.sort()
+
+        for filename in files:
+            file_path = os.path.join(root, filename)
+
+            # Hash the relative path
+            rel_path = os.path.relpath(file_path, directory_path)
+            hasher.update(rel_path.encode("utf-8"))
+
+            # Hash the file contents
+            try:
+                with open(file_path, "rb") as f:
+                    for chunk in iter(lambda: f.read(4096), b""):
+                        hasher.update(chunk)
+            except (OSError, IOError):
+                # Skip files that can't be read
+                continue
+
+    return hasher.hexdigest()
+
+
+def _compare_directories(old_dir: str, new_dir: str) -> bool:
+    """
+    Compare two directories to see if their contents are identical.
+
+    Args:
+        old_dir: Path to the old directory
+        new_dir: Path to the new directory
+
+    Returns:
+        bool: True if directories have identical contents, False otherwise
+    """
+    old_hash = _calculate_directory_hash(old_dir)
+    new_hash = _calculate_directory_hash(new_dir)
+
+    return old_hash == new_hash and old_hash != ""
+
+
 def package_project(
     agent: Any,
     requirements: Optional[List[str]] = None,
-    extras_package: Optional[List[str]] = None,
-) -> str:
+    extra_packages: Optional[List[str]] = None,
+    package_dir: Optional[str] = None,
+) -> Tuple[str, bool]:
     """
     Package a project with agent and dependencies into a temporary directory.
 
     Args:
         agent: The agent object to be packaged
         requirements: List of pip package requirements
-        extras_package: List of extra files/directories to include
+        extra_packages: List of extra files/directories to include
+        package_dir: Optional directory to use for packaging. If provided and
+                    directory already exists with content, will compare contents
+                    before updating.
 
     Returns:
-        str: Path to the temporary directory containing the packaged project
+        Tuple[str, bool]: A tuple containing:
+            - str: Path to the directory containing the packaged project
+            - bool: True if the directory was updated, False if no update was needed
     """
     # Create temporary directory
-    temp_dir = tempfile.mkdtemp(prefix="agentscope_package_")
+    original_temp_dir = temp_dir = None
+    if package_dir is None:
+        temp_dir = tempfile.mkdtemp(prefix="agentscope_package_")
+        needs_update = True  # New directory always needs update
+    else:
+        temp_dir = package_dir
+        # Check if directory exists and has content
+        if os.path.exists(temp_dir) and os.listdir(temp_dir):
+            # Directory exists and has content, create a temporary directory first
+            # to generate new content for comparison
+            original_temp_dir = temp_dir
+            temp_dir = tempfile.mkdtemp(prefix="agentscope_package_new_")
+            needs_update = None  # Will be determined after comparison
+        else:
+            # Directory doesn't exist or is empty, needs update
+            needs_update = True
+            # Create directory if it doesn't exist
+            if not os.path.exists(temp_dir):
+                os.makedirs(temp_dir)
 
     try:
         # Extract agent variable name from the caller's frame
@@ -456,13 +538,12 @@ def package_project(
         shutil.copy2(agent_file_path, agent_dest_path)
 
         # Copy extra package files
-        if extras_package:
-            # Get the base directory from the caller for relative path
+        if extra_packages:
+            # Get the base directory from the agent_file_path for relative path
             # calculation
-            caller_filename = caller_frame.f_code.co_filename
-            caller_dir = os.path.dirname(caller_filename)
+            caller_dir = os.path.dirname(agent_file_path)
 
-            for extra_path in extras_package:
+            for extra_path in extra_packages:
                 if os.path.isfile(extra_path):
                     # Calculate relative path from caller directory
                     if os.path.isabs(extra_path):
@@ -620,16 +701,61 @@ async def chat(message: str):
                 ]
 
                 # Combine base requirements with user requirements
-                all_requirements = list(set(base_requirements + requirements))
+                all_requirements = sorted(
+                    list(set(base_requirements + requirements))
+                )
 
                 for req in all_requirements:
                     f.write(f"{req}\n")
 
-        return temp_dir
+        # If we need to determine if update is needed (existing directory case)
+        if needs_update is None and original_temp_dir is not None:
+            # Compare the original directory with the new content
+            if _compare_directories(original_temp_dir, temp_dir):
+                # Content is identical, no update needed
+                needs_update = False
+                # Clean up the temporary new directory and return original directory
+                if os.path.exists(temp_dir):
+                    shutil.rmtree(temp_dir)
+                return original_temp_dir, needs_update
+            else:
+                # Content is different, update needed
+                needs_update = True
+                # Replace the content in the original directory
+                # First, clear the original directory
+                for item in os.listdir(original_temp_dir):
+                    item_path = os.path.join(original_temp_dir, item)
+                    if os.path.isdir(item_path):
+                        shutil.rmtree(item_path)
+                    else:
+                        os.remove(item_path)
+
+                # Copy new content to original directory
+                for item in os.listdir(temp_dir):
+                    src_path = os.path.join(temp_dir, item)
+                    dst_path = os.path.join(original_temp_dir, item)
+                    if os.path.isdir(src_path):
+                        shutil.copytree(src_path, dst_path)
+                    else:
+                        shutil.copy2(src_path, dst_path)
+
+                # Clean up temporary directory
+                if os.path.exists(temp_dir):
+                    shutil.rmtree(temp_dir)
+                return original_temp_dir, needs_update
+
+        return temp_dir, needs_update
 
     except Exception as e:
         # Clean up on error
-        if os.path.exists(temp_dir):
+        if os.path.exists(temp_dir) and temp_dir != package_dir:
+            shutil.rmtree(temp_dir)
+        # If we're using a temporary directory for comparison, clean it up
+        if (
+            original_temp_dir
+            and temp_dir != original_temp_dir
+            and os.path.exists(temp_dir)
+        ):
             shutil.rmtree(temp_dir)
         raise e
 

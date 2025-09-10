@@ -155,12 +155,13 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         self,
         runner: Runner,
         requirements: List[str],
-        user_code_path: str,
+        extra_packages: Optional[List[str]] = None,
     ) -> str:
         """Generate hash for runner context"""
         # Create hash based on runner content
+        extra_packages_str = str(extra_packages) if extra_packages else "None"
         hash_content = (
-            f"{str(runner._agent)}{str(requirements)}{user_code_path}"
+            f"{str(runner._agent)}{str(requirements)}{extra_packages_str}"
         )
         return hashlib.md5(hash_content.encode()).hexdigest()[:8]
 
@@ -307,12 +308,15 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         self,
         tar_gz_path: str,
         image_name: str,
+        registry: str,
         image_tag: str = "latest",
         build_context_dir: Optional[str] = None,
         dockerfile_customizations: Optional[Dict] = None,
         build_args: Optional[Dict[str, str]] = None,
         no_cache: bool = False,
         quiet: bool = False,
+        source_updated: bool = False,
+        **kwargs,
     ) -> Tuple[str, str]:
         """
         Build Docker image from tar.gz project.
@@ -326,6 +330,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
             build_args: Build arguments to pass to docker build
             no_cache: Whether to disable Docker build cache
             quiet: Whether to suppress build output
+            source_updated: Whether to update Docker image
 
         Returns:
             Tuple[str, str]: (full_image_name, build_context_path)
@@ -356,6 +361,9 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
         # Construct full image name
         full_image_name = f"{image_name}:{image_tag}"
+
+        if not source_updated:
+            return full_image_name, build_context_path
 
         # Prepare docker build command
         build_cmd = ["docker", "build", "-t", full_image_name]
@@ -450,7 +458,10 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         image_tag: str = "latest",
         dockerfile_customizations: Optional[Dict] = None,
         build_args: Optional[Dict[str, str]] = None,
-        **build_options,
+        no_cache: bool = False,
+        quiet: bool = False,
+        source_updated: bool = False,
+        **kwargs,
     ) -> str:
         """
         Build and push Docker image to registry.
@@ -462,7 +473,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
             image_tag: Tag for the Docker image
             dockerfile_customizations: Customizations for Dockerfile
             build_args: Build arguments
-            **build_options: Additional build options (no_cache, quiet, etc.)
+            **kwargs: Additional build options (no_cache, quiet, etc.)
 
         Returns:
             str: Full image name with registry
@@ -472,27 +483,27 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         """
         # Construct full image name with registry
         if registry:
-            full_image_name = f"{registry}/{image_name}:{image_tag}"
+            full_image_name = f"{registry}/{image_name}"
         else:
-            full_image_name = f"{image_name}:{image_tag}"
+            full_image_name = f"{image_name}"
 
         # Build the image
         built_image_name, build_context_path = self.build_image(
             tar_gz_path=tar_gz_path,
-            image_name=full_image_name.rsplit(":", 1)[
-                0
-            ],  # Remove tag for build
+            image_name=full_image_name,
+            registry=registry,
             image_tag=image_tag,
             dockerfile_customizations=dockerfile_customizations,
             build_args=build_args,
-            **build_options,
+            source_updated=source_updated,
+            **kwargs,
         )
 
         # Push to registry if registry is specified
         if registry:
             try:
                 push_cmd = ["docker", "push", full_image_name]
-                quiet = build_options.get("quiet", False)
+                quiet = kwargs.get("quiet", False)
 
                 if quiet:
                     result = subprocess.run(
@@ -610,7 +621,8 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         build_args: Optional[Dict[str, str]] = None,
         no_cache: bool = False,
         quiet: bool = False,
-        **dockerfile_options,
+        source_updated: bool = False,
+        **kwargs,
     ) -> Tuple[str, str]:
         """
         Complete pipeline to build Docker image from tar.gz project.
@@ -626,7 +638,8 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
             build_args: Build arguments for docker build
             no_cache: Whether to disable Docker build cache
             quiet: Whether to suppress build output
-            **dockerfile_options: Additional Dockerfile customization options
+            source_updated: Whether to update Docker image source
+            **kwargs: Additional Dockerfile customization options
 
         Returns:
             Tuple[str, str]: (full_image_name, build_context_path)
@@ -646,10 +659,11 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
                     image_name=image_name,
                     registry=registry,
                     image_tag=image_tag,
-                    dockerfile_customizations=dockerfile_options,
+                    dockerfile_customizations=kwargs,
                     build_args=build_args,
                     no_cache=no_cache,
                     quiet=quiet,
+                    source_updated=source_updated,
                 )
                 # Get build context path from last operation
                 build_context_path = (
@@ -661,11 +675,13 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
                 full_image_name, build_context_path = self.build_image(
                     tar_gz_path=tar_gz_path,
                     image_name=image_name,
+                    registry=registry,
                     image_tag=image_tag,
-                    dockerfile_customizations=dockerfile_options,
+                    dockerfile_customizations=kwargs,
                     build_args=build_args,
                     no_cache=no_cache,
                     quiet=quiet,
+                    source_updated=source_updated,
                 )
                 return full_image_name, build_context_path
 
@@ -683,7 +699,8 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         image_tag: str = "latest",
         registry: Optional[str] = None,
         push_to_registry: bool = False,
-        **build_options,
+        build_context_dir: Optional[str] = None,
+        **kwargs,
     ) -> Tuple[str, str, str]:
         """
         Complete end-to-end pipeline: package agent project -> create tar.gz -> build Docker image.
@@ -696,7 +713,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
             image_tag: Tag for the Docker image
             registry: Docker registry URL for pushing
             push_to_registry: Whether to push the image to registry
-            **build_options: Additional build options and Dockerfile customizations
+            **kwargs: Additional build options and Dockerfile customizations
 
         Returns:
             Tuple[str, str, str]: (full_image_name, tar_gz_path, build_context_path)
@@ -708,13 +725,13 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
         try:
             # Package the project
-            temp_project_dir = package_project(
+            temp_project_dir, is_updated = package_project(
                 agent=agent,
                 requirements=requirements,
                 extra_packages=extra_packages,
+                package_dir=build_context_dir,
                 # caller_depth is no longer needed due to automatic stack search
             )
-
             # Create tar.gz from packaged project
             tar_gz_path = create_tar_gz(temp_project_dir)
 
@@ -725,12 +742,14 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
                 image_tag=image_tag,
                 registry=registry,
                 push_to_registry=push_to_registry,
-                **build_options,
+                source_updated=is_updated,
+                **kwargs,
             )
 
             return full_image_name, tar_gz_path, build_context_path
 
-        except Exception:
+        except Exception as e:
+            logger.error(e)
             # Clean up temporary files on error
             if temp_project_dir and os.path.exists(temp_project_dir):
                 shutil.rmtree(temp_project_dir)
@@ -741,12 +760,16 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
     def build_runner_image(
         self,
         runner: Runner,
+        registry: str,
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: List[str] = [],
         base_image: str = "python:3.9-slim",
+        image_name: str = "agent_app",
         image_tag: str = None,
         stream: bool = True,
         endpoint_path: str = "/process",
+        build_context_dir: Optional[str] = None,
+        push_to_registry=False,
         **kwargs,
     ) -> str:
         """
@@ -779,9 +802,8 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
                 runner_hash = self._generate_runner_hash(
                     runner,
                     requirements,
-                    extra_packages,
                 )
-                image_tag = f"runner-{runner_hash}-{int(time.time())}"
+                image_tag = f"runner-{runner_hash}"
 
             # Extract agent from runner
             if not hasattr(runner, "_agent") or runner._agent is None:
@@ -802,14 +824,16 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
                 build_context_path,
             ) = self.package_and_build_image(
                 agent=agent,
-                image_name=image_tag,
+                image_name=image_name,
+                image_tag=image_tag,
                 requirements=requirements,
                 extra_packages=extra_packages,
-                registry=self.registry_config.registry_url,
-                push_to_registry=True,
+                registry=registry,
+                push_to_registry=push_to_registry,
                 base_image=base_image,
                 port=8000,
                 quiet=False,
+                build_context_dir=build_context_dir,
             )
 
             logger.info(

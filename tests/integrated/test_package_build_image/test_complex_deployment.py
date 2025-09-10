@@ -46,7 +46,7 @@ class MockDeployManager(DeployManager):
         package_path = package_project(
             agent=runner._agent,
             requirements=requirements,
-            extras_package=extra_packages,
+            extra_packages=extra_packages,
         )
 
         return package_path

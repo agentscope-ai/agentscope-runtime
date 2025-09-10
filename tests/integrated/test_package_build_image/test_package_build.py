@@ -31,7 +31,7 @@ def test_service_integration():
         package_path = package_project(
             agent=llm_agent,
             requirements=["langgraph"],
-            extras_package=[
+            extra_packages=[
                 os.path.join(
                     os.path.dirname(__file__),
                     "others",
@@ -104,7 +104,7 @@ def test_package_build():
             agent=llm_agent,
             image_name="agentscope-test",
             requirements=["langgraph"],
-            extras_package=[
+            extra_packages=[
                 os.path.join(
                     os.path.dirname(__file__),
                     "others",
