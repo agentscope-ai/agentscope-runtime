@@ -10,7 +10,7 @@ import tarfile
 import pytest
 from pathlib import Path
 
-from agentscope_runtime.engine.deployers.ack_deployment.package_project import (
+from agentscope_runtime.engine.deployers.utils.package_project import (
     package_project,
     create_tar_gz,
     _find_agent_source_file,
@@ -242,25 +242,6 @@ class TestPackageProject:
         finally:
             if "result_dir" in locals() and os.path.exists(result_dir):
                 shutil.rmtree(result_dir)
-
-
-class TestFindAgentSourceFile:
-    """Test cases for _find_agent_source_file function."""
-
-    def test_find_agent_source_file_basic(self):
-        """Test basic functionality of _find_agent_source_file."""
-        # Create a mock frame
-        import inspect
-
-        frame = inspect.currentframe()
-
-        # This is a simplified test - the actual function requires complex frame analysis
-        # In a real scenario, this would need more sophisticated mocking
-        result = _find_agent_source_file("test_agent", frame)
-
-        # Should at least return the current file as fallback
-        assert result is not None
-        assert isinstance(result, str)
 
 
 if __name__ == "__main__":

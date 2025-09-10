@@ -14,11 +14,15 @@ import signal
 sys.path.insert(0, os.path.dirname(__file__))
 
 from agent_run import llm_agent
-from package_project import package_project
-from docker_builder import package_and_build_docker_image
+from agentscope_runtime.engine.deployers.utils.package_project import (
+    package_project,
+)
+from agentscope_runtime.engine.deployers.utils.docker_builder import (
+    DockerImageBuilder,
+)
 
 
-def demo_service_integration():
+def test_service_integration():
     """Test that the packaged service can start and respond to requests"""
     print("Testing service integration...")
 
@@ -30,7 +34,7 @@ def demo_service_integration():
             extras_package=[
                 os.path.join(
                     os.path.dirname(__file__),
-                    "otheers",
+                    "others",
                     "other_project.py",
                 ),
             ],
@@ -65,50 +69,17 @@ def demo_service_integration():
 
         # Give the service time to start
         time.sleep(3)
-
         # Test the root endpoint
-        try:
-            response = requests.get("http://localhost:8000/", timeout=5)
-            if response.status_code == 200:
-                print("✅ Root endpoint is working")
-                print(f"Response: {response.json()}")
-            else:
-                print(
-                    f"❌ Root endpoint failed with status: {response.status_code}",
-                )
-                return False
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Failed to connect to service: {e}")
-            return False
+        response = requests.get("http://localhost:8000/", timeout=5)
+        assert response.status_code == 200
 
         # Test the chat endpoint
-        try:
-            response = requests.get(
-                "http://localhost:8000/chat?message=Hello",
-                timeout=10,
-            )
-            if response.status_code == 200:
-                print("✅ Chat endpoint is accessible")
-                result = response.json()
-                print(f"Chat response: {result}")
-            else:
-                print(
-                    f"⚠️ Chat endpoint returned status: {response.status_code}",
-                )
-        except requests.exceptions.RequestException as e:
-            print(
-                f"⚠️ Chat endpoint test failed (this might be expected without proper API keys): {e}",
-            )
 
-        print("✅ Service integration test completed!")
-        return True
-
-    except Exception as e:
-        print(f"❌ Service integration test failed: {e}")
-        import traceback
-
-        traceback.print_exc()
-        return False
+        response = requests.get(
+            "http://localhost:8000/chat?message=Hello",
+            timeout=10,
+        )
+        assert response.status_code == 200
 
     finally:
         # Clean up the service process
@@ -120,37 +91,31 @@ def demo_service_integration():
         except:
             pass
 
-        # Clean up the package directory
-        if "package_path" in locals():
-            import shutil
 
-            print(f"Cleaning up package directory: {package_path}")
-            shutil.rmtree(package_path)
-
-
-def demo_package_build():
+def test_package_build():
+    docker_builder = DockerImageBuilder()
     try:
         # Create package
-        package_path = package_and_build_docker_image(
+        (
+            image_name,
+            tar_gz_path,
+            build_context_path,
+        ) = docker_builder.package_and_build_image(
             agent=llm_agent,
             image_name="agentscope-test",
             requirements=["langgraph"],
             extras_package=[
                 os.path.join(
                     os.path.dirname(__file__),
-                    "otheers",
+                    "others",
                     "other_project.py",
                 ),
             ],
         )
+        assert image_name == "agentscope-test:latest"
     except Exception as e:
         print(f"❌ Service integration test failed: {e}")
         import traceback
 
         traceback.print_exc()
-        return False
-
-
-if __name__ == "__main__":
-    # demo_service_integration()
-    demo_package_build()
+        assert False

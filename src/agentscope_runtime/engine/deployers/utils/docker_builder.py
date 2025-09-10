@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
+import hashlib
+import json
+import logging
 import os
-import tempfile
-import tarfile
 import shutil
 import subprocess
-import json
-from typing import Optional, Dict, List, Tuple
-from pathlib import Path
+import tarfile
+import tempfile
+from typing import Optional, Dict, List, Tuple, Union
+
+from agentscope_runtime.engine.runner import Runner
+from .package_project import package_project, create_tar_gz
+
+logger = logging.getLogger(__name__)
 
 
 class DockerImageBuilder:
@@ -75,7 +81,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         self.port = port
         self.temp_dirs: List[str] = []
 
-    def create_dockerfile(
+    def _create_dockerfile(
         self,
         tar_gz_path: str,
         output_dir: Optional[str] = None,
@@ -144,6 +150,61 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
                 self.temp_dirs.remove(output_dir)
             raise OSError(f"Failed to create Dockerfile: {str(e)}")
 
+    def _generate_runner_hash(
+        self,
+        runner: Runner,
+        requirements: List[str],
+        user_code_path: str,
+    ) -> str:
+        """Generate hash for runner context"""
+        # Create hash based on runner content
+        hash_content = (
+            f"{str(runner._agent)}{str(requirements)}{user_code_path}"
+        )
+        return hashlib.md5(hash_content.encode()).hexdigest()[:8]
+
+    def _validate_requirements_or_raise(
+        self,
+        requirements: Optional[Union[str, List[str]]],
+    ) -> List[str]:
+        """Validate requirements parameter"""
+        if requirements is None:
+            return []
+        elif isinstance(requirements, str):
+            if os.path.exists(requirements):
+                with open(requirements, "r") as f:
+                    return f.read().splitlines()
+            else:
+                # Treat as single requirement
+                return [requirements]
+        elif isinstance(requirements, list):
+            return requirements
+        else:
+            raise ValueError(
+                f"Invalid requirements type: {type(requirements)}",
+            )
+
+    def _validate_extras_package_or_raise(
+        self,
+        extras_package: List[str],
+    ) -> List[str]:
+        """Validate extras_package"""
+        for package in extras_package:
+            if not os.path.exists(package):
+                raise FileNotFoundError(
+                    f"User code path not found: {package}",
+                )
+        return extras_package or []
+
+    def _validate_runner_or_raise(self, runner: Runner):
+        """Validate runner object"""
+        if not hasattr(runner, "_agent"):
+            raise ValueError("Invalid runner object: missing _agent attribute")
+        if not hasattr(runner, "_environment_manager"):
+            logger.warning("Runner missing _environment_manager")
+        if not hasattr(runner, "_context_manager"):
+            logger.warning("Runner missing _context_manager")
+
     def _generate_dockerfile_content(
         self,
         custom_template: Optional[str],
@@ -210,7 +271,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
         return content
 
-    def create_build_context(
+    def _create_build_context(
         self,
         tar_gz_path: str,
         output_dir: Optional[str] = None,
@@ -229,7 +290,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         """
         customizations = dockerfile_customizations or {}
 
-        dockerfile_path = self.create_dockerfile(
+        dockerfile_path = self._create_dockerfile(
             tar_gz_path=tar_gz_path,
             output_dir=output_dir,
             custom_dockerfile_template=customizations.get("template"),
@@ -286,7 +347,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
             )
 
         # Create build context
-        build_context_path = self.create_build_context(
+        build_context_path = self._create_build_context(
             tar_gz_path=tar_gz_path,
             output_dir=build_context_dir,
             dockerfile_customizations=dockerfile_customizations,
@@ -536,220 +597,228 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         """Context manager exit with cleanup."""
         self.cleanup()
 
+    def build_image_from_tar(
+        self,
+        tar_gz_path: str,
+        image_name: str,
+        image_tag: str = "latest",
+        registry: Optional[str] = None,
+        push_to_registry: bool = False,
+        base_image: str = "python:3.9-slim",
+        port: int = 8000,
+        build_args: Optional[Dict[str, str]] = None,
+        no_cache: bool = False,
+        quiet: bool = False,
+        **dockerfile_options,
+    ) -> Tuple[str, str]:
+        """
+        Complete pipeline to build Docker image from tar.gz project.
 
-def build_docker_image_from_tar(
-    tar_gz_path: str,
-    image_name: str,
-    image_tag: str = "latest",
-    registry: Optional[str] = None,
-    push_to_registry: bool = False,
-    base_image: str = "python:3.9-slim",
-    port: int = 8000,
-    build_args: Optional[Dict[str, str]] = None,
-    no_cache: bool = False,
-    quiet: bool = False,
-    **dockerfile_options,
-) -> Tuple[str, str]:
-    """
-    Complete pipeline to build Docker image from tar.gz project.
+        Args:
+            tar_gz_path: Path to the tar.gz file containing the project
+            image_name: Name for the Docker image
+            image_tag: Tag for the Docker image
+            registry: Docker registry URL for pushing
+            push_to_registry: Whether to push the image to registry
+            base_image: Base Docker image to use
+            port: Port to expose in container
+            build_args: Build arguments for docker build
+            no_cache: Whether to disable Docker build cache
+            quiet: Whether to suppress build output
+            **dockerfile_options: Additional Dockerfile customization options
 
-    Args:
-        tar_gz_path: Path to the tar.gz file containing the project
-        image_name: Name for the Docker image
-        image_tag: Tag for the Docker image
-        registry: Docker registry URL for pushing
-        push_to_registry: Whether to push the image to registry
-        base_image: Base Docker image to use
-        port: Port to expose in container
-        build_args: Build arguments for docker build
-        no_cache: Whether to disable Docker build cache
-        quiet: Whether to suppress build output
-        **dockerfile_options: Additional Dockerfile customization options
+        Returns:
+            Tuple[str, str]: (full_image_name, build_context_path)
 
-    Returns:
-        Tuple[str, str]: (full_image_name, build_context_path)
+        Raises:
+            subprocess.CalledProcessError: If docker build or push fails
+            FileNotFoundError: If docker command is not found
+            ValueError: If tar.gz file doesn't exist
 
-    Raises:
-        subprocess.CalledProcessError: If docker build or push fails
-        FileNotFoundError: If docker command is not found
-        ValueError: If tar.gz file doesn't exist
+        """
 
-    Example:
-        >>> # Basic build
-        >>> image_name, context_path = build_docker_image_from_tar(
-        ...     "my_project.tar.gz",
-        ...     "my-app"
-        ... )
+        try:
+            if push_to_registry and registry:
+                # Build and push to registry
+                full_image_name = self.build_and_push_image(
+                    tar_gz_path=tar_gz_path,
+                    image_name=image_name,
+                    registry=registry,
+                    image_tag=image_tag,
+                    dockerfile_customizations=dockerfile_options,
+                    build_args=build_args,
+                    no_cache=no_cache,
+                    quiet=quiet,
+                )
+                # Get build context path from last operation
+                build_context_path = (
+                    self.temp_dirs[-1] if self.temp_dirs else ""
+                )
+                return full_image_name, build_context_path
+            else:
+                # Just build locally
+                full_image_name, build_context_path = self.build_image(
+                    tar_gz_path=tar_gz_path,
+                    image_name=image_name,
+                    image_tag=image_tag,
+                    dockerfile_customizations=dockerfile_options,
+                    build_args=build_args,
+                    no_cache=no_cache,
+                    quiet=quiet,
+                )
+                return full_image_name, build_context_path
 
-        >>> # Build and push to registry
-        >>> image_name, context_path = build_docker_image_from_tar(
-        ...     "my_project.tar.gz",
-        ...     "my-app",
-        ...     registry="gcr.io/my-project",
-        ...     push_to_registry=True,
-        ...     packages=["curl", "git"],
-        ...     env_vars={"DEBUG": "1"}
-        ... )
-    """
-    builder = DockerImageBuilder(base_image=base_image, port=port)
+        except Exception:
+            # Clean up on error
+            self.cleanup()
+            raise
 
-    try:
-        if push_to_registry and registry:
-            # Build and push to registry
-            full_image_name = builder.build_and_push_image(
+    def package_and_build_image(
+        self,
+        agent,
+        image_name: str,
+        requirements: Optional[List[str]] = None,
+        extras_package: Optional[List[str]] = None,
+        image_tag: str = "latest",
+        registry: Optional[str] = None,
+        push_to_registry: bool = False,
+        **build_options,
+    ) -> Tuple[str, str, str]:
+        """
+        Complete end-to-end pipeline: package agent project -> create tar.gz -> build Docker image.
+
+        Args:
+            agent: The agent object to be packaged
+            image_name: Name for the Docker image
+            requirements: List of pip package requirements
+            extras_package: List of extra files/directories to include
+            image_tag: Tag for the Docker image
+            registry: Docker registry URL for pushing
+            push_to_registry: Whether to push the image to registry
+            **build_options: Additional build options and Dockerfile customizations
+
+        Returns:
+            Tuple[str, str, str]: (full_image_name, tar_gz_path, build_context_path)
+
+        """
+
+        temp_project_dir = None
+        tar_gz_path = None
+
+        try:
+            # Package the project
+            temp_project_dir = package_project(
+                agent=agent,
+                requirements=requirements,
+                extras_package=extras_package,
+                # caller_depth is no longer needed due to automatic stack search
+            )
+
+            # Create tar.gz from packaged project
+            tar_gz_path = create_tar_gz(temp_project_dir)
+
+            # Build Docker image from tar.gz
+            full_image_name, build_context_path = self.build_image_from_tar(
                 tar_gz_path=tar_gz_path,
                 image_name=image_name,
+                image_tag=image_tag,
                 registry=registry,
-                image_tag=image_tag,
-                dockerfile_customizations=dockerfile_options,
-                build_args=build_args,
-                no_cache=no_cache,
-                quiet=quiet,
+                push_to_registry=push_to_registry,
+                **build_options,
             )
-            # Get build context path from last operation
-            build_context_path = (
-                builder.temp_dirs[-1] if builder.temp_dirs else ""
+
+            return full_image_name, tar_gz_path, build_context_path
+
+        except Exception:
+            # Clean up temporary files on error
+            if temp_project_dir and os.path.exists(temp_project_dir):
+                shutil.rmtree(temp_project_dir)
+            if tar_gz_path and os.path.exists(tar_gz_path):
+                os.remove(tar_gz_path)
+            raise
+
+    def build_runner_image(
+        self,
+        runner: Runner,
+        requirements: Optional[Union[str, List[str]]] = None,
+        extras_package: List[str] = [],
+        base_image: str = "python:3.9-slim",
+        image_tag: str = None,
+        stream: bool = True,
+        endpoint_path: str = "/process",
+        **kwargs,
+    ) -> str:
+        """
+        Build Docker image containing complete runner context using the new
+        package_project and docker_builder approach.
+
+        Args:
+            runner: Complete Runner object with agent, environment_manager, context_manager
+            requirements: PyPI dependencies
+            extras_package: User code directory/file path
+            base_image: Docker base image
+            image_tag: Image tag (auto-generated if None)
+            stream: Enable streaming endpoint
+            endpoint_path: API endpoint path
+            **kwargs: Additional arguments
+
+        Returns:
+            Built image tag name
+        """
+        try:
+            # Validation
+            requirements = self._validate_requirements_or_raise(requirements)
+            extras_package = self._validate_extras_package_or_raise(
+                extras_package,
             )
-            return full_image_name, build_context_path
-        else:
-            # Just build locally
-            full_image_name, build_context_path = builder.build_image(
-                tar_gz_path=tar_gz_path,
-                image_name=image_name,
-                image_tag=image_tag,
-                dockerfile_customizations=dockerfile_options,
-                build_args=build_args,
-                no_cache=no_cache,
-                quiet=quiet,
+            self._validate_runner_or_raise(runner)
+
+            # Generate image tag
+            if not image_tag:
+                runner_hash = self._generate_runner_hash(
+                    runner,
+                    requirements,
+                    extras_package,
+                )
+                image_tag = f"runner-{runner_hash}-{int(time.time())}"
+
+            # Extract agent from runner
+            if not hasattr(runner, "_agent") or runner._agent is None:
+                raise ValueError("Runner must have a valid agent")
+
+            agent = runner._agent
+
+            logger.info(
+                f"Building image using package_project and docker_builder: {image_tag}",
             )
-            return full_image_name, build_context_path
 
-    except Exception:
-        # Clean up on error
-        builder.cleanup()
-        raise
+            # Import the function directly to avoid async issues
 
+            # Build the image with registry push
+            (
+                full_image_name,
+                tar_gz_path,
+                build_context_path,
+            ) = self.package_and_build_image(
+                agent=agent,
+                image_name=image_tag,
+                requirements=requirements,
+                extras_package=extras_package,
+                registry=self.registry_config.registry_url,
+                push_to_registry=True,
+                base_image=base_image,
+                port=8000,
+                quiet=False,
+            )
 
-def package_and_build_docker_image(
-    agent,
-    image_name: str,
-    requirements: Optional[List[str]] = None,
-    extras_package: Optional[List[str]] = None,
-    image_tag: str = "latest",
-    registry: Optional[str] = None,
-    push_to_registry: bool = False,
-    **build_options,
-) -> Tuple[str, str, str]:
-    """
-    Complete end-to-end pipeline: package agent project -> create tar.gz -> build Docker image.
+            logger.info(
+                f"Successfully built and pushed runner image: {full_image_name}",
+            )
+            return full_image_name
 
-    Args:
-        agent: The agent object to be packaged
-        image_name: Name for the Docker image
-        requirements: List of pip package requirements
-        extras_package: List of extra files/directories to include
-        image_tag: Tag for the Docker image
-        registry: Docker registry URL for pushing
-        push_to_registry: Whether to push the image to registry
-        **build_options: Additional build options and Dockerfile customizations
-
-    Returns:
-        Tuple[str, str, str]: (full_image_name, tar_gz_path, build_context_path)
-
-    Example:
-        >>> from agentscope_runtime.engine.deployers.ack_deployment.package_project import package_project
-        >>> from agentscope_runtime.engine.deployers.ack_deployment.docker_builder import package_and_build_docker_image
-        >>>
-        >>> # Complete pipeline
-        >>> image_name, tar_path, context_path = package_and_build_docker_image(
-        ...     my_agent,
-        ...     "my-agent-service",
-        ...     requirements=["numpy", "requests"],
-        ...     extras_package=["config/", "data/sample.json"],
-        ...     registry="gcr.io/my-project",
-        ...     push_to_registry=True
-        ... )
-        >>> print(f"Built and pushed image: {image_name}")
-    """
-    from package_project import package_project, create_tar_gz
-
-    temp_project_dir = None
-    tar_gz_path = None
-
-    try:
-        # Step 1: Package the project
-        temp_project_dir = package_project(
-            agent=agent,
-            requirements=requirements,
-            extras_package=extras_package,
-            # caller_depth is no longer needed due to automatic stack search
-        )
-
-        # Step 2: Create tar.gz from packaged project
-        tar_gz_path = create_tar_gz(temp_project_dir)
-
-        # Step 3: Build Docker image from tar.gz
-        full_image_name, build_context_path = build_docker_image_from_tar(
-            tar_gz_path=tar_gz_path,
-            image_name=image_name,
-            image_tag=image_tag,
-            registry=registry,
-            push_to_registry=push_to_registry,
-            **build_options,
-        )
-
-        return full_image_name, tar_gz_path, build_context_path
-
-    except Exception:
-        # Clean up temporary files on error
-        if temp_project_dir and os.path.exists(temp_project_dir):
-            shutil.rmtree(temp_project_dir)
-        if tar_gz_path and os.path.exists(tar_gz_path):
-            os.remove(tar_gz_path)
-        raise
-
-
-def create_docker_build_context(
-    tar_gz_path: str,
-    output_dir: Optional[str] = None,
-    base_image: str = "python:3.9-slim",
-    port: int = 8000,
-    **dockerfile_options,
-) -> str:
-    """
-    Convenience function to create a Docker build context from a tar.gz file.
-
-    Args:
-        tar_gz_path: Path to the tar.gz file containing the project
-        output_dir: Output directory for build context (temp dir if None)
-        base_image: Base Docker image to use
-        port: Port to expose in container
-        **dockerfile_options: Additional options for Dockerfile customization
-            - packages: List of additional system packages
-            - env_vars: Dict of environment variables
-            - startup_command: Custom startup command
-            - template: Custom Dockerfile template
-
-    Returns:
-        str: Path to the build context directory containing Dockerfile and extracted files
-
-    Example:
-        >>> build_context = create_docker_build_context(
-        ...     "my_project.tar.gz",
-        ...     packages=["curl", "git"],
-        ...     env_vars={"DEBUG": "1"},
-        ...     startup_command='["python", "app.py"]'
-        ... )
-        >>> # Use build_context with docker build
-    """
-    builder = DockerImageBuilder(base_image=base_image, port=port)
-
-    try:
-        return builder.create_build_context(
-            tar_gz_path=tar_gz_path,
-            output_dir=output_dir,
-            dockerfile_customizations=dockerfile_options,
-        )
-    except Exception:
-        builder.cleanup()
-        raise
+        except Exception as e:
+            logger.error(f"Failed to build runner image: {e}")
+            self.cleanup()
+            raise
+        finally:
+            self.cleanup()

@@ -2,7 +2,7 @@
 import os
 from agentscope_runtime.engine.agents.llm_agent import LLMAgent
 from agentscope_runtime.engine.llms import QwenLLM
-from otheers.other_project import version
+from others.other_project import version
 
 model = QwenLLM(
     model_name="qwen-turbo",
