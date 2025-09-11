@@ -316,8 +316,9 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         no_cache: bool = False,
         quiet: bool = False,
         source_updated: bool = False,
+        platform: Optional[str] = None,
         **kwargs,
-    ) -> Tuple[str, str]:
+    ) -> Tuple[str, str, bool]:
         """
         Build Docker image from tar.gz project.
 
@@ -331,6 +332,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
             no_cache: Whether to disable Docker build cache
             quiet: Whether to suppress build output
             source_updated: Whether to update Docker image
+            platform: Target platform for the build (e.g., linux/amd64, linux/arm64)
 
         Returns:
             Tuple[str, str]: (full_image_name, build_context_path)
@@ -363,10 +365,26 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         full_image_name = f"{image_name}:{image_tag}"
 
         if not source_updated:
-            return full_image_name, build_context_path
+            # Check if the image already exists before skipping build
+            try:
+                subprocess.run(
+                    ["docker", "inspect", full_image_name],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+                # Image exists, safe to skip build
+                return full_image_name, build_context_path, False
+            except subprocess.CalledProcessError:
+                # Image doesn't exist, need to build even if source not updated
+                pass
 
         # Prepare docker build command
         build_cmd = ["docker", "build", "-t", full_image_name]
+
+        # Add platform if specified
+        if platform:
+            build_cmd.extend(["--platform", platform])
 
         # Add build arguments
         if build_args:
@@ -440,7 +458,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
                 print("Build output:")
                 print(stdout_output)
 
-            return full_image_name, build_context_path
+            return full_image_name, build_context_path, True
 
         except subprocess.CalledProcessError as e:
             error_msg = f"Docker build failed for image {full_image_name}"
@@ -461,6 +479,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         no_cache: bool = False,
         quiet: bool = False,
         source_updated: bool = False,
+        platform: Optional[str] = None,
         **kwargs,
     ) -> str:
         """
@@ -473,6 +492,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
             image_tag: Tag for the Docker image
             dockerfile_customizations: Customizations for Dockerfile
             build_args: Build arguments
+            platform: Target platform for the build (e.g., linux/amd64, linux/arm64)
             **kwargs: Additional build options (no_cache, quiet, etc.)
 
         Returns:
@@ -488,7 +508,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
             full_image_name = f"{image_name}"
 
         # Build the image
-        built_image_name, build_context_path = self.build_image(
+        built_image_name, build_context_path, should_push = self.build_image(
             tar_gz_path=tar_gz_path,
             image_name=full_image_name,
             registry=registry,
@@ -496,13 +516,14 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
             dockerfile_customizations=dockerfile_customizations,
             build_args=build_args,
             source_updated=source_updated,
+            platform=platform,
             **kwargs,
         )
 
         # Push to registry if registry is specified
-        if registry:
+        if registry and should_push:
             try:
-                push_cmd = ["docker", "push", full_image_name]
+                push_cmd = ["docker", "push", built_image_name]
                 quiet = kwargs.get("quiet", False)
 
                 if quiet:
@@ -564,7 +585,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
                     error_msg,
                 )
 
-        return full_image_name
+        return built_image_name
 
     def get_image_info(self, image_name: str) -> Dict:
         """
@@ -622,6 +643,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         no_cache: bool = False,
         quiet: bool = False,
         source_updated: bool = False,
+        platform: Optional[str] = None,
         **kwargs,
     ) -> Tuple[str, str]:
         """
@@ -639,6 +661,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
             no_cache: Whether to disable Docker build cache
             quiet: Whether to suppress build output
             source_updated: Whether to update Docker image source
+            platform: Target platform for the build (e.g., linux/amd64, linux/arm64)
             **kwargs: Additional Dockerfile customization options
 
         Returns:
@@ -664,6 +687,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
                     no_cache=no_cache,
                     quiet=quiet,
                     source_updated=source_updated,
+                    platform=platform,
                 )
                 # Get build context path from last operation
                 build_context_path = (
@@ -672,7 +696,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
                 return full_image_name, build_context_path
             else:
                 # Just build locally
-                full_image_name, build_context_path = self.build_image(
+                full_image_name, build_context_path, _ = self.build_image(
                     tar_gz_path=tar_gz_path,
                     image_name=image_name,
                     registry=registry,
@@ -682,6 +706,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
                     no_cache=no_cache,
                     quiet=quiet,
                     source_updated=source_updated,
+                    platform=platform,
                 )
                 return full_image_name, build_context_path
 
@@ -700,6 +725,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         registry: Optional[str] = None,
         push_to_registry: bool = True,
         build_context_dir: Optional[str] = None,
+        platform: Optional[str] = None,
         **kwargs,
     ) -> Tuple[str, str, str]:
         """
@@ -713,6 +739,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
             image_tag: Tag for the Docker image
             registry: Docker registry URL for pushing
             push_to_registry: Whether to push the image to registry
+            platform: Target platform for the build (e.g., linux/amd64, linux/arm64)
             **kwargs: Additional build options and Dockerfile customizations
 
         Returns:
@@ -743,6 +770,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
                 registry=registry,
                 push_to_registry=push_to_registry,
                 source_updated=is_updated,
+                platform=platform,
                 **kwargs,
             )
 
@@ -770,6 +798,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         endpoint_path: str = "/process",
         build_context_dir: Optional[str] = None,
         push_to_registry=True,
+        platform: Optional[str] = None,
         **kwargs,
     ) -> str:
         """
@@ -784,6 +813,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
             image_tag: Image tag (auto-generated if None)
             stream: Enable streaming endpoint
             endpoint_path: API endpoint path
+            platform: Target platform for the build (e.g., linux/amd64, linux/arm64)
             **kwargs: Additional arguments
 
         Returns:
@@ -834,6 +864,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
                 port=8000,
                 quiet=False,
                 build_context_dir=build_context_dir,
+                platform=platform,
             )
 
             logger.info(

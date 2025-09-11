@@ -40,7 +40,7 @@ async def deploy_agent_to_k8s():
     # 3. 配置K8s连接
     k8s_config = K8sConfig(
         k8s_namespace="agentscope-runtime",
-        kubeconfig_path="/tests/integrated/test_package_build_image/logs/kubeconfig.yaml"
+        kubeconfig_path="/Users/zhicheng/repo/agentscope-runtime/tests/integrated/test_package_build_image/logs/kubeconfig.yaml",
     )
 
     port = 8000
@@ -86,9 +86,9 @@ async def deploy_agent_to_k8s():
         # 基础配置
         "endpoint_path": "/process",
         "stream": True,
-        "port": port,
+        "port": str(port),
         "replicas": 2,  # 部署2个副本
-        "image_tag": "latest",
+        "image_tag": "linux-amd64",
         "image_name": "agent_llm",
         # 依赖配置
         "requirements": [
@@ -116,6 +116,7 @@ async def deploy_agent_to_k8s():
         # 部署超时
         "deploy_timeout": 300,
         "health_check": True,
+        "platform": "linux/amd64",
     }
 
     try:
@@ -139,11 +140,10 @@ async def deploy_agent_to_k8s():
         print(f"状态: {status}")
 
         # 11. 获取详细信息
-        inspect_info = deployer.inspect()
+        inspect_info = await deployer.inspect()
         if inspect_info:
             print(f"\n🔍 部署详细信息:")
-            print(f"  类型: {inspect_info['type']}")
-            print(f"  URL: {inspect_info['url']}")
+            print(f"  呢日哦给你: {inspect_info['metadata']}")
             print(f"  状态: {inspect_info['status']}")
 
         return result, deployer
@@ -204,16 +204,15 @@ async def main():
         print(f"curl -X POST {service_url}/process \\")
         print(f'  -H "Content-Type: application/json" \\')
         print(
-            f'  -d \'{{"content": "Hello!", "name": "user", "role": "user"}}\''
+            f'  -d \'{{"content": "Hello!", "name": "user", "role": "user"}}\'',
         )
 
         print(f"\n📝 或者使用kubectl查看:")
         print(f"kubectl get pods -n agentscope-runtime")
         print(f"kubectl get svc -n agentscope-runtime")
         print(
-            f"kubectl logs -l app={result['resource_name']} -n agentscope-runtime"
+            f"kubectl logs -l app={result['resource_name']} -n agentscope-runtime",
         )
-
 
         # 等待用户确认后清理
         input("\n按Enter键清理部署...")

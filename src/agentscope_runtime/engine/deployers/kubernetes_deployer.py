@@ -198,7 +198,7 @@ class KubernetesDeployer(DeployManager):
                 )
                 if not built_image_name:
                     raise RuntimeError(
-                        "Image build failed - no image name returned"
+                        "Image build failed - no image name returned",
                     )
 
                 created_resources.append(f"image:{built_image_name}")
@@ -226,7 +226,7 @@ class KubernetesDeployer(DeployManager):
 
             # Create Deployment
             _id, ports, ip = self.k8s_client.create(
-                image=built_image_name,
+                image=built_image_name.split("/")[-1],
                 name=resource_name,
                 ports=[port],
                 volumes=volume_bindings,
@@ -237,7 +237,8 @@ class KubernetesDeployer(DeployManager):
                 import traceback
 
                 raise RuntimeError(
-                    f"Failed to create resource: " f"{resource_name}, {traceback.format_exc()}"
+                    f"Failed to create resource: "
+                    f"{resource_name}, {traceback.format_exc()}",
                 )
 
             url = f"http://{ip}:{ports[0]}"
@@ -278,7 +279,9 @@ class KubernetesDeployer(DeployManager):
                 await self._rollback_deployment(deploy_id, created_resources)
             except Exception as rollback_error:
                 logger.error(f"Rollback also failed: {rollback_error}")
-            raise RuntimeError(f"Deployment failed: {e}, {traceback.format_exc()}") from e
+            raise RuntimeError(
+                f"Deployment failed: {e}, {traceback.format_exc()}"
+            ) from e
 
     async def stop(self) -> bool:
         """Stop service"""

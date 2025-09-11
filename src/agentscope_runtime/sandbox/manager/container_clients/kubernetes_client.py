@@ -53,6 +53,61 @@ class KubernetesClient(BaseClient):
                 "• For in-cluster: ensure proper RBAC permissions",
             ) from e
 
+    def _is_local_cluster(self):
+        """
+        Determine if we're connected to a local Kubernetes cluster.
+
+        Returns:
+            bool: True if connected to a local cluster, False otherwise
+        """
+        try:
+            # Get the current context configuration
+            contexts, current_context = k8s_config.list_kube_config_contexts(
+                config_file=self.config.kubeconfig_path
+                if hasattr(self.config, "kubeconfig_path")
+                and self.config.kubeconfig_path
+                else None,
+            )
+
+            if current_context and current_context.get("context"):
+                cluster_name = current_context["context"].get("cluster", "")
+                server = None
+
+                # Get cluster server URL
+                for cluster in contexts.get("clusters", []):
+                    if cluster["name"] == cluster_name:
+                        server = cluster.get("cluster", {}).get("server", "")
+                        break
+
+                if server:
+                    # Check for common local cluster patterns
+                    local_patterns = [
+                        "localhost",
+                        "127.0.0.1",
+                        "0.0.0.0",
+                        "docker-desktop",
+                        "kind-",  # kind clusters
+                        "minikube",  # minikube
+                        "k3d-",  # k3d clusters
+                        "colima",  # colima
+                    ]
+
+                    server_lower = server.lower()
+                    cluster_lower = cluster_name.lower()
+
+                    for pattern in local_patterns:
+                        if pattern in server_lower or pattern in cluster_lower:
+                            return True
+
+            return False
+
+        except Exception as e:
+            logger.debug(
+                f"Could not determine cluster type, assuming remote: {e}"
+            )
+            # If we can't determine, assume remote for safety
+            return False
+
     def _parse_port_spec(self, port_spec):
         """
         Parse port specification.
@@ -524,7 +579,7 @@ class KubernetesClient(BaseClient):
             service_spec = client.V1ServiceSpec(
                 selector=selector,
                 ports=service_ports,
-                type="NodePort",
+                type="LoadBalancer",
             )
 
             service = client.V1Service(
@@ -577,9 +632,8 @@ class KubernetesClient(BaseClient):
     def _get_pod_node_ip(self, pod_name):
         """Get the IP of the node where the pod is running"""
 
-        # Check if we are running in Colima, where pod runs in VM
-        docker_host = os.getenv("DOCKER_HOST", "")
-        if "colima" in docker_host.lower():
+        # Check if we are using a local Kubernetes cluster
+        if self._is_local_cluster():
             return "localhost"
 
         try:
