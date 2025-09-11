@@ -233,17 +233,19 @@ class KubernetesDeployer(DeployManager):
                 environment=environment,
                 runtime_config=runtime_config or {},
             )
-            if not ip:
+            if not _id:
+                import traceback
+
                 raise RuntimeError(
-                    f"Failed to create resource: " f"{resource_name}"
+                    f"Failed to create resource: " f"{resource_name}, {traceback.format_exc()}"
                 )
 
             url = f"http://{ip}:{ports[0]}"
             logger.info(f"Deployment {deploy_id} successful: {url}")
 
             self._deployed_resources[deploy_id] = {
-                f"{resource_type}_name": resource_name,
-                "service_name": f"{resource_name}-service",
+                f"resource_name": resource_name,
+                "service_name": _id,
                 "image": built_image_name,
                 "created_at": time.time(),
                 "replicas": replicas if self.use_deployment else 1,
@@ -276,7 +278,7 @@ class KubernetesDeployer(DeployManager):
                 await self._rollback_deployment(deploy_id, created_resources)
             except Exception as rollback_error:
                 logger.error(f"Rollback also failed: {rollback_error}")
-            raise RuntimeError(f"Deployment failed: {e}") from e
+            raise RuntimeError(f"Deployment failed: {e}, {traceback.format_exc()}") from e
 
     async def stop(self) -> bool:
         """Stop service"""

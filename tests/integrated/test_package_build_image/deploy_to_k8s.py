@@ -40,10 +40,12 @@ async def deploy_agent_to_k8s():
     # 3. 配置K8s连接
     k8s_config = K8sConfig(
         k8s_namespace="agentscope-runtime",
+        kubeconfig_path="/tests/integrated/test_package_build_image/logs/kubeconfig.yaml"
     )
 
+    port = 8000
     # 4. 创建Docker镜像构建器
-    image_builder = DockerImageBuilder()
+    image_builder = DockerImageBuilder(port=port)
 
     # 5. 创建KubernetesDeployer
     deployer = KubernetesDeployer(
@@ -68,8 +70,6 @@ async def deploy_agent_to_k8s():
         },
         # 镜像拉取策略
         "image_pull_policy": "IfNotPresent",
-        # 镜像拉取密钥
-        "image_pull_secrets": ["agentscope-registry-secret"],
         # 节点选择器（可选）
         # "node_selector": {"node-type": "gpu"},
         # 容忍度（可选）
@@ -86,7 +86,7 @@ async def deploy_agent_to_k8s():
         # 基础配置
         "endpoint_path": "/process",
         "stream": True,
-        "port": 8090,
+        "port": port,
         "replicas": 2,  # 部署2个副本
         "image_tag": "latest",
         "image_name": "agent_llm",
@@ -109,6 +109,7 @@ async def deploy_agent_to_k8s():
         "environment": {
             "PYTHONPATH": "/app",
             "LOG_LEVEL": "INFO",
+            "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
         },
         # K8s运行时配置
         "runtime_config": runtime_config,
@@ -136,10 +137,6 @@ async def deploy_agent_to_k8s():
         print("\n📊 检查部署状态...")
         status = deployer.get_status()
         print(f"状态: {status}")
-
-        # 10. 获取副本信息
-        replica_info = deployer.get_current_replicas()
-        print(f"副本信息: {replica_info}")
 
         # 11. 获取详细信息
         inspect_info = deployer.inspect()
@@ -217,18 +214,13 @@ async def main():
             f"kubectl logs -l app={result['resource_name']} -n agentscope-runtime"
         )
 
-        # 可选：扩缩容测试
-        print(f"\n🔄 扩缩容测试...")
-        scale_result = await deployer.scale(3)
-        if scale_result:
-            print("✅ 扩容到3个副本成功")
 
         # 等待用户确认后清理
         input("\n按Enter键清理部署...")
 
         # 清理部署
         print("🧹 清理部署...")
-        cleanup_result = await deployer.remove(cleanup_image=True)
+        cleanup_result = await deployer.remove(force=True)
         if cleanup_result:
             print("✅ 清理完成")
         else:

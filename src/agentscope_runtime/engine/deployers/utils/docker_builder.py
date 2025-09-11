@@ -698,7 +698,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         extra_packages: Optional[List[str]] = None,
         image_tag: str = "latest",
         registry: Optional[str] = None,
-        push_to_registry: bool = False,
+        push_to_registry: bool = True,
         build_context_dir: Optional[str] = None,
         **kwargs,
     ) -> Tuple[str, str, str]:
@@ -769,7 +769,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
         stream: bool = True,
         endpoint_path: str = "/process",
         build_context_dir: Optional[str] = None,
-        push_to_registry=False,
+        push_to_registry=True,
         **kwargs,
     ) -> str:
         """
