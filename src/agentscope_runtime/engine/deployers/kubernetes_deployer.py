@@ -225,13 +225,15 @@ class KubernetesDeployer(DeployManager):
             resource_name = f"agent-{deploy_id[:8]}"
 
             # Create Deployment
-            _id, ports, ip = self.k8s_client.create(
+            _id, ports, ip = self.k8s_client.create_deployment(
                 image=built_image_name.split("/")[-1],
                 name=resource_name,
                 ports=[port],
                 volumes=volume_bindings,
                 environment=environment,
                 runtime_config=runtime_config or {},
+                replicas=replicas,
+                create_service=True,
             )
             if not _id:
                 import traceback
@@ -273,14 +275,12 @@ class KubernetesDeployer(DeployManager):
             }
 
         except Exception as e:
+            import traceback
+
             logger.error(f"Deployment {deploy_id} failed: {e}")
             # Enhanced rollback with better error handling
-            try:
-                await self._rollback_deployment(deploy_id, created_resources)
-            except Exception as rollback_error:
-                logger.error(f"Rollback also failed: {rollback_error}")
             raise RuntimeError(
-                f"Deployment failed: {e}, {traceback.format_exc()}"
+                f"Deployment failed: {e}, {traceback.format_exc()}",
             ) from e
 
     async def stop(self) -> bool:
@@ -290,30 +290,7 @@ class KubernetesDeployer(DeployManager):
 
         resources = self._deployed_resources[self.deploy_id]
         service_name = resources["service_name"]
-        return self.k8s_client.stop(service_name)
-
-    async def remove(self, force: bool = False) -> bool:
-        """Remove deployment and all resources"""
-        if self.deploy_id not in self._deployed_resources:
-            return True
-
-        resources = self._deployed_resources[self.deploy_id]
-        service_name = resources["service_name"]
-
-        result = self.k8s_client.remove(service_name, force=force)
-        if result:
-            del self._deployed_resources[self.deploy_id]
-            logger.info(f"Deployment {self.deploy_id} completely removed")
-        return result
-
-    async def inspect(self) -> Optional[Dict]:
-        if self.deploy_id not in self._deployed_resources:
-            return None
-
-        resources = self._deployed_resources[self.deploy_id]
-        service_name = resources["service_name"]
-
-        return self.k8s_client.inspect(service_name)
+        return self.k8s_client.remove_deployment(service_name)
 
     def get_status(self) -> str:
         """Get deployment status"""
@@ -323,27 +300,4 @@ class KubernetesDeployer(DeployManager):
         resources = self._deployed_resources[self.deploy_id]
         service_name = resources["service_name"]
 
-        return self.k8s_client.get_status(service_name)
-
-    def get_logs(
-        self,
-        container_name: str,
-        tail_lines: int = 100,
-        follow: bool = False,
-    ) -> (Optional)[str]:
-        """获取服务日志"""
-        if self.deploy_id not in self._deployed_resources:
-            return None
-
-        resources = self._deployed_resources[self.deploy_id]
-        service_name = resources["service_name"]
-
-        return self.k8s_client.get_logs(
-            service_name,
-            container_name,
-            tail_lines,
-            follow,
-        )
-
-    def list_pods(self, label_selector=None) -> List[Dict]:
-        return self.k8s_client.list_pods(label_selector=label_selector)
+        return self.k8s_client.get_deployment_status(service_name)

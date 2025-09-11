@@ -139,13 +139,6 @@ async def deploy_agent_to_k8s():
         status = deployer.get_status()
         print(f"状态: {status}")
 
-        # 11. 获取详细信息
-        inspect_info = await deployer.inspect()
-        if inspect_info:
-            print(f"\n🔍 部署详细信息:")
-            print(f"  呢日哦给你: {inspect_info['metadata']}")
-            print(f"  状态: {inspect_info['status']}")
-
         return result, deployer
 
     except Exception as e:
@@ -190,10 +183,6 @@ async def main():
         result, deployer = await deploy_agent_to_k8s()
         service_url = result["url"]
 
-        # 等待服务启动
-        print("\n⏳ 等待服务完全启动...")
-        await asyncio.sleep(30)
-
         # 测试服务
         print("\n🧪 测试部署的服务...")
         await deployed_service(service_url)
@@ -219,7 +208,7 @@ async def main():
 
         # 清理部署
         print("🧹 清理部署...")
-        cleanup_result = await deployer.remove(force=True)
+        cleanup_result = await deployer.stop()
         if cleanup_result:
             print("✅ 清理完成")
         else:
