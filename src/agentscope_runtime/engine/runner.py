@@ -64,8 +64,8 @@ class Runner:
             endpoint_path: API endpoint path for the processing function
             stream: If start a streaming service
             protocol_adapters: protocol adapters
-            requirements: PyPI dependencies (following _agent_engines.py pattern)
-            user_code_path: User code directory/file path
+            requirements: PyPI dependencies
+            extra_packages: User code directory/file path
             base_image: Docker base image (for containerized deployment)
             environment: Environment variables dict
             runtime_config: Runtime configuration dict
