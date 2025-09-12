@@ -325,7 +325,7 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
         }
       };
       return () => ws.close();
-    }, 3000); // wait a few seconds
+    }, 5); // wait a few seconds
   }, [handleTabClosed, handleTabList, singlePageMode, webSocketUrl]);
 
   useEffect(() => {

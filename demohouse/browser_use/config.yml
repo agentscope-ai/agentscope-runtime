@@ -1,0 +1,13 @@
+# the config of all browser-use
+backend:
+  host: localhost # backend host
+  port: 9000 # backend port
+  llm-name: qwen-max # llm name, support qwen-max, qwen-turbo, qwen-plus, for more details, read dashscope document.
+  session-type: redis # session type, support memory, redis (you need install redis)
+  session-redis: # config this if you use redis as session store
+    url: redis://localhost:6379/0
+  secure-key: DEMO_EKY # secure key of  backend
+  session-timeout: 300 # session timeout, unit: second
+frontend:
+  host: localhost # frontend host
+  port: 3000 # frontend port. Note that this port is also manually configured in the frontend.

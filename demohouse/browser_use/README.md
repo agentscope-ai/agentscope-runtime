@@ -123,6 +123,17 @@ python async_quart_service.py
 
 The service will listen on port 9000.
 
+#### (Alternative) Use Redis as session service
+1. Install [Redis](https://redis.io/)  and start it
+2. modify `config.yml`. Set session-type to redis and set session-redis.url as your redis url. For example, if your redis url is redis://localhost:6379/0, the `config.yml` should be like this:
+
+```yml
+backend:
+  session-type: redis # session type, support memory, redis (you need install redis)
+  session-redis: # config this if you use redis as session store
+    url: redis://localhost:6379/0
+```
+
 ### Usage
 
 1. Open your browser and navigate to http://localhost:3000.

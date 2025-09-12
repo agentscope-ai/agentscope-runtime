@@ -1,3 +1,4 @@
+yaml
 quart
 quart-cors
 agentscope-runtime
