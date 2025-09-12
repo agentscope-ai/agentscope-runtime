@@ -3,6 +3,7 @@
 # pylint:disable=line-too-long
 
 import json
+import logging
 import threading
 import uuid
 from functools import partial
@@ -19,7 +20,7 @@ from agentscope.formatter import (
     GeminiChatFormatter,
 )
 from agentscope.memory import InMemoryMemory
-from agentscope.message import Msg
+from agentscope.message import Msg, ToolUseBlock, ToolResultBlock
 from agentscope.model import (
     ChatModelBase,
     DashScopeChatModel,
@@ -51,8 +52,10 @@ from ...schemas.agent_schemas import (
 )
 from ...schemas.context import Context
 
+logger = logging.getLogger(__name__)
+
 # Disable logging from agentscope
-setup_logger(level="CRITICAL")
+setup_logger(level="INFO")
 
 
 class AgentScopeContextAdapter:
@@ -91,12 +94,33 @@ class AgentScopeContextAdapter:
             role_label = "user"
         else:
             role_label = message.role
-
-        return {
+        result = {
             "name": message.role,
             "role": role_label,
-            "content": message.content[0].text if message.content else "",
         }
+        if message.type == MessageType.PLUGIN_CALL:
+            result["content"] = [
+                ToolUseBlock(
+                    type="tool_use",
+                    id=message.content[0].data["call_id"],
+                    name=message.role,
+                    input=json.loads(message.content[0].data["arguments"]),
+                ),
+            ]
+        elif message.type == MessageType.PLUGIN_CALL_OUTPUT:
+            result["content"] = [
+                ToolResultBlock(
+                    type="tool_result",
+                    id=message.content[0].data["call_id"],
+                    name=message.role,
+                    output=message.content[0].data["output"],
+                ),
+            ]
+        else:
+            result["content"] = (
+                message.content[0].text if message.content else ""
+            )
+        return result
 
     async def adapt_new_message(self):
         last_message = self.context.session.messages[-1]
@@ -249,22 +273,25 @@ class AgentScopeAgent(Agent):
 
             message = Message(type=MessageType.MESSAGE, role="assistant")
             yield message.in_progress()
+            index = None
 
-            text_delta_content = TextContent(delta=True)
-            data_delta_content = DataContent(delta=True)
             for msg, msg_len in get_msg_instances(thread_id=thread_id):
                 if msg:
                     content = msg.content
-
                     if isinstance(content, str):
                         last_content = content
                     else:
                         for element in content:
-                            if isinstance(element, str):
-                                text_delta_content.text = element
+                            if isinstance(element, str) and element:
+                                text_delta_content = TextContent(
+                                    delta=True,
+                                    index=index,
+                                    text=element,
+                                )
                                 text_delta_content = message.add_delta_content(
                                     new_content=text_delta_content,
                                 )
+                                index = text_delta_content.index
                                 yield text_delta_content
                             elif isinstance(element, dict):
                                 if element.get("type") == "text":
@@ -272,64 +299,75 @@ class AgentScopeAgent(Agent):
                                         "text",
                                         "",
                                     )
-                                    if isinstance(text, str):
-                                        text_delta_content.text = (
-                                            text.removeprefix(
+                                    if text:
+                                        text_delta_content = TextContent(
+                                            delta=True,
+                                            index=index,
+                                            text=text.removeprefix(
                                                 local_truncate_memory,
-                                            )
+                                            ),
                                         )
                                         local_truncate_memory = element.get(
                                             "text",
                                             "",
                                         )
-                                    text_delta_content = (
-                                        message.add_delta_content(
-                                            new_content=text_delta_content,
+                                        text_delta_content = (
+                                            message.add_delta_content(
+                                                new_content=text_delta_content,
+                                            )
                                         )
-                                    )
-                                    yield text_delta_content
+                                        index = text_delta_content.index
+                                        yield text_delta_content
+                                        if hasattr(msg, "is_last"):
+                                            yield message.completed()
+                                            message = Message(
+                                                type=MessageType.MESSAGE,
+                                                role="assistant",
+                                            )
+                                            index = None
+
                                 elif element.get("type") == "tool_use":
+                                    json_str = json.dumps(element.get("input"))
+                                    data_delta_content = DataContent(
+                                        index=index,
+                                        data=FunctionCall(
+                                            call_id=element.get("id"),
+                                            name=element.get("name"),
+                                            arguments=json_str,
+                                        ).model_dump(),
+                                    )
                                     plugin_call_message = Message(
                                         type=MessageType.PLUGIN_CALL,
                                         role="assistant",
+                                        content=[data_delta_content],
                                     )
-                                    json_str = json.dumps(element.get("input"))
-                                    data_delta_content.data = FunctionCall(
-                                        call_id=element.get("id"),
-                                        name=element.get("name"),
-                                        arguments=json_str,
-                                    ).model_dump()
-                                    data_delta_content = (
-                                        plugin_call_message.add_delta_content(
-                                            new_content=data_delta_content,
-                                        )
-                                    )
-                                    yield data_delta_content
-                                    plugin_call_message.completed()
-                                    yield plugin_call_message
+                                    yield plugin_call_message.completed()
                                 elif element.get("type") == "tool_result":
+                                    data_delta_content = DataContent(
+                                        index=index,
+                                        data=FunctionCallOutput(
+                                            call_id=element.get("id"),
+                                            output=str(element.get("output")),
+                                        ).model_dump(),
+                                    )
                                     plugin_output_message = Message(
                                         type=MessageType.PLUGIN_CALL_OUTPUT,
                                         role="assistant",
+                                        content=[data_delta_content],
                                     )
-                                    data_delta_content.data = (
-                                        FunctionCallOutput(
-                                            call_id=element.get("id"),
-                                            output=str(element.get("output")),
-                                        ).model_dump()
-                                    )
-                                    data_delta_content = plugin_output_message.add_delta_content(  # noqa E501
-                                        new_content=data_delta_content,
-                                    )
-                                    plugin_output_message.completed()
-                                    yield plugin_output_message
+                                    yield plugin_output_message.completed()
                                 else:
-                                    text_delta_content.text = f"{element}"
+                                    text_delta_content = TextContent(
+                                        delta=True,
+                                        index=index,
+                                        text=f"{element}",
+                                    )
                                     text_delta_content = (
                                         message.add_delta_content(
                                             new_content=text_delta_content,
                                         )
                                     )
+                                    index = text_delta_content.index
                                     yield text_delta_content
 
                 # Break if the thread is dead and no more messages are expected
@@ -337,13 +375,16 @@ class AgentScopeAgent(Agent):
                     break
 
             if last_content:
-                text_delta_content.text = last_content
+                text_delta_content = TextContent(
+                    delta=True,
+                    index=index,
+                    text=last_content,
+                )
                 text_delta_content = message.add_delta_content(
                     new_content=text_delta_content,
                 )
                 yield text_delta_content
-                message.completed()
-                yield message
+                yield message.completed()
 
             # Wait for the function to finish
             thread.join()

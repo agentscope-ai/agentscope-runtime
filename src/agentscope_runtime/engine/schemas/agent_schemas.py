@@ -152,7 +152,7 @@ class Error(BaseModel):
 
 
 class Event(BaseModel):
-    sequence_number: Optional[str] = None
+    sequence_number: Optional[int] = None
     """sequence number of event"""
 
     object: str
