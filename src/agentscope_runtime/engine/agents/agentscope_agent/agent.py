@@ -269,7 +269,8 @@ class AgentScopeAgent(Agent):
                             elif isinstance(element, dict):
                                 if element.get("type") == "text":
                                     text = element.get(
-                                        "text", ""
+                                        "text",
+                                        "",
                                     )
                                     if isinstance(text, str):
                                         text_delta_content.text = (
@@ -278,7 +279,8 @@ class AgentScopeAgent(Agent):
                                             )
                                         )
                                         local_truncate_memory = element.get(
-                                            "text", ""
+                                            "text",
+                                            "",
                                         )
                                     text_delta_content = (
                                         message.add_delta_content(
