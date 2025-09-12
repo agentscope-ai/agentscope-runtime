@@ -90,7 +90,7 @@ def pre_speak_msg_buffer_hook(
                 new_blocks = []
                 if isinstance(msg.content, List):
                     for block in msg.content:
-                        if not block.get("type", "") == "tool_use":
+                        if block.get("type", "") != "tool_use":
                             new_blocks.append(block)
                     msg.content = new_blocks
                 if msg.content:
