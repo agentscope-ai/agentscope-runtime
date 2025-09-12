@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=too-many-nested-blocks, too-many-branches, too-many-statements
-# pylint:disable=line-too-long
-
 import json
 import threading
 import uuid
 from functools import partial
 from typing import Optional, Type
 
-from agentscope import setup_logger
 from agentscope.agent import ReActAgent
 from agentscope.formatter import (
     FormatterBase,
@@ -18,8 +15,6 @@ from agentscope.formatter import (
     OllamaChatFormatter,
     GeminiChatFormatter,
 )
-from agentscope.memory import InMemoryMemory
-from agentscope.message import Msg
 from agentscope.model import (
     ChatModelBase,
     DashScopeChatModel,
@@ -28,6 +23,9 @@ from agentscope.model import (
     OllamaChatModel,
     GeminiChatModel,
 )
+from agentscope.memory import InMemoryMemory
+from agentscope.message import Msg
+from agentscope import setup_logger
 from agentscope.tool import (
     Toolkit,
     ToolResponse,
@@ -48,6 +46,7 @@ from ...schemas.agent_schemas import (
     FunctionCall,
     FunctionCallOutput,
     MessageType,
+    RunStatus,
 )
 from ...schemas.context import Context
 
@@ -226,7 +225,6 @@ class AgentScopeAgent(Agent):
     async def run(self, context):
         as_context = AgentScopeContextAdapter(context=context, attr=self._attr)
         await as_context.initialize()
-        local_truncate_memory = ""
 
         # We should always build a new agent since the state is manage outside
         # the agent
@@ -247,11 +245,6 @@ class AgentScopeAgent(Agent):
             # Yield new Msg instances as they are logged
             last_content = ""
 
-            message = Message(type=MessageType.MESSAGE, role="assistant")
-            yield message.in_progress()
-
-            text_delta_content = TextContent(delta=True)
-            data_delta_content = DataContent(delta=True)
             for msg, msg_len in get_msg_instances(thread_id=thread_id):
                 if msg:
                     content = msg.content
@@ -261,88 +254,79 @@ class AgentScopeAgent(Agent):
                     else:
                         for element in content:
                             if isinstance(element, str):
-                                text_delta_content.text = element
-                                text_delta_content = message.add_delta_content(
-                                    new_content=text_delta_content,
+                                content = TextContent(text=element)
+                                message = Message(
+                                    type=MessageType.MESSAGE,
+                                    role="assistant",
+                                    content=[content],
+                                    status=RunStatus.Completed,
                                 )
-                                yield text_delta_content
+                                yield message
                             elif isinstance(element, dict):
                                 if element.get("type") == "text":
-                                    text = element.get(
-                                        "text",
-                                        "",
+                                    content = TextContent(
+                                        text=element.get("text"),
                                     )
-                                    if isinstance(text, str):
-                                        text_delta_content.text = (
-                                            text.removeprefix(
-                                                local_truncate_memory,
-                                            )
-                                        )
-                                        local_truncate_memory = element.get(
-                                            "text",
-                                            "",
-                                        )
-                                    text_delta_content = (
-                                        message.add_delta_content(
-                                            new_content=text_delta_content,
-                                        )
+                                    message = Message(
+                                        type=MessageType.MESSAGE,
+                                        role="assistant",
+                                        status=RunStatus.Completed,
+                                        content=[content],
                                     )
-                                    yield text_delta_content
+                                    yield message
                                 elif element.get("type") == "tool_use":
-                                    plugin_call_message = Message(
+                                    json_str = json.dumps(element.get("input"))
+                                    data = DataContent(
+                                        data=FunctionCall(
+                                            call_id=element.get("id"),
+                                            name=element.get("name"),
+                                            arguments=json_str,
+                                        ).model_dump(),
+                                    )
+                                    message = Message(
                                         type=MessageType.PLUGIN_CALL,
                                         role="assistant",
+                                        status=RunStatus.Completed,
+                                        content=[data],
                                     )
-                                    json_str = json.dumps(element.get("input"))
-                                    data_delta_content.data = FunctionCall(
-                                        call_id=element.get("id"),
-                                        name=element.get("name"),
-                                        arguments=json_str,
-                                    ).model_dump()
-                                    data_delta_content = (
-                                        plugin_call_message.add_delta_content(
-                                            new_content=data_delta_content,
-                                        )
-                                    )
-                                    yield data_delta_content
-                                    plugin_call_message.completed()
-                                    yield plugin_call_message
+                                    yield message
                                 elif element.get("type") == "tool_result":
-                                    plugin_output_message = Message(
-                                        type=MessageType.PLUGIN_CALL_OUTPUT,
-                                        role="assistant",
-                                    )
-                                    data_delta_content.data = (
-                                        FunctionCallOutput(
+                                    data = DataContent(
+                                        data=FunctionCallOutput(
                                             call_id=element.get("id"),
                                             output=str(element.get("output")),
-                                        ).model_dump()
+                                        ).model_dump(),
                                     )
-                                    data_delta_content = plugin_output_message.add_delta_content(  # noqa E501
-                                        new_content=data_delta_content,
+                                    message = Message(
+                                        type=MessageType.PLUGIN_CALL_OUTPUT,
+                                        role="assistant",
+                                        status=RunStatus.Completed,
+                                        content=[data],
                                     )
-                                    plugin_output_message.completed()
-                                    yield plugin_output_message
+                                    yield message
                                 else:
-                                    text_delta_content.text = f"{element}"
-                                    text_delta_content = (
-                                        message.add_delta_content(
-                                            new_content=text_delta_content,
-                                        )
+                                    message = Message(
+                                        type=MessageType.MESSAGE,
+                                        role="assistant",
+                                        status=RunStatus.Completed,
+                                        content=[
+                                            TextContent(text=f"{element}"),
+                                        ],
                                     )
-                                    yield text_delta_content
+                                    yield message
 
                 # Break if the thread is dead and no more messages are expected
                 if not thread.is_alive() and msg_len == 0:
                     break
 
             if last_content:
-                text_delta_content.text = last_content
-                text_delta_content = message.add_delta_content(
-                    new_content=text_delta_content,
+                content = TextContent(text=last_content)
+                message = Message(
+                    type=MessageType.MESSAGE,
+                    role="assistant",
+                    content=[content],
+                    status=RunStatus.Completed,
                 )
-                yield text_delta_content
-                message.completed()
                 yield message
 
             # Wait for the function to finish
