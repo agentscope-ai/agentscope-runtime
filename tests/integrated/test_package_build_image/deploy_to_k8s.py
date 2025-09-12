@@ -29,14 +29,6 @@ async def deploy_agent_to_k8s():
         namespace="agentscope-runtime",
     )
 
-    # 2. 配置Build
-    build_config = BuildConfig(
-        build_context_dir="/tmp/agentscope_k8s_build",
-        build_timeout=600,
-        push_timeout=300,
-        cleanup_after_build=True,
-    )
-
     # 3. 配置K8s连接
     k8s_config = K8sConfig(
         k8s_namespace="agentscope-runtime",
