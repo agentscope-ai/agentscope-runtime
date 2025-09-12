@@ -268,14 +268,18 @@ class AgentScopeAgent(Agent):
                                 yield text_delta_content
                             elif isinstance(element, dict):
                                 if element.get("type") == "text":
-                                    text_delta_content.text = element.get(
-                                        "text",
-                                    ).removeprefix(
-                                        local_truncate_memory,
-                                    )
-                                    local_truncate_memory = element.get(
+                                    text = element.get(
                                         "text",
                                     )
+                                    if isinstance(text, str):
+                                        text_delta_content.text = (
+                                            text.removeprefix(
+                                                local_truncate_memory,
+                                            )
+                                        )
+                                        local_truncate_memory = element.get(
+                                            "text",
+                                        )
                                     text_delta_content = (
                                         message.add_delta_content(
                                             new_content=text_delta_content,
