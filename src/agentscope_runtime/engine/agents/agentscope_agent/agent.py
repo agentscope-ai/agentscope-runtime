@@ -3,7 +3,6 @@
 # pylint:disable=line-too-long
 
 import json
-import logging
 import threading
 import uuid
 from functools import partial
@@ -52,10 +51,8 @@ from ...schemas.agent_schemas import (
 )
 from ...schemas.context import Context
 
-logger = logging.getLogger(__name__)
-
 # Disable logging from agentscope
-setup_logger(level="INFO")
+setup_logger(level="CRITICAL")
 
 
 class AgentScopeContextAdapter:
