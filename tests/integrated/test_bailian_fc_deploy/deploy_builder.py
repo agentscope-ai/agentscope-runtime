@@ -8,7 +8,7 @@ from agentscope_runtime.engine.deployers.bailian_fc_deployer import (
 )
 
 
-def run(dir_path: str, cmd: str, deploy_name: Optional[str] = None, skip_upload: bool = False) -> Path:
+def run(dir_path: str, cmd: str, deploy_name: Optional[str] = None, skip_upload: bool = False, telemetry_enabled: bool = True) -> Path:
     """
     Backward compatible helper that builds the wheel (and optionally uploads/deploys)
     and returns the wheel path.
@@ -20,6 +20,7 @@ def run(dir_path: str, cmd: str, deploy_name: Optional[str] = None, skip_upload:
             cmd=cmd,
             deploy_name=deploy_name,
             skip_upload=skip_upload,
+            telemetry_enabled=telemetry_enabled,
         )
     )
     return Path(result["wheel_path"])  # type: ignore
@@ -33,11 +34,15 @@ def main_cli():
     parser.add_argument("--cmd", required=True, help="Command to start the user project (e.g., 'python app.py')")
     parser.add_argument("--deploy-name", dest="deploy_name", default=None, help="Deploy name (agent_name). Random if omitted")
     parser.add_argument("--skip-upload", action="store_true", help="Only build wheel, do not upload/deploy")
+    # Telemetry option: --telemetry {enable,disable} (default: enable)
+    parser.add_argument("--telemetry", choices=["enable", "disable"], default="enable", help="Enable or disable telemetry (default: enable)")
     parser.add_argument("--output-file", dest="output_file", default="fc_deploy.txt", help="Write deploy result key=value lines to a txt file")
 
     args = parser.parse_args()
 
     deployer = BailianFCDeployer()
+    telemetry_enabled = args.telemetry == "enable"
+
     result = asyncio.run(
         deployer.deploy(
             project_dir=args.dir,
@@ -45,6 +50,7 @@ def main_cli():
             deploy_name=args.deploy_name,
             skip_upload=args.skip_upload,
             output_file=args.output_file,
+            telemetry_enabled=telemetry_enabled,
         )
     )
 

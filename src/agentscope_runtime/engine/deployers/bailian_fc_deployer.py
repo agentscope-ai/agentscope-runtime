@@ -240,6 +240,7 @@ class BailianFCDeployer(DeployManager):
             user_project_dir=project_dir,
             start_cmd=cmd,
             deploy_name=name,
+            telemetry_enabled=telemetry_enabled,
         )
 
         logger.info("Building wheel under %s", wrapper_project_dir)

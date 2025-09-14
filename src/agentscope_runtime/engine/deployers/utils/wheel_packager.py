@@ -148,6 +148,7 @@ def generate_wrapper_project(
     user_project_dir: Path,
     start_cmd: str,
     deploy_name: str,
+    telemetry_enabled: bool = True,
 ) -> Tuple[Path, Path]:
     """
     Create a wrapper project under build_root, embedding user project under
@@ -281,7 +282,7 @@ SETUP_LONG_DESCRIPTION: "agentDev-starter services, supporting both direct execu
 
 FC_RUN_CMD: "python3 /code/python/deploy_starter/main.py"
 
-TELEMETRY_ENABLE: true
+TELEMETRY_ENABLE: {'true' if telemetry_enabled else 'false'}
 CMD: "{start_cmd}"
 APP_SUBDIR_NAME: "{project_basename}"
 """
