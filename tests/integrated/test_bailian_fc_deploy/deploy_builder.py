@@ -33,7 +33,7 @@ def main_cli():
     parser.add_argument("--cmd", required=True, help="Command to start the user project (e.g., 'python app.py')")
     parser.add_argument("--deploy-name", dest="deploy_name", default=None, help="Deploy name (agent_name). Random if omitted")
     parser.add_argument("--skip-upload", action="store_true", help="Only build wheel, do not upload/deploy")
-    parser.add_argument("--output-file", dest="output_file", default=None, help="Write deploy result key=value lines to a txt file")
+    parser.add_argument("--output-file", dest="output_file", default="fc_deploy.txt", help="Write deploy result key=value lines to a txt file")
 
     args = parser.parse_args()
 
