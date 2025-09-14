@@ -1,6 +1,5 @@
 fastapi
 uvicorn
-python-dotenv
+dotenv
 openai
-
 

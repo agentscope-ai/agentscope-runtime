@@ -6,8 +6,7 @@ from dotenv import load_dotenv
 from fastapi import Request, FastAPI
 from fastapi.responses import StreamingResponse
 from openai import OpenAI
-
-from tests.integrated.test_bailian_fc_deploy.examples.custom_defined_app.model.chat_model import ChatRequest
+from model.chat_model import ChatRequest
 
 # Load .env from current directory
 load_dotenv()
