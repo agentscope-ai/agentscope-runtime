@@ -151,13 +151,14 @@ def generate_wrapper_project(
 ) -> Tuple[Path, Path]:
     """
     Create a wrapper project under build_root, embedding user project under
-    user_bundle/app. Returns: (wrapper_project_dir, dist_dir)
+    user_bundle/<project_basename>. Returns: (wrapper_project_dir, dist_dir)
     """
     wrapper_dir = build_root
 
-    # 1) Copy user project into wrapper under deploy_starter/user_bundle/app
-    # Put user code inside the deploy_starter package so wheel includes it
-    bundle_app_dir = wrapper_dir / "deploy_starter" / "user_bundle" / "app"
+    # 1) Copy user project into wrapper under deploy_starter/user_bundle/<project_basename>
+    # Put user code inside the deploy_starter package so wheel includes it and preserves project folder name
+    project_basename = user_project_dir.name
+    bundle_app_dir = wrapper_dir / "deploy_starter" / "user_bundle" / project_basename
     ignore = shutil.ignore_patterns(
         ".git",
         ".venv",
@@ -213,7 +214,11 @@ def read_config():
 
 def main():
     cfg = read_config()
-    workdir = Path(__file__).resolve().parent / 'user_bundle' / 'app'
+    subdir = cfg.get('APP_SUBDIR_NAME')
+    if not subdir:
+        print('APP_SUBDIR_NAME missing in config.yml', file=sys.stderr)
+        sys.exit(1)
+    workdir = Path(__file__).resolve().parent / 'user_bundle' / subdir
     cmd = cfg.get('CMD')
     if not cmd:
         print('CMD missing in config.yml', file=sys.stderr)
@@ -278,6 +283,7 @@ FC_RUN_CMD: "python3 /code/python/deploy_starter/main.py"
 
 TELEMETRY_ENABLE: true
 CMD: "{start_cmd}"
+APP_SUBDIR_NAME: "{project_basename}"
 """
     _write_file(wrapper_dir / "deploy_starter" / "config.yml", config_yml)
 
@@ -296,7 +302,7 @@ setup(
 
     manifest_in = """
 recursive-include deploy_starter *.yml
-recursive-include deploy_starter/user_bundle/app *
+recursive-include deploy_starter/user_bundle *
 """
     _write_file(wrapper_dir / "MANIFEST.in", manifest_in)
 
