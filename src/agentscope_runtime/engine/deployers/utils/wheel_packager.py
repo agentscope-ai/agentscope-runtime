@@ -263,9 +263,6 @@ HOST: "0.0.0.0"
 PORT: 8080
 RELOAD: true
 
-DASHSCOPE_API_KEY: null
-DASHSCOPE_MODEL_NAME: "qwen-turbo"
-
 LOG_LEVEL: "INFO"
 
 SETUP_PACKAGE_NAME: "{package_name}"

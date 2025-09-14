@@ -40,7 +40,7 @@ class OSSConfig(BaseModel):
     access_key_id: Optional[str] = None
     access_key_secret: Optional[str] = None
     bucket_prefix: str = Field(
-        "tmpbucket-agentdev",
+        "tmpbucket-agentscope-runtime",
         description="Prefix for temporary buckets if creation is needed",
     )
 
