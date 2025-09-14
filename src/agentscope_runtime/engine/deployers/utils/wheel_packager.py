@@ -163,6 +163,9 @@ def generate_wrapper_project(
     ignore = shutil.ignore_patterns(
         ".git",
         ".venv",
+        ".venv_build",
+        ".agentdev_builds",
+        ".agentscope_runtime_builds",
         "__pycache__",
         "dist",
         "build",

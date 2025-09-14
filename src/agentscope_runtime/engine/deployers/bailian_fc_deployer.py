@@ -192,7 +192,8 @@ class BailianFCDeployer(DeployManager):
         super().__init__()
         self.oss_config = oss_config or OSSConfig.from_env()
         self.bailian_config = bailian_config or BailianConfig.from_env()
-        self.build_root = Path(build_root) if build_root else Path.cwd() / ".agentdev_builds"
+        # Defer default build_root selection to deploy() to avoid using home by default
+        self.build_root = Path(build_root) if build_root else None
 
     async def deploy(
         self,
@@ -231,7 +232,13 @@ class BailianFCDeployer(DeployManager):
             raise FileNotFoundError(f"Project dir not found: {project_dir}")
 
         name = deploy_name or default_deploy_name()
-        build_dir = self.build_root / f"build-{int(time.time())}"
+        proj_root = project_dir.resolve()
+        # Default build artifacts go to the project's parent directory
+        effective_build_root = (
+            self.build_root.resolve() if isinstance(self.build_root, Path) else
+            (Path(self.build_root).resolve() if self.build_root else (proj_root.parent / ".agentscope_runtime_builds").resolve())
+        )
+        build_dir = effective_build_root / f"build-{int(time.time())}"
         build_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info("Generating wrapper project for %s", name)
