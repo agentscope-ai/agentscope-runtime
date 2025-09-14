@@ -17,7 +17,7 @@ from agent_run import llm_agent
 from agentscope_runtime.engine.deployers.utils.package_project import (
     package_project,
 )
-from agentscope_runtime.engine.deployers.utils.docker_builder import (
+from logs.docker_builder import (
     DockerImageBuilder,
 )
 

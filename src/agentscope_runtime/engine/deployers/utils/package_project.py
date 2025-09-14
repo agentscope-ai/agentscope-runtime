@@ -4,16 +4,106 @@
 # pylint:disable=too-many-branches, unused-import, too-many-statements
 # pylint:disable=unused-variable
 
+import ast
+import hashlib
+import inspect
 import os
 import shutil
-import tempfile
-import inspect
-import ast
-import importlib.util
 import tarfile
-import hashlib
+import tempfile
 from typing import List, Optional, Any, Tuple
-from pathlib import Path
+from jinja2 import Template
+
+from pydantic import BaseModel
+
+
+DEFAULT_TEMPLATE = """import asyncio
+import os
+from fastapi import FastAPI
+from agentscope_runtime.engine import Runner
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
+from agentscope_runtime.engine.services.context_manager import ContextManager
+from agentscope_runtime.engine.services.session_history_service import (
+    InMemorySessionHistoryService,
+)
+from agentscope_runtime.engine.services.memory_service import (
+    InMemoryMemoryService)
+from agent_file import {{agent_name}} as agent
+
+app = FastAPI()
+
+# 初始化全局变量
+runner = None
+
+
+@app.on_event("startup")
+async def startup_event():
+    global runner
+
+    # 创建上下文管理器和运行器
+    session_history_service = InMemorySessionHistoryService()
+    memory_service = InMemoryMemoryService()
+    context_manager = ContextManager(
+        session_history_service=session_history_service,
+        memory_service=memory_service
+    )
+    await context_manager.__aenter__()
+    runner = Runner(
+        agent=agent,
+        context_manager=context_manager
+    )
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    global runner
+    if runner and runner.context_manager:
+        await runner.context_manager.__aexit__(None, None, None)
+
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+
+
+@app.get("{{endpoint_path}}")
+async def chat(message: str):
+    global runner
+    if not runner:
+        return {"error": "Runner not initialized"}
+
+    # 创建请求
+    request = AgentRequest(
+        input=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": message,
+                    },
+                ],
+            },
+        ],
+    )
+
+    # 收集流式响应
+    response_text = ""
+    async for message in runner.stream_query(request=request):
+        if hasattr(message, "text"):
+            response_text += message.text
+
+    return {"response": response_text}
+"""
+
+
+class PackageConfig(BaseModel):
+    """Configuration for project packaging"""
+
+    requirements: Optional[List[str]] = None
+    extra_packages: Optional[List[str]] = None
+    output_dir: Optional[str] = None
+    endpoint_path: Optional[str] = "/process"
 
 
 def _find_agent_source_file(
@@ -450,20 +540,18 @@ def _compare_directories(old_dir: str, new_dir: str) -> bool:
 
 def package_project(
     agent: Any,
-    requirements: Optional[List[str]] = None,
-    extra_packages: Optional[List[str]] = None,
-    package_dir: Optional[str] = None,
+    config: PackageConfig,
+    dockerfile_path: str,
+    template: str = DEFAULT_TEMPLATE,
 ) -> Tuple[str, bool]:
     """
     Package a project with agent and dependencies into a temporary directory.
 
     Args:
         agent: The agent object to be packaged
-        requirements: List of pip package requirements
-        extra_packages: List of extra files/directories to include
-        package_dir: Optional directory to use for packaging. If provided and
-                    directory already exists with content, will compare contents
-                    before updating.
+        config: The configuration of the package
+        dockerfile_path: Path to the Docker file
+        template: User override template
 
     Returns:
         Tuple[str, bool]: A tuple containing:
@@ -472,17 +560,19 @@ def package_project(
     """
     # Create temporary directory
     original_temp_dir = temp_dir = None
-    if package_dir is None:
+    if config.output_dir is None:
         temp_dir = tempfile.mkdtemp(prefix="agentscope_package_")
         needs_update = True  # New directory always needs update
     else:
-        temp_dir = package_dir
+        temp_dir = config.output_dir
         # Check if directory exists and has content
         if os.path.exists(temp_dir) and os.listdir(temp_dir):
             # Directory exists and has content, create a temporary directory first
             # to generate new content for comparison
             original_temp_dir = temp_dir
             temp_dir = tempfile.mkdtemp(prefix="agentscope_package_new_")
+            # copy docker file to this place
+            shutil.copy(dockerfile_path, os.path.join(temp_dir, "Dockerfile"))
             needs_update = None  # Will be determined after comparison
         else:
             # Directory doesn't exist or is empty, needs update
@@ -538,12 +628,12 @@ def package_project(
         shutil.copy2(agent_file_path, agent_dest_path)
 
         # Copy extra package files
-        if extra_packages:
+        if config.extra_packages:
             # Get the base directory from the agent_file_path for relative path
             # calculation
             caller_dir = os.path.dirname(agent_file_path)
 
-            for extra_path in extra_packages:
+            for extra_path in config.extra_packages:
                 if os.path.isfile(extra_path):
                     # Calculate relative path from caller directory
                     if os.path.isabs(extra_path):
@@ -602,87 +692,14 @@ def package_project(
                     shutil.copytree(extra_path, dest_path, dirs_exist_ok=True)
 
         # Define the template content inline
-        template_content = """import asyncio
-import os
-from fastapi import FastAPI
-from agentscope_runtime.engine import Runner
-from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agentscope_runtime.engine.services.context_manager import ContextManager
-from agentscope_runtime.engine.services.session_history_service import (
-    InMemorySessionHistoryService,
-)
-from agentscope_runtime.engine.services.memory_service import (
-    InMemoryMemoryService)
-from agent_file import {{agent_name}} as agent
 
-app = FastAPI()
-
-# 初始化全局变量
-runner = None
-
-
-@app.on_event("startup")
-async def startup_event():
-    global runner
-
-    # 创建上下文管理器和运行器
-    session_history_service = InMemorySessionHistoryService()
-    memory_service = InMemoryMemoryService()
-    context_manager = ContextManager(
-        session_history_service=session_history_service,
-        memory_service=memory_service
-    )
-    await context_manager.__aenter__()
-    runner = Runner(
-        agent=agent,
-        context_manager=context_manager
-    )
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    global runner
-    if runner and runner.context_manager:
-        await runner.context_manager.__aexit__(None, None, None)
-
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-
-@app.get("/chat")
-async def chat(message: str):
-    global runner
-    if not runner:
-        return {"error": "Runner not initialized"}
-
-    # 创建请求
-    request = AgentRequest(
-        input=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": message,
-                    },
-                ],
-            },
-        ],
-    )
-
-    # 收集流式响应
-    response_text = ""
-    async for message in runner.stream_query(request=request):
-        if hasattr(message, "text"):
-            response_text += message.text
-
-    return {"response": response_text}
-"""
+        template_object = Template(template)
 
         # Replace placeholder in template
-        main_content = template_content.replace("{{agent_name}}", agent_name)
+        main_content = template_object.render(
+            agent_name=agent_name,
+            endpoint_path=config.endpoint_path,
+        )
 
         # Write main.py
         main_file_path = os.path.join(temp_dir, "main.py")
@@ -690,7 +707,7 @@ async def chat(message: str):
             f.write(main_content)
 
         # Generate requirements.txt
-        if requirements:
+        if config.requirements:
             requirements_path = os.path.join(temp_dir, "requirements.txt")
             with open(requirements_path, "w", encoding="utf-8") as f:
                 # Add base requirements for the runtime
@@ -702,7 +719,7 @@ async def chat(message: str):
 
                 # Combine base requirements with user requirements
                 all_requirements = sorted(
-                    list(set(base_requirements + requirements))
+                    list(set(base_requirements + config.requirements)),
                 )
 
                 for req in all_requirements:
@@ -748,7 +765,7 @@ async def chat(message: str):
 
     except Exception as e:
         # Clean up on error
-        if os.path.exists(temp_dir) and temp_dir != package_dir:
+        if os.path.exists(temp_dir) and temp_dir != config.output_dir:
             shutil.rmtree(temp_dir)
         # If we're using a temporary directory for comparison, clean it up
         if (

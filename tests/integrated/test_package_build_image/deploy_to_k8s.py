@@ -7,11 +7,7 @@ from agentscope_runtime.engine.runner import Runner
 from agentscope_runtime.engine.deployers.kubernetes_deployer import (
     KubernetesDeployer,
     RegistryConfig,
-    BuildConfig,
     K8sConfig,
-)
-from agentscope_runtime.engine.deployers.utils.docker_builder import (
-    DockerImageBuilder,
 )
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -35,15 +31,12 @@ async def deploy_agent_to_k8s():
         kubeconfig_path="/Users/zhicheng/repo/agentscope-runtime/tests/integrated/test_package_build_image/logs/kubeconfig.yaml",
     )
 
-    port = 8000
-    # 4. 创建Docker镜像构建器
-    image_builder = DockerImageBuilder(port=port)
+    port = 8080
 
     # 5. 创建KubernetesDeployer
     deployer = KubernetesDeployer(
         kube_config=k8s_config,
         registry_config=registry_config,
-        image_builder=image_builder,
         use_deployment=True,  # 使用Deployment模式，支持扩缩容
     )
 
@@ -76,11 +69,11 @@ async def deploy_agent_to_k8s():
     # 7. 部署配置
     deployment_config = {
         # 基础配置
-        "endpoint_path": "/process",
+        "api_endpoint": "/process",
         "stream": True,
         "port": str(port),
         "replicas": 2,  # 部署2个副本
-        "image_tag": "linux-amd64",
+        "image_tag": "linux-amd64-1",
         "image_name": "agent_llm",
         # 依赖配置
         "requirements": [
@@ -96,7 +89,7 @@ async def deploy_agent_to_k8s():
                 "other_project.py",
             ),
         ],
-        "base_image": "pyhon:3.10-slim-bookworm",
+        "base_image": "python:3.10-slim-bookworm",
         # 环境变量
         "environment": {
             "PYTHONPATH": "/app",
@@ -109,6 +102,7 @@ async def deploy_agent_to_k8s():
         "deploy_timeout": 300,
         "health_check": True,
         "platform": "linux/amd64",
+        "push_to_registry": True,
     }
 
     try:
@@ -141,7 +135,6 @@ async def deploy_agent_to_k8s():
 async def deployed_service(service_url: str):
     """测试部署的服务"""
     import aiohttp
-    import json
 
     test_request = {
         "content": "Hello, agent!",

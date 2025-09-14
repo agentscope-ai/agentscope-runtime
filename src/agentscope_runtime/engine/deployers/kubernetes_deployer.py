@@ -3,28 +3,22 @@ import asyncio
 import logging
 import os
 import time
-from dataclasses import dataclass
-from typing import Optional, Dict, Any, Callable, List, Union
+from typing import Optional, Dict, Callable, List, Union
 
-from agentscope_runtime.sandbox.manager.container_clients import (
-    KubernetesClient,
-)
 from pydantic import BaseModel, Field
 
 from agentscope_runtime.engine.runner import Runner
+from agentscope_runtime.engine.deployers.utils.runner_image_factory import (
+    RunnerImageFactory,
+)
+from agentscope_runtime.engine.deployers.utils.docker_image_builder import (
+    RegistryConfig,
+)
 from agentscope_runtime.sandbox.manager.container_clients.kubernetes_client import (
     KubernetesClient,
 )  # noqa E501
-from agentscope_runtime.sandbox.manager.sandbox_manager import (
-    SandboxManagerEnvConfig,
-)
-from kubernetes import client
-from kubernetes import config as k8s_config
-from kubernetes.client.rest import ApiException
-
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
-from .utils.docker_builder import DockerImageBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -41,20 +35,6 @@ class K8sConfig(BaseModel):
         description="Path to kubeconfig file. If not set, will try "
         "in-cluster config or default kubeconfig.",
     )
-
-
-class RegistryConfig(BaseModel):
-    """Container registry configuration"""
-
-    registry_url: str = ""
-    username: str = None
-    password: str = None
-    namespace: str = "agentscope-runtime"
-    image_pull_secret: str = None
-
-    def get_full_image_name(self) -> str:
-        # Handle different registry URL formats
-        return f"{self.registry_url}/{self.namespace}"
 
 
 class BuildConfig(BaseModel):
@@ -74,7 +54,8 @@ class KubernetesDeployer(DeployManager):
         self,
         kube_config: K8sConfig = None,
         registry_config: RegistryConfig = RegistryConfig(),
-        image_builder: DockerImageBuilder = None,
+        # image_builder: DockerImageBuilder = None,
+        image_builder: RunnerImageFactory = None,
         use_deployment: bool = True,
         build_context_dir: str = "/tmp/k8s_build",
         **kwargs,
@@ -82,7 +63,7 @@ class KubernetesDeployer(DeployManager):
         super().__init__()
         self.kubeconfig = kube_config
         self.registry_config = registry_config
-        self.image_builder = image_builder or DockerImageBuilder()
+        self.image_builder = RunnerImageFactory()
         self.use_deployment = use_deployment
         self.build_context_dir = build_context_dir
         self._deployed_resources = {}
@@ -90,7 +71,7 @@ class KubernetesDeployer(DeployManager):
 
         self.k8s_client = KubernetesClient(
             config=self.kubeconfig,
-            image_registry=self.registry_config.get_full_image_name(),
+            image_registry=self.registry_config.get_full_url(),
         )
 
     async def deploy(
@@ -116,6 +97,7 @@ class KubernetesDeployer(DeployManager):
         requirements_list: List[str] = None,
         image_name: str = "agent_llm",
         image_tag: str = "latest",
+        push_to_registry: bool = False,
         **kwargs,
     ) -> Dict[str, str]:
         """
@@ -185,15 +167,17 @@ class KubernetesDeployer(DeployManager):
             try:
                 built_image_name = self.image_builder.build_runner_image(
                     runner=actual_func,
-                    registry=self.registry_config.get_full_image_name(),
                     requirements=actual_requirements,
                     extra_packages=extra_packages,
                     base_image=base_image,
                     stream=stream,
                     endpoint_path=endpoint_path,
                     build_context_dir=self.build_context_dir,
+                    registry_config=self.registry_config,
                     image_name=image_name,
                     image_tag=image_tag,
+                    push_to_registry=push_to_registry,
+                    port=port,
                     **kwargs,
                 )
                 if not built_image_name:
@@ -226,7 +210,7 @@ class KubernetesDeployer(DeployManager):
 
             # Create Deployment
             _id, ports, ip = self.k8s_client.create_deployment(
-                image=built_image_name.split("/")[-1],
+                image=built_image_name,
                 name=resource_name,
                 ports=[port],
                 volumes=volume_bindings,
