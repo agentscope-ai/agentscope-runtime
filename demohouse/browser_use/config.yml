@@ -7,7 +7,7 @@ backend:
 
   # agent config
   llm-name: qwen-max # llm name, support qwen-max, qwen-turbo, qwen-plus, for more details, read dashscope document.
-  agent-timeout: 3600 # agent timeout, unit: second
+  agent-timeout: 3 # agent timeout, unit: second
 
   # session history service, it supports three modes: none, memory, redis.
   # none means no session service used

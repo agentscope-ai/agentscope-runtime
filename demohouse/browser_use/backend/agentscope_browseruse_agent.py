@@ -186,7 +186,7 @@ class AgentscopeBrowseruseAgent:
         self.runner = runner
         self.is_closed = False
 
-    async def chat(self, chat_messages):
+    async def chat_back(self, chat_messages):
         convert_messages = []
         for chat_message in chat_messages:
             convert_messages.append(
@@ -208,7 +208,7 @@ class AgentscopeBrowseruseAgent:
         self.ws = ""
         yield [TextContent(text="hello world " + self.session_id)]
 
-    async def chat_dumye(self, chat_messages):
+    async def chat(self, chat_messages):
         convert_messages = []
         for chat_message in chat_messages:
             convert_messages.append(
@@ -241,6 +241,6 @@ class AgentscopeBrowseruseAgent:
         if self.is_closed:
             return
         await self.sandbox_service.stop()
-        await self.mem_service.stop()
+        # await self.mem_service.stop()
         self.ws = ""
         self.is_closed = True
