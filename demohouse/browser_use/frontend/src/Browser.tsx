@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import "./Browser.scss";
 
@@ -39,7 +40,37 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
   const [isUrlBarFocused, setIsUrlBarFocused] = useState(false);
   const urlTextRef = useRef<HTMLInputElement>(null);
   const wsDiscoveryRef = useRef<WebSocket | null>(null);
+  const activeConnectionRetries = useRef<Record<string, number>>({});
   const singlePageMode = false;
+  const interactive = true;
+
+  useEffect(() => {
+    if (singlePageMode) return;
+    const ws = new WebSocket(webSocketUrl + "?tabInfo=true");
+    wsDiscoveryRef.current = ws;
+    ws.onopen = () => setConnectionStatus("online");
+    ws.onclose = () => setConnectionStatus("offline");
+    ws.onerror = () => setConnectionStatus("offline");
+    ws.onmessage = (event) => {
+      const payload = JSON.parse(event.data);
+      if (payload.type === "tabList" && payload.tabs) {
+        handleTabList(payload.tabs, payload.firstTabId);
+      } else if (payload.type === "tabClosed" && payload.pageId) {
+        handleTabClosed(payload.pageId);
+      } else if (payload.type === "activeTabChange" && payload.pageId) {
+        setActiveTabId(payload.pageId);
+      }
+    };
+    return () => ws.close();
+  }, [webSocketUrl]);
+
+  useEffect(() => {
+    if (!activeTabId) return;
+    const tab = tabs[activeTabId];
+    if (!tab) return;
+    if (tab.ws) return;
+    connectTabWebSocket(activeTabId);
+  }, [activeTabId, tabs]);
 
   const handleTabList = useCallback((tabList: any[], firstTabId?: string) => {
     const newTabs: Record<string, Tab> = {};
@@ -108,252 +139,177 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
     },
     [],
   );
-  const renderCanvasImage = useCallback(
-    (
-      pageId: string,
-      imageData: string,
-      url?: string,
-      title?: string,
-      favicon?: string,
-    ) => {
+
+  const connectTabWebSocket = (pageId: string) => {
+    setTabs((prev) => {
+      if (!prev[pageId]) return prev;
+      return {
+        ...prev,
+        [pageId]: {
+          ...prev[pageId],
+          isLoading: true,
+          error: false,
+          reconnecting: true,
+        },
+      };
+    });
+    const ws = new WebSocket(
+      webSocketUrl + `?pageId=${encodeURIComponent(pageId)}`,
+    );
+    ws.onopen = () => {
       setTabs((prev) => {
-        const updated = { ...prev };
-        if (!updated[pageId]) {
-          return updated;
-        }
-        updated[pageId].receivedFirstFrame = true;
-        updated[pageId].lastImageData = imageData.startsWith(
-          "data:image/jpeg;base64,",
-        )
-          ? imageData
-          : `data:image/jpeg;base64,${imageData}`;
-        updated[pageId].isLoading = false;
-        updated[pageId].error = false;
-        if (url && !isUrlBarFocused) {
-          updated[pageId].url = url;
-        }
-        if (title) {
-          updated[pageId].title = title;
-        }
-        if (favicon) {
-          updated[pageId].favicon = favicon;
-        }
-        updated[pageId].frameCount++;
-        return updated;
-      });
-      setTimeout(() => {
-        const tab = tabs[pageId];
-        const canvas = tab?.canvasRef.current;
-        if (!canvas) {
-          return;
-        }
-        const ctx = canvas.getContext("2d", { alpha: false });
-        if (!ctx) {
-          return;
-        }
-        const img = new window.Image();
-        img.src = imageData.startsWith("data:image/jpeg;base64,")
-          ? imageData
-          : `data:image/jpeg;base64,${imageData}`;
-        img.onload = () => {
-          setTabs((prev) => {
-            const updated = { ...prev };
-            if (!updated[pageId]) return updated;
-            updated[pageId].currentImageWidth = img.naturalWidth;
-            updated[pageId].currentImageHeight = img.naturalHeight;
-            return updated;
-          });
-          const dpr = window.devicePixelRatio || 1;
-          const container = tab?.containerRef.current;
-          const targetHeight = container?.clientHeight || defaultHeight;
-          const targetWidth =
-            targetHeight * (img.naturalWidth / img.naturalHeight);
-          canvas.width = targetWidth * dpr;
-          canvas.height = targetHeight * dpr;
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.scale(dpr, dpr);
-          canvas.style.height = "100%";
-          canvas.style.width = "auto";
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(
-            img,
-            0,
-            0,
-            Math.floor(canvas.width / dpr),
-            Math.floor(canvas.height / dpr),
-          );
-        };
-      }, 0);
-    },
-    [isUrlBarFocused, tabs],
-  );
-  const connectTabWebSocket = useCallback(
-    (pageId: string) => {
-      setTabs((prev) => {
-        if (!prev[pageId]) {
-          return prev;
-        }
-        return {
-          ...prev,
-          [pageId]: {
-            ...prev[pageId],
-            isLoading: true,
-            error: false,
-            reconnecting: true,
-          },
-        };
-      });
-      const ws = new WebSocket(
-        webSocketUrl + `?pageId=${encodeURIComponent(pageId)}`,
-      );
-      ws.onopen = () => {
-        setTabs((prev) => {
-          if (!prev[pageId]) {
-            return prev;
-          }
-          return {
-            ...prev,
-            [pageId]: {
-              ...prev[pageId],
-              ws,
-              isLoading: false,
-              error: false,
-              reconnecting: false,
-              frameCount: 0,
-            },
-          };
-        });
-        setConnectionStatus("online");
-      };
-      ws.onclose = () => {
-        setTabs((prev) => {
-          if (!prev[pageId]) {
-            return prev;
-          }
-          return {
-            ...prev,
-            [pageId]: {
-              ...prev[pageId],
-              isLoading: false,
-              error: true,
-              reconnecting: false,
-              ws: null,
-            },
-          };
-        });
-        setConnectionStatus("offline");
-      };
-      ws.onerror = () => {
-        setTabs((prev) => {
-          if (!prev[pageId]) {
-            return prev;
-          }
-          return {
-            ...prev,
-            [pageId]: {
-              ...prev[pageId],
-              isLoading: false,
-              error: true,
-              reconnecting: false,
-            },
-          };
-        });
-        setConnectionStatus("offline");
-      };
-      ws.onmessage = (event) => {
-        const payload = JSON.parse(event.data);
-        if (payload.type === "tabUpdate") {
-          updateTabInfo(
-            pageId,
-            payload.url || "",
-            payload.title || "",
-            payload.favicon || null,
-          );
-        } else if (payload.type === "targetClosed") {
-          handleTabClosed(pageId);
-        }
-        if (payload.data) {
-          renderCanvasImage(
-            pageId,
-            payload.data,
-            payload.url,
-            payload.title,
-            payload.favicon,
-          );
-        }
-      };
-      setTabs((prev) => {
-        if (!prev[pageId]) {
-          return prev;
-        }
+        if (!prev[pageId]) return prev;
         return {
           ...prev,
           [pageId]: {
             ...prev[pageId],
             ws,
+            isLoading: false,
+            error: false,
+            reconnecting: false,
+            frameCount: 0,
           },
         };
       });
-    },
-    [handleTabClosed, renderCanvasImage, updateTabInfo, webSocketUrl],
-  );
-
-  useEffect(() => {
-    if (singlePageMode) {
-      return;
-    }
-    if (webSocketUrl === "") {
-      return;
-    }
-
-    const ws = new WebSocket(webSocketUrl + "?tabInfo=true");
-    wsDiscoveryRef.current = ws;
-    ws.onopen = () => setConnectionStatus("online");
-    ws.onclose = () => setConnectionStatus("offline");
-    ws.onerror = (e) => {
-      console.log(e);
+      setConnectionStatus("online");
+    };
+    ws.onclose = () => {
+      setTabs((prev) => {
+        if (!prev[pageId]) return prev;
+        return {
+          ...prev,
+          [pageId]: {
+            ...prev[pageId],
+            isLoading: false,
+            error: true,
+            reconnecting: false,
+            ws: null,
+          },
+        };
+      });
+      setConnectionStatus("offline");
+    };
+    ws.onerror = () => {
+      setTabs((prev) => {
+        if (!prev[pageId]) return prev;
+        return {
+          ...prev,
+          [pageId]: {
+            ...prev[pageId],
+            isLoading: false,
+            error: true,
+            reconnecting: false,
+          },
+        };
+      });
       setConnectionStatus("offline");
     };
     ws.onmessage = (event) => {
       const payload = JSON.parse(event.data);
-      if (payload.type === "tabList" && payload.tabs) {
-        handleTabList(payload.tabs, payload.firstTabId);
-      } else if (payload.type === "tabClosed" && payload.pageId) {
-        handleTabClosed(payload.pageId);
-      } else if (payload.type === "activeTabChange" && payload.pageId) {
-        setActiveTabId(payload.pageId);
+      if (payload.type === "tabUpdate") {
+        updateTabInfo(
+          pageId,
+          payload.url || "",
+          payload.title || "",
+          payload.favicon || null,
+        );
+      } else if (payload.type === "targetClosed") {
+        handleTabClosed(pageId);
+      }
+      if (payload.data) {
+        renderCanvasImage(
+          pageId,
+          payload.data,
+          payload.url,
+          payload.title,
+          payload.favicon,
+        );
       }
     };
-    return () => ws.close();
-  }, [handleTabClosed, handleTabList, singlePageMode, webSocketUrl]);
+    setTabs((prev) => {
+      if (!prev[pageId]) return prev;
+      return {
+        ...prev,
+        [pageId]: {
+          ...prev[pageId],
+          ws,
+        },
+      };
+    });
+  };
+
+  const renderCanvasImage = (
+    pageId: string,
+    imageData: string,
+    url?: string,
+    title?: string,
+    favicon?: string,
+  ) => {
+    setTabs((prev) => {
+      const updated = { ...prev };
+      if (!updated[pageId]) return updated;
+      updated[pageId].receivedFirstFrame = true;
+      updated[pageId].lastImageData = imageData.startsWith(
+        "data:image/jpeg;base64,",
+      )
+        ? imageData
+        : `data:image/jpeg;base64,${imageData}`;
+      updated[pageId].isLoading = false;
+      updated[pageId].error = false;
+      if (url && !isUrlBarFocused) updated[pageId].url = url;
+      if (title) updated[pageId].title = title;
+      if (favicon) updated[pageId].favicon = favicon;
+      updated[pageId].frameCount++;
+      return updated;
+    });
+    setTimeout(() => {
+      const tab = tabs[pageId];
+      const canvas = tab?.canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d", { alpha: false });
+      if (!ctx) return;
+      const img = new window.Image();
+      img.src = imageData.startsWith("data:image/jpeg;base64,")
+        ? imageData
+        : `data:image/jpeg;base64,${imageData}`;
+      img.onload = () => {
+        setTabs((prev) => {
+          const updated = { ...prev };
+          if (!updated[pageId]) return updated;
+          updated[pageId].currentImageWidth = img.naturalWidth;
+          updated[pageId].currentImageHeight = img.naturalHeight;
+          return updated;
+        });
+        const dpr = window.devicePixelRatio || 1;
+        const container = tab?.containerRef.current;
+        const targetHeight = container?.clientHeight || defaultHeight;
+        const targetWidth =
+          targetHeight * (img.naturalWidth / img.naturalHeight);
+        canvas.width = targetWidth * dpr;
+        canvas.height = targetHeight * dpr;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+        canvas.style.height = "100%";
+        canvas.style.width = "auto";
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(
+          img,
+          0,
+          0,
+          Math.floor(canvas.width / dpr),
+          Math.floor(canvas.height / dpr),
+        );
+      };
+    }, 0);
+  };
 
   useEffect(() => {
-    if (!activeTabId) {
-      return;
-    }
+    if (!activeTabId || activeKey !== "3") return;
     const tab = tabs[activeTabId];
-    if (!tab) {
-      return;
-    }
-    if (tab.ws) {
-      return;
-    }
-    connectTabWebSocket(activeTabId);
-  }, [activeTabId, connectTabWebSocket, tabs]);
-
-  useEffect(() => {
-    if (!activeTabId || activeKey !== "3") {
-      return;
-    }
-    const tab = tabs[activeTabId];
-    if (!tab) {
-      return;
-    }
+    if (!tab) return;
     const canvas = tab.canvasRef.current;
-    if (!canvas) {
-      return;
-    }
-    // mouse event
+    if (!canvas) return;
+    // 鼠标事件
     const getScaledCoordinates = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       const scaleX = tab.currentImageWidth / rect.width;
@@ -376,9 +332,7 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
       };
     };
     const handleMouse = (e: MouseEvent, type: string) => {
-      if (!tab.ws || tab.ws.readyState !== WebSocket.OPEN) {
-        return;
-      }
+      if (!tab.ws || tab.ws.readyState !== WebSocket.OPEN) return;
       const coords = getScaledCoordinates(e);
       const modifiers =
         (e.ctrlKey ? 2 : 0) |
@@ -407,15 +361,11 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
     };
     let moveTimeout: any = null;
     const handleMouseMove = (e: MouseEvent) => {
-      if (moveTimeout) {
-        clearTimeout(moveTimeout);
-      }
+      if (moveTimeout) clearTimeout(moveTimeout);
       moveTimeout = setTimeout(() => handleMouse(e, "mouseMoved"), 20);
     };
     const handleWheel = (e: WheelEvent) => {
-      if (!tab.ws || tab.ws.readyState !== WebSocket.OPEN) {
-        return;
-      }
+      if (!tab.ws || tab.ws.readyState !== WebSocket.OPEN) return;
       const coords = getScaledCoordinates(e as any);
       const modifiers =
         (e.ctrlKey ? 2 : 0) |
@@ -446,12 +396,20 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
     canvas.addEventListener("wheel", handleWheel, { passive: false });
 
     const handleKey = (e: KeyboardEvent, type: "keyDown" | "keyUp") => {
-      if (document.activeElement === urlTextRef.current) {
-        return;
-      }
-      if (!tab.ws || tab.ws.readyState !== WebSocket.OPEN) {
-        return;
-      }
+      if (document.activeElement === urlTextRef.current) return;
+      if (!tab.ws || tab.ws.readyState !== WebSocket.OPEN) return;
+
+      const eventData = JSON.stringify({
+        type: "keyEvent",
+        pageId: activeTabId,
+        event: {
+          type,
+          text: e.key.length === 1 ? e.key : undefined,
+          code: e.code,
+          key: e.key,
+          keyCode: e.keyCode,
+        },
+      });
     };
     const keydown = (e: KeyboardEvent) => handleKey(e, "keyDown");
     const keyup = (e: KeyboardEvent) => handleKey(e, "keyUp");
@@ -469,13 +427,11 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
       document.removeEventListener("keydown", keydown);
       document.removeEventListener("keyup", keyup);
     };
-  }, [activeKey, activeTabId, tabs]);
+  }, [activeTabId, tabs]);
 
   const handleUrlSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!urlTextRef.current || !activeTabId) {
-      return;
-    }
+    if (!urlTextRef.current || !activeTabId) return;
     const url = urlTextRef.current.value;
     handleNavigation("url", url);
     urlTextRef.current.blur();
@@ -485,13 +441,9 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
     action: "back" | "forward" | "refresh" | "url",
     url?: string,
   ) => {
-    if (!activeTabId || !tabs[activeTabId]?.ws) {
-      return;
-    }
+    if (!activeTabId || !tabs[activeTabId]?.ws) return;
     const ws = tabs[activeTabId].ws;
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      return;
-    }
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
     //if (ws.readyState !== WebSocket.OPEN) return;
     setTabs((prev) => ({
       ...prev,
@@ -649,9 +601,7 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
               ref={urlTextRef}
               value={tabs[activeTabId || ""]?.url || ""}
               onChange={(e) => {
-                if (!activeTabId || activeKey !== "3") {
-                  return;
-                }
+                if (!activeTabId || activeKey !== "3") return;
                 setTabs((prev) => ({
                   ...prev,
                   [activeTabId]: {

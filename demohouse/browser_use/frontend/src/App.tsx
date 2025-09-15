@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState, useRef, useEffect } from "react"; // 添加 useEffect
 import { Layout, theme } from "antd";
 
@@ -80,6 +81,7 @@ const App: React.FC = () => {
   }
 
   const handleSend = async (message: string) => {
+    await get_ws();
     setCollapsed(true);
     if (message.trim() === "") {
       return;

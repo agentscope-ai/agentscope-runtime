@@ -6,8 +6,9 @@ backend:
   secure-key: DEMO_EKY # secure key of  backend
 
   # agent config
+  agent-type: agentscope # now support agentscope, to add more
   llm-name: qwen-max # llm name, support qwen-max, qwen-turbo, qwen-plus, for more details, read dashscope document.
-  agent-timeout: 3 # agent timeout, unit: second
+  agent-timeout: 3600 # agent timeout, unit: second
 
   # session history service, it supports three modes: none, memory, redis.
   # none means no session service used
@@ -30,7 +31,8 @@ backend:
   # remote means use remote sandbox to run sandbox
   sandbox-type:  local # sandbox type, support local and remote
   sandbox-remote:
-    url: http://47.239.249.6:5179 # set your sandbox url e.g. http://47.239.249.6:5179
+    url: http://xx.xx.xx.xx:xx # set your sandbox url
 frontend:
+  # basic front-end config
   host: localhost # frontend host
-  port: 3000 # frontend port. Note that this port is also manually configured in the frontend.
+  port: 3000 # frontend port.

@@ -94,17 +94,25 @@ Node and Python environments are required.
 ```bash
 cd frontend
 npm install
+npm install -g serve
 ```
 
 #### Run the Front-end Service
+Use your frontend port to serve the frontend service.
 
+NOTE: the `config.yml` file contains the 'frontend' port configuration, which SHOULD BE the SAME with the port here.
 ```bash
 npm run build
-npm install -g serve
-serve -s build
+serve -s build -p 3000
 ```
 
 This will open your browser and display the demo page. Alternatively, you can also open it in your browser at http://localhost:3000:
+
+#### (Alternatively) Dev Mode
+To run the front-end service in development mode, use the following command:
+```bash
+npm run start
+```
 
 ### Install the Back-end Service
 

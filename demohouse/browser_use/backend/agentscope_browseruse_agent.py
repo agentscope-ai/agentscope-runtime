@@ -15,7 +15,6 @@ from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.schemas.agent_schemas import (
     RunStatus,
     AgentRequest,
-    TextContent,
 )
 from agentscope_runtime.engine.services.context_manager import (
     ContextManager,
@@ -100,18 +99,24 @@ class AgentscopeBrowseruseAgent:
         self.session_id = session_id
         self.user_id = session_id  # use session_id as
         # user_id for simplification
-        self.agent = AgentScopeAgent(
-            name="Friday",
-            model=DashScopeChatModel(
-                self.config["backend"]["llm-name"],
-                api_key=os.getenv("DASHSCOPE_API_KEY"),
-            ),
-            agent_config={
-                "sys_prompt": SYSTEM_PROMPT,
-            },
-            tools=self.tools,
-            agent_builder=ReActAgent,
-        )
+        if self.config["backend"]["agent-type"] == "agentscope":
+            self.agent = AgentScopeAgent(
+                name="Friday",
+                model=DashScopeChatModel(
+                    self.config["backend"]["llm-name"],
+                    api_key=os.getenv("DASHSCOPE_API_KEY"),
+                ),
+                agent_config={
+                    "sys_prompt": SYSTEM_PROMPT,
+                },
+                tools=self.tools,
+                agent_builder=ReActAgent,
+            )
+        elif self.config["backend"]["agent-type"] == "agno":
+            # add in the future
+            raise ValueError("Invalid agent type")
+        else:
+            raise ValueError("Invalid agent type")
         self.ws = ""
         self.runner = None
         self.is_closed = False
@@ -185,28 +190,6 @@ class AgentscopeBrowseruseAgent:
         )
         self.runner = runner
         self.is_closed = False
-
-    async def chat_back(self, chat_messages):
-        convert_messages = []
-        for chat_message in chat_messages:
-            convert_messages.append(
-                {
-                    "role": chat_message["role"],
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": chat_message["content"],
-                        },
-                    ],
-                },
-            )
-        request = AgentRequest(
-            input=convert_messages,
-            session_id=self.session_id,
-        )
-        request.tools = []
-        self.ws = ""
-        yield [TextContent(text="hello world " + self.session_id)]
 
     async def chat(self, chat_messages):
         convert_messages = []
