@@ -129,6 +129,22 @@ def _oss_create_bucket_if_not_exists(client, bucket_name: str) -> None:
             create_bucket_configuration=oss.CreateBucketConfiguration(storage_class='IA'),
         )
         client.put_bucket(req)
+        result = client.put_bucket_tags(
+            oss.PutBucketTagsRequest(
+                bucket=bucket_name,
+                tagging=oss.Tagging(
+                    tag_set=oss.TagSet(
+                        tags=[
+                            oss.Tag(
+                                key='bailian-high-code-deploy-oss-access',
+                                value='ReadAndAdd',
+                            )
+                        ]
+                    ),
+                ),
+            )
+        )
+        logger.info(f'put bucket tag status code: {result.status_code}, request id: {result.request_id}')
 
 
 def _create_bucket_name(prefix: str, base_name: str) -> str:
