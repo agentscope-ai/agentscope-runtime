@@ -6,7 +6,7 @@ frontend/node_modules
 /.pnp
 .pnp.js
 node_modules/
-
+sessions_mount_dir/
 
 # testing
 /coverage

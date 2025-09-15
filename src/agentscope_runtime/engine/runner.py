@@ -139,18 +139,22 @@ class Runner:
             request_input=request_input,
         )
 
+        sequence_number = 0
         async for event in context.agent.run_async(context):
             if (
                 event.status == RunStatus.Completed
                 and event.object == "message"
             ):
                 response.add_new_message(event)
+            event.sequence_number = sequence_number
             yield event
+            sequence_number += 1
 
         await context.context_manager.append(
             session=context.session,
             event_output=response.output,
         )
+        response.sequence_number = sequence_number
         yield response.completed()
 
     @trace(TraceType.AGENT_STEP)

@@ -7,7 +7,7 @@ import threading
 import logging
 
 from collections import defaultdict
-from typing import Union, Optional, Generator, Any
+from typing import Union, Optional, Generator, Any, List
 
 from agentscope.agent import AgentBase
 from agentscope.message import Msg
@@ -83,7 +83,19 @@ def pre_speak_msg_buffer_hook(
     thread_id = threading.current_thread().name
     if thread_id.startswith("pipeline"):
         with _LOCKS[thread_id]:
-            _MSG_INSTANCE[thread_id].append(msg)
+            if kwargs.get("last", True):
+                msg.is_last = True
+                _MSG_INSTANCE[thread_id].append(msg)
+            else:
+                new_blocks = []
+                if isinstance(msg.content, List):
+                    for block in msg.content:
+                        if block.get("type", "") != "tool_use":
+                            new_blocks.append(block)
+                    msg.content = new_blocks
+                if msg.content:
+                    _MSG_INSTANCE[thread_id].append(msg)
+
     return kwargs
 
 
