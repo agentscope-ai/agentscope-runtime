@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+import atexit
 import logging
+import signal
 from typing import Any, Optional
 
 from ..enums import SandboxType
@@ -61,17 +63,67 @@ class Sandbox:
         self.sandbox_type = sandbox_type
         self.timeout = timeout
 
+        # Clean up function enabled in embed mode
+        if self.embed_mode:
+            atexit.register(self._cleanup)
+            self._register_signal_handlers()
+
+    def _register_signal_handlers(self) -> None:
+        """
+        Register signal handlers for graceful shutdown and cleanup.
+        Handles SIGINT (Ctrl+C) and, if available, SIGTERM to ensure that
+        the sandbox is properly cleaned up when the process receives these
+        signals. On platforms where SIGTERM is not available (e.g.,
+        Windows), only SIGINT is handled.
+        """
+
+        def _handler(signum, frame):  # pylint: disable=unused-argument
+            logger.debug(
+                f"Received signal {signum}, stopping Sandbox"
+                f" {self.sandbox_id}...",
+            )
+            self._cleanup()
+            raise SystemExit(0)
+
+        # Windows does not support SIGTERM
+        if hasattr(signal, "SIGTERM"):
+            signals = [signal.SIGINT, signal.SIGTERM]
+        else:
+            signals = [signal.SIGINT]
+
+        for sig in signals:
+            try:
+                signal.signal(sig, _handler)
+            except Exception as e:
+                logger.warning(f"Cannot register handler for {sig}: {e}")
+
+    def _cleanup(self):
+        """
+        Clean up resources associated with the sandbox.
+        This method is called when the sandbox receives termination signals
+        (such as SIGINT or SIGTERM) in embed mode, or when exiting a context
+        manager block. In embed mode, it calls the manager API's __exit__
+        method to clean up all resources. Otherwise, it releases the
+        specific sandbox instance.
+        """
+        try:
+            # Remote not need to close the embed_manager
+            if self.embed_mode:
+                # Clean all
+                self.manager_api.__exit__(None, None, None)
+            else:
+                # Clean the specific sandbox
+                self.manager_api.release(self.sandbox_id)
+        except Exception as e:
+            logger.error(
+                f"Cleanup {self.sandbox_id} error: {e}",
+            )
+
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        # Remote not need to close the embed_manager
-        if self.embed_mode:
-            # Clean all
-            self.manager_api.__exit__(exc_type, exc_value, traceback)
-        else:
-            # Clean the specific sandbox
-            self.manager_api.release(self.sandbox_id)
+        self._cleanup()
 
     @property
     def sandbox_id(self) -> str:
