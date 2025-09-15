@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState, useEffect, useRef } from "react";
 import { MessageCircle, User, Send, Plus, LogOut, Menu, X, Bot } from "lucide-react";
 

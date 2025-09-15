@@ -224,6 +224,5 @@ class AgentscopeBrowseruseAgent:
         if self.is_closed:
             return
         await self.sandbox_service.stop()
-        # await self.mem_service.stop()
         self.ws = ""
         self.is_closed = True
