@@ -305,27 +305,26 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
     if (webSocketUrl === "") {
       return;
     }
-    setTimeout(() => {
-      const ws = new WebSocket(webSocketUrl + "?tabInfo=true");
-      wsDiscoveryRef.current = ws;
-      ws.onopen = () => setConnectionStatus("online");
-      ws.onclose = () => setConnectionStatus("offline");
-      ws.onerror = (e) => {
-        console.log(e);
-        setConnectionStatus("offline");
-      };
-      ws.onmessage = (event) => {
-        const payload = JSON.parse(event.data);
-        if (payload.type === "tabList" && payload.tabs) {
-          handleTabList(payload.tabs, payload.firstTabId);
-        } else if (payload.type === "tabClosed" && payload.pageId) {
-          handleTabClosed(payload.pageId);
-        } else if (payload.type === "activeTabChange" && payload.pageId) {
-          setActiveTabId(payload.pageId);
-        }
-      };
-      return () => ws.close();
-    }, 5); // wait a few seconds
+
+    const ws = new WebSocket(webSocketUrl + "?tabInfo=true");
+    wsDiscoveryRef.current = ws;
+    ws.onopen = () => setConnectionStatus("online");
+    ws.onclose = () => setConnectionStatus("offline");
+    ws.onerror = (e) => {
+      console.log(e);
+      setConnectionStatus("offline");
+    };
+    ws.onmessage = (event) => {
+      const payload = JSON.parse(event.data);
+      if (payload.type === "tabList" && payload.tabs) {
+        handleTabList(payload.tabs, payload.firstTabId);
+      } else if (payload.type === "tabClosed" && payload.pageId) {
+        handleTabClosed(payload.pageId);
+      } else if (payload.type === "activeTabChange" && payload.pageId) {
+        setActiveTabId(payload.pageId);
+      }
+    };
+    return () => ws.close();
   }, [handleTabClosed, handleTabList, singlePageMode, webSocketUrl]);
 
   useEffect(() => {

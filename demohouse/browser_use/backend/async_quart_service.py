@@ -56,7 +56,7 @@ agents = {}
 timers = {}
 
 # timeout
-INACTIVITY_TIMEOUT = config["backend"]["session-timeout"]
+INACTIVITY_TIMEOUT = config["backend"]["agent-timeout"]
 # the unit is second, for example,
 # 30 means 30 seconds
 
@@ -84,6 +84,7 @@ async def handle_query(input_data, session_id):
 
     # get agent by session_id
     if session_id not in agents:
+        # create a new agent by session_id
         agents[session_id] = AgentscopeBrowseruseAgent(
             session_id=session_id,
             config=config,
@@ -174,6 +175,7 @@ async def stream():
     # get session_id or generate a new one
     session_id = session.get("id", None)
     if not session_id:
+        # create one if not exist
         session_id = os.urandom(24).hex()
         session["id"] = session_id
         logger.info(f"New session created: {session_id}")
@@ -186,22 +188,24 @@ async def stream():
 
 @app.route("/env_info", methods=["GET"])
 async def get_env_info():
-    # get cooresponding agent ws info
+    # get corresponding agent ws info
     session_id = session.get("id", None)
     if not session_id:
+        # no session found
         logger.info("No session found")
-        return jsonify({"url": ""}), 200
-
-    # check agent
-    if session_id in agents and agents[session_id].is_closed:
-        return jsonify({"url": ""}), 200
-
-    if session_id in agents and agents[session_id].ws is not None:
-        url = agents[session_id].ws
-        logger.info(url)
-        return jsonify({"url": url})
     else:
-        return jsonify({"error": "WebSocket connection failed"}), 500
+        # session found
+        # check agent
+        if session_id in agents:
+            if not agents[session_id].is_closed:
+                # agent  alive
+                if agents[session_id].ws is not None:
+                    # if ws is not empty
+                    url = agents[session_id].ws
+                    logger.info(url)
+                    return jsonify({"url": url}), 200
+
+    return jsonify({"url": ""}), 200
 
 
 @app.route("/reset", methods=["POST"])

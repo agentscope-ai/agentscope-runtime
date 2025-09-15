@@ -117,25 +117,48 @@ class AgentscopeBrowseruseAgent:
         self.is_closed = False
 
     async def connect(self):
+        session_history_service = None
         if self.config["backend"]["session-type"] == "redis":
             session_history_service = RedisSessionHistoryService(
                 redis_url=self.config["backend"]["session-redis"]["url"],
             )
             await session_history_service.start()
-        else:
+        elif self.config["backend"]["session-type"] == "memory":
             session_history_service = InMemorySessionHistoryService()
-        await session_history_service.create_session(
-            user_id=self.user_id,
-            session_id=self.session_id,
-        )
+            await session_history_service.start()
+        else:
+            # no session service
+            pass
 
-        self.mem_service = InMemoryMemoryService()
-        await self.mem_service.start()
-        self.sandbox_service = SandboxService()
+        if session_history_service:
+            await session_history_service.create_session(
+                user_id=self.user_id,
+                session_id=self.session_id,
+            )
+
+        mem_service = None
+        if self.config["backend"]["memory-type"] == "redis":
+            mem_service = RedisSessionHistoryService(
+                redis_url=self.config["backend"]["memory-redis"]["url"],
+            )
+            await mem_service.start()
+        elif self.config["backend"]["memory-type"] == "memory":
+            mem_service = InMemoryMemoryService()
+            await mem_service.start()
+        else:
+            # no memory service
+            pass
+
+        if self.config["backend"]["sandbox-type"] == "local":
+            self.sandbox_service = SandboxService()
+        else:
+            self.sandbox_service = SandboxService(
+                base_url=self.config["backend"]["sandbox-remote"]["url"],
+            )
         await self.sandbox_service.start()
 
         self.context_manager = ContextManager(
-            memory_service=self.mem_service,
+            memory_service=mem_service,
             session_history_service=session_history_service,
         )
         self.environment_manager = EnvironmentManager(
@@ -185,7 +208,7 @@ class AgentscopeBrowseruseAgent:
         self.ws = ""
         yield [TextContent(text="hello world " + self.session_id)]
 
-    async def chat_back(self, chat_messages):
+    async def chat_dumye(self, chat_messages):
         convert_messages = []
         for chat_message in chat_messages:
             convert_messages.append(
