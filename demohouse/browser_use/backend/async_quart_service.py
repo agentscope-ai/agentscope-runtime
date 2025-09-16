@@ -20,7 +20,9 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
 # read config.yml file
 def read_config():
     try:
-        with open("../config.yml", "r", encoding="utf-8") as file:
+        base_dir = os.path.dirname(__file__)
+        config_path = os.path.join(base_dir, "..", "config.yml")
+        with open(config_path, "r", encoding="utf-8") as file:
             return yaml.safe_load(file)
     except FileNotFoundError:
         logger.warning("config.yml not found, using default configuration")
