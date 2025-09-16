@@ -114,7 +114,7 @@ class AgentscopeBrowseruseAgent:
             )
         elif self.config["backend"]["agent-type"] == "agno":
             # add in the future
-            raise ValueError("Invalid agent type")
+            raise NotImplementedError('Agent type "agno" is not yet implemented')
         else:
             raise ValueError("Invalid agent type")
         self.ws = ""
