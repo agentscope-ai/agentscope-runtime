@@ -25,7 +25,7 @@ if os.path.exists("../../.env"):
     load_dotenv("../../.env")
 
 
-def load_lanchain_docs():
+def load_langchain_docs():
     import bs4
     from langchain_community.document_loaders import WebBaseLoader
     from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -82,7 +82,7 @@ def load_llama_index_docs():
 
 @pytest.mark.asyncio
 async def test_langchain_from_docs():
-    docs = load_lanchain_docs()
+    docs = load_langchain_docs()
     from langchain_milvus import Milvus
     from langchain_community.embeddings import DashScopeEmbeddings
 
