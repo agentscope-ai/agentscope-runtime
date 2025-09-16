@@ -10,7 +10,7 @@ import tarfile
 import pytest
 from pathlib import Path
 
-from agentscope_runtime.engine.deployers.utils.package_project import (
+from agentscope_runtime.engine.deployers.utils.package_project_utils import (
     package_project,
     create_tar_gz,
     _find_agent_source_file,

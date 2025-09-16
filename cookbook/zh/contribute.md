@@ -9,7 +9,7 @@ AgentScope Runtime 是一个专注于智能体部署和安全工具执行的开�
 参与 AgentScope Runtime 项目的第一步是加入我们的讨论，通过不同的沟通渠道与我们联系。以下是与我们建立联系的几种方式：
 
 - **GitHub Discussions**: 提问和分享经验（请使用**英语**）
-- **Slack**: 加入我们的 [Slack频道](https://discord.gg/eYMpfnkG8h) 进行实时讨论
+- **Discord**: 加入我们的 [Discord频道](https://discord.gg/eYMpfnkG8h) 进行实时讨论
 - **DingTalk**: 中文用户可以加入我们的 [钉钉群](https://qr.dingtalk.com/action/joingroup?code=v1,k1,OmDlBXpjW+I2vWjKDsjvI9dhcXjGZi3bQiojOq3dlDw=&_dt_no_comment=1&origin=11)
 
 ## 报告问题

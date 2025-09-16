@@ -2,7 +2,7 @@
 # type: ignore
 from copy import deepcopy
 from datetime import datetime
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Literal, TypeAlias, Annotated
 from typing import Union
 
 try:
@@ -12,6 +12,7 @@ except ImportError:
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, field_validator
+from openai.types.chat import ChatCompletionChunk
 
 
 class MessageType:
@@ -29,6 +30,15 @@ class MessageType:
     HEARTBEAT = "heartbeat"
     ERROR = "error"
 
+    @classmethod
+    def all_values(cls):
+        """return all constants values in MessageType"""
+        return [
+            value
+            for name, value in vars(cls).items()
+            if not name.startswith("_") and isinstance(value, str)
+        ]
+
 
 class ContentType:
     TEXT = "text"
@@ -41,6 +51,7 @@ class Role:
     ASSISTANT = "assistant"
     USER = "user"
     SYSTEM = "system"
+    TOOL = "tool"
 
 
 class RunStatus:
@@ -70,7 +81,7 @@ class FunctionParameters(BaseModel):
 
 class FunctionTool(BaseModel):
     """
-    Model class for prompt message tool.
+    Model class for message tool.
     """
 
     name: str
@@ -89,10 +100,10 @@ class FunctionTool(BaseModel):
 
 class Tool(BaseModel):
     """
-    Model class for assistant prompt message tool call.
+    Model class for assistant message tool call.
     """
 
-    type: Optional[str] = None
+    type: Optional[str] = "function"
     """The type of the tool. Currently, only `function` is supported."""
 
     function: Optional[FunctionTool] = None
@@ -141,7 +152,7 @@ class Error(BaseModel):
 
 
 class Event(BaseModel):
-    sequence_number: Optional[str] = None
+    sequence_number: Optional[int] = None
     """sequence number of event"""
 
     object: str
@@ -213,9 +224,42 @@ class Content(Event):
     msg_id: Optional[str] = None
     """message unique id"""
 
+    @staticmethod
+    def from_chat_completion_chunk(
+        chunk: ChatCompletionChunk,
+        index: Optional[int] = None,
+    ) -> Optional[Union["TextContent", "DataContent", "ImageContent"]]:
+        if not chunk.choices:
+            return None
+
+        choice = chunk.choices[0]
+        if choice.delta.content is not None:
+            return TextContent(
+                delta=True,
+                text=choice.delta.content,
+                index=index,
+            )
+        elif choice.delta.tool_calls:
+            # TODO: support multiple tool calls output
+            tool_call = choice.delta.tool_calls[0]
+            if tool_call.function is not None:
+                return DataContent(
+                    delta=True,
+                    data={
+                        "call_id": tool_call.id,
+                        "name": tool_call.function.name,
+                        "arguments": tool_call.function.arguments,
+                    },
+                    index=index,
+                )
+            else:
+                return None
+        else:
+            return None
+
 
 class ImageContent(Content):
-    type: str = ContentType.IMAGE
+    type: Literal[ContentType.IMAGE] = ContentType.IMAGE
     """The type of the content part."""
 
     image_url: Optional[str] = None
@@ -223,7 +267,7 @@ class ImageContent(Content):
 
 
 class TextContent(Content):
-    type: str = ContentType.TEXT
+    type: Literal[ContentType.TEXT] = ContentType.TEXT
     """The type of the content part."""
 
     text: Optional[str] = None
@@ -231,11 +275,25 @@ class TextContent(Content):
 
 
 class DataContent(Content):
-    type: str = ContentType.DATA
+    type: Literal[ContentType.DATA] = ContentType.DATA
     """The type of the content part."""
 
     data: Optional[Dict] = None
     """The data content."""
+
+
+AgentRole: TypeAlias = Literal[
+    Role.ASSISTANT,
+    Role.SYSTEM,
+    Role.USER,
+    Role.TOOL,
+]
+
+
+AgentContent = Annotated[
+    Union[TextContent, ImageContent, DataContent],
+    Field(discriminator="type"),
+]
 
 
 class Message(Event):
@@ -251,13 +309,11 @@ class Message(Event):
     status: str = RunStatus.Created
     """The status of the message. in_progress, completed, or incomplete"""
 
-    role: Optional[str] = None
+    role: Optional[AgentRole] = None
     """The role of the messages author, should be in `user`,`system`,
     'assistant'."""
 
-    content: Optional[
-        List[Union[TextContent, ImageContent, DataContent]]
-    ] = None
+    content: Optional[List[AgentContent]] = None
     """The contents of the message."""
 
     code: Optional[str] = None
@@ -265,6 +321,145 @@ class Message(Event):
 
     message: Optional[str] = None
     """The error message of the message."""
+
+    usage: Optional[Dict] = None
+    """response usage for output"""
+
+    @staticmethod
+    def from_openai_message(message: Union[BaseModel, dict]) -> "Message":
+        """Create a message object from an openai message."""
+
+        # in case message is a Message object
+        if isinstance(message, Message):
+            return message
+
+        # make sure operation on dict object
+        if isinstance(message, BaseModel):
+            message = message.model_dump()
+
+        # in case message is a Message format dict
+        if "type" in message and message["type"] in MessageType.all_values():
+            return Message(**message)
+
+        # handle message in openai message format
+        if message["role"] == Role.ASSISTANT and "tool_calls" in message:
+            _content_list = []
+            for tool_call in message["tool_calls"]:
+                _content = DataContent(
+                    data=FunctionCall(
+                        call_id=tool_call["id"],
+                        name=tool_call["function"]["name"],
+                        arguments=tool_call["function"]["arguments"],
+                    ).model_dump(),
+                )
+                _content_list.append(_content)
+            _message = Message(
+                type=MessageType.FUNCTION_CALL,
+                content=_content_list,
+            )
+        elif message["role"] == Role.TOOL:
+            _content = DataContent(
+                data=FunctionCallOutput(
+                    call_id=message["tool_call_id"],
+                    output=message["content"],
+                ).model_dump(),
+            )
+            _message = Message(
+                type=MessageType.FUNCTION_CALL_OUTPUT,
+                content=[_content],
+            )
+        # mainly focus on matching content
+        elif isinstance(message["content"], str):
+            _content = TextContent(text=message["content"])
+            _message = Message(
+                type=MessageType.MESSAGE,
+                role=message["role"],
+                content=[_content],
+            )
+        else:
+            _content_list = []
+            for content in message["content"]:
+                if content["type"] == "image_url":
+                    _content = ImageContent(
+                        image_url=content["image_url"]["url"],
+                    )
+                elif content["type"] == "text":
+                    _content = TextContent(text=content["text"])
+                else:
+                    _content = DataContent(data=content["text"])
+                _content_list.append(_content)
+            _message = Message(
+                type=MessageType.MESSAGE,
+                role=message["role"],
+                content=_content_list,
+            )
+        return _message
+
+    def get_text_content(self) -> Optional[str]:
+        """
+        Extract the first text content from the message.
+
+        :return:
+            First text string found in the content, or None if no text content
+        """
+        if self.content is None:
+            return None
+
+        for item in self.content:
+            if isinstance(item, TextContent):
+                return item.text
+        return None
+
+    def get_image_content(self) -> List[str]:
+        """
+        Extract all image content (URLs or base64 data) from the message.
+
+        :return:
+            List of image URLs or base64 encoded strings found in the content
+        """
+        images = []
+
+        if self.content is None:
+            return images
+
+        for item in self.content:
+            if isinstance(item, ImageContent):
+                images.append(item.image_url)
+        return images
+
+    def get_audio_content(self) -> List[str]:
+        """
+        Extract all audio content (URLs or base64 data) from the message.
+
+        :return:
+            List of audio URLs or base64 encoded strings found in the content
+        """
+        audios = []
+
+        if self.content is None:
+            return audios
+
+        for item in self.content:
+            if hasattr(item, "type"):
+                if item.type == "input_audio" and hasattr(
+                    item,
+                    "input_audio",
+                ):
+                    if hasattr(item.input_audio, "data"):
+                        audios.append(item.input_audio.data)
+                    elif hasattr(item.input_audio, "base64_data"):
+                        # Construct data URL for audio
+                        format_type = getattr(
+                            item.input_audio,
+                            "format",
+                            "mp3",
+                        )
+                        audios.append(
+                            f"data:{format_type};base64,"
+                            f"{item.input_audio.base64_data}",
+                        )
+
+        return audios
 
     def add_delta_content(
         self,
@@ -500,7 +695,7 @@ def convert_to_openai_tool_call(function: FunctionCall):
     }
 
 
-def convert_to_openai_messages(messages: List[Message]) -> list:
+def convert_to_openai_messages(messages: List[Message]) -> List[Dict]:
     """
     Convert a generic message protocol to a model-specific protocol.
     Args:

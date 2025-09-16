@@ -64,8 +64,8 @@ class Runner:
             endpoint_path: API endpoint path for the processing function
             stream: If start a streaming service
             protocol_adapters: protocol adapters
-            requirements: PyPI dependencies (following _agent_engines.py pattern)
-            user_code_path: User code directory/file path
+            requirements: PyPI dependencies
+            extra_packages: User code directory/file path
             base_image: Docker base image (for containerized deployment)
             environment: Environment variables dict
             runtime_config: Runtime configuration dict
@@ -113,7 +113,7 @@ class Runner:
     @trace(TraceType.AGENT_STEP)
     async def stream_query(  # pylint:disable=unused-argument
         self,
-        request: AgentRequest,
+        request: Union[AgentRequest, dict],
         user_id: Optional[str] = None,
         tools: Optional[List] = None,
         **kwargs: Any,
@@ -121,6 +121,9 @@ class Runner:
         """
         Streams the agent.
         """
+        if isinstance(request, dict):
+            request = AgentRequest(**request)
+
         response = AgentResponse()
         yield response
 
@@ -173,18 +176,22 @@ class Runner:
             request_input=request_input,
         )
 
+        sequence_number = 0
         async for event in context.agent.run_async(context):
             if (
                 event.status == RunStatus.Completed
                 and event.object == "message"
             ):
                 response.add_new_message(event)
+            event.sequence_number = sequence_number
             yield event
+            sequence_number += 1
 
         await context.context_manager.append(
             session=context.session,
             event_output=response.output,
         )
+        response.sequence_number = sequence_number
         yield response.completed()
 
     @trace(TraceType.AGENT_STEP)

@@ -6,6 +6,7 @@ frontend/node_modules
 /.pnp
 .pnp.js
 node_modules/
+sessions_mount_dir/
 
 # testing
 /coverage
@@ -15,6 +16,7 @@ cookbook/_build
 
 # production
 /build
+dist/
 
 # misc
 .env
@@ -25,6 +27,7 @@ __pycache__/
 *.db
 *.rdb
 *.egg-info/
+*.zip
 
 # IDEs and editors
 .idea/

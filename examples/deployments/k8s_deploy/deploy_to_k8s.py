@@ -7,11 +7,7 @@ from agentscope_runtime.engine.runner import Runner
 from agentscope_runtime.engine.deployers.kubernetes_deployer import (
     KubernetesDeployer,
     RegistryConfig,
-    BuildConfig,
     K8sConfig,
-)
-from agentscope_runtime.engine.deployers.utils.docker_builder import (
-    DockerImageBuilder,
 )
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -29,29 +25,18 @@ async def deploy_agent_to_k8s():
         namespace="agentscope-runtime",
     )
 
-    # 2. 配置Build
-    build_config = BuildConfig(
-        build_context_dir="/tmp/agentscope_k8s_build",
-        build_timeout=600,
-        push_timeout=300,
-        cleanup_after_build=True,
-    )
-
     # 3. 配置K8s连接
     k8s_config = K8sConfig(
         k8s_namespace="agentscope-runtime",
-        kubeconfig_path="/Users/zhicheng/repo/agentscope-runtime/tests/integrated/test_package_build_image/logs/kubeconfig.yaml",
+        kubeconfig_path="/Users/zhicheng/repo/agentscope-runtime/logs/kubeconfig.yaml",
     )
 
-    port = 8000
-    # 4. 创建Docker镜像构建器
-    image_builder = DockerImageBuilder(port=port)
+    port = 8080
 
     # 5. 创建KubernetesDeployer
     deployer = KubernetesDeployer(
         kube_config=k8s_config,
         registry_config=registry_config,
-        image_builder=image_builder,
         use_deployment=True,  # 使用Deployment模式，支持扩缩容
     )
 
@@ -84,11 +69,11 @@ async def deploy_agent_to_k8s():
     # 7. 部署配置
     deployment_config = {
         # 基础配置
-        "endpoint_path": "/process",
+        "api_endpoint": "/process",
         "stream": True,
         "port": str(port),
-        "replicas": 2,  # 部署2个副本
-        "image_tag": "linux-amd64",
+        "replicas": 1,  # 部署2个副本
+        "image_tag": "linux-amd64-6",
         "image_name": "agent_llm",
         # 依赖配置
         "requirements": [
@@ -104,7 +89,7 @@ async def deploy_agent_to_k8s():
                 "other_project.py",
             ),
         ],
-        "base_image": "pyhon:3.10-slim-bookworm",
+        "base_image": "python:3.10-slim-bookworm",
         # 环境变量
         "environment": {
             "PYTHONPATH": "/app",
@@ -117,6 +102,7 @@ async def deploy_agent_to_k8s():
         "deploy_timeout": 300,
         "health_check": True,
         "platform": "linux/amd64",
+        "push_to_registry": True,
     }
 
     try:
@@ -149,7 +135,6 @@ async def deploy_agent_to_k8s():
 async def deployed_service(service_url: str):
     """测试部署的服务"""
     import aiohttp
-    import json
 
     test_request = {
         "content": "Hello, agent!",
@@ -188,12 +173,33 @@ async def main():
         await deployed_service(service_url)
 
         # 保持运行状态，您可以手动测试
-        print(f"\n🎯 服务已部署完成!")
-        print(f"您可以使用以下命令测试:")
-        print(f"curl -X POST {service_url}/process \\")
-        print(f'  -H "Content-Type: application/json" \\')
         print(
-            f'  -d \'{{"content": "Hello!", "name": "user", "role": "user"}}\'',
+            f"""
+        🎯 服务已部署完成，可以使用以下命令测试:
+
+        # 健康检查
+        curl {service_url}/health
+
+        # 流式请求
+        curl -X POST {service_url}/process \\
+          -H "Content-Type: application/json" \\
+          -H "Accept: text/event-stream" \\
+          --no-buffer \\
+          -d '{{
+                "input": [
+                {{
+                "role": "user",
+                  "content": [
+                    {{
+                      "type": "text",
+                      "text": "Hello, how are you?"
+                    }}
+                  ]
+                }}
+              ],
+              "session_id": "123"
+            }}'
+        """,
         )
 
         print(f"\n📝 或者使用kubectl查看:")

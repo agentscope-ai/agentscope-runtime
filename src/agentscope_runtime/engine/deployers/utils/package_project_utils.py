@@ -1,19 +1,32 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=line-too-long, too-many-boolean-expressions
-# pylint:disable=too-many-nested-blocks, too-many-return-statements
-# pylint:disable=too-many-branches, unused-import, too-many-statements
-# pylint:disable=unused-variable
+"""Modified package_project_utils.py with unified FastAPI template."""
 
+import ast
+import hashlib
+import inspect
 import os
 import shutil
-import tempfile
-import inspect
-import ast
-import importlib.util
 import tarfile
-import hashlib
+import tempfile
 from typing import List, Optional, Any, Tuple
-from pathlib import Path
+
+from pydantic import BaseModel
+
+from .service_utils.fastapi_templates import FastAPITemplateManager
+
+
+# Default template will be loaded from template file
+
+
+class PackageConfig(BaseModel):
+    """Configuration for project packaging"""
+
+    requirements: Optional[List[str]] = None
+    extra_packages: Optional[List[str]] = None
+    output_dir: Optional[str] = None
+    endpoint_path: Optional[str] = "/process"
+    deployment_mode: Optional[str] = "standalone"  # New: deployment mode
+    services_config: Optional[dict] = None  # New: services configuration
 
 
 def _find_agent_source_file(
@@ -450,20 +463,18 @@ def _compare_directories(old_dir: str, new_dir: str) -> bool:
 
 def package_project(
     agent: Any,
-    requirements: Optional[List[str]] = None,
-    extra_packages: Optional[List[str]] = None,
-    package_dir: Optional[str] = None,
+    config: PackageConfig,
+    dockerfile_path: Optional[str] = None,
+    template: Optional[str] = None,  # Use template file by default
 ) -> Tuple[str, bool]:
     """
     Package a project with agent and dependencies into a temporary directory.
 
     Args:
         agent: The agent object to be packaged
-        requirements: List of pip package requirements
-        extra_packages: List of extra files/directories to include
-        package_dir: Optional directory to use for packaging. If provided and
-                    directory already exists with content, will compare contents
-                    before updating.
+        config: The configuration of the package
+        dockerfile_path: Path to the Docker file
+        template: User override template string (if None, uses standalone template file)
 
     Returns:
         Tuple[str, bool]: A tuple containing:
@@ -472,17 +483,26 @@ def package_project(
     """
     # Create temporary directory
     original_temp_dir = temp_dir = None
-    if package_dir is None:
+    if config.output_dir is None:
         temp_dir = tempfile.mkdtemp(prefix="agentscope_package_")
         needs_update = True  # New directory always needs update
     else:
-        temp_dir = package_dir
+        temp_dir = config.output_dir
         # Check if directory exists and has content
         if os.path.exists(temp_dir) and os.listdir(temp_dir):
             # Directory exists and has content, create a temporary directory first
             # to generate new content for comparison
             original_temp_dir = temp_dir
             temp_dir = tempfile.mkdtemp(prefix="agentscope_package_new_")
+            # copy docker file to this place
+            if dockerfile_path:
+                shutil.copy(
+                    dockerfile_path,
+                    os.path.join(
+                        temp_dir,
+                        "Dockerfile",
+                    ),
+                )
             needs_update = None  # Will be determined after comparison
         else:
             # Directory doesn't exist or is empty, needs update
@@ -538,12 +558,12 @@ def package_project(
         shutil.copy2(agent_file_path, agent_dest_path)
 
         # Copy extra package files
-        if extra_packages:
+        if config.extra_packages:
             # Get the base directory from the agent_file_path for relative path
             # calculation
             caller_dir = os.path.dirname(agent_file_path)
 
-            for extra_path in extra_packages:
+            for extra_path in config.extra_packages:
                 if os.path.isfile(extra_path):
                     # Calculate relative path from caller directory
                     if os.path.isabs(extra_path):
@@ -601,112 +621,71 @@ def package_project(
                     # Copy directory to destination
                     shutil.copytree(extra_path, dest_path, dirs_exist_ok=True)
 
-        # Define the template content inline
-        template_content = """import asyncio
-import os
-from fastapi import FastAPI
-from agentscope_runtime.engine import Runner
-from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agentscope_runtime.engine.services.context_manager import ContextManager
-from agentscope_runtime.engine.services.session_history_service import (
-    InMemorySessionHistoryService,
-)
-from agentscope_runtime.engine.services.memory_service import (
-    InMemoryMemoryService)
-from agent_file import {{agent_name}} as agent
+        # Use template manager for better template handling
+        template_manager = FastAPITemplateManager()
 
-app = FastAPI()
-
-# 初始化全局变量
-runner = None
-
-
-@app.on_event("startup")
-async def startup_event():
-    global runner
-
-    # 创建上下文管理器和运行器
-    session_history_service = InMemorySessionHistoryService()
-    memory_service = InMemoryMemoryService()
-    context_manager = ContextManager(
-        session_history_service=session_history_service,
-        memory_service=memory_service
-    )
-    await context_manager.__aenter__()
-    runner = Runner(
-        agent=agent,
-        context_manager=context_manager
-    )
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    global runner
-    if runner and runner.context_manager:
-        await runner.context_manager.__aexit__(None, None, None)
-
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-
-@app.get("/chat")
-async def chat(message: str):
-    global runner
-    if not runner:
-        return {"error": "Runner not initialized"}
-
-    # 创建请求
-    request = AgentRequest(
-        input=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": message,
-                    },
-                ],
-            },
-        ],
-    )
-
-    # 收集流式响应
-    response_text = ""
-    async for message in runner.stream_query(request=request):
-        if hasattr(message, "text"):
-            response_text += message.text
-
-    return {"response": response_text}
-"""
-
-        # Replace placeholder in template
-        main_content = template_content.replace("{{agent_name}}", agent_name)
+        # Render template - use template file by default, or user-provided string
+        if template is None:
+            # Use standalone template file
+            main_content = template_manager.render_standalone_template(
+                agent_name=agent_name,
+                endpoint_path=config.endpoint_path,
+                deployment_mode=config.deployment_mode or "standalone",
+            )
+        else:
+            # Use user-provided template string
+            main_content = template_manager.render_template_from_string(
+                template,
+                agent_name=agent_name,
+                endpoint_path=config.endpoint_path,
+                deployment_mode=config.deployment_mode or "standalone",
+            )
 
         # Write main.py
         main_file_path = os.path.join(temp_dir, "main.py")
         with open(main_file_path, "w", encoding="utf-8") as f:
             f.write(main_content)
 
-        # Generate requirements.txt
-        if requirements:
+        # Generate requirements.txt with unified dependencies
+        if config.requirements:
             requirements_path = os.path.join(temp_dir, "requirements.txt")
             with open(requirements_path, "w", encoding="utf-8") as f:
-                # Add base requirements for the runtime
+                # Add base requirements for the unified runtime
                 base_requirements = [
                     "fastapi",
                     "uvicorn",
                     "agentscope-runtime",
+                    "pydantic",
+                    "jinja2",  # For template rendering
+                    "psutil",  # For process management
                 ]
+
+                # Add optional requirements based on configuration
+                if config.services_config:
+                    # Check if Redis services are configured
+                    services = config.services_config
+                    if any(
+                        service.get("provider") == "redis"
+                        for service in services.values()
+                        if isinstance(service, dict)
+                    ):
+                        base_requirements.append("redis")
 
                 # Combine base requirements with user requirements
                 all_requirements = sorted(
-                    list(set(base_requirements + requirements))
+                    list(set(base_requirements + config.requirements)),
                 )
 
                 for req in all_requirements:
                     f.write(f"{req}\n")
+
+        # Generate services configuration file if specified
+        if config.services_config:
+            config_path = os.path.join(temp_dir, "services_config.json")
+            import json
+
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(config.services_config, f, indent=2)
 
         # If we need to determine if update is needed (existing directory case)
         if needs_update is None and original_temp_dir is not None:
@@ -748,7 +727,7 @@ async def chat(message: str):
 
     except Exception as e:
         # Clean up on error
-        if os.path.exists(temp_dir) and temp_dir != package_dir:
+        if os.path.exists(temp_dir) and temp_dir != config.output_dir:
             shutil.rmtree(temp_dir)
         # If we're using a temporary directory for comparison, clean it up
         if (

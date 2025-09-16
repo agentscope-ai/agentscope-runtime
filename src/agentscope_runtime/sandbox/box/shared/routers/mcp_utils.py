@@ -41,6 +41,8 @@ class MCPSessionHandler:
                     command=command,
                     args=self.config.get("args", []),
                     env={**os.environ, **self.config.get("env", {})},
+                    # cwd=self.config.get("cwd"),  # Disabled
+                    encoding=self.config.get("encoding", "utf-8"),
                 )
 
                 streams = await self._exit_stack.enter_async_context(
@@ -52,12 +54,28 @@ class MCPSessionHandler:
                     "streamableHttp",
                 ]:
                     streams = await self._exit_stack.enter_async_context(
-                        streamablehttp_client(url=self.config["url"]),
+                        streamablehttp_client(
+                            url=self.config["url"],
+                            headers=self.config.get("headers"),
+                            timeout=self.config.get("timeout", 30),
+                            sse_read_timeout=self.config.get(
+                                "sse_read_timeout",
+                                60 * 5,
+                            ),
+                        ),
                     )
                     streams = (streams[0], streams[1])
                 else:
                     streams = await self._exit_stack.enter_async_context(
-                        sse_client(url=self.config["url"]),
+                        sse_client(
+                            url=self.config["url"],
+                            headers=self.config.get("headers"),
+                            timeout=self.config.get("timeout", 30),
+                            sse_read_timeout=self.config.get(
+                                "sse_read_timeout",
+                                60 * 5,
+                            ),
+                        ),
                     )
             session = await self._exit_stack.enter_async_context(
                 ClientSession(*streams),
