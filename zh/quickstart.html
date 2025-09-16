@@ -729,11 +729,10 @@
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@asynccontextmanager</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_runner</span><span class="p">():</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">ContextManager</span><span class="p">()</span> <span class="k">as</span> <span class="n">context_manager</span><span class="p">:</span>
-        <span class="n">runner</span> <span class="o">=</span> <span class="n">Runner</span><span class="p">(</span>
-            <span class="n">agent</span><span class="o">=</span><span class="n">llm_agent</span><span class="p">,</span>
-            <span class="n">context_manager</span><span class="o">=</span><span class="n">context_manager</span><span class="p">,</span>
-        <span class="p">)</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">Runner</span><span class="p">(</span>
+        <span class="n">agent</span><span class="o">=</span><span class="n">llm_agent</span><span class="p">,</span>
+        <span class="n">context_manager</span><span class="o">=</span><span class="n">ContextManager</span><span class="p">(),</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">runner</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ Runner创建成功&quot;</span><span class="p">)</span>
         <span class="k">yield</span> <span class="n">runner</span>
 </pre></div>
