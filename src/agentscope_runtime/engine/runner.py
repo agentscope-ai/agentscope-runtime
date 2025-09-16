@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import uuid
 from typing import Optional, List, AsyncGenerator, Any
+from contextlib import AsyncExitStack
 
 from openai.types.chat import ChatCompletion
 
@@ -41,8 +42,35 @@ class Runner:
         self._environment_manager = environment_manager
         self._context_manager = context_manager
         self._deploy_managers = {}
+        self._exit_stack = AsyncExitStack()
 
-    # TODO: should be sync method?
+    async def __aenter__(self) -> "Runner":
+        """
+        Initializes the runner and ensures context/environment managers
+        are fully entered so that attributes like compose_session are
+        available.
+        """
+        if self._environment_manager:
+            # enter_async_context returns the "real" object
+            self._environment_manager = (
+                await self._exit_stack.enter_async_context(
+                    self._environment_manager,
+                )
+            )
+
+        if self._context_manager:
+            self._context_manager = await self._exit_stack.enter_async_context(
+                self._context_manager,
+            )
+
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        try:
+            await self._exit_stack.aclose()
+        except Exception:
+            pass
+
     async def deploy(
         self,
         deploy_manager: DeployManager = LocalDeployManager(),

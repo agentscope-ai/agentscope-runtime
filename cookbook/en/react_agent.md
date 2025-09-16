@@ -156,15 +156,13 @@ Establish the runtime by creating a runner that orchestrates the agent and essen
 ```{code-cell}
 @asynccontextmanager
 async def create_runner():
-    async with ContextManager() as context_manager:
-        async with EnvironmentManager() as env_manager:
-            runner = Runner(
-                agent=agent,
-                context_manager=context_manager,
-                environment_manager=env_manager,
-            )
-            print("✅ Runner created successfully")
-            yield runner
+    async with Runner(
+        agent=llm_agent,
+        context_manager=ContextManager(),
+        environment_manager=EnvironmentManager(),
+    ) as runner:
+        print("✅ Runner created successfully")
+        yield runner
 ```
 
 ### Step 6: Define Local Interaction Function

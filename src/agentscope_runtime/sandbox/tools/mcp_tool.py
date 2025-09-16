@@ -145,7 +145,7 @@ class MCPConfigConverter:
             overwrite=False,
         )
         for server_name in self.server_configs["mcpServers"]:
-            tools = box.list_tools(tool_type=server_name).get(server_name, [])
+            tools = box.list_tools(tool_type=server_name).get(server_name, {})
             for tool_name, tool_info in tools.items():
                 if self.whitelist and tool_name not in self.whitelist:
                     continue

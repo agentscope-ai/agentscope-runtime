@@ -371,6 +371,37 @@ with BaseSandbox(base_url="http://your_IP_address:8000") as box:
     print(box.run_ipython_cell(code="print('hi')"))
 ```
 
+### 将 Sandbox 暴露为 MCP 服务
+
+将本地的 Sandbox Runtime 配置为名为 `sandbox` 的 MCP 服务，使其可以被 MCP 兼容的客户端调用，通过远程的 sandbox 服务器 `http://127.0.0.1:8000` 来安全地执行沙箱中的命令。
+
+```json
+{
+    "mcpServers": {
+        "sandbox": {
+            "command": "uvx",
+            "args": [
+                "--from",
+                "agentscope-runtime[sandbox]",
+                "runtime-sandbox-mcp",
+                "--type=base",
+                "--base_url=http://127.0.0.1:8000"
+            ],
+        }
+    },
+}
+```
+
+#### 命令参数
+
+`runtime-sandbox-mcp` 命令支持以下参数：
+
+| 参数             | 取值范围                          | 描述                                                         |
+| ---------------- | --------------------------------- | ------------------------------------------------------------ |
+| `--type`         | `base` | `browser` | `filesystem` | 要运行的沙箱类型：`base` 适用于 Python/终端执行，`browser` 适用于浏览器操作，`filesystem` 适用于文件系统操作。 |
+| `--base_url`     | URL 字符串                        | 远程 Sandbox 服务的基础 URL。不填写则在本地运行。            |
+| `--bearer_token` | 字符串令牌                        | （可选）安全访问的身份认证令牌。                             |
+
 ## 工具列表
 
 * 基础工具（在所有沙箱类型中可用）
