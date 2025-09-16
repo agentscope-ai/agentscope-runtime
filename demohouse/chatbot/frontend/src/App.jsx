@@ -103,8 +103,7 @@ const App = () => {
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE}/users/${currentUser.id}/conversations`, {
-        method: "PO" +
-            "ST",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
