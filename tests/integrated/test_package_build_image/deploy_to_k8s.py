@@ -72,8 +72,8 @@ async def deploy_agent_to_k8s():
         "api_endpoint": "/process",
         "stream": True,
         "port": str(port),
-        "replicas": 2,  # 部署2个副本
-        "image_tag": "linux-amd64-1",
+        "replicas": 1,  # 部署2个副本
+        "image_tag": "linux-amd64-3",
         "image_name": "agent_llm",
         # 依赖配置
         "requirements": [

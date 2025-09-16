@@ -1,0 +1,85 @@
+import os
+import sys
+import asyncio
+import uvicorn
+from agentscope_runtime.engine.deployers.utils.fastapi_factory import FastAPIAppFactory
+from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
+from agentscope_runtime.engine.deployers.utils.service_config import ServicesConfig
+
+
+async def setup_runner_with_func(app):
+    """Setup runner with the provided function or runner."""
+    # This will be dynamically populated based on what was passed to deploy_detached
+    {% if runner_code %}
+    # Runner setup code
+    {{runner_code}}
+    {% endif %}
+
+    {% if func_code %}
+    # Custom function setup code
+    {{func_code}}
+    {% endif %}
+
+
+async def before_start(app, **kwargs):
+    """Application startup callback."""
+    await setup_runner_with_func(app)
+
+
+async def after_finish(app, **kwargs):
+    """Application shutdown callback."""
+    # Cleanup handled by factory
+    pass
+
+
+# Services configuration
+services_config = ServicesConfig(
+    {% if services_config %}
+    {{services_config}}
+    {% else %}
+    # Default configuration
+    {% endif %}
+)
+
+# Create FastAPI application using the factory
+app = FastAPIAppFactory.create_app(
+    endpoint_path="{{endpoint_path}}",
+    mode=DeploymentMode.DETACHED_PROCESS,
+    services_config=services_config,
+    before_start=before_start,
+    after_finish=after_finish,
+    stream={{stream_enabled}},
+    response_type="{{response_type}}"
+)
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="AgentScope Runtime Detached Service")
+    parser.add_argument("--host", default="{{host}}", help="Host to bind to")
+    parser.add_argument("--port", type=int, default={{port}}, help="Port to bind to")
+    parser.add_argument("--pid-file", help="PID file path")
+
+    args = parser.parse_args()
+
+    # Create PID file if specified
+    if args.pid_file:
+        with open(args.pid_file, 'w') as f:
+            f.write(str(os.getpid()))
+
+    try:
+        uvicorn.run(
+            app,
+            host=args.host,
+            port=args.port,
+            access_log=False,  # Reduce logging for detached mode
+            log_level="warning"
+        )
+    finally:
+        # Cleanup PID file
+        if args.pid_file and os.path.exists(args.pid_file):
+            try:
+                os.remove(args.pid_file)
+            except OSError:
+                pass

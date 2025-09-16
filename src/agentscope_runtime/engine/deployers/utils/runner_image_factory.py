@@ -8,7 +8,13 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Union
 
 from agentscope_runtime.engine.runner import Runner
-from .package_project import PackageConfig, package_project, create_tar_gz
+
+# from .package_project import PackageConfig, package_project, create_tar_gz
+from .package_project_unified import (
+    PackageConfig,
+    package_project,
+    create_tar_gz,
+)
 from .dockerfile_generator import DockerfileGenerator, DockerfileConfig
 from .docker_image_builder import (
     DockerImageBuilder,
