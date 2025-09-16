@@ -915,6 +915,54 @@ Tools behave like regular Python functions, making them easy to use and integrat
 </pre></div>
 </div>
 </section>
+<section id="expose-sandbox-as-an-mcp-server">
+<h3>Expose Sandbox as an MCP Server<a class="headerlink" href="#expose-sandbox-as-an-mcp-server" title="Link to this heading">¶</a></h3>
+<p>Configure the local Sandbox Runtime as an MCP server named <code class="docutils literal notranslate"><span class="pre">sandbox</span></code>, so it can be invoked by MCP-compatible clients to safely execute command from sandbox via a remote sandbox server <code class="docutils literal notranslate"><span class="pre">http://127.0.0.1:8000</span></code>.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;sandbox&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uvx&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;--from&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;agentscope-runtime[sandbox]&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;runtime-sandbox-mcp&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;--type=base&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;--base_url=http://127.0.0.1:8000&quot;</span>
+<span class="w">            </span><span class="p">],</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<section id="command-arguments">
+<h4>Command Arguments<a class="headerlink" href="#command-arguments" title="Link to this heading">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">runtime-sandbox-mcp</span></code> command accepts the following arguments:</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Argument</p></th>
+<th class="head"><p>Values</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--type</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">base</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">browser</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--base_url</span></code></p></td>
+<td><p>URL string</p></td>
+<td><p>Base URL of a remote sandbox service. Leave empty to run locally.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--bearer_token</span></code></p></td>
+<td><p>String token</p></td>
+<td><p>Optional authentication token for secure access.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
 </section>
 <section id="tool-list">
 <h2>Tool List<a class="headerlink" href="#tool-list" title="Link to this heading">¶</a></h2>
@@ -1219,6 +1267,10 @@ Tools behave like regular Python functions, making them easy to use and integrat
 <li><a class="reference internal" href="#create-a-sandbox">Create a Sandbox</a></li>
 <li><a class="reference internal" href="#add-mcp-server-to-sandbox">Add MCP Server to Sandbox</a></li>
 <li><a class="reference internal" href="#connect-to-remote-sandbox">Connect to Remote Sandbox</a></li>
+<li><a class="reference internal" href="#expose-sandbox-as-an-mcp-server">Expose Sandbox as an MCP Server</a><ul>
+<li><a class="reference internal" href="#command-arguments">Command Arguments</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#tool-list">Tool List</a></li>

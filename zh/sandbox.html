@@ -915,9 +915,57 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </pre></div>
 </div>
 </section>
-</section>
+<section id="sandbox-mcp">
+<h3>将 Sandbox 暴露为 MCP 服务<a class="headerlink" href="#sandbox-mcp" title="Link to this heading">¶</a></h3>
+<p>将本地的 Sandbox Runtime 配置为名为 <code class="docutils literal notranslate"><span class="pre">sandbox</span></code> 的 MCP 服务，使其可以被 MCP 兼容的客户端调用，通过远程的 sandbox 服务器 <code class="docutils literal notranslate"><span class="pre">http://127.0.0.1:8000</span></code> 来安全地执行沙箱中的命令。</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;sandbox&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uvx&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;--from&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;agentscope-runtime[sandbox]&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;runtime-sandbox-mcp&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;--type=base&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;--base_url=http://127.0.0.1:8000&quot;</span>
+<span class="w">            </span><span class="p">],</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
 <section id="id20">
-<h2>工具列表<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h2>
+<h4>命令参数<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">runtime-sandbox-mcp</span></code> 命令支持以下参数：</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>参数</p></th>
+<th class="head"><p>取值范围</p></th>
+<th class="head"><p>描述</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--type</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">base</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">browser</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--base_url</span></code></p></td>
+<td><p>URL 字符串</p></td>
+<td><p>远程 Sandbox 服务的基础 URL。不填写则在本地运行。</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--bearer_token</span></code></p></td>
+<td><p>字符串令牌</p></td>
+<td><p>（可选）安全访问的身份认证令牌。</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+</section>
+<section id="id21">
+<h2>工具列表<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>基础工具（在所有沙箱类型中可用）</p></li>
 <li><p>文件系统工具（在<code class="docutils literal notranslate"><span class="pre">FilesystemSandbox</span></code>中可用）</p></li>
@@ -1080,10 +1128,10 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </table>
 </div>
 </section>
-<section id="id21">
-<h2>故障排除<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h2>
 <section id="id22">
-<h3>Docker连接错误<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h3>
+<h2>故障排除<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h2>
+<section id="id23">
+<h3>Docker连接错误<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h3>
 <p>如果您遇到以下错误：</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">DockerException</span><span class="p">:</span> <span class="n">Error</span> <span class="k">while</span> <span class="n">fetching</span> <span class="n">server</span> <span class="n">API</span> <span class="n">version</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;Connection aborted.&#39;</span><span class="p">,</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;No such file or directory&#39;</span><span class="p">))</span>
 </pre></div>
@@ -1218,11 +1266,15 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <li><a class="reference internal" href="#id17">创建沙箱</a></li>
 <li><a class="reference internal" href="#id18">向沙箱添加MCP服务器</a></li>
 <li><a class="reference internal" href="#id19">连接到远程沙箱</a></li>
+<li><a class="reference internal" href="#sandbox-mcp">将 Sandbox 暴露为 MCP 服务</a><ul>
+<li><a class="reference internal" href="#id20">命令参数</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id20">工具列表</a></li>
-<li><a class="reference internal" href="#id21">故障排除</a><ul>
-<li><a class="reference internal" href="#id22">Docker连接错误</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id21">工具列表</a></li>
+<li><a class="reference internal" href="#id22">故障排除</a><ul>
+<li><a class="reference internal" href="#id23">Docker连接错误</a></li>
 </ul>
 </li>
 </ul>
