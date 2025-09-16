@@ -85,5 +85,5 @@ llamaindex_rag=[
     "bs4>=0.0.2",
 ]
 memory-ext = [
-    "reme-ai==0.1.8 ; python_full_version >= '3.12'",
+    "reme-ai==0.1.9 ; python_full_version >= '3.12'",
 ]
