@@ -411,9 +411,10 @@
 <li class="toctree-l2"><a class="reference internal" href="environment_manager.html">Environment Manager</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tracing.html">8. Tracing Method Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="demohouse.html">9. Demo House</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="contribute.html">10. How to Contribute</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of 10. How to Contribute</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1"><a class="reference internal" href="rag.html">8. RAG</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tracing.html">9. Tracing Method Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="demohouse.html">10. Demo House</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="contribute.html">11. How to Contribute</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of 11. How to Contribute</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="README.html">Contribute to Cookbook</a></li>
 </ul>
 </li>
@@ -450,9 +451,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../zh/environment_manager.html">环境管理器（Environment Manager）</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../zh/tracing.html">8. 执行轨迹追踪</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../zh/demohouse.html">9. Demo 展示厅</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/contribute.html">10. 如何贡献</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of 10. 如何贡献</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1"><a class="reference internal" href="../zh/rag.html">8. RAG</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../zh/tracing.html">9. 执行轨迹追踪</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../zh/demohouse.html">10. Demo 展示厅</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/contribute.html">11. 如何贡献</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of 11. 如何贡献</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../zh/README.html">参与贡献Cookbook</a></li>
 </ul>
 </li>
@@ -556,14 +558,15 @@ When asked by an end-user, the agent may need to retrieve relevant information f
 The knowledge base can be a database or a collection of documents.
 The <code class="docutils literal notranslate"><span class="pre">RAGService</span></code> contains the following methods:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">retrieve</span></code>: retrieve relevant information from the knowledge base</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">retrieve</span></code>: retrieve relevant information from the knowledge base.</p></li>
 </ul>
-<p>The <code class="docutils literal notranslate"><span class="pre">LangChainRAGService</span></code> is a concrete implementation of <code class="docutils literal notranslate"><span class="pre">RAGService</span></code> that uses LangChain to retrieve relevant information from Milvus.
+<p>The <code class="docutils literal notranslate"><span class="pre">LangChainRAGService</span></code> is a concrete implementation of <code class="docutils literal notranslate"><span class="pre">RAGService</span></code> that uses LangChain to retrieve relevant information.
 It can be initialized by:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">uri</span></code> the Milvus URI, either a local file (<code class="docutils literal notranslate"><span class="pre">.\xxx.db</span></code>) or a remote URL (<code class="docutils literal notranslate"><span class="pre">http://localhost:19530</span></code>).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">docs</span></code> the documents to be indexed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">vectorstore</span></code> the vectorstore to be indexed. Specifically, it can be a <code class="docutils literal notranslate"><span class="pre">VectorStore</span></code> instance of LangChain.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">embedding</span></code> the embedding model to be used for indexing.</p></li>
 </ul>
+<p>Read more about RAGService <a class="reference internal" href="rag.html#rag-service"><span class="std std-ref">here</span></a></p>
 </section>
 </section>
 <section id="life-cycle-of-a-context-manager">
@@ -1231,7 +1234,7 @@ Other complicated search algorithms could be used to replace the simple method b
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-09-15</div>
+              Last updated on 2025-09-16</div>
           </div>
           <div class="right-details">
             <div class="icons">

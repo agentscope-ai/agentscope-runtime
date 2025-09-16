@@ -3,11 +3,11 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="6. Agent API Protocol Specification" href="protocol.html" /><link rel="prev" title="Training Sandbox" href="training_sandbox.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="9. Tracing Method Introduction" href="tracing.html" /><link rel="prev" title="Environment Manager" href="environment_manager.html" />
         <link rel="prefetch" href="../_static/logo.svg" as="image" />
 
     <link rel="shortcut icon" href="../_static/logo.svg"/><!-- Generated with Sphinx 7.4.7 and Furo 2025.07.19 -->
-        <title>5. Deploy a ReAct Agent with Tool Sandbox - AgentScope Runtime</title>
+        <title>8. RAG - AgentScope Runtime</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
@@ -401,7 +401,7 @@
 <li class="toctree-l2"><a class="reference internal" href="training_sandbox.html">Training Sandbox</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">5. Deploy a ReAct Agent with Tool Sandbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="react_agent.html">5. Deploy a ReAct Agent with Tool Sandbox</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="protocol.html">6. Agent API Protocol Specification</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of 6. Agent API Protocol Specification</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="a2a_support.html">A2A Protocol Support Documentation</a></li>
 </ul>
@@ -411,7 +411,7 @@
 <li class="toctree-l2"><a class="reference internal" href="environment_manager.html">Environment Manager</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="rag.html">8. RAG</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">8. RAG</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tracing.html">9. Tracing Method Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="demohouse.html">10. Demo House</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="contribute.html">11. How to Contribute</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of 11. How to Contribute</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -485,7 +485,7 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="https://github.com/agentscope-ai/agentscope-runtime/blob/main/cookbook/en/react_agent.md?plain=true" title="View this page">
+  <a class="muted-link" href="https://github.com/agentscope-ai/agentscope-runtime/blob/main/cookbook/en/rag.md?plain=true" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
@@ -504,180 +504,177 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="deploy-a-react-agent-with-tool-sandbox">
-<h1><span class="section-number">5. </span>Deploy a ReAct Agent with Tool Sandbox<a class="headerlink" href="#deploy-a-react-agent-with-tool-sandbox" title="Link to this heading">¶</a></h1>
-<p>This tutorial demonstrates how to create and deploy a <em>“reasoning and acting” (ReAct)</em> with AgentScope Runtime and <a class="reference external" href="https://github.com/modelscope/agentscope"><strong>AgentScope framework</strong></a>.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The ReAct (Reasoning and Acting) paradigm enables agents to interleave reasoning traces with task-specific actions, making them particularly effective for tool interaction tasks. By combining AgentScope’s <code class="docutils literal notranslate"><span class="pre">ReActAgent</span></code> with AgentScope Runtime’s infrastructure, you get both intelligent decision-making and secure tool execution.</p>
-</div>
-<section id="prerequisites">
-<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
-<section id="installation-requirements">
-<h3>🔧 Installation Requirements<a class="headerlink" href="#installation-requirements" title="Link to this heading">¶</a></h3>
-<p>Install AgentScope Runtime with the required dependencies:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[sandbox,agentscope]&quot;</span>
-</pre></div>
-</div>
+          <section id="rag">
+<span id="rag-service"></span><h1><span class="section-number">8. </span>RAG<a class="headerlink" href="#rag" title="Link to this heading">¶</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<p>This document introduces building a rag agent using Agentscope-runtime.</p>
+<p>You can learn</p>
+<ol class="arabic simple">
+<li><p>How to build a complete RAG agent by Agenscope-runtime+LangChain+Milvus.</p></li>
+<li><p>How to use Llamaindex as an alternative to LangChain.</p></li>
+<li><p>How to use FAISS/Chroma/Pinecone/Weaviate as an alternative to Milvus.</p></li>
+</ol>
+<p>Agentscope-runtime contains a lightweight service, called <code class="docutils literal notranslate"><span class="pre">RAGService</span></code>, which</p>
+<ol class="arabic simple">
+<li><p>provides the retrieval capability;</p></li>
+<li><p>integrated by context manager.</p></li>
+</ol>
+<p>It does not contain</p>
+<ol class="arabic simple">
+<li><p>the ability to process the doc;</p></li>
+<li><p>the ability to index the doc;</p></li>
+<li><p>the store of the knowledge base.</p></li>
+</ol>
+<p>We suggest to use the popular framework (e.g. Langchain) and database (e.g. FAISS) to complete the task.
+In most following cases, we use LangChain and Milvus.</p>
+<p>The following of this document contains the following:</p>
+<ul class="simple">
+<li><p>pre-requisites: all requirements you need;</p></li>
+<li><p>document preparation;</p></li>
+<li><p>building a vectorstore index;</p></li>
+<li><p>building a rag_service;</p></li>
+<li><p>building a rag agent.</p></li>
+<li><p>how to use LlamaIndex.</p></li>
+<li><p>how to use other database.</p></li>
+</ul>
+<section id="pre-requisites">
+<h3>Pre-requisites<a class="headerlink" href="#pre-requisites" title="Link to this heading">¶</a></h3>
+<p>There are some prerequisites:</p>
+<ol class="arabic simple">
+<li><p>The key of DashScope: to access the DashScope API of Qwen model and embedding model.
+The key should be set in the environment variable <code class="docutils literal notranslate"><span class="pre">DASHSCOPE_API_KEY</span></code>.</p></li>
+<li><p>Install the dependencies: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">agentscope-runtime[langchain_rag]</span></code>. If use llamaindex, you need install <code class="docutils literal notranslate"><span class="pre">agentscope-runtime[llamaindex_rag]</span></code>.</p></li>
+</ol>
 </section>
-<section id="sandbox-setup">
-<h3>🐳 Sandbox Setup<a class="headerlink" href="#sandbox-setup" title="Link to this heading">¶</a></h3>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Make sure your browser sandbox environment is ready to use, see <a class="reference internal" href="sandbox.html"><span class="doc">Tool Sandbox</span></a> for details.</p>
-</div>
-<p>Ensure the browser sandbox image is available:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-browser:latest<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-browser:latest<span class="w"> </span>agentscope/runtime-sandbox-browser:latest
-</pre></div>
-</div>
-</section>
-<section id="api-key-configuration">
-<h3>🔑 API Key Configuration<a class="headerlink" href="#api-key-configuration" title="Link to this heading">¶</a></h3>
-<p>You’ll need an API key for your chosen LLM provider. This example uses DashScope (Qwen), but you can adapt it to other providers:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">DASHSCOPE_API_KEY</span><span class="o">=</span><span class="s2">&quot;your_api_key_here&quot;</span>
-</pre></div>
-</div>
-</section>
-</section>
-<section id="step-by-step-implementation">
-<h2>Step-by-Step Implementation<a class="headerlink" href="#step-by-step-implementation" title="Link to this heading">¶</a></h2>
-<section id="step-1-import-dependencies">
-<h3>Step 1: Import Dependencies<a class="headerlink" href="#step-1-import-dependencies" title="Link to this heading">¶</a></h3>
-<p>Start by importing all necessary modules:</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.runner</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runner</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.agentscope_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentScopeAgent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.context_manager</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">ContextManager</span><span class="p">,</span>
+<section id="document-preparation">
+<h3>Document Preparation<a class="headerlink" href="#document-preparation" title="Link to this heading">¶</a></h3>
+<p>The documents can be loaded from a variety of sources, including websites, PDFs, and other formats.
+Check the API of Langchain to learn how to load documents from various sources.
+Here, we load documents from a website.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">bs4</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_community.document_loaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">WebBaseLoader</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_text_splitters</span><span class="w"> </span><span class="kn">import</span> <span class="n">RecursiveCharacterTextSplitter</span>
+
+<span class="n">loader</span> <span class="o">=</span> <span class="n">WebBaseLoader</span><span class="p">(</span>
+    <span class="n">web_paths</span><span class="o">=</span><span class="p">(</span>
+        <span class="s2">&quot;https://lilianweng.github.io/posts/2023-06-23-agent/&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;https://lilianweng.github.io/posts/2023-03-15-prompt&quot;</span>
+        <span class="s2">&quot;-engineering/&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">bs_kwargs</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;parse_only&quot;</span><span class="p">:</span> <span class="n">bs4</span><span class="o">.</span><span class="n">SoupStrainer</span><span class="p">(</span>
+            <span class="n">class_</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;post-content&quot;</span><span class="p">,</span> <span class="s2">&quot;post-title&quot;</span><span class="p">,</span> <span class="s2">&quot;post-header&quot;</span><span class="p">),</span>
+        <span class="p">),</span>
+    <span class="p">},</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.environment_manager</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">EnvironmentManager</span><span class="p">,</span>
+<span class="n">documents</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="n">text_splitter</span> <span class="o">=</span> <span class="n">RecursiveCharacterTextSplitter</span><span class="p">(</span>
+    <span class="n">chunk_size</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
+    <span class="n">chunk_overlap</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
 <span class="p">)</span>
+
+<span class="n">docs</span> <span class="o">=</span> <span class="n">text_splitter</span><span class="o">.</span><span class="n">split_documents</span><span class="p">(</span><span class="n">documents</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In this code, we collect the website content by <code class="docutils literal notranslate"><span class="pre">WebBaseLoader</span></code> which supports bs4 to parse the website.
+Then we split documents into chunks. The chunk size is 2000 and the chunk overlap is 200.
+The <code class="docutils literal notranslate"><span class="pre">RecursiveCharacterTextSplitter</span></code>, from Langchain, is a text splitter that splits text into chunks of a given size.
+The split documents are stored in the <code class="docutils literal notranslate"><span class="pre">docs</span></code> variable.</p>
+</section>
+<section id="building-a-vectorstore-index">
+<h3>Building a Vectorstore Index<a class="headerlink" href="#building-a-vectorstore-index" title="Link to this heading">¶</a></h3>
+<p>The documents need to be indexed and stored in a vectorstore.
+In Langchain, it supports many vector stores, including Milvus, Chroma, and Pinecone.
+We use Milvus as the vectorstore in this example.
+The embedding model is used to embed the documents and store them in the vectorstore.
+Langchain also supports many embedding models, including OpenAI, HuggingFace, and DashScope.
+We use <code class="docutils literal notranslate"><span class="pre">DashScopeEmbeddings</span></code> as the embedding model.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">langchain_milvus</span><span class="w"> </span><span class="kn">import</span> <span class="n">Milvus</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_community.embeddings</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeEmbeddings</span>
+<span class="n">vectorstore</span><span class="o">=</span><span class="n">Milvus</span><span class="o">.</span><span class="n">from_documents</span><span class="p">(</span>
+    <span class="n">documents</span><span class="o">=</span><span class="n">docs</span><span class="p">,</span>
+    <span class="n">embedding</span><span class="o">=</span><span class="n">DashScopeEmbeddings</span><span class="p">(),</span>
+    <span class="n">connection_args</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;milvus_demo.db&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">),</span>
+</pre></div>
+</div>
+<p>In this code, we initialize a Milvus vectorstore by its <code class="docutils literal notranslate"><span class="pre">from_documents</span></code>.
+The connection args is the path to the Milvus database.
+For more details, please refer to the <a class="reference external" href="https://milvus.io/docs/">Milvus documentation</a>.
+Here we use a local database file (<code class="docutils literal notranslate"><span class="pre">milvus_demo.db</span></code>).</p>
+</section>
+<section id="building-a-rag-service">
+<h3>Building a Rag Service<a class="headerlink" href="#building-a-rag-service" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">RAGService</span></code> is a basic class to provide retrieval augmented generation (RAG) capabilities.
+When asked by an end-user, the agent may need to retrieve relevant information from the knowledge base.
+The knowledge base can be a database or a collection of documents.
+The <code class="docutils literal notranslate"><span class="pre">RAGService</span></code> contains the following methods:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">retrieve</span></code>: retrieve relevant information from the knowledge base.</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">LangChainRAGService</span></code> is a concrete implementation of <code class="docutils literal notranslate"><span class="pre">RAGService</span></code> that uses LangChain to retrieve relevant information.
+It can be initialized by:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">vectorstore</span></code> the vectorstore to be indexed. Specifically, it can be a <code class="docutils literal notranslate"><span class="pre">VectorStore</span></code> instance of LangChain.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">embedding</span></code> the embedding model to be used for indexing.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">langchain_milvus</span><span class="w"> </span><span class="kn">import</span> <span class="n">Milvus</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_community.embeddings</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeEmbeddings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.rag_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">LangChainRAGService</span>
+
+<span class="c1"># langchain+Milvus</span>
+<span class="n">rag_service</span> <span class="o">=</span> <span class="n">LangChainRAGService</span><span class="p">(</span>
+    <span class="n">vectorstore</span><span class="o">=</span><span class="n">vectorstore</span><span class="p">,</span>
+    <span class="n">embedding</span><span class="o">=</span><span class="n">DashScopeEmbeddings</span><span class="p">()</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>In this code, we initialize a <code class="docutils literal notranslate"><span class="pre">LangChainRAGService</span></code> by its <code class="docutils literal notranslate"><span class="pre">vectorstore</span></code> and <code class="docutils literal notranslate"><span class="pre">embedding</span></code>.
+We can use the rag_service directly. It can be used to retrieve relevant information from the knowledge base. The results are returned as a list of documents.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ret_docs</span> <span class="o">=</span> <span class="k">await</span> <span class="n">rag_service</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span>
+    <span class="s2">&quot;What is self-reflection of an AI Agent?&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="building-a-rag-agent">
+<h3>Building a Rag Agent<a class="headerlink" href="#building-a-rag-agent" title="Link to this heading">¶</a></h3>
+<p>In Agentscope-runtime, rag_service is integrated in the <code class="docutils literal notranslate"><span class="pre">context_manager</span></code>.
+It composes all data from memory, session and rag into context.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runner</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.llm_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.llms</span><span class="w"> </span><span class="kn">import</span> <span class="n">QwenLLM</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">MessageType</span><span class="p">,</span>
-    <span class="n">RunStatus</span><span class="p">,</span>
     <span class="n">AgentRequest</span><span class="p">,</span>
+    <span class="n">RunStatus</span><span class="p">,</span>
 <span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</section>
-<section id="step-2-configure-browser-tools">
-<h3>Step 2: Configure Browser Tools<a class="headerlink" href="#step-2-configure-browser-tools" title="Link to this heading">¶</a></h3>
-<p>Define the browser tools your agent will have access to:</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.tools.browser</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">browser_navigate</span><span class="p">,</span>
-    <span class="n">browser_take_screenshot</span><span class="p">,</span>
-    <span class="n">browser_snapshot</span><span class="p">,</span>
-    <span class="n">browser_click</span><span class="p">,</span>
-    <span class="n">browser_type</span><span class="p">,</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.context_manager</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">create_context_manager</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">USER_ID</span> <span class="o">=</span> <span class="s2">&quot;user1&quot;</span>
+<span class="n">SESSION_ID</span> <span class="o">=</span> <span class="s2">&quot;session1&quot;</span>
+<span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;What is self-reflection of an AI Agent?&quot;</span>
+
+<span class="n">llm_agent</span> <span class="o">=</span> <span class="n">LLMAgent</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">QwenLLM</span><span class="p">(),</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;llm_agent&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A simple LLM agent&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="c1"># Prepare browser tools</span>
-<span class="n">BROWSER_TOOLS</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="n">browser_navigate</span><span class="p">,</span>
-    <span class="n">browser_take_screenshot</span><span class="p">,</span>
-    <span class="n">browser_snapshot</span><span class="p">,</span><span class="n">browser_click</span><span class="p">,</span>
-    <span class="n">browser_type</span><span class="p">,</span>
-<span class="p">]</span>
+<span class="k">async</span> <span class="k">with</span> <span class="n">create_context_manager</span><span class="p">(</span>
+    <span class="n">rag_service</span><span class="o">=</span><span class="n">rag_service</span><span class="p">,</span>
+<span class="p">)</span> <span class="k">as</span> <span class="n">context_manager</span><span class="p">:</span>
+    <span class="n">runner</span> <span class="o">=</span> <span class="n">Runner</span><span class="p">(</span>
+        <span class="n">agent</span><span class="o">=</span><span class="n">llm_agent</span><span class="p">,</span>
+        <span class="n">context_manager</span><span class="o">=</span><span class="n">context_manager</span><span class="p">,</span>
+        <span class="n">environment_manager</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ Configured </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">BROWSER_TOOLS</span><span class="p">)</span><span class="si">}</span><span class="s2"> browser tools&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</section>
-<section id="step-3-define-system-prompt">
-<h3>Step 3: Define System Prompt<a class="headerlink" href="#step-3-define-system-prompt" title="Link to this heading">¶</a></h3>
-<p>Create a system prompt that establishes your agent’s role, objectives, and operational guidelines for web browsing tasks:</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">SYSTEM_PROMPT</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;You are a Web-Using AI assistant.</span>
-
-<span class="s2"># Objective</span>
-<span class="s2">Your goal is to complete given tasks by controlling a browser to navigate web pages.</span>
-
-<span class="s2">## Web Browsing Guidelines</span>
-<span class="s2">- Use the `browser_navigate` command to jump to specific webpages when needed.</span>
-<span class="s2">- Use `generate_response` to answer the user once you have all the required information.</span>
-<span class="s2">- Always answer in English.</span>
-
-<span class="s2">### Observing Guidelines</span>
-<span class="s2">- Always take action based on the elements on the webpage. Never create URLs or generate new pages.</span>
-<span class="s2">- If the webpage is blank or an error, such as 404, is found, try refreshing it or go back to the previous page and find another webpage.</span>
-<span class="s2">&quot;&quot;&quot;</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ System prompt configured&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</section>
-<section id="step-4-initialize-agent-and-model">
-<h3>Step 4: Initialize Agent and Model<a class="headerlink" href="#step-4-initialize-agent-and-model" title="Link to this heading">¶</a></h3>
-<p>Set up the ReAct agent builder with your chosen language model from the AgentScope framework :</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
-
-<span class="c1"># Initialize the language model</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">DashScopeChatModel</span><span class="p">(</span>
-    <span class="s2">&quot;qwen-max&quot;</span><span class="p">,</span>
-    <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
-<span class="p">)</span>
-
-<span class="c1"># Create the AgentScope agent</span>
-<span class="n">agent</span> <span class="o">=</span> <span class="n">AgentScopeAgent</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
-    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
-    <span class="n">agent_config</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;sys_prompt&quot;</span><span class="p">:</span> <span class="n">SYSTEM_PROMPT</span><span class="p">,</span>
-    <span class="p">},</span>
-    <span class="n">tools</span><span class="o">=</span><span class="n">BROWSER_TOOLS</span><span class="p">,</span>
-    <span class="n">agent_builder</span><span class="o">=</span><span class="n">ReActAgent</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ Agent initialized successfully&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</section>
-<section id="step-5-create-the-runner">
-<h3>Step 5: Create the Runner<a class="headerlink" href="#step-5-create-the-runner" title="Link to this heading">¶</a></h3>
-<p>Establish the runtime by creating a runner that orchestrates the agent and essential services for session management, memory, and environment control:</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@asynccontextmanager</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_runner</span><span class="p">():</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">ContextManager</span><span class="p">()</span> <span class="k">as</span> <span class="n">context_manager</span><span class="p">:</span>
-        <span class="k">async</span> <span class="k">with</span> <span class="n">EnvironmentManager</span><span class="p">()</span> <span class="k">as</span> <span class="n">env_manager</span><span class="p">:</span>
-            <span class="n">runner</span> <span class="o">=</span> <span class="n">Runner</span><span class="p">(</span>
-                <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
-                <span class="n">context_manager</span><span class="o">=</span><span class="n">context_manager</span><span class="p">,</span>
-                <span class="n">environment_manager</span><span class="o">=</span><span class="n">env_manager</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ Runner created successfully&quot;</span><span class="p">)</span>
-            <span class="k">yield</span> <span class="n">runner</span>
-</pre></div>
-</div>
-</div>
-</div>
-</section>
-<section id="step-6-define-local-interaction-function">
-<h3>Step 6: Define Local Interaction Function<a class="headerlink" href="#step-6-define-local-interaction-function" title="Link to this heading">¶</a></h3>
-<p>Implement a local interaction function to test your agent’s capabilities with direct query processing and streaming responses:</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">interact</span><span class="p">(</span><span class="n">runner</span><span class="p">):</span>
-    <span class="c1"># Create a request</span>
+    <span class="n">all_result</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
     <span class="n">request</span> <span class="o">=</span> <span class="n">AgentRequest</span><span class="p">(</span>
         <span class="nb">input</span><span class="o">=</span><span class="p">[</span>
             <span class="p">{</span>
@@ -685,94 +682,140 @@
                 <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">[</span>
                     <span class="p">{</span>
                         <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span>
-                        <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;What is in example.com?&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">,</span>
                     <span class="p">},</span>
                 <span class="p">],</span>
             <span class="p">},</span>
         <span class="p">],</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">SESSION_ID</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="c1"># Stream interaction with the agent</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;🤖 Agent is processing your request...&quot;</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">runner</span><span class="o">.</span><span class="n">stream_query</span><span class="p">(</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">USER_ID</span><span class="p">,</span>
         <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="c1"># Check if this is a completed message</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="n">message</span><span class="o">.</span><span class="n">object</span> <span class="o">==</span> <span class="s2">&quot;message&quot;</span>
             <span class="ow">and</span> <span class="n">MessageType</span><span class="o">.</span><span class="n">MESSAGE</span> <span class="o">==</span> <span class="n">message</span><span class="o">.</span><span class="n">type</span>
             <span class="ow">and</span> <span class="n">RunStatus</span><span class="o">.</span><span class="n">Completed</span> <span class="o">==</span> <span class="n">message</span><span class="o">.</span><span class="n">status</span>
         <span class="p">):</span>
             <span class="n">all_result</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;📝 Agent output:&quot;</span><span class="p">,</span> <span class="n">all_result</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">all_result</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-</div>
+<p>In this code we introduce a simple agent and build a runner with the help of <code class="docutils literal notranslate"><span class="pre">context_manager</span></code>.</p>
 </section>
-<section id="step-7-run-interaction">
-<h3>Step 7: Run Interaction<a class="headerlink" href="#step-7-run-interaction" title="Link to this heading">¶</a></h3>
-<p>Execute the interaction flow to test your agent’s functionality in a local development environment:</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">interact_run</span><span class="p">():</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">create_runner</span><span class="p">()</span> <span class="k">as</span> <span class="n">runner</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">interact</span><span class="p">(</span><span class="n">runner</span><span class="p">)</span>
+<section id="how-to-use-llamaindex">
+<h3>How To Use LlamaIndex.<a class="headerlink" href="#how-to-use-llamaindex" title="Link to this heading">¶</a></h3>
+<p>LlamaIndex is a powerful toolkit for building large language model applications. It provides a variety of tools for building and querying indexes, including vector stores, text splitters, and query engines.
+In Agentscope-runtime, we provide a <code class="docutils literal notranslate"><span class="pre">LlamaIndexRAGService</span></code> to integrate LlamaIndex into Agentscope-runtime. To use it, you need install <code class="docutils literal notranslate"><span class="pre">agentscope-runtime[llamaindex_rag]</span></code>. Here is a full example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">Document</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.readers.web</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleWebPageReader</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.node_parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">SentenceSplitter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_community.embeddings</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeEmbeddings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorStoreIndex</span><span class="p">,</span> <span class="n">StorageContext</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.vector_stores.milvus</span><span class="w"> </span><span class="kn">import</span> <span class="n">MilvusVectorStore</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">Settings</span>
 
-<span class="k">await</span> <span class="n">interact_run</span><span class="p">()</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.rag_service</span><span class="w"> </span><span class="kn">import</span>   <span class="n">LlamaIndexRAGService</span>
+
+<span class="c1"># llamaindex+Milvus</span>
+
+<span class="c1"># Load documents from web pages</span>
+<span class="n">loader</span> <span class="o">=</span> <span class="n">SimpleWebPageReader</span><span class="p">()</span>
+<span class="n">documents</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span>
+    <span class="n">urls</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">&quot;https://lilianweng.github.io/posts/2023-06-23-agent/&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;https://lilianweng.github.io/posts/2023-03-15-prompt-&quot;</span>
+        <span class="s2">&quot;engineering/&quot;</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+
+<span class="c1"># Split documents into nodes</span>
+<span class="n">splitter</span> <span class="o">=</span> <span class="n">SentenceSplitter</span><span class="p">(</span><span class="n">chunk_size</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">chunk_overlap</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+<span class="n">nodes</span> <span class="o">=</span> <span class="n">splitter</span><span class="o">.</span><span class="n">get_nodes_from_documents</span><span class="p">(</span><span class="n">documents</span><span class="p">)</span>
+
+<span class="c1"># Convert nodes to documents</span>
+<span class="n">docs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Document</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">]</span>
+
+
+<span class="n">Settings</span><span class="o">.</span><span class="n">embed_model</span> <span class="o">=</span> <span class="n">DashScopeEmbeddings</span><span class="p">()</span>
+<span class="n">vector_store</span> <span class="o">=</span> <span class="n">MilvusVectorStore</span><span class="p">(</span>
+    <span class="n">uri</span><span class="o">=</span><span class="s2">&quot;milvus_llamaindex_demo.db&quot;</span><span class="p">,</span>
+    <span class="n">dim</span><span class="o">=</span><span class="mi">1536</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">storage_context</span> <span class="o">=</span> <span class="n">StorageContext</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">(</span><span class="n">vector_store</span><span class="o">=</span><span class="n">vector_store</span><span class="p">)</span>
+<span class="n">index</span> <span class="o">=</span> <span class="n">VectorStoreIndex</span><span class="o">.</span><span class="n">from_documents</span><span class="p">(</span>
+    <span class="n">documents</span><span class="o">=</span><span class="n">docs</span><span class="p">,</span>
+    <span class="n">storage_context</span><span class="o">=</span><span class="n">storage_context</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">rag_service</span> <span class="o">=</span> <span class="n">LlamaIndexRAGService</span><span class="p">(</span>
+    <span class="n">vectorstore</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
+    <span class="n">embedding</span><span class="o">=</span><span class="n">DashScopeEmbeddings</span><span class="p">(),</span>
+<span class="p">)</span>
+
+<span class="n">ret_docs</span> <span class="o">=</span> <span class="k">await</span> <span class="n">rag_service</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span>
+    <span class="s2">&quot;What is self-reflection of an AI Agent?&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
 </pre></div>
 </div>
-</div>
-</div>
 </section>
-<section id="step-8-deploy-the-agent-locally">
-<h3>Step 8: Deploy the Agent Locally<a class="headerlink" href="#step-8-deploy-the-agent-locally" title="Link to this heading">¶</a></h3>
-<p>Transform your agent into a production-ready service using the local deployment manager for HTTP API access:</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalDeployManager</span>
-
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">deploy</span><span class="p">(</span><span class="n">runner</span><span class="p">):</span>
-    <span class="c1"># Create deployment manager</span>
-    <span class="n">deploy_manager</span> <span class="o">=</span> <span class="n">LocalDeployManager</span><span class="p">(</span>
-        <span class="n">host</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
-        <span class="n">port</span><span class="o">=</span><span class="mi">8090</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="c1"># Deploy the agent as a streaming service</span>
-    <span class="n">deploy_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">runner</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
-        <span class="n">deploy_manager</span><span class="o">=</span><span class="n">deploy_manager</span><span class="p">,</span>
-        <span class="n">endpoint_path</span><span class="o">=</span><span class="s2">&quot;/process&quot;</span><span class="p">,</span>
-        <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Enable streaming responses</span>
-    <span class="p">)</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Agent deployed at: </span><span class="si">{</span><span class="n">deploy_result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Service URL: </span><span class="si">{</span><span class="n">deploy_manager</span><span class="o">.</span><span class="n">service_url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Health check: </span><span class="si">{</span><span class="n">deploy_manager</span><span class="o">.</span><span class="n">service_url</span><span class="si">}</span><span class="s2">/health&quot;</span><span class="p">)</span>
+<section id="how-to-use-other-database">
+<h3>How To Use Other Database.<a class="headerlink" href="#how-to-use-other-database" title="Link to this heading">¶</a></h3>
+<p>Several vector databases are supported in Agentscope-runtime.</p>
+<ol class="arabic simple">
+<li><p>FAISS.</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">langchain.vectorstores</span><span class="w"> </span><span class="kn">import</span> <span class="n">FAISS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain.embeddings</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeEmbeddings</span>
+<span class="n">vectorstore</span> <span class="o">=</span> <span class="n">FAISS</span><span class="o">.</span><span class="n">from_documents</span><span class="p">(</span><span class="n">docs</span><span class="p">,</span> <span class="n">DashScopeEmbeddings</span><span class="p">())</span>
 </pre></div>
 </div>
-</div>
-</div>
-</section>
-<section id="step-9-run-deployment">
-<h3>Step 9: Run Deployment<a class="headerlink" href="#step-9-run-deployment" title="Link to this heading">¶</a></h3>
-<p>Execute the complete deployment process to make your agent available as a web service:</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">deploy_run</span><span class="p">():</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">create_runner</span><span class="p">()</span> <span class="k">as</span> <span class="n">runner</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">deploy</span><span class="p">(</span><span class="n">runner</span><span class="p">)</span>
-
-<span class="k">await</span> <span class="n">deploy_run</span><span class="p">()</span>
+<ol class="arabic simple" start="2">
+<li><p>Chroma</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">langchain.vectorstores</span><span class="w"> </span><span class="kn">import</span> <span class="n">Chroma</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain.embeddings</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeEmbeddings</span>
+<span class="n">vectorstore</span> <span class="o">=</span> <span class="n">Chroma</span><span class="o">.</span><span class="n">from_documents</span><span class="p">(</span><span class="n">docs</span><span class="p">,</span> <span class="n">DashScopeEmbeddings</span><span class="p">())</span>
 </pre></div>
 </div>
+<ol class="arabic simple" start="3">
+<li><p>Weaviate</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">weaviate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain.vectorstores</span><span class="w"> </span><span class="kn">import</span> <span class="n">Weaviate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain.embeddings</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeEmbeddings</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">weaviate</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080&quot;</span><span class="p">)</span>  <span class="c1"># URI</span>
+<span class="n">class_name</span> <span class="o">=</span> <span class="s2">&quot;YourClassName&quot;</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">client</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">class_name</span><span class="p">):</span>
+    <span class="n">class_obj</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="n">class_name</span><span class="p">,</span>
+        <span class="s2">&quot;vectorizer&quot;</span><span class="p">:</span> <span class="s2">&quot;none&quot;</span>
+    <span class="p">}</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">create_class</span><span class="p">(</span><span class="n">class_obj</span><span class="p">)</span>
+<span class="n">vectorstore</span> <span class="o">=</span> <span class="n">Weaviate</span><span class="o">.</span><span class="n">from_documents</span><span class="p">(</span><span class="n">docs</span><span class="p">,</span> <span class="n">DashScopeEmbeddings</span><span class="p">(),</span> <span class="n">client</span><span class="p">,</span> <span class="n">class_name</span><span class="p">)</span>
+</pre></div>
 </div>
+<ol class="arabic simple" start="4">
+<li><p>Pinecone</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pinecone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain.vectorstores</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pinecone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain.embeddings</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeEmbeddings</span>
+
+<span class="n">pinecone</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;YOUR_PINECONE_API_KEY&quot;</span><span class="p">,</span> <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;YOUR_PINECONE_ENVIRONMENT&quot;</span><span class="p">)</span>
+
+<span class="n">index_name</span> <span class="o">=</span> <span class="s2">&quot;your-index-name&quot;</span>
+<span class="k">if</span> <span class="n">index_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">pinecone</span><span class="o">.</span><span class="n">list_indexes</span><span class="p">():</span>
+    <span class="n">pinecone</span><span class="o">.</span><span class="n">create_index</span><span class="p">(</span><span class="n">index_name</span><span class="p">,</span> <span class="n">dimension</span><span class="o">=</span><span class="mi">768</span><span class="p">)</span>
+
+<span class="n">index</span> <span class="o">=</span> <span class="n">pinecone</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span><span class="n">index_name</span><span class="p">)</span>
+
+<span class="n">vectorstore</span> <span class="o">=</span> <span class="n">Pinecone</span><span class="o">.</span><span class="n">from_documents</span><span class="p">(</span><span class="n">docs</span><span class="p">,</span> <span class="n">DashScopeEmbeddings</span><span class="p">(),</span> <span class="n">index_name</span><span class="o">=</span><span class="n">index_name</span><span class="p">)</span>
+</pre></div>
 </div>
-</section>
-<section id="summary">
-<h3>Summary<a class="headerlink" href="#summary" title="Link to this heading">¶</a></h3>
-<p>By following these steps, you’ve successfully set up, interacted with, and deployed a ReAct Agent using the AgentScope framework and AgentScope Runtime. This configuration allows the agent to use browser tools securely within a sandbox environment, ensuring safe and effective web interactions. Adjust the system prompt, tools, or model as needed to customize the agent’s behavior for specific tasks or applications.</p>
 </section>
 </section>
 </section>
@@ -801,23 +844,23 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="protocol.html">
+          <a class="next-page" href="tracing.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title"><span class="section-number">6. </span>Agent API Protocol Specification</div>
+                <div class="title"><span class="section-number">9. </span>Tracing Method Introduction</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="training_sandbox.html">
+          <a class="prev-page" href="environment_manager.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Training Sandbox</div>
+                <div class="title">Environment Manager</div>
                 
               </div>
             </a>
@@ -865,24 +908,15 @@
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">5. Deploy a ReAct Agent with Tool Sandbox</a><ul>
-<li><a class="reference internal" href="#prerequisites">Prerequisites</a><ul>
-<li><a class="reference internal" href="#installation-requirements">🔧 Installation Requirements</a></li>
-<li><a class="reference internal" href="#sandbox-setup">🐳 Sandbox Setup</a></li>
-<li><a class="reference internal" href="#api-key-configuration">🔑 API Key Configuration</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#step-by-step-implementation">Step-by-Step Implementation</a><ul>
-<li><a class="reference internal" href="#step-1-import-dependencies">Step 1: Import Dependencies</a></li>
-<li><a class="reference internal" href="#step-2-configure-browser-tools">Step 2: Configure Browser Tools</a></li>
-<li><a class="reference internal" href="#step-3-define-system-prompt">Step 3: Define System Prompt</a></li>
-<li><a class="reference internal" href="#step-4-initialize-agent-and-model">Step 4: Initialize Agent and Model</a></li>
-<li><a class="reference internal" href="#step-5-create-the-runner">Step 5: Create the Runner</a></li>
-<li><a class="reference internal" href="#step-6-define-local-interaction-function">Step 6: Define Local Interaction Function</a></li>
-<li><a class="reference internal" href="#step-7-run-interaction">Step 7: Run Interaction</a></li>
-<li><a class="reference internal" href="#step-8-deploy-the-agent-locally">Step 8: Deploy the Agent Locally</a></li>
-<li><a class="reference internal" href="#step-9-run-deployment">Step 9: Run Deployment</a></li>
-<li><a class="reference internal" href="#summary">Summary</a></li>
+<li><a class="reference internal" href="#">8. RAG</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a><ul>
+<li><a class="reference internal" href="#pre-requisites">Pre-requisites</a></li>
+<li><a class="reference internal" href="#document-preparation">Document Preparation</a></li>
+<li><a class="reference internal" href="#building-a-vectorstore-index">Building a Vectorstore Index</a></li>
+<li><a class="reference internal" href="#building-a-rag-service">Building a Rag Service</a></li>
+<li><a class="reference internal" href="#building-a-rag-agent">Building a Rag Agent</a></li>
+<li><a class="reference internal" href="#how-to-use-llamaindex">How To Use LlamaIndex.</a></li>
+<li><a class="reference internal" href="#how-to-use-other-database">How To Use Other Database.</a></li>
 </ul>
 </li>
 </ul>
