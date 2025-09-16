@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Process manager for detached process deployment mode."""
 
+import asyncio
 import os
 import subprocess
-import signal
-import asyncio
-from typing import Optional, List
+from typing import Optional
+
 import psutil
 
 

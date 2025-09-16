@@ -113,7 +113,7 @@ class Runner:
     @trace(TraceType.AGENT_STEP)
     async def stream_query(  # pylint:disable=unused-argument
         self,
-        request: AgentRequest,
+        request: Union[AgentRequest, dict],
         user_id: Optional[str] = None,
         tools: Optional[List] = None,
         **kwargs: Any,
@@ -121,6 +121,9 @@ class Runner:
         """
         Streams the agent.
         """
+        if isinstance(request, dict):
+            request = AgentRequest(**request)
+
         response = AgentResponse()
         yield response
 

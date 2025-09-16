@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Modified package_project.py with unified FastAPI template."""
+"""Modified package_project_utils.py with unified FastAPI template."""
 
 import ast
 import hashlib
@@ -9,11 +9,10 @@ import shutil
 import tarfile
 import tempfile
 from typing import List, Optional, Any, Tuple
-from jinja2 import Template
 
 from pydantic import BaseModel
 
-from .fastapi_templates import FastAPITemplateManager
+from .service_utils.fastapi_templates import FastAPITemplateManager
 
 
 # Default template will be loaded from template file
@@ -465,7 +464,7 @@ def _compare_directories(old_dir: str, new_dir: str) -> bool:
 def package_project(
     agent: Any,
     config: PackageConfig,
-    dockerfile_path: str,
+    dockerfile_path: Optional[str] = None,
     template: Optional[str] = None,  # Use template file by default
 ) -> Tuple[str, bool]:
     """
@@ -496,7 +495,14 @@ def package_project(
             original_temp_dir = temp_dir
             temp_dir = tempfile.mkdtemp(prefix="agentscope_package_new_")
             # copy docker file to this place
-            shutil.copy(dockerfile_path, os.path.join(temp_dir, "Dockerfile"))
+            if dockerfile_path:
+                shutil.copy(
+                    dockerfile_path,
+                    os.path.join(
+                        temp_dir,
+                        "Dockerfile",
+                    ),
+                )
             needs_update = None  # Will be determined after comparison
         else:
             # Directory doesn't exist or is empty, needs update
@@ -624,6 +630,7 @@ def package_project(
             main_content = template_manager.render_standalone_template(
                 agent_name=agent_name,
                 endpoint_path=config.endpoint_path,
+                deployment_mode=config.deployment_mode or "standalone",
             )
         else:
             # Use user-provided template string
@@ -631,6 +638,7 @@ def package_project(
                 template,
                 agent_name=agent_name,
                 endpoint_path=config.endpoint_path,
+                deployment_mode=config.deployment_mode or "standalone",
             )
 
         # Write main.py

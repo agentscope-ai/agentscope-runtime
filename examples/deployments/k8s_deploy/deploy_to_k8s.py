@@ -28,7 +28,7 @@ async def deploy_agent_to_k8s():
     # 3. 配置K8s连接
     k8s_config = K8sConfig(
         k8s_namespace="agentscope-runtime",
-        kubeconfig_path="/Users/zhicheng/repo/agentscope-runtime/tests/integrated/test_package_build_image/logs/kubeconfig.yaml",
+        kubeconfig_path="/Users/zhicheng/repo/agentscope-runtime/logs/kubeconfig.yaml",
     )
 
     port = 8080
@@ -73,7 +73,7 @@ async def deploy_agent_to_k8s():
         "stream": True,
         "port": str(port),
         "replicas": 1,  # 部署2个副本
-        "image_tag": "linux-amd64-3",
+        "image_tag": "linux-amd64-6",
         "image_name": "agent_llm",
         # 依赖配置
         "requirements": [
@@ -173,12 +173,33 @@ async def main():
         await deployed_service(service_url)
 
         # 保持运行状态，您可以手动测试
-        print(f"\n🎯 服务已部署完成!")
-        print(f"您可以使用以下命令测试:")
-        print(f"curl -X POST {service_url}/process \\")
-        print(f'  -H "Content-Type: application/json" \\')
         print(
-            f'  -d \'{{"content": "Hello!", "name": "user", "role": "user"}}\'',
+            f"""
+        🎯 服务已部署完成，可以使用以下命令测试:
+
+        # 健康检查
+        curl {service_url}/health
+
+        # 流式请求
+        curl -X POST {service_url}/process \\
+          -H "Content-Type: application/json" \\
+          -H "Accept: text/event-stream" \\
+          --no-buffer \\
+          -d '{{
+                "input": [
+                {{
+                "role": "user",
+                  "content": [
+                    {{
+                      "type": "text",
+                      "text": "Hello, how are you?"
+                    }}
+                  ]
+                }}
+              ],
+              "session_id": "123"
+            }}'
+        """,
         )
 
         print(f"\n📝 或者使用kubectl查看:")

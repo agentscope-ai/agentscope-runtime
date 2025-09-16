@@ -4,6 +4,7 @@
 import os
 from typing import Dict, Any
 from jinja2 import Template, Environment, FileSystemLoader
+from ..deployment_modes import DeploymentMode
 
 
 class FastAPITemplateManager:
@@ -13,8 +14,6 @@ class FastAPITemplateManager:
         """Initialize template manager."""
         self.template_dir = os.path.join(
             os.path.dirname(__file__),
-            "..",
-            "templates",
         )
         self.env = Environment(
             loader=FileSystemLoader(self.template_dir),
@@ -26,6 +25,7 @@ class FastAPITemplateManager:
         self,
         agent_name: str,
         endpoint_path: str = "/process",
+        deployment_mode: str = DeploymentMode.STANDALONE,
         **kwargs,
     ) -> str:
         """Render the standalone deployment template.
@@ -33,6 +33,7 @@ class FastAPITemplateManager:
         Args:
             agent_name: Name of the agent variable
             endpoint_path: API endpoint path
+            deployment_mode: Deployment mode (standalone or detached_process)
             **kwargs: Additional template variables
 
         Returns:
@@ -42,6 +43,7 @@ class FastAPITemplateManager:
         return template.render(
             agent_name=agent_name,
             endpoint_path=endpoint_path,
+            deployment_mode=deployment_mode,
             **kwargs,
         )
 
@@ -139,41 +141,6 @@ class FastAPITemplateManager:
 
         return "\n".join(lines)
 
-    def create_runner_setup_code(
-        self,
-        runner_var_name: str = "runner",
-    ) -> str:
-        """Create Python code for runner setup.
-
-        Args:
-            runner_var_name: Variable name for the runner
-
-        Returns:
-            Python code as string
-        """
-        return f"""
-# Setup runner from app state
-if hasattr(app.state, 'runner') and app.state.runner:
-    app.state.runner.agent = {runner_var_name}
-"""
-
-    def create_func_setup_code(
-        self,
-        func_var_name: str = "custom_func",
-    ) -> str:
-        """Create Python code for custom function setup.
-
-        Args:
-            func_var_name: Variable name for the custom function
-
-        Returns:
-            Python code as string
-        """
-        return f"""
-# Setup custom function
-app.state.custom_func = {func_var_name}
-"""
-
     def get_template_list(self) -> list:
         """Get list of available templates.
 
@@ -208,7 +175,6 @@ app.state.custom_func = {func_var_name}
         # In practice, you might want to parse the template to find required variables
         required_vars = {
             "standalone_main.py.j2": ["agent_name", "endpoint_path"],
-            "detached_script.py.j2": ["endpoint_path", "host", "port"],
         }
 
         required = required_vars.get(template_name, [])

@@ -1,13 +1,12 @@
 import os
-import asyncio
 import uvicorn
-from agentscope_runtime.engine.deployers.utils.fastapi_factory import FastAPIAppFactory
 from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
-from agentscope_runtime.engine.deployers.utils.service_config import (
+from agentscope_runtime.engine.deployers.utils.service_utils import (
+    FastAPIAppFactory,
     ServicesConfig,
     ServiceConfig,
-    ServiceProvider
 )
+
 from agent_file import {{agent_name}} as agent
 
 
@@ -71,10 +70,19 @@ async def after_finish(app, **kwargs):
 # Load services configuration
 services_config = load_services_config()
 
+# Determine deployment mode from environment or use default
+deployment_mode_str = os.getenv('DEPLOYMENT_MODE', '{{deployment_mode|default("standalone")}}')
+if deployment_mode_str == 'detached_process':
+    deployment_mode = DeploymentMode.DETACHED_PROCESS
+elif deployment_mode_str == 'standalone':
+    deployment_mode = DeploymentMode.STANDALONE
+else:
+    deployment_mode = DeploymentMode.STANDALONE  # fallback
+
 # Create FastAPI application using the factory
 app = FastAPIAppFactory.create_app(
     endpoint_path="{{endpoint_path}}",
-    mode=DeploymentMode.STANDALONE,
+    mode=deployment_mode,
     services_config=services_config,
     before_start=before_start,
     after_finish=after_finish,

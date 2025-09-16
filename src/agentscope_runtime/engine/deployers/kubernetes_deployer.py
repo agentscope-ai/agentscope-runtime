@@ -8,15 +8,13 @@ from typing import Optional, Dict, Callable, List, Union
 from pydantic import BaseModel, Field
 
 from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.engine.deployers.utils.runner_image_factory import (
+from agentscope_runtime.engine.deployers.utils.docker_image_utils import (
     RunnerImageFactory,
-)
-from agentscope_runtime.engine.deployers.utils.docker_image_builder import (
     RegistryConfig,
 )
-from agentscope_runtime.sandbox.manager.container_clients.kubernetes_client import (
+from agentscope_runtime.sandbox.manager.container_clients import (
     KubernetesClient,
-)  # noqa E501
+)
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 

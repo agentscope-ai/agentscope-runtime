@@ -9,7 +9,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from .deployment_modes import DeploymentMode, StreamConfig
+from ..deployment_modes import DeploymentMode
 from .service_config import ServicesConfig, DEFAULT_SERVICES_CONFIG
 from .service_factory import ServiceFactory
 
@@ -245,29 +245,29 @@ class FastAPIAppFactory:
             return status
 
         # Main processing endpoint
-        if stream_enabled:
-            # Streaming endpoint
-            @app.post(f"{endpoint_path}/stream")
-            async def stream_endpoint(request: dict):
-                """Streaming endpoint."""
-                return StreamingResponse(
-                    FastAPIAppFactory._create_stream_generator(app, request),
-                    media_type="text/event-stream",
-                    headers={
-                        "Cache-Control": "no-cache",
-                        "Connection": "keep-alive",
-                    },
-                )
-
-        # Standard endpoint
+        # if stream_enabled:
+        # Streaming endpoint
         @app.post(endpoint_path)
-        async def process_endpoint(request: dict):
-            """Main processing endpoint."""
-            return await FastAPIAppFactory._handle_request(
-                app,
-                request,
-                stream_enabled,
+        async def stream_endpoint(request: dict):
+            """Streaming endpoint."""
+            return StreamingResponse(
+                FastAPIAppFactory._create_stream_generator(app, request),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                },
             )
+
+        # # Standard endpoint
+        # @app.post(endpoint_path)
+        # async def process_endpoint(request: dict):
+        #     """Main processing endpoint."""
+        #     return await FastAPIAppFactory._handle_request(
+        #         app,
+        #         request,
+        #         stream_enabled,
+        #     )
 
         # Root endpoint
         @app.get("/")
