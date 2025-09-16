@@ -114,7 +114,9 @@ class AgentscopeBrowseruseAgent:
             )
         elif self.config["backend"]["agent-type"] == "agno":
             # add in the future
-            raise NotImplementedError('Agent type "agno" is not yet implemented')
+            raise NotImplementedError(
+                'Agent type "agno" is not yet implemented',
+            )
         else:
             raise ValueError("Invalid agent type")
         self.ws = ""
@@ -176,7 +178,7 @@ class AgentscopeBrowseruseAgent:
         )
 
         if len(sandboxes) > 0:
-            sandbox = sandboxes[0]
+            sandbox = sandboxes[0]  # we use the first sandbox
             sandbox.list_tools()  # TODO: @weirui
             ws = sandbox.browser_ws
             self.ws = ws
