@@ -58,7 +58,7 @@ def format_search_results(search_results: List[Dict[str, Any]]) -> str:
         formatted_result = f"""
 Result Number {i}:
 Title: {result.get('title', 'N/A')}
-Label：{result.get('site_name', 'N/A')}
+Label: {result.get('site_name', 'N/A')}
 URL: {result.get('url', 'N/A')}
 Snippet: {result.get('snippet', 'N/A')}
 publish_date: {result.get('publish_date', 'N/A')}

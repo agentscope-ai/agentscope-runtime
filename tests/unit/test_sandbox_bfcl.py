@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=redefined-outer-name, unused-argument
 import os
+import pytest
+from dotenv import load_dotenv
+
 from agentscope_runtime.sandbox.box.training_box.training_box import (
     BFCLSandbox,
 )
@@ -66,31 +70,39 @@ ASSISTANT_MESSAGES = [
     },
 ]
 
-with BFCLSandbox() as box:
-    profile_list = box.get_env_profile(env_type="bfcl")
-    init_response = box.create_instance(
-        env_type="bfcl",
-        task_id=profile_list[1],
-        params={"model_name": "gt-script"},
-    )
-    print("init state", init_response)
-    inst_id = init_response["info"]["instance_id"]
-    query = init_response["state"]
-    print(f"Created instance {inst_id} with query: {query}")
-    for turn_no, msg in enumerate(ASSISTANT_MESSAGES, 1):
-        res = box.step(
-            inst_id,
-            msg,
-        )
-        print(
-            f"\n[TURN {turn_no}] term={res['is_terminated']} "
-            f"reward={res['reward']}\n state: {res.get('state', {})}",
-        )
-        if res["is_terminated"]:
-            break
 
-    score = box.evaluate(inst_id, params={"sparse": False})
-    print(f"\n[RESULT] sparse_score = {score}")
+@pytest.fixture
+def env():
+    if os.path.exists("../../.env"):
+        load_dotenv("../../.env")
 
-    box.release_instance(inst_id)
-    print("[DONE] released instance")
+
+def test_bfcl_sandbox(env):
+    with BFCLSandbox() as box:
+        profile_list = box.get_env_profile(env_type="bfcl")
+        init_response = box.create_instance(
+            env_type="bfcl",
+            task_id=profile_list[1],
+            params={"model_name": "gt-script"},
+        )
+        print("init state", init_response)
+        inst_id = init_response["info"]["instance_id"]
+        query = init_response["state"]
+        print(f"Created instance {inst_id} with query: {query}")
+        for turn_no, msg in enumerate(ASSISTANT_MESSAGES, 1):
+            res = box.step(
+                inst_id,
+                msg,
+            )
+            print(
+                f"\n[TURN {turn_no}] term={res['is_terminated']} "
+                f"reward={res['reward']}\n state: {res.get('state', {})}",
+            )
+            if res["is_terminated"]:
+                break
+
+        score = box.evaluate(inst_id, params={"sparse": False})
+        print(f"\n[RESULT] sparse_score = {score}")
+
+        box.release_instance(inst_id)
+        print("[DONE] released instance")

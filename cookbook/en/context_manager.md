@@ -145,6 +145,20 @@ async with create_context_manager() as manager:
     await manager.append(session, event_output=[])
 ```
 
+## Available Memory Services
+|         MemoryType         | Import                                                                                   |                       Note                       |
+|:--------------------------:|------------------------------------------------------------------------------------------|:------------------------------------------------:|
+|   InMemoryMemoryService    | `from agentscope_runtime.engine.services.memory_service import InMemoryMemoryService`    |                                                  |
+|     RedisMemoryService     | `from agentscope_runtime.engine.services.redis_memory_service import RedisMemoryService` |                                                  |
+| ReMe.PersonalMemoryService | `from reme_ai.service.personal_memory_service import PersonalMemoryService`              | [User Guide](https://github.com/modelscope/ReMe) |
+|   ReMe.TaskMemoryService   | `from reme_ai.service.task_memory_service import TaskMemoryService`                      | [User Guide](https://github.com/modelscope/ReMe) |
+
+### Description
+- **InMemoryMemoryService**: An in-memory memory service without persistent storage.
+- **RedisMemoryService**: A memory service leveraging Redis for persistent storage.
+- **ReMe.PersonalMemoryService**: ReMe's personalized memory service (formerly MemoryScope) empowers you to generate, retrieve, and share customized memories. Leveraging advanced LLM, embedding, and vector store technologies, it builds a comprehensive memory system with intelligent, context- and time-aware memory management—seamlessly enabling you to configure and deploy powerful AI agents.
+- **ReMe.TaskMemoryService**: ReMe's task-oriented memory service helps you efficiently manage and schedule task-related memories, enhancing both the accuracy and efficiency of task execution. Powered by LLM capabilities, it supports flexible creation, retrieval, update, and deletion of memories across diverse task scenarios—enabling you to effortlessly build and scale robust agent-based task systems.
+
 (session-history-service)=
 
 ## Details about Session History Service

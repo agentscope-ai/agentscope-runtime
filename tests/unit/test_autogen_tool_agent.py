@@ -90,6 +90,6 @@ async def test_autogen_agent_runner(env):
         "New York",
         "New_York",
     ]
-    query = "What time is it now?"
+    query = "What time is it now in America/New_York?"
     all_result = await simple_call_agent_tool(agent, query)
     assert gt_list[0] in all_result or gt_list[1] in all_result
