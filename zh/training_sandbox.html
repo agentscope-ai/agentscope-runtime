@@ -518,8 +518,7 @@ Sandbox主要用于训练评测的功能。训练沙箱的数据主要基于公�
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/StonyBrookNLP/appworld">APPWorld</a>: APPWorld 是一个高效的测试环境，用于测试和评估AI
 Agent在执行复杂多步骤任务的能力。</p></li>
-<li><p><a class="reference external" href="https://github.com/ShishirPatil/gorilla">BFCL</a>: APPWorld 是一个高效的测试环境，用于测试和评估AI
-Agent在执行复杂多步骤任务的能力。</p></li>
+<li><p><a class="reference external" href="https://github.com/ShishirPatil/gorilla">BFCL</a>: BFCL 是首个专门评估大语言模型（LLMs）函数调用能力的全面且可执行的评测平台。与以往的评测不同，BFCL涵盖了多种形式的函数调用、丰富的场景，并关注函数调用的可执行性。。</p></li>
 </ul>
 </section>
 <section id="id3">
@@ -578,15 +577,11 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <h4>查看数据集样本<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h4>
 <p>构建Docker镜像后，我们可以首先查看数据集样本。</p>
 <p>例如，我们可以使用 get_env_profile 方法获取训练ID列表。</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.box.training_box.training_box</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">TrainingSandbox</span><span class="p">,</span>
-<span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.box.training_box.training_box</span><span class="w"> </span><span class="kn">import</span> <span class="n">APPWorldSandbox</span>
 
-<span class="c1">#创建训练用沙箱</span>
-<span class="n">box</span> <span class="o">=</span> <span class="n">TrainingSandbox</span><span class="p">()</span>
-
-<span class="n">profile_list</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">get_env_profile</span><span class="p">(</span><span class="n">env_type</span><span class="o">=</span><span class="s1">&#39;appworld&#39;</span><span class="p">,</span><span class="n">split</span><span class="o">=</span><span class="s1">&#39;train&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">profile_list</span><span class="p">)</span>
+<span class="n">box</span> <span class="o">=</span> <span class="n">APPWorldSandbox</span><span class="p">()</span>
+<span class="n">profile_list</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">get_env_profile</span><span class="p">(</span><span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;appworld&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">profile_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </pre></div>
 </div>
 </section>
