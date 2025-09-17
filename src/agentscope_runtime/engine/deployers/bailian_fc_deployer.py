@@ -3,7 +3,7 @@ import logging
 import os
 import time
 from pathlib import Path
-from typing import Dict, Optional, List, Union
+from typing import Dict, Optional, List, Union, Tuple
 
 from pydantic import BaseModel, Field
 
@@ -72,6 +72,7 @@ class BailianConfig(BaseModel):
     workspace_id: Optional[str] = None
     access_key_id: Optional[str] = None
     access_key_secret: Optional[str] = None
+    dashscope_api_key: Optional[str] = None
 
     @classmethod
     def from_env(cls) -> "BailianConfig":
@@ -83,6 +84,7 @@ class BailianConfig(BaseModel):
             workspace_id=os.environ.get("ALIBABA_CLOUD_WORKSPACE_ID"),
             access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
             access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+            dashscope_api_key=os.environ.get('ALIBABA_CLOUD_DASHSCOPE_API_KEY'),
         )
 
     def ensure_valid(self) -> None:
@@ -211,6 +213,72 @@ class BailianFCDeployer(DeployManager):
         # Defer default build_root selection to deploy() to avoid using home by default
         self.build_root = Path(build_root) if build_root else None
 
+    def _generate_wrapper_and_build_wheel(
+            self,
+            project_dir: Union[str, Path],
+            cmd: str,
+            deploy_name: Optional[str] = None,
+            telemetry_enabled: bool = True
+    ) -> Tuple[Path, str]:
+        """
+        校验参数、生成 wrapper 项目并构建 wheel。
+
+        返回: (wheel_path, wrapper_project_dir, name)
+        """
+        if not project_dir or not cmd:
+            raise ValueError("project_dir and cmd are required for Bailian deployment")
+
+        project_dir = Path(project_dir).resolve()
+        if not project_dir.is_dir():
+            raise FileNotFoundError(f"Project dir not found: {project_dir}")
+
+        name = deploy_name or default_deploy_name()
+        proj_root = project_dir.resolve()
+        effective_build_root = (
+            self.build_root.resolve() if isinstance(self.build_root, Path) else
+            (Path(self.build_root).resolve() if self.build_root else (
+                        proj_root.parent / ".agentscope_runtime_builds").resolve())
+        )
+        build_dir = effective_build_root / f"build-{int(time.time())}"
+        build_dir.mkdir(parents=True, exist_ok=True)
+
+        logger.info("Generating wrapper project for %s", name)
+        wrapper_project_dir, _ = generate_wrapper_project(
+            build_root=build_dir,
+            user_project_dir=project_dir,
+            start_cmd=cmd,
+            deploy_name=name,
+            telemetry_enabled=telemetry_enabled,
+        )
+
+        logger.info("Building wheel under %s", wrapper_project_dir)
+        wheel_path = build_wheel(wrapper_project_dir)
+        return wheel_path, name
+
+    def _upload_and_deploy(
+        self,
+        wheel_path: Path,
+        name: str,
+        telemetry_enabled: bool = True,
+    ) -> str:
+        logger.info("Uploading wheel to OSS and generating presigned URL")
+        client = _oss_get_client(self.oss_config)
+        bucket_name = "tmpbucket-for-full-code-deployment"
+        _oss_create_bucket_if_not_exists(client, bucket_name)
+        filename = wheel_path.name
+        with wheel_path.open("rb") as f:
+            file_bytes = f.read()
+        artifact_url = _oss_put_and_presign(client, bucket_name, filename, file_bytes)
+
+        logger.info("Triggering Bailian HighCode deploy for %s", name)
+        _bailian_deploy(
+            cfg=self.bailian_config,
+            file_url=artifact_url,
+            filename=filename,
+            deploy_name=name,
+            telemetry_enabled=telemetry_enabled,
+        )
+        return artifact_url
     async def deploy(
         self,
         runner: Optional[Runner] = None,
@@ -228,6 +296,7 @@ class BailianFCDeployer(DeployManager):
         skip_upload: bool = False,
         output_file: Optional[Union[str, Path]] = None,
         telemetry_enabled: bool = True,
+        external_whl_path: Optional[str] = None,
         **kwargs,
     ) -> Dict[str, str]:
         """
@@ -240,55 +309,23 @@ class BailianFCDeployer(DeployManager):
         self.oss_config.ensure_valid()
         self.bailian_config.ensure_valid()
 
-        if not project_dir or not cmd:
-            raise ValueError("project_dir and cmd are required for Bailian deployment")
-
-        project_dir = Path(project_dir).resolve()
-        if not project_dir.is_dir():
-            raise FileNotFoundError(f"Project dir not found: {project_dir}")
-
-        name = deploy_name or default_deploy_name()
-        proj_root = project_dir.resolve()
-        # Default build artifacts go to the project's parent directory
-        effective_build_root = (
-            self.build_root.resolve() if isinstance(self.build_root, Path) else
-            (Path(self.build_root).resolve() if self.build_root else (proj_root.parent / ".agentscope_runtime_builds").resolve())
-        )
-        build_dir = effective_build_root / f"build-{int(time.time())}"
-        build_dir.mkdir(parents=True, exist_ok=True)
-
-        logger.info("Generating wrapper project for %s", name)
-        wrapper_project_dir, _ = generate_wrapper_project(
-            build_root=build_dir,
-            user_project_dir=project_dir,
-            start_cmd=cmd,
-            deploy_name=name,
-            telemetry_enabled=telemetry_enabled,
-        )
-
-        logger.info("Building wheel under %s", wrapper_project_dir)
-        wheel_path = build_wheel(wrapper_project_dir)
+        # 如果传入了外部whl包地址，则跳过打包步骤
+        if external_whl_path:
+            wheel_path = Path(external_whl_path).resolve()
+            if not wheel_path.is_file():
+                raise FileNotFoundError(f"External wheel file not found: {wheel_path}")
+            name = deploy_name or default_deploy_name()
+        else:
+            wheel_path, name = self._generate_wrapper_and_build_wheel(
+                project_dir=project_dir,
+                cmd=cmd,
+                deploy_name=deploy_name,
+                telemetry_enabled=telemetry_enabled
+            )
 
         artifact_url = ""
-        bucket_name = ""
         if not skip_upload:
-            logger.info("Uploading wheel to OSS and generating presigned URL")
-            client = _oss_get_client(self.oss_config)
-            bucket_name = _create_bucket_name(self.oss_config.bucket_prefix, name)
-            _oss_create_bucket_if_not_exists(client, bucket_name)
-            filename = wheel_path.name
-            with wheel_path.open("rb") as f:
-                file_bytes = f.read()
-            artifact_url = _oss_put_and_presign(client, bucket_name, filename, file_bytes)
-
-            logger.info("Triggering Bailian HighCode deploy for %s", name)
-            _bailian_deploy(
-                cfg=self.bailian_config,
-                file_url=artifact_url,
-                filename=filename,
-                deploy_name=name,
-                telemetry_enabled=telemetry_enabled,
-            )
+            artifact_url = self._upload_and_deploy(wheel_path, name, telemetry_enabled)
 
         result: Dict[str, str] = {
             "deploy_id": self.deploy_id,

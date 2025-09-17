@@ -17,6 +17,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--telemetry", choices=["enable", "disable"], default="enable", help="Enable or disable telemetry (default: enable)")
     parser.add_argument("--output-file", dest="output_file", default="fc_deploy.txt", help="Write deploy result key=value lines to a txt file")
     parser.add_argument("--build-root", dest="build_root", default=None, help="Custom directory for temporary build artifacts (optional)")
+    parser.add_argument("--whl-path", dest="whl_path", default=None, help="Path to an external wheel file to deploy directly (skip build)")
     return parser.parse_args()
 
 
@@ -28,6 +29,7 @@ async def _run(
     telemetry_enabled: bool,
     output_file: Optional[str],
     build_root: Optional[str],
+    external_whl_path: Optional[str]
 ):
     deployer = BailianFCDeployer(build_root=build_root)
     return await deployer.deploy(
@@ -37,6 +39,7 @@ async def _run(
         skip_upload=skip_upload,
         output_file=output_file,
         telemetry_enabled=telemetry_enabled,
+        external_whl_path=external_whl_path,
     )
 
 
@@ -52,6 +55,7 @@ def main() -> None:
             telemetry_enabled=telemetry_enabled,
             output_file=args.output_file,
             build_root=args.build_root,
+            external_whl_path=args.whl_path,
         )
     )
     print("Built wheel at:", result.get("wheel_path", ""))
