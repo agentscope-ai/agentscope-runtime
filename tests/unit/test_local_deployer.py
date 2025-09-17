@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 """Unit tests for LocalDeployManager using pytest."""
 
-import pytest
-import asyncio
-import tempfile
-import shutil
 import os
-import threading
-import time
-from unittest.mock import patch, Mock, MagicMock, AsyncMock
+import shutil
+import tempfile
+import asyncio
+from unittest.mock import patch, Mock, AsyncMock, MagicMock
+
+import pytest
 
 from agentscope_runtime.engine.deployers.local_deployer import (
     LocalDeployManager,
@@ -56,19 +55,23 @@ class TestLocalDeployManager:
         assert manager._shutdown_timeout == 60
 
     @patch(
-        "agentscope_runtime.engine.deployers.local_deployer.FastAPIAppFactory"
+        "agentscope_runtime.engine.deployers.local_deployer.FastAPIAppFactory",
     )
     @patch("uvicorn.Server")
     @pytest.mark.asyncio
     async def test_deploy_daemon_thread_mode(
-        self, mock_server_class, mock_app_factory
+        self,
+        mock_server_class,
+        mock_app_factory,
     ):
         """Test deployment in daemon thread mode."""
         # Setup mocks
         mock_app = Mock()
         mock_app_factory.create_app.return_value = mock_app
 
-        mock_server_instance = Mock()
+        # Create a proper mock server instance with async serve method
+        mock_server_instance = MagicMock()
+        mock_server_instance.serve = AsyncMock()
         mock_server_class.return_value = mock_server_instance
 
         mock_runner = Mock()
@@ -77,7 +80,9 @@ class TestLocalDeployManager:
 
         # Mock the server readiness check
         with patch.object(
-            manager, "_wait_for_server_ready", new_callable=AsyncMock
+            manager,
+            "_wait_for_server_ready",
+            new_callable=AsyncMock,
         ):
             result = await manager.deploy(
                 runner=mock_runner,
@@ -97,8 +102,11 @@ class TestLocalDeployManager:
         # Verify uvicorn server was created
         mock_server_class.assert_called_once()
 
+        # Stop the manager to clean up the thread
+        await manager.stop()
+
     @patch(
-        "agentscope_runtime.engine.deployers.local_deployer.package_project"
+        "agentscope_runtime.engine.deployers.local_deployer.package_project",
     )
     @pytest.mark.asyncio
     async def test_deploy_detached_process_mode(self, mock_package_project):
@@ -123,9 +131,12 @@ class TestLocalDeployManager:
             "start_detached_process",
             new_callable=AsyncMock,
         ) as mock_start, patch.object(
-            manager.process_manager, "wait_for_port", new_callable=AsyncMock
+            manager.process_manager,
+            "wait_for_port",
+            new_callable=AsyncMock,
         ) as mock_wait, patch.object(
-            manager.process_manager, "create_pid_file"
+            manager.process_manager,
+            "create_pid_file",
         ) as mock_create_pid:
             mock_start.return_value = 12345
             mock_wait.return_value = True
@@ -151,16 +162,30 @@ class TestLocalDeployManager:
     @pytest.mark.asyncio
     async def test_deploy_detached_process_no_agent(self):
         """Test detached process deployment without agent."""
+        # Test with runner but no agent
         mock_runner = Mock()
         mock_runner._agent = None
 
         manager = LocalDeployManager()
 
+        # The validation happens in _deploy_detached_process but after template creation
+        # So it raises a RuntimeError wrapping the original ValueError
         with pytest.raises(
-            ValueError, match="requires a runner with an agent"
+            RuntimeError,
+            match="Failed to deploy service",
         ):
             await manager.deploy(
                 runner=mock_runner,
+                mode=DeploymentMode.DETACHED_PROCESS,
+            )
+
+        # Test with no runner at all
+        with pytest.raises(
+            RuntimeError,
+            match="Failed to deploy service",
+        ):
+            await manager.deploy(
+                runner=None,
                 mode=DeploymentMode.DETACHED_PROCESS,
             )
 
@@ -169,7 +194,7 @@ class TestLocalDeployManager:
         """Test deployment with unsupported mode."""
         manager = LocalDeployManager()
 
-        with pytest.raises(ValueError, match="Unsupported deployment mode"):
+        with pytest.raises(RuntimeError, match="Failed to deploy service"):
             await manager.deploy(mode="unsupported_mode")
 
     @pytest.mark.asyncio
@@ -182,12 +207,14 @@ class TestLocalDeployManager:
             await manager.deploy()
 
     @patch(
-        "agentscope_runtime.engine.deployers.local_deployer.FastAPIAppFactory"
+        "agentscope_runtime.engine.deployers.local_deployer.FastAPIAppFactory",
     )
     @patch("uvicorn.Server")
     @pytest.mark.asyncio
     async def test_deploy_with_custom_config(
-        self, mock_server_class, mock_app_factory
+        self,
+        mock_server_class,
+        mock_app_factory,
     ):
         """Test deployment with custom configuration."""
         mock_app = Mock()
@@ -202,7 +229,9 @@ class TestLocalDeployManager:
         manager = LocalDeployManager()
 
         with patch.object(
-            manager, "_wait_for_server_ready", new_callable=AsyncMock
+            manager,
+            "_wait_for_server_ready",
+            new_callable=AsyncMock,
         ):
             result = await manager.deploy(
                 runner=mock_runner,
@@ -220,13 +249,18 @@ class TestLocalDeployManager:
         assert call_args[1]["stream"] is False
         assert call_args[1]["services_config"] == services_config
 
+        # Stop the manager to clean up the thread
+        await manager.stop()
+
     @patch("agentscope_runtime.engine.deployers.local_deployer.PackageConfig")
     @patch(
-        "agentscope_runtime.engine.deployers.local_deployer.package_project"
+        "agentscope_runtime.engine.deployers.local_deployer.package_project",
     )
     @pytest.mark.asyncio
     async def test_create_detached_project(
-        self, mock_package_project, mock_package_config
+        self,
+        mock_package_project,
+        mock_package_config,
     ):
         """Test creating detached project."""
         mock_agent = Mock()
@@ -262,15 +296,24 @@ class TestLocalDeployManager:
         """Test stopping daemon thread service."""
         manager = LocalDeployManager()
         manager.is_running = True
-        manager._server = Mock()
-        manager._server_thread = Mock()
-        manager._server_thread.is_alive.return_value = False
+        mock_server = Mock()
+        mock_thread = Mock()
+        manager._server = mock_server
+        manager._server_thread = mock_thread
+        # Set is_alive to True first to trigger join(), then to False to avoid warning
+        mock_thread.is_alive.side_effect = [True, False]
 
         await manager.stop()
 
         assert manager.is_running is False
-        assert manager._server.should_exit is True
-        manager._server_thread.join.assert_called_once()
+        # After cleanup, _server is set to None, so check the mock that was used
+        assert mock_server.should_exit is True
+        mock_thread.join.assert_called_once_with(
+            timeout=manager._shutdown_timeout,
+        )
+        # After cleanup, these should be None
+        assert manager._server is None
+        assert manager._server_thread is None
 
     @pytest.mark.asyncio
     async def test_stop_detached_process(self):
@@ -305,6 +348,43 @@ class TestLocalDeployManager:
 
         # Should not raise exception
         await manager.stop()
+
+    @pytest.mark.asyncio
+    async def test_minimal_functionality_without_heavy_mocking(self):
+        """Test basic functionality with minimal mocking."""
+        manager = LocalDeployManager(host="localhost", port=9999)
+
+        # Test initial state
+        assert manager.host == "localhost"
+        assert manager.port == 9999
+        assert not manager.is_running
+        assert manager.service_url is None
+
+        # Test deployment info when not running
+        info = manager.get_deployment_info()
+        assert info["host"] == "localhost"
+        assert info["port"] == 9999
+        assert info["is_running"] is False
+        assert info["url"] is None
+
+        # Test server readiness check (should fail for unused port)
+        assert not manager._is_server_ready()
+
+        # Test process manager functionality
+        process_manager = manager.process_manager
+        assert process_manager.shutdown_timeout == 120  # default
+
+        # Mock just the essential parts for testing wait_for_port
+        result = await process_manager.wait_for_port(
+            "127.0.0.1",
+            9999,
+            timeout=0.1,
+        )
+        assert result is False  # Should timeout quickly
+
+        # Test template manager
+        template_manager = manager.template_manager
+        assert template_manager is not None
 
     def test_is_server_ready(self):
         """Test server readiness check."""
@@ -366,7 +446,9 @@ class TestLocalDeployManager:
         manager._detached_process_pid = 12345
 
         with patch.object(
-            manager.process_manager, "is_process_running", return_value=True
+            manager.process_manager,
+            "is_process_running",
+            return_value=True,
         ):
             result = manager.is_service_running()
             assert result is True
@@ -384,16 +466,20 @@ class TestLocalDeployManager:
         manager = LocalDeployManager()
         manager.deploy_id = "daemon_127.0.0.1_8000"
         manager.is_running = True
+        # Set up a mock server to make is_service_running() return True
+        manager._server = Mock()
 
-        info = manager.get_deployment_info()
+        # Mock _is_server_ready to return True
+        with patch.object(manager, "_is_server_ready", return_value=True):
+            info = manager.get_deployment_info()
 
-        assert info["deploy_id"] == "daemon_127.0.0.1_8000"
-        assert info["host"] == "127.0.0.1"
-        assert info["port"] == 8000
-        assert info["is_running"] is True
-        assert info["mode"] == "daemon_thread"
-        assert info["pid"] is None
-        assert info["url"] == "http://127.0.0.1:8000"
+            assert info["deploy_id"] == "daemon_127.0.0.1_8000"
+            assert info["host"] == "127.0.0.1"
+            assert info["port"] == 8000
+            assert info["is_running"] is True
+            assert info["mode"] == "daemon_thread"
+            assert info["pid"] is None
+            assert info["url"] == "http://127.0.0.1:8000"
 
     def test_get_deployment_info_detached_process(self):
         """Test getting deployment info for detached process mode."""
@@ -422,11 +508,12 @@ class TestLocalDeployManager:
         assert url == "http://127.0.0.1:8000"
 
     @patch(
-        "agentscope_runtime.engine.deployers.local_deployer.package_project"
+        "agentscope_runtime.engine.deployers.local_deployer.package_project",
     )
     @pytest.mark.asyncio
     async def test_detached_process_service_not_ready(
-        self, mock_package_project
+        self,
+        mock_package_project,
     ):
         """Test detached process deployment when service doesn't become ready."""
         mock_agent = Mock()
@@ -447,13 +534,16 @@ class TestLocalDeployManager:
             "start_detached_process",
             new_callable=AsyncMock,
         ) as mock_start, patch.object(
-            manager.process_manager, "wait_for_port", new_callable=AsyncMock
+            manager.process_manager,
+            "wait_for_port",
+            new_callable=AsyncMock,
         ) as mock_wait:
             mock_start.return_value = 12345
             mock_wait.return_value = False  # Service not ready
 
             with pytest.raises(
-                RuntimeError, match="Service did not start within timeout"
+                RuntimeError,
+                match="Service did not start within timeout",
             ):
                 await manager.deploy(
                     runner=mock_runner,

@@ -3,7 +3,7 @@ import asyncio
 import logging
 import os
 import time
-from typing import Optional, Dict, Callable, List, Union
+from typing import Optional, Dict, Callable, List, Union, Any
 
 from pydantic import BaseModel, Field
 
@@ -87,15 +87,12 @@ class KubernetesDeployer(DeployManager):
         runtime_config: Dict = None,
         deploy_timeout: int = 300,
         health_check: bool = True,
-        # Backward compatibility parameters
         func: Optional[Callable] = None,
-        requirements_file: str = None,
-        requirements_list: List[str] = None,
         image_name: str = "agent_llm",
         image_tag: str = "latest",
         push_to_registry: bool = False,
         **kwargs,
-    ) -> Dict[str, str]:
+    ) -> Dict[str, Any]:
         """
         Deploy runner to Kubernetes.
 
@@ -112,13 +109,15 @@ class KubernetesDeployer(DeployManager):
             port: Container port
             replicas: Number of replicas
             environment: Environment variables dict
+            mount_dir: Mount directory
             runtime_config: K8s runtime configuration
             deploy_timeout: Deployment timeout in seconds
             health_check: Enable health check
             # Backward compatibility
             func: Legacy function parameter (deprecated)
-            requirements_file: Legacy requirements file parameter (deprecated)
-            requirements_list: Legacy requirements list parameter (deprecated)
+            image_name: Image name
+            image_tag: Image tag
+            push_to_registry: Push to registry
             **kwargs: Additional arguments
 
         Returns:
@@ -149,9 +148,7 @@ class KubernetesDeployer(DeployManager):
                     )
 
                 actual_func = wrapper_func
-                actual_requirements = (
-                    requirements_file or requirements_list or requirements
-                )
+                actual_requirements = requirements
             elif runner is not None:
                 # New approach: use complete runner object
                 actual_func = runner
@@ -255,7 +252,7 @@ class KubernetesDeployer(DeployManager):
                 "deploy_id": deploy_id,
                 "url": url,
                 "resource_name": resource_name,
-                "replicas": str(replicas),
+                "replicas": replicas,
             }
 
         except Exception as e:

@@ -1,30 +1,32 @@
 # -*- coding: utf-8 -*-
 """Unit tests for docker image utils modules using pytest."""
 
-import pytest
-import tempfile
+import os
 import shutil
-import os
-from unittest.mock import patch, Mock, MagicMock
-from pydantic import ValidationError
-
 import sys
-import os
+import tempfile
+from unittest.mock import patch, Mock
 
-# Add the src directory to path to use local development version
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+import pytest
 
-from agentscope_runtime.engine.deployers.utils.docker_image_utils.docker_image_builder import (
+
+from agentscope_runtime.engine.deployers.utils.docker_image_utils import (
     RegistryConfig,
     DockerImageBuilder,
     BuildConfig,
 )
-from agentscope_runtime.engine.deployers.utils.docker_image_utils.dockerfile_generator import (
+from agentscope_runtime.engine.deployers.utils.docker_image_utils import (
     DockerfileConfig,
     DockerfileGenerator,
 )
-from agentscope_runtime.engine.deployers.utils.docker_image_utils.runner_image_factory import (
+from agentscope_runtime.engine.deployers.utils.docker_image_utils import (
     RunnerImageFactory,
+)
+
+# Add the src directory to path to use local development version
+sys.path.insert(
+    0,
+    os.path.join(os.path.dirname(__file__), "..", "..", "src"),
 )
 
 
@@ -46,7 +48,7 @@ class TestRegistryConfig:
             registry_url="registry.example.com",
             username="user",
             password="pass",
-            namespace="custom-namespace"
+            namespace="custom-namespace",
         )
         assert config.registry_url == "registry.example.com"
         assert config.username == "user"
@@ -61,7 +63,7 @@ class TestRegistryConfig:
 
         config_with_custom = RegistryConfig(
             registry_url="registry.example.com",
-            namespace="custom"
+            namespace="custom",
         )
         url_custom = config_with_custom.get_full_url()
         assert url_custom == "registry.example.com/custom"
@@ -80,7 +82,7 @@ class TestBuildConfig:
         """Test BuildConfig creation with custom values."""
         config = BuildConfig(
             no_cache=True,
-            quiet=True
+            quiet=True,
         )
         assert config.no_cache is True
         assert config.quiet is True
@@ -103,7 +105,7 @@ class TestDockerfileConfig:
             base_image="python:3.9",
             port=8080,
             env_vars={"ENV": "production"},
-            startup_command="python main.py"
+            startup_command="python main.py",
         )
         assert config.base_image == "python:3.9"
         assert config.port == 8080
@@ -122,7 +124,6 @@ class TestDockerfileGenerator:
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
-
     def test_generate_dockerfile_basic(self):
         """Test basic Dockerfile generation."""
         config = DockerfileConfig()
@@ -135,7 +136,7 @@ class TestDockerfileGenerator:
     def test_generate_dockerfile_with_env_vars(self):
         """Test Dockerfile generation with environment variables."""
         config = DockerfileConfig(
-            env_vars={"ENV": "production", "DEBUG": "false"}
+            env_vars={"ENV": "production", "DEBUG": "false"},
         )
         generator = DockerfileGenerator()
         dockerfile_content = generator.generate_dockerfile_content(config)
@@ -146,12 +147,12 @@ class TestDockerfileGenerator:
     def test_generate_dockerfile_with_startup_command(self):
         """Test Dockerfile generation with startup command."""
         config = DockerfileConfig(
-            startup_command="python app.py"
+            startup_command="python app.py",
         )
         generator = DockerfileGenerator()
         dockerfile_content = generator.generate_dockerfile_content(config)
 
-        assert "CMD [\"python app.py\"]" in dockerfile_content
+        assert 'CMD ["python app.py"]' in dockerfile_content
 
     def test_create_dockerfile(self):
         """Test writing Dockerfile to file."""
@@ -164,7 +165,7 @@ class TestDockerfileGenerator:
         assert result_path == dockerfile_path
         assert os.path.exists(dockerfile_path)
 
-        with open(dockerfile_path, 'r') as f:
+        with open(dockerfile_path, "r") as f:
             content = f.read()
             assert "FROM python:3.10-slim-bookworm" in content
 
@@ -180,7 +181,7 @@ class TestDockerImageBuilder:
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_build_image_mock(self, mock_subprocess):
         """Test build_image method with mocks."""
         # Mock subprocess.run for both docker --version and docker build (quiet mode)
@@ -189,21 +190,24 @@ class TestDockerImageBuilder:
         mock_result.stdout = "Successfully built abc123"
         mock_subprocess.return_value = mock_result
 
-        build_config = BuildConfig(source_updated=True, quiet=True)  # Set quiet=True to use subprocess.run
+        build_config = BuildConfig(
+            source_updated=True,
+            quiet=True,
+        )  # Set quiet=True to use subprocess.run
         builder = DockerImageBuilder()
 
         result = builder.build_image(
             build_context=self.temp_dir,
             image_name="test-image",
             image_tag="latest",
-            config=build_config
+            config=build_config,
         )
 
         assert result == "test-image:latest"
         # Verify subprocess.run was called (at least for docker --version)
         assert mock_subprocess.call_count >= 1
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_build_image_source_not_updated(self, mock_subprocess):
         """Test build_image when source_updated=False (early return)."""
         # Mock docker --version for __init__
@@ -219,7 +223,7 @@ class TestDockerImageBuilder:
             build_context=self.temp_dir,
             image_name="test-image",
             image_tag="latest",
-            config=build_config
+            config=build_config,
         )
 
         # Should return the image name without actually building
@@ -244,9 +248,17 @@ class TestRunnerImageFactory:
         factory = RunnerImageFactory()
         assert isinstance(factory, RunnerImageFactory)
 
-    @patch('agentscope_runtime.engine.deployers.utils.docker_image_utils.runner_image_factory.package_project')
-    @patch('agentscope_runtime.engine.deployers.utils.docker_image_utils.runner_image_factory.DockerImageBuilder')
-    def test_build_runner_image_mock(self, mock_builder_class, mock_package_project):
+    @patch(
+        "agentscope_runtime.engine.deployers.utils.docker_image_utils.runner_image_factory.package_project",
+    )
+    @patch(
+        "agentscope_runtime.engine.deployers.utils.docker_image_utils.runner_image_factory.DockerImageBuilder",
+    )
+    def test_build_runner_image_mock(
+        self,
+        mock_builder_class,
+        mock_package_project,
+    ):
         """Test build_runner_image method with mocks."""
         # Setup mocks
         mock_package_project.return_value = (self.temp_dir, True)
@@ -266,7 +278,7 @@ class TestRunnerImageFactory:
             build_context_dir=self.temp_dir,
             registry_config=RegistryConfig(),
             image_name="test-runner",
-            image_tag="latest"
+            image_tag="latest",
         )
 
         assert result == "test-runner:latest"

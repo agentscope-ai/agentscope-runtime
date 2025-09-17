@@ -30,9 +30,7 @@ async def deploy_agent_to_k8s():
     # 3. 配置K8s连接
     k8s_config = K8sConfig(
         k8s_namespace="agentscope-runtime",
-        kubeconfig_path=(
-            "/Users/zhicheng/repo/agentscope-runtime/logs/kubeconfig.yaml"
-        ),
+        kubeconfig_path=None,
     )
 
     port = 8080
