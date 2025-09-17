@@ -2,11 +2,8 @@
 """Quick deployment script for testing detached mode."""
 
 import asyncio
-import sys
 import os
-
-# Add current directory to path for importing agent
-sys.path.insert(0, os.path.dirname(__file__))
+import sys
 
 from agentscope_runtime.engine.deployers.local_deployer import (
     LocalDeployManager,
@@ -18,10 +15,14 @@ from agentscope_runtime.engine.deployers.utils.service_utils import (
     ServicesConfig,
 )
 from agentscope_runtime.engine.runner import Runner
-from agent_run import llm_agent
 from agentscope_runtime.engine.deployers.adapter.a2a import (
     A2AFastAPIDefaultAdapter,
 )
+
+# Add current directory to path for importing agent
+sys.path.insert(0, os.path.dirname(__file__))
+
+from agent_run import llm_agent  # noqa: E402
 
 
 async def quick_deploy():
@@ -64,28 +65,20 @@ curl -X POST {deployment_info['url']}/process \\
   -H "Content-Type: application/json" \\
   -H "Accept: text/event-stream" \\
   --no-buffer \\
-  -d '{
-      "input": [
-        {
-          "role": "user",
-          "content": [
-            {{
-              "type": "text",
-              "text": "Hello, how are you?",
+  -d '{{
+    "input": [
+      {{
+        "role": "user",
+        "content": [
+          {{
+            "type": "text",
+            "text": "Hello, how are you?"
           }}
-          ]
-
-
-
-      
-      }
-      ],
-      "session_id": "123"
-
-
-
-        
-        }'
+        ]
+      }}
+    ],
+    "session_id": "123"
+  }}'
 
 # 停止服务
 curl -X POST {deployment_info['url']}/admin/shutdown

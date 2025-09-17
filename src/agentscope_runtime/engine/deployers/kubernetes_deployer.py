@@ -7,11 +7,11 @@ from typing import Optional, Dict, Callable, List, Union
 
 from pydantic import BaseModel, Field
 
-from agentscope_runtime.engine.runner import Runner
 from agentscope_runtime.engine.deployers.utils.docker_image_utils import (
     RunnerImageFactory,
     RegistryConfig,
 )
+from agentscope_runtime.engine.runner import Runner
 from agentscope_runtime.sandbox.manager.container_clients import (
     KubernetesClient,
 )
@@ -52,8 +52,6 @@ class KubernetesDeployer(DeployManager):
         self,
         kube_config: K8sConfig = None,
         registry_config: RegistryConfig = RegistryConfig(),
-        # image_builder: DockerImageBuilder = None,
-        image_builder: RunnerImageFactory = None,
         use_deployment: bool = True,
         build_context_dir: str = "/tmp/k8s_build",
         **kwargs,
@@ -80,7 +78,7 @@ class KubernetesDeployer(DeployManager):
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         # Parameters following _agent_engines.py create method pattern
         requirements: Optional[Union[str, List[str]]] = None,
-        extra_packages: List[str] = [],
+        extra_packages: Optional[List[str]] = None,
         base_image: str = "python:3.9-slim",
         port: int = 8090,
         replicas: int = 1,
@@ -102,11 +100,13 @@ class KubernetesDeployer(DeployManager):
         Deploy runner to Kubernetes.
 
         Args:
-            runner: Complete Runner object with agent, environment_manager, context_manager
+            runner: Complete Runner object with agent, environment_manager,
+                context_manager
             endpoint_path: API endpoint path
             stream: Enable streaming responses
             protocol_adapters: protocol adapters
-            requirements: PyPI dependencies (following _agent_engines.py pattern)
+            requirements: PyPI dependencies (following _agent_engines.py
+                pattern)
             extra_packages: User code directory/file path
             base_image: Docker base image
             port: Container port
@@ -136,7 +136,8 @@ class KubernetesDeployer(DeployManager):
             # Handle backward compatibility
             if runner is None and func is not None:
                 logger.warning(
-                    "Using deprecated func parameter. Please use runner parameter instead.",
+                    "Using deprecated func parameter. "
+                    "Please use runner parameter instead.",
                 )
 
                 # For backward compatibility, create a minimal wrapper
@@ -166,7 +167,7 @@ class KubernetesDeployer(DeployManager):
                 built_image_name = self.image_builder.build_runner_image(
                     runner=actual_func,
                     requirements=actual_requirements,
-                    extra_packages=extra_packages,
+                    extra_packages=extra_packages or [],
                     base_image=base_image,
                     stream=stream,
                     endpoint_path=endpoint_path,
@@ -230,7 +231,7 @@ class KubernetesDeployer(DeployManager):
             logger.info(f"Deployment {deploy_id} successful: {url}")
 
             self._deployed_resources[deploy_id] = {
-                f"resource_name": resource_name,
+                "resource_name": resource_name,
                 "service_name": _id,
                 "image": built_image_name,
                 "created_at": time.time(),
@@ -254,7 +255,7 @@ class KubernetesDeployer(DeployManager):
                 "deploy_id": deploy_id,
                 "url": url,
                 "resource_name": resource_name,
-                "replicas": replicas,
+                "replicas": str(replicas),
             }
 
         except Exception as e:

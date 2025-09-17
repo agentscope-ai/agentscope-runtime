@@ -3,17 +3,17 @@
 import asyncio
 import os
 import sys
-from agentscope_runtime.engine.runner import Runner
+
 from agentscope_runtime.engine.deployers.kubernetes_deployer import (
     KubernetesDeployer,
     RegistryConfig,
     K8sConfig,
 )
+from agentscope_runtime.engine.runner import Runner
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-# 从simple_agent.py导入agent
-from agent_run import llm_agent
+from agent_run import llm_agent  # noqa: E402
 
 
 async def deploy_agent_to_k8s():
@@ -21,14 +21,18 @@ async def deploy_agent_to_k8s():
 
     # 1. 配置Registry
     registry_config = RegistryConfig(
-        registry_url="crpi-p44cuw4wgxu8xn0b.cn-hangzhou.personal.cr.aliyuncs.com",
+        registry_url=(
+            "crpi-p44cuw4wgxu8xn0b.cn-hangzhou.personal.cr.aliyuncs.com"
+        ),
         namespace="agentscope-runtime",
     )
 
     # 3. 配置K8s连接
     k8s_config = K8sConfig(
         k8s_namespace="agentscope-runtime",
-        kubeconfig_path="/Users/zhicheng/repo/agentscope-runtime/logs/kubeconfig.yaml",
+        kubeconfig_path=(
+            "/Users/zhicheng/repo/agentscope-runtime/logs/kubeconfig.yaml"
+        ),
     )
 
     port = 8080
@@ -202,11 +206,12 @@ async def main():
         """,
         )
 
-        print(f"\n📝 或者使用kubectl查看:")
-        print(f"kubectl get pods -n agentscope-runtime")
-        print(f"kubectl get svc -n agentscope-runtime")
+        print("\n📝 或者使用kubectl查看:")
+        print("kubectl get pods -n agentscope-runtime")
+        print("kubectl get svc -n agentscope-runtime")
         print(
-            f"kubectl logs -l app={result['resource_name']} -n agentscope-runtime",
+            f"kubectl logs -l app={result['resource_name']} "
+            "-n agentscope-runtime",
         )
 
         # 等待用户确认后清理

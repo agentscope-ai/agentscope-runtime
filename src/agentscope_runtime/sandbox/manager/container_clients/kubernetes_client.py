@@ -868,7 +868,8 @@ class KubernetesClient(BaseClient):
             return True, service_name
         except Exception as e:
             logger.error(
-                f"Failed to create LoadBalancer service for deployment {deployment_name}: "
+                f"Failed to create LoadBalancer service for deployment "
+                f"{deployment_name}: "
                 f"{e}, {traceback.format_exc()}",
             )
             return False, None
@@ -883,7 +884,7 @@ class KubernetesClient(BaseClient):
         runtime_config=None,
         replicas=1,
         create_service=True,
-    ) -> Tuple[str, str, str]:
+    ) -> Tuple[str, str, str] | Tuple[None, None, None]:
         """
         Create a new Kubernetes Deployment with LoadBalancer service.
 
@@ -980,10 +981,15 @@ class KubernetesClient(BaseClient):
                 logger.warning(f"Deployment '{name}' may not be fully ready")
 
             logger.debug(
-                f"Deployment '{name}' created successfully with service: {service_info}",
+                f"Deployment '{name}' created successfully with service: "
+                f"{service_info}",
             )
 
-            return name, service_info["ports"], load_balancer_ip
+            return (
+                name,
+                str(service_info["ports"]) if service_info else "",
+                load_balancer_ip or "",
+            )
 
         except Exception as e:
             logger.error(

@@ -3,10 +3,7 @@ import json
 import logging
 import os
 import subprocess
-import tempfile
-from dataclasses import dataclass, field
-from typing import Optional, Dict, List, Tuple
-from pathlib import Path
+from typing import Optional, Dict
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -89,9 +86,11 @@ class DockerImageBuilder:
             build_context: Path to build context directory
             image_name: Name for the Docker image
             image_tag: Tag for the Docker image
-            dockerfile_path: Optional path to Dockerfile (defaults to Dockerfile in context)
+            dockerfile_path: Optional path to Dockerfile
+                (defaults to Dockerfile in context)
             config: Build configuration
-            source_updated: Optional flag to determine if source image should be updated.
+            source_updated: Optional flag to determine if source image
+                should be updated.
 
         Returns:
             str: Full image name with tag
@@ -212,7 +211,8 @@ class DockerImageBuilder:
 
         Args:
             image_name: Full image name to push
-            registry_config: Optional registry config (uses instance config if None)
+            registry_config: Optional registry config
+                (uses instance config if None)
             quiet: Whether to suppress output
 
         Returns:

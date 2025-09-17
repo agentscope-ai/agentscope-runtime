@@ -25,26 +25,6 @@ USER_ID = "user_1"
 SESSION_ID = "session_001"  # Using a fixed ID for simplicity
 
 
-"""
-curl http://localhost:8090/process \
--X POST -H "Content-Type: application/json" \
--d '{
-        "model": "qwen-max",
-        "input": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "杭州在哪里？"
-                    }
-                ]
-            }
-        ]
-    }'
-"""
-
-
 async def prepare_context():
     session_history_service = InMemorySessionHistoryService()
     await session_history_service.create_session(
@@ -101,9 +81,36 @@ async def deploy_agent(runner):
         stream=True,  # Enable streaming responses
     )
     print(f"🚀智能体部署在: {deploy_result}")
-    print(f"🌐服务URL: {deploy_manager.service_url}")
-    print(f"💚 健康检查: {deploy_manager.service_url}/health")
+    print(f"🌐服务URL: {deploy_result['url']}")
+    print(f"💚 健康检查: {deploy_result['url']}/health")
+    print(
+        f"""
+    🎯 服务已部署完成，可以使用以下命令测试:
 
+    # 健康检查
+    curl {deploy_result['url']}/health
+
+    # 流式请求
+    curl -X POST {deploy_result['url']}/process \\
+      -H "Content-Type: application/json" \\
+      -H "Accept: text/event-stream" \\
+      --no-buffer \\
+      -d '{{
+            "input": [
+            {{
+            "role": "user",
+              "content": [
+                {{
+                  "type": "text",
+                  "text": "Hello, how are you?"
+                }}
+              ]
+            }}
+          ],
+          "session_id": "123"
+        }}'
+    """,
+    )
     return deploy_manager
 
 

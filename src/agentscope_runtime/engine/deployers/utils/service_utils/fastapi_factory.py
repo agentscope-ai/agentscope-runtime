@@ -104,7 +104,8 @@ class FastAPIAppFactory:
             mode,
         )
 
-        # Note: protocol_adapters will be added in _handle_startup after runner is available
+        # Note: protocol_adapters will be added in _handle_startup
+        # after runner is available
 
         return app
 
@@ -440,7 +441,10 @@ class FastAPIAppFactory:
         try:
             runner = FastAPIAppFactory._get_runner_instance(app)
             if not runner:
-                yield f"data: {json.dumps({'error': 'Runner not initialized'})}\n\n"
+                yield (
+                    f"data: {json.dumps({'error': 'Runner not initialized'})}"
+                    f"\n\n"
+                )
                 return
 
             if app.state.custom_func:
@@ -459,8 +463,6 @@ class FastAPIAppFactory:
                         yield f"data: {chunk.json()}\n\n"
                     else:
                         yield f"data: {json.dumps({'text': str(chunk)})}\n\n"
-
-            yield f"data: [DONE]\n\n"
 
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"

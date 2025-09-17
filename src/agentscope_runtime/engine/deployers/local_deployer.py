@@ -10,8 +10,8 @@ from typing import Callable, Optional, Type, Any, Dict
 
 import uvicorn
 
-from .base import DeployManager
 from .adapter.protocol_adapter import ProtocolAdapter
+from .base import DeployManager
 from .utils.deployment_modes import DeploymentMode
 from .utils.package_project_utils import package_project, PackageConfig
 from .utils.service_utils import (
@@ -131,7 +131,8 @@ class LocalDeployManager(DeployManager):
                 )
             else:
                 raise ValueError(
-                    f"Unsupported deployment mode for LocalDeployManager: {mode}",
+                    f"Unsupported deployment mode for LocalDeployManager: "
+                    f"{mode}",
                 )
 
         except Exception as e:

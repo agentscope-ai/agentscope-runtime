@@ -152,7 +152,7 @@ class RunnerImageFactory:
         try:
             # Validation
             self._validate_runner(runner)
-            validated_requirements = self._validate_requirements(
+            self._validate_requirements(
                 config.requirements,
             )
 
@@ -184,7 +184,8 @@ class RunnerImageFactory:
                     protocol_adapters=config.protocol_adapters,
                 ),
                 dockerfile_path=dockerfile_path,
-                # caller_depth is no longer needed due to automatic stack search
+                # caller_depth is no longer needed due to automatic
+                # stack search
             )
             logger.info(f"Project packaged: {project_dir}")
 

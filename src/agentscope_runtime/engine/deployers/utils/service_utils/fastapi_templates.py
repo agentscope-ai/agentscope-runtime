@@ -127,23 +127,23 @@ class FastAPITemplateManager:
 
         if "memory" in services_config:
             memory_config = services_config["memory"]
-            lines.append(f"memory=ServiceConfig(")
+            lines.append("memory=ServiceConfig(")
             lines.append(
-                f"    provider='{memory_config.get('provider', 'in_memory')}',",
+                f"    provider='{memory_config.get('provider', 'in_memory')}',",  # noqa E501
             )
             if memory_config.get("config"):
                 lines.append(f"    config={memory_config['config']}")
-            lines.append(f"),")
+            lines.append("),")
 
         if "session_history" in services_config:
             session_config = services_config["session_history"]
-            lines.append(f"session_history=ServiceConfig(")
+            lines.append("session_history=ServiceConfig(")
             lines.append(
-                f"    provider='{session_config.get('provider', 'in_memory')}',",
+                f"    provider='{session_config.get('provider', 'in_memory')}',",  # noqa E501
             )
             if session_config.get("config"):
                 lines.append(f"    config={session_config['config']}")
-            lines.append(f"),")
+            lines.append("),")
 
         return "\n".join(lines)
 
@@ -178,7 +178,8 @@ class FastAPITemplateManager:
             Dictionary with 'missing' and 'extra' keys containing lists
         """
         # This is a basic implementation
-        # In practice, you might want to parse the template to find required variables
+        # In practice, you might want to parse the template to find
+        # required variables
         required_vars = {
             "standalone_main.py.j2": ["agent_name", "endpoint_path"],
         }
