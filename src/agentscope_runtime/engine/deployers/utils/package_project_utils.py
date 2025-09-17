@@ -27,6 +27,7 @@ class PackageConfig(BaseModel):
     endpoint_path: Optional[str] = "/process"
     deployment_mode: Optional[str] = "standalone"  # New: deployment mode
     services_config: Optional[dict] = None  # New: services configuration
+    protocol_adapters: Optional[List[Any]] = None  # New: protocol adapters
 
 
 def _find_agent_source_file(
@@ -490,8 +491,8 @@ def package_project(
         temp_dir = config.output_dir
         # Check if directory exists and has content
         if os.path.exists(temp_dir) and os.listdir(temp_dir):
-            # Directory exists and has content, create a temporary directory first
-            # to generate new content for comparison
+            # Directory exists and has content, create a temporary directory
+            # first to generate new content for comparison
             original_temp_dir = temp_dir
             temp_dir = tempfile.mkdtemp(prefix="agentscope_package_new_")
             # copy docker file to this place
@@ -624,6 +625,32 @@ def package_project(
         # Use template manager for better template handling
         template_manager = FastAPITemplateManager()
 
+        # Convert protocol_adapters to string representation for template
+        protocol_adapters_str = None
+        if config.protocol_adapters:
+            # For standalone deployment, we need to generate code that creates the adapters
+            # This is a simplified approach - in practice, you might want more sophisticated serialization
+            adapter_imports = []
+            adapter_instances = []
+            for i, adapter in enumerate(config.protocol_adapters):
+                adapter_class = adapter.__class__
+                adapter_module = adapter_class.__module__
+                adapter_name = adapter_class.__name__
+
+                # Add import
+                adapter_imports.append(
+                    f"from {adapter_module} import {adapter_name}",
+                )
+
+                # Add instance creation (simplified - doesn't handle complex constructor args)
+                adapter_instances.append(f"{adapter_name}(agent=agent)")
+
+            # Create the protocol_adapters array string
+            if adapter_instances:
+                imports_str = "\n".join(adapter_imports)
+                instances_str = "[" + ", ".join(adapter_instances) + "]"
+                protocol_adapters_str = f"# Protocol adapter imports\n{imports_str}\n\n# Protocol adapters\nprotocol_adapters = {instances_str}"
+
         # Render template - use template file by default, or user-provided string
         if template is None:
             # Use standalone template file
@@ -631,6 +658,7 @@ def package_project(
                 agent_name=agent_name,
                 endpoint_path=config.endpoint_path,
                 deployment_mode=config.deployment_mode or "standalone",
+                protocol_adapters=protocol_adapters_str,
             )
         else:
             # Use user-provided template string
@@ -639,6 +667,7 @@ def package_project(
                 agent_name=agent_name,
                 endpoint_path=config.endpoint_path,
                 deployment_mode=config.deployment_mode or "standalone",
+                protocol_adapters=protocol_adapters_str,
             )
 
         # Write main.py

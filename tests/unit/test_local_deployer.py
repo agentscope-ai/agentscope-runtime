@@ -49,7 +49,7 @@ class TestLocalDeployManager:
         assert deploy_manager.port == 8090
         assert deploy_manager._server is None
         assert deploy_manager._server_task is None
-        assert deploy_manager._is_running is False
+        assert deploy_manager.is_running is False
         assert deploy_manager._app is None
         assert deploy_manager._startup_timeout == 30
         assert deploy_manager._shutdown_timeout == 10
@@ -169,7 +169,7 @@ class TestLocalDeployManager:
             )
 
             assert result["url"] == "http://localhost:8090"
-            assert deploy_manager._is_running is True
+            assert deploy_manager.is_running is True
             assert deploy_manager.func is test_func
             assert deploy_manager.endpoint_path == "/test"
             assert deploy_manager.response_type == "json"
@@ -194,7 +194,7 @@ class TestLocalDeployManager:
 
         finally:
             # Clean up
-            if deploy_manager._is_running:
+            if deploy_manager.is_running:
                 await deploy_manager.stop()
 
     @pytest.mark.asyncio
@@ -203,7 +203,7 @@ class TestLocalDeployManager:
         try:
             # First deployment
             await deploy_manager.deploy(func=lambda: None)
-            assert deploy_manager._is_running is True
+            assert deploy_manager.is_running is True
 
             # Try to deploy again
             with pytest.raises(
@@ -214,7 +214,7 @@ class TestLocalDeployManager:
 
         finally:
             # Clean up
-            if deploy_manager._is_running:
+            if deploy_manager.is_running:
                 await deploy_manager.stop()
 
     @pytest.mark.asyncio
@@ -238,12 +238,12 @@ class TestLocalDeployManager:
         """Test successful service stop."""
         # First deploy the service
         await deploy_manager.deploy(func=lambda: None)
-        assert deploy_manager._is_running is True
+        assert deploy_manager.is_running is True
 
         # Stop the service
         await deploy_manager.stop()
 
-        assert deploy_manager._is_running is False
+        assert deploy_manager.is_running is False
         assert deploy_manager._server is None
         assert deploy_manager._server_task is None
         assert deploy_manager._app is None
@@ -251,7 +251,7 @@ class TestLocalDeployManager:
     @pytest.mark.asyncio
     async def test_stop_not_running(self, deploy_manager):
         """Test stopping when service is not running."""
-        deploy_manager._is_running = False
+        deploy_manager.is_running = False
 
         # Should not raise an exception
         await deploy_manager.stop()
@@ -260,7 +260,7 @@ class TestLocalDeployManager:
         """Test is_running property."""
         assert deploy_manager.is_running is False
 
-        deploy_manager._is_running = True
+        deploy_manager.is_running = True
         assert deploy_manager.is_running is True
 
     def test_service_url_property(self, deploy_manager):
@@ -269,7 +269,7 @@ class TestLocalDeployManager:
         assert deploy_manager.service_url is None
 
         # Running with port
-        deploy_manager._is_running = True
+        deploy_manager.is_running = True
         deploy_manager.port = 8000
         assert deploy_manager.service_url == "http://localhost:8000"
 

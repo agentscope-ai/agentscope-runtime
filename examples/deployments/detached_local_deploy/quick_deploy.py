@@ -19,12 +19,16 @@ from agentscope_runtime.engine.deployers.utils.service_utils import (
 )
 from agentscope_runtime.engine.runner import Runner
 from agent_run import llm_agent
+from agentscope_runtime.engine.deployers.adapter.a2a import (
+    A2AFastAPIDefaultAdapter,
+)
 
 
 async def quick_deploy():
     """Quick deployment for testing purposes."""
 
     print("🚀 快速部署测试...")
+    a2a_protocol = A2AFastAPIDefaultAdapter(agent=llm_agent)
 
     # Create deployment manager
     deploy_manager = LocalDeployManager(
@@ -42,6 +46,7 @@ async def quick_deploy():
         stream=True,
         mode=DeploymentMode.DETACHED_PROCESS,
         services_config=ServicesConfig(),  # Default in-memory
+        protocol_adapters=[a2a_protocol],
     )
 
     print(f"✅ 部署成功: {deployment_info['url']}")
@@ -70,12 +75,16 @@ curl -X POST {deployment_info['url']}/process \\
           }}
           ]
 
+
+
       
       }
       ],
       "session_id": "123"
 
-    
+
+
+        
         }'
 
 # 停止服务

@@ -2,7 +2,7 @@
 """FastAPI templates management and rendering."""
 
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from jinja2 import Template, Environment, FileSystemLoader
 from ..deployment_modes import DeploymentMode
 
@@ -26,6 +26,7 @@ class FastAPITemplateManager:
         agent_name: str,
         endpoint_path: str = "/process",
         deployment_mode: str = DeploymentMode.STANDALONE,
+        protocol_adapters: Optional[str] = None,
         **kwargs,
     ) -> str:
         """Render the standalone deployment template.
@@ -34,6 +35,7 @@ class FastAPITemplateManager:
             agent_name: Name of the agent variable
             endpoint_path: API endpoint path
             deployment_mode: Deployment mode (standalone or detached_process)
+            protocol_adapters: Protocol adapters code string
             **kwargs: Additional template variables
 
         Returns:
@@ -44,6 +46,7 @@ class FastAPITemplateManager:
             agent_name=agent_name,
             endpoint_path=endpoint_path,
             deployment_mode=deployment_mode,
+            protocol_adapters=protocol_adapters,
             **kwargs,
         )
 
@@ -57,6 +60,7 @@ class FastAPITemplateManager:
         runner_code: str = "",
         func_code: str = "",
         services_config: str = "",
+        protocol_adapters: Optional[str] = None,
         **kwargs,
     ) -> str:
         """Render the detached process script template.
@@ -70,6 +74,7 @@ class FastAPITemplateManager:
             runner_code: Code to setup runner
             func_code: Code to setup custom function
             services_config: Services configuration code
+            protocol_adapters: Protocol adapters code string
             **kwargs: Additional template variables
 
         Returns:
@@ -85,6 +90,7 @@ class FastAPITemplateManager:
             runner_code=runner_code,
             func_code=func_code,
             services_config=services_config,
+            protocol_adapters=protocol_adapters,
             **kwargs,
         )
 

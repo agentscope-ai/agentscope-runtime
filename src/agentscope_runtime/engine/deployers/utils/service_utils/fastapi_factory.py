@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 from ..deployment_modes import DeploymentMode
 from .service_config import ServicesConfig, DEFAULT_SERVICES_CONFIG
 from .service_factory import ServiceFactory
+from ...adapter.protocol_adapter import ProtocolAdapter
 
 
 class FastAPIAppFactory:
@@ -29,6 +30,7 @@ class FastAPIAppFactory:
         after_finish: Optional[Callable] = None,
         mode: DeploymentMode = DeploymentMode.DAEMON_THREAD,
         services_config: Optional[ServicesConfig] = None,
+        protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         **kwargs: Any,
     ) -> FastAPI:
         """Create a FastAPI application with unified architecture.
@@ -44,6 +46,7 @@ class FastAPIAppFactory:
             after_finish: Callback function called after server finishes
             mode: Deployment mode
             services_config: Services configuration
+            protocol_adapters: Protocol adapters
             **kwargs: Additional keyword arguments
 
         Returns:
@@ -87,6 +90,7 @@ class FastAPIAppFactory:
         app.state.custom_func = func
         app.state.external_runner = runner
         app.state.endpoint_path = endpoint_path
+        app.state.protocol_adapters = protocol_adapters  # Store for later use
 
         # Add middleware
         FastAPIAppFactory._add_middleware(app, mode)
@@ -99,6 +103,8 @@ class FastAPIAppFactory:
             stream,
             mode,
         )
+
+        # Note: protocol_adapters will be added in _handle_startup after runner is available
 
         return app
 
@@ -134,6 +140,30 @@ class FastAPIAppFactory:
                 await before_start(app, **kwargs)
             else:
                 before_start(app, **kwargs)
+
+        # Add protocol adapter endpoints after runner is available
+        if (
+            hasattr(app.state, "protocol_adapters")
+            and app.state.protocol_adapters
+        ):
+            # Determine the effective function to use
+            if hasattr(app.state, "custom_func") and app.state.custom_func:
+                effective_func = app.state.custom_func
+            elif hasattr(app.state, "runner") and app.state.runner:
+                # Use stream_query if streaming is enabled, otherwise query
+                if (
+                    hasattr(app.state, "stream_enabled")
+                    and app.state.stream_enabled
+                ):
+                    effective_func = app.state.runner.stream_query
+                else:
+                    effective_func = app.state.runner.query
+            else:
+                effective_func = None
+
+            if effective_func:
+                for protocol_adapter in app.state.protocol_adapters:
+                    protocol_adapter.add_endpoint(app=app, func=effective_func)
 
     @staticmethod
     async def _handle_shutdown(

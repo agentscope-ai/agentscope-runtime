@@ -34,6 +34,7 @@ class RunnerImageConfig(BaseModel):
     extra_packages: Optional[List[str]] = None
     build_context_dir: str = "/tmp/k8s_build"
     endpoint_path: str = "/process"
+    protocol_adapters: Optional[List] = None  # New: protocol adapters
 
     # Docker configuration
     base_image: str = "python:3.10-slim-bookworm"
@@ -79,7 +80,7 @@ class RunnerImageFactory:
         if config.image_name:
             return config.image_name
         hash_content = (
-            f"{str(runner._agent.name)}"
+            f"{str(runner.agent.name)}"
             f"{str(config.requirements)}"
             f"{str(config.extra_files)}"
             f"{config.base_image}"
@@ -92,7 +93,7 @@ class RunnerImageFactory:
     @staticmethod
     def _validate_runner(runner: Runner):
         """Validate runner object"""
-        if not hasattr(runner, "_agent") or runner._agent is None:
+        if not hasattr(runner, "_agent") or runner.agent is None:
             raise ValueError("Runner must have a valid agent")
 
         # Log warnings for missing components
@@ -174,12 +175,13 @@ class RunnerImageFactory:
             # Package the project
             logger.info("Packaging Runner project...")
             project_dir, is_updated = package_project(
-                agent=runner._agent,
+                agent=runner.agent,
                 config=PackageConfig(
                     requirements=config.requirements,
                     extra_packages=config.extra_packages,
                     output_dir=config.build_context_dir,
                     endpoint_path=config.endpoint_path,
+                    protocol_adapters=config.protocol_adapters,
                 ),
                 dockerfile_path=dockerfile_path,
                 # caller_depth is no longer needed due to automatic stack search
@@ -238,6 +240,7 @@ class RunnerImageFactory:
         image_tag: Optional[str] = None,
         registry_config: Optional[RegistryConfig] = None,
         push_to_registry: bool = False,
+        protocol_adapters: Optional[List] = None,  # New: protocol adapters
         **kwargs,
     ) -> str:
         """
@@ -252,6 +255,7 @@ class RunnerImageFactory:
             image_tag: Optional image tag
             registry_config: Optional registry config
             push_to_registry: Whether to push to registry
+            protocol_adapters: Protocol adapters
             **kwargs: Additional configuration options
 
         Returns:
@@ -265,6 +269,7 @@ class RunnerImageFactory:
             image_tag=image_tag,
             registry_config=registry_config,
             push_to_registry=push_to_registry,
+            protocol_adapters=protocol_adapters,
             **kwargs,
         )
 

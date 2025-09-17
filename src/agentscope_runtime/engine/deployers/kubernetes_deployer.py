@@ -176,6 +176,7 @@ class KubernetesDeployer(DeployManager):
                     image_tag=image_tag,
                     push_to_registry=push_to_registry,
                     port=port,
+                    protocol_adapters=protocol_adapters,
                     **kwargs,
                 )
                 if not built_image_name:

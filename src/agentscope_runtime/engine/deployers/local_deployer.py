@@ -11,6 +11,7 @@ from typing import Callable, Optional, Type, Any, Dict
 import uvicorn
 
 from .base import DeployManager
+from .adapter.protocol_adapter import ProtocolAdapter
 from .utils.deployment_modes import DeploymentMode
 from .utils.package_project_utils import package_project, PackageConfig
 from .utils.service_utils import (
@@ -46,7 +47,7 @@ class LocalDeployManager(DeployManager):
         self._logger = logger or logging.getLogger(__name__)
 
         # State management
-        self._is_running = False
+        self.is_running = False
 
         # Daemon thread mode attributes
         self._server: Optional[uvicorn.Server] = None
@@ -74,6 +75,7 @@ class LocalDeployManager(DeployManager):
         after_finish: Optional[Callable] = None,
         mode: DeploymentMode = DeploymentMode.DAEMON_THREAD,
         services_config: Optional[ServicesConfig] = None,
+        protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         **kwargs: Any,
     ) -> Dict[str, str]:
         """Deploy using unified FastAPI architecture.
@@ -88,6 +90,7 @@ class LocalDeployManager(DeployManager):
             after_finish: Callback function called after server finishes
             mode: Deployment mode
             services_config: Services configuration
+            protocol_adapters: Protocol adapters
             **kwargs: Additional keyword arguments
 
         Returns:
@@ -96,7 +99,7 @@ class LocalDeployManager(DeployManager):
         Raises:
             RuntimeError: If deployment fails
         """
-        if self._is_running:
+        if self.is_running:
             raise RuntimeError("Service is already running")
 
         try:
@@ -110,6 +113,7 @@ class LocalDeployManager(DeployManager):
                     before_start=before_start,
                     after_finish=after_finish,
                     services_config=services_config,
+                    protocol_adapters=protocol_adapters,
                     **kwargs,
                 )
             elif mode == DeploymentMode.DETACHED_PROCESS:
@@ -122,6 +126,7 @@ class LocalDeployManager(DeployManager):
                     before_start=before_start,
                     after_finish=after_finish,
                     services_config=services_config,
+                    protocol_adapters=protocol_adapters,
                     **kwargs,
                 )
             else:
@@ -136,6 +141,7 @@ class LocalDeployManager(DeployManager):
     async def _deploy_daemon_thread(
         self,
         runner: Optional[Any] = None,
+        protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         **kwargs,
     ) -> Dict[str, str]:
         """Deploy in daemon thread mode."""
@@ -145,6 +151,7 @@ class LocalDeployManager(DeployManager):
         app = FastAPIAppFactory.create_app(
             runner=runner,
             mode=DeploymentMode.DAEMON_THREAD,
+            protocol_adapters=protocol_adapters,
             **kwargs,
         )
 
@@ -168,7 +175,7 @@ class LocalDeployManager(DeployManager):
         # Wait for server to start
         await self._wait_for_server_ready()
 
-        self._is_running = True
+        self.is_running = True
         self.deploy_id = f"daemon_{self.host}_{self.port}"
 
         self._logger.info(
@@ -183,6 +190,7 @@ class LocalDeployManager(DeployManager):
     async def _deploy_detached_process(
         self,
         runner: Optional[Any] = None,
+        protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         **kwargs,
     ) -> Dict[str, str]:
         """Deploy in detached process mode."""
@@ -202,6 +210,7 @@ class LocalDeployManager(DeployManager):
         project_dir = await self._create_detached_project(
             agent=agent,
             runner=runner,
+            protocol_adapters=protocol_adapters,
             **kwargs,
         )
 
@@ -230,7 +239,7 @@ class LocalDeployManager(DeployManager):
             if not service_ready:
                 raise RuntimeError("Service did not start within timeout")
 
-            self._is_running = True
+            self.is_running = True
             self.deploy_id = f"detached_{pid}"
 
             self._logger.info(
@@ -261,6 +270,7 @@ class LocalDeployManager(DeployManager):
         response_type: str = "sse",
         stream: bool = True,
         services_config: Optional[ServicesConfig] = None,
+        protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         **kwargs,
     ) -> str:
         """Create detached project using package_project method."""
@@ -269,6 +279,7 @@ class LocalDeployManager(DeployManager):
         package_config = PackageConfig(
             endpoint_path=endpoint_path,
             deployment_mode="detached_process",
+            protocol_adapters=protocol_adapters,
             services_config=services_config.model_dump()
             if services_config
             else None,
@@ -307,7 +318,7 @@ class LocalDeployManager(DeployManager):
 
     async def stop(self) -> None:
         """Stop the FastAPI service (unified method for all modes)."""
-        if not self._is_running:
+        if not self.is_running:
             self._logger.warning("Service is not running")
             return
 
@@ -340,7 +351,7 @@ class LocalDeployManager(DeployManager):
                 )
 
         await self._cleanup_daemon_thread()
-        self._is_running = False
+        self.is_running = False
         self._logger.info("FastAPI daemon thread service stopped successfully")
 
     async def _stop_detached_process(self):
@@ -353,7 +364,7 @@ class LocalDeployManager(DeployManager):
             )
 
         await self._cleanup_detached_process()
-        self._is_running = False
+        self.is_running = False
         self._logger.info(
             "FastAPI detached process service stopped successfully",
         )
@@ -398,7 +409,7 @@ class LocalDeployManager(DeployManager):
 
     def is_service_running(self) -> bool:
         """Check if service is running."""
-        if not self._is_running:
+        if not self.is_running:
             return False
 
         if self._detached_process_pid:
@@ -422,13 +433,13 @@ class LocalDeployManager(DeployManager):
             else "daemon_thread",
             "pid": self._detached_process_pid,
             "url": f"http://{self.host}:{self.port}"
-            if self._is_running
+            if self.is_running
             else None,
         }
 
     @property
     def service_url(self) -> Optional[str]:
         """Get the current service URL if running."""
-        if self._is_running and self.port:
+        if self.is_running and self.port:
             return f"http://{self.host}:{self.port}"
         return None
