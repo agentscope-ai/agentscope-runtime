@@ -675,11 +675,13 @@
     <span class="n">memory_service</span><span class="p">:</span> <span class="n">MemoryService</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">session_history_service</span><span class="p">:</span> <span class="n">SessionHistoryService</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">rag_service</span><span class="p">:</span> <span class="n">RAGService</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">context_composer_cls</span><span class="o">=</span><span class="n">ContextComposer</span><span class="p">,</span>
 <span class="p">):</span>
     <span class="n">manager</span> <span class="o">=</span> <span class="n">ContextManager</span><span class="p">(</span>
         <span class="n">memory_service</span><span class="o">=</span><span class="n">memory_service</span><span class="p">,</span>
         <span class="n">session_history_service</span><span class="o">=</span><span class="n">session_history_service</span><span class="p">,</span>
         <span class="n">rag_service</span><span class="o">=</span><span class="n">rag_service</span><span class="p">,</span>
+        <span class="n">context_composer_cls</span><span class="o">=</span><span class="n">context_composer_cls</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="k">async</span> <span class="k">with</span> <span class="n">manager</span><span class="p">:</span>
