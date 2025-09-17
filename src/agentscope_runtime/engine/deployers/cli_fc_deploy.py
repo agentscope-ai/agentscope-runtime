@@ -10,8 +10,8 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="One-click deploy your service to Alibaba Bailian Function Compute (FC)",
     )
-    parser.add_argument("--dir", required=True, help="Path to your project directory")
-    parser.add_argument("--cmd", required=True, help="Command to start your service (e.g., 'python app.py')")
+    parser.add_argument("--dir", required=False, help="Path to your project directory")
+    parser.add_argument("--cmd", required=False, help="Command to start your service (e.g., 'python app.py')")
     parser.add_argument("--deploy-name", dest="deploy_name", default=None, help="Deploy name (agent_name). Random if omitted")
     parser.add_argument("--skip-upload", action="store_true", help="Only build wheel, do not upload/deploy")
     parser.add_argument("--telemetry", choices=["enable", "disable"], default="enable", help="Enable or disable telemetry (default: enable)")

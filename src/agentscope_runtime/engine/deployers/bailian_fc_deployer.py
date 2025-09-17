@@ -119,7 +119,7 @@ def _oss_get_client(oss_cfg: OSSConfig):
     return oss.Client(cfg)
 
 
-def _oss_create_bucket_if_not_exists(client, bucket_name: str) -> None:
+async def _oss_create_bucket_if_not_exists(client, bucket_name: str) -> None:
     try:
         exists = client.is_bucket_exist(bucket=bucket_name)
     except Exception:
@@ -158,7 +158,7 @@ def _create_bucket_name(prefix: str, base_name: str) -> str:
     return name[:63]
 
 
-def _oss_put_and_presign(client, bucket_name: str, object_key: str, file_bytes: bytes) -> str:
+async def _oss_put_and_presign(client, bucket_name: str, object_key: str, file_bytes: bytes) -> str:
     import datetime as _dt
     put_req = PutObjectRequest(bucket=bucket_name, key=object_key, body=file_bytes)
     client.put_object(put_req)
@@ -169,7 +169,7 @@ def _oss_put_and_presign(client, bucket_name: str, object_key: str, file_bytes: 
     return pre.url
 
 
-def _bailian_deploy(
+async def _bailian_deploy(
     cfg: BailianConfig,
     file_url: str,
     filename: str,
@@ -213,7 +213,7 @@ class BailianFCDeployer(DeployManager):
         # Defer default build_root selection to deploy() to avoid using home by default
         self.build_root = Path(build_root) if build_root else None
 
-    def _generate_wrapper_and_build_wheel(
+    async def _generate_wrapper_and_build_wheel(
             self,
             project_dir: Union[str, Path],
             cmd: str,
@@ -255,7 +255,7 @@ class BailianFCDeployer(DeployManager):
         wheel_path = build_wheel(wrapper_project_dir)
         return wheel_path, name
 
-    def _upload_and_deploy(
+    async def _upload_and_deploy(
         self,
         wheel_path: Path,
         name: str,
@@ -264,14 +264,14 @@ class BailianFCDeployer(DeployManager):
         logger.info("Uploading wheel to OSS and generating presigned URL")
         client = _oss_get_client(self.oss_config)
         bucket_name = "tmpbucket-for-full-code-deployment"
-        _oss_create_bucket_if_not_exists(client, bucket_name)
+        await _oss_create_bucket_if_not_exists(client, bucket_name)
         filename = wheel_path.name
         with wheel_path.open("rb") as f:
             file_bytes = f.read()
-        artifact_url = _oss_put_and_presign(client, bucket_name, filename, file_bytes)
+        artifact_url = await _oss_put_and_presign(client, bucket_name, filename, file_bytes)
 
         logger.info("Triggering Bailian HighCode deploy for %s", name)
-        _bailian_deploy(
+        await _bailian_deploy(
             cfg=self.bailian_config,
             file_url=artifact_url,
             filename=filename,
@@ -316,7 +316,7 @@ class BailianFCDeployer(DeployManager):
                 raise FileNotFoundError(f"External wheel file not found: {wheel_path}")
             name = deploy_name or default_deploy_name()
         else:
-            wheel_path, name = self._generate_wrapper_and_build_wheel(
+            wheel_path, name = await self._generate_wrapper_and_build_wheel(
                 project_dir=project_dir,
                 cmd=cmd,
                 deploy_name=deploy_name,
@@ -325,7 +325,7 @@ class BailianFCDeployer(DeployManager):
 
         artifact_url = ""
         if not skip_upload:
-            artifact_url = self._upload_and_deploy(wheel_path, name, telemetry_enabled)
+            artifact_url = await self._upload_and_deploy(wheel_path, name, telemetry_enabled)
 
         result: Dict[str, str] = {
             "deploy_id": self.deploy_id,
