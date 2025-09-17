@@ -243,7 +243,7 @@ class BailianFCDeployer(DeployManager):
         build_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info("Generating wrapper project for %s", name)
-        wrapper_project_dir, _ = generate_wrapper_project(
+        wrapper_project_dir, _ = await generate_wrapper_project(
             build_root=build_dir,
             user_project_dir=project_dir,
             start_cmd=cmd,
@@ -252,7 +252,7 @@ class BailianFCDeployer(DeployManager):
         )
 
         logger.info("Building wheel under %s", wrapper_project_dir)
-        wheel_path = build_wheel(wrapper_project_dir)
+        wheel_path = await build_wheel(wrapper_project_dir)
         return wheel_path, name
 
     async def _upload_and_deploy(
@@ -279,6 +279,7 @@ class BailianFCDeployer(DeployManager):
             telemetry_enabled=telemetry_enabled,
         )
         return artifact_url
+
     async def deploy(
         self,
         runner: Optional[Runner] = None,

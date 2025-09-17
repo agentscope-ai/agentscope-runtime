@@ -25,22 +25,22 @@ except Exception:  # pragma: no cover - fallback on older Pythons
     tomllib = None  # type: ignore
 
 
-def _read_text_file_lines(file_path: Path) -> List[str]:
+async def _read_text_file_lines(file_path: Path) -> List[str]:
     if not file_path.is_file():
         return []
     return [line.strip() for line in file_path.read_text(encoding="utf-8").splitlines()]
 
 
-def _parse_requirements_txt(req_path: Path) -> List[str]:
+async def _parse_requirements_txt(req_path: Path) -> List[str]:
     requirements: List[str] = []
-    for line in _read_text_file_lines(req_path):
+    for line in await _read_text_file_lines(req_path):
         if not line or line.startswith("#"):
             continue
         requirements.append(line)
     return requirements
 
 
-def _parse_pyproject_toml(pyproject_path: Path) -> List[str]:
+async def _parse_pyproject_toml(pyproject_path: Path) -> List[str]:
     deps: List[str] = []
     if not pyproject_path.is_file():
         return deps
@@ -95,12 +95,13 @@ def _parse_pyproject_toml(pyproject_path: Path) -> List[str]:
     return deps
 
 
-def _gather_user_dependencies(project_dir: Path) -> List[str]:
+async def _gather_user_dependencies(project_dir: Path) -> List[str]:
     pyproject = project_dir / "pyproject.toml"
     req_txt = project_dir / "requirements.txt"
     deps: List[str] = []
     if pyproject.is_file():
-        deps.extend(_parse_pyproject_toml(pyproject))
+        dep = await _parse_pyproject_toml(pyproject)
+        deps.extend(dep)
     if req_txt.is_file():
         # Merge requirements.txt too, avoiding duplicates
         existing = set(
@@ -112,7 +113,7 @@ def _gather_user_dependencies(project_dir: Path) -> List[str]:
             .lower()
             for d in deps
         )
-        for r in _parse_requirements_txt(req_txt):
+        for r in await _parse_requirements_txt(req_txt):
             name_key = (
                 r.split("[", 1)[0]
                 .split("=", 1)[0]
@@ -143,7 +144,7 @@ def _write_file(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def generate_wrapper_project(
+async def generate_wrapper_project(
     build_root: Path,
     user_project_dir: Path,
     start_cmd: str,
@@ -176,7 +177,7 @@ def generate_wrapper_project(
     shutil.copytree(user_project_dir, bundle_app_dir, dirs_exist_ok=True, ignore=ignore)
 
     # 2) Dependencies
-    user_deps = _gather_user_dependencies(user_project_dir)
+    user_deps = await _gather_user_dependencies(user_project_dir)
     wrapper_deps = [
         "pyyaml",
         "alibabacloud-oss-v2",
@@ -313,7 +314,7 @@ recursive-include deploy_starter/user_bundle *
     return wrapper_dir, wrapper_dir / "dist"
 
 
-def build_wheel(project_dir: Path) -> Path:
+async def build_wheel(project_dir: Path) -> Path:
     """
     Build a wheel inside an isolated virtual environment to avoid PEP 668
     issues. Returns the path to the built wheel.
