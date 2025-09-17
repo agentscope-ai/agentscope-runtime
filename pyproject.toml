@@ -77,3 +77,11 @@ langchain_rag=[
 memory-ext = [
     "reme-ai==0.1.8 ; python_full_version >= '3.12'",
 ]
+
+deployment = [
+    "alibabacloud-oss-v2",
+    "alibabacloud-bailian20231229",
+    "build",
+    "setuptools",
+    "wheel"
+]

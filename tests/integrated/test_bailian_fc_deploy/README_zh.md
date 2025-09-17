@@ -39,19 +39,19 @@ export BAILIAN_ENDPOINT=bailian-pre.cn-hangzhou.aliyuncs.com
 ```bash
 # 仅构建（不上传/不部署）
 runtime-fc-deploy \
-  --dir <YOUR_PROJECT_PATH> \
+  --dir <YOUR_PYTHON_PROJECT_DIR> \
   --cmd "<YOUR_RUN_CMD>" \
   --skip-upload
 
 # 一键部署到 FC（默认开启可观测）
 runtime-fc-deploy \
-  --dir <YOUR_PROJECT_PATH> \
+  --dir <YOUR_PYTHON_PROJECT_DIR> \
   --cmd "<YOUR_RUN_CMD>" \
   --telemetry enable
 
 # 显式关闭可观测
 runtime-fc-deploy \
-  --dir <YOUR_PROJECT_PATH> \
+  --dir <YOUR_PYTHON_PROJECT_DIR> \
   --cmd "<YOUR_RUN_CMD>" \
   --telemetry disable
 ```
@@ -76,7 +76,7 @@ from agentscope_runtime.engine.deployers.bailian_fc_deployer import BailianFCDep
 async def main():
     deployer = BailianFCDeployer()
     result = await deployer.deploy(
-        project_dir="./path/to/your/project",
+        project_dir="./path/to/your/python/project",
         cmd="python app.py",
         deploy_name=None,            # 可选，不传则自动生成
         skip_upload=False,           # True 表示只构建 wheel

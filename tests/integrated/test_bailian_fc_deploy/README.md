@@ -39,19 +39,19 @@ Once installed, you can run a short command anywhere to package and deploy your 
 ```bash
 # Build only (no upload/deploy)
 runtime-fc-deploy \
-  --dir <YOUR_PROJECT_PATH> \
+  --dir <YOUR_PYTHON_PROJECT_DIR> \
   --cmd "<YOUR_RUN_CMD>" \
   --skip-upload
 
 # One-click deploy to FC (default telemetry enabled)
 runtime-fc-deploy \
-  --dir <YOUR_PROJECT_PATH> \
+  --dir <YOUR_PYTHON_PROJECT_DIR> \
   --cmd "<YOUR_RUN_CMD>" \
   --telemetry enable
 
 # Disable telemetry explicitly
 runtime-fc-deploy \
-  --dir <YOUR_PROJECT_PATH> \
+  --dir <YOUR_PYTHON_PROJECT_DIR> \
   --cmd "<YOUR_RUN_CMD>" \
   --telemetry disable
 ```
