@@ -151,11 +151,13 @@ async def create_context_manager(
     memory_service: MemoryService = None,
     session_history_service: SessionHistoryService = None,
     rag_service: RAGService = None,
+    context_composer_cls=ContextComposer,
 ):
     manager = ContextManager(
         memory_service=memory_service,
         session_history_service=session_history_service,
         rag_service=rag_service,
+        context_composer_cls=context_composer_cls,
     )
 
     async with manager:
