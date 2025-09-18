@@ -4,9 +4,13 @@ from .local_deployer import LocalDeployManager
 from .kubernetes_deployer import (
     KubernetesDeployManager,
 )
+from .bailian_fc_deployer import (
+    BailianFCDeployer,
+)
 
 __all__ = [
     "DeployManager",
     "LocalDeployManager",
     "KubernetesDeployManager",
+    "BailianFCDeployer",
 ]
