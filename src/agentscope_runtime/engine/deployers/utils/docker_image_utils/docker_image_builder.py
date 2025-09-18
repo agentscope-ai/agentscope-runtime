@@ -4,7 +4,7 @@ import logging
 import os
 import subprocess
 from typing import Optional, Dict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 

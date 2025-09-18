@@ -4,7 +4,7 @@
 import os
 import shutil
 import tempfile
-from unittest.mock import patch, Mock
+# Mock classes will be provided by pytest-mock plugin
 
 import pytest
 from fastapi import FastAPI
@@ -33,9 +33,9 @@ class TestFastAPIAppFactory:
         assert app.state.stream_enabled is True
         assert app.state.response_type == "sse"
 
-    def test_create_app_with_runner(self):
+    def test_create_app_with_runner(self, mocker):
         """Test FastAPI app creation with runner."""
-        mock_runner = Mock()
+        mock_runner = mocker.Mock()
         app = FastAPIAppFactory.create_app(
             runner=mock_runner,
             endpoint_path="/api/process",
@@ -54,9 +54,9 @@ class TestFastAPIAppFactory:
         app = FastAPIAppFactory.create_app(services_config=services_config)
         assert app.state.services_config == services_config
 
-    def test_create_app_with_protocol_adapters(self):
+    def test_create_app_with_protocol_adapters(self, mocker):
         """Test FastAPI app creation with protocol adapters."""
-        protocol_adapters = [Mock(), Mock()]
+        protocol_adapters = [mocker.Mock(), mocker.Mock()]
         app = FastAPIAppFactory.create_app(protocol_adapters=protocol_adapters)
         assert app.state.protocol_adapters == protocol_adapters
 
@@ -102,10 +102,13 @@ class TestFastAPITemplateManager:
         manager = FastAPITemplateManager()
         assert isinstance(manager, FastAPITemplateManager)
 
-    @patch.object(FastAPITemplateManager, "render_standalone_template")
-    def test_render_standalone_template(self, mock_render):
+    def test_render_standalone_template(self, mocker):
+        mock_render = mocker.patch.object(FastAPITemplateManager, "render_standalone_template")
         """Test rendering standalone template."""
-        mock_render.return_value = "# Generated FastAPI main.py\nfrom fastapi import FastAPI\n\napp = FastAPI()\n"
+        mock_render.return_value = (
+            "# Generated FastAPI main.py\nfrom fastapi import FastAPI\n\n"
+            "app = FastAPI()\n"
+        )
 
         manager = FastAPITemplateManager()
         result = manager.render_standalone_template(
@@ -131,10 +134,13 @@ class TestFastAPITemplateManager:
 
         assert result == "Agent: my_agent, Endpoint: /api"
 
-    @patch.object(FastAPITemplateManager, "render_standalone_template")
-    def test_render_template_with_protocol_adapters(self, mock_render):
+    def test_render_template_with_protocol_adapters(self, mocker):
+        mock_render = mocker.patch.object(FastAPITemplateManager, "render_standalone_template")
         """Test rendering template with protocol adapters."""
-        mock_render.return_value = "# Generated code with adapters\nadapters = [HttpAdapter(), WsAdapter()]\ntest_agent = Agent()"
+        mock_render.return_value = (
+            "# Generated code with adapters\nadapters = [HttpAdapter(), "
+            "WsAdapter()]\ntest_agent = Agent()"
+        )
 
         manager = FastAPITemplateManager()
         protocol_adapters_str = "adapters = [HttpAdapter(), WsAdapter()]"
@@ -170,17 +176,17 @@ class TestProcessManager:
         custom_manager = ProcessManager(shutdown_timeout=60)
         assert custom_manager.shutdown_timeout == 60
 
-    @patch("subprocess.Popen")
     @pytest.mark.asyncio
-    async def test_start_detached_process(self, mock_popen):
+    async def test_start_detached_process(self, mocker):
+        mock_popen = mocker.patch("subprocess.Popen")
         """Test starting a detached process."""
         # Create a test script
         script_path = os.path.join(self.temp_dir, "test_script.py")
-        with open(script_path, "w") as f:
+        with open(script_path, "w", encoding="utf-8") as f:
             f.write("print('Hello World')")
 
         # Mock the subprocess
-        mock_process = Mock()
+        mock_process = mocker.Mock()
         mock_process.pid = 12345
         mock_process.poll.return_value = None  # Process is still running
         mock_popen.return_value = mock_process
@@ -207,7 +213,7 @@ class TestProcessManager:
         manager.create_pid_file(12345, pid_file)
 
         assert os.path.exists(pid_file)
-        with open(pid_file, "r") as f:
+        with open(pid_file, "r", encoding="utf-8") as f:
             content = f.read().strip()
             assert content == "12345"
 
@@ -216,7 +222,7 @@ class TestProcessManager:
         pid_file = os.path.join(self.temp_dir, "test.pid")
 
         # Create PID file
-        with open(pid_file, "w") as f:
+        with open(pid_file, "w", encoding="utf-8") as f:
             f.write("12345")
 
         manager = ProcessManager()
@@ -224,8 +230,8 @@ class TestProcessManager:
 
         assert not os.path.exists(pid_file)
 
-    @patch("psutil.pid_exists")
-    def test_is_process_running(self, mock_pid_exists):
+    def test_is_process_running(self, mocker):
+        mock_pid_exists = mocker.patch("psutil.pid_exists")
         """Test checking if process is running."""
         mock_pid_exists.return_value = True
 
@@ -235,12 +241,12 @@ class TestProcessManager:
         assert result is True
         mock_pid_exists.assert_called_once_with(12345)
 
-    @patch("socket.socket")
     @pytest.mark.asyncio
-    async def test_wait_for_port(self, mock_socket):
+    async def test_wait_for_port(self, mocker):
+        mock_socket = mocker.patch("socket.socket")
         """Test waiting for port to be available."""
         # Mock successful connection
-        mock_sock = Mock()
+        mock_sock = mocker.Mock()
         mock_sock.connect_ex.return_value = 0  # Success
         mock_socket.return_value.__enter__.return_value = mock_sock
 
@@ -249,12 +255,12 @@ class TestProcessManager:
 
         assert result is True
 
-    @patch("socket.socket")
     @pytest.mark.asyncio
-    async def test_wait_for_port_timeout(self, mock_socket):
+    async def test_wait_for_port_timeout(self, mocker):
+        mock_socket = mocker.patch("socket.socket")
         """Test waiting for port with timeout."""
         # Mock failed connection
-        mock_sock = Mock()
+        mock_sock = mocker.Mock()
         mock_sock.connect_ex.return_value = 1  # Connection refused
         mock_socket.return_value.__enter__.return_value = mock_sock
 
@@ -263,19 +269,15 @@ class TestProcessManager:
 
         assert result is False
 
-    @patch("psutil.pid_exists")
-    @patch("psutil.Process")
     @pytest.mark.asyncio
-    async def test_stop_process_gracefully(
-        self,
-        mock_process_class,
-        mock_pid_exists,
-    ):
+    async def test_stop_process_gracefully(self, mocker):
+        mock_pid_exists = mocker.patch("psutil.pid_exists")
+        mock_process_class = mocker.patch("psutil.Process")
         """Test stopping process gracefully."""
         mock_pid_exists.return_value = True
-        mock_proc = Mock()
-        mock_proc.terminate = Mock()
-        mock_proc.wait = Mock()
+        mock_proc = mocker.Mock()
+        mock_proc.terminate = mocker.Mock()
+        mock_proc.wait = mocker.Mock()
         mock_process_class.return_value = mock_proc
 
         manager = ProcessManager()
@@ -285,23 +287,19 @@ class TestProcessManager:
         mock_proc.terminate.assert_called_once()
         mock_proc.wait.assert_called_once()
 
-    @patch("psutil.pid_exists")
-    @patch("psutil.Process")
     @pytest.mark.asyncio
-    async def test_stop_process_gracefully_force_kill(
-        self,
-        mock_process_class,
-        mock_pid_exists,
-    ):
+    async def test_stop_process_gracefully_force_kill(self, mocker):
+        mock_pid_exists = mocker.patch("psutil.pid_exists")
+        mock_process_class = mocker.patch("psutil.Process")
         """Test stopping process with force kill."""
         mock_pid_exists.return_value = True
-        mock_proc = Mock()
-        mock_proc.terminate = Mock()
+        mock_proc = mocker.Mock()
+        mock_proc.terminate = mocker.Mock()
         mock_proc.wait.side_effect = [
             __import__("psutil").TimeoutExpired(12345),  # First wait times out
             None,  # Second wait (after kill) succeeds
         ]
-        mock_proc.kill = Mock()
+        mock_proc.kill = mocker.Mock()
         mock_process_class.return_value = mock_proc
 
         manager = ProcessManager(
@@ -313,11 +311,11 @@ class TestProcessManager:
         mock_proc.terminate.assert_called_once()
         mock_proc.kill.assert_called_once()
 
-    @patch("psutil.NoSuchProcess")
     @pytest.mark.asyncio
-    async def test_stop_nonexistent_process(self, mock_no_such_process):
+    async def test_stop_nonexistent_process(self, mocker):
+        mock_no_such_process = mocker.patch("psutil.NoSuchProcess")
         """Test stopping nonexistent process."""
-        with patch("psutil.pid_exists", return_value=False):
+        with mocker.patch("psutil.pid_exists", return_value=False):
             manager = ProcessManager()
             result = await manager.stop_process_gracefully(99999)
             assert (

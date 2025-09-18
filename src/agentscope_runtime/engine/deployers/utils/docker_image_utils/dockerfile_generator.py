@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
+import logging
 import os
 import tempfile
-import logging
-from pydantic import BaseModel
 from typing import Optional, Dict, List
-from pathlib import Path
+
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 

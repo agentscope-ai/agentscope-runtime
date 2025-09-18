@@ -6,7 +6,7 @@ import asyncio
 import tempfile
 import shutil
 import os
-from unittest.mock import patch, Mock, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
 from agentscope_runtime.engine.deployers.kubernetes_deployer import (
     KubernetesDeployer,
@@ -89,15 +89,15 @@ class TestKubernetesDeployer:
         "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
     )
     @pytest.mark.asyncio
-    async def test_deploy_with_runner_success(self, mock_k8s_client):
+    async def test_deploy_with_runner_success(self, mock_k8s_client, mocker):
         """Test successful deployment with runner."""
         # Setup mocks
-        mock_runner = Mock()
-        mock_runner._agent = Mock()
+        mock_runner = mocker.Mock()
+        mock_runner._agent = mocker.Mock()
         mock_runner.__class__.__name__ = "MockRunner"
 
         # Mock Kubernetes client
-        mock_client_instance = Mock()
+        mock_client_instance = mocker.Mock()
         mock_client_instance.create_deployment.return_value = (
             "service-id",
             [8090],
@@ -143,7 +143,7 @@ class TestKubernetesDeployer:
         "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
     )
     @pytest.mark.asyncio
-    async def test_deploy_with_legacy_func(self, mock_k8s_client):
+    async def test_deploy_with_legacy_func(self, mock_k8s_client, mocker):
         """Test deployment with legacy func parameter."""
 
         # Setup mocks
@@ -151,7 +151,7 @@ class TestKubernetesDeployer:
             return "test response"
 
         # Mock Kubernetes client
-        mock_client_instance = Mock()
+        mock_client_instance = mocker.Mock()
         mock_client_instance.create_deployment.return_value = (
             "service-id",
             [8090],
@@ -188,12 +188,12 @@ class TestKubernetesDeployer:
         "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
     )
     @pytest.mark.asyncio
-    async def test_deploy_image_build_failure(self, mock_k8s_client):
+    async def test_deploy_image_build_failure(self, mock_k8s_client, mocker):
         """Test deployment when image build fails."""
-        mock_runner = Mock()
+        mock_runner = mocker.Mock()
 
         # Mock Kubernetes client
-        mock_client_instance = Mock()
+        mock_client_instance = mocker.Mock()
         mock_k8s_client.return_value = mock_client_instance
 
         # Create deployer
@@ -213,12 +213,12 @@ class TestKubernetesDeployer:
         "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
     )
     @pytest.mark.asyncio
-    async def test_deploy_k8s_deployment_failure(self, mock_k8s_client):
+    async def test_deploy_k8s_deployment_failure(self, mock_k8s_client, mocker):
         """Test deployment when Kubernetes deployment fails."""
-        mock_runner = Mock()
+        mock_runner = mocker.Mock()
 
         # Mock Kubernetes client failure
-        mock_client_instance = Mock()
+        mock_client_instance = mocker.Mock()
         mock_client_instance.create_deployment.return_value = (
             None,
             [],
@@ -246,13 +246,13 @@ class TestKubernetesDeployer:
         "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
     )
     @pytest.mark.asyncio
-    async def test_deploy_with_protocol_adapters(self, mock_k8s_client):
+    async def test_deploy_with_protocol_adapters(self, mock_k8s_client, mocker):
         """Test deployment with protocol adapters."""
-        mock_runner = Mock()
-        mock_adapters = [Mock(), Mock()]
+        mock_runner = mocker.Mock()
+        mock_adapters = [mocker.Mock(), mocker.Mock()]
 
         # Setup mocks
-        mock_client_instance = Mock()
+        mock_client_instance = mocker.Mock()
         mock_client_instance.create_deployment.return_value = (
             "service-id",
             [8090],
@@ -281,12 +281,12 @@ class TestKubernetesDeployer:
         "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
     )
     @pytest.mark.asyncio
-    async def test_deploy_with_volume_mount(self, mock_k8s_client):
+    async def test_deploy_with_volume_mount(self, mock_k8s_client, mocker):
         """Test deployment with volume mounting."""
-        mock_runner = Mock()
+        mock_runner = mocker.Mock()
 
         # Setup mocks
-        mock_client_instance = Mock()
+        mock_client_instance = mocker.Mock()
         mock_client_instance.create_deployment.return_value = (
             "service-id",
             [8090],
@@ -334,10 +334,10 @@ class TestKubernetesDeployer:
         "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
     )
     @pytest.mark.asyncio
-    async def test_stop_deployment(self, mock_k8s_client):
+    async def test_stop_deployment(self, mock_k8s_client, mocker):
         """Test stopping a deployment."""
         # Setup deployer with a mock deployment
-        mock_client_instance = Mock()
+        mock_client_instance = mocker.Mock()
         mock_client_instance.remove_deployment.return_value = True
         mock_k8s_client.return_value = mock_client_instance
 
@@ -371,9 +371,9 @@ class TestKubernetesDeployer:
     @patch(
         "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
     )
-    def test_get_status(self, mock_k8s_client):
+    def test_get_status(self, mock_k8s_client, mocker):
         """Test getting deployment status."""
-        mock_client_instance = Mock()
+        mock_client_instance = mocker.Mock()
         mock_client_instance.get_deployment_status.return_value = "running"
         mock_k8s_client.return_value = mock_client_instance
 

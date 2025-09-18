@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """FastAPI application factory for unified deployment architecture."""
 
-import json
 import asyncio
-from typing import Optional, Callable, Type, Any, Dict
+import json
+from contextlib import asynccontextmanager
+from typing import Optional, Callable, Type, Any
+
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 
 from ..deployment_modes import DeploymentMode
 from .service_config import ServicesConfig, DEFAULT_SERVICES_CONFIG

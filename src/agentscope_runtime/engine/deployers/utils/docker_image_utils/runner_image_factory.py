@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 import hashlib
 import logging
-import time
 import os
+from typing import Optional, List, Dict, Union
 
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Union
 
 from agentscope_runtime.engine.runner import Runner
 
@@ -13,7 +12,6 @@ from agentscope_runtime.engine.runner import Runner
 from ..package_project_utils import (
     PackageConfig,
     package_project,
-    create_tar_gz,
 )
 from .dockerfile_generator import DockerfileGenerator, DockerfileConfig
 from .docker_image_builder import (
@@ -111,7 +109,7 @@ class RunnerImageFactory:
             return []
         elif isinstance(requirements, str):
             if os.path.exists(requirements):
-                with open(requirements, "r") as f:
+                with open(requirements, "r", encoding="utf-8") as f:
                     return [
                         line.strip() for line in f.readlines() if line.strip()
                     ]

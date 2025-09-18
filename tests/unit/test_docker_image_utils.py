@@ -5,7 +5,7 @@ import os
 import shutil
 import sys
 import tempfile
-from unittest.mock import patch, Mock
+# Mock classes will be provided by pytest-mock plugin
 
 import pytest
 
@@ -165,7 +165,7 @@ class TestDockerfileGenerator:
         assert result_path == dockerfile_path
         assert os.path.exists(dockerfile_path)
 
-        with open(dockerfile_path, "r") as f:
+        with open(dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
             assert "FROM python:3.10-slim-bookworm" in content
 
@@ -181,11 +181,12 @@ class TestDockerImageBuilder:
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
-    @patch("subprocess.run")
-    def test_build_image_mock(self, mock_subprocess):
+    def test_build_image_mock(self, mocker):
+        mock_subprocess = mocker.patch("subprocess.run")
         """Test build_image method with mocks."""
-        # Mock subprocess.run for both docker --version and docker build (quiet mode)
-        mock_result = Mock()
+        # Mock subprocess.run for both docker --version and docker build
+        # (quiet mode)
+        mock_result = mocker.Mock()
         mock_result.returncode = 0
         mock_result.stdout = "Successfully built abc123"
         mock_subprocess.return_value = mock_result
@@ -207,11 +208,11 @@ class TestDockerImageBuilder:
         # Verify subprocess.run was called (at least for docker --version)
         assert mock_subprocess.call_count >= 1
 
-    @patch("subprocess.run")
-    def test_build_image_source_not_updated(self, mock_subprocess):
+    def test_build_image_source_not_updated(self, mocker):
+        mock_subprocess = mocker.patch("subprocess.run")
         """Test build_image when source_updated=False (early return)."""
         # Mock docker --version for __init__
-        mock_version_result = Mock()
+        mock_version_result = mocker.Mock()
         mock_version_result.returncode = 0
         mock_version_result.stdout = "Docker version 24.0.0"
         mock_subprocess.return_value = mock_version_result
@@ -248,28 +249,26 @@ class TestRunnerImageFactory:
         factory = RunnerImageFactory()
         assert isinstance(factory, RunnerImageFactory)
 
-    @patch(
-        "agentscope_runtime.engine.deployers.utils.docker_image_utils.runner_image_factory.package_project",
-    )
-    @patch(
-        "agentscope_runtime.engine.deployers.utils.docker_image_utils.runner_image_factory.DockerImageBuilder",
-    )
-    def test_build_runner_image_mock(
-        self,
-        mock_builder_class,
-        mock_package_project,
-    ):
+    def test_build_runner_image_mock(self, mocker):
+        mock_package_project = mocker.patch(
+            "agentscope_runtime.engine.deployers.utils.docker_image_utils."
+            "runner_image_factory.package_project"
+        )
+        mock_builder_class = mocker.patch(
+            "agentscope_runtime.engine.deployers.utils.docker_image_utils."
+            "runner_image_factory.DockerImageBuilder"
+        )
         """Test build_runner_image method with mocks."""
         # Setup mocks
         mock_package_project.return_value = (self.temp_dir, True)
 
-        mock_builder_instance = Mock()
+        mock_builder_instance = mocker.Mock()
         mock_builder_instance.build_image.return_value = "test-runner:latest"
         mock_builder_class.return_value = mock_builder_instance
 
         # Create mock runner
-        mock_runner = Mock()
-        mock_runner._agent = Mock()
+        mock_runner = mocker.Mock()
+        mock_runner._agent = mocker.Mock()
 
         factory = RunnerImageFactory()
         result = factory.build_runner_image(

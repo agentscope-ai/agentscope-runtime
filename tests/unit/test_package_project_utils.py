@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Unit tests for package_project_utils module using pytest with real assets."""
+"""Unit tests for package_project_utils module using pytest with real
+assets."""
 
 import json
 import os
@@ -42,7 +43,7 @@ class TestPackageConfig:
             endpoint_path="/api/process",
             deployment_mode="detached_process",
             services_config={"memory": {"provider": "redis"}},
-            protocol_adapters=[{"type": "http"}]
+            protocol_adapters=[{"type": "http"}],
         )
         assert config.requirements == ["fastapi", "uvicorn"]
         assert config.extra_packages == ["./utils"]
@@ -57,18 +58,19 @@ class TestPackageConfig:
         # Test with empty lists
         config = PackageConfig(
             requirements=[],
-            extra_packages=[]
+            extra_packages=[],
         )
         assert config.requirements == []
         assert config.extra_packages == []
-        
+
         # Test with None values
         config = PackageConfig(
             requirements=None,
-            services_config=None
+            services_config=None,
         )
         assert config.requirements is None
         assert config.services_config is None
+
 
 class TestPackageProject:
     """Test cases for package_project function using real assets."""
@@ -84,27 +86,35 @@ class TestPackageProject:
         self.others_dir = os.path.join(self.assets_dir, "others")
 
         # Verify assets exist
-        assert os.path.exists(self.agent_file), f"Agent file not found: {self.agent_file}"
-        assert os.path.exists(self.others_dir), f"Others directory not found: {self.others_dir}"
+        assert os.path.exists(
+            self.agent_file,
+        ), f"Agent file not found: {self.agent_file}"
+        assert os.path.exists(
+            self.others_dir,
+        ), f"Others directory not found: {self.others_dir}"
 
         yield
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
     def _get_test_agent(self):
-        """Helper method to get the test agent with fallback import strategies."""
+        """Helper method to get the test agent with fallback import
+        strategies."""
         try:
             from tests.unit.assets.agent_for_test import llm_agent
+
             return llm_agent
         except ImportError:
             # Fallback to sys.path approach
             import sys
             import os
+
             assets_path = os.path.join(os.path.dirname(__file__), "assets")
             if assets_path not in sys.path:
                 sys.path.insert(0, assets_path)
             try:
                 import agent_for_test
+
                 return agent_for_test.llm_agent
             except ImportError:
                 pytest.skip("Cannot import test agent - missing dependencies")
@@ -131,28 +141,30 @@ class TestPackageProject:
 
         config = PackageConfig(
             requirements=["fastapi"],
-            output_dir=self.temp_dir
+            output_dir=self.temp_dir,
         )
 
         try:
             project_dir, updated = package_project(llm_agent, config)
-            
+
             # Check basic structure
             assert os.path.exists(project_dir)
             assert updated is True
             assert os.path.exists(os.path.join(project_dir, "agent_file.py"))
-            
+
             # Check that requirements.txt includes base requirements
             req_file = os.path.join(project_dir, "requirements.txt")
             if os.path.exists(req_file):
-                with open(req_file, "r") as f:
+                with open(req_file, "r", encoding="utf-8") as f:
                     content = f.read()
                     assert "fastapi" in content
                     assert "agentscope-runtime" in content
-                    
+
         except Exception as e:
             if "TemplateNotFound" in str(e):
-                pytest.skip("Template file not found - development environment issue")
+                pytest.skip(
+                    "Template file not found - development environment issue",
+                )
             else:
                 raise
 
@@ -163,122 +175,142 @@ class TestPackageProject:
         config = PackageConfig(
             requirements=["fastapi"],
             extra_packages=[self.others_dir],
-            output_dir=self.temp_dir
+            output_dir=self.temp_dir,
         )
 
         try:
             project_dir, updated = package_project(llm_agent, config)
-            
+
             # Check that extra directory was copied
             others_target = os.path.join(project_dir, "others")
             assert os.path.exists(others_target)
-            assert os.path.exists(os.path.join(others_target, "other_project.py"))
-            
+            assert os.path.exists(
+                os.path.join(others_target, "other_project.py"),
+            )
+
         except Exception as e:
             if "TemplateNotFound" in str(e):
-                pytest.skip("Template file not found - development environment issue")
+                pytest.skip(
+                    "Template file not found - development environment issue",
+                )
             else:
                 raise
 
     def test_package_project_with_services_config(self):
         """Test package_project with services configuration."""
         from tests.unit.assets.agent_for_test import llm_agent
+
         agent = llm_agent
-        
+
         config = PackageConfig(
             requirements=["fastapi"],
-            services_config={"memory": {"provider": "redis", "host": "localhost"}},
-            output_dir=self.temp_dir
+            services_config={
+                "memory": {"provider": "redis", "host": "localhost"},
+            },
+            output_dir=self.temp_dir,
         )
 
         try:
             project_dir, updated = package_project(agent, config)
-            
+
             # Check that services config file was created
             config_file = os.path.join(project_dir, "services_config.json")
             assert os.path.exists(config_file)
-            
-            with open(config_file, "r") as f:
+
+            with open(config_file, "r", encoding="utf-8") as f:
                 config_data = json.load(f)
                 assert "memory" in config_data
                 assert config_data["memory"]["provider"] == "redis"
-                
+
             # Check that redis was added to requirements
             req_file = os.path.join(project_dir, "requirements.txt")
             if os.path.exists(req_file):
-                with open(req_file, "r") as f:
+                with open(req_file, "r", encoding="utf-8") as f:
                     content = f.read()
                     assert "redis" in content
-                    
+
         except Exception as e:
             if "TemplateNotFound" in str(e):
-                pytest.skip("Template file not found - development environment issue")
+                pytest.skip(
+                    "Template file not found - development environment issue",
+                )
             else:
                 raise
 
     def test_package_project_output_directory_creation(self):
-        """Test that package_project creates output directory if it doesn't exist."""
+        """Test that package_project creates output directory if it
+        doesn't exist."""
         from tests.unit.assets.agent_for_test import llm_agent
+
         agent = llm_agent
-        
+
         # Use a non-existent subdirectory
         output_dir = os.path.join(self.temp_dir, "new_subdir", "deeper_subdir")
         assert not os.path.exists(output_dir)
 
         config = PackageConfig(
             requirements=["fastapi"],
-            output_dir=output_dir
+            output_dir=output_dir,
         )
 
         try:
             project_dir, updated = package_project(agent, config)
             assert os.path.exists(project_dir)
-            assert project_dir.startswith(output_dir) or project_dir == output_dir
-            
+            assert (
+                project_dir.startswith(output_dir) or project_dir == output_dir
+            )
+
         except Exception as e:
             if "TemplateNotFound" in str(e):
-                pytest.skip("Template file not found - development environment issue")
+                pytest.skip(
+                    "Template file not found - development environment issue",
+                )
             else:
                 raise
 
     def test_package_project_directory_comparison(self):
         """Test package_project directory comparison logic."""
         from tests.unit.assets.agent_for_test import llm_agent
+
         agent = llm_agent
-        
+
         config = PackageConfig(
             requirements=["fastapi"],
-            output_dir=self.temp_dir
+            output_dir=self.temp_dir,
         )
 
         try:
             # First call should create content
             project_dir1, updated1 = package_project(agent, config)
             assert updated1 is True
-            
+
             # Second call with same config should detect no changes needed
             project_dir2, updated2 = package_project(agent, config)
             assert project_dir1 == project_dir2
-            # Note: updated2 might be True due to template rendering differences
-            
+            # Note: updated2 might be True due to template rendering
+            # differences
+
         except Exception as e:
             if "TemplateNotFound" in str(e):
-                pytest.skip("Template file not found - development environment issue")
+                pytest.skip(
+                    "Template file not found - development environment issue",
+                )
             else:
                 raise
 
     def test_package_project_with_missing_extra_package(self):
         """Test package_project with a non-existent extra package path."""
         from tests.unit.assets.agent_for_test import llm_agent
+
         agent = llm_agent
 
         # Use a non-existent extra package path
         non_existent_path = os.path.join(self.temp_dir, "non_existent_package")
-        
+
         config = PackageConfig(
             requirements=["fastapi"],
             extra_packages=[non_existent_path],
-            output_dir=self.temp_dir
+            output_dir=self.temp_dir,
         )
 
         # This should either handle gracefully or raise appropriate error
@@ -291,13 +323,16 @@ class TestPackageProject:
             pass
         except Exception as e:
             if "TemplateNotFound" in str(e):
-                pytest.skip("Template file not found - development environment issue")
+                pytest.skip(
+                    "Template file not found - development environment issue",
+                )
             else:
                 raise
 
     def test_package_project_empty_config(self):
         """Test package_project with minimal empty config."""
         from tests.unit.assets.agent_for_test import llm_agent
+
         agent = llm_agent
         config = PackageConfig()
 
@@ -305,10 +340,12 @@ class TestPackageProject:
             project_dir, updated = package_project(agent, config)
             assert os.path.exists(project_dir)
             assert os.path.exists(os.path.join(project_dir, "agent_file.py"))
-            
+
         except Exception as e:
             if "TemplateNotFound" in str(e):
-                pytest.skip("Template file not found - development environment issue")
+                pytest.skip(
+                    "Template file not found - development environment issue",
+                )
             else:
                 raise
 
@@ -324,15 +361,27 @@ class TestCreateTarGz:
         os.makedirs(self.test_dir)
 
         # Create test files
-        with open(os.path.join(self.test_dir, "file1.txt"), "w") as f:
+        with open(
+            os.path.join(self.test_dir, "file1.txt"),
+            "w",
+            encoding="utf-8",
+        ) as f:
             f.write("Content 1")
-        with open(os.path.join(self.test_dir, "file2.txt"), "w") as f:
+        with open(
+            os.path.join(self.test_dir, "file2.txt"),
+            "w",
+            encoding="utf-8",
+        ) as f:
             f.write("Content 2")
 
         # Create subdirectory
         sub_dir = os.path.join(self.test_dir, "subdir")
         os.makedirs(sub_dir)
-        with open(os.path.join(sub_dir, "file3.txt"), "w") as f:
+        with open(
+            os.path.join(sub_dir, "file3.txt"),
+            "w",
+            encoding="utf-8",
+        ) as f:
             f.write("Content 3")
 
         yield
@@ -374,7 +423,7 @@ class TestCreateTarGz:
     def test_create_tar_gz_file_instead_of_directory(self):
         """Test tar.gz creation with file instead of directory."""
         test_file = os.path.join(self.temp_dir, "test_file.txt")
-        with open(test_file, "w") as f:
+        with open(test_file, "w", encoding="utf-8") as f:
             f.write("test")
 
         with pytest.raises(ValueError, match="Path is not a directory"):
@@ -384,14 +433,15 @@ class TestCreateTarGz:
         """Test tar.gz creation with empty directory."""
         empty_dir = os.path.join(self.temp_dir, "empty_dir")
         os.makedirs(empty_dir)
-        
+
         output_path = create_tar_gz(empty_dir)
         assert os.path.exists(output_path)
-        
+
         # Verify it's a valid tar.gz even if empty
         with tarfile.open(output_path, "r:gz") as tar:
             names = tar.getnames()
-            # Empty directory should have no entries or just the directory itself
+            # Empty directory should have no entries or just the
+            # directory itself
             assert len(names) >= 0
 
     def test_create_tar_gz_with_real_project(self):
@@ -399,13 +449,25 @@ class TestCreateTarGz:
         # Create a mock project structure
         project_dir = os.path.join(self.temp_dir, "mock_project")
         os.makedirs(project_dir)
-        
+
         # Create mock project files
-        with open(os.path.join(project_dir, "main.py"), "w") as f:
+        with open(
+            os.path.join(project_dir, "main.py"),
+            "w",
+            encoding="utf-8",
+        ) as f:
             f.write("# Mock main.py\nprint('Hello World')")
-        with open(os.path.join(project_dir, "requirements.txt"), "w") as f:
+        with open(
+            os.path.join(project_dir, "requirements.txt"),
+            "w",
+            encoding="utf-8",
+        ) as f:
             f.write("fastapi\nuvicorn\n")
-        with open(os.path.join(project_dir, "agent_file.py"), "w") as f:
+        with open(
+            os.path.join(project_dir, "agent_file.py"),
+            "w",
+            encoding="utf-8",
+        ) as f:
             f.write("# Mock agent file\nagent = None")
 
         # Create tar.gz from the project
@@ -437,31 +499,35 @@ class TestIntegration:
         """Test the complete workflow of packaging and creating tar.gz."""
         try:
             from tests.unit.assets.agent_for_test import llm_agent
+
             agent = llm_agent
 
             config = PackageConfig(
                 requirements=["fastapi"],
-                output_dir=self.temp_dir
+                output_dir=self.temp_dir,
             )
 
             # Package the project
             try:
                 project_dir, updated = package_project(agent, config)
-                
+
                 # Create tar.gz from the packaged project
                 tar_path = create_tar_gz(project_dir)
-                
+
                 assert os.path.exists(tar_path)
                 assert tar_path.endswith(".tar.gz")
-                
+
                 # Verify tar contents include expected files
                 with tarfile.open(tar_path, "r:gz") as tar:
                     names = tar.getnames()
                     assert "agent_file.py" in names
-                    
+
             except Exception as e:
                 if "TemplateNotFound" in str(e):
-                    pytest.skip("Template file not found - development environment issue")
+                    pytest.skip(
+                        "Template file not found - development "
+                        "environment issue",
+                    )
                 else:
                     raise
 
@@ -473,26 +539,34 @@ class TestIntegration:
         # Create test directory
         test_dir = os.path.join(self.temp_dir, "hash_test")
         os.makedirs(test_dir)
-        
-        with open(os.path.join(test_dir, "file.txt"), "w") as f:
+
+        with open(
+            os.path.join(test_dir, "file.txt"),
+            "w",
+            encoding="utf-8",
+        ) as f:
             f.write("consistent content")
-        
+
         # Calculate hash multiple times
         hash1 = _calculate_directory_hash(test_dir)
         hash2 = _calculate_directory_hash(test_dir)
         hash3 = _calculate_directory_hash(test_dir)
-        
+
         assert hash1 == hash2 == hash3
         assert len(hash1) == 64  # SHA256 length
-        
+
         # Create identical directory elsewhere
         test_dir2 = os.path.join(self.temp_dir, "hash_test2")
         os.makedirs(test_dir2)
-        with open(os.path.join(test_dir2, "file.txt"), "w") as f:
+        with open(
+            os.path.join(test_dir2, "file.txt"),
+            "w",
+            encoding="utf-8",
+        ) as f:
             f.write("consistent content")
-        
+
         hash4 = _calculate_directory_hash(test_dir2)
         assert hash1 == hash4  # Identical content should have same hash
-        
+
         # Verify comparison function works
         assert _compare_directories(test_dir, test_dir2) is True
