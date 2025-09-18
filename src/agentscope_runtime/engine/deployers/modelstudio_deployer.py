@@ -21,17 +21,17 @@ logger = logging.getLogger(__name__)
 try:  # Lazy optional imports; validated at runtime
     import alibabacloud_oss_v2 as oss  # type: ignore
     from alibabacloud_oss_v2.models import PutBucketRequest, PutObjectRequest  # type: ignore
-    from alibabacloud_bailian20231229.client import Client as bailian20231229Client  # type: ignore
+    from alibabacloud_bailian20231229.client import Client as ModelstudioClient  # type: ignore
     from alibabacloud_tea_openapi import models as open_api_models  # type: ignore
-    from alibabacloud_bailian20231229 import models as bailian_20231229_models  # type: ignore
+    from alibabacloud_bailian20231229 import models as ModelstudioTypes  # type: ignore
     from alibabacloud_tea_util import models as util_models  # type: ignore
 except Exception:  # pragma: no cover - we validate presence explicitly
     oss = None  # type: ignore
     PutBucketRequest = None  # type: ignore
     PutObjectRequest = None  # type: ignore
-    bailian20231229Client = None  # type: ignore
+    ModelstudioClient = None  # type: ignore
     open_api_models = None  # type: ignore
-    bailian_20231229_models = None  # type: ignore
+    ModelstudioTypes = None  # type: ignore
     util_models = None  # type: ignore
 
 
@@ -64,10 +64,10 @@ class OSSConfig(BaseModel):
             )
 
 
-class BailianConfig(BaseModel):
+class ModelstudioConfig(BaseModel):
     endpoint: str = Field(
         "bailian-pre.cn-hangzhou.aliyuncs.com",
-        description="Bailian service endpoint",
+        description="Modelstudio service endpoint",
     )
     workspace_id: Optional[str] = None
     access_key_id: Optional[str] = None
@@ -75,16 +75,20 @@ class BailianConfig(BaseModel):
     dashscope_api_key: Optional[str] = None
 
     @classmethod
-    def from_env(cls) -> "BailianConfig":
+    def from_env(cls) -> "ModelstudioConfig":
         return cls(
             endpoint=os.environ.get(
-                "BAILIAN_ENDPOINT",
+                "MODELSTUDIO_ENDPOINT",
                 "bailian-pre.cn-hangzhou.aliyuncs.com",
             ),
-            workspace_id=os.environ.get("ALIBABA_CLOUD_WORKSPACE_ID"),
+            workspace_id=os.environ.get("MODELSTUDIO_WORKSPACE_ID"),
             access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
-            access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
-            dashscope_api_key=os.environ.get('ALIBABA_CLOUD_DASHSCOPE_API_KEY'),
+            access_key_secret=os.environ.get(
+                "ALIBABA_CLOUD_ACCESS_KEY_SECRET"
+            ),
+            dashscope_api_key=os.environ.get(
+                "ALIBABA_CLOUD_DASHSCOPE_API_KEY"
+            ),
         )
 
     def ensure_valid(self) -> None:
@@ -97,12 +101,12 @@ class BailianConfig(BaseModel):
             missing.append("ALIBABA_CLOUD_ACCESS_KEY_SECRET")
         if missing:
             raise RuntimeError(
-                f"Missing required Bailian env vars: {', '.join(missing)}",
+                f"Missing required Modelstudio env vars: {', '.join(missing)}",
             )
 
 
 def _assert_cloud_sdks_available():
-    if oss is None or bailian20231229Client is None:
+    if oss is None or ModelstudioClient is None:
         raise RuntimeError(
             "Cloud SDKs not installed. Please install: "
             "alibabacloud-oss-v2 alibabacloud-bailian20231229 "
@@ -112,7 +116,9 @@ def _assert_cloud_sdks_available():
 
 def _oss_get_client(oss_cfg: OSSConfig):
     oss_cfg.ensure_valid()
-    credentials_provider = oss.credentials.EnvironmentVariableCredentialsProvider()
+    credentials_provider = (
+        oss.credentials.EnvironmentVariableCredentialsProvider()
+    )
     cfg = oss.config.load_default()
     cfg.credentials_provider = credentials_provider
     cfg.region = oss_cfg.region
@@ -127,8 +133,10 @@ async def _oss_create_bucket_if_not_exists(client, bucket_name: str) -> None:
     if not exists:
         req = PutBucketRequest(
             bucket=bucket_name,
-            acl='private',
-            create_bucket_configuration=oss.CreateBucketConfiguration(storage_class='IA'),
+            acl="private",
+            create_bucket_configuration=oss.CreateBucketConfiguration(
+                storage_class="IA"
+            ),
         )
         client.put_bucket(req)
         result = client.put_bucket_tags(
@@ -138,19 +146,22 @@ async def _oss_create_bucket_if_not_exists(client, bucket_name: str) -> None:
                     tag_set=oss.TagSet(
                         tags=[
                             oss.Tag(
-                                key='bailian-high-code-deploy-oss-access',
-                                value='ReadAndAdd',
-                            )
-                        ]
+                                key="bailian-high-code-deploy-oss-access",
+                                value="ReadAndAdd",
+                            ),
+                        ],
                     ),
                 ),
-            )
+            ),
         )
-        logger.info(f'put bucket tag status code: {result.status_code}, request id: {result.request_id}')
+        logger.info(
+            f"put bucket tag status code: {result.status_code}, request id: {result.request_id}"
+        )
 
 
 def _create_bucket_name(prefix: str, base_name: str) -> str:
     import re as _re
+
     ts = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
     base = _re.sub(r"\s+", "-", base_name)
     base = _re.sub(r"[^a-zA-Z0-9-]", "", base).lower().strip("-")
@@ -158,9 +169,14 @@ def _create_bucket_name(prefix: str, base_name: str) -> str:
     return name[:63]
 
 
-async def _oss_put_and_presign(client, bucket_name: str, object_key: str, file_bytes: bytes) -> str:
+async def _oss_put_and_presign(
+    client, bucket_name: str, object_key: str, file_bytes: bytes
+) -> str:
     import datetime as _dt
-    put_req = PutObjectRequest(bucket=bucket_name, key=object_key, body=file_bytes)
+
+    put_req = PutObjectRequest(
+        bucket=bucket_name, key=object_key, body=file_bytes
+    )
     client.put_object(put_req)
     pre = client.presign(
         oss.GetObjectRequest(bucket=bucket_name, key=object_key),
@@ -169,8 +185,8 @@ async def _oss_put_and_presign(client, bucket_name: str, object_key: str, file_b
     return pre.url
 
 
-async def _bailian_deploy(
-    cfg: BailianConfig,
+async def _modelstudio_deploy(
+    cfg: ModelstudioConfig,
     file_url: str,
     filename: str,
     deploy_name: str,
@@ -182,8 +198,8 @@ async def _bailian_deploy(
         access_key_secret=cfg.access_key_secret,
     )
     config.endpoint = cfg.endpoint
-    client_bailian = bailian20231229Client(config)
-    req = bailian_20231229_models.HighCodeDeployRequest(
+    client_modelstudio = ModelstudioClient(config)
+    req = ModelstudioTypes.HighCodeDeployRequest(
         source_code_name=filename,
         source_code_oss_url=file_url,
         agent_name=deploy_name,
@@ -191,34 +207,39 @@ async def _bailian_deploy(
     )
     runtime = util_models.RuntimeOptions()
     headers: Dict[str, str] = {}
-    client_bailian.high_code_deploy_with_options(cfg.workspace_id, req, headers, runtime)
+    client_modelstudio.high_code_deploy_with_options(
+        cfg.workspace_id, req, headers, runtime
+    )
 
 
-class BailianFCDeployer(DeployManager):
-    """Deployer for Alibaba Bailian Function Compute based agent deployment.
+class ModelstudioDeployManager(DeployManager):
+    """Deployer for Alibaba Modelstudio Function Compute based agent
+    deployment.
 
     This deployer packages the user project into a wheel, uploads it to OSS,
-    and triggers a Bailian HighCode deploy.
+    and triggers a Modelstudio Full-Code deploy.
     """
 
     def __init__(
         self,
         oss_config: Optional[OSSConfig] = None,
-        bailian_config: Optional[BailianConfig] = None,
+        modelstudio_config: Optional[ModelstudioConfig] = None,
         build_root: Optional[Union[str, Path]] = None,
     ) -> None:
         super().__init__()
         self.oss_config = oss_config or OSSConfig.from_env()
-        self.bailian_config = bailian_config or BailianConfig.from_env()
+        self.modelstudio_config = (
+            modelstudio_config or ModelstudioConfig.from_env()
+        )
         # Defer default build_root selection to deploy() to avoid using home by default
         self.build_root = Path(build_root) if build_root else None
 
     async def _generate_wrapper_and_build_wheel(
-            self,
-            project_dir: Union[str, Path],
-            cmd: str,
-            deploy_name: Optional[str] = None,
-            telemetry_enabled: bool = True
+        self,
+        project_dir: Union[str, Path],
+        cmd: str,
+        deploy_name: Optional[str] = None,
+        telemetry_enabled: bool = True,
     ) -> Tuple[Path, str]:
         """
         校验参数、生成 wrapper 项目并构建 wheel。
@@ -226,7 +247,10 @@ class BailianFCDeployer(DeployManager):
         返回: (wheel_path, wrapper_project_dir, name)
         """
         if not project_dir or not cmd:
-            raise ValueError("project_dir and cmd are required for Bailian deployment")
+            raise ValueError(
+                "project_dir and cmd are required for "
+                "Modelstudio deployment",
+            )
 
         project_dir = Path(project_dir).resolve()
         if not project_dir.is_dir():
@@ -235,9 +259,15 @@ class BailianFCDeployer(DeployManager):
         name = deploy_name or default_deploy_name()
         proj_root = project_dir.resolve()
         effective_build_root = (
-            self.build_root.resolve() if isinstance(self.build_root, Path) else
-            (Path(self.build_root).resolve() if self.build_root else (
-                        proj_root.parent / ".agentscope_runtime_builds").resolve())
+            self.build_root.resolve()
+            if isinstance(self.build_root, Path)
+            else (
+                Path(self.build_root).resolve()
+                if self.build_root
+                else (
+                    proj_root.parent / ".agentscope_runtime_builds"
+                ).resolve()
+            )
         )
         build_dir = effective_build_root / f"build-{int(time.time())}"
         build_dir.mkdir(parents=True, exist_ok=True)
@@ -268,11 +298,13 @@ class BailianFCDeployer(DeployManager):
         filename = wheel_path.name
         with wheel_path.open("rb") as f:
             file_bytes = f.read()
-        artifact_url = await _oss_put_and_presign(client, bucket_name, filename, file_bytes)
+        artifact_url = await _oss_put_and_presign(
+            client, bucket_name, filename, file_bytes
+        )
 
-        logger.info("Triggering Bailian HighCode deploy for %s", name)
-        await _bailian_deploy(
-            cfg=self.bailian_config,
+        logger.info("Triggering Modelstudio Full-Code deploy for %s", name)
+        await _modelstudio_deploy(
+            cfg=self.modelstudio_config,
             file_url=artifact_url,
             filename=filename,
             deploy_name=name,
@@ -285,7 +317,9 @@ class BailianFCDeployer(DeployManager):
         runner: Optional[Runner] = None,
         endpoint_path: str = "/process",
         stream: bool = True,
-        requirements: Optional[Union[str, List[str]]] = None,  # not used directly
+        requirements: Optional[
+            Union[str, List[str]]
+        ] = None,  # not used directly
         extra_packages: Optional[List[str]] = None,  # not used directly
         base_image: str = "python:3.9-slim",  # not used, kept for API symmetry
         environment: Optional[Dict[str, str]] = None,  # not used directly
@@ -308,40 +342,49 @@ class BailianFCDeployer(DeployManager):
         """
         _assert_cloud_sdks_available()
         self.oss_config.ensure_valid()
-        self.bailian_config.ensure_valid()
+        self.modelstudio_config.ensure_valid()
 
         # 如果传入了外部whl包地址，则跳过打包步骤
         if external_whl_path:
             wheel_path = Path(external_whl_path).resolve()
             if not wheel_path.is_file():
-                raise FileNotFoundError(f"External wheel file not found: {wheel_path}")
+                raise FileNotFoundError(
+                    f"External wheel file not found: {wheel_path}"
+                )
             name = deploy_name or default_deploy_name()
         else:
             wheel_path, name = await self._generate_wrapper_and_build_wheel(
                 project_dir=project_dir,
                 cmd=cmd,
                 deploy_name=deploy_name,
-                telemetry_enabled=telemetry_enabled
+                telemetry_enabled=telemetry_enabled,
             )
 
         artifact_url = ""
         if not skip_upload:
-            artifact_url = await self._upload_and_deploy(wheel_path, name, telemetry_enabled)
+            artifact_url = await self._upload_and_deploy(
+                wheel_path, name, telemetry_enabled
+            )
 
         result: Dict[str, str] = {
             "deploy_id": self.deploy_id,
             "wheel_path": str(wheel_path),
             "artifact_url": artifact_url,
             "resource_name": name,
-            "workspace_id": self.bailian_config.workspace_id or "",
+            "workspace_id": self.modelstudio_config.workspace_id or "",
             "url": "",
         }
 
         if output_file:
             try:
-                Path(output_file).write_text("\n".join([f"{k}={v}" for k, v in result.items()]), encoding="utf-8")
+                Path(output_file).write_text(
+                    "\n".join([f"{k}={v}" for k, v in result.items()]),
+                    encoding="utf-8",
+                )
             except Exception as e:  # pragma: no cover
-                logger.warning("Failed to write output file %s: %s", output_file, e)
+                logger.warning(
+                    "Failed to write output file %s: %s", output_file, e
+                )
 
         return result
 
@@ -350,5 +393,3 @@ class BailianFCDeployer(DeployManager):
 
     def get_status(self) -> str:  # pragma: no cover - not supported yet
         return "unknown"
-
-

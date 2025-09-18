@@ -1,19 +1,26 @@
+# -*- coding: utf-8 -*-
 import argparse
 import asyncio
 from pathlib import Path
 from typing import Optional
 
-from agentscope_runtime.engine.deployers.bailian_fc_deployer import (
-    BailianFCDeployer,
+from agentscope_runtime.engine.deployers.modelstudio_deployer import (
+    ModelstudioDeployManager,
 )
 
 
-def run(dir_path: str, cmd: str, deploy_name: Optional[str] = None, skip_upload: bool = False, telemetry_enabled: bool = True) -> Path:
+def run(
+    dir_path: str,
+    cmd: str,
+    deploy_name: Optional[str] = None,
+    skip_upload: bool = False,
+    telemetry_enabled: bool = True,
+) -> Path:
     """
     Backward compatible helper that builds the wheel (and optionally uploads/deploys)
     and returns the wheel path.
     """
-    deployer = BailianFCDeployer()
+    deployer = ModelstudioDeployManager()
     result = asyncio.run(
         deployer.deploy(
             project_dir=dir_path,
@@ -21,7 +28,7 @@ def run(dir_path: str, cmd: str, deploy_name: Optional[str] = None, skip_upload:
             deploy_name=deploy_name,
             skip_upload=skip_upload,
             telemetry_enabled=telemetry_enabled,
-        )
+        ),
     )
     return Path(result["wheel_path"])  # type: ignore
 
@@ -30,17 +37,42 @@ def main_cli():
     parser = argparse.ArgumentParser(
         description="Package and deploy a Python project into AgentDev starter template (Bailian FC)",
     )
-    parser.add_argument("--dir", required=True, help="Path to user project directory")
-    parser.add_argument("--cmd", required=True, help="Command to start the user project (e.g., 'python app.py')")
-    parser.add_argument("--deploy-name", dest="deploy_name", default=None, help="Deploy name (agent_name). Random if omitted")
-    parser.add_argument("--skip-upload", action="store_true", help="Only build wheel, do not upload/deploy")
+    parser.add_argument(
+        "--dir", required=True, help="Path to user project directory"
+    )
+    parser.add_argument(
+        "--cmd",
+        required=True,
+        help="Command to start the user project (e.g., 'python app.py')",
+    )
+    parser.add_argument(
+        "--deploy-name",
+        dest="deploy_name",
+        default=None,
+        help="Deploy name (agent_name). Random if omitted",
+    )
+    parser.add_argument(
+        "--skip-upload",
+        action="store_true",
+        help="Only build wheel, do not upload/deploy",
+    )
     # Telemetry option: --telemetry {enable,disable} (default: enable)
-    parser.add_argument("--telemetry", choices=["enable", "disable"], default="enable", help="Enable or disable telemetry (default: enable)")
-    parser.add_argument("--output-file", dest="output_file", default="fc_deploy.txt", help="Write deploy result key=value lines to a txt file")
+    parser.add_argument(
+        "--telemetry",
+        choices=["enable", "disable"],
+        default="enable",
+        help="Enable or disable telemetry (default: enable)",
+    )
+    parser.add_argument(
+        "--output-file",
+        dest="output_file",
+        default="fc_deploy.txt",
+        help="Write deploy result key=value lines to a txt file",
+    )
 
     args = parser.parse_args()
 
-    deployer = BailianFCDeployer()
+    deployer = ModelstudioDeployManager()
     telemetry_enabled = args.telemetry == "enable"
 
     result = asyncio.run(
@@ -51,7 +83,7 @@ def main_cli():
             skip_upload=args.skip_upload,
             output_file=args.output_file,
             telemetry_enabled=telemetry_enabled,
-        )
+        ),
     )
 
     print("Built wheel at:", result.get("wheel_path", ""))
@@ -67,5 +99,3 @@ def main_cli():
 
 if __name__ == "__main__":
     main_cli()
-
-
