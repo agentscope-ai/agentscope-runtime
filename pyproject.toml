@@ -24,6 +24,7 @@ build-backend = "setuptools.build_meta"
 runtime-sandbox-mcp = "agentscope_runtime.sandbox.mcp_server:main"
 runtime-sandbox-server = "agentscope_runtime.sandbox.manager.server.app:main"
 runtime-sandbox-builder = "agentscope_runtime.sandbox.build:main"
+runtime-fc-deploy = "agentscope_runtime.engine.deployers.cli_fc_deploy:main"
 
 [project.optional-dependencies]
 dev = [
@@ -75,4 +76,12 @@ langchain_rag=[
 ]
 memory-ext = [
     "reme-ai==0.1.8 ; python_full_version >= '3.12'",
+]
+
+deployment = [
+    "alibabacloud-oss-v2",
+    "alibabacloud-bailian20231229",
+    "build",
+    "setuptools",
+    "wheel"
 ]
