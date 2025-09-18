@@ -131,7 +131,8 @@ class OTSSessionHistoryService(SessionHistoryService):
             ots_messages = None
         else:
             ots_messages_iterator = await self._memory_store.list_messages(
-                session_id=session_id, order=Order.ASC
+                session_id=session_id,
+                order=Order.ASC,  # Sort by timestamp, keeping the most recent information at the end of the list.
             )
             ots_messages = [message async for message in ots_messages_iterator]
 

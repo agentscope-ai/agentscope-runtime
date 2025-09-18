@@ -11,6 +11,7 @@ from .utils.ots_service_utils import (
     convert_message_to_ots_document,
     get_message_metadata_names,
     convert_ots_document_to_message,
+    convert_messages_to_ots_documents,
 )
 from ..schemas.agent_schemas import Message, MessageType
 
@@ -115,12 +116,10 @@ class OTSMemoryService(MemoryService):
         session_id_ = session_id if session_id else OTSMemoryService._DEFAULT_SESSION_ID
 
         put_tasks = [
-            self._knowledge_store.put_document(
-                convert_message_to_ots_document(
-                    message, user_id, session_id_, self._embedding_model
-                )
+            self._knowledge_store.put_document(ots_document)
+            for ots_document in convert_messages_to_ots_documents(
+                messages, user_id, session_id_, self._embedding_model
             )
-            for message in messages
         ]
         await asyncio.gather(*put_tasks)
 
