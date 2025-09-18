@@ -84,7 +84,7 @@ class OTSRAGService(RAGService):
         return self._knowledge_store is not None
 
     async def add_docs(self, docs: Union[Document, List[Document]]):
-        if isinstance(docs, str):
+        if not isinstance(docs, List):
             docs = [docs]
 
         contents = [doc.page_content for doc in docs]

@@ -88,7 +88,9 @@ def convert_message_to_ots_document(
     ots_document = OTSDocument(
         document_id=message.id,
         text=content,
-        embedding=embedding_model.embed_query(content) if embedding_model else None,
+        embedding=embedding_model.embed_query(content)
+        if embedding_model and content
+        else None,
         metadata=ots_document_metadata,
     )
     return ots_document
@@ -179,6 +181,7 @@ def _generate_ots_content_from_message(
     return content, content_json_list
 
 
+# This global variable will be cached to reduce computation time overhead
 message_metadata_names: Optional[List[str]] = None
 
 
