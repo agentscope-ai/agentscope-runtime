@@ -83,5 +83,9 @@ deployment = [
     "alibabacloud-bailian20231229",
     "build",
     "setuptools",
-    "wheel"
+    "wheel",
+    "steel-sdk>=0.1.0",
+    "alibabacloud-credentials",
+    "jinja2",
+    "psutil",
 ]
