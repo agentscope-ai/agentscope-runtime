@@ -94,15 +94,25 @@ Node and Python environments are required.
 ```bash
 cd frontend
 npm install
+npm install -g serve
 ```
 
 #### Run the Front-end Service
+Use your frontend port to serve the frontend service.
 
+NOTE: the `config.yml` file contains the 'frontend' port configuration, which SHOULD BE the SAME with the port here.
 ```bash
-npm run start
+npm run build
+serve -s build -p 3000
 ```
 
 This will open your browser and display the demo page. Alternatively, you can also open it in your browser at http://localhost:3000:
+
+#### (Alternatively) Dev Mode
+To run the front-end service in development mode, use the following command:
+```bash
+npm run start
+```
 
 ### Install the Back-end Service
 
@@ -120,6 +130,17 @@ python async_quart_service.py
 ```
 
 The service will listen on port 9000.
+
+#### (Alternative) Use Redis as session service
+1. Install [Redis](https://redis.io/)  and start it
+2. modify `config.yml`. Set session-type to redis and set session-redis.url as your redis url. For example, if your redis url is redis://localhost:6379/0, the `config.yml` should be like this:
+
+```yml
+backend:
+  session-type: redis # session type, support memory, redis (you need install redis)
+  session-redis: # config this if you use redis as session store
+    url: redis://localhost:6379/0
+```
 
 ### Usage
 

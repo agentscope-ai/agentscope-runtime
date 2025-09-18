@@ -215,7 +215,9 @@ It will listen on 5100
 Open another terminal and run the frontend.
 ```bash
 cd frontend
-npm run start
+npm run build
+npm install -g serve
+serve -s build
 ```
 It will listen on 3000. Open your browser and go to http://localhost:3000.
 

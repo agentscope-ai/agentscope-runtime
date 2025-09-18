@@ -195,7 +195,7 @@ class SandboxHttpClient:
             mcp_tools = response.json()
             mcp_tools["generic"] = self.generic_tools
             if tool_type:
-                return {tool_type: mcp_tools.get(tool_type, [])}
+                return {tool_type: mcp_tools.get(tool_type, {})}
             return mcp_tools
         except requests.exceptions.RequestException as e:
             logging.error(f"An error occurred: {e}")

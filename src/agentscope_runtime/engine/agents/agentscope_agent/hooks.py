@@ -2,6 +2,7 @@
 """ Hooks for stream output """
 # pylint: disable=unused-argument,too-many-nested-blocks
 import asyncio
+import os
 import time
 import threading
 import logging
@@ -14,7 +15,7 @@ from agentscope.message import Msg
 
 _MSG_INSTANCE = defaultdict(list)
 _LOCKS = defaultdict(threading.Lock)
-TIMEOUT = 30
+TIMEOUT = int(os.getenv("AGENTSCOPE_AGENT_TIMEOUT", "30"))
 
 
 def run_async_in_thread(coro):

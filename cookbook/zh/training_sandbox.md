@@ -27,8 +27,7 @@ Sandbox主要用于训练评测的功能。训练沙箱的数据主要基于公�
 
 + [APPWorld](https://github.com/StonyBrookNLP/appworld): APPWorld 是一个高效的测试环境，用于测试和评估AI
   Agent在执行复杂多步骤任务的能力。
-+ [BFCL](https://github.com/ShishirPatil/gorilla): APPWorld 是一个高效的测试环境，用于测试和评估AI
-  Agent在执行复杂多步骤任务的能力。
++ [BFCL](https://github.com/ShishirPatil/gorilla): BFCL 是首个专门评估大语言模型（LLMs）函数调用能力的全面且可执行的评测平台。与以往的评测不同，BFCL涵盖了多种形式的函数调用、丰富的场景，并关注函数调用的可执行性。。
 
 ## 安装
 
@@ -95,15 +94,11 @@ docker build -f src/agentscope_runtime/sandbox/box/training_box/environments/app
 例如，我们可以使用 get_env_profile 方法获取训练ID列表。
 
 ```python
-from agentscope_runtime.sandbox.box.training_box.training_box import (
-    TrainingSandbox,
-)
+from agentscope_runtime.sandbox.box.training_box.training_box import APPWorldSandbox
 
-#创建训练用沙箱
-box = TrainingSandbox()
-
-profile_list = box.get_env_profile(env_type='appworld',split='train')
-print(profile_list)
+box = APPWorldSandbox()
+profile_list = box.get_env_profile(env_type="appworld", split="train")
+print(profile_list[0])
 ```
 
 #### 创建训练样本

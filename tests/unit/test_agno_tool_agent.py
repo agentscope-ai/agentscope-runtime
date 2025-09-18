@@ -5,7 +5,9 @@ import pytest
 
 from agentscope_runtime.sandbox.tools.function_tool import FunctionTool
 from agentscope_runtime.engine.agents.agno_agent import AgnoAgent
-from agentscope_runtime.engine.helpers.helper import simple_call_agent_tool
+from agentscope_runtime.engine.helpers.helper import (
+    simple_call_agent_tool_auto_lifecycle,
+)
 from agentscope_runtime.sandbox.tools.mcp_tool import MCPConfigConverter
 
 
@@ -81,7 +83,7 @@ async def test_agno_agent_runner(env):
     ]
     query = "Calculate 8^5 with tools."
 
-    all_result = await simple_call_agent_tool(agent, query)
+    all_result = await simple_call_agent_tool_auto_lifecycle(agent, query)
 
     assert gt_list[0] in all_result or gt_list[1] in all_result
 
@@ -90,5 +92,5 @@ async def test_agno_agent_runner(env):
         "New_York",
     ]
     query = "What time is it now?"
-    all_result = await simple_call_agent_tool(agent, query)
+    all_result = await simple_call_agent_tool_auto_lifecycle(agent, query)
     assert gt_list[0] in all_result or gt_list[1] in all_result

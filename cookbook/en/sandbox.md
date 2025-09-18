@@ -369,6 +369,37 @@ with BaseSandbox(base_url="http://your_IP_address:8000") as box:
     print(box.run_ipython_cell(code="print('hi')"))
 ```
 
+### Expose Sandbox as an MCP Server
+
+Configure the local Sandbox Runtime as an MCP server named `sandbox`, so it can be invoked by MCP-compatible clients to safely execute command from sandbox via a remote sandbox server `http://127.0.0.1:8000`.
+
+```json
+{
+    "mcpServers": {
+        "sandbox": {
+            "command": "uvx",
+            "args": [
+                "--from",
+                "agentscope-runtime[sandbox]",
+                "runtime-sandbox-mcp",
+                "--type=base",
+                "--base_url=http://127.0.0.1:8000"
+            ],
+        }
+    },
+}
+```
+
+#### Command Arguments
+
+The `runtime-sandbox-mcp` command accepts the following arguments:
+
+| Argument         | Values                            | Description                                                  |
+| ---------------- | --------------------------------- | ------------------------------------------------------------ |
+| `--type`         | `base` | `browser` | `filesystem` | Sandbox type to run. `base` for Python/shell, `browser` for browser automation, `filesystem` for file operations. |
+| `--base_url`     | URL string                        | Base URL of a remote sandbox service. Leave empty to run locally. |
+| `--bearer_token` | String token                      | Optional authentication token for secure access.             |
+
 ## Tool List
 
 * Base Tools (Available in all sandbox types)
