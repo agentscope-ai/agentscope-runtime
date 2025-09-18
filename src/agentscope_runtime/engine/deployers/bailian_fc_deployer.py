@@ -148,6 +148,14 @@ async def _oss_create_bucket_if_not_exists(client, bucket_name: str) -> None:
         )
         logger.info(f'put bucket tag status code: {result.status_code}, request id: {result.request_id}')
 
+        policy_text = "{\"Version\":\"1\",\"Statement\":[{\"Effect\":\"Deny\",\"Action\":[\"Created by Alibaba Cloud Security Team, do not modify this action. Details: https://alidocs.dingtalk.com/i/nodes/QG53mjyd800agdlKHXoGND7E86zbX04v\",\"oss:ListObjects\",\"oss:PutBucketPolicy\",\"oss:GetBucketPolicy\",\"oss:DeleteBucketPolicy\"],\"Principal\":[\"*\"],\"Resource\":[\"*\"],\"Condition\":{\"StringNotLike\":{\"acs:SourceVpc\":[\"vpc-*\"],\"acs:AccessId\":[\"TMP.*\",\"STS.*\"]},\"NotIpAddress\":{\"acs:SourceIp\":[\"106.11.0.0/16\",\"203.119.128.0/17\",\"59.82.0.0/16\",\"140.205.0.0/16\",\"100.64.0.0/10\",\"10.0.0.0/8\",\"11.0.0.0/8\",\"26.0.0.0/8\",\"33.0.0.0/8\",\"205.204.117.160/27\",\"47.89.74.0/27\",\"47.246.164.128/27\",\"47.246.164.160/27\",\"47.246.120.64/27\",\"47.89.93.64/27\",\"47.89.97.192/27\",\"47.246.88.224/27\",\"198.11.161.96/27\",\"47.246.128.192/27\",\"47.246.132.128/25\",\"47.89.85.96/27\",\"47.89.122.64/27\",\"47.246.67.96/27\",\"203.209.240.0/24\",\"42.120.72.0/22\"]}}},{\"Effect\":\"Deny\",\"Action\":[\"Created by Alibaba Cloud Security Team, do not modify this action. Details: https://alidocs.dingtalk.com/i/nodes/QG53mjyd800agdlKHXoGND7E86zbX04v\",\"oss:ListObjects\",\"oss:PutBucketPolicy\",\"oss:GetBucketPolicy\",\"oss:DeleteBucketPolicy\"],\"Principal\":[\"*\"],\"Resource\":[\"*\"],\"Condition\":{\"StringNotLike\":{\"acs:AccessId\":[\"TMP.*\",\"STS.*\"]},\"StringLike\":{\"acs:SourceVpc\":[\"vpc-*\"]},\"StringNotEquals\":{\"acs:SourceVpc\":[\"vpc-bp1cmmg4eq9yfadr6idra\",\"vpc-bp1f1h7l4b29pzjg8dwnr\",\"vpc-e8yb114e6hjnal3snrtv2\",\"vpc-bp18g9edcwgebtzk1ii1p\",\"vpc-bp1p6lfiwegz2uqzz0l1c\",\"vpc-bp1r0msgeluubemc3jj0w\",\"vpc-bp1pfhm5hcc6mhxlyyspj\",\"vpc-23cmu927c\",\"vpc-i0f3724zokjw4pf8yi0ru\"]}}}]}"
+        put_bucket_policy_result = client.put_bucket_policy(oss.PutBucketPolicyRequest(
+            bucket=bucket_name,
+            body=policy_text,
+        ))
+        logger.info(f'put bucket policy status code: {put_bucket_policy_result.status_code}, request id: {put_bucket_policy_result.request_id}')
+
+
 
 def _create_bucket_name(prefix: str, base_name: str) -> str:
     import re as _re
