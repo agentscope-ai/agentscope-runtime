@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
-"""Unit tests for KubernetesDeployer using pytest."""
+# pylint:disable=protected-access, unused-argument
+# pylint:disable=use-implicit-booleaness-not-comparison
+
+
+import os
+import shutil
+import tempfile
+from unittest.mock import patch
 
 import pytest
-import asyncio
-import tempfile
-import shutil
-import os
-from unittest.mock import patch, MagicMock, AsyncMock
 
 from agentscope_runtime.engine.deployers.kubernetes_deployer import (
-    KubernetesDeployer,
+    KubernetesDeployManager,
     K8sConfig,
     BuildConfig,
 )
@@ -50,8 +52,8 @@ class TestBuildConfigK8s:
         assert config.cleanup_after_build is True
 
 
-class TestKubernetesDeployer:
-    """Test cases for KubernetesDeployer class."""
+class TestKubernetesDeployManager:
+    """Test cases for KubernetesDeployManager class."""
 
     @pytest.fixture(autouse=True)
     def setup_teardown(self):
@@ -62,14 +64,14 @@ class TestKubernetesDeployer:
             shutil.rmtree(self.temp_dir)
 
     @patch(
-        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
+        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
     )
     def test_kubernetes_deployer_creation(self, mock_k8s_client):
-        """Test KubernetesDeployer creation."""
+        """Test KubernetesDeployManager creation."""
         k8s_config = K8sConfig()
         registry_config = RegistryConfig()
 
-        deployer = KubernetesDeployer(
+        deployer = KubernetesDeployManager(
             kube_config=k8s_config,
             registry_config=registry_config,
         )
@@ -86,7 +88,7 @@ class TestKubernetesDeployer:
         )
 
     @patch(
-        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
+        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
     )
     @pytest.mark.asyncio
     async def test_deploy_with_runner_success(self, mock_k8s_client, mocker):
@@ -106,7 +108,7 @@ class TestKubernetesDeployer:
         mock_k8s_client.return_value = mock_client_instance
 
         # Create deployer
-        deployer = KubernetesDeployer()
+        deployer = KubernetesDeployManager()
 
         # Mock the image builder to avoid actual Docker operations
         with patch.object(
@@ -140,7 +142,7 @@ class TestKubernetesDeployer:
             mock_client_instance.create_deployment.assert_called_once()
 
     @patch(
-        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
+        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
     )
     @pytest.mark.asyncio
     async def test_deploy_with_legacy_func(self, mock_k8s_client, mocker):
@@ -160,7 +162,7 @@ class TestKubernetesDeployer:
         mock_k8s_client.return_value = mock_client_instance
 
         # Create deployer
-        deployer = KubernetesDeployer()
+        deployer = KubernetesDeployManager()
 
         # Mock the image builder to avoid actual Docker operations
         with patch.object(
@@ -185,7 +187,7 @@ class TestKubernetesDeployer:
             mock_build.assert_called_once()
 
     @patch(
-        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
+        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
     )
     @pytest.mark.asyncio
     async def test_deploy_image_build_failure(self, mock_k8s_client, mocker):
@@ -197,7 +199,7 @@ class TestKubernetesDeployer:
         mock_k8s_client.return_value = mock_client_instance
 
         # Create deployer
-        deployer = KubernetesDeployer()
+        deployer = KubernetesDeployManager()
 
         # Mock the image builder to return None (build failure)
         with patch.object(
@@ -210,10 +212,14 @@ class TestKubernetesDeployer:
                 await deployer.deploy(runner=mock_runner)
 
     @patch(
-        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
+        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
     )
     @pytest.mark.asyncio
-    async def test_deploy_k8s_deployment_failure(self, mock_k8s_client, mocker):
+    async def test_deploy_k8s_deployment_failure(
+        self,
+        mock_k8s_client,
+        mocker,
+    ):
         """Test deployment when Kubernetes deployment fails."""
         mock_runner = mocker.Mock()
 
@@ -227,7 +233,7 @@ class TestKubernetesDeployer:
         mock_k8s_client.return_value = mock_client_instance
 
         # Create deployer
-        deployer = KubernetesDeployer()
+        deployer = KubernetesDeployManager()
 
         # Mock the image builder to return success, but k8s deployment fails
         with patch.object(
@@ -243,10 +249,14 @@ class TestKubernetesDeployer:
                 await deployer.deploy(runner=mock_runner)
 
     @patch(
-        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
+        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
     )
     @pytest.mark.asyncio
-    async def test_deploy_with_protocol_adapters(self, mock_k8s_client, mocker):
+    async def test_deploy_with_protocol_adapters(
+        self,
+        mock_k8s_client,
+        mocker,
+    ):
         """Test deployment with protocol adapters."""
         mock_runner = mocker.Mock()
         mock_adapters = [mocker.Mock(), mocker.Mock()]
@@ -260,7 +270,7 @@ class TestKubernetesDeployer:
         )
         mock_k8s_client.return_value = mock_client_instance
 
-        deployer = KubernetesDeployer()
+        deployer = KubernetesDeployManager()
 
         # Mock the image builder
         with patch.object(
@@ -272,13 +282,13 @@ class TestKubernetesDeployer:
                 runner=mock_runner,
                 protocol_adapters=mock_adapters,
             )
-
+            print(result)
             # Verify protocol_adapters were passed to image builder
             call_args = mock_build.call_args
             assert call_args[1]["protocol_adapters"] == mock_adapters
 
     @patch(
-        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
+        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
     )
     @pytest.mark.asyncio
     async def test_deploy_with_volume_mount(self, mock_k8s_client, mocker):
@@ -294,7 +304,7 @@ class TestKubernetesDeployer:
         )
         mock_k8s_client.return_value = mock_client_instance
 
-        deployer = KubernetesDeployer()
+        deployer = KubernetesDeployManager()
 
         # Mock the image builder
         with patch.object(
@@ -306,7 +316,7 @@ class TestKubernetesDeployer:
                 runner=mock_runner,
                 mount_dir="/data",
             )
-
+            print(result)
             # Verify volume mounting configuration was passed
             call_args = mock_client_instance.create_deployment.call_args
             volumes_arg = call_args[1]["volumes"]
@@ -319,19 +329,19 @@ class TestKubernetesDeployer:
             assert volumes_arg == expected_volumes
 
     @patch(
-        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
+        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
     )
     @pytest.mark.asyncio
     async def test_deploy_validation_error(self, mock_k8s_client):
         """Test deployment with invalid parameters."""
-        deployer = KubernetesDeployer()
+        deployer = KubernetesDeployManager()
 
         # Test with neither runner nor func
         with pytest.raises(RuntimeError, match="Deployment failed"):
             await deployer.deploy(runner=None, func=None)
 
     @patch(
-        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
+        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
     )
     @pytest.mark.asyncio
     async def test_stop_deployment(self, mock_k8s_client, mocker):
@@ -341,7 +351,7 @@ class TestKubernetesDeployer:
         mock_client_instance.remove_deployment.return_value = True
         mock_k8s_client.return_value = mock_client_instance
 
-        deployer = KubernetesDeployer()
+        deployer = KubernetesDeployManager()
         deployer.deploy_id = "test-deploy-123"
         deployer._deployed_resources["test-deploy-123"] = {
             "service_name": "agent-test-depl",
@@ -356,12 +366,12 @@ class TestKubernetesDeployer:
         )
 
     @patch(
-        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
+        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
     )
     @pytest.mark.asyncio
     async def test_stop_nonexistent_deployment(self, mock_k8s_client):
         """Test stopping a nonexistent deployment."""
-        deployer = KubernetesDeployer()
+        deployer = KubernetesDeployManager()
         deployer.deploy_id = "nonexistent-deploy"
 
         result = await deployer.stop()
@@ -369,7 +379,7 @@ class TestKubernetesDeployer:
         assert result is False
 
     @patch(
-        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
+        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
     )
     def test_get_status(self, mock_k8s_client, mocker):
         """Test getting deployment status."""
@@ -377,7 +387,7 @@ class TestKubernetesDeployer:
         mock_client_instance.get_deployment_status.return_value = "running"
         mock_k8s_client.return_value = mock_client_instance
 
-        deployer = KubernetesDeployer()
+        deployer = KubernetesDeployManager()
         deployer.deploy_id = "test-deploy-123"
         deployer._deployed_resources["test-deploy-123"] = {
             "service_name": "agent-test-depl",
@@ -391,11 +401,11 @@ class TestKubernetesDeployer:
         )
 
     @patch(
-        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
+        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
     )
     def test_get_status_nonexistent(self, mock_k8s_client):
         """Test getting status of nonexistent deployment."""
-        deployer = KubernetesDeployer()
+        deployer = KubernetesDeployManager()
         deployer.deploy_id = "nonexistent-deploy"
 
         status = deployer.get_status()
@@ -410,9 +420,9 @@ class TestKubernetesDeployer:
 
         # Mock just the KubernetesClient constructor
         with patch(
-            "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",
+            "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
         ):
-            deployer = KubernetesDeployer(
+            deployer = KubernetesDeployManager(
                 kube_config=k8s_config,
                 registry_config=registry_config,
                 build_context_dir="/tmp/test-build",

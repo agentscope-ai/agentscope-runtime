@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-# deploy_to_k8s.py
+# pylint:disable=wrong-import-position, wrong-import-order
 import asyncio
 import os
 import sys
 
 from agentscope_runtime.engine.deployers.kubernetes_deployer import (
-    KubernetesDeployer,
+    KubernetesDeployManager,
     RegistryConfig,
     K8sConfig,
 )
@@ -35,8 +35,8 @@ async def deploy_agent_to_k8s():
 
     port = 8080
 
-    # 5. 创建KubernetesDeployer
-    deployer = KubernetesDeployer(
+    # 5. 创建KubernetesDeployManager
+    deployer = KubernetesDeployManager(
         kube_config=k8s_config,
         registry_config=registry_config,
         use_deployment=True,  # 使用Deployment模式，支持扩缩容
@@ -75,7 +75,7 @@ async def deploy_agent_to_k8s():
         "stream": True,
         "port": str(port),
         "replicas": 1,  # 部署2个副本
-        "image_tag": "linux-amd64-6",
+        "image_tag": "linux-amd64-8-2",
         "image_name": "agent_llm",
         # 依赖配置
         "requirements": [

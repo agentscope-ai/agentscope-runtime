@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Process manager for detached process deployment mode."""
+# pylint:disable=consider-using-with
 
 import asyncio
 import os

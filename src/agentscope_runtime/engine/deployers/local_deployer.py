@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Modified LocalDeployManager with unified FastAPI architecture."""
+# pylint:disable=protected-access
 
 import asyncio
 import logging
@@ -266,16 +266,13 @@ class LocalDeployManager(DeployManager):
     async def _create_detached_project(
         self,
         agent: Any,
-        runner: Optional[Any] = None,
         endpoint_path: str = "/process",
-        response_type: str = "sse",
-        stream: bool = True,
         services_config: Optional[ServicesConfig] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         **kwargs,
     ) -> str:
         """Create detached project using package_project method."""
-
+        self._logger.info(f"additional kwargs: {kwargs}")
         # Create package configuration for detached deployment
         package_config = PackageConfig(
             endpoint_path=endpoint_path,
@@ -287,6 +284,7 @@ class LocalDeployManager(DeployManager):
             requirements=[
                 "fastapi",
                 "uvicorn",
+                "agentscope-runtime[sandbox]",
                 "agentscope-runtime",
                 "pydantic",
                 "jinja2",

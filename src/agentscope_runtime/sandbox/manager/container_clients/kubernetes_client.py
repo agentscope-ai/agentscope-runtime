@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches, self-assigning-variable
+# pylint: disable=too-many-statements
+
 import hashlib
 import logging
 import time
@@ -884,7 +886,7 @@ class KubernetesClient(BaseClient):
         runtime_config=None,
         replicas=1,
         create_service=True,
-    ) -> Tuple[str, str, str] | Tuple[None, None, None]:
+    ) -> Tuple[str, list, str] | Tuple[None, None, None]:
         """
         Create a new Kubernetes Deployment with LoadBalancer service.
 
@@ -899,7 +901,7 @@ class KubernetesClient(BaseClient):
             create_service: Whether to create LoadBalancer service
 
         Returns:
-            Tuple of (deployment_name, service_info, load_balancer_ip)
+            Tuple of (deployment_name, ports, load_balancer_ip)
         """
         if not name:
             name = f"deploy-{hashlib.md5(image.encode()).hexdigest()[:8]}"
@@ -987,7 +989,7 @@ class KubernetesClient(BaseClient):
 
             return (
                 name,
-                str(service_info["ports"]) if service_info else "",
+                service_info["ports"] if service_info else [],
                 load_balancer_ip or "",
             )
 

@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Unit tests for docker image utils modules using pytest."""
+# pylint:disable=use-implicit-booleaness-not-comparison
+# pylint:disable=pointless-string-statement, protected-access
 
 import os
 import shutil
 import sys
 import tempfile
+
 # Mock classes will be provided by pytest-mock plugin
 
 import pytest
@@ -252,11 +254,11 @@ class TestRunnerImageFactory:
     def test_build_runner_image_mock(self, mocker):
         mock_package_project = mocker.patch(
             "agentscope_runtime.engine.deployers.utils.docker_image_utils."
-            "runner_image_factory.package_project"
+            "runner_image_factory.package_project",
         )
         mock_builder_class = mocker.patch(
             "agentscope_runtime.engine.deployers.utils.docker_image_utils."
-            "runner_image_factory.DockerImageBuilder"
+            "runner_image_factory.DockerImageBuilder",
         )
         """Test build_runner_image method with mocks."""
         # Setup mocks

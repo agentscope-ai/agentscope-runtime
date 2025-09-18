@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Service factory for dynamic service creation based on configuration."""
+# pylint:disable=line-too-long
 
 from typing import Dict, Type, Any
 from .service_config import (

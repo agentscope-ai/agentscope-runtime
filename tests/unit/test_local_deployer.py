@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Unit tests for LocalDeployManager using pytest."""
+# pylint:disable=too-many-return-statements, unused-variable
+# pylint:disable=protected-access, too-many-public-methods
 
 import os
 import shutil
 import tempfile
+
 # Mock classes will be provided by pytest-mock plugin
 
 import pytest
@@ -57,7 +59,7 @@ class TestLocalDeployManager:
     async def test_deploy_daemon_thread_mode(self, mocker):
         """Test deployment in daemon thread mode."""
         mock_app_factory = mocker.patch(
-            "agentscope_runtime.engine.deployers.local_deployer.FastAPIAppFactory"
+            "agentscope_runtime.engine.deployers.local_deployer.FastAPIAppFactory",  # noqa E501
         )
         mock_server_class = mocker.patch("uvicorn.Server")
         # Setup mocks
@@ -104,7 +106,7 @@ class TestLocalDeployManager:
     async def test_deploy_detached_process_mode(self, mocker):
         """Test deployment in detached process mode."""
         mock_package_project = mocker.patch(
-            "agentscope_runtime.engine.deployers.local_deployer.package_project"
+            "agentscope_runtime.engine.deployers.local_deployer.package_project",  # noqa E501
         )
         # Setup mocks
         mock_agent = mocker.Mock()
@@ -208,7 +210,7 @@ class TestLocalDeployManager:
     async def test_deploy_with_custom_config(self, mocker):
         """Test deployment with custom configuration."""
         mock_app_factory = mocker.patch(
-            "agentscope_runtime.engine.deployers.local_deployer.FastAPIAppFactory"
+            "agentscope_runtime.engine.deployers.local_deployer.FastAPIAppFactory",  # noqa E501
         )
         mock_server_class = mocker.patch("uvicorn.Server")
         mock_app = mocker.Mock()
@@ -250,10 +252,10 @@ class TestLocalDeployManager:
     async def test_create_detached_project(self, mocker):
         """Test creating detached project."""
         mock_package_config = mocker.patch(
-            "agentscope_runtime.engine.deployers.local_deployer.PackageConfig"
+            "agentscope_runtime.engine.deployers.local_deployer.PackageConfig",
         )
         mock_package_project = mocker.patch(
-            "agentscope_runtime.engine.deployers.local_deployer.package_project"
+            "agentscope_runtime.engine.deployers.local_deployer.package_project",  # noqa E501
         )
         mock_agent = mocker.Mock()
         mock_runner = mocker.Mock()
@@ -439,7 +441,11 @@ class TestLocalDeployManager:
         manager.is_running = True
         manager._detached_process_pid = 12345
 
-        mocker.patch.object(manager.process_manager, "is_process_running", return_value=True)
+        mocker.patch.object(
+            manager.process_manager,
+            "is_process_running",
+            return_value=True,
+        )
         result = manager.is_service_running()
         assert result is True
 
@@ -502,7 +508,7 @@ class TestLocalDeployManager:
         """Test detached process deployment when service doesn't become
         ready."""
         mock_package_project = mocker.patch(
-            "agentscope_runtime.engine.deployers.local_deployer.package_project"
+            "agentscope_runtime.engine.deployers.local_deployer.package_project",  # noqa E501
         )
         mock_agent = mocker.Mock()
         mock_runner = mocker.Mock()
@@ -517,8 +523,16 @@ class TestLocalDeployManager:
 
         manager = LocalDeployManager()
 
-        mock_start = mocker.patch.object(manager.process_manager, "start_detached_process", new_callable=mocker.AsyncMock)
-        mock_wait = mocker.patch.object(manager.process_manager, "wait_for_port", new_callable=mocker.AsyncMock)
+        mock_start = mocker.patch.object(
+            manager.process_manager,
+            "start_detached_process",
+            new_callable=mocker.AsyncMock,
+        )
+        mock_wait = mocker.patch.object(
+            manager.process_manager,
+            "wait_for_port",
+            new_callable=mocker.AsyncMock,
+        )
         mock_start.return_value = 12345
         mock_wait.return_value = False  # Service not ready
 

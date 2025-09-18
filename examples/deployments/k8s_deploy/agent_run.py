@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=wrong-import-position, wrong-import-order
+
 import os
 
 from agentscope_runtime.engine.agents.llm_agent import LLMAgent
 from agentscope_runtime.engine.llms import QwenLLM
-
 from others.other_project import version
 
 model = QwenLLM(

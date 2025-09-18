@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=protected-access
+
 import hashlib
 import logging
 import os
@@ -78,7 +80,7 @@ class RunnerImageFactory:
         if config.image_name:
             return config.image_name
         hash_content = (
-            f"{str(runner.agent.name)}"
+            f"{str(runner._agent.name)}"
             f"{str(config.requirements)}"
             f"{str(config.extra_files)}"
             f"{config.base_image}"
@@ -91,7 +93,7 @@ class RunnerImageFactory:
     @staticmethod
     def _validate_runner(runner: Runner):
         """Validate runner object"""
-        if not hasattr(runner, "_agent") or runner.agent is None:
+        if not hasattr(runner, "_agent") or runner._agent is None:
             raise ValueError("Runner must have a valid agent")
 
         # Log warnings for missing components
@@ -173,7 +175,7 @@ class RunnerImageFactory:
             # Package the project
             logger.info("Packaging Runner project...")
             project_dir, is_updated = package_project(
-                agent=runner.agent,
+                agent=runner._agent,
                 config=PackageConfig(
                     requirements=config.requirements,
                     extra_packages=config.extra_packages,

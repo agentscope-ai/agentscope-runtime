@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Unit tests for package_project_utils module using pytest with real
-assets."""
+# pylint:disable=inconsistent-return-statements
 
 import json
 import os
@@ -60,8 +59,8 @@ class TestPackageConfig:
             requirements=[],
             extra_packages=[],
         )
-        assert config.requirements == []
-        assert config.extra_packages == []
+        assert not config.requirements
+        assert not config.extra_packages
 
         # Test with None values
         config = PackageConfig(
@@ -105,10 +104,6 @@ class TestPackageProject:
 
             return llm_agent
         except ImportError:
-            # Fallback to sys.path approach
-            import sys
-            import os
-
             assets_path = os.path.join(os.path.dirname(__file__), "assets")
             if assets_path not in sys.path:
                 sys.path.insert(0, assets_path)
@@ -182,6 +177,7 @@ class TestPackageProject:
             project_dir, updated = package_project(llm_agent, config)
 
             # Check that extra directory was copied
+            assert updated is True
             others_target = os.path.join(project_dir, "others")
             assert os.path.exists(others_target)
             assert os.path.exists(
@@ -216,6 +212,7 @@ class TestPackageProject:
             # Check that services config file was created
             config_file = os.path.join(project_dir, "services_config.json")
             assert os.path.exists(config_file)
+            assert updated is True
 
             with open(config_file, "r", encoding="utf-8") as f:
                 config_data = json.load(f)
@@ -255,6 +252,7 @@ class TestPackageProject:
 
         try:
             project_dir, updated = package_project(agent, config)
+            assert updated is True
             assert os.path.exists(project_dir)
             assert (
                 project_dir.startswith(output_dir) or project_dir == output_dir
@@ -286,6 +284,8 @@ class TestPackageProject:
 
             # Second call with same config should detect no changes needed
             project_dir2, updated2 = package_project(agent, config)
+            assert updated2 is False
+
             assert project_dir1 == project_dir2
             # Note: updated2 might be True due to template rendering
             # differences
@@ -318,6 +318,8 @@ class TestPackageProject:
             project_dir, updated = package_project(agent, config)
             # If it succeeds, that's also valid (ignoring missing packages)
             assert os.path.exists(project_dir)
+            assert updated is True
+
         except (FileNotFoundError, OSError, ValueError):
             # Expected behavior for missing packages
             pass
@@ -338,6 +340,8 @@ class TestPackageProject:
 
         try:
             project_dir, updated = package_project(agent, config)
+            assert updated is True
+
             assert os.path.exists(project_dir)
             assert os.path.exists(os.path.join(project_dir, "agent_file.py"))
 
@@ -513,7 +517,7 @@ class TestIntegration:
 
                 # Create tar.gz from the packaged project
                 tar_path = create_tar_gz(project_dir)
-
+                assert updated is True
                 assert os.path.exists(tar_path)
                 assert tar_path.endswith(".tar.gz")
 

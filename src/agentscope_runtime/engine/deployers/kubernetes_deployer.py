@@ -45,7 +45,7 @@ class BuildConfig(BaseModel):
     cleanup_after_build: bool = True
 
 
-class KubernetesDeployer(DeployManager):
+class KubernetesDeployManager(DeployManager):
     """Kubernetes deployer for agent services"""
 
     def __init__(
@@ -54,12 +54,11 @@ class KubernetesDeployer(DeployManager):
         registry_config: RegistryConfig = RegistryConfig(),
         use_deployment: bool = True,
         build_context_dir: str = "/tmp/k8s_build",
-        **kwargs,
     ):
         super().__init__()
         self.kubeconfig = kube_config
         self.registry_config = registry_config
-        self.image_builder = RunnerImageFactory()
+        self.image_factory = RunnerImageFactory()
         self.use_deployment = use_deployment
         self.build_context_dir = build_context_dir
         self._deployed_resources = {}
@@ -85,8 +84,6 @@ class KubernetesDeployer(DeployManager):
         environment: Dict = None,
         mount_dir: str = None,
         runtime_config: Dict = None,
-        deploy_timeout: int = 300,
-        health_check: bool = True,
         func: Optional[Callable] = None,
         image_name: str = "agent_llm",
         image_tag: str = "latest",
@@ -111,8 +108,6 @@ class KubernetesDeployer(DeployManager):
             environment: Environment variables dict
             mount_dir: Mount directory
             runtime_config: K8s runtime configuration
-            deploy_timeout: Deployment timeout in seconds
-            health_check: Enable health check
             # Backward compatibility
             func: Legacy function parameter (deprecated)
             image_name: Image name
@@ -161,7 +156,7 @@ class KubernetesDeployer(DeployManager):
             # Step 1: Build image with proper error handling
             logger.info("Building runner image...")
             try:
-                built_image_name = self.image_builder.build_runner_image(
+                built_image_name = self.image_factory.build_runner_image(
                     runner=actual_func,
                     requirements=actual_requirements,
                     extra_packages=extra_packages or [],

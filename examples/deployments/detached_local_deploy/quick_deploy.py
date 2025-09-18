@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Quick deployment script for testing detached mode."""
+# pylint:disable=wrong-import-position, wrong-import-order
 
 import asyncio
 import os
 import sys
 
+from agentscope_runtime.engine.deployers.adapter.a2a import (
+    A2AFastAPIDefaultAdapter,
+)
 from agentscope_runtime.engine.deployers.local_deployer import (
     LocalDeployManager,
 )
@@ -15,9 +18,6 @@ from agentscope_runtime.engine.deployers.utils.service_utils import (
     ServicesConfig,
 )
 from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.engine.deployers.adapter.a2a import (
-    A2AFastAPIDefaultAdapter,
-)
 
 # Add current directory to path for importing agent
 sys.path.insert(0, os.path.dirname(__file__))

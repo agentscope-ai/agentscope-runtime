@@ -2,6 +2,7 @@
 # pylint: disable=redefined-outer-name, protected-access, unused-argument, wrong-import-position
 # flake8: noqa: E402
 import sys
+
 # AsyncMock will be provided by pytest-mock plugin
 
 import pytest
@@ -37,7 +38,7 @@ def create_message(role: str, content: str) -> Message:
 async def mock_task_memory_service(mocker):
     """Mock the TaskMemoryService from reme_ai."""
     mock_class = mocker.patch(
-        "reme_ai.service.task_memory_service.TaskMemoryService"
+        "reme_ai.service.task_memory_service.TaskMemoryService",
     )
     instance = mock_class.return_value
     instance.start = mocker.AsyncMock()

@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Unit tests for service utils modules using pytest."""
+# pylint:disable=pointless-string-statement
 
 import os
 import shutil
 import tempfile
+
 # Mock classes will be provided by pytest-mock plugin
 
 import pytest
@@ -103,7 +104,10 @@ class TestFastAPITemplateManager:
         assert isinstance(manager, FastAPITemplateManager)
 
     def test_render_standalone_template(self, mocker):
-        mock_render = mocker.patch.object(FastAPITemplateManager, "render_standalone_template")
+        mock_render = mocker.patch.object(
+            FastAPITemplateManager,
+            "render_standalone_template",
+        )
         """Test rendering standalone template."""
         mock_render.return_value = (
             "# Generated FastAPI main.py\nfrom fastapi import FastAPI\n\n"
@@ -135,7 +139,10 @@ class TestFastAPITemplateManager:
         assert result == "Agent: my_agent, Endpoint: /api"
 
     def test_render_template_with_protocol_adapters(self, mocker):
-        mock_render = mocker.patch.object(FastAPITemplateManager, "render_standalone_template")
+        mock_render = mocker.patch.object(
+            FastAPITemplateManager,
+            "render_standalone_template",
+        )
         """Test rendering template with protocol adapters."""
         mock_render.return_value = (
             "# Generated code with adapters\nadapters = [HttpAdapter(), "
@@ -314,6 +321,7 @@ class TestProcessManager:
     @pytest.mark.asyncio
     async def test_stop_nonexistent_process(self, mocker):
         mock_no_such_process = mocker.patch("psutil.NoSuchProcess")
+        print(mock_no_such_process)
         """Test stopping nonexistent process."""
         with mocker.patch("psutil.pid_exists", return_value=False):
             manager = ProcessManager()

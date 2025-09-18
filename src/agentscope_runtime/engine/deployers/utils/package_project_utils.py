@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Modified package_project_utils.py with unified FastAPI template."""
+# pylint:disable=too-many-boolean-expressions, too-many-nested-blocks
+# pylint:disable=too-many-return-statements, unused-variable
+# pylint:disable=cell-var-from-loop, too-many-branches, too-many-statements
 
 import ast
 import hashlib
@@ -733,6 +735,7 @@ def package_project(
                     "fastapi",
                     "uvicorn",
                     "agentscope-runtime",
+                    "agentscope-runtime[sandbox]",
                     "pydantic",
                     "jinja2",  # For template rendering
                     "psutil",  # For process management

@@ -396,7 +396,10 @@ class TestContextManager:
         assert len(manager.service_instances) == 0
 
     @pytest.mark.asyncio
-    async def test_context_manager_lifecycle_with_pre_instantiated(self, mocker):
+    async def test_context_manager_lifecycle_with_pre_instantiated(
+        self,
+        mocker,
+    ):
         """Test async context manager lifecycle with pre-instantiated
         services."""
         mock_service = mocker.AsyncMock()

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""FastAPI application factory for unified deployment architecture."""
+# pylint:disable=too-many-branches, unused-argument
+
 
 import asyncio
 import json
@@ -261,6 +262,7 @@ class FastAPIAppFactory:
         mode: DeploymentMode,
     ):
         """Add routes to the FastAPI application."""
+        print(request_model)
 
         # Health check endpoint
         @app.get("/health")
