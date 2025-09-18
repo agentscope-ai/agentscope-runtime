@@ -104,37 +104,20 @@ class Runner:
         Raises:
             RuntimeError: If deployment fails
         """
-        # Check if deploy_manager supports runner-based deployment
-        if (
-            hasattr(deploy_manager, "deploy")
-            and "runner" in deploy_manager.deploy.__code__.co_varnames
-        ):
-            # New pattern: pass complete runner object
-            deploy_result = await deploy_manager.deploy(
-                runner=self,
-                endpoint_path=endpoint_path,
-                stream=stream,
-                protocol_adapters=protocol_adapters,
-                requirements=requirements,
-                extra_packages=extra_packages,
-                base_image=base_image,
-                environment=environment,
-                runtime_config=runtime_config,
-                **kwargs,
-            )
-        else:
-            # Backward compatibility: pass deploy_func for existing deployers
-            if stream:
-                deploy_func = self.stream_query
-            else:
-                deploy_func = self.query
-            deploy_result = await deploy_manager.deploy(
-                deploy_func,
-                endpoint_path=endpoint_path,
-                protocol_adapters=protocol_adapters,
-                **kwargs,
-            )
+        deploy_result = await deploy_manager.deploy(
+            runner=self,
+            endpoint_path=endpoint_path,
+            stream=stream,
+            protocol_adapters=protocol_adapters,
+            requirements=requirements,
+            extra_packages=extra_packages,
+            base_image=base_image,
+            environment=environment,
+            runtime_config=runtime_config,
+            **kwargs,
+        )
 
+        # TODO: add redis or other persistant method
         self._deploy_managers[deploy_manager.deploy_id] = deploy_result
         return deploy_result
 
