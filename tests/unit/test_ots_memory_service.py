@@ -362,3 +362,30 @@ async def test_vector_search(ots_memory_service_vector):
 
     await ots_memory_service_vector.delete_memory(user_id)
     await wait_for_index_ready(ots_memory_service_vector, 0)
+
+    # Test vector search with error message
+    messages = [
+        create_message(Role.USER, "The weather is sunny today"),
+        create_message(Role.USER, "I like to eat apples"),
+        create_message(Role.USER, "The cat is sleeping"),
+    ]
+    messages[0].type = MessageType.ERROR
+    await ots_memory_service_vector.add_memory(user_id, messages)
+    await wait_for_index_ready(ots_memory_service_vector, 3)
+
+    search_query = [create_message(Role.USER, "What is the weather like?")]
+    retrieved = await ots_memory_service_vector.search_memory(user_id, search_query)
+
+    assert len(retrieved) == 2
+    assert "sunny" not in retrieved[0].content[0].text
+
+    search_query = [create_message(Role.USER, "What is the cat doing?")]
+    retrieved = await ots_memory_service_vector.search_memory(
+        user_id, search_query, filters={"top_k": 1}
+    )
+
+    assert len(retrieved) == 1
+    assert "sleeping" in retrieved[0].content[0].text
+
+    await ots_memory_service_vector.delete_memory(user_id)
+    await wait_for_index_ready(ots_memory_service_vector, 0)

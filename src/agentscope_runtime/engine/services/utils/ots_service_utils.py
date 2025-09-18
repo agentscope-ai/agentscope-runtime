@@ -69,11 +69,44 @@ def convert_message_to_ots_message(message: Message, session: Session) -> OTSMes
     return ots_message
 
 
+# This function is designed to facilitate batch embedding computation for better performance.
+def convert_messages_to_ots_documents(
+    messages: List[Message],
+    user_id: str,
+    session_id: str,
+    embedding_model: Optional[Embeddings] = None,
+) -> List[OTSDocument]:
+    if not embedding_model:
+        return [
+            convert_message_to_ots_document(message, user_id, session_id)
+            for message in messages
+        ]
+
+    # Batch embed messages: extract content, filter non-empty, compute embeddings, and align results with original messages
+    contents = [_generate_ots_content_from_message(message)[0] for message in messages]
+    contents_not_none = [content for content in contents if content is not None]
+
+    embeddings_not_none = embedding_model.embed_documents(contents_not_none)
+    embeddings = []
+    index = 0
+    for content in contents:
+        if content is not None:
+            embeddings.append(embeddings_not_none[index])
+            index += 1
+            continue
+        embeddings.append(None)
+
+    return [
+        convert_message_to_ots_document(message, user_id, session_id, embedding)
+        for message, embedding in zip(messages, embeddings)
+    ]
+
+
 def convert_message_to_ots_document(
     message: Message,
     user_id: str,
     session_id: str,
-    embedding_model: Optional[Embeddings] = None,
+    embedding: Optional[List[float]] = None,
 ) -> OTSDocument:
     content, content_list = _generate_ots_content_from_message(message)
     ots_document_metadata = message.model_dump(exclude={"content", "id"})
@@ -88,9 +121,7 @@ def convert_message_to_ots_document(
     ots_document = OTSDocument(
         document_id=message.id,
         text=content,
-        embedding=embedding_model.embed_query(content)
-        if embedding_model and content
-        else None,
+        embedding=embedding if embedding else None,
         metadata=ots_document_metadata,
     )
     return ots_document
