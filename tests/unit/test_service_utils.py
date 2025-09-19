@@ -320,8 +320,7 @@ class TestProcessManager:
 
     @pytest.mark.asyncio
     async def test_stop_nonexistent_process(self, mocker):
-        mock_no_such_process = mocker.patch("psutil.NoSuchProcess")
-        print(mock_no_such_process)
+        mocker.patch("psutil.NoSuchProcess")
         """Test stopping nonexistent process."""
         with mocker.patch("psutil.pid_exists", return_value=False):
             manager = ProcessManager()

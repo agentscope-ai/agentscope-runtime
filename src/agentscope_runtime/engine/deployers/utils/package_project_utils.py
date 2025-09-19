@@ -15,7 +15,7 @@ from typing import List, Optional, Any, Tuple
 from pydantic import BaseModel
 
 from .service_utils.fastapi_templates import FastAPITemplateManager
-
+from .service_utils.service_config import ServicesConfig
 
 # Default template will be loaded from template file
 
@@ -28,7 +28,9 @@ class PackageConfig(BaseModel):
     output_dir: Optional[str] = None
     endpoint_path: Optional[str] = "/process"
     deployment_mode: Optional[str] = "standalone"  # New: deployment mode
-    services_config: Optional[dict] = None  # New: services configuration
+    services_config: Optional[
+        ServicesConfig
+    ] = None  # New: services configuration
     protocol_adapters: Optional[List[Any]] = None  # New: protocol adapters
 
 

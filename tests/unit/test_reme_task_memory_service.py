@@ -2,9 +2,6 @@
 # pylint: disable=redefined-outer-name, protected-access, unused-argument, wrong-import-position
 # flake8: noqa: E402
 import sys
-
-# AsyncMock will be provided by pytest-mock plugin
-
 import pytest
 import pytest_asyncio
 

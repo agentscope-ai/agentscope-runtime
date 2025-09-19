@@ -8,12 +8,12 @@ from contextlib import asynccontextmanager
 from typing import Optional, Callable, Type, Any
 
 from fastapi import FastAPI, Request
-from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse, JSONResponse
 
-from ..deployment_modes import DeploymentMode
 from .service_config import ServicesConfig, DEFAULT_SERVICES_CONFIG
 from .service_factory import ServiceFactory
+from ..deployment_modes import DeploymentMode
 from ...adapter.protocol_adapter import ProtocolAdapter
 
 
@@ -262,7 +262,6 @@ class FastAPIAppFactory:
         mode: DeploymentMode,
     ):
         """Add routes to the FastAPI application."""
-        print(request_model)
 
         # Health check endpoint
         @app.get("/health")
