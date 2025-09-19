@@ -112,7 +112,7 @@ class TestKubernetesDeployManager:
 
         # Mock the image builder to avoid actual Docker operations
         with patch.object(
-            deployer.image_builder,
+            deployer.image_factory,
             "build_runner_image",
             return_value="test-image:latest",
         ) as mock_build:
@@ -166,7 +166,7 @@ class TestKubernetesDeployManager:
 
         # Mock the image builder to avoid actual Docker operations
         with patch.object(
-            deployer.image_builder,
+            deployer.image_factory,
             "build_runner_image",
             return_value="test-image:latest",
         ) as mock_build:
@@ -203,7 +203,7 @@ class TestKubernetesDeployManager:
 
         # Mock the image builder to return None (build failure)
         with patch.object(
-            deployer.image_builder,
+            deployer.image_factory,
             "build_runner_image",
             return_value=None,
         ):
@@ -237,7 +237,7 @@ class TestKubernetesDeployManager:
 
         # Mock the image builder to return success, but k8s deployment fails
         with patch.object(
-            deployer.image_builder,
+            deployer.image_factory,
             "build_runner_image",
             return_value="test-image:latest",
         ):
@@ -274,7 +274,7 @@ class TestKubernetesDeployManager:
 
         # Mock the image builder
         with patch.object(
-            deployer.image_builder,
+            deployer.image_factory,
             "build_runner_image",
             return_value="test-image:latest",
         ) as mock_build:
@@ -282,7 +282,7 @@ class TestKubernetesDeployManager:
                 runner=mock_runner,
                 protocol_adapters=mock_adapters,
             )
-            print(result)
+            assert "deploy_id" in result
             # Verify protocol_adapters were passed to image builder
             call_args = mock_build.call_args
             assert call_args[1]["protocol_adapters"] == mock_adapters
@@ -308,7 +308,7 @@ class TestKubernetesDeployManager:
 
         # Mock the image builder
         with patch.object(
-            deployer.image_builder,
+            deployer.image_factory,
             "build_runner_image",
             return_value="test-image:latest",
         ):
@@ -441,7 +441,7 @@ class TestKubernetesDeployManager:
             assert isinstance(deployer.deploy_id, str)
 
             # Test image builder initialization
-            assert deployer.image_builder is not None
+            assert deployer.image_factory is not None
 
             # Test validation error handling
             with pytest.raises(RuntimeError, match="Deployment failed"):

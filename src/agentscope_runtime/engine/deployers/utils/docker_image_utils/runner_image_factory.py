@@ -15,6 +15,9 @@ from ..package_project_utils import (
     PackageConfig,
     package_project,
 )
+from ..service_utils import (
+    ServicesConfig,
+)
 from .dockerfile_generator import DockerfileGenerator, DockerfileConfig
 from .docker_image_builder import (
     DockerImageBuilder,
@@ -35,6 +38,7 @@ class RunnerImageConfig(BaseModel):
     build_context_dir: str = "/tmp/k8s_build"
     endpoint_path: str = "/process"
     protocol_adapters: Optional[List] = None  # New: protocol adapters
+    services_config: Optional[ServicesConfig] = None
 
     # Docker configuration
     base_image: str = "python:3.10-slim-bookworm"
@@ -182,6 +186,7 @@ class RunnerImageFactory:
                     output_dir=config.build_context_dir,
                     endpoint_path=config.endpoint_path,
                     protocol_adapters=config.protocol_adapters,
+                    services_config=config.services_config,
                 ),
                 dockerfile_path=dockerfile_path,
                 # caller_depth is no longer needed due to automatic
@@ -241,6 +246,7 @@ class RunnerImageFactory:
         image_tag: Optional[str] = None,
         registry_config: Optional[RegistryConfig] = None,
         push_to_registry: bool = False,
+        services_config: Optional[ServicesConfig] = None,
         protocol_adapters: Optional[List] = None,  # New: protocol adapters
         **kwargs,
     ) -> str:
@@ -256,6 +262,7 @@ class RunnerImageFactory:
             image_tag: Optional image tag
             registry_config: Optional registry config
             push_to_registry: Whether to push to registry
+            services_config: Optional services config
             protocol_adapters: Protocol adapters
             **kwargs: Additional configuration options
 
@@ -271,6 +278,7 @@ class RunnerImageFactory:
             registry_config=registry_config,
             push_to_registry=push_to_registry,
             protocol_adapters=protocol_adapters,
+            services_config=services_config,
             **kwargs,
         )
 

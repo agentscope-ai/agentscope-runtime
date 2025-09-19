@@ -21,7 +21,6 @@ class ServiceProvider(str, Enum):
 
     IN_MEMORY = "in_memory"
     REDIS = "redis"
-    POSTGRESQL = "postgresql"
     # Extensible for other providers
 
 

@@ -14,9 +14,7 @@ from agentscope_runtime.engine.deployers.local_deployer import (
 from agentscope_runtime.engine.deployers.utils.deployment_modes import (
     DeploymentMode,
 )
-from agentscope_runtime.engine.deployers.utils.service_utils import (
-    ServicesConfig,
-)
+
 from agentscope_runtime.engine.runner import Runner
 
 # Add current directory to path for importing agent
@@ -46,10 +44,8 @@ async def quick_deploy():
         endpoint_path="/process",
         stream=True,
         mode=DeploymentMode.DETACHED_PROCESS,
-        services_config=ServicesConfig(),  # Default in-memory
         protocol_adapters=[a2a_protocol],
     )
-
     print(f"✅ 部署成功: {deployment_info['url']}")
     print(f"📍 部署ID: {deployment_info['deploy_id']}")
 

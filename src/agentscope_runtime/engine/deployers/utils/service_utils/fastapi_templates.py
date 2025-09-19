@@ -111,42 +111,6 @@ class FastAPITemplateManager:
         template = Template(template_string)
         return template.render(**variables)
 
-    def create_services_config_code(
-        self,
-        services_config: Dict[str, Any],
-    ) -> str:
-        """Create Python code for services configuration.
-
-        Args:
-            services_config: Services configuration dictionary
-
-        Returns:
-            Python code as string
-        """
-        lines = []
-
-        if "memory" in services_config:
-            memory_config = services_config["memory"]
-            lines.append("memory=ServiceConfig(")
-            lines.append(
-                f"    provider='{memory_config.get('provider', 'in_memory')}',",  # noqa E501
-            )
-            if memory_config.get("config"):
-                lines.append(f"    config={memory_config['config']}")
-            lines.append("),")
-
-        if "session_history" in services_config:
-            session_config = services_config["session_history"]
-            lines.append("session_history=ServiceConfig(")
-            lines.append(
-                f"    provider='{session_config.get('provider', 'in_memory')}',",  # noqa E501
-            )
-            if session_config.get("config"):
-                lines.append(f"    config={session_config['config']}")
-            lines.append("),")
-
-        return "\n".join(lines)
-
     def get_template_list(self) -> list:
         """Get list of available templates.
 

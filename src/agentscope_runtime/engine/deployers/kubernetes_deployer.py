@@ -11,6 +11,9 @@ from agentscope_runtime.engine.deployers.utils.docker_image_utils import (
     RunnerImageFactory,
     RegistryConfig,
 )
+from agentscope_runtime.engine.deployers.utils.service_utils import (
+    ServicesConfig,
+)
 from agentscope_runtime.engine.runner import Runner
 from agentscope_runtime.sandbox.manager.container_clients import (
     KubernetesClient,
@@ -74,8 +77,8 @@ class KubernetesDeployManager(DeployManager):
         runner: Runner,
         endpoint_path: str = "/process",
         stream: bool = True,
+        services_config: Optional[dict] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
-        # Parameters following _agent_engines.py create method pattern
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
         base_image: str = "python:3.9-slim",
@@ -98,6 +101,7 @@ class KubernetesDeployManager(DeployManager):
                 context_manager
             endpoint_path: API endpoint path
             stream: Enable streaming responses
+            services_config: Services configuration for context manager
             protocol_adapters: protocol adapters
             requirements: PyPI dependencies (following _agent_engines.py
                 pattern)
@@ -153,6 +157,13 @@ class KubernetesDeployManager(DeployManager):
                     "Either runner or func parameter must be provided",
                 )
 
+            # convert services_config to Model body
+            if services_config is not None and isinstance(
+                services_config,
+                dict,
+            ):
+                services_config = ServicesConfig(**services_config)
+
             # Step 1: Build image with proper error handling
             logger.info("Building runner image...")
             try:
@@ -169,6 +180,7 @@ class KubernetesDeployManager(DeployManager):
                     image_tag=image_tag,
                     push_to_registry=push_to_registry,
                     port=port,
+                    services_config=services_config,
                     protocol_adapters=protocol_adapters,
                     **kwargs,
                 )

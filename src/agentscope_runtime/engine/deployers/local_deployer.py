@@ -272,7 +272,7 @@ class LocalDeployManager(DeployManager):
         **kwargs,
     ) -> str:
         """Create detached project using package_project method."""
-        self._logger.info(f"additional kwargs: {kwargs}")
+        self._logger.debug(f"additional kwargs: {kwargs}")
         # Create package configuration for detached deployment
         package_config = PackageConfig(
             endpoint_path=endpoint_path,
