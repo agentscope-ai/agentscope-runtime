@@ -2,7 +2,7 @@
 import os
 from typing import Optional, Dict, Any, List
 from .memory_service import MemoryService
-from ..schemas.agent_schemas import Message, MessageType
+from ..schemas.agent_schemas import Message, MessageType, ContentType
 
 
 class Mem0MemoryService(MemoryService):
@@ -16,9 +16,9 @@ class Mem0MemoryService(MemoryService):
         super().__init__(**kwargs)
         from mem0 import AsyncMemoryClient
 
-        if os.getenv("mem0_api_key") is None:
-            raise ValueError("mem0_api_key is not set")
-        mem0_api_key = os.getenv("mem0_api_key")
+        if os.getenv("MEM0_API_KEY") is None:
+            raise ValueError("MEM0_API_KEY is not set")
+        mem0_api_key = os.getenv("MEM0_API_KEY")
 
         # get the mem0 client instance
         self.service = AsyncMemoryClient(api_key=mem0_api_key)
@@ -31,7 +31,7 @@ class Mem0MemoryService(MemoryService):
         if message:
             if message.type == MessageType.MESSAGE:
                 for content in message.content:
-                    if content.type == "text":
+                    if content.type == ContentType.TEXT:
                         return content.text
         return ""
 
@@ -76,11 +76,12 @@ class Mem0MemoryService(MemoryService):
         messages: list,
         session_id: Optional[str] = None,
     ):
+        messages = await self.transform_messages(messages)
         return await self.service.add(
-            messages=self.transform_messages(messages),
+            messages=messages,
             user_id=user_id,
             run_id=session_id,
-            async_mode=True,
+            # async_mode=True,
         )
 
     async def search_memory(
@@ -93,14 +94,11 @@ class Mem0MemoryService(MemoryService):
         if filters:
             return await self.service.search(
                 filters=filters,
-                version="v2",
                 query=query,
                 user_id=user_id,
             )
         else:
             return await self.service.search(
-                filters=filters,
-                version="v2",
                 query=query,
                 user_id=user_id,
             )
@@ -114,12 +112,10 @@ class Mem0MemoryService(MemoryService):
             return await self.service.get_all(
                 user_id=user_id,
                 filters=filters,
-                version="v2",
             )
         else:
             return await self.service.get_all(
                 user_id=user_id,
-                version="v2",
             )
 
     async def delete_memory(
@@ -128,9 +124,9 @@ class Mem0MemoryService(MemoryService):
         session_id: Optional[str] = None,
     ) -> None:
         if session_id:
-            return await self.service.delete(
+            return await self.service.delete_all(
                 user_id=user_id,
                 run_id=session_id,
             )
         else:
-            return await self.service.delete(user_id=user_id)
+            return await self.service.delete_all(user_id=user_id)
