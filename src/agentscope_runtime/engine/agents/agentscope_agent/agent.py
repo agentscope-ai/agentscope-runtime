@@ -2,6 +2,7 @@
 # pylint:disable=too-many-nested-blocks, too-many-branches, too-many-statements
 # pylint:disable=line-too-long, protected-access
 
+import os
 import json
 import threading
 import uuid
@@ -235,7 +236,26 @@ class AgentScopeAgent(Agent):
             memory=as_context.memory,
             toolkit=as_context.toolkit,
         )
-        self._agent._disable_console_output = True
+
+        # Read env variable (default = false)
+        console_output_env = (
+            os.getenv(
+                "AGENTSCOPE_AGENT_CONSOLE_OUTPUT",
+                "false",
+            )
+            .strip()
+            .lower()
+        )
+
+        if console_output_env not in ("true", "false"):
+            raise ValueError(
+                f"Invalid value for AGENTSCOPE_AGENT_CONSOLE_OUTPUT: "
+                f"'{console_output_env}'. "
+                f"Only 'true' or 'false' is allowed.",
+            )
+
+        # If true → enable output; if false → disable output
+        self._agent._disable_console_output = console_output_env == "false"
 
         self._agent.register_instance_hook(
             "pre_print",

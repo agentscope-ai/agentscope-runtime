@@ -38,7 +38,7 @@ async def test_react_agent_runner(env):
             api_key=os.getenv("DASHSCOPE_API_KEY"),
         ),
         agent_config={
-            "sys_prompt": "You're a helpful assistant named {name}.",
+            "sys_prompt": "You're a helpful assistant named Friday.",
         },
         tools=[
             calculate_power,

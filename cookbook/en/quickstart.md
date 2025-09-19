@@ -106,7 +106,7 @@ agent = AgentScopeAgent(
         api_key=os.getenv("OPENAI_API_KEY"),
     ),
     agent_config={
-        "sys_prompt": "You're a helpful assistant named {name}.",
+        "sys_prompt": "You're a helpful assistant named Friday.",
     },
     agent_builder=ReActAgent,
 )

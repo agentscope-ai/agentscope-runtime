@@ -112,6 +112,7 @@ KUBECONFIG_PATH=
 | `CONTAINER_PREFIX_KEY` | 容器名称前缀   | `agent-runtime-container-` | 用于标识                                                     |
 | `CONTAINER_DEPLOYMENT` | 容器运行时     | `docker`                   | 目前支持`docker`和`k8s`                                      |
 | `DEFAULT_MOUNT_DIR`    | 默认挂载目录   | `sessions_mount_dir`       | 用于持久存储路径，存储`/workspace` 文件                      |
+| `READONLY_MOUNTS`      | 只读目录挂载   | `None`                     | 一个字典，映射 **宿主机路径** → **容器路径**，以 **只读** 方式挂载。用于共享文件 / 配置，但禁止容器修改数据。示例：<br/>`{"\/Users\/alice\/data": "\/data"}` 会把宿主机 `/Users/alice/data` 挂载到容器的 `/data`（只读）。 |
 | `PORT_RANGE`           | 可用端口范围   | `[49152,59152]`            | 用于服务端口分配                                             |
 
 #### （可选）Redis 设置
@@ -401,3 +402,13 @@ runtime-sandbox-builder filesystem
 ```bash
 export RUNTIME_SANDBOX_IMAGE_TAG="my_custom"
 ```
+
+### 更改 Sandbox 镜像相关配置
+
+Sandbox 模块运行所用的 Docker 镜像由以下三个环境变量共同决定，你可以根据需要修改其中任意一个，来改变镜像的来源或版本。
+
+| 环境变量                            | 作用                                                    | 默认值         | 修改示例                                                     |
+| --------------------------------- | ------------------------------------------------------- | -------------- | ------------------------------------------------------------ |
+| `RUNTIME_SANDBOX_REGISTRY`     | 镜像注册中心地址（Registry）。为空表示使用 Docker Hub。 | `""`           | `export RUNTIME_SANDBOX_REGISTRY="agentscope-registry.ap-southeast-1.cr.aliyuncs.com"` |
+| `RUNTIME_SANDBOX_IMAGE_NAMESPACE` | 镜像命名空间（Namespace），类似账号名。                 | `"agentscope"` | `export RUNTIME_SANDBOX_IMAGE_NAMESPACE="my_namespace"`      |
+| `RUNTIME_SANDBOX_IMAGE_TAG`   | 镜像版本标签（Tag）。                                   | `"latest"`     | `export RUNTIME_SANDBOX_IMAGE_TAG="my_custom"`               |
