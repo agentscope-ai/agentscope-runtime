@@ -1,6 +1,6 @@
-deploy_id=429b805c-f6f7-4c06-8757-b95c006fd933
+deploy_id=efd6fdd7-fa86-4a67-87bc-6ab191b256d1
 wheel_path=/Users/yunyao/PycharmProjects/agentscope-runtime/tests/integrated/test_bailian_fc_deploy/custom_defined_app/external_whl/agentdev_starter_e61c4e2f-0.1.0-py3-none-any.whl
-artifact_url=https://tmpbucket-for-full-code-deployment-v3.oss-cn-hangzhou.aliyuncs.com/agentdev_starter_e61c4e2f-0.1.0-py3-none-any.whl?x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-date=20250918T091407Z&x-oss-expires=10799&x-oss-credential=LTAI5tJZp2JJ9pHQ6k4nLidx%2F20250918%2Fcn-hangzhou%2Foss%2Faliyun_v4_request&x-oss-signature=65c8a38490ce2794ea34698e6b4835ce2e88df42846ca685d6bf43bab5f9aaea
-resource_name=yunyao_random_test_0918_v12
+artifact_url=https://tmpbucket-for-full-code-deployment.oss-cn-hangzhou.aliyuncs.com/agentdev_starter_e61c4e2f-0.1.0-py3-none-any.whl?x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-date=20250919T080928Z&x-oss-expires=10799&x-oss-credential=LTAI5tJZp2JJ9pHQ6k4nLidx%2F20250919%2Fcn-hangzhou%2Foss%2Faliyun_v4_request&x-oss-signature=1382b57f82655cef437c56ff0e72148542d8e8d8c4168db5ef7dfaa841056aba
+resource_name=deploy-20250919160927-10c14e
 workspace_id=llm-enpaqbwxdsmnlfpq
 url=
