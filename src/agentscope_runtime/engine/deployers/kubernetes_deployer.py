@@ -1,0 +1,291 @@
+# -*- coding: utf-8 -*-
+import asyncio
+import logging
+import os
+import time
+from typing import Optional, Dict, Callable, List, Union, Any
+
+from pydantic import BaseModel, Field
+
+from agentscope_runtime.engine.deployers.utils.docker_image_utils import (
+    RunnerImageFactory,
+    RegistryConfig,
+)
+from agentscope_runtime.engine.deployers.utils.service_utils import (
+    ServicesConfig,
+)
+from agentscope_runtime.engine.runner import Runner
+from agentscope_runtime.sandbox.manager.container_clients import (
+    KubernetesClient,
+)
+from .adapter.protocol_adapter import ProtocolAdapter
+from .base import DeployManager
+
+logger = logging.getLogger(__name__)
+
+
+class K8sConfig(BaseModel):
+    # Kubernetes settings
+    k8s_namespace: Optional[str] = Field(
+        "agentscope-runtime",
+        description="Kubernetes namespace to deploy pods. Required if "
+        "container_deployment is 'k8s'.",
+    )
+    kubeconfig_path: Optional[str] = Field(
+        None,
+        description="Path to kubeconfig file. If not set, will try "
+        "in-cluster config or default kubeconfig.",
+    )
+
+
+class BuildConfig(BaseModel):
+    """Build configuration"""
+
+    build_context_dir: str = "/tmp/k8s_build"
+    dockerfile_template: str = None
+    build_timeout: int = 600  # 10 minutes
+    push_timeout: int = 300  # 5 minutes
+    cleanup_after_build: bool = True
+
+
+class KubernetesDeployManager(DeployManager):
+    """Kubernetes deployer for agent services"""
+
+    def __init__(
+        self,
+        kube_config: K8sConfig = None,
+        registry_config: RegistryConfig = RegistryConfig(),
+        use_deployment: bool = True,
+        build_context_dir: str = "/tmp/k8s_build",
+    ):
+        super().__init__()
+        self.kubeconfig = kube_config
+        self.registry_config = registry_config
+        self.image_factory = RunnerImageFactory()
+        self.use_deployment = use_deployment
+        self.build_context_dir = build_context_dir
+        self._deployed_resources = {}
+        self._built_images = {}
+
+        self.k8s_client = KubernetesClient(
+            config=self.kubeconfig,
+            image_registry=self.registry_config.get_full_url(),
+        )
+
+    async def deploy(
+        self,
+        runner: Runner,
+        endpoint_path: str = "/process",
+        stream: bool = True,
+        services_config: Optional[dict] = None,
+        protocol_adapters: Optional[list[ProtocolAdapter]] = None,
+        requirements: Optional[Union[str, List[str]]] = None,
+        extra_packages: Optional[List[str]] = None,
+        base_image: str = "python:3.9-slim",
+        port: int = 8090,
+        replicas: int = 1,
+        environment: Dict = None,
+        mount_dir: str = None,
+        runtime_config: Dict = None,
+        func: Optional[Callable] = None,
+        image_name: str = "agent_llm",
+        image_tag: str = "latest",
+        push_to_registry: bool = False,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        Deploy runner to Kubernetes.
+
+        Args:
+            runner: Complete Runner object with agent, environment_manager,
+                context_manager
+            endpoint_path: API endpoint path
+            stream: Enable streaming responses
+            services_config: Services configuration for context manager
+            protocol_adapters: protocol adapters
+            requirements: PyPI dependencies (following _agent_engines.py
+                pattern)
+            extra_packages: User code directory/file path
+            base_image: Docker base image
+            port: Container port
+            replicas: Number of replicas
+            environment: Environment variables dict
+            mount_dir: Mount directory
+            runtime_config: K8s runtime configuration
+            # Backward compatibility
+            func: Legacy function parameter (deprecated)
+            image_name: Image name
+            image_tag: Image tag
+            push_to_registry: Push to registry
+            **kwargs: Additional arguments
+
+        Returns:
+            Dict containing deploy_id, url, resource_name, replicas
+
+        Raises:
+            RuntimeError: If deployment fails
+        """
+        created_resources = []
+        deploy_id = self.deploy_id
+
+        try:
+            logger.info(f"Starting deployment {deploy_id}")
+
+            # Handle backward compatibility
+            if runner is None and func is not None:
+                logger.warning(
+                    "Using deprecated func parameter. "
+                    "Please use runner parameter instead.",
+                )
+
+                # For backward compatibility, create a minimal wrapper
+                async def wrapper_func(*args, **kwargs):
+                    return (
+                        await func(*args, **kwargs)
+                        if asyncio.iscoroutinefunction(func)
+                        else func(*args, **kwargs)
+                    )
+
+                actual_func = wrapper_func
+                actual_requirements = requirements
+            elif runner is not None:
+                # New approach: use complete runner object
+                actual_func = runner
+                actual_requirements = requirements
+            else:
+                raise ValueError(
+                    "Either runner or func parameter must be provided",
+                )
+
+            # convert services_config to Model body
+            if services_config is not None and isinstance(
+                services_config,
+                dict,
+            ):
+                services_config = ServicesConfig(**services_config)
+
+            # Step 1: Build image with proper error handling
+            logger.info("Building runner image...")
+            try:
+                built_image_name = self.image_factory.build_runner_image(
+                    runner=actual_func,
+                    requirements=actual_requirements,
+                    extra_packages=extra_packages or [],
+                    base_image=base_image,
+                    stream=stream,
+                    endpoint_path=endpoint_path,
+                    build_context_dir=self.build_context_dir,
+                    registry_config=self.registry_config,
+                    image_name=image_name,
+                    image_tag=image_tag,
+                    push_to_registry=push_to_registry,
+                    port=port,
+                    services_config=services_config,
+                    protocol_adapters=protocol_adapters,
+                    **kwargs,
+                )
+                if not built_image_name:
+                    raise RuntimeError(
+                        "Image build failed - no image name returned",
+                    )
+
+                created_resources.append(f"image:{built_image_name}")
+                self._built_images[deploy_id] = built_image_name
+                logger.info(f"Image built successfully: {built_image_name}")
+            except Exception as e:
+                logger.error(f"Image build failed: {e}")
+                raise RuntimeError(f"Failed to build image: {e}") from e
+
+            if mount_dir:
+                if not os.path.isabs(mount_dir):
+                    mount_dir = os.path.abspath(mount_dir)
+
+            if mount_dir:
+                volume_bindings = {
+                    mount_dir: {
+                        "bind": mount_dir,
+                        "mode": "rw",
+                    },
+                }
+            else:
+                volume_bindings = {}
+
+            resource_name = f"agent-{deploy_id[:8]}"
+
+            # Create Deployment
+            _id, ports, ip = self.k8s_client.create_deployment(
+                image=built_image_name,
+                name=resource_name,
+                ports=[port],
+                volumes=volume_bindings,
+                environment=environment,
+                runtime_config=runtime_config or {},
+                replicas=replicas,
+                create_service=True,
+            )
+            if not _id:
+                import traceback
+
+                raise RuntimeError(
+                    f"Failed to create resource: "
+                    f"{resource_name}, {traceback.format_exc()}",
+                )
+
+            url = f"http://{ip}:{ports[0]}"
+            logger.info(f"Deployment {deploy_id} successful: {url}")
+
+            self._deployed_resources[deploy_id] = {
+                "resource_name": resource_name,
+                "service_name": _id,
+                "image": built_image_name,
+                "created_at": time.time(),
+                "replicas": replicas if self.use_deployment else 1,
+                "config": {
+                    "runner": runner.__class__.__name__,
+                    "extra_packages": extra_packages,
+                    "requirements": requirements,  # New format
+                    "base_image": base_image,
+                    "port": port,
+                    "replicas": replicas,
+                    "environment": environment,
+                    "runtime_config": runtime_config,
+                    "endpoint_path": endpoint_path,
+                    "stream": stream,
+                    "protocol_adapters": protocol_adapters,
+                    **kwargs,
+                },
+            }
+            return {
+                "deploy_id": deploy_id,
+                "url": url,
+                "resource_name": resource_name,
+                "replicas": replicas,
+            }
+
+        except Exception as e:
+            import traceback
+
+            logger.error(f"Deployment {deploy_id} failed: {e}")
+            # Enhanced rollback with better error handling
+            raise RuntimeError(
+                f"Deployment failed: {e}, {traceback.format_exc()}",
+            ) from e
+
+    async def stop(self) -> bool:
+        """Stop service"""
+        if self.deploy_id not in self._deployed_resources:
+            return False
+
+        resources = self._deployed_resources[self.deploy_id]
+        service_name = resources["service_name"]
+        return self.k8s_client.remove_deployment(service_name)
+
+    def get_status(self) -> str:
+        """Get deployment status"""
+        if self.deploy_id not in self._deployed_resources:
+            return "not_found"
+
+        resources = self._deployed_resources[self.deploy_id]
+        service_name = resources["service_name"]
+
+        return self.k8s_client.get_deployment_status(service_name)

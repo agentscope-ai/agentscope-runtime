@@ -1,3 +1,12 @@
 # -*- coding: utf-8 -*-
 from .base import DeployManager
 from .local_deployer import LocalDeployManager
+from .kubernetes_deployer import (
+    KubernetesDeployManager,
+)
+
+__all__ = [
+    "DeployManager",
+    "LocalDeployManager",
+    "KubernetesDeployManager",
+]
