@@ -316,7 +316,7 @@ class TestKubernetesDeployManager:
                 runner=mock_runner,
                 mount_dir="/data",
             )
-            print(result)
+            assert "deploy_id" in result
             # Verify volume mounting configuration was passed
             call_args = mock_client_instance.create_deployment.call_args
             volumes_arg = call_args[1]["volumes"]
