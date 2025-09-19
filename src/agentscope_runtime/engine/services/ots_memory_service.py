@@ -113,12 +113,13 @@ class OTSMemoryService(MemoryService):
         messages: list,
         session_id: Optional[str] = None,
     ) -> None:
-        session_id_ = session_id if session_id else OTSMemoryService._DEFAULT_SESSION_ID
+        if not session_id:
+            session_id = OTSMemoryService._DEFAULT_SESSION_ID
 
         put_tasks = [
             self._knowledge_store.put_document(ots_document)
             for ots_document in convert_messages_to_ots_documents(
-                messages, user_id, session_id_, self._embedding_model
+                messages, user_id, session_id, self._embedding_model
             )
         ]
         await asyncio.gather(*put_tasks)

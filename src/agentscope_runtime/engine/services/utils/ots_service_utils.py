@@ -15,10 +15,54 @@ from ...schemas.agent_schemas import ContentType, MessageType
 from langchain_core.embeddings import Embeddings
 
 
+"""
+Dependency Tree:
+                           |**convert_session_to_ots_session**|
+                              │                          \
+                    |**convert_message_to_ots_message**|  exclude_None_fields_in_place
+                           /            \
+                          /              \
+_generate_ots_content_from_message  exclude_None_fields_in_place
+
+
+                |**convert_ots_session_to_session**|
+                              │
+               _generate_init_json_from_ots_session
+                              │
+                |**convert_ots_message_to_message**|
+                              │
+                _generate_init_json_from_ots_message
+                              │
+                  _generate_content_from_ots_content
+
+
+               |**convert_messages_to_ots_documents**|
+                              │
+                |**convert_message_to_ots_document**|
+                       /            \
+                      /              \
+_generate_ots_content_from_message  exclude_None_fields_in_place
+
+
+                |**convert_ots_document_to_message**|
+                              │
+               _generate_init_json_from_ots_document
+                              │
+                  _generate_content_from_ots_content
+
+Utility functions:
+exclude_None_fields_in_place
+
+Metadata helper:
+get_message_metadata_names
+"""
+
+
 content_list_name = "content_list"
 
 
 def exclude_None_fields_in_place(obj: Dict):
+    """Remove fields with None values from dictionary in-place"""
     obj_copy = copy.deepcopy(obj)
     for key, value in obj_copy.items():
         if value is None:
@@ -28,6 +72,7 @@ def exclude_None_fields_in_place(obj: Dict):
 def convert_ots_session_to_session(
     ots_session: OTSSession, ots_messages: Optional[List[OTSMessage]] = None
 ) -> Session:
+    """Convert OTSSession to Session"""
     init_json = _generate_init_json_from_ots_session(ots_session, ots_messages)
     return Session.model_validate(init_json)
 
@@ -36,10 +81,13 @@ def convert_ots_session_to_session(
 def convert_session_to_ots_session(
     session: Session,
 ) -> Tuple[OTSSession, List[OTSMessage]]:
+    """Convert Session to OTSSession and list of OTSMessage"""
+    ots_session_metadata = session.model_dump(exclude={"id", "user_id", "messages"})
+    exclude_None_fields_in_place(ots_session_metadata)
     ots_session = OTSSession(
         user_id=session.user_id,
         session_id=session.id,
-        metadata=session.model_dump(exclude={"id", "user_id", "messages"}),
+        metadata=ots_session_metadata,
     )
     ots_messages = [
         convert_message_to_ots_message(message, session) for message in session.messages
@@ -49,11 +97,13 @@ def convert_session_to_ots_session(
 
 
 def convert_ots_message_to_message(ots_message: OTSMessage) -> Message:
+    """Convert OTSMessage to Message"""
     init_json = _generate_init_json_from_ots_message(ots_message)
     return Message.model_validate(init_json)
 
 
 def convert_message_to_ots_message(message: Message, session: Session) -> OTSMessage:
+    """Convert Message to OTSMessage"""
     content, content_list = _generate_ots_content_from_message(message)
     ots_message_metadata = message.model_dump(exclude={"content", "id"})
     ots_message_metadata[content_list_name] = json.dumps(
@@ -76,6 +126,7 @@ def convert_messages_to_ots_documents(
     session_id: str,
     embedding_model: Optional[Embeddings] = None,
 ) -> List[OTSDocument]:
+    """Convert list of messages to OTSDocuments with optional batch embedding"""
     if not embedding_model:
         return [
             convert_message_to_ots_document(message, user_id, session_id)
@@ -108,6 +159,7 @@ def convert_message_to_ots_document(
     session_id: str,
     embedding: Optional[List[float]] = None,
 ) -> OTSDocument:
+    """Convert Message to OTSDocument"""
     content, content_list = _generate_ots_content_from_message(message)
     ots_document_metadata = message.model_dump(exclude={"content", "id"})
     ots_document_metadata.update(
@@ -128,6 +180,7 @@ def convert_message_to_ots_document(
 
 
 def convert_ots_document_to_message(ots_document: OTSDocument) -> Message:
+    """Convert OTSDocument to Message"""
     init_json = _generate_init_json_from_ots_document(ots_document)
     return Message.model_validate(init_json)
 
@@ -135,6 +188,7 @@ def convert_ots_document_to_message(ots_document: OTSDocument) -> Message:
 def _generate_init_json_from_ots_session(
     ots_session: OTSSession, ots_messages: Optional[List[OTSMessage]] = None
 ) -> Dict[str, Any]:
+    """Generate initialization JSON from OTSSession"""
     init_json = {
         "id": ots_session.session_id,
         "user_id": ots_session.user_id,
@@ -150,6 +204,8 @@ def _generate_init_json_from_ots_session(
 
 
 def _generate_init_json_from_ots_message(ots_message: OTSMessage) -> Dict[str, Any]:
+    """Generate initialization JSON from OTSMessage"""
+    ots_message = copy.deepcopy(ots_message)
     ots_message_content_list = ots_message.metadata.pop(content_list_name, None)
     init_json = {
         "id": ots_message.message_id,
@@ -165,6 +221,8 @@ def _generate_init_json_from_ots_message(ots_message: OTSMessage) -> Dict[str, A
 
 
 def _generate_init_json_from_ots_document(ots_document: OTSDocument) -> Dict[str, Any]:
+    """Generate initialization JSON from OTSDocument"""
+    ots_document = copy.deepcopy(ots_document)
     ots_document_content_list = ots_document.metadata.pop(content_list_name, None)
     init_json = {
         "id": ots_document.document_id,
@@ -182,21 +240,23 @@ def _generate_init_json_from_ots_document(ots_document: OTSDocument) -> Dict[str
 def _generate_content_from_ots_content(
     text: str, content_list: List[Dict[str, Any]]
 ) -> Optional[List[Dict[str, Any]]]:
-    if content_list is None:
-        return None
+    """Generate final content from text and content list"""
+    content_list = copy.deepcopy(content_list)
 
-    content_list_copy = copy.deepcopy(content_list)
-    if text is not None:
-        for content in content_list_copy:
-            if content["type"] == ContentType.TEXT:
-                content["text"] = text
-                break
-    return content_list_copy
+    if text is None:
+        return content_list
+
+    for content in content_list:
+        if content["type"] == ContentType.TEXT:
+            content["text"] = text
+            break
+    return content_list
 
 
 def _generate_ots_content_from_message(
     message: Message,
 ) -> Tuple[Optional[str], Optional[List[Dict[str, Any]]]]:
+    """Generate OTS content (text and content list) from Message"""
     if message.content is None:
         return None, None
 
@@ -217,6 +277,7 @@ message_metadata_names: Optional[List[str]] = None
 
 
 def get_message_metadata_names():
+    """Get list of message metadata field names"""
     global message_metadata_names
 
     if message_metadata_names is not None:
