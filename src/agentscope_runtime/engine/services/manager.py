@@ -77,6 +77,12 @@ class ServiceManager(ABC):
         logger.debug(f"Registered service instance: {name}")
         return self
 
+    async def before_start_app(self, app):
+        await self.__aenter__()
+
+    async def after_finish_app(self, app):
+        await self.__aexit__(None, None, None)
+
     async def __aenter__(self):
         """Start all registered services using AsyncExitStack."""
         try:

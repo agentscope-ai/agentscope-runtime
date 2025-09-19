@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=redefined-outer-name
+import asyncio
 import os
 
 import pytest
 import pytest_asyncio
-from agentscope_runtime.engine.schemas.agent_schemas import TextContent
+from agentscope_runtime.engine.schemas.agent_schemas import (
+    TextContent,
+    DataContent,
+    MessageType,
+    Message,
+)
 from agentscope_runtime.engine.services.session_history_service import (
     Session,
 )
@@ -303,3 +309,85 @@ async def test_append_message(
     )
     assert retrieved_session is not None
     assert retrieved_session.messages == []  # Empty as it's a newly created session
+
+
+@pytest.mark.asyncio
+async def test_append_abnormal_message(
+    ots_session_history_service: OTSSessionHistoryService, user_id: str
+) -> None:
+    await ots_session_history_service.delete_user_sessions(user_id)
+
+    messages = [
+        {
+            "id": "msg_1",
+            "role": "user",
+            "content": [TextContent(text="Hello World!")],
+            "type": MessageType.ERROR,
+        },
+        {
+            "id": "msg_1",
+            "role": "user",
+            "content": None,
+            "type": MessageType.MESSAGE,
+        },
+        {
+            "id": "msg_1",
+            "role": "user",
+            "content": [],
+            "type": MessageType.MESSAGE,
+        },
+        {
+            "id": "msg_1",
+            "role": "user",
+            "content": None,
+            "type": MessageType.ERROR,
+        },
+        {
+            "id": "msg_1",
+            "role": "user",
+            "content": [],
+            "type": MessageType.ERROR,
+        },
+        {
+            "id": "msg_1",
+            "role": "user",
+            "content": [DataContent(data={"a": 1})],
+            "type": MessageType.MESSAGE,
+        },
+        {
+            "id": "msg_1",
+            "role": "user",
+            "content": [DataContent(data={"a": 1})],
+            "type": MessageType.ERROR,
+        },
+        {
+            "id": "msg_1",
+            "role": "user",
+            "content": [DataContent(data={"a": 1}), TextContent(text="Hello World!")],
+            "type": MessageType.MESSAGE,
+        },
+        {
+            "id": "msg_1",
+            "role": "user",
+            "content": [DataContent(data={"a": 1}), TextContent(text="Hello World!")],
+            "type": MessageType.ERROR,
+        },
+    ]
+
+    for message in messages:
+        session = await ots_session_history_service.create_session(user_id)
+        await ots_session_history_service.append_message(session, message)
+
+        # The local session object should also be updated
+        assert len(session.messages) == 1
+        assert session.messages[0] == Message.model_validate(message)
+
+        stored_session = await ots_session_history_service.get_session(
+            user_id,
+            session.id,
+        )
+        assert stored_session is not None
+        assert len(stored_session.messages) == 1
+        assert stored_session.messages[0] == Message.model_validate(message)
+
+        await ots_session_history_service.delete_user_sessions(user_id)

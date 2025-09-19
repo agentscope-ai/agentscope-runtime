@@ -2,7 +2,9 @@ import os
 import pytest_asyncio
 import tablestore
 from agentscope_runtime.engine.services.ots_memory_service import OTSMemoryService
-from agentscope_runtime.engine.services.ots_session_history_service import OTSSessionHistoryService
+from agentscope_runtime.engine.services.ots_session_history_service import (
+    OTSSessionHistoryService,
+)
 from agentscope_runtime.engine.services.ots_rag_service import OTSRAGService
 import pytest
 
@@ -10,8 +12,13 @@ from agentscope_runtime.engine.agents.llm_agent import LLMAgent
 from agentscope_runtime.engine.llms.qwen_llm import QwenLLM
 
 from agentscope_runtime.engine import Runner
-from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest, MessageType, RunStatus
+from agentscope_runtime.engine.schemas.agent_schemas import (
+    AgentRequest,
+    MessageType,
+    RunStatus,
+)
 from agentscope_runtime.engine.services.context_manager import ContextManager
+from tablestore_for_agent_memory.util.tablestore_helper import TablestoreHelper
 
 
 @pytest_asyncio.fixture
@@ -25,11 +32,18 @@ async def ots_client():
     )
 
 
+async def wait_for_index_ready(ots_memory_service: OTSMemoryService, length):
+    await TablestoreHelper.async_wait_search_index_ready(
+        tablestore_client=ots_memory_service._tablestore_client,
+        table_name=ots_memory_service._knowledge_store._table_name,
+        index_name=ots_memory_service._knowledge_store._search_index_name,
+        total_count=length,
+    )
+
+
 @pytest_asyncio.fixture
 async def ots_memory_service(ots_client):
-    ots_memory_service = OTSMemoryService(
-        tablestore_client=ots_client
-    )
+    ots_memory_service = OTSMemoryService(tablestore_client=ots_client)
 
     await ots_memory_service.start()
     return ots_memory_service
@@ -37,9 +51,7 @@ async def ots_memory_service(ots_client):
 
 @pytest_asyncio.fixture
 async def ots_session_history_service(ots_client):
-    ots_session_history_service = OTSSessionHistoryService(
-        tablestore_client=ots_client
-    )
+    ots_session_history_service = OTSSessionHistoryService(tablestore_client=ots_client)
 
     await ots_session_history_service.start()
     return ots_session_history_service
@@ -47,9 +59,7 @@ async def ots_session_history_service(ots_client):
 
 @pytest_asyncio.fixture
 async def ots_rag_service(ots_client):
-    ots_rag_service = OTSRAGService(
-        tablestore_client=ots_client
-    )
+    ots_rag_service = OTSRAGService(tablestore_client=ots_client)
 
     await ots_rag_service.start()
     return ots_rag_service
@@ -118,8 +128,7 @@ async def test_runner(ots_session_history_service, ots_memory_service, ots_rag_s
                                 "type": "data",
                                 "data": {
                                     "call_id": "call_eb113ba709d54ab6a4dcbf",
-                                    "output": '{"temperature": 25, "unit": '
-                                    '"Celsius"}',
+                                    "output": '{"temperature": 25, "unit": "Celsius"}',
                                 },
                             },
                         ],
@@ -167,4 +176,8 @@ async def test_runner(ots_session_history_service, ots_memory_service, ots_rag_s
                         res = message.content
                         print(res)
 
-        print("\n")
+        print("finish")
+        await wait_for_index_ready(ots_memory_service, 4)
+        await ots_session_history_service.delete_user_sessions(USER_ID)
+        await ots_memory_service.delete_memory(USER_ID)
+        await wait_for_index_ready(ots_memory_service, 0)

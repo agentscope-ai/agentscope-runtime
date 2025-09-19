@@ -77,6 +77,7 @@ class Runner:
         endpoint_path: str = "/process",
         stream: bool = True,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
+        context_managed_in_app: bool = False
     ):
         """
         Deploys the agent as a service.
@@ -100,6 +101,8 @@ class Runner:
             deploy_func,
             endpoint_path=endpoint_path,
             protocol_adapters=protocol_adapters,
+            before_start=self._context_manager.before_start_app if context_managed_in_app else None,
+            after_finish=self._context_manager.after_finish_app if context_managed_in_app else None,
         )
         self._deploy_managers[deploy_manager.deploy_id] = deploy_result
         return deploy_result
