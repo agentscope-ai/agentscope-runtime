@@ -33,7 +33,7 @@ class TtsConfig(BaseModel):
     format: Optional[str] = None
     bits_per_sample: Optional[int] = None
     nb_channels: Optional[int] = None
-    chat_id: str = None
+    chat_id: Optional[str] = None
 
 
 class ModelstudioTtsConfig(TtsConfig, ModelstudioConnection):
@@ -121,7 +121,9 @@ class ModelstudioVoiceChatInPayload(BaseModel):
 
 
 class ModelstudioVoiceChatSessionStartPayload(ModelstudioVoiceChatInPayload):
-    session_id: Optional[str] = str(uuid.uuid4())
+    session_id: Optional[str] = Field(
+        default_factory=lambda: str(uuid.uuid4()),
+    )
     upstream: Optional[
         ModelstudioVoiceChatUpstream
     ] = ModelstudioVoiceChatUpstream()
@@ -175,21 +177,18 @@ class ModelstudioVoiceChatOutPayload(BaseModel):
 
 class ModelstudioVoiceChatSessionStartedPayload(
     ModelstudioVoiceChatOutPayload,
-    BaseModel,
 ):
     pass
 
 
 class ModelstudioVoiceChatSessionStoppedPayload(
     ModelstudioVoiceChatOutPayload,
-    BaseModel,
 ):
     pass
 
 
 class ModelstudioVoiceChatAudioTranscriptPayload(
     ModelstudioVoiceChatOutPayload,
-    BaseModel,
 ):
     text: Optional[str] = ""
     finished: bool
@@ -197,7 +196,6 @@ class ModelstudioVoiceChatAudioTranscriptPayload(
 
 class ModelstudioVoiceChatResponseTextPayload(
     ModelstudioVoiceChatOutPayload,
-    BaseModel,
 ):
     text: Optional[str] = ""
     tool_calls: Optional[List[ChoiceDeltaToolCall]] = []

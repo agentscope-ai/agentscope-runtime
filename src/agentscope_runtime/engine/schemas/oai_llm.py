@@ -116,7 +116,7 @@ class OpenAIMessage(BaseModel):
     """The role of the messages author, should be in `user`,`system`,
     'assistant', 'tool'."""
 
-    content: Optional[Union[str | List[ChatCompletionMessage]]] = None
+    content: Optional[Union[str, List[ChatCompletionMessage]]] = None
     """The contents of the message.
 
     Can be a string, a list of content parts for multimodal messages.
@@ -279,17 +279,6 @@ class ToolMessage(OpenAIMessage):
     tool_call_id: str
     """Tool call that this message is responding to."""
 
-    def is_empty(self) -> bool:
-        """
-        Check if prompt message is empty.
-
-        :return: True if prompt message is empty, False otherwise
-        """
-        if not super().is_empty() and not self.tool_call_id:
-            return False
-
-        return True
-
 
 class ResponseFormat(BaseModel):
     class JsonSchema(BaseModel):
@@ -331,19 +320,19 @@ class ResponseFormat(BaseModel):
     @model_validator(mode="before")
     def validate_schema(self, values: dict) -> dict:
         if not isinstance(values, dict) or "type" not in values:
-            raise ValueError(f"Json schem not valid with type {type(values)}")
+            raise ValueError(f"Json schema not valid with type {type(values)}")
         format_type = values.get("type")
         json_schema = values.get("json_schema")
 
         if format_type in ["text", "json_object"] and json_schema is not None:
             raise ValueError(
-                f"Json schem is not allowed for type {format_type}",
+                f"Json schema is not allowed for type {format_type}",
             )
 
         if format_type == "json_schema":
             if json_schema is None:
                 raise ValueError(
-                    f"Json schem is required for type {format_type}",
+                    f"Json schema is required for type {format_type}",
                 )
         return values
 
