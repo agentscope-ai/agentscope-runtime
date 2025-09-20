@@ -185,6 +185,7 @@ async def generate_wrapper_project(
         "alibabacloud-credentials",
         "alibabacloud-tea-openapi",
         "alibabacloud-tea-util",
+        "python-dotenv",
     ]
     # De-duplicate while preserving order
     seen = set()
@@ -209,6 +210,10 @@ import subprocess
 import sys
 import yaml
 from pathlib import Path
+try:
+    from dotenv import load_dotenv  # type: ignore
+except Exception:
+    load_dotenv = None  # type: ignore
 
 
 def read_config():
@@ -242,6 +247,17 @@ def main():
         cmd_str = f'"{{sys.executable}}" ' + cmd_str
 
     print(f'[deploy_starter] Starting user service: "{{cmd_str}}" in {{workdir}}')
+
+    # Load environment variables from user's bundle if present
+    if load_dotenv is not None:
+        for fname in ('.env', '.env.local'):
+            env_file = workdir / fname
+            if env_file.is_file():
+                try:
+                    load_dotenv(dotenv_path=env_file, override=False)
+                except Exception:
+                    pass
+
     env = os.environ.copy()
     process = subprocess.Popen(cmd_str, cwd=str(workdir), shell=True, env=env)
 
