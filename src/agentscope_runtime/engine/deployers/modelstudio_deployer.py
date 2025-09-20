@@ -7,13 +7,17 @@ from typing import Dict, Optional, List, Union, Tuple
 
 from pydantic import BaseModel, Field
 
-from .base import DeployManager
+from .local_deployer import LocalDeployManager
 from ..runner import Runner
 from .utils.wheel_packager import (
     generate_wrapper_project,
     build_wheel,
     default_deploy_name,
 )
+from .utils.service_utils import (
+    ServicesConfig,
+)
+from .adapter.protocol_adapter import ProtocolAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -84,17 +88,17 @@ class ModelstudioConfig(BaseModel):
             workspace_id=os.environ.get("MODELSTUDIO_WORKSPACE_ID"),
             access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
             access_key_secret=os.environ.get(
-                "ALIBABA_CLOUD_ACCESS_KEY_SECRET"
+                "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
             ),
             dashscope_api_key=os.environ.get(
-                "ALIBABA_CLOUD_DASHSCOPE_API_KEY"
+                "DASHSCOPE_API_KEY",
             ),
         )
 
     def ensure_valid(self) -> None:
         missing = []
         if not self.workspace_id:
-            missing.append("ALIBABA_CLOUD_WORKSPACE_ID")
+            missing.append("MODELSTUDIO_WORKSPACE_ID")
         if not self.access_key_id:
             missing.append("ALIBABA_CLOUD_ACCESS_KEY_ID")
         if not self.access_key_secret:
@@ -135,7 +139,7 @@ async def _oss_create_bucket_if_not_exists(client, bucket_name: str) -> None:
             bucket=bucket_name,
             acl="private",
             create_bucket_configuration=oss.CreateBucketConfiguration(
-                storage_class="IA"
+                storage_class="IA",
             ),
         )
         client.put_bucket(req)
@@ -155,7 +159,7 @@ async def _oss_create_bucket_if_not_exists(client, bucket_name: str) -> None:
             ),
         )
         logger.info(
-            f"put bucket tag status code: {result.status_code}, request id: {result.request_id}"
+            f"put bucket tag status code: {result.status_code}, request id: {result.request_id}",
         )
 
 
@@ -170,12 +174,17 @@ def _create_bucket_name(prefix: str, base_name: str) -> str:
 
 
 async def _oss_put_and_presign(
-    client, bucket_name: str, object_key: str, file_bytes: bytes
+    client,
+    bucket_name: str,
+    object_key: str,
+    file_bytes: bytes,
 ) -> str:
     import datetime as _dt
 
     put_req = PutObjectRequest(
-        bucket=bucket_name, key=object_key, body=file_bytes
+        bucket=bucket_name,
+        key=object_key,
+        body=file_bytes,
     )
     client.put_object(put_req)
     pre = client.presign(
@@ -208,11 +217,14 @@ async def _modelstudio_deploy(
     runtime = util_models.RuntimeOptions()
     headers: Dict[str, str] = {}
     client_modelstudio.high_code_deploy_with_options(
-        cfg.workspace_id, req, headers, runtime
+        cfg.workspace_id,
+        req,
+        headers,
+        runtime,
     )
 
 
-class ModelstudioDeployManager(DeployManager):
+class ModelstudioDeployManager(LocalDeployManager):
     """Deployer for Alibaba Modelstudio Function Compute based agent
     deployment.
 
@@ -285,6 +297,67 @@ class ModelstudioDeployManager(DeployManager):
         wheel_path = await build_wheel(wrapper_project_dir)
         return wheel_path, name
 
+    def _generate_env_file(
+        self,
+        project_dir: Union[str, Path],
+        environment: Optional[Dict[str, str]] = None,
+        env_filename: str = ".env",
+    ) -> Optional[Path]:
+        """
+        Generate a .env file from environment variables dictionary.
+
+        Args:
+            project_dir: The project directory where the .env file will be
+            created  environment: Dictionary of environment variables to
+            write to .env file env_filename: Name of the env file (default:
+            ".env")
+
+        Returns:
+            Path to the created .env file, or None if no environment
+            variables provided
+        """
+        if not environment:
+            return None
+
+        project_path = Path(project_dir).resolve()
+        if not project_path.exists():
+            raise FileNotFoundError(
+                f"Project directory not found: " f"{project_path}"
+            )
+
+        env_file_path = project_path / env_filename
+
+        try:
+            with env_file_path.open("w", encoding="utf-8") as f:
+                f.write("# Environment variables used by AgentScope Runtime\n")
+
+                for key, value in environment.items():
+                    # Escape special characters and quote values if needed
+                    if value is None:
+                        continue
+
+                    # Quote values that contain spaces or special characters
+                    if " " in str(value) or any(
+                        char in str(value)
+                        for char in ["$", "`", '"', "'", "\\"]
+                    ):
+                        # Escape existing quotes and wrap in double quotes
+                        escaped_value = (
+                            str(value)
+                            .replace("\\", "\\\\")
+                            .replace('"', '\\"')
+                        )
+                        f.write(f'{key}="{escaped_value}"\n')
+                    else:
+                        f.write(f"{key}={value}\n")
+
+            logger.info(f"Generated .env file at: {env_file_path}")
+            return env_file_path
+
+        except Exception as e:
+            logger.warning(f"Failed to generate .env file: {e}")
+            return None
+
     async def _upload_and_deploy(
         self,
         wheel_path: Path,
@@ -299,7 +372,10 @@ class ModelstudioDeployManager(DeployManager):
         with wheel_path.open("rb") as f:
             file_bytes = f.read()
         artifact_url = await _oss_put_and_presign(
-            client, bucket_name, filename, file_bytes
+            client,
+            bucket_name,
+            filename,
+            file_bytes,
         )
 
         logger.info("Triggering Modelstudio Full-Code deploy for %s", name)
@@ -317,14 +393,14 @@ class ModelstudioDeployManager(DeployManager):
         runner: Optional[Runner] = None,
         endpoint_path: str = "/process",
         stream: bool = True,
-        requirements: Optional[
-            Union[str, List[str]]
-        ] = None,  # not used directly
-        extra_packages: Optional[List[str]] = None,  # not used directly
-        base_image: str = "python:3.9-slim",  # not used, kept for API symmetry
-        environment: Optional[Dict[str, str]] = None,  # not used directly
-        runtime_config: Optional[Dict] = None,  # not used directly
-        # Bailian-specific/packaging args (required)
+        services_config: Optional[Union[ServicesConfig, dict]] = None,
+        protocol_adapters: Optional[list[ProtocolAdapter]] = None,
+        requirements: Optional[Union[str, List[str]]] = None,
+        extra_packages: Optional[List[str]] = None,
+        base_image: str = "python:3.9-slim",
+        environment: Optional[Dict[str, str]] = None,
+        runtime_config: Optional[Dict] = None,
+        # ModelStudio-specific/packaging args (required)
         project_dir: Optional[Union[str, Path]] = None,
         cmd: Optional[str] = None,
         deploy_name: Optional[str] = None,
@@ -335,7 +411,7 @@ class ModelstudioDeployManager(DeployManager):
         **kwargs,
     ) -> Dict[str, str]:
         """
-        Package the project, upload to OSS and trigger Bailian deploy.
+        Package the project, upload to OSS and trigger ModelStudio deploy.
 
         Returns a dict containing deploy_id, wheel_path, artifact_url (if uploaded),
         resource_name (deploy_name), and workspace_id.
@@ -344,49 +420,69 @@ class ModelstudioDeployManager(DeployManager):
         self.oss_config.ensure_valid()
         self.modelstudio_config.ensure_valid()
 
-        # 如果传入了外部whl包地址，则跳过打包步骤
-        if external_whl_path:
-            wheel_path = Path(external_whl_path).resolve()
-            if not wheel_path.is_file():
-                raise FileNotFoundError(
-                    f"External wheel file not found: {wheel_path}"
+        if not runner and not project_dir and not external_whl_path:
+            raise ValueError("")
+
+        # convert services_config to Model body
+        if services_config and isinstance(services_config, dict):
+            services_config = ServicesConfig(**services_config)
+        try:
+            if runner:
+                agent = runner._agent
+
+                # Create package project for detached deployment
+                project_dir = await self._create_detached_project(
+                    agent=agent,
+                    services_config=services_config,
+                    protocol_adapters=protocol_adapters,
+                    requirements=requirements,
+                    extra_packages=extra_packages,
+                    **kwargs,
                 )
-            name = deploy_name or default_deploy_name()
-        else:
-            wheel_path, name = await self._generate_wrapper_and_build_wheel(
-                project_dir=project_dir,
-                cmd=cmd,
-                deploy_name=deploy_name,
-                telemetry_enabled=telemetry_enabled,
-            )
+                self._generate_env_file(project_dir, environment)
+                cmd = "python main.py"
+                deploy_name = deploy_name or default_deploy_name()
 
-        artifact_url = ""
-        if not skip_upload:
-            artifact_url = await self._upload_and_deploy(
-                wheel_path, name, telemetry_enabled
-            )
-
-        result: Dict[str, str] = {
-            "deploy_id": self.deploy_id,
-            "wheel_path": str(wheel_path),
-            "artifact_url": artifact_url,
-            "resource_name": name,
-            "workspace_id": self.modelstudio_config.workspace_id or "",
-            "url": "",
-        }
-
-        if output_file:
-            try:
-                Path(output_file).write_text(
-                    "\n".join([f"{k}={v}" for k, v in result.items()]),
-                    encoding="utf-8",
-                )
-            except Exception as e:  # pragma: no cover
-                logger.warning(
-                    "Failed to write output file %s: %s", output_file, e
+            # if whl exists then skip the project package method
+            if external_whl_path:
+                wheel_path = Path(external_whl_path).resolve()
+                if not wheel_path.is_file():
+                    raise FileNotFoundError(
+                        f"External wheel file not found: {wheel_path}",
+                    )
+                name = deploy_name or default_deploy_name()
+            else:
+                (
+                    wheel_path,
+                    name,
+                ) = await self._generate_wrapper_and_build_wheel(
+                    project_dir=project_dir,
+                    cmd=cmd,
+                    deploy_name=deploy_name,
+                    telemetry_enabled=telemetry_enabled,
                 )
 
-        return result
+            artifact_url = ""
+            if not skip_upload:
+                artifact_url = await self._upload_and_deploy(
+                    wheel_path,
+                    name,
+                    telemetry_enabled,
+                )
+
+            result: Dict[str, str] = {
+                "deploy_id": self.deploy_id,
+                "wheel_path": str(wheel_path),
+                "artifact_url": artifact_url,
+                "resource_name": name,
+                "workspace_id": self.modelstudio_config.workspace_id or "",
+                "url": "",
+            }
+
+            return result
+        except Exception as e:
+            logger.error("Failed to deploy to modelstudio: %s", e)
+            raise e
 
     async def stop(self) -> bool:  # pragma: no cover - not supported yet
         return False

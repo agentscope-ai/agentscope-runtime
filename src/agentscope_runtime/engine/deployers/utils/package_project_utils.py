@@ -748,9 +748,7 @@ def package_project(
                     # Check if Redis services are configured
                     services = config.services_config
                     if any(
-                        service.get("provider") == "redis"
-                        for service in services.values()
-                        if isinstance(service, dict)
+                        service.provider == "redis" for service in services
                     ):
                         base_requirements.append("redis")
 
@@ -768,7 +766,7 @@ def package_project(
             import json
 
             with open(config_path, "w", encoding="utf-8") as f:
-                json.dump(config.services_config, f, indent=2)
+                json.dump(config.services_config.model_dump(), f, indent=2)
 
         # If we need to determine if update is needed (existing directory case)
         if needs_update is None and original_temp_dir is not None:

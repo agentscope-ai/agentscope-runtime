@@ -7,11 +7,11 @@ from typing import Optional, Dict, Callable, List, Union, Any
 
 from pydantic import BaseModel, Field
 
-from agentscope_runtime.engine.deployers.utils.docker_image_utils import (
+from .utils.docker_image_utils import (
     RunnerImageFactory,
     RegistryConfig,
 )
-from agentscope_runtime.engine.deployers.utils.service_utils import (
+from .utils.service_utils import (
     ServicesConfig,
 )
 from agentscope_runtime.engine.runner import Runner
@@ -77,17 +77,16 @@ class KubernetesDeployManager(DeployManager):
         runner: Runner,
         endpoint_path: str = "/process",
         stream: bool = True,
-        services_config: Optional[dict] = None,
+        services_config: Optional[Union[ServicesConfig, dict]] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
         base_image: str = "python:3.9-slim",
+        environment: Dict = None,
+        runtime_config: Dict = None,
         port: int = 8090,
         replicas: int = 1,
-        environment: Dict = None,
         mount_dir: str = None,
-        runtime_config: Dict = None,
-        func: Optional[Callable] = None,
         image_name: str = "agent_llm",
         image_tag: str = "latest",
         push_to_registry: bool = False,
@@ -113,7 +112,6 @@ class KubernetesDeployManager(DeployManager):
             mount_dir: Mount directory
             runtime_config: K8s runtime configuration
             # Backward compatibility
-            func: Legacy function parameter (deprecated)
             image_name: Image name
             image_tag: Image tag
             push_to_registry: Push to registry
@@ -132,44 +130,21 @@ class KubernetesDeployManager(DeployManager):
             logger.info(f"Starting deployment {deploy_id}")
 
             # Handle backward compatibility
-            if runner is None and func is not None:
-                logger.warning(
-                    "Using deprecated func parameter. "
-                    "Please use runner parameter instead.",
-                )
-
-                # For backward compatibility, create a minimal wrapper
-                async def wrapper_func(*args, **kwargs):
-                    return (
-                        await func(*args, **kwargs)
-                        if asyncio.iscoroutinefunction(func)
-                        else func(*args, **kwargs)
-                    )
-
-                actual_func = wrapper_func
-                actual_requirements = requirements
-            elif runner is not None:
-                # New approach: use complete runner object
-                actual_func = runner
-                actual_requirements = requirements
-            else:
+            if runner is None:
                 raise ValueError(
-                    "Either runner or func parameter must be provided",
+                    "Runner must be provided",
                 )
 
             # convert services_config to Model body
-            if services_config is not None and isinstance(
-                services_config,
-                dict,
-            ):
+            if services_config and isinstance(services_config, dict):
                 services_config = ServicesConfig(**services_config)
 
             # Step 1: Build image with proper error handling
             logger.info("Building runner image...")
             try:
                 built_image_name = self.image_factory.build_runner_image(
-                    runner=actual_func,
-                    requirements=actual_requirements,
+                    runner=runner,
+                    requirements=requirements,
                     extra_packages=extra_packages or [],
                     base_image=base_image,
                     stream=stream,

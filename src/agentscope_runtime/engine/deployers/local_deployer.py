@@ -6,7 +6,7 @@ import logging
 import os
 import socket
 import threading
-from typing import Callable, Optional, Type, Any, Dict
+from typing import Callable, Optional, Type, Any, Dict, Union, List
 
 import uvicorn
 
@@ -191,6 +191,7 @@ class LocalDeployManager(DeployManager):
     async def _deploy_detached_process(
         self,
         runner: Optional[Any] = None,
+        services_config: Optional[ServicesConfig] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         **kwargs,
     ) -> Dict[str, str]:
@@ -210,7 +211,7 @@ class LocalDeployManager(DeployManager):
         # Create package project for detached deployment
         project_dir = await self._create_detached_project(
             agent=agent,
-            runner=runner,
+            services_config=services_config,
             protocol_adapters=protocol_adapters,
             **kwargs,
         )
@@ -267,21 +268,17 @@ class LocalDeployManager(DeployManager):
         self,
         agent: Any,
         endpoint_path: str = "/process",
+        requirements: Optional[Union[str, List[str]]] = None,
+        extra_packages: Optional[List[str]] = None,
         services_config: Optional[ServicesConfig] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         **kwargs,
     ) -> str:
         """Create detached project using package_project method."""
         self._logger.debug(f"additional kwargs: {kwargs}")
-        # Create package configuration for detached deployment
-        package_config = PackageConfig(
-            endpoint_path=endpoint_path,
-            deployment_mode="detached_process",
-            protocol_adapters=protocol_adapters,
-            services_config=services_config.model_dump()
-            if services_config
-            else None,
-            requirements=[
+
+        if requirements is None:
+            requirements = [
                 "fastapi",
                 "uvicorn",
                 "agentscope-runtime[sandbox]",
@@ -289,8 +286,19 @@ class LocalDeployManager(DeployManager):
                 "pydantic",
                 "jinja2",
                 "psutil",
-                # Add Redis if needed
             ]
+
+        if isinstance(requirements, str):
+            requirements = [requirements]
+
+        # Create package configuration for detached deployment
+        package_config = PackageConfig(
+            endpoint_path=endpoint_path,
+            deployment_mode="detached_process",
+            extra_packages=extra_packages,
+            protocol_adapters=protocol_adapters,
+            services_config=services_config,
+            requirements=requirements
             + (
                 ["redis"]
                 if services_config

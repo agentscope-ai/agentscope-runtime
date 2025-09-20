@@ -1,0 +1,6 @@
+deploy_id=8606eeaa-c45e-451b-9648-4061cfce6acb
+wheel_path=/private/var/folders/ds/cdbg4b1509jbq82d60bgn_gm0000gp/T/.agentscope_runtime_builds/build-1758349441/dist/agentdev_starter_5f620392-0.1.1758349441-py3-none-any.whl
+artifact_url=https://tmpbucket-for-full-code-deployment.oss-cn-hangzhou.aliyuncs.com/agentdev_starter_5f620392-0.1.1758349441-py3-none-any.whl?x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-date=20250920T062407Z&x-oss-expires=10799&x-oss-credential=LTAI5tJZp2JJ9pHQ6k4nLidx%2F20250920%2Fcn-hangzhou%2Foss%2Faliyun_v4_request&x-oss-signature=cac4570032f3357f6b17f68250e4264f84cf76d52fb41ee96fd6046e600020f1
+resource_name=agent-llm-example
+workspace_id=llm-enpaqbwxdsmnlfpq
+url=
