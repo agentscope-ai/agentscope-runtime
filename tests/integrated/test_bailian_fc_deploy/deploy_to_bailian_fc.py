@@ -61,6 +61,7 @@ async def deploy_agent_to_bailian_fc():
     if result.get("workspace_id"):
         print("🏷  Workspace：", result.get("workspace_id"))
     print("📝 Results written to:", output_file)
+    print("🚀 Deploying to FC, see:", result.get("url"))
 
     return result, deployer
 

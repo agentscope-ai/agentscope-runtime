@@ -16,7 +16,9 @@ app = FastAPI()
 
 @app.get("/health")
 async def health():
-    return "OK"
+    return {
+        "status": "healthy"
+    }
 
 
 @app.post("/chat_stream")

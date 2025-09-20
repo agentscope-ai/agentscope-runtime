@@ -200,7 +200,7 @@ async def _modelstudio_deploy(
     filename: str,
     deploy_name: str,
     telemetry_enabled: bool = True,
-) -> None:
+) -> str:
     cfg.ensure_valid()
     config = open_api_models.Config(
         access_key_id=cfg.access_key_id,
@@ -216,12 +216,54 @@ async def _modelstudio_deploy(
     )
     runtime = util_models.RuntimeOptions()
     headers: Dict[str, str] = {}
-    client_modelstudio.high_code_deploy_with_options(
+    resp = client_modelstudio.high_code_deploy_with_options(
         cfg.workspace_id,
         req,
         headers,
         runtime,
     )
+
+    # Extract deploy identifier string from response
+    def _extract_deploy_identifier(response_obj) -> str:
+        try:
+            if isinstance(response_obj, str):
+                return response_obj
+            # Tea responses often have a 'body' that can be a dict or model
+            body = getattr(response_obj, "body", None)
+            # 1) If body is a plain string
+            if isinstance(body, str):
+                return body
+            # 2) If body is a dict, prefer common fields
+            if isinstance(body, dict):
+                for key in ("data", "result", "deployId"):
+                    val = body.get(key)
+                    if isinstance(val, str) and val:
+                        return val
+            # 3) If body is a Tea model, try to_map()
+            if hasattr(body, "to_map") and callable(getattr(body, "to_map")):
+                try:
+                    m = body.to_map()
+                    if isinstance(m, dict):
+                        for key in ("data", "result", "deployId"):
+                            val = m.get(key)
+                            if isinstance(val, str) and val:
+                                return val
+                except Exception:  # pragma: no cover - best-effort
+                    pass
+            # 4) If response_obj itself is a dict
+            if isinstance(response_obj, dict):
+                b = response_obj.get("body")
+                if isinstance(b, dict):
+                    for key in ("data", "result", "deployId"):
+                        val = b.get(key)
+                        if isinstance(val, str) and val:
+                            return val
+            # Fallback to string representation
+            return str(response_obj)
+        except Exception:  # pragma: no cover - conservative fallback
+            return str(response_obj)
+
+    return _extract_deploy_identifier(resp)
 
 
 class ModelstudioDeployManager(LocalDeployManager):
@@ -363,7 +405,7 @@ class ModelstudioDeployManager(LocalDeployManager):
         wheel_path: Path,
         name: str,
         telemetry_enabled: bool = True,
-    ) -> str:
+) -> Tuple[str, str]:
         logger.info("Uploading wheel to OSS and generating presigned URL")
         client = _oss_get_client(self.oss_config)
         bucket_name = "tmpbucket-for-full-code-deployment"
@@ -379,14 +421,25 @@ class ModelstudioDeployManager(LocalDeployManager):
         )
 
         logger.info("Triggering Modelstudio Full-Code deploy for %s", name)
-        await _modelstudio_deploy(
+        deploy_identifier = await _modelstudio_deploy(
             cfg=self.modelstudio_config,
             file_url=artifact_url,
             filename=filename,
             deploy_name=name,
             telemetry_enabled=telemetry_enabled,
         )
-        return artifact_url
+
+        def _build_console_url(endpoint: str, identifier: str) -> str:
+            # Map API endpoint to console domain
+            base = (
+                "https://pre-bailian.console.aliyun.com/?tab=app&efm_v=3.4.108#"
+                if ("bailian-pre" in endpoint or "pre" in endpoint)
+                else "https://bailian.console.aliyun.com/?tab=app"
+            )
+            return f"{base}/app-center/high-code-detail/{identifier}"
+
+        console_url = _build_console_url(self.modelstudio_config.endpoint, deploy_identifier)
+        return artifact_url, console_url
 
     async def deploy(
         self,
@@ -463,8 +516,9 @@ class ModelstudioDeployManager(LocalDeployManager):
                 )
 
             artifact_url = ""
+            console_url = ""
             if not skip_upload:
-                artifact_url = await self._upload_and_deploy(
+                artifact_url, console_url = await self._upload_and_deploy(
                     wheel_path,
                     name,
                     telemetry_enabled,
@@ -476,7 +530,7 @@ class ModelstudioDeployManager(LocalDeployManager):
                 "artifact_url": artifact_url,
                 "resource_name": name,
                 "workspace_id": self.modelstudio_config.workspace_id or "",
-                "url": "",
+                "url": console_url,
             }
 
             return result
