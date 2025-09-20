@@ -1,3 +1,5 @@
 flask
 flask_cors
 agentscope-runtime
+agentscope-runtime[agentscope]
+flask_sqlalchemy

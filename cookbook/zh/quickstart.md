@@ -225,11 +225,10 @@ print("✅ LangGraph agent created successfully")
 ```{code-cell}
 @asynccontextmanager
 async def create_runner():
-    async with ContextManager() as context_manager:
-        runner = Runner(
-            agent=llm_agent,
-            context_manager=context_manager,
-        )
+    async with Runner(
+        agent=llm_agent,
+        context_manager=ContextManager(),
+    ) as runner:
         print("✅ Runner创建成功")
         yield runner
 ```

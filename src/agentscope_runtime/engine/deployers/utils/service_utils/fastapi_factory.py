@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
-"""FastAPI application factory for unified deployment architecture."""
+# pylint:disable=too-many-branches, unused-argument
 
-import json
+
 import asyncio
-from typing import Optional, Callable, Type, Any, Dict
-from fastapi import FastAPI, Request
-from fastapi.responses import StreamingResponse, JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
+import json
 from contextlib import asynccontextmanager
+from typing import Optional, Callable, Type, Any
 
-from ..deployment_modes import DeploymentMode
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse, JSONResponse
+
 from .service_config import ServicesConfig, DEFAULT_SERVICES_CONFIG
 from .service_factory import ServiceFactory
+from ..deployment_modes import DeploymentMode
+from ...adapter.protocol_adapter import ProtocolAdapter
 
 
 class FastAPIAppFactory:
@@ -29,6 +32,7 @@ class FastAPIAppFactory:
         after_finish: Optional[Callable] = None,
         mode: DeploymentMode = DeploymentMode.DAEMON_THREAD,
         services_config: Optional[ServicesConfig] = None,
+        protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         **kwargs: Any,
     ) -> FastAPI:
         """Create a FastAPI application with unified architecture.
@@ -44,6 +48,7 @@ class FastAPIAppFactory:
             after_finish: Callback function called after server finishes
             mode: Deployment mode
             services_config: Services configuration
+            protocol_adapters: Protocol adapters
             **kwargs: Additional keyword arguments
 
         Returns:
@@ -87,6 +92,7 @@ class FastAPIAppFactory:
         app.state.custom_func = func
         app.state.external_runner = runner
         app.state.endpoint_path = endpoint_path
+        app.state.protocol_adapters = protocol_adapters  # Store for later use
 
         # Add middleware
         FastAPIAppFactory._add_middleware(app, mode)
@@ -99,6 +105,9 @@ class FastAPIAppFactory:
             stream,
             mode,
         )
+
+        # Note: protocol_adapters will be added in _handle_startup
+        # after runner is available
 
         return app
 
@@ -134,6 +143,30 @@ class FastAPIAppFactory:
                 await before_start(app, **kwargs)
             else:
                 before_start(app, **kwargs)
+
+        # Add protocol adapter endpoints after runner is available
+        if (
+            hasattr(app.state, "protocol_adapters")
+            and app.state.protocol_adapters
+        ):
+            # Determine the effective function to use
+            if hasattr(app.state, "custom_func") and app.state.custom_func:
+                effective_func = app.state.custom_func
+            elif hasattr(app.state, "runner") and app.state.runner:
+                # Use stream_query if streaming is enabled, otherwise query
+                if (
+                    hasattr(app.state, "stream_enabled")
+                    and app.state.stream_enabled
+                ):
+                    effective_func = app.state.runner.stream_query
+                else:
+                    effective_func = app.state.runner.query
+            else:
+                effective_func = None
+
+            if effective_func:
+                for protocol_adapter in app.state.protocol_adapters:
+                    protocol_adapter.add_endpoint(app=app, func=effective_func)
 
     @staticmethod
     async def _handle_shutdown(
@@ -410,7 +443,10 @@ class FastAPIAppFactory:
         try:
             runner = FastAPIAppFactory._get_runner_instance(app)
             if not runner:
-                yield f"data: {json.dumps({'error': 'Runner not initialized'})}\n\n"
+                yield (
+                    f"data: {json.dumps({'error': 'Runner not initialized'})}"
+                    f"\n\n"
+                )
                 return
 
             if app.state.custom_func:
@@ -429,8 +465,6 @@ class FastAPIAppFactory:
                         yield f"data: {chunk.json()}\n\n"
                     else:
                         yield f"data: {json.dumps({'text': str(chunk)})}\n\n"
-
-            yield f"data: [DONE]\n\n"
 
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"

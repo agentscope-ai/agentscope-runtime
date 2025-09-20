@@ -1,24 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, User, Send, Plus, LogOut, Menu, X, Bot } from 'lucide-react';
+/* eslint-disable */
+import React, { useState, useEffect, useRef } from "react";
+import { MessageCircle, User, Send, Plus, LogOut, Menu, X, Bot } from "lucide-react";
 
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
   // API base URL
-  const API_BASE = 'http://localhost:5100/api';
+  const API_BASE = "http://localhost:5100/api";
 
   // Auto scroll to bottom of messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeConversation?.messages]);
 
   // Fetch user conversations
@@ -30,11 +31,11 @@ const App = () => {
         setConversations(data);
         if (data.length > 0 && !activeConversation) {
           // Load the first conversation
-          loadConversation(data[0].id);
+          await loadConversation(data[0].id);
         }
       }
     } catch (error) {
-      console.error('Error fetching conversations:', error);
+      console.error("Error fetching conversations:", error);
     }
   };
 
@@ -47,7 +48,7 @@ const App = () => {
         setActiveConversation(data);
       }
     } catch (error) {
-      console.error('Error loading conversation:', error);
+      console.error("Error loading conversation:", error);
     }
   };
 
@@ -58,9 +59,9 @@ const App = () => {
 
     try {
       const response = await fetch(`${API_BASE}/login`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ username, password }),
       });
@@ -72,11 +73,11 @@ const App = () => {
         await fetchConversations(userData.id);
       } else {
         const errorData = await response.json();
-        alert(errorData.error || 'Login failed');
+        alert(errorData.error || "Login failed");
       }
     } catch (error) {
-      console.error('Login error:', error);
-      alert('Network error. Please try again.');
+      console.error("Login error:", error);
+      alert("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -86,8 +87,8 @@ const App = () => {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentUser(null);
-    setUsername('');
-    setPassword('');
+    setUsername("");
+    setPassword("");
     setConversations([]);
     setActiveConversation(null);
     setIsMenuOpen(false);
@@ -95,17 +96,18 @@ const App = () => {
 
   // Create new conversation
   const createNewConversation = async () => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      return;
+    }
 
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE}/users/${currentUser.id}/conversations`, {
-        method: 'PO' +
-            'ST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ title: 'New Conversation' }),
+        body: JSON.stringify({ title: "New Conversation" }),
       });
 
       if (response.ok) {
@@ -114,7 +116,7 @@ const App = () => {
         await loadConversation(newConversation.id);
       }
     } catch (error) {
-      console.error('Error creating conversation:', error);
+      console.error("Error creating conversation:", error);
     } finally {
       setLoading(false);
       setIsMenuOpen(false);
@@ -123,17 +125,19 @@ const App = () => {
 
   // Send message
   const sendMessage = async () => {
-    if (!message.trim() || !activeConversation) return;
+    if (!message.trim() || !activeConversation) {
+      return;
+    }
 
     setLoading(true);
     try {
       // Send user message
       const userMessageResponse = await fetch(`${API_BASE}/conversations/${activeConversation.id}/messages`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ text: message, sender: 'user' }),
+        body: JSON.stringify({ text: message, sender: "user" }),
       });
 
       if (userMessageResponse.ok) {
@@ -143,16 +147,16 @@ const App = () => {
         const updatedConversation = {
           ...activeConversation,
           messages: [...activeConversation.messages, userMessage],
-          title: activeConversation.messages.length === 1 ? message.slice(0, 20) + (message.length > 20 ? '...' : '') : activeConversation.title
+          title: activeConversation.messages.length === 1 ? message.slice(0, 20) + (message.length > 20 ? "..." : "") : activeConversation.title
         };
         setActiveConversation(updatedConversation);
-        setMessage('');
+        setMessage("");
 
         // Fetch updated conversation to get AI response
         await loadConversation(activeConversation.id);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error("Error sending message:", error);
     } finally {
       setLoading(false);
     }
@@ -160,9 +164,9 @@ const App = () => {
 
   // Format timestamp
   const formatTime = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(timestamp).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit"
     });
   };
 
@@ -207,7 +211,7 @@ const App = () => {
               disabled={loading}
               className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
             >
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? "Logging in..." : "Login"}
             </button>
           </form>
 
@@ -284,7 +288,7 @@ const App = () => {
                       setIsMenuOpen(false);
                     }}
                     className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
-                      activeConversation?.id === conversation.id ? 'bg-indigo-50 border-l-4 border-l-indigo-500' : ''
+                      activeConversation?.id === conversation.id ? "bg-indigo-50 border-l-4 border-l-indigo-500" : ""
                     }`}
                   >
                     <div className="flex items-start space-x-3">
@@ -292,7 +296,7 @@ const App = () => {
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-gray-900 truncate">{conversation.title}</h3>
                         <p className="text-sm text-gray-500 truncate">
-                          {conversation.preview || 'New conversation'}
+                          {conversation.preview || "New conversation"}
                         </p>
                       </div>
                     </div>
@@ -329,17 +333,17 @@ const App = () => {
                 {activeConversation.messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
                   >
                     <div
                       className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                        msg.sender === 'user'
-                          ? 'bg-indigo-600 text-white rounded-br-md'
-                          : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md shadow-sm'
+                        msg.sender === "user"
+                          ? "bg-indigo-600 text-white rounded-br-md"
+                          : "bg-white text-gray-800 border border-gray-200 rounded-bl-md shadow-sm"
                       }`}
                     >
                       <p className="text-sm">{msg.text}</p>
-                      <p className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-indigo-100' : 'text-gray-500'}`}>
+                      <p className={`text-xs mt-1 ${msg.sender === "user" ? "text-indigo-100" : "text-gray-500"}`}>
                         {formatTime(msg.created_at)}
                       </p>
                     </div>
@@ -355,7 +359,7 @@ const App = () => {
                     type="text"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && !loading && sendMessage()}
+                    onKeyPress={(e) => e.key === "Enter" && !loading && sendMessage()}
                     disabled={loading}
                     className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all disabled:opacity-50"
                     placeholder="Type a message..."

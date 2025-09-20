@@ -71,19 +71,21 @@ runtime-fc-deploy \
 
 ```python
 import asyncio
-from agentscope_runtime.engine.deployers.bailian_fc_deployer import BailianFCDeployer
+from agentscope_runtime.engine.deployers.modelstudio_deployer import ModelstudioDeployManager
+
 
 async def main():
-    deployer = BailianFCDeployer()
+    deployer = ModelstudioDeployManager()
     result = await deployer.deploy(
         project_dir="./path/to/your/python/project",
         cmd="python app.py",
-        deploy_name=None,            # 可选，不传则自动生成
-        skip_upload=False,           # True 表示只构建 wheel
-        output_file="fc_deploy.txt",# 可选
-        telemetry_enabled=True,      # 或 False
+        deploy_name=None,  # 可选，不传则自动生成
+        skip_upload=False,  # True 表示只构建 wheel
+        output_file="fc_deploy.txt",  # 可选
+        telemetry_enabled=True,  # 或 False
     )
     print(result)
+
 
 asyncio.run(main())
 ```

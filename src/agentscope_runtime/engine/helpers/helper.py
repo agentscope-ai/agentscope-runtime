@@ -93,6 +93,39 @@ async def simple_call_agent_tool(agent, query):
     return all_result
 
 
+async def simple_call_agent_tool_auto_lifecycle(agent, query):
+    all_result = ""
+    async with Runner(
+        agent=agent,
+        context_manager=create_context_manager(),
+        environment_manager=create_environment_manager(),
+    ) as runner:
+        request = AgentRequest(
+            input=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": query,
+                        },
+                    ],
+                },
+            ],
+        )
+
+        async for message in runner.stream_query(
+            request=request,
+        ):
+            if (
+                message.object == "message"
+                and MessageType.MESSAGE == message.type
+                and RunStatus.Completed == message.status
+            ):
+                all_result = message.content[0].text
+    return all_result
+
+
 async def simple_call_agent_tool_wo_env(agent, query):
     all_result = ""
     async with create_context_manager() as context_manager:

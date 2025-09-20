@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """Service configuration models for dynamic service loading."""
 
-from typing import Dict, Any, Optional
-from pydantic import BaseModel
 from enum import Enum
+from typing import Dict, Any, Optional
+
+from pydantic import BaseModel
 
 
 class ServiceType(str, Enum):
@@ -20,7 +21,6 @@ class ServiceProvider(str, Enum):
 
     IN_MEMORY = "in_memory"
     REDIS = "redis"
-    POSTGRESQL = "postgresql"
     # Extensible for other providers
 
 

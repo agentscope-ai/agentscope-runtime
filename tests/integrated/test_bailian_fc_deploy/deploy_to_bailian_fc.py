@@ -6,8 +6,8 @@ import time
 from pathlib import Path
 
 from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.engine.deployers.bailian_fc_deployer import (
-    BailianFCDeployer,
+from agentscope_runtime.engine.deployers.modelstudio_deployer import (
+    ModelstudioDeployManager,
 )
 
 
@@ -27,7 +27,9 @@ async def deploy_agent_to_bailian_fc():
     missing_envs = _check_required_envs()
     if missing_envs:
         print("[WARN] Missing required env vars:", ", ".join(missing_envs))
-        print("       You may set them before running to enable upload & deploy.")
+        print(
+            "       You may set them before running to enable upload & deploy."
+        )
 
     # Example project under this directory
     base_dir = Path(__file__).resolve().parent
@@ -35,7 +37,7 @@ async def deploy_agent_to_bailian_fc():
     cmd = "python app.py"
 
     # Create deployer and runner (agent not used by BailianFCDeployer)
-    deployer = BailianFCDeployer()
+    deployer = ModelstudioDeployManager()
     runner = Runner(agent=None)  # type: ignore
 
     deploy_name = f"bailian-fc-demo-{int(time.time())}"
@@ -76,5 +78,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-

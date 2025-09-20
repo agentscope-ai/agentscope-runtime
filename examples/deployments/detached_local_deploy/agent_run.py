@@ -15,6 +15,9 @@ llm_agent = LLMAgent(
     model=model,
     name="DetachedAgent",
     agent_config={
-        "sys_prompt": "You are a helpful assistant running in detached mode. You can help users with various tasks and questions.",
+        "sys_prompt": (
+            "You are a helpful assistant running in detached mode. "
+            "You can help users with various tasks and questions."
+        ),
     },
 )

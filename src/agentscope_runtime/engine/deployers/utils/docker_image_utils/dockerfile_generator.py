@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
+import logging
 import os
 import tempfile
-import logging
-from pydantic import BaseModel
 from typing import Optional, Dict, List
-from pathlib import Path
+
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +44,13 @@ ENV PYTHONUNBUFFERED=1
 RUN rm -f /etc/apt/sources.list.d/*.list
 
 # 替换主源为阿里云
-RUN echo "deb https://mirrors.aliyun.com/debian/ bookworm main contrib non-free non-free-firmware" > /etc/apt/sources.list && \\
-    echo "deb https://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free non-free-firmware" >> /etc/apt/sources.list && \\
-    echo "deb https://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free non-free-firmware" >> /etc/apt/sources.list
+RUN echo "deb https://mirrors.aliyun.com/debian/ bookworm main contrib " \\
+        "non-free non-free-firmware" > /etc/apt/sources.list && \\
+    echo "deb https://mirrors.aliyun.com/debian/ bookworm-updates main " \\
+         "contrib non-free non-free-firmware" >> /etc/apt/sources.list && \\
+    echo "deb https://mirrors.aliyun.com/debian-security/ " \\
+         "bookworm-security main contrib non-free " \\
+         "non-free-firmware" >> /etc/apt/sources.list
 
 # Clean up package lists
 RUN rm -rf /var/lib/apt/lists/*
@@ -62,10 +66,13 @@ COPY . {working_dir}/
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip
-RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple; fi
+RUN if [ -f requirements.txt ]; then \\
+        pip install --no-cache-dir -r requirements.txt \\
+        -i https://pypi.tuna.tsinghua.edu.cn/simple; fi
 
 # Create non-root user for security
-RUN adduser --disabled-password --gecos '' {user} && chown -R {user} {working_dir}
+RUN adduser --disabled-password --gecos '' {user} && \\
+    chown -R {user} {working_dir}
 USER {user}
 
 {env_vars_section}
@@ -118,7 +125,10 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \\
                 startup_command_section = f'CMD ["{config.startup_command}"]'
         else:
             # Default uvicorn command
-            startup_command_section = f'CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "{config.port}"]'
+            startup_command_section = (
+                f'CMD ["uvicorn", "main:app", "--host", "0.0.0.0", '
+                f'"--port", "{config.port}"]'
+            )
 
         # Format template with configuration values
         content = template.format(
@@ -202,7 +212,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \\
 
         if not config.working_dir.startswith("/"):
             raise ValueError(
-                f"Working directory must be absolute path: {config.working_dir}",
+                f"Working directory must be absolute path: "
+                f"{config.working_dir}",
             )
 
         return True

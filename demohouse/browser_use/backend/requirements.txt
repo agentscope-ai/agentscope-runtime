@@ -1,4 +1,5 @@
-quart
-quart-cors
-agentscope-runtime
-agentscope
+pyyaml>=6.0.2
+quart>=0.8.0
+quart-cors>=0.8.0
+agentscope-runtime>=0.1.3
+agentscope>=1.0.1

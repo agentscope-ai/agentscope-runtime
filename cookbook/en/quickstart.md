@@ -219,18 +219,17 @@ agent = LangGraphAgent(graph=compiled_graph)
 print("✅ LangGraph agent created successfully")
 ```
 
-### Step3: Create Runner Context Manager
+### Step3: Create Runner
 
 Establish the runtime context for managing agent lifecycle:
 
 ```{code-cell}
 @asynccontextmanager
 async def create_runner():
-    async with ContextManager() as context_manager:
-        runner = Runner(
-            agent=llm_agent,
-            context_manager=context_manager,
-        )
+    async with Runner(
+        agent=llm_agent,
+        context_manager=ContextManager(),
+    ) as runner:
         print("✅ Runner created successfully")
         yield runner
 ```

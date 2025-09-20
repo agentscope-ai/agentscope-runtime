@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
-# deploy_to_k8s.py
+# pylint:disable=wrong-import-position, wrong-import-order
 import asyncio
 import os
 import sys
-from agentscope_runtime.engine.runner import Runner
+
 from agentscope_runtime.engine.deployers.kubernetes_deployer import (
-    KubernetesDeployer,
+    KubernetesDeployManager,
     RegistryConfig,
     K8sConfig,
 )
+from agentscope_runtime.engine.runner import Runner
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-# 从simple_agent.py导入agent
-from agent_run import llm_agent
+from agent_run import llm_agent  # noqa: E402
 
 
 async def deploy_agent_to_k8s():
@@ -21,20 +21,22 @@ async def deploy_agent_to_k8s():
 
     # 1. 配置Registry
     registry_config = RegistryConfig(
-        registry_url="crpi-p44cuw4wgxu8xn0b.cn-hangzhou.personal.cr.aliyuncs.com",
+        registry_url=(
+            "crpi-p44cuw4wgxu8xn0b.cn-hangzhou.personal.cr.aliyuncs.com"
+        ),
         namespace="agentscope-runtime",
     )
 
     # 3. 配置K8s连接
     k8s_config = K8sConfig(
         k8s_namespace="agentscope-runtime",
-        kubeconfig_path="/Users/zhicheng/repo/agentscope-runtime/logs/kubeconfig.yaml",
+        kubeconfig_path=None,
     )
 
     port = 8080
 
-    # 5. 创建KubernetesDeployer
-    deployer = KubernetesDeployer(
+    # 5. 创建KubernetesDeployManager
+    deployer = KubernetesDeployManager(
         kube_config=k8s_config,
         registry_config=registry_config,
         use_deployment=True,  # 使用Deployment模式，支持扩缩容
@@ -73,7 +75,7 @@ async def deploy_agent_to_k8s():
         "stream": True,
         "port": str(port),
         "replicas": 1,  # 部署2个副本
-        "image_tag": "linux-amd64-6",
+        "image_tag": "linux-amd64-8-2",
         "image_name": "agent_llm",
         # 依赖配置
         "requirements": [
@@ -202,11 +204,12 @@ async def main():
         """,
         )
 
-        print(f"\n📝 或者使用kubectl查看:")
-        print(f"kubectl get pods -n agentscope-runtime")
-        print(f"kubectl get svc -n agentscope-runtime")
+        print("\n📝 或者使用kubectl查看:")
+        print("kubectl get pods -n agentscope-runtime")
+        print("kubectl get svc -n agentscope-runtime")
         print(
-            f"kubectl logs -l app={result['resource_name']} -n agentscope-runtime",
+            f"kubectl logs -l app={result['resource_name']} "
+            "-n agentscope-runtime",
         )
 
         # 等待用户确认后清理

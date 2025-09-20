@@ -2,7 +2,7 @@
 """FastAPI templates management and rendering."""
 
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from jinja2 import Template, Environment, FileSystemLoader
 from ..deployment_modes import DeploymentMode
 
@@ -26,6 +26,7 @@ class FastAPITemplateManager:
         agent_name: str,
         endpoint_path: str = "/process",
         deployment_mode: str = DeploymentMode.STANDALONE,
+        protocol_adapters: Optional[str] = None,
         **kwargs,
     ) -> str:
         """Render the standalone deployment template.
@@ -34,6 +35,7 @@ class FastAPITemplateManager:
             agent_name: Name of the agent variable
             endpoint_path: API endpoint path
             deployment_mode: Deployment mode (standalone or detached_process)
+            protocol_adapters: Protocol adapters code string
             **kwargs: Additional template variables
 
         Returns:
@@ -44,6 +46,7 @@ class FastAPITemplateManager:
             agent_name=agent_name,
             endpoint_path=endpoint_path,
             deployment_mode=deployment_mode,
+            protocol_adapters=protocol_adapters,
             **kwargs,
         )
 
@@ -57,6 +60,7 @@ class FastAPITemplateManager:
         runner_code: str = "",
         func_code: str = "",
         services_config: str = "",
+        protocol_adapters: Optional[str] = None,
         **kwargs,
     ) -> str:
         """Render the detached process script template.
@@ -70,6 +74,7 @@ class FastAPITemplateManager:
             runner_code: Code to setup runner
             func_code: Code to setup custom function
             services_config: Services configuration code
+            protocol_adapters: Protocol adapters code string
             **kwargs: Additional template variables
 
         Returns:
@@ -85,6 +90,7 @@ class FastAPITemplateManager:
             runner_code=runner_code,
             func_code=func_code,
             services_config=services_config,
+            protocol_adapters=protocol_adapters,
             **kwargs,
         )
 
@@ -104,42 +110,6 @@ class FastAPITemplateManager:
         """
         template = Template(template_string)
         return template.render(**variables)
-
-    def create_services_config_code(
-        self,
-        services_config: Dict[str, Any],
-    ) -> str:
-        """Create Python code for services configuration.
-
-        Args:
-            services_config: Services configuration dictionary
-
-        Returns:
-            Python code as string
-        """
-        lines = []
-
-        if "memory" in services_config:
-            memory_config = services_config["memory"]
-            lines.append(f"memory=ServiceConfig(")
-            lines.append(
-                f"    provider='{memory_config.get('provider', 'in_memory')}',",
-            )
-            if memory_config.get("config"):
-                lines.append(f"    config={memory_config['config']}")
-            lines.append(f"),")
-
-        if "session_history" in services_config:
-            session_config = services_config["session_history"]
-            lines.append(f"session_history=ServiceConfig(")
-            lines.append(
-                f"    provider='{session_config.get('provider', 'in_memory')}',",
-            )
-            if session_config.get("config"):
-                lines.append(f"    config={session_config['config']}")
-            lines.append(f"),")
-
-        return "\n".join(lines)
 
     def get_template_list(self) -> list:
         """Get list of available templates.
@@ -172,7 +142,8 @@ class FastAPITemplateManager:
             Dictionary with 'missing' and 'extra' keys containing lists
         """
         # This is a basic implementation
-        # In practice, you might want to parse the template to find required variables
+        # In practice, you might want to parse the template to find
+        # required variables
         required_vars = {
             "standalone_main.py.j2": ["agent_name", "endpoint_path"],
         }

@@ -1,22 +1,26 @@
 # -*- coding: utf-8 -*-
 import uuid
+from contextlib import AsyncExitStack
 from typing import Optional, List, AsyncGenerator, Any, Union, Dict
 
 from openai.types.chat import ChatCompletion
 
-from .deployers.adapter.protocol_adapter import ProtocolAdapter
+from agentscope_runtime.engine.deployers.utils.service_utils import (
+    ServicesConfig,
+)
 from .agents import Agent
-from .schemas.context import Context
 from .deployers import (
     DeployManager,
     LocalDeployManager,
 )
+from .deployers.adapter.protocol_adapter import ProtocolAdapter
 from .schemas.agent_schemas import (
     Event,
     AgentRequest,
     RunStatus,
     AgentResponse,
 )
+from .schemas.context import Context
 from .services.context_manager import ContextManager
 from .services.environment_manager import EnvironmentManager
 from .tracing import TraceType
@@ -41,8 +45,35 @@ class Runner:
         self._environment_manager = environment_manager
         self._context_manager = context_manager
         self._deploy_managers = {}
+        self._exit_stack = AsyncExitStack()
 
-    # TODO: should be sync method?
+    async def __aenter__(self) -> "Runner":
+        """
+        Initializes the runner and ensures context/environment managers
+        are fully entered so that attributes like compose_session are
+        available.
+        """
+        if self._environment_manager:
+            # enter_async_context returns the "real" object
+            self._environment_manager = (
+                await self._exit_stack.enter_async_context(
+                    self._environment_manager,
+                )
+            )
+
+        if self._context_manager:
+            self._context_manager = await self._exit_stack.enter_async_context(
+                self._context_manager,
+            )
+
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        try:
+            await self._exit_stack.aclose()
+        except Exception:
+            pass
+
     async def deploy(
         self,
         deploy_manager: DeployManager = LocalDeployManager(),
@@ -54,6 +85,7 @@ class Runner:
         base_image: str = "python:3.9-slim",
         environment: Optional[Dict[str, str]] = None,
         runtime_config: Optional[Dict] = None,
+        services_config: Optional[Union[ServicesConfig, dict]] = None,
         **kwargs,
     ):
         """
@@ -69,6 +101,7 @@ class Runner:
             base_image: Docker base image (for containerized deployment)
             environment: Environment variables dict
             runtime_config: Runtime configuration dict
+            services_config: Services configuration dict
             **kwargs: Additional arguments passed to deployment manager
         Returns:
             URL of the deployed service
@@ -76,37 +109,21 @@ class Runner:
         Raises:
             RuntimeError: If deployment fails
         """
-        # Check if deploy_manager supports runner-based deployment
-        if (
-            hasattr(deploy_manager, "deploy")
-            and "runner" in deploy_manager.deploy.__code__.co_varnames
-        ):
-            # New pattern: pass complete runner object
-            deploy_result = await deploy_manager.deploy(
-                runner=self,
-                endpoint_path=endpoint_path,
-                stream=stream,
-                protocol_adapters=protocol_adapters,
-                requirements=requirements,
-                extra_packages=extra_packages,
-                base_image=base_image,
-                environment=environment,
-                runtime_config=runtime_config,
-                **kwargs,
-            )
-        else:
-            # Backward compatibility: pass deploy_func for existing deployers
-            if stream:
-                deploy_func = self.stream_query
-            else:
-                deploy_func = self.query
-            deploy_result = await deploy_manager.deploy(
-                deploy_func,
-                endpoint_path=endpoint_path,
-                protocol_adapters=protocol_adapters,
-                **kwargs,
-            )
+        deploy_result = await deploy_manager.deploy(
+            runner=self,
+            endpoint_path=endpoint_path,
+            stream=stream,
+            protocol_adapters=protocol_adapters,
+            requirements=requirements,
+            extra_packages=extra_packages,
+            base_image=base_image,
+            environment=environment,
+            runtime_config=runtime_config,
+            services_config=services_config,
+            **kwargs,
+        )
 
+        # TODO: add redis or other persistant method
         self._deploy_managers[deploy_manager.deploy_id] = deploy_result
         return deploy_result
 
