@@ -115,7 +115,6 @@ async def test_deploy_with_upload_calls_cloud_and_writes_output(
     fake_wheel.parent.mkdir(parents=True, exist_ok=True)
     fake_wheel.write_bytes(b"wheel-bytes")
 
-    output_file = tmp_path / "result.txt"
 
     with patch(
         "agentscope_runtime.engine.deployers.bailian_fc_deployer.generate_wrapper_project",
@@ -147,7 +146,6 @@ async def test_deploy_with_upload_calls_cloud_and_writes_output(
             cmd="python app.py",
             deploy_name="upload-deploy",
             skip_upload=False,
-            output_file=str(output_file),
             telemetry_enabled=True,
         )
 

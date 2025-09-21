@@ -231,7 +231,6 @@ async def _modelstudio_deploy(
                 return response_obj
             # Tea responses often have a 'body' that can be a dict or model
             body = getattr(response_obj, "body", None)
-            print(f"deploy_body:{body}")
 
             # 1) If body is a plain string
             if isinstance(body, str):
@@ -576,8 +575,11 @@ class ModelstudioDeployManager(LocalDeployManager):
 
             return result
         except Exception as e:
-            logger.error("Failed to deploy to modelstudio: %s", e)
-            raise e
+            # Print richer error message to improve UX
+            err_text = str(e)
+            logger.error("Failed to deploy to modelstudio: %s", err_text)
+            print(f"[ModelStudio Deploy Error] {err_text}")
+            raise
 
     async def stop(self) -> bool:  # pragma: no cover - not supported yet
         return False
