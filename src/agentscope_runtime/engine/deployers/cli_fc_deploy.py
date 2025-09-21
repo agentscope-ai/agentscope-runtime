@@ -21,6 +21,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--telemetry", choices=["enable", "disable"], default="enable", help="Enable or disable telemetry (default: enable)")
     parser.add_argument("--output-file", dest="output_file", default="fc_deploy.txt", help="Write deploy result key=value lines to a txt file")
     parser.add_argument("--build-root", dest="build_root", default=None, help="Custom directory for temporary build artifacts (optional)")
+    parser.add_argument("--update", dest="agent_id", default=None, help="Update an existing agent. Specify agent_id to update a particular agent (optional)")
+    parser.add_argument("--desc", dest="agent_desc", default=None, help="Add description to current agent(optional)")
     return parser.parse_args()
 
 
@@ -34,6 +36,8 @@ async def _run(
     build_root: Optional[str],
     mode: str,
     whl_path: Optional[str],
+    agent_id: Optional[str],
+    agent_desc: Optional[str],
 ):
     deployer = BailianFCDeployer(build_root=build_root)
     # If a wheel path is provided, skip local build entirely
@@ -46,6 +50,8 @@ async def _run(
             output_file=output_file,
             telemetry_enabled=telemetry_enabled,
             external_whl_path=whl_path,
+            agent_id=agent_id,
+            agent_desc=agent_desc,
         )
 
     if mode == "native":
@@ -60,6 +66,8 @@ async def _run(
             output_file=output_file,
             telemetry_enabled=telemetry_enabled,
             external_whl_path=str(built_whl),
+            agent_id=agent_id,
+            agent_desc=agent_desc,
         )
 
     # wrapper mode (default): require dir and cmd
@@ -72,6 +80,8 @@ async def _run(
         skip_upload=skip_upload,
         output_file=output_file,
         telemetry_enabled=telemetry_enabled,
+        agent_id=agent_id,
+        agent_desc=agent_desc,
     )
 
 
@@ -89,6 +99,8 @@ def main() -> None:
             build_root=args.build_root,
             mode=args.mode,
             whl_path=args.whl_path,
+            agent_id=args.agent_id,
+            agent_desc=args.agent_desc,
         )
     )
     print("Built wheel at:", result.get("wheel_path", ""))

@@ -2,6 +2,7 @@
 import logging
 import os
 import time
+import json
 from pathlib import Path
 from typing import Dict, Optional, List, Union, Tuple
 
@@ -156,7 +157,6 @@ async def _oss_create_bucket_if_not_exists(client, bucket_name: str) -> None:
         logger.info(f'put bucket policy status code: {put_bucket_policy_result.status_code}, request id: {put_bucket_policy_result.request_id}')
 
 
-
 def _create_bucket_name(prefix: str, base_name: str) -> str:
     import re as _re
     ts = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
@@ -182,6 +182,8 @@ async def _bailian_deploy(
     file_url: str,
     filename: str,
     deploy_name: str,
+    agent_desc: str,
+    agent_id: str,
     telemetry_enabled: bool = True,
 ) -> None:
     cfg.ensure_valid()
@@ -192,6 +194,8 @@ async def _bailian_deploy(
     config.endpoint = cfg.endpoint
     client_bailian = bailian20231229Client(config)
     req = bailian_20231229_models.HighCodeDeployRequest(
+        agent_desc=agent_desc,
+        agent_id=agent_id,
         source_code_name=filename,
         source_code_oss_url=file_url,
         agent_name=deploy_name,
@@ -199,8 +203,9 @@ async def _bailian_deploy(
     )
     runtime = util_models.RuntimeOptions()
     headers: Dict[str, str] = {}
-    client_bailian.high_code_deploy_with_options(cfg.workspace_id, req, headers, runtime)
-
+    deploy_result  = client_bailian.high_code_deploy_with_options(cfg.workspace_id, req, headers, runtime)
+    logger.info(f'deploy status code: {deploy_result.status_code}')
+    logger.info(json.dumps(deploy_result.body.to_map(), indent=2, ensure_ascii=False))
 
 class BailianFCDeployer(DeployManager):
     """Deployer for Alibaba Bailian Function Compute based agent deployment.
@@ -267,6 +272,8 @@ class BailianFCDeployer(DeployManager):
         self,
         wheel_path: Path,
         name: str,
+        agent_desc: str,
+        agent_id: str,
         telemetry_enabled: bool = True,
     ) -> str:
         logger.info("Uploading wheel to OSS and generating presigned URL")
@@ -280,6 +287,8 @@ class BailianFCDeployer(DeployManager):
 
         logger.info("Triggering Bailian HighCode deploy for %s", name)
         await _bailian_deploy(
+            agent_desc=agent_desc,
+            agent_id=agent_id,
             cfg=self.bailian_config,
             file_url=artifact_url,
             filename=filename,
@@ -306,6 +315,8 @@ class BailianFCDeployer(DeployManager):
         output_file: Optional[Union[str, Path]] = None,
         telemetry_enabled: bool = True,
         external_whl_path: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        agent_desc: Optional[str] = None,
         **kwargs,
     ) -> Dict[str, str]:
         """
@@ -318,12 +329,15 @@ class BailianFCDeployer(DeployManager):
         self.oss_config.ensure_valid()
         self.bailian_config.ensure_valid()
 
-        # 如果传入了外部whl包地址，则跳过打包步骤
+        # 如果传入了外部whl包地址或者agent_id，则跳过打包步骤
         if external_whl_path:
             wheel_path = Path(external_whl_path).resolve()
             if not wheel_path.is_file():
                 raise FileNotFoundError(f"External wheel file not found: {wheel_path}")
             name = deploy_name or default_deploy_name()
+            # 如果是更新agent，且没有传deploy_name, 则不更新名字
+            if agent_id and (deploy_name is None):
+                name = None
         else:
             wheel_path, name = await self._generate_wrapper_and_build_wheel(
                 project_dir=project_dir,
@@ -334,7 +348,7 @@ class BailianFCDeployer(DeployManager):
 
         artifact_url = ""
         if not skip_upload:
-            artifact_url = await self._upload_and_deploy(wheel_path, name, telemetry_enabled)
+            artifact_url = await self._upload_and_deploy(wheel_path, name, agent_desc, agent_id, telemetry_enabled)
 
         result: Dict[str, str] = {
             "deploy_id": self.deploy_id,
