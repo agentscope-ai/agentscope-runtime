@@ -70,7 +70,7 @@ class OSSConfig(BaseModel):
 
 class ModelstudioConfig(BaseModel):
     endpoint: str = Field(
-        "bailian-pre.cn-hangzhou.aliyuncs.com",
+        "bailian.cn-beijing.aliyuncs.com",
         description="Modelstudio service endpoint",
     )
     workspace_id: Optional[str] = None
@@ -83,7 +83,7 @@ class ModelstudioConfig(BaseModel):
         return cls(
             endpoint=os.environ.get(
                 "MODELSTUDIO_ENDPOINT",
-                "bailian-pre.cn-hangzhou.aliyuncs.com",
+                "bailian.cn-beijing.aliyuncs.com",
             ),
             workspace_id=os.environ.get("MODELSTUDIO_WORKSPACE_ID"),
             access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
