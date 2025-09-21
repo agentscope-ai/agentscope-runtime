@@ -107,7 +107,7 @@ async def _run(
     # wrapper mode (default): require dir and cmd
     if not dir_path or not cmd:
         raise SystemExit(
-            "In wrapper mode, --dir and --cmd are required. Alternatively use --mode native or --whl-path."
+            "In wrapper mode, --dir and --cmd are required. Alternatively use --mode native or --whl-path.",
         )
     return await deployer.deploy(
         project_dir=dir_path,

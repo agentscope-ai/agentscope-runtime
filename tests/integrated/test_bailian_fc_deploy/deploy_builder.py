@@ -38,7 +38,9 @@ def main_cli():
         description="Package and deploy a Python project into AgentDev starter template (Bailian FC)",
     )
     parser.add_argument(
-        "--dir", required=True, help="Path to user project directory"
+        "--dir",
+        required=True,
+        help="Path to user project directory",
     )
     parser.add_argument(
         "--cmd",

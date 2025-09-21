@@ -28,7 +28,10 @@ except Exception:  # pragma: no cover - fallback on older Pythons
 async def _read_text_file_lines(file_path: Path) -> List[str]:
     if not file_path.is_file():
         return []
-    return [line.strip() for line in file_path.read_text(encoding="utf-8").splitlines()]
+    return [
+        line.strip()
+        for line in file_path.read_text(encoding="utf-8").splitlines()
+    ]
 
 
 async def _parse_requirements_txt(req_path: Path) -> List[str]:
@@ -70,13 +73,17 @@ async def _parse_pyproject_toml(pyproject_path: Path) -> List[str]:
                     deps.append(name)
     except Exception:
         # Minimal non-toml parser fallback: try to extract a dependencies = [ ... ] list
-        block_match = re.search(r"dependencies\s*=\s*\[(.*?)\]", text, re.S | re.I)
+        block_match = re.search(
+            r"dependencies\s*=\s*\[(.*?)\]", text, re.S | re.I
+        )
         if block_match:
             block = block_match.group(1)
             for m in re.finditer(r"['\"]([^'\"]+)['\"]", block):
                 deps.append(m.group(1))
         # Poetry fallback: very limited, heuristic
-        poetry_block = re.search(r"\[tool\.poetry\.dependencies\](.*?)\n\[", text, re.S)
+        poetry_block = re.search(
+            r"\[tool\.poetry\.dependencies\](.*?)\n\[", text, re.S
+        )
         if poetry_block:
             for line in poetry_block.group(1).splitlines():
                 line = line.strip()
@@ -84,7 +91,9 @@ async def _parse_pyproject_toml(pyproject_path: Path) -> List[str]:
                     continue
                 if ":" in line:
                     # name = "^1.2.3"
-                    m = re.match(r"([A-Za-z0-9_.-]+)\s*=\s*['\"]([^'\"]+)['\"]", line)
+                    m = re.match(
+                        r"([A-Za-z0-9_.-]+)\s*=\s*['\"]([^'\"]+)['\"]", line
+                    )
                     if m and m.group(1).lower() != "python":
                         deps.append(f"{m.group(1)}{m.group(2)}")
                 else:
@@ -160,7 +169,9 @@ async def generate_wrapper_project(
     # 1) Copy user project into wrapper under deploy_starter/user_bundle/<project_basename>
     # Put user code inside the deploy_starter package so wheel includes it and preserves project folder name
     project_basename = user_project_dir.name
-    bundle_app_dir = wrapper_dir / "deploy_starter" / "user_bundle" / project_basename
+    bundle_app_dir = (
+        wrapper_dir / "deploy_starter" / "user_bundle" / project_basename
+    )
     ignore = shutil.ignore_patterns(
         ".git",
         ".venv",
@@ -174,7 +185,9 @@ async def generate_wrapper_project(
         ".mypy_cache",
         ".pytest_cache",
     )
-    shutil.copytree(user_project_dir, bundle_app_dir, dirs_exist_ok=True, ignore=ignore)
+    shutil.copytree(
+        user_project_dir, bundle_app_dir, dirs_exist_ok=True, ignore=ignore
+    )
 
     # 2) Dependencies
     user_deps = await _gather_user_dependencies(user_project_dir)
@@ -337,12 +350,19 @@ async def build_wheel(project_dir: Path) -> Path:
     """
     venv_dir = project_dir / ".venv_build"
     if not venv_dir.exists():
-        subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True)
+        subprocess.run(
+            [sys.executable, "-m", "venv", str(venv_dir)], check=True
+        )
     vpy = _venv_python(venv_dir)
-    subprocess.run([str(vpy), "-m", "pip", "install", "--upgrade", "pip", "build"], check=True)
+    subprocess.run(
+        [str(vpy), "-m", "pip", "install", "--upgrade", "pip", "build"],
+        check=True,
+    )
     subprocess.run([str(vpy), "-m", "build"], cwd=str(project_dir), check=True)
     dist_dir = project_dir / "dist"
-    whls = sorted(dist_dir.glob("*.whl"), key=lambda p: p.stat().st_mtime, reverse=True)
+    whls = sorted(
+        dist_dir.glob("*.whl"), key=lambda p: p.stat().st_mtime, reverse=True
+    )
     if not whls:
         raise RuntimeError("Wheel build failed: no .whl produced")
     return whls[0]
@@ -351,5 +371,3 @@ async def build_wheel(project_dir: Path) -> Path:
 def default_deploy_name() -> str:
     ts = time.strftime("%Y%m%d%H%M%S", time.localtime())
     return f"deploy-{ts}-{uuid.uuid4().hex[:6]}"
-
-

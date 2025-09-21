@@ -53,9 +53,14 @@ class OSSConfig(BaseModel):
     def from_env(cls) -> "OSSConfig":
         return cls(
             region=os.environ.get("OSS_REGION", "cn-hangzhou"),
-            access_key_id=os.environ.get("OSS_ACCESS_KEY_ID", os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID")),
-            access_key_secret=os.environ.get("OSS_ACCESS_KEY_SECRET",
-                                             os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET")),
+            access_key_id=os.environ.get(
+                "OSS_ACCESS_KEY_ID",
+                os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+            ),
+            access_key_secret=os.environ.get(
+                "OSS_ACCESS_KEY_SECRET",
+                os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+            ),
         )
 
     def ensure_valid(self) -> None:
@@ -239,11 +244,15 @@ async def _modelstudio_deploy(
             # 2) If body is a dict, prefer common fields
             if isinstance(body, dict):
                 # Explicit error handling: do not build URL on failure
-                if isinstance(body.get("success"), bool) and not body.get("success"):
-                    err_code = body.get("errorCode") or body.get("code") or "unknown"
+                if isinstance(body.get("success"), bool) and not body.get(
+                    "success"
+                ):
+                    err_code = (
+                        body.get("errorCode") or body.get("code") or "unknown"
+                    )
                     err_msg = body.get("errorMsg") or body.get("message") or ""
                     raise RuntimeError(
-                        f"ModelStudio deploy failed: {err_code} {err_msg}".strip()
+                        f"ModelStudio deploy failed: {err_code} {err_msg}".strip(),
                     )
                 for key in ("data", "result", "deployId"):
                     val = body.get(key)
@@ -261,11 +270,19 @@ async def _modelstudio_deploy(
                 try:
                     m = body.to_map()
                     if isinstance(m, dict):
-                        if isinstance(m.get("success"), bool) and not m.get("success"):
-                            err_code = m.get("errorCode") or m.get("code") or "unknown"
-                            err_msg = m.get("errorMsg") or m.get("message") or ""
+                        if isinstance(m.get("success"), bool) and not m.get(
+                            "success"
+                        ):
+                            err_code = (
+                                m.get("errorCode")
+                                or m.get("code")
+                                or "unknown"
+                            )
+                            err_msg = (
+                                m.get("errorMsg") or m.get("message") or ""
+                            )
                             raise RuntimeError(
-                                f"ModelStudio deploy failed: {err_code} {err_msg}".strip()
+                                f"ModelStudio deploy failed: {err_code} {err_msg}".strip(),
                             )
                         for key in ("data", "result", "deployId"):
                             val = m.get(key)
@@ -283,11 +300,15 @@ async def _modelstudio_deploy(
             if isinstance(response_obj, dict):
                 b = response_obj.get("body")
                 if isinstance(b, dict):
-                    if isinstance(b.get("success"), bool) and not b.get("success"):
-                        err_code = b.get("errorCode") or b.get("code") or "unknown"
+                    if isinstance(b.get("success"), bool) and not b.get(
+                        "success"
+                    ):
+                        err_code = (
+                            b.get("errorCode") or b.get("code") or "unknown"
+                        )
                         err_msg = b.get("errorMsg") or b.get("message") or ""
                         raise RuntimeError(
-                            f"ModelStudio deploy failed: {err_code} {err_msg}".strip()
+                            f"ModelStudio deploy failed: {err_code} {err_msg}".strip(),
                         )
                     for key in ("data", "result", "deployId"):
                         val = b.get(key)
@@ -400,7 +421,7 @@ class ModelstudioDeployManager(LocalDeployManager):
         project_path = Path(project_dir).resolve()
         if not project_path.exists():
             raise FileNotFoundError(
-                f"Project directory not found: " f"{project_path}"
+                f"Project directory not found: " f"{project_path}",
             )
 
         env_file_path = project_path / env_filename
@@ -441,7 +462,7 @@ class ModelstudioDeployManager(LocalDeployManager):
         wheel_path: Path,
         name: str,
         telemetry_enabled: bool = True,
-) -> Tuple[str, str]:
+    ) -> Tuple[str, str]:
         logger.info("Uploading wheel to OSS and generating presigned URL")
         client = _oss_get_client(self.oss_config)
         bucket_name = f"tmp-bucket-for-code-deployment-{os.getenv('MODELSTUDIO_WORKSPACE_ID', uuid.uuid4())}"
@@ -476,7 +497,9 @@ class ModelstudioDeployManager(LocalDeployManager):
             return f"{base}/app-center/high-code-detail/{identifier}"
 
         console_url = (
-            _build_console_url(self.modelstudio_config.endpoint, deploy_identifier)
+            _build_console_url(
+                self.modelstudio_config.endpoint, deploy_identifier
+            )
             if deploy_identifier
             else ""
         )

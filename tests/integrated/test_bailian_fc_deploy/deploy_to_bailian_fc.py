@@ -17,7 +17,7 @@ def _check_required_envs() -> list[str]:
         "OSS_ACCESS_KEY_SECRET",
         "ALIBABA_CLOUD_ACCESS_KEY_ID",
         "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
-        "ALIBABA_CLOUD_WORKSPACE_ID",
+        "MODELSTUDIO_WORKSPACE_ID",
     ]
     missing = [k for k in required if not os.environ.get(k)]
     return missing
@@ -28,7 +28,7 @@ async def deploy_agent_to_bailian_fc():
     if missing_envs:
         print("[WARN] Missing required env vars:", ", ".join(missing_envs))
         print(
-            "       You may set them before running to enable upload & deploy."
+            "       You may set them before running to enable upload & deploy.",
         )
 
     # Example project under this directory
@@ -48,7 +48,7 @@ async def deploy_agent_to_bailian_fc():
         project_dir=str(project_dir),
         cmd=cmd,
         deploy_name=deploy_name,
-        skip_upload=False
+        skip_upload=False,
     )
 
     print("✅ Build completed:", result.get("wheel_path", ""))
