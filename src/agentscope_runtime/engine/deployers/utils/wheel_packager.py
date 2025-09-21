@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=unused-variable, f-string-without-interpolation
+# pylint: disable=line-too-long, too-many-branches
 """
 Utilities for packaging a local Python project into a distributable wheel
 that can be uploaded and deployed by various deployers.

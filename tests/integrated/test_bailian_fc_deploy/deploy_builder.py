@@ -17,7 +17,8 @@ def run(
     telemetry_enabled: bool = True,
 ) -> Path:
     """
-    Backward compatible helper that builds the wheel (and optionally uploads/deploys)
+    Backward compatible helper that builds
+    the wheel (and optionally uploads/deploys)
     and returns the wheel path.
     """
     deployer = ModelstudioDeployManager()
@@ -35,7 +36,8 @@ def run(
 
 def main_cli():
     parser = argparse.ArgumentParser(
-        description="Package and deploy a Python project into AgentDev starter template (Bailian FC)",
+        description="Package and deploy a Python project "
+        "into AgentDev starter template (Bailian FC)",
     )
     parser.add_argument(
         "--dir",

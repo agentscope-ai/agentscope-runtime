@@ -5,8 +5,8 @@ import sys
 import time
 from pathlib import Path
 
-from src.agentscope_runtime.engine.runner import Runner
-from src.agentscope_runtime.engine.deployers.modelstudio_deployer import (
+from agentscope_runtime.engine.runner import Runner
+from agentscope_runtime.engine.deployers.modelstudio_deployer import (
     ModelstudioDeployManager,
 )
 
@@ -28,7 +28,8 @@ async def deploy_agent_to_bailian_fc():
     if missing_envs:
         print("[WARN] Missing required env vars:", ", ".join(missing_envs))
         print(
-            "       You may set them before running to enable upload & deploy.",
+            "       You may set them before "
+            "running to enable upload & deploy.",
         )
 
     # Example project under this directory
@@ -68,10 +69,11 @@ async def deploy_whl_to_bailian_fc():
     if missing_envs:
         print("[WARN] Missing required env vars:", ", ".join(missing_envs))
         print(
-            "       You may set them before running to enable upload & deploy.",
+            "       You may set them before "
+            "running to enable upload & deploy.",
         )
     whl_path = "your whl path"
-    deploy_name = f"test_123"
+    deploy_name = "your deploy name"
 
     deployer = ModelstudioDeployManager()
     runner = Runner(agent=None)  # type: ignore

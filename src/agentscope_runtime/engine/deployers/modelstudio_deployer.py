@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=too-many-nested-blocks, too-many-return-statements,
+# pylint:disable=too-many-branches, too-many-return-statements
+# pylint:disable=ungrouped-imports
+# # flake8: noqa: E501
 import logging
 import os
 import time
@@ -25,19 +29,19 @@ logger = logging.getLogger(__name__)
 
 try:  # Lazy optional imports; validated at runtime
     import alibabacloud_oss_v2 as oss  # type: ignore
-    from alibabacloud_oss_v2.models import PutBucketRequest, PutObjectRequest  # type: ignore
-    from alibabacloud_bailian20231229.client import Client as ModelstudioClient  # type: ignore
-    from alibabacloud_tea_openapi import models as open_api_models  # type: ignore
-    from alibabacloud_bailian20231229 import models as ModelstudioTypes  # type: ignore
-    from alibabacloud_tea_util import models as util_models  # type: ignore
-except Exception:  # pragma: no cover - we validate presence explicitly
-    oss = None  # type: ignore
-    PutBucketRequest = None  # type: ignore
-    PutObjectRequest = None  # type: ignore
-    ModelstudioClient = None  # type: ignore
-    open_api_models = None  # type: ignore
-    ModelstudioTypes = None  # type: ignore
-    util_models = None  # type: ignore
+    from alibabacloud_oss_v2.models import PutBucketRequest, PutObjectRequest
+    from alibabacloud_bailian20231229.client import Client as ModelstudioClient
+    from alibabacloud_tea_openapi import models as open_api_models
+    from alibabacloud_bailian20231229 import models as ModelstudioTypes
+    from alibabacloud_tea_util import models as util_models
+except Exception:
+    oss = None
+    PutBucketRequest = None
+    PutObjectRequest = None
+    ModelstudioClient = None
+    open_api_models = None
+    ModelstudioTypes = None
+    util_models = None
 
 
 class OSSConfig(BaseModel):
@@ -129,7 +133,10 @@ def _oss_get_client(oss_cfg: OSSConfig):
     # already have fallen back to ALIBABA_CLOUD_* as per from_env()).
     if not os.environ.get("OSS_ACCESS_KEY_ID") and oss_cfg.access_key_id:
         os.environ["OSS_ACCESS_KEY_ID"] = str(oss_cfg.access_key_id)
-    if not os.environ.get("OSS_ACCESS_KEY_SECRET") and oss_cfg.access_key_secret:
+    if (
+        not os.environ.get("OSS_ACCESS_KEY_SECRET")
+        and oss_cfg.access_key_secret
+    ):
         os.environ["OSS_ACCESS_KEY_SECRET"] = str(oss_cfg.access_key_secret)
 
     credentials_provider = (
@@ -374,17 +381,16 @@ class ModelstudioDeployManager(LocalDeployManager):
 
         name = deploy_name or default_deploy_name()
         proj_root = project_dir.resolve()
-        effective_build_root = (
-            self.build_root.resolve()
-            if isinstance(self.build_root, Path)
-            else (
-                Path(self.build_root).resolve()
-                if self.build_root
-                else (
+        if isinstance(self.build_root, Path):
+            effective_build_root = self.build_root.resolve()
+        else:
+            if self.build_root:
+                effective_build_root = Path(self.build_root).resolve()
+            else:
+                effective_build_root = (
                     proj_root.parent / ".agentscope_runtime_builds"
                 ).resolve()
-            )
-        )
+
         build_dir = effective_build_root / f"build-{int(time.time())}"
         build_dir.mkdir(parents=True, exist_ok=True)
 
@@ -470,7 +476,10 @@ class ModelstudioDeployManager(LocalDeployManager):
     ) -> Tuple[str, str]:
         logger.info("Uploading wheel to OSS and generating presigned URL")
         client = _oss_get_client(self.oss_config)
-        bucket_name = f"tmp-bucket-for-code-deployment-{os.getenv('MODELSTUDIO_WORKSPACE_ID', uuid.uuid4())}"
+        bucket_name = (
+            f"tmp-bucket-for-code-deployment-"
+            f"{os.getenv('MODELSTUDIO_WORKSPACE_ID', str(uuid.uuid4()))}"
+        )
         await _oss_create_bucket_if_not_exists(client, bucket_name)
         filename = wheel_path.name
         with wheel_path.open("rb") as f:

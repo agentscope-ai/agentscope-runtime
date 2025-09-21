@@ -4,7 +4,7 @@ from typing import Optional
 
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import Request, FastAPI
+from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from openai import OpenAI
 from model.chat_model import ChatRequest
@@ -23,7 +23,7 @@ async def health():
 
 
 @app.post("/chat_stream")
-async def stream(request: Request, chat_request: ChatRequest):
+async def stream(chat_request: ChatRequest):
     client = OpenAI(
         api_key=os.getenv("DASHSCOPE_API_KEY"),
         base_url=os.getenv(
@@ -35,7 +35,6 @@ async def stream(request: Request, chat_request: ChatRequest):
     def generator(sys: Optional[str], user_query: str):
         completion = client.chat.completions.create(
             model="qwen-plus",
-            # 此处以qwen-plus为例，可按需更换模型名称。模型列表：https://help.aliyun.com/zh/model-studio/getting-started/models
             messages=[
                 {
                     "role": "system",
