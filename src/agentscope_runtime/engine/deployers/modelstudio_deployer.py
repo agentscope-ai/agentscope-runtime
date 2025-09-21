@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=too-many-nested-blocks, too-many-return-statements,
-# pylint:disable=too-many-branches, too-many-return-statements
-# pylint:disable=ungrouped-imports
-# # flake8: noqa: E501
+# pylint:disable=too-many-branches, too-many-statements, try-except-raise
+# pylint:disable=ungrouped-imports, arguments-renamed, protected-access
+# flake8: noqa: E501
 import logging
 import os
 import time
@@ -354,13 +354,12 @@ class ModelstudioDeployManager(LocalDeployManager):
         self.modelstudio_config = (
             modelstudio_config or ModelstudioConfig.from_env()
         )
-        # Defer default build_root selection to deploy() to avoid using home by default
         self.build_root = Path(build_root) if build_root else None
 
     async def _generate_wrapper_and_build_wheel(
         self,
-        project_dir: Union[str, Path],
-        cmd: str,
+        project_dir: Union[Optional[str], Path],
+        cmd: Optional[str] = None,
         deploy_name: Optional[str] = None,
         telemetry_enabled: bool = True,
     ) -> Tuple[Path, str]:
@@ -529,15 +528,13 @@ class ModelstudioDeployManager(LocalDeployManager):
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
-        base_image: str = "python:3.9-slim",
         environment: Optional[Dict[str, str]] = None,
-        runtime_config: Optional[Dict] = None,
+        # runtime_config: Optional[Dict] = None,
         # ModelStudio-specific/packaging args (required)
         project_dir: Optional[Union[str, Path]] = None,
         cmd: Optional[str] = None,
         deploy_name: Optional[str] = None,
         skip_upload: bool = False,
-        output_file: Optional[Union[str, Path]] = None,
         telemetry_enabled: bool = True,
         external_whl_path: Optional[str] = None,
         **kwargs,
@@ -620,8 +617,8 @@ class ModelstudioDeployManager(LocalDeployManager):
             print(f"[ModelStudio Deploy Error] {err_text}")
             raise
 
-    async def stop(self) -> bool:  # pragma: no cover - not supported yet
-        return False
+    async def stop(self) -> None:  # pragma: no cover - not supported yet
+        pass
 
     def get_status(self) -> str:  # pragma: no cover - not supported yet
         return "unknown"

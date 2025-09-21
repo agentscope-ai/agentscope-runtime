@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E501
+# flake8: noqa: E541
+# -*- coding: utf-8 -*-
 # pylint: disable=unused-variable, f-string-without-interpolation
 # pylint: disable=line-too-long, too-many-branches
 """

@@ -87,8 +87,6 @@ async def deploy_agent_to_modelstudio():
             "LOG_LEVEL": "INFO",
             "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
         },
-        # 输出文件（可选）
-        "output_file": "modelstudio_deploy_result.txt",
     }
 
     try:
@@ -132,7 +130,6 @@ async def deploy_from_project_directory():
         "cmd": "python agent_run.py",  # 启动命令
         "deploy_name": "agent-llm-project",
         "telemetry_enabled": True,
-        "output_file": "project_deploy_result.txt",
     }
 
     try:
@@ -173,7 +170,6 @@ async def deploy_from_existing_wheel():
         "external_whl_path": wheel_path,
         "deploy_name": "agent-from-wheel",
         "telemetry_enabled": True,
-        "output_file": "wheel_deploy_result.txt",
     }
 
     try:

@@ -135,8 +135,6 @@ def main() -> None:
     print("Resource Name:", result.get("resource_name"))
     if result.get("workspace_id"):
         print("Workspace:", result.get("workspace_id"))
-    if args.output_file:
-        print("Result written to:", args.output_file)
     if result.get("url"):
         print("Console Url:", result.get("url"))
 
