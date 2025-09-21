@@ -2,6 +2,7 @@
 import logging
 import os
 import time
+import uuid
 from pathlib import Path
 from typing import Dict, Optional, List, Union, Tuple
 
@@ -443,7 +444,7 @@ class ModelstudioDeployManager(LocalDeployManager):
 ) -> Tuple[str, str]:
         logger.info("Uploading wheel to OSS and generating presigned URL")
         client = _oss_get_client(self.oss_config)
-        bucket_name = "tmp-bucket-for-full-code-deployment"
+        bucket_name = f"tmp-bucket-for-code-deployment-{os.getenv('MODELSTUDIO_WORKSPACE_ID', uuid.uuid4())}"
         await _oss_create_bucket_if_not_exists(client, bucket_name)
         filename = wheel_path.name
         with wheel_path.open("rb") as f:
