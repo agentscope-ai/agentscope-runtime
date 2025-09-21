@@ -12,14 +12,14 @@ from src.agentscope_runtime.engine.deployers.modelstudio_deployer import (
 
 
 def _check_required_envs() -> list[str]:
+    # OSS AK/SK optional; fall back to Alibaba Cloud AK/SK
     required = [
-        "OSS_ACCESS_KEY_ID",
-        "OSS_ACCESS_KEY_SECRET",
         "ALIBABA_CLOUD_ACCESS_KEY_ID",
         "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
         "MODELSTUDIO_WORKSPACE_ID",
     ]
     missing = [k for k in required if not os.environ.get(k)]
+    # If Alibaba Cloud AK/SK present, OSS_* may be missing and that's OK
     return missing
 
 

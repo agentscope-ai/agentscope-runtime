@@ -14,13 +14,13 @@ pip install agentscope-runtime && pip install agentscope-runtime[deployment]
 ```
 #### 2. 设置所需的环境变量：
 ```bash
-export OSS_ACCESS_KEY_ID=...                      #你的阿里云OSS AccessKey
-export OSS_ACCESS_KEY_SECRET=...                  #你的阿里云OSS SecurityKey
-export ALIBABA_CLOUD_ACCESS_KEY_ID=...            #你的阿里云账号AccessKey
-export ALIBABA_CLOUD_ACCESS_KEY_SECRET=...        #你的阿里云账号SecurityKey
+export ALIBABA_CLOUD_ACCESS_KEY_ID=...            #你的阿里云账号AccessKey（必填）
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET=...        #你的阿里云账号SecurityKey（必填）
 export MODELSTUDIO_WORKSPACE_ID=...             #你的百炼业务空间id
 
-# 可选,自己的阿里云oss配置
+# 可选：如果你希望使用单独的 OSS AK/SK，可设置如下（未设置时将回退到上面的账号 AK/SK）
+# export OSS_ACCESS_KEY_ID=...
+# export OSS_ACCESS_KEY_SECRET=...
 export OSS_REGION=cn-beijing
 ```
 #### 3. 打包方式 A：手动构建 wheel 文件

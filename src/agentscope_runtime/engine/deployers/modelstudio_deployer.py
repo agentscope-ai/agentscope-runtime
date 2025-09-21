@@ -64,14 +64,11 @@ class OSSConfig(BaseModel):
         )
 
     def ensure_valid(self) -> None:
-        missing = []
-        if not self.access_key_id:
-            missing.append("OSS_ACCESS_KEY_ID")
-        if not self.access_key_secret:
-            missing.append("OSS_ACCESS_KEY_SECRET")
-        if missing:
+        # allow fallback to Alibaba Cloud AK/SK via from_env()
+        if not self.access_key_id or not self.access_key_secret:
             raise RuntimeError(
-                f"Missing required OSS env vars: {', '.join(missing)}",
+                "Missing AccessKey for OSS. Set either OSS_ACCESS_KEY_ID/OSS_ACCESS_KEY_SECRET "
+                "or ALIBABA_CLOUD_ACCESS_KEY_ID/ALIBABA_CLOUD_ACCESS_KEY_SECRET.",
             )
 
 
@@ -245,7 +242,7 @@ async def _modelstudio_deploy(
             if isinstance(body, dict):
                 # Explicit error handling: do not build URL on failure
                 if isinstance(body.get("success"), bool) and not body.get(
-                    "success"
+                    "success",
                 ):
                     err_code = (
                         body.get("errorCode") or body.get("code") or "unknown"
@@ -271,7 +268,7 @@ async def _modelstudio_deploy(
                     m = body.to_map()
                     if isinstance(m, dict):
                         if isinstance(m.get("success"), bool) and not m.get(
-                            "success"
+                            "success",
                         ):
                             err_code = (
                                 m.get("errorCode")
@@ -301,7 +298,7 @@ async def _modelstudio_deploy(
                 b = response_obj.get("body")
                 if isinstance(b, dict):
                     if isinstance(b.get("success"), bool) and not b.get(
-                        "success"
+                        "success",
                     ):
                         err_code = (
                             b.get("errorCode") or b.get("code") or "unknown"
@@ -498,7 +495,8 @@ class ModelstudioDeployManager(LocalDeployManager):
 
         console_url = (
             _build_console_url(
-                self.modelstudio_config.endpoint, deploy_identifier
+                self.modelstudio_config.endpoint,
+                deploy_identifier,
             )
             if deploy_identifier
             else ""

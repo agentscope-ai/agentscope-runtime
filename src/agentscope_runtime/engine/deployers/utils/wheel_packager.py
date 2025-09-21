@@ -74,7 +74,9 @@ async def _parse_pyproject_toml(pyproject_path: Path) -> List[str]:
     except Exception:
         # Minimal non-toml parser fallback: try to extract a dependencies = [ ... ] list
         block_match = re.search(
-            r"dependencies\s*=\s*\[(.*?)\]", text, re.S | re.I
+            r"dependencies\s*=\s*\[(.*?)\]",
+            text,
+            re.S | re.I,
         )
         if block_match:
             block = block_match.group(1)
@@ -82,7 +84,9 @@ async def _parse_pyproject_toml(pyproject_path: Path) -> List[str]:
                 deps.append(m.group(1))
         # Poetry fallback: very limited, heuristic
         poetry_block = re.search(
-            r"\[tool\.poetry\.dependencies\](.*?)\n\[", text, re.S
+            r"\[tool\.poetry\.dependencies\](.*?)\n\[",
+            text,
+            re.S,
         )
         if poetry_block:
             for line in poetry_block.group(1).splitlines():
@@ -92,7 +96,8 @@ async def _parse_pyproject_toml(pyproject_path: Path) -> List[str]:
                 if ":" in line:
                     # name = "^1.2.3"
                     m = re.match(
-                        r"([A-Za-z0-9_.-]+)\s*=\s*['\"]([^'\"]+)['\"]", line
+                        r"([A-Za-z0-9_.-]+)\s*=\s*['\"]([^'\"]+)['\"]",
+                        line,
                     )
                     if m and m.group(1).lower() != "python":
                         deps.append(f"{m.group(1)}{m.group(2)}")
@@ -186,7 +191,10 @@ async def generate_wrapper_project(
         ".pytest_cache",
     )
     shutil.copytree(
-        user_project_dir, bundle_app_dir, dirs_exist_ok=True, ignore=ignore
+        user_project_dir,
+        bundle_app_dir,
+        dirs_exist_ok=True,
+        ignore=ignore,
     )
 
     # 2) Dependencies
@@ -351,7 +359,8 @@ async def build_wheel(project_dir: Path) -> Path:
     venv_dir = project_dir / ".venv_build"
     if not venv_dir.exists():
         subprocess.run(
-            [sys.executable, "-m", "venv", str(venv_dir)], check=True
+            [sys.executable, "-m", "venv", str(venv_dir)],
+            check=True,
         )
     vpy = _venv_python(venv_dir)
     subprocess.run(
@@ -361,7 +370,9 @@ async def build_wheel(project_dir: Path) -> Path:
     subprocess.run([str(vpy), "-m", "build"], cwd=str(project_dir), check=True)
     dist_dir = project_dir / "dist"
     whls = sorted(
-        dist_dir.glob("*.whl"), key=lambda p: p.stat().st_mtime, reverse=True
+        dist_dir.glob("*.whl"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
     )
     if not whls:
         raise RuntimeError("Wheel build failed: no .whl produced")

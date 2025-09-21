@@ -1,13 +1,8 @@
 # -*- coding: utf-8 -*-
-import os
-import io
-import asyncio
 from pathlib import Path
-from typing import Optional
 from unittest.mock import patch, MagicMock
 
 import pytest
-
 from agentscope_runtime.engine.deployers.modelstudio_deployer import (
     ModelstudioDeployManager,
     OSSConfig,
@@ -175,7 +170,6 @@ async def test_deploy_with_upload_calls_cloud_and_writes_output(
     assert result["artifact_url"] == "https://oss/presigned"
     assert result["resource_name"] == "upload-deploy"
     assert result["wheel_path"].endswith(".whl")
-
 
 
 @pytest.mark.asyncio

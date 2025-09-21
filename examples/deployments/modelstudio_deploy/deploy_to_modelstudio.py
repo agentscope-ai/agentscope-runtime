@@ -26,8 +26,15 @@ async def deploy_agent_to_modelstudio():
     # 1. 配置OSS
     oss_config = OSSConfig(
         region="cn-hangzhou",
-        access_key_id=os.environ.get("OSS_ACCESS_KEY_ID"),
-        access_key_secret=os.environ.get("OSS_ACCESS_KEY_SECRET"),
+        # OSS AK/SK optional; fallback to Alibaba Cloud AK/SK
+        access_key_id=os.environ.get(
+            "OSS_ACCESS_KEY_ID",
+            os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+        ),
+        access_key_secret=os.environ.get(
+            "OSS_ACCESS_KEY_SECRET",
+            os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+        ),
         bucket_prefix="tmpbucket-agentscope-runtime",
     )
 
@@ -195,8 +202,7 @@ async def main():
 
     # 检查环境变量
     required_env_vars = [
-        "OSS_ACCESS_KEY_ID",
-        "OSS_ACCESS_KEY_SECRET",
+        # OSS_ creds are optional; Alibaba Cloud creds are required
         "MODELSTUDIO_WORKSPACE_ID",
         "ALIBABA_CLOUD_ACCESS_KEY_ID",
         "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
