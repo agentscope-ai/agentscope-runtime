@@ -144,6 +144,8 @@ def main() -> None:
         print("Workspace:", result.get("workspace_id"))
     if args.output_file:
         print("Result written to:", args.output_file)
+    if result.get("url"):
+        print("Console Url:", result.get("url"))
 
 
 if __name__ == "__main__":  # pragma: no cover
