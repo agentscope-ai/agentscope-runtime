@@ -5,8 +5,8 @@ import sys
 import time
 from pathlib import Path
 
-from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.engine.deployers.modelstudio_deployer import (
+from src.agentscope_runtime.engine.runner import Runner
+from src.agentscope_runtime.engine.deployers.modelstudio_deployer import (
     ModelstudioDeployManager,
 )
 
@@ -74,8 +74,8 @@ async def deploy_whl_to_bailian_fc():
             "       You may set them before running to enable upload & deploy.",
         )
     base_dir = Path(__file__).resolve().parent
-    whl_path = "your_whl_path"
-    deploy_name = f"bailian-fc-demo-{int(time.time())}"
+    whl_path = "./dist/agentdev_starter_d4784470-0.1.1758379431-py3-none-any.whl"
+    deploy_name = f"test_123"
     output_file = base_dir / "bailian_deploy_result_from_whl.txt"
     deployer = ModelstudioDeployManager()
     runner = Runner(agent=None)  # type: ignore
@@ -106,8 +106,8 @@ async def deploy_whl_to_bailian_fc():
 
 async def main():
     try:
-        await deploy_agent_to_bailian_fc()
-        # await deploy_whl_to_bailian_fc()
+        # await deploy_agent_to_bailian_fc()
+        await deploy_whl_to_bailian_fc()
     except Exception as e:
         print(f"❌ Deployment failed: {e}")
         import traceback

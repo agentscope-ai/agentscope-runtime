@@ -52,8 +52,9 @@ class OSSConfig(BaseModel):
     def from_env(cls) -> "OSSConfig":
         return cls(
             region=os.environ.get("OSS_REGION", "cn-hangzhou"),
-            access_key_id=os.environ.get("OSS_ACCESS_KEY_ID"),
-            access_key_secret=os.environ.get("OSS_ACCESS_KEY_SECRET"),
+            access_key_id=os.environ.get("OSS_ACCESS_KEY_ID", os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID")),
+            access_key_secret=os.environ.get("OSS_ACCESS_KEY_SECRET",
+                                             os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET")),
         )
 
     def ensure_valid(self) -> None:
@@ -230,38 +231,73 @@ async def _modelstudio_deploy(
                 return response_obj
             # Tea responses often have a 'body' that can be a dict or model
             body = getattr(response_obj, "body", None)
+            print(f"deploy_body:{body}")
+
             # 1) If body is a plain string
             if isinstance(body, str):
                 return body
             # 2) If body is a dict, prefer common fields
             if isinstance(body, dict):
+                # Explicit error handling: do not build URL on failure
+                if isinstance(body.get("success"), bool) and not body.get("success"):
+                    err_code = body.get("errorCode") or body.get("code") or "unknown"
+                    err_msg = body.get("errorMsg") or body.get("message") or ""
+                    raise RuntimeError(
+                        f"ModelStudio deploy failed: {err_code} {err_msg}".strip()
+                    )
                 for key in ("data", "result", "deployId"):
                     val = body.get(key)
                     if isinstance(val, str) and val:
                         return val
+                # Try nested structures
+                data_val = body.get("data")
+                if isinstance(data_val, dict):
+                    for key in ("id", "deployId"):
+                        v = data_val.get(key)
+                        if isinstance(v, str) and v:
+                            return v
             # 3) If body is a Tea model, try to_map()
             if hasattr(body, "to_map") and callable(getattr(body, "to_map")):
                 try:
                     m = body.to_map()
                     if isinstance(m, dict):
+                        if isinstance(m.get("success"), bool) and not m.get("success"):
+                            err_code = m.get("errorCode") or m.get("code") or "unknown"
+                            err_msg = m.get("errorMsg") or m.get("message") or ""
+                            raise RuntimeError(
+                                f"ModelStudio deploy failed: {err_code} {err_msg}".strip()
+                            )
                         for key in ("data", "result", "deployId"):
                             val = m.get(key)
                             if isinstance(val, str) and val:
                                 return val
-                except Exception:  # pragma: no cover - best-effort
-                    pass
+                        d = m.get("data")
+                        if isinstance(d, dict):
+                            for key in ("id", "deployId"):
+                                v = d.get(key)
+                                if isinstance(v, str) and v:
+                                    return v
+                except Exception:
+                    raise
             # 4) If response_obj itself is a dict
             if isinstance(response_obj, dict):
                 b = response_obj.get("body")
                 if isinstance(b, dict):
+                    if isinstance(b.get("success"), bool) and not b.get("success"):
+                        err_code = b.get("errorCode") or b.get("code") or "unknown"
+                        err_msg = b.get("errorMsg") or b.get("message") or ""
+                        raise RuntimeError(
+                            f"ModelStudio deploy failed: {err_code} {err_msg}".strip()
+                        )
                     for key in ("data", "result", "deployId"):
                         val = b.get(key)
                         if isinstance(val, str) and val:
                             return val
-            # Fallback to string representation
-            return str(response_obj)
+            # Fallback: return empty to avoid polluting URL with dump
+            return ""
         except Exception:  # pragma: no cover - conservative fallback
-            return str(response_obj)
+            # Propagate errors as empty identifier; upper layer logs/raises
+            raise
 
     return _extract_deploy_identifier(resp)
 
@@ -408,7 +444,7 @@ class ModelstudioDeployManager(LocalDeployManager):
 ) -> Tuple[str, str]:
         logger.info("Uploading wheel to OSS and generating presigned URL")
         client = _oss_get_client(self.oss_config)
-        bucket_name = "tmpbucket-for-full-code-deployment"
+        bucket_name = "tmp-bucket-for-full-code-deployment"
         await _oss_create_bucket_if_not_exists(client, bucket_name)
         filename = wheel_path.name
         with wheel_path.open("rb") as f:
@@ -430,15 +466,20 @@ class ModelstudioDeployManager(LocalDeployManager):
         )
 
         def _build_console_url(endpoint: str, identifier: str) -> str:
-            # Map API endpoint to console domain
+            # Map API endpoint to console domain (no fragment in base)
             base = (
                 "https://pre-bailian.console.aliyun.com/?tab=app&efm_v=3.4.108#"
                 if ("bailian-pre" in endpoint or "pre" in endpoint)
                 else "https://bailian.console.aliyun.com/?tab=app"
             )
+            # Optional query can be appended if needed; keep path clean
             return f"{base}/app-center/high-code-detail/{identifier}"
 
-        console_url = _build_console_url(self.modelstudio_config.endpoint, deploy_identifier)
+        console_url = (
+            _build_console_url(self.modelstudio_config.endpoint, deploy_identifier)
+            if deploy_identifier
+            else ""
+        )
         return artifact_url, console_url
 
     async def deploy(
