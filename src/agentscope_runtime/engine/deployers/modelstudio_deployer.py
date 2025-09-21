@@ -124,6 +124,14 @@ def _assert_cloud_sdks_available():
 
 def _oss_get_client(oss_cfg: OSSConfig):
     oss_cfg.ensure_valid()
+    # Ensure OSS SDK can read credentials from environment variables.
+    # If OSS_* are not set, populate them from resolved config (which may
+    # already have fallen back to ALIBABA_CLOUD_* as per from_env()).
+    if not os.environ.get("OSS_ACCESS_KEY_ID") and oss_cfg.access_key_id:
+        os.environ["OSS_ACCESS_KEY_ID"] = str(oss_cfg.access_key_id)
+    if not os.environ.get("OSS_ACCESS_KEY_SECRET") and oss_cfg.access_key_secret:
+        os.environ["OSS_ACCESS_KEY_SECRET"] = str(oss_cfg.access_key_secret)
+
     credentials_provider = (
         oss.credentials.EnvironmentVariableCredentialsProvider()
     )
@@ -531,10 +539,6 @@ class ModelstudioDeployManager(LocalDeployManager):
         Returns a dict containing deploy_id, wheel_path, artifact_url (if uploaded),
         resource_name (deploy_name), and workspace_id.
         """
-        _assert_cloud_sdks_available()
-        self.oss_config.ensure_valid()
-        self.modelstudio_config.ensure_valid()
-
         if not runner and not project_dir and not external_whl_path:
             raise ValueError("")
 
@@ -580,6 +584,10 @@ class ModelstudioDeployManager(LocalDeployManager):
             artifact_url = ""
             console_url = ""
             if not skip_upload:
+                # Only require cloud SDKs and credentials when performing upload/deploy
+                _assert_cloud_sdks_available()
+                self.oss_config.ensure_valid()
+                self.modelstudio_config.ensure_valid()
                 artifact_url, console_url = await self._upload_and_deploy(
                     wheel_path,
                     name,

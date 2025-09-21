@@ -103,5 +103,6 @@ deployment = [
     "shortuuid>=1.0.13",
     "docker>=7.1.0",
     "kubernetes>=33.1.0",
-    "PyYAML"
+    "PyYAML",
+    "oss2>=2.19.1"
 ]
