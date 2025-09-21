@@ -112,9 +112,10 @@ class RedisSessionHistoryService(SessionHistoryService):
             message = [message]
         norm_message = []
         for msg in message:
-            if not isinstance(msg, Message):
-                msg = Message.model_validate(msg)
-            norm_message.append(msg)
+            if msg is not None:
+                if not isinstance(msg, Message):
+                    msg = Message.model_validate(msg)
+                norm_message.append(msg)
 
         session.messages.extend(norm_message)
 
