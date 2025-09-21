@@ -3,15 +3,18 @@ import asyncio
 import logging
 import os
 import time
-from typing import Optional, Dict, Callable, List, Union
+from typing import Optional, Dict, Callable, List, Union, Any
 
 from pydantic import BaseModel, Field
 
-from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.engine.deployers.utils.docker_image_utils import (
+from .utils.docker_image_utils import (
     RunnerImageFactory,
     RegistryConfig,
 )
+from .utils.service_utils import (
+    ServicesConfig,
+)
+from agentscope_runtime.engine.runner import Runner
 from agentscope_runtime.sandbox.manager.container_clients import (
     KubernetesClient,
 )
@@ -45,23 +48,20 @@ class BuildConfig(BaseModel):
     cleanup_after_build: bool = True
 
 
-class KubernetesDeployer(DeployManager):
+class KubernetesDeployManager(DeployManager):
     """Kubernetes deployer for agent services"""
 
     def __init__(
         self,
         kube_config: K8sConfig = None,
         registry_config: RegistryConfig = RegistryConfig(),
-        # image_builder: DockerImageBuilder = None,
-        image_builder: RunnerImageFactory = None,
         use_deployment: bool = True,
         build_context_dir: str = "/tmp/k8s_build",
-        **kwargs,
     ):
         super().__init__()
         self.kubeconfig = kube_config
         self.registry_config = registry_config
-        self.image_builder = RunnerImageFactory()
+        self.image_factory = RunnerImageFactory()
         self.use_deployment = use_deployment
         self.build_context_dir = build_context_dir
         self._deployed_resources = {}
@@ -77,48 +77,44 @@ class KubernetesDeployer(DeployManager):
         runner: Runner,
         endpoint_path: str = "/process",
         stream: bool = True,
+        services_config: Optional[Union[ServicesConfig, dict]] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
-        # Parameters following _agent_engines.py create method pattern
         requirements: Optional[Union[str, List[str]]] = None,
-        extra_packages: List[str] = [],
+        extra_packages: Optional[List[str]] = None,
         base_image: str = "python:3.9-slim",
+        environment: Dict = None,
+        runtime_config: Dict = None,
         port: int = 8090,
         replicas: int = 1,
-        environment: Dict = None,
         mount_dir: str = None,
-        runtime_config: Dict = None,
-        deploy_timeout: int = 300,
-        health_check: bool = True,
-        # Backward compatibility parameters
-        func: Optional[Callable] = None,
-        requirements_file: str = None,
-        requirements_list: List[str] = None,
         image_name: str = "agent_llm",
         image_tag: str = "latest",
         push_to_registry: bool = False,
         **kwargs,
-    ) -> Dict[str, str]:
+    ) -> Dict[str, Any]:
         """
         Deploy runner to Kubernetes.
 
         Args:
-            runner: Complete Runner object with agent, environment_manager, context_manager
+            runner: Complete Runner object with agent, environment_manager,
+                context_manager
             endpoint_path: API endpoint path
             stream: Enable streaming responses
+            services_config: Services configuration for context manager
             protocol_adapters: protocol adapters
-            requirements: PyPI dependencies (following _agent_engines.py pattern)
+            requirements: PyPI dependencies (following _agent_engines.py
+                pattern)
             extra_packages: User code directory/file path
             base_image: Docker base image
             port: Container port
             replicas: Number of replicas
             environment: Environment variables dict
+            mount_dir: Mount directory
             runtime_config: K8s runtime configuration
-            deploy_timeout: Deployment timeout in seconds
-            health_check: Enable health check
             # Backward compatibility
-            func: Legacy function parameter (deprecated)
-            requirements_file: Legacy requirements file parameter (deprecated)
-            requirements_list: Legacy requirements list parameter (deprecated)
+            image_name: Image name
+            image_tag: Image tag
+            push_to_registry: Push to registry
             **kwargs: Additional arguments
 
         Returns:
@@ -134,39 +130,22 @@ class KubernetesDeployer(DeployManager):
             logger.info(f"Starting deployment {deploy_id}")
 
             # Handle backward compatibility
-            if runner is None and func is not None:
-                logger.warning(
-                    "Using deprecated func parameter. Please use runner parameter instead.",
-                )
-
-                # For backward compatibility, create a minimal wrapper
-                async def wrapper_func(*args, **kwargs):
-                    return (
-                        await func(*args, **kwargs)
-                        if asyncio.iscoroutinefunction(func)
-                        else func(*args, **kwargs)
-                    )
-
-                actual_func = wrapper_func
-                actual_requirements = (
-                    requirements_file or requirements_list or requirements
-                )
-            elif runner is not None:
-                # New approach: use complete runner object
-                actual_func = runner
-                actual_requirements = requirements
-            else:
+            if runner is None:
                 raise ValueError(
-                    "Either runner or func parameter must be provided",
+                    "Runner must be provided",
                 )
+
+            # convert services_config to Model body
+            if services_config and isinstance(services_config, dict):
+                services_config = ServicesConfig(**services_config)
 
             # Step 1: Build image with proper error handling
             logger.info("Building runner image...")
             try:
-                built_image_name = self.image_builder.build_runner_image(
-                    runner=actual_func,
-                    requirements=actual_requirements,
-                    extra_packages=extra_packages,
+                built_image_name = self.image_factory.build_runner_image(
+                    runner=runner,
+                    requirements=requirements,
+                    extra_packages=extra_packages or [],
                     base_image=base_image,
                     stream=stream,
                     endpoint_path=endpoint_path,
@@ -176,6 +155,8 @@ class KubernetesDeployer(DeployManager):
                     image_tag=image_tag,
                     push_to_registry=push_to_registry,
                     port=port,
+                    services_config=services_config,
+                    protocol_adapters=protocol_adapters,
                     **kwargs,
                 )
                 if not built_image_name:
@@ -229,7 +210,7 @@ class KubernetesDeployer(DeployManager):
             logger.info(f"Deployment {deploy_id} successful: {url}")
 
             self._deployed_resources[deploy_id] = {
-                f"resource_name": resource_name,
+                "resource_name": resource_name,
                 "service_name": _id,
                 "image": built_image_name,
                 "created_at": time.time(),

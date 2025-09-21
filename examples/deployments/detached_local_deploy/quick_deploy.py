@@ -1,30 +1,33 @@
 # -*- coding: utf-8 -*-
-"""Quick deployment script for testing detached mode."""
+# pylint:disable=wrong-import-position, wrong-import-order
 
 import asyncio
-import sys
 import os
+import sys
 
-# Add current directory to path for importing agent
-sys.path.insert(0, os.path.dirname(__file__))
-
+from agentscope_runtime.engine.deployers.adapter.a2a import (
+    A2AFastAPIDefaultAdapter,
+)
 from agentscope_runtime.engine.deployers.local_deployer import (
     LocalDeployManager,
 )
 from agentscope_runtime.engine.deployers.utils.deployment_modes import (
     DeploymentMode,
 )
-from agentscope_runtime.engine.deployers.utils.service_utils import (
-    ServicesConfig,
-)
+
 from agentscope_runtime.engine.runner import Runner
-from agent_run import llm_agent
+
+# Add current directory to path for importing agent
+sys.path.insert(0, os.path.dirname(__file__))
+
+from agent_run import llm_agent  # noqa: E402
 
 
 async def quick_deploy():
     """Quick deployment for testing purposes."""
 
     print("🚀 快速部署测试...")
+    a2a_protocol = A2AFastAPIDefaultAdapter(agent=llm_agent)
 
     # Create deployment manager
     deploy_manager = LocalDeployManager(
@@ -41,9 +44,8 @@ async def quick_deploy():
         endpoint_path="/process",
         stream=True,
         mode=DeploymentMode.DETACHED_PROCESS,
-        services_config=ServicesConfig(),  # Default in-memory
+        protocol_adapters=[a2a_protocol],
     )
-
     print(f"✅ 部署成功: {deployment_info['url']}")
     print(f"📍 部署ID: {deployment_info['deploy_id']}")
 
@@ -59,24 +61,20 @@ curl -X POST {deployment_info['url']}/process \\
   -H "Content-Type: application/json" \\
   -H "Accept: text/event-stream" \\
   --no-buffer \\
-  -d '{
-      "input": [
-        {
-          "role": "user",
-          "content": [
-            {{
-              "type": "text",
-              "text": "Hello, how are you?",
+  -d '{{
+    "input": [
+      {{
+        "role": "user",
+        "content": [
+          {{
+            "type": "text",
+            "text": "Hello, how are you?"
           }}
-          ]
-
-      
-      }
-      ],
-      "session_id": "123"
-
-    
-        }'
+        ]
+      }}
+    ],
+    "session_id": "123"
+  }}'
 
 # 停止服务
 curl -X POST {deployment_info['url']}/admin/shutdown

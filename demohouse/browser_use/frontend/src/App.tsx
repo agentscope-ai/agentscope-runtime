@@ -1,10 +1,11 @@
+/* eslint-disable */
 import React, { useState, useRef, useEffect } from "react"; // 添加 useEffect
 import { Layout, theme } from "antd";
 
 import { Input, List } from "antd";
 import type { InputRef } from "antd";
 
-import { Image, Avatar, Spin } from "antd";
+import { Image, Avatar, Spin, Button } from "antd";
 import { Flex } from "antd";
 import Browser from "./Browser";
 
@@ -14,6 +15,7 @@ const REACT_APP_API_URL =
   process.env.REACT_APP_API_URL || "http://localhost:9000";
 const BACKEND_URL = REACT_APP_API_URL + "/v1/chat/completions";
 const BACKEND_WS_URL = REACT_APP_API_URL + "/env_info";
+const BACKEND_RESET_URL = REACT_APP_API_URL + "/reset";
 const DEFAULT_MODEL = "qwen-max";
 const systemMessage = {
   role: "system",
@@ -63,6 +65,7 @@ const App: React.FC = () => {
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",
     });
 
     if (!response.ok) {
@@ -96,6 +99,7 @@ const App: React.FC = () => {
 
     setIsTyping(true);
     await processMessageToChatGPT(newMessages);
+    await get_ws();
   };
 
   async function processMessageToChatGPT(chatMessages: ChatMessage) {
@@ -121,6 +125,7 @@ const App: React.FC = () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(apiRequestBody),
+      credentials: "include",
     });
 
     if (!response.ok) {
@@ -179,6 +184,35 @@ const App: React.FC = () => {
     setIsTyping(false);
   }
 
+  async function reset_chat() {
+    setMessages([
+      {
+        message: "Hello, I'm the assistant! Ask me anything!",
+        sender: "assistant",
+        think: "",
+        site: [],
+      },
+    ]);
+    const response = await fetch(BACKEND_RESET_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    if (!response.body) {
+      throw new Error("ReadableStream not found in response.");
+    }
+
+    const data = await response.json();
+    console.log(data);
+
+    return true;
+  }
   useEffect(() => {
     const scrollInterval = setInterval(() => {
       if (listRef.current) {
@@ -221,6 +255,9 @@ const App: React.FC = () => {
                 onSearch={handleSend}
                 onFocus={handleFocus}
               />
+              <Button onClick={reset_chat} type="primary" size={"large"}>
+                Reset
+              </Button>
             </Flex>
             <Flex gap={"large"}>
               <Flex vertical={true} style={{ width: 500 }} gap={"large"}>

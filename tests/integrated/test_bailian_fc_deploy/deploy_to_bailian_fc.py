@@ -5,21 +5,21 @@ import sys
 import time
 from pathlib import Path
 
-from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.engine.deployers.bailian_fc_deployer import (
-    BailianFCDeployer,
+from src.agentscope_runtime.engine.runner import Runner
+from src.agentscope_runtime.engine.deployers.modelstudio_deployer import (
+    ModelstudioDeployManager,
 )
 
 
 def _check_required_envs() -> list[str]:
+    # OSS AK/SK optional; fall back to Alibaba Cloud AK/SK
     required = [
-        "OSS_ACCESS_KEY_ID",
-        "OSS_ACCESS_KEY_SECRET",
         "ALIBABA_CLOUD_ACCESS_KEY_ID",
         "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
-        "ALIBABA_CLOUD_WORKSPACE_ID",
+        "MODELSTUDIO_WORKSPACE_ID",
     ]
     missing = [k for k in required if not os.environ.get(k)]
+    # If Alibaba Cloud AK/SK present, OSS_* may be missing and that's OK
     return missing
 
 
@@ -27,7 +27,9 @@ async def deploy_agent_to_bailian_fc():
     missing_envs = _check_required_envs()
     if missing_envs:
         print("[WARN] Missing required env vars:", ", ".join(missing_envs))
-        print("       You may set them before running to enable upload & deploy.")
+        print(
+            "       You may set them before running to enable upload & deploy.",
+        )
 
     # Example project under this directory
     base_dir = Path(__file__).resolve().parent
@@ -35,11 +37,10 @@ async def deploy_agent_to_bailian_fc():
     cmd = "python app.py"
 
     # Create deployer and runner (agent not used by BailianFCDeployer)
-    deployer = BailianFCDeployer()
+    deployer = ModelstudioDeployManager()
     runner = Runner(agent=None)  # type: ignore
 
     deploy_name = f"bailian-fc-demo-{int(time.time())}"
-    output_file = base_dir / "bailian_deploy_result.txt"
 
     print("🚀 Starting deployment to Bailian FC...")
     result = await runner.deploy(
@@ -48,7 +49,6 @@ async def deploy_agent_to_bailian_fc():
         cmd=cmd,
         deploy_name=deploy_name,
         skip_upload=False,
-        output_file=str(output_file),
     )
 
     print("✅ Build completed:", result.get("wheel_path", ""))
@@ -58,7 +58,42 @@ async def deploy_agent_to_bailian_fc():
     print("🔖 Resource name:", result.get("resource_name"))
     if result.get("workspace_id"):
         print("🏷  Workspace：", result.get("workspace_id"))
-    print("📝 Results written to:", output_file)
+    print("🚀 Deploying to FC, see:", result.get("url"))
+
+    return result, deployer
+
+
+async def deploy_whl_to_bailian_fc():
+    missing_envs = _check_required_envs()
+    if missing_envs:
+        print("[WARN] Missing required env vars:", ", ".join(missing_envs))
+        print(
+            "       You may set them before running to enable upload & deploy.",
+        )
+    whl_path = "your whl path"
+    deploy_name = f"test_123"
+
+    deployer = ModelstudioDeployManager()
+    runner = Runner(agent=None)  # type: ignore
+    print("🚀 Starting deployment to Bailian FC from wheel...")
+    result = await runner.deploy(
+        deploy_manager=deployer,
+        project_dir=None,
+        cmd=None,
+        deploy_name=deploy_name,
+        skip_upload=False,
+        telemetry_enabled=True,
+        external_whl_path=whl_path,
+    )
+
+    print("✅ Wheel used:", result.get("wheel_path", ""))
+    if result.get("artifact_url"):
+        print("📦 Artifact URL:", result.get("artifact_url"))
+    print("📍 Deployment ID:", result.get("deploy_id"))
+    print("🔖 Resource name:", result.get("resource_name"))
+    if result.get("workspace_id"):
+        print("🏷  Workspace：", result.get("workspace_id"))
+    print("🚀 Deploying to FC, see:", result.get("url"))
 
     return result, deployer
 
@@ -66,6 +101,7 @@ async def deploy_agent_to_bailian_fc():
 async def main():
     try:
         await deploy_agent_to_bailian_fc()
+        # await deploy_whl_to_bailian_fc()
     except Exception as e:
         print(f"❌ Deployment failed: {e}")
         import traceback
@@ -76,5 +112,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-

@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=too-many-branches
+
 import json
 import logging
 import os
 import subprocess
-import tempfile
-from dataclasses import dataclass, field
-from typing import Optional, Dict, List, Tuple
-from pathlib import Path
-from pydantic import BaseModel, Field
+from typing import Optional, Dict
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -89,9 +88,11 @@ class DockerImageBuilder:
             build_context: Path to build context directory
             image_name: Name for the Docker image
             image_tag: Tag for the Docker image
-            dockerfile_path: Optional path to Dockerfile (defaults to Dockerfile in context)
+            dockerfile_path: Optional path to Dockerfile
+                (defaults to Dockerfile in context)
             config: Build configuration
-            source_updated: Optional flag to determine if source image should be updated.
+            source_updated: Optional flag to determine if source image
+                should be updated.
 
         Returns:
             str: Full image name with tag
@@ -159,7 +160,7 @@ class DockerImageBuilder:
                 logger.info(f"Building image: {full_image_name}")
                 logger.debug(f"Build command: {' '.join(build_cmd)}")
 
-                process = subprocess.Popen(
+                with subprocess.Popen(
                     build_cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
@@ -167,17 +168,16 @@ class DockerImageBuilder:
                     bufsize=1,
                     universal_newlines=True,
                     cwd=build_context,
-                )
+                ) as process:
+                    # Stream output in real-time
+                    while True:
+                        output = process.stdout.readline()
+                        if output == "" and process.poll() is not None:
+                            break
+                        if output:
+                            print(output.strip())
 
-                # Stream output in real-time
-                while True:
-                    output = process.stdout.readline()
-                    if output == "" and process.poll() is not None:
-                        break
-                    if output:
-                        print(output.strip())
-
-                process.wait()
+                    process.wait()
 
                 if process.returncode != 0:
                     raise subprocess.CalledProcessError(
@@ -212,7 +212,8 @@ class DockerImageBuilder:
 
         Args:
             image_name: Full image name to push
-            registry_config: Optional registry config (uses instance config if None)
+            registry_config: Optional registry config
+                (uses instance config if None)
             quiet: Whether to suppress output
 
         Returns:
@@ -256,24 +257,23 @@ class DockerImageBuilder:
             else:
                 logger.info(f"Pushing image: {registry_image_name}")
 
-                process = subprocess.Popen(
+                with subprocess.Popen(
                     push_cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
                     bufsize=1,
                     universal_newlines=True,
-                )
+                ) as process:
+                    # Stream output in real-time
+                    while True:
+                        output = process.stdout.readline()
+                        if output == "" and process.poll() is not None:
+                            break
+                        if output:
+                            print(output.strip())
 
-                # Stream output in real-time
-                while True:
-                    output = process.stdout.readline()
-                    if output == "" and process.poll() is not None:
-                        break
-                    if output:
-                        print(output.strip())
-
-                process.wait()
+                    process.wait()
 
                 if process.returncode != 0:
                     raise subprocess.CalledProcessError(
@@ -407,10 +407,10 @@ class DockerImageBuilder:
             image_info = json.loads(result.stdout)[0]
             return image_info
 
-        except subprocess.CalledProcessError:
-            raise ValueError(f"Image not found: {image_name}")
-        except (json.JSONDecodeError, IndexError):
-            raise ValueError(f"Invalid image info for: {image_name}")
+        except subprocess.CalledProcessError as e:
+            raise ValueError(f"Image not found: {image_name}") from e
+        except (json.JSONDecodeError, IndexError) as e:
+            raise ValueError(f"Invalid image info for: {image_name}") from e
 
     def image_exists(self, image_name: str) -> bool:
         """

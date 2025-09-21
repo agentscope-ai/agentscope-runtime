@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Modified package_project_utils.py with unified FastAPI template."""
+# pylint:disable=too-many-boolean-expressions, too-many-nested-blocks
+# pylint:disable=too-many-return-statements, unused-variable
+# pylint:disable=cell-var-from-loop, too-many-branches, too-many-statements
 
 import ast
 import hashlib
@@ -13,7 +15,7 @@ from typing import List, Optional, Any, Tuple
 from pydantic import BaseModel
 
 from .service_utils.fastapi_templates import FastAPITemplateManager
-
+from .service_utils.service_config import ServicesConfig
 
 # Default template will be loaded from template file
 
@@ -26,7 +28,10 @@ class PackageConfig(BaseModel):
     output_dir: Optional[str] = None
     endpoint_path: Optional[str] = "/process"
     deployment_mode: Optional[str] = "standalone"  # New: deployment mode
-    services_config: Optional[dict] = None  # New: services configuration
+    services_config: Optional[
+        ServicesConfig
+    ] = None  # New: services configuration
+    protocol_adapters: Optional[List[Any]] = None  # New: protocol adapters
 
 
 def _find_agent_source_file(
@@ -121,21 +126,59 @@ def _find_agent_source_file(
                         # Try to find the source module file
                         current_dir = os.path.dirname(file_path)
 
+                        # Convert dotted module name to filesystem path
+                        module_path = module_name.replace(".", os.sep)
+
                         # Try different possible paths for the source module
                         possible_paths = [
+                            # Same directory - simple module name
                             os.path.join(
                                 current_dir,
                                 f"{module_name}.py",
-                            ),  # Same directory
+                            ),
+                            # Same directory - dotted path
+                            os.path.join(
+                                current_dir,
+                                f"{module_path}.py",
+                            ),
+                            # Package in same directory
                             os.path.join(
                                 current_dir,
                                 module_name,
                                 "__init__.py",
-                            ),  # Package
+                            ),
+                            # Package with dotted path
+                            os.path.join(
+                                current_dir,
+                                module_path,
+                                "__init__.py",
+                            ),
+                            # Parent directory - simple module name
                             os.path.join(
                                 os.path.dirname(current_dir),
                                 f"{module_name}.py",
-                            ),  # Parent directory
+                            ),
+                            # Parent directory - dotted path
+                            os.path.join(
+                                os.path.dirname(current_dir),
+                                f"{module_path}.py",
+                            ),
+                            # Current working directory - simple module name
+                            os.path.join(
+                                os.getcwd(),
+                                f"{module_name}.py",
+                            ),
+                            # Current working directory - dotted path
+                            os.path.join(
+                                os.getcwd(),
+                                f"{module_path}.py",
+                            ),
+                            # Current working directory - package
+                            os.path.join(
+                                os.getcwd(),
+                                module_path,
+                                "__init__.py",
+                            ),
                         ]
 
                         for source_path in possible_paths:
@@ -153,8 +196,10 @@ def _find_agent_source_file(
                                     # Look for the assignment in the source
                                     # file
                                     assignment_patterns = [
-                                        rf"^[^\#]*{re.escape(agent_name_in_file)}\s*=\s*\w+\(",  # noqa E501
-                                        rf"^[^\#]*{re.escape(agent_name_in_file)}\s*=\s*[\w.]+\(",  # noqa E501
+                                        rf"^[^\#]*{re.escape(agent_name_in_file)}"  # noqa E501
+                                        rf"\s*=\s*\w+\(",
+                                        rf"^[^\#]*{re.escape(agent_name_in_file)}"  # noqa E501
+                                        rf"\s*=\s*[\w.]+\(",
                                     ]
 
                                     src_lines = src_content.split("\n")
@@ -474,12 +519,14 @@ def package_project(
         agent: The agent object to be packaged
         config: The configuration of the package
         dockerfile_path: Path to the Docker file
-        template: User override template string (if None, uses standalone template file)
+        template: User override template string
+            (if None, uses standalone template file)
 
     Returns:
         Tuple[str, bool]: A tuple containing:
             - str: Path to the directory containing the packaged project
-            - bool: True if the directory was updated, False if no update was needed
+            - bool: True if the directory was updated,
+                False if no update was needed
     """
     # Create temporary directory
     original_temp_dir = temp_dir = None
@@ -490,8 +537,8 @@ def package_project(
         temp_dir = config.output_dir
         # Check if directory exists and has content
         if os.path.exists(temp_dir) and os.listdir(temp_dir):
-            # Directory exists and has content, create a temporary directory first
-            # to generate new content for comparison
+            # Directory exists and has content, create a temporary directory
+            # first to generate new content for comparison
             original_temp_dir = temp_dir
             temp_dir = tempfile.mkdtemp(prefix="agentscope_package_new_")
             # copy docker file to this place
@@ -624,13 +671,47 @@ def package_project(
         # Use template manager for better template handling
         template_manager = FastAPITemplateManager()
 
-        # Render template - use template file by default, or user-provided string
+        # Convert protocol_adapters to string representation for template
+        protocol_adapters_str = None
+        if config.protocol_adapters:
+            # For standalone deployment, we need to generate code that
+            # creates the adapters
+            # This is a simplified approach - in practice, you might want
+            # more sophisticated serialization
+            adapter_imports = []
+            adapter_instances = []
+            for i, adapter in enumerate(config.protocol_adapters):
+                adapter_class = adapter.__class__
+                adapter_module = adapter_class.__module__
+                adapter_name = adapter_class.__name__
+
+                # Add import
+                adapter_imports.append(
+                    f"from {adapter_module} import {adapter_name}",
+                )
+
+                # Add instance creation (simplified - doesn't handle
+                # complex constructor args)
+                adapter_instances.append(f"{adapter_name}(agent=agent)")
+
+            # Create the protocol_adapters array string
+            if adapter_instances:
+                imports_str = "\n".join(adapter_imports)
+                instances_str = "[" + ", ".join(adapter_instances) + "]"
+                protocol_adapters_str = (
+                    f"# Protocol adapter imports\n{imports_str}\n\n"
+                    f"# Protocol adapters\nprotocol_adapters = {instances_str}"
+                )
+
+        # Render template - use template file by default,
+        # or user-provided string
         if template is None:
             # Use standalone template file
             main_content = template_manager.render_standalone_template(
                 agent_name=agent_name,
-                endpoint_path=config.endpoint_path,
+                endpoint_path=config.endpoint_path or "/process",
                 deployment_mode=config.deployment_mode or "standalone",
+                protocol_adapters=protocol_adapters_str,
             )
         else:
             # Use user-provided template string
@@ -639,6 +720,7 @@ def package_project(
                 agent_name=agent_name,
                 endpoint_path=config.endpoint_path,
                 deployment_mode=config.deployment_mode or "standalone",
+                protocol_adapters=protocol_adapters_str,
             )
 
         # Write main.py
@@ -655,6 +737,7 @@ def package_project(
                     "fastapi",
                     "uvicorn",
                     "agentscope-runtime",
+                    "agentscope-runtime[sandbox]",
                     "pydantic",
                     "jinja2",  # For template rendering
                     "psutil",  # For process management
@@ -665,9 +748,7 @@ def package_project(
                     # Check if Redis services are configured
                     services = config.services_config
                     if any(
-                        service.get("provider") == "redis"
-                        for service in services.values()
-                        if isinstance(service, dict)
+                        service.provider == "redis" for service in services
                     ):
                         base_requirements.append("redis")
 
@@ -685,7 +766,7 @@ def package_project(
             import json
 
             with open(config_path, "w", encoding="utf-8") as f:
-                json.dump(config.services_config, f, indent=2)
+                json.dump(config.services_config.model_dump(), f, indent=2)
 
         # If we need to determine if update is needed (existing directory case)
         if needs_update is None and original_temp_dir is not None:
@@ -693,7 +774,8 @@ def package_project(
             if _compare_directories(original_temp_dir, temp_dir):
                 # Content is identical, no update needed
                 needs_update = False
-                # Clean up the temporary new directory and return original directory
+                # Clean up the temporary new directory and return
+                # original directory
                 if os.path.exists(temp_dir):
                     shutil.rmtree(temp_dir)
                 return original_temp_dir, needs_update
@@ -723,7 +805,7 @@ def package_project(
                     shutil.rmtree(temp_dir)
                 return original_temp_dir, needs_update
 
-        return temp_dir, needs_update
+        return temp_dir, needs_update or True
 
     except Exception as e:
         # Clean up on error

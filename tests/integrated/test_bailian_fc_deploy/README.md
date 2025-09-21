@@ -12,25 +12,19 @@ The flow includes:
 - Python >= 3.10
 - Install runtime and required cloud SDKs:
 ```bash
-pip install agentscope-runtime \
-  alibabacloud-oss-v2 \
-  alibabacloud-bailian20231229 \
-  alibabacloud-credentials \
-  alibabacloud-tea-openapi \
-  alibabacloud-tea-util
+pip install agentscope-runtime && pip install "agentscope-runtime[deployment]"
 ```
 
 - Set the required environment variables:
 ```bash
-export OSS_ACCESS_KEY_ID=... 
-export OSS_ACCESS_KEY_SECRET=...
 export ALIBABA_CLOUD_ACCESS_KEY_ID=...
 export ALIBABA_CLOUD_ACCESS_KEY_SECRET=...
-export ALIBABA_CLOUD_WORKSPACE_ID=...
+export MODELSTUDIO_WORKSPACE_ID=...
 
-# Optional
-export OSS_REGION=cn-hangzhou
-export BAILIAN_ENDPOINT=bailian-pre.cn-hangzhou.aliyuncs.com
+# Optional: if you prefer separate OSS AK/SK (otherwise will fallback to Alibaba Cloud AK/SK)
+# export OSS_ACCESS_KEY_ID=...
+# export OSS_ACCESS_KEY_SECRET=...
+# export OSS_REGION=cn-hangzhou
 ```
 
 #### Quick start (CLI)
@@ -71,19 +65,21 @@ You can deploy without the helper by calling the deployer directly:
 
 ```python
 import asyncio
-from agentscope_runtime.engine.deployers.bailian_fc_deployer import BailianFCDeployer
+from agentscope_runtime.engine.deployers.modelstudio_deployer import ModelstudioDeployManager
+
 
 async def main():
-    deployer = BailianFCDeployer()
+    deployer = ModelstudioDeployManager()
     result = await deployer.deploy(
         project_dir="./path/to/your/project",
         cmd="python app.py",
-        deploy_name=None,            # optional, auto-generated if None
-        skip_upload=False,           # set True to only build the wheel
-        output_file="fc_deploy.txt",# optional
-        telemetry_enabled=True,      # or False
+        deploy_name=None,  # optional, auto-generated if None
+        skip_upload=False,  # set True to only build the wheel
+        output_file="fc_deploy.txt",  # optional
+        telemetry_enabled=True,  # or False
     )
     print(result)
+
 
 asyncio.run(main())
 ```

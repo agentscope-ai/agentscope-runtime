@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Service factory for dynamic service creation based on configuration."""
+# pylint:disable=line-too-long
 
 from typing import Dict, Type, Any
 from .service_config import (
@@ -13,7 +13,8 @@ from .service_config import (
 class ServiceFactory:
     """Factory for creating service instances based on configuration."""
 
-    # Service registry mapping service types and providers to implementation classes
+    # Service registry mapping service types and providers to
+    # implementation classes
     _service_registry: Dict[str, Dict[str, Type]] = {}
 
     @classmethod
@@ -27,7 +28,7 @@ class ServiceFactory:
             from agentscope_runtime.engine.services.memory_service import (
                 InMemoryMemoryService,
             )
-            from agentscope_runtime.engine.services.session_history_service import (
+            from agentscope_runtime.engine.services.session_history_service import (  # noqa E501
                 InMemorySessionHistoryService,
             )
 
@@ -42,46 +43,39 @@ class ServiceFactory:
             }
 
             # Try to register Redis services if available
-            try:
-                from agentscope_runtime.engine.services.redis_memory_service import (
-                    RedisMemoryService,
-                )
-                from agentscope_runtime.engine.services.redis_session_history_service import (
-                    RedisSessionHistoryService,
-                )
 
-                cls._service_registry[ServiceType.MEMORY][
-                    ServiceProvider.REDIS
-                ] = RedisMemoryService
-                cls._service_registry[ServiceType.SESSION_HISTORY][
-                    ServiceProvider.REDIS
-                ] = RedisSessionHistoryService
-            except ImportError:
-                # Redis services not available
-                pass
+            from agentscope_runtime.engine.services.redis_memory_service import (  # noqa E501
+                RedisMemoryService,
+            )
+            from agentscope_runtime.engine.services.redis_session_history_service import (  # noqa E501
+                RedisSessionHistoryService,
+            )
+
+            cls._service_registry[ServiceType.MEMORY][
+                ServiceProvider.REDIS
+            ] = RedisMemoryService
+            cls._service_registry[ServiceType.SESSION_HISTORY][
+                ServiceProvider.REDIS
+            ] = RedisSessionHistoryService
 
             # Try to register other services if available
-            try:
-                from agentscope_runtime.engine.services.sandbox_service import (
-                    SandboxService,
-                )
+            from agentscope_runtime.engine.services.sandbox_service import (
+                SandboxService,
+            )
 
-                cls._service_registry[ServiceType.SANDBOX] = {
-                    ServiceProvider.IN_MEMORY: SandboxService,  # Assuming default implementation
-                }
-            except ImportError:
-                pass
+            # Assuming default implementation
+            cls._service_registry[ServiceType.SANDBOX] = {
+                ServiceProvider.IN_MEMORY: SandboxService,
+            }
 
-            try:
-                from agentscope_runtime.engine.services.rag_service import (
-                    RAGService,
-                )
+            from agentscope_runtime.engine.services.rag_service import (
+                RAGService,
+            )
 
-                cls._service_registry[ServiceType.RAG] = {
-                    ServiceProvider.IN_MEMORY: RAGService,  # Assuming default implementation
-                }
-            except ImportError:
-                pass
+            # Assuming default implementation
+            cls._service_registry[ServiceType.RAG] = {
+                ServiceProvider.IN_MEMORY: RAGService,
+            }
 
         except ImportError as e:
             raise RuntimeError(
@@ -116,8 +110,8 @@ class ServiceFactory:
         if config.provider not in providers:
             available_providers = list(providers.keys())
             raise ValueError(
-                f"Unknown provider '{config.provider}' for service '{service_type}'. "
-                f"Available providers: {available_providers}",
+                f"Unknown provider '{config.provider}' for service '"
+                f"{service_type}'. Available providers: {available_providers}",
             )
 
         service_class = providers[config.provider]

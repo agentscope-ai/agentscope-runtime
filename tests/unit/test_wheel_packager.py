@@ -40,15 +40,17 @@ def test_generate_wrapper_project_writes_config_and_manifest(tmp_path: Path):
     cfg = wrapper_dir / "deploy_starter" / "config.yml"
     assert cfg.is_file()
     content = cfg.read_text(encoding="utf-8")
-    assert "APP_NAME: \"demo\"" in content
-    assert "CMD: \"python app.py\"" in content
-    assert "APP_SUBDIR_NAME: \"proj\"" in content
+    assert 'APP_NAME: "demo"' in content
+    assert 'CMD: "python app.py"' in content
+    assert 'APP_SUBDIR_NAME: "proj"' in content
     assert "TELEMETRY_ENABLE: false" in content
 
     assert (wrapper_dir / "setup.py").is_file()
     assert (wrapper_dir / "MANIFEST.in").is_file()
     assert (wrapper_dir / "deploy_starter" / "main.py").is_file()
-    assert (wrapper_dir / "deploy_starter" / "user_bundle" / "proj" / "app.py").is_file()
+    assert (
+        wrapper_dir / "deploy_starter" / "user_bundle" / "proj" / "app.py"
+    ).is_file()
 
 
 def test_generate_wrapper_project_telemetry_true(tmp_path: Path):
@@ -62,5 +64,3 @@ def test_generate_wrapper_project_telemetry_true(tmp_path: Path):
     )
     cfg = wrapper_dir / "deploy_starter" / "config.yml"
     assert "TELEMETRY_ENABLE: true" in cfg.read_text(encoding="utf-8")
-
-

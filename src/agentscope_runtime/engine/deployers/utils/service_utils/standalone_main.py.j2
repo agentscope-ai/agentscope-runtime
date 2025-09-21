@@ -9,6 +9,8 @@ from agentscope_runtime.engine.deployers.utils.service_utils import (
 
 from agent_file import {{agent_name}} as agent
 
+{% if protocol_adapters %}{{protocol_adapters}}{% endif %}
+
 
 def load_services_config() -> ServicesConfig:
     """Load services configuration from environment variables or config file."""
@@ -86,7 +88,8 @@ app = FastAPIAppFactory.create_app(
     services_config=services_config,
     before_start=before_start,
     after_finish=after_finish,
-    stream=True
+    stream=True{% if protocol_adapters %},
+    protocol_adapters=protocol_adapters{% endif %}
 )
 
 
@@ -95,7 +98,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="AgentScope Runtime Standalone Service")
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
-    parser.add_argument("--port", type=int, default=8000, help="Port to bind to")
+    parser.add_argument("--port", type=int, default=8080, help="Port to bind to")
     parser.add_argument("--workers", type=int, default=1, help="Number of worker processes")
 
     args = parser.parse_args()

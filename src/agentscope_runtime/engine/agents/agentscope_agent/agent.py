@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=too-many-nested-blocks, too-many-branches, too-many-statements
-# pylint:disable=line-too-long
+# pylint:disable=line-too-long, protected-access
 
 import json
 import threading
@@ -235,6 +235,7 @@ class AgentScopeAgent(Agent):
             memory=as_context.memory,
             toolkit=as_context.toolkit,
         )
+        self._agent._disable_console_output = True
 
         self._agent.register_instance_hook(
             "pre_print",

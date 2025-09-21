@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=protected-access
+
 import hashlib
 import logging
-import time
 import os
+from typing import Optional, List, Dict, Union
 
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Union
 
 from agentscope_runtime.engine.runner import Runner
 
@@ -13,7 +14,9 @@ from agentscope_runtime.engine.runner import Runner
 from ..package_project_utils import (
     PackageConfig,
     package_project,
-    create_tar_gz,
+)
+from ..service_utils import (
+    ServicesConfig,
 )
 from .dockerfile_generator import DockerfileGenerator, DockerfileConfig
 from .docker_image_builder import (
@@ -34,6 +37,8 @@ class RunnerImageConfig(BaseModel):
     extra_packages: Optional[List[str]] = None
     build_context_dir: str = "/tmp/k8s_build"
     endpoint_path: str = "/process"
+    protocol_adapters: Optional[List] = None  # New: protocol adapters
+    services_config: Optional[ServicesConfig] = None
 
     # Docker configuration
     base_image: str = "python:3.10-slim-bookworm"
@@ -110,7 +115,7 @@ class RunnerImageFactory:
             return []
         elif isinstance(requirements, str):
             if os.path.exists(requirements):
-                with open(requirements, "r") as f:
+                with open(requirements, "r", encoding="utf-8") as f:
                     return [
                         line.strip() for line in f.readlines() if line.strip()
                     ]
@@ -151,7 +156,7 @@ class RunnerImageFactory:
         try:
             # Validation
             self._validate_runner(runner)
-            validated_requirements = self._validate_requirements(
+            self._validate_requirements(
                 config.requirements,
             )
 
@@ -180,9 +185,12 @@ class RunnerImageFactory:
                     extra_packages=config.extra_packages,
                     output_dir=config.build_context_dir,
                     endpoint_path=config.endpoint_path,
+                    protocol_adapters=config.protocol_adapters,
+                    services_config=config.services_config,
                 ),
                 dockerfile_path=dockerfile_path,
-                # caller_depth is no longer needed due to automatic stack search
+                # caller_depth is no longer needed due to automatic
+                # stack search
             )
             logger.info(f"Project packaged: {project_dir}")
 
@@ -238,6 +246,8 @@ class RunnerImageFactory:
         image_tag: Optional[str] = None,
         registry_config: Optional[RegistryConfig] = None,
         push_to_registry: bool = False,
+        services_config: Optional[ServicesConfig] = None,
+        protocol_adapters: Optional[List] = None,  # New: protocol adapters
         **kwargs,
     ) -> str:
         """
@@ -252,6 +262,8 @@ class RunnerImageFactory:
             image_tag: Optional image tag
             registry_config: Optional registry config
             push_to_registry: Whether to push to registry
+            services_config: Optional services config
+            protocol_adapters: Protocol adapters
             **kwargs: Additional configuration options
 
         Returns:
@@ -265,6 +277,8 @@ class RunnerImageFactory:
             image_tag=image_tag,
             registry_config=registry_config,
             push_to_registry=push_to_registry,
+            protocol_adapters=protocol_adapters,
+            services_config=services_config,
             **kwargs,
         )
 

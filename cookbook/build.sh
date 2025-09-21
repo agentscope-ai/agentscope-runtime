@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Multiple versions to build
-VERSIONS=("preview" "v0.1.0" "v0.1.1" "v0.1.2")
+VERSIONS=("preview" "v0.1.0" "v0.1.1" "v0.1.2" "v0.1.3" "v0.1.4")
 OUTPUT_DIR="_build"
 
 # ANSI color codes for better display
