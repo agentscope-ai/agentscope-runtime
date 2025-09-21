@@ -12,24 +12,19 @@
 - Python >= 3.10
 - 安装运行时与云端 SDK：
 ```bash
-pip install agentscope-runtime \
-  alibabacloud-oss-v2 \
-  alibabacloud-bailian20231229 \
-  alibabacloud-credentials \
-  alibabacloud-tea-openapi \
-  alibabacloud-tea-util
+pip install agentscope-runtime && pip install "agentscope-runtime[deployment]"
 ```
 
 - 配置所需环境变量：
 ```bash
-export OSS_ACCESS_KEY_ID=...
-export OSS_ACCESS_KEY_SECRET=...
 export ALIBABA_CLOUD_ACCESS_KEY_ID=...
 export ALIBABA_CLOUD_ACCESS_KEY_SECRET=...
 export MODELSTUDIO_WORKSPACE_ID=...
 
 # 可选
 export OSS_REGION=cn-hangzhou
+export OSS_ACCESS_KEY_ID=...
+export OSS_ACCESS_KEY_SECRET=...
 ```
 
 #### 快速开始（CLI）

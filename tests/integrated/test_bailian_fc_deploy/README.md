@@ -12,12 +12,7 @@ The flow includes:
 - Python >= 3.10
 - Install runtime and required cloud SDKs:
 ```bash
-pip install agentscope-runtime \
-  alibabacloud-oss-v2 \
-  alibabacloud-bailian20231229 \
-  alibabacloud-credentials \
-  alibabacloud-tea-openapi \
-  alibabacloud-tea-util
+pip install agentscope-runtime && pip install "agentscope-runtime[deployment]"
 ```
 
 - Set the required environment variables:
