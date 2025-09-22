@@ -8,21 +8,20 @@ from langchain_core.embeddings import Embeddings
 from langchain_community.embeddings import DashScopeEmbeddings
 
 from .memory_service import MemoryService
-from .utils.ots_service_utils import (
-    convert_message_to_ots_document,
+from .utils.tablestore_service_utils import (
     get_message_metadata_names,
-    convert_ots_document_to_message,
-    convert_messages_to_ots_documents,
+    convert_tablestore_document_to_message,
+    convert_messages_to_tablestore_documents,
+    print_log,
 )
 from ..schemas.agent_schemas import Message, MessageType
 
 import tablestore
+from tablestore import AsyncOTSClient as AsyncTablestoreClient
 from tablestore_for_agent_memory.knowledge.async_knowledge_store import (
     AsyncKnowledgeStore,
 )
 from tablestore_for_agent_memory.base.filter import Filters
-
-from pydantic import Field
 
 
 class SearchStrategy(Enum):
@@ -30,9 +29,9 @@ class SearchStrategy(Enum):
     VECTOR = "vector"
 
 
-class OTSMemoryService(MemoryService):
+class TablestoreMemoryService(MemoryService):
     """
-    A OTS-based implementation of the memory service.
+    A Tablestore-based implementation of the memory service.
     based on tablestore_for_agent_memory(https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory/blob/main/python/docs/knowledge_store_tutorial.ipynb).
     """
 
@@ -41,7 +40,7 @@ class OTSMemoryService(MemoryService):
 
     def __init__(
         self,
-        tablestore_client: tablestore.AsyncOTSClient,
+        tablestore_client: AsyncTablestoreClient,
         search_strategy: SearchStrategy = SearchStrategy.FULL_TEXT,
         embedding_model: Optional[Embeddings] = DashScopeEmbeddings(),
         vector_dimension: int = 1536,
@@ -56,15 +55,24 @@ class OTSMemoryService(MemoryService):
         **kwargs: Any,
     ):
         self._search_strategy = search_strategy
-        self._embedding_model = embedding_model # the parameter is None, don't store vector
+        self._embedding_model = (
+            embedding_model  # the parameter is None, don't store vector
+        )
 
-        if self._search_strategy == SearchStrategy.VECTOR and self._embedding_model is None:
-            raise ValueError("Embedding model is required when search strategy is VECTOR.")
+        if (
+            self._search_strategy == SearchStrategy.VECTOR
+            and self._embedding_model is None
+        ):
+            raise ValueError(
+                "Embedding model is required when search strategy is VECTOR."
+            )
 
         self._tablestore_client = tablestore_client
         self._vector_dimension = vector_dimension
         self._table_name = table_name
-        self._search_index_schema = list(search_index_schema) if search_index_schema is not None else None
+        self._search_index_schema = (
+            list(search_index_schema) if search_index_schema is not None else None
+        )
         self._text_field = text_field
         self._embedding_field = embedding_field
         self._vector_metric_type = vector_metric_type
@@ -78,7 +86,7 @@ class OTSMemoryService(MemoryService):
             enable_multi_tenant=False,
             # enable multi tenant will make user be confused, we unify the usage of session id and user id, and allow users to configure the index themselves.
             table_name=self._table_name,
-            search_index_name=OTSMemoryService._SEARCH_INDEX_NAME,
+            search_index_name=TablestoreMemoryService._SEARCH_INDEX_NAME,
             search_index_schema=copy.deepcopy(self._search_index_schema),
             text_field=self._text_field,
             embedding_field=self._embedding_field,
@@ -86,15 +94,16 @@ class OTSMemoryService(MemoryService):
             **self._knowledge_store_init_parameter_kwargs,
         )
 
+        await self._knowledge_store.init_table()
+
     async def start(self) -> None:
-        """Start the ots service"""
+        """Start the tablestore service"""
         if self._knowledge_store:
             return
         await self._init_knowledge_store()
-        await self._knowledge_store.init_table()
 
     async def stop(self) -> None:
-        """Close the ots service"""
+        """Close the tablestore service"""
         if self._knowledge_store is None:
             return
         knowledge_store = self._knowledge_store
@@ -103,7 +112,15 @@ class OTSMemoryService(MemoryService):
 
     async def health(self) -> bool:
         """Checks the health of the service."""
-        return self._knowledge_store is not None
+        if self._knowledge_store is None:
+            return False
+
+        try:
+            async for _ in await self._knowledge_store.get_all_documents():
+                return True
+            return True
+        except Exception:
+            return False
 
     async def add_memory(
         self,
@@ -112,11 +129,11 @@ class OTSMemoryService(MemoryService):
         session_id: Optional[str] = None,
     ) -> None:
         if not session_id:
-            session_id = OTSMemoryService._DEFAULT_SESSION_ID
+            session_id = TablestoreMemoryService._DEFAULT_SESSION_ID
 
         put_tasks = [
-            self._knowledge_store.put_document(ots_document)
-            for ots_document in convert_messages_to_ots_documents(
+            self._knowledge_store.put_document(tablestore_document)
+            for tablestore_document in convert_messages_to_tablestore_documents(
                 messages, user_id, session_id, self._embedding_model
             )
         ]
@@ -140,7 +157,7 @@ class OTSMemoryService(MemoryService):
         if not messages or not isinstance(messages, list) or len(messages) == 0:
             return []
 
-        query = await OTSMemoryService.get_query_text(messages[-1])
+        query = await TablestoreMemoryService.get_query_text(messages[-1])
         if not query:
             return []
 
@@ -150,7 +167,7 @@ class OTSMemoryService(MemoryService):
 
         if self._search_strategy == SearchStrategy.FULL_TEXT:
             matched_messages = [
-                convert_ots_document_to_message(hit.document)
+                convert_tablestore_document_to_message(hit.document)
                 for hit in (
                     await self._knowledge_store.full_text_search(
                         query=query,
@@ -162,7 +179,7 @@ class OTSMemoryService(MemoryService):
             ]
         elif self._search_strategy == SearchStrategy.VECTOR:
             matched_messages = [
-                convert_ots_document_to_message(hit.document)
+                convert_tablestore_document_to_message(hit.document)
                 for hit in (
                     await self._knowledge_store.vector_search(
                         query_vector=self._embedding_model.embed_query(query),
@@ -198,13 +215,13 @@ class OTSMemoryService(MemoryService):
                 )
             ).next_token
             if not next_token:
-                print(
+                print_log(
                     "Page number exceeds the total number of pages, return empty list."
                 )
                 return []
 
         messages = [
-            convert_ots_document_to_message(hit.document)
+            convert_tablestore_document_to_message(hit.document)
             for hit in (
                 await self._knowledge_store.search_documents(
                     metadata_filter=Filters.eq("user_id", user_id),
@@ -222,7 +239,7 @@ class OTSMemoryService(MemoryService):
         user_id: str,
         session_id: Optional[str] = None,
     ) -> None:
-        delete_ots_documents = [
+        delete_tablestore_documents = [
             hit.document
             for hit in (
                 await self._knowledge_store.search_documents(
@@ -238,7 +255,7 @@ class OTSMemoryService(MemoryService):
             ).hits
         ]
         delete_tasks = [
-            self._knowledge_store.delete_document(ots_document.document_id)
-            for ots_document in delete_ots_documents
+            self._knowledge_store.delete_document(tablestore_document.document_id)
+            for tablestore_document in delete_tablestore_documents
         ]
         await asyncio.gather(*delete_tasks)
