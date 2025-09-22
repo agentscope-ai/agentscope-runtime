@@ -198,7 +198,9 @@ class ModelstudioVoiceChatResponseTextPayload(
     ModelstudioVoiceChatOutPayload,
 ):
     text: Optional[str] = ""
-    tool_calls: Optional[List[ChoiceDeltaToolCall]] = []
+    tool_calls: Optional[List[ChoiceDeltaToolCall]] = Field(
+        default_factory=list,
+    )
     finished: bool
 
 

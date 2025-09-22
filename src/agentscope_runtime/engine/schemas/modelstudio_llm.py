@@ -25,10 +25,10 @@ class KnowledgeHolder(BaseModel):
 
 
 class IntentionOptions(BaseModel):
-    white_list: List[str] = []
+    white_list: List[str] = Field(default_factory=list)
     """A list of allowed intentions that can be processed."""
 
-    black_list: List[str] = []
+    black_list: List[str] = Field(default_factory=list)
     """A list of blocked intentions that should not be processed."""
 
     search_model: str = "search_v6"
@@ -138,13 +138,16 @@ class RagOptions(BaseModel):
     """The placeholder word in prompts that will be replaced with retrieved
     documents. """
 
-    index_names: Optional[List[str]] = []
+    index_names: Optional[List[str]] = Field(default_factory=list)
     """List of index names to use for document processing and retrieval."""
 
-    pipeline_ids: Optional[List[str]] = []
+    pipeline_ids: Optional[List[str]] = Field(default_factory=list)
     """List of pipeline IDs to use for document processing and retrieval."""
 
-    file_ids: Optional[List[str]] = Field(default=[], alias="file_id_list")
+    file_ids: Optional[List[str]] = Field(
+        default_factory=list,
+        alias="file_id_list",
+    )
     """List of specific file IDs to searches within."""
 
     prompt_strategy: Optional[str] = Field(
@@ -172,7 +175,7 @@ class RagOptions(BaseModel):
     enable_web_search: bool = False
     """Whether to enable web searches as part of the RAG pipeline."""
 
-    session_file_ids: Optional[List[str]] = []
+    session_file_ids: Optional[List[str]] = Field(default_factory=list)
     """List of file IDs that are specific to the current session."""
 
     dense_similarity_top_k: Optional[int] = 100
