@@ -268,7 +268,7 @@ class TestLocalDeployManager:
 
         manager = LocalDeployManager()
 
-        result = await manager._create_detached_project(
+        result = await manager.create_detached_project(
             agent=mock_agent,
             runner=mock_runner,
             endpoint_path="/custom",

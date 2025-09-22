@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
-import asyncio
 import logging
 import os
 import time
-from typing import Optional, Dict, Callable, List, Union, Any
+from typing import Optional, Dict, List, Union, Any
 
 from pydantic import BaseModel, Field
 
+from agentscope_runtime.engine.runner import Runner
+from agentscope_runtime.sandbox.manager.container_clients import (
+    KubernetesClient,
+)
+from .adapter.protocol_adapter import ProtocolAdapter
+from .base import DeployManager
 from .utils.docker_image_utils import (
     RunnerImageFactory,
     RegistryConfig,
@@ -14,12 +19,6 @@ from .utils.docker_image_utils import (
 from .utils.service_utils import (
     ServicesConfig,
 )
-from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.sandbox.manager.container_clients import (
-    KubernetesClient,
-)
-from .adapter.protocol_adapter import ProtocolAdapter
-from .base import DeployManager
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +154,7 @@ class KubernetesDeployManager(DeployManager):
                     image_tag=image_tag,
                     push_to_registry=push_to_registry,
                     port=port,
-                    services_config=services_config,
+                    services_config=services_config,  # type: ignore[arg-type]
                     protocol_adapters=protocol_adapters,
                     **kwargs,
                 )

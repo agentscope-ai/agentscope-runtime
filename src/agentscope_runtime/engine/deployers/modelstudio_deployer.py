@@ -2,6 +2,7 @@
 # pylint:disable=too-many-nested-blocks, too-many-return-statements,
 # pylint:disable=too-many-branches, too-many-statements, try-except-raise
 # pylint:disable=ungrouped-imports, arguments-renamed, protected-access
+#
 # flake8: noqa: E501
 import logging
 import os
@@ -12,17 +13,18 @@ from typing import Dict, Optional, List, Union, Tuple
 
 from pydantic import BaseModel, Field
 
+from .adapter.protocol_adapter import ProtocolAdapter
+from .base import DeployManager
 from .local_deployer import LocalDeployManager
-from ..runner import Runner
+from .utils.service_utils import (
+    ServicesConfig,
+)
 from .utils.wheel_packager import (
     generate_wrapper_project,
     build_wheel,
     default_deploy_name,
 )
-from .utils.service_utils import (
-    ServicesConfig,
-)
-from .adapter.protocol_adapter import ProtocolAdapter
+from ..runner import Runner
 
 logger = logging.getLogger(__name__)
 
@@ -335,7 +337,7 @@ async def _modelstudio_deploy(
     return _extract_deploy_identifier(resp)
 
 
-class ModelstudioDeployManager(LocalDeployManager):
+class ModelstudioDeployManager(DeployManager):
     """Deployer for Alibaba Modelstudio Function Compute based agent
     deployment.
 
@@ -523,7 +525,6 @@ class ModelstudioDeployManager(LocalDeployManager):
         self,
         runner: Optional[Runner] = None,
         endpoint_path: str = "/process",
-        stream: bool = True,
         services_config: Optional[Union[ServicesConfig, dict]] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         requirements: Optional[Union[str, List[str]]] = None,
@@ -551,14 +552,16 @@ class ModelstudioDeployManager(LocalDeployManager):
         # convert services_config to Model body
         if services_config and isinstance(services_config, dict):
             services_config = ServicesConfig(**services_config)
+
         try:
             if runner:
                 agent = runner._agent
 
                 # Create package project for detached deployment
-                project_dir = await self._create_detached_project(
+                project_dir = await LocalDeployManager.create_detached_project(
                     agent=agent,
-                    services_config=services_config,
+                    endpoint_path=endpoint_path,
+                    services_config=services_config,  # type: ignore[arg-type]
                     protocol_adapters=protocol_adapters,
                     requirements=requirements,
                     extra_packages=extra_packages,
@@ -614,7 +617,6 @@ class ModelstudioDeployManager(LocalDeployManager):
             # Print richer error message to improve UX
             err_text = str(e)
             logger.error("Failed to deploy to modelstudio: %s", err_text)
-            print(f"[ModelStudio Deploy Error] {err_text}")
             raise
 
     async def stop(self) -> None:  # pragma: no cover - not supported yet
