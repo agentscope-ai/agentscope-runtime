@@ -8,7 +8,6 @@ import logging
 import os
 import time
 import uuid
-import json
 from pathlib import Path
 from typing import Dict, Optional, List, Union, Tuple
 
@@ -166,7 +165,8 @@ async def _oss_create_bucket_if_not_exists(client, bucket_name: str) -> None:
         )
         put_bucket_result = client.put_bucket(req)
         logger.info(
-            f"put bucket status code: {put_bucket_result.status_code}, request id: {put_bucket_result.request_id}",
+            f"put bucket status code: {put_bucket_result.status_code},"
+            f" request id: {put_bucket_result.request_id}",
         )
         result = client.put_bucket_tags(
             oss.PutBucketTagsRequest(
@@ -252,9 +252,9 @@ async def _modelstudio_deploy(
         runtime,
     )
 
-    #logger.info(json.dumps(resp.to_map(), indent=2, ensure_ascii=False))
+    # logger.info(json.dumps(resp.to_map(), indent=2, ensure_ascii=False))
     request_id = resp.to_map()["headers"].get("x-acs-request-id")
-    logger.info("deploy request id:"+request_id)
+    logger.info("deploy request id: %s", request_id)
 
     # Extract deploy identifier string from response
     def _extract_deploy_identifier(response_obj) -> str:
@@ -627,7 +627,11 @@ class ModelstudioDeployManager(DeployManager):
                 _assert_cloud_sdks_available()
                 self.oss_config.ensure_valid()
                 self.modelstudio_config.ensure_valid()
-                artifact_url, console_url, deploy_identifier = await self._upload_and_deploy(
+                (
+                    artifact_url,
+                    console_url,
+                    deploy_identifier,
+                ) = await self._upload_and_deploy(
                     wheel_path,
                     name,
                     agent_id,
