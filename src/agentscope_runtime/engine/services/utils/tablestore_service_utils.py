@@ -70,6 +70,7 @@ def create_tablestore_client(
     sts_token: Optional[str] = None,
     region: Optional[str] = None,
     credentials_provider: Optional[CredentialsProvider] = None,
+    retry_policy: tablestore.RetryPolicy = tablestore.WriteRetryPolicy(),
     **kwargs: Any,
 ) -> AsyncTablestoreClient:
     return AsyncTablestoreClient(
@@ -80,7 +81,7 @@ def create_tablestore_client(
         region=region,
         credentials_provider=credentials_provider,
         sts_token=None if sts_token == "" else sts_token,
-        retry_policy=tablestore.WriteRetryPolicy(),
+        retry_policy=retry_policy,
         **kwargs,
     )
 
