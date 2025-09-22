@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=too-many-nested-blocks, too-many-return-statements,
+# pylint:disable=too-many-branches, too-many-statements, try-except-raise
+# pylint:disable=ungrouped-imports, arguments-renamed, protected-access
+# flake8: noqa: E501
 import logging
 import os
 import time
+import uuid
 from pathlib import Path
 from typing import Dict, Optional, List, Union, Tuple
 
@@ -24,19 +29,19 @@ logger = logging.getLogger(__name__)
 
 try:  # Lazy optional imports; validated at runtime
     import alibabacloud_oss_v2 as oss  # type: ignore
-    from alibabacloud_oss_v2.models import PutBucketRequest, PutObjectRequest  # type: ignore
-    from alibabacloud_bailian20231229.client import Client as ModelstudioClient  # type: ignore
-    from alibabacloud_tea_openapi import models as open_api_models  # type: ignore
-    from alibabacloud_bailian20231229 import models as ModelstudioTypes  # type: ignore
-    from alibabacloud_tea_util import models as util_models  # type: ignore
-except Exception:  # pragma: no cover - we validate presence explicitly
-    oss = None  # type: ignore
-    PutBucketRequest = None  # type: ignore
-    PutObjectRequest = None  # type: ignore
-    ModelstudioClient = None  # type: ignore
-    open_api_models = None  # type: ignore
-    ModelstudioTypes = None  # type: ignore
-    util_models = None  # type: ignore
+    from alibabacloud_oss_v2.models import PutBucketRequest, PutObjectRequest
+    from alibabacloud_bailian20231229.client import Client as ModelstudioClient
+    from alibabacloud_tea_openapi import models as open_api_models
+    from alibabacloud_bailian20231229 import models as ModelstudioTypes
+    from alibabacloud_tea_util import models as util_models
+except Exception:
+    oss = None
+    PutBucketRequest = None
+    PutObjectRequest = None
+    ModelstudioClient = None
+    open_api_models = None
+    ModelstudioTypes = None
+    util_models = None
 
 
 class OSSConfig(BaseModel):
@@ -52,25 +57,28 @@ class OSSConfig(BaseModel):
     def from_env(cls) -> "OSSConfig":
         return cls(
             region=os.environ.get("OSS_REGION", "cn-hangzhou"),
-            access_key_id=os.environ.get("OSS_ACCESS_KEY_ID"),
-            access_key_secret=os.environ.get("OSS_ACCESS_KEY_SECRET"),
+            access_key_id=os.environ.get(
+                "OSS_ACCESS_KEY_ID",
+                os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+            ),
+            access_key_secret=os.environ.get(
+                "OSS_ACCESS_KEY_SECRET",
+                os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+            ),
         )
 
     def ensure_valid(self) -> None:
-        missing = []
-        if not self.access_key_id:
-            missing.append("OSS_ACCESS_KEY_ID")
-        if not self.access_key_secret:
-            missing.append("OSS_ACCESS_KEY_SECRET")
-        if missing:
+        # allow fallback to Alibaba Cloud AK/SK via from_env()
+        if not self.access_key_id or not self.access_key_secret:
             raise RuntimeError(
-                f"Missing required OSS env vars: {', '.join(missing)}",
+                "Missing AccessKey for OSS. Set either OSS_ACCESS_KEY_ID/OSS_ACCESS_KEY_SECRET "
+                "or ALIBABA_CLOUD_ACCESS_KEY_ID/ALIBABA_CLOUD_ACCESS_KEY_SECRET.",
             )
 
 
 class ModelstudioConfig(BaseModel):
     endpoint: str = Field(
-        "bailian-pre.cn-hangzhou.aliyuncs.com",
+        "bailian.cn-beijing.aliyuncs.com",
         description="Modelstudio service endpoint",
     )
     workspace_id: Optional[str] = None
@@ -83,7 +91,7 @@ class ModelstudioConfig(BaseModel):
         return cls(
             endpoint=os.environ.get(
                 "MODELSTUDIO_ENDPOINT",
-                "bailian-pre.cn-hangzhou.aliyuncs.com",
+                "bailian.cn-beijing.aliyuncs.com",
             ),
             workspace_id=os.environ.get("MODELSTUDIO_WORKSPACE_ID"),
             access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
@@ -120,6 +128,17 @@ def _assert_cloud_sdks_available():
 
 def _oss_get_client(oss_cfg: OSSConfig):
     oss_cfg.ensure_valid()
+    # Ensure OSS SDK can read credentials from environment variables.
+    # If OSS_* are not set, populate them from resolved config (which may
+    # already have fallen back to ALIBABA_CLOUD_* as per from_env()).
+    if not os.environ.get("OSS_ACCESS_KEY_ID") and oss_cfg.access_key_id:
+        os.environ["OSS_ACCESS_KEY_ID"] = str(oss_cfg.access_key_id)
+    if (
+        not os.environ.get("OSS_ACCESS_KEY_SECRET")
+        and oss_cfg.access_key_secret
+    ):
+        os.environ["OSS_ACCESS_KEY_SECRET"] = str(oss_cfg.access_key_secret)
+
     credentials_provider = (
         oss.credentials.EnvironmentVariableCredentialsProvider()
     )
@@ -200,7 +219,7 @@ async def _modelstudio_deploy(
     filename: str,
     deploy_name: str,
     telemetry_enabled: bool = True,
-) -> None:
+) -> str:
     cfg.ensure_valid()
     config = open_api_models.Config(
         access_key_id=cfg.access_key_id,
@@ -216,12 +235,104 @@ async def _modelstudio_deploy(
     )
     runtime = util_models.RuntimeOptions()
     headers: Dict[str, str] = {}
-    client_modelstudio.high_code_deploy_with_options(
+    resp = client_modelstudio.high_code_deploy_with_options(
         cfg.workspace_id,
         req,
         headers,
         runtime,
     )
+
+    # Extract deploy identifier string from response
+    def _extract_deploy_identifier(response_obj) -> str:
+        try:
+            if isinstance(response_obj, str):
+                return response_obj
+            # Tea responses often have a 'body' that can be a dict or model
+            body = getattr(response_obj, "body", None)
+
+            # 1) If body is a plain string
+            if isinstance(body, str):
+                return body
+            # 2) If body is a dict, prefer common fields
+            if isinstance(body, dict):
+                # Explicit error handling: do not build URL on failure
+                if isinstance(body.get("success"), bool) and not body.get(
+                    "success",
+                ):
+                    err_code = (
+                        body.get("errorCode") or body.get("code") or "unknown"
+                    )
+                    err_msg = body.get("errorMsg") or body.get("message") or ""
+                    raise RuntimeError(
+                        f"ModelStudio deploy failed: {err_code} {err_msg}".strip(),
+                    )
+                for key in ("data", "result", "deployId"):
+                    val = body.get(key)
+                    if isinstance(val, str) and val:
+                        return val
+                # Try nested structures
+                data_val = body.get("data")
+                if isinstance(data_val, dict):
+                    for key in ("id", "deployId"):
+                        v = data_val.get(key)
+                        if isinstance(v, str) and v:
+                            return v
+            # 3) If body is a Tea model, try to_map()
+            if hasattr(body, "to_map") and callable(getattr(body, "to_map")):
+                try:
+                    m = body.to_map()
+                    if isinstance(m, dict):
+                        if isinstance(m.get("success"), bool) and not m.get(
+                            "success",
+                        ):
+                            err_code = (
+                                m.get("errorCode")
+                                or m.get("code")
+                                or "unknown"
+                            )
+                            err_msg = (
+                                m.get("errorMsg") or m.get("message") or ""
+                            )
+                            raise RuntimeError(
+                                f"ModelStudio deploy failed: {err_code} {err_msg}".strip(),
+                            )
+                        for key in ("data", "result", "deployId"):
+                            val = m.get(key)
+                            if isinstance(val, str) and val:
+                                return val
+                        d = m.get("data")
+                        if isinstance(d, dict):
+                            for key in ("id", "deployId"):
+                                v = d.get(key)
+                                if isinstance(v, str) and v:
+                                    return v
+                except Exception:
+                    raise
+            # 4) If response_obj itself is a dict
+            if isinstance(response_obj, dict):
+                b = response_obj.get("body")
+                if isinstance(b, dict):
+                    if isinstance(b.get("success"), bool) and not b.get(
+                        "success",
+                    ):
+                        err_code = (
+                            b.get("errorCode") or b.get("code") or "unknown"
+                        )
+                        err_msg = b.get("errorMsg") or b.get("message") or ""
+                        raise RuntimeError(
+                            f"ModelStudio deploy failed: {err_code} {err_msg}".strip(),
+                        )
+                    for key in ("data", "result", "deployId"):
+                        val = b.get(key)
+                        if isinstance(val, str) and val:
+                            return val
+            # Fallback: return empty to avoid polluting URL with dump
+            return ""
+        except Exception:  # pragma: no cover - conservative fallback
+            # Propagate errors as empty identifier; upper layer logs/raises
+            raise
+
+    return _extract_deploy_identifier(resp)
 
 
 class ModelstudioDeployManager(LocalDeployManager):
@@ -243,13 +354,12 @@ class ModelstudioDeployManager(LocalDeployManager):
         self.modelstudio_config = (
             modelstudio_config or ModelstudioConfig.from_env()
         )
-        # Defer default build_root selection to deploy() to avoid using home by default
         self.build_root = Path(build_root) if build_root else None
 
     async def _generate_wrapper_and_build_wheel(
         self,
-        project_dir: Union[str, Path],
-        cmd: str,
+        project_dir: Union[Optional[str], Path],
+        cmd: Optional[str] = None,
         deploy_name: Optional[str] = None,
         telemetry_enabled: bool = True,
     ) -> Tuple[Path, str]:
@@ -270,17 +380,16 @@ class ModelstudioDeployManager(LocalDeployManager):
 
         name = deploy_name or default_deploy_name()
         proj_root = project_dir.resolve()
-        effective_build_root = (
-            self.build_root.resolve()
-            if isinstance(self.build_root, Path)
-            else (
-                Path(self.build_root).resolve()
-                if self.build_root
-                else (
+        if isinstance(self.build_root, Path):
+            effective_build_root = self.build_root.resolve()
+        else:
+            if self.build_root:
+                effective_build_root = Path(self.build_root).resolve()
+            else:
+                effective_build_root = (
                     proj_root.parent / ".agentscope_runtime_builds"
                 ).resolve()
-            )
-        )
+
         build_dir = effective_build_root / f"build-{int(time.time())}"
         build_dir.mkdir(parents=True, exist_ok=True)
 
@@ -322,7 +431,7 @@ class ModelstudioDeployManager(LocalDeployManager):
         project_path = Path(project_dir).resolve()
         if not project_path.exists():
             raise FileNotFoundError(
-                f"Project directory not found: " f"{project_path}"
+                f"Project directory not found: " f"{project_path}",
             )
 
         env_file_path = project_path / env_filename
@@ -363,10 +472,13 @@ class ModelstudioDeployManager(LocalDeployManager):
         wheel_path: Path,
         name: str,
         telemetry_enabled: bool = True,
-    ) -> str:
+    ) -> Tuple[str, str]:
         logger.info("Uploading wheel to OSS and generating presigned URL")
         client = _oss_get_client(self.oss_config)
-        bucket_name = "tmpbucket-for-full-code-deployment"
+        bucket_name = (
+            f"tmp-bucket-for-code-deployment-"
+            f"{os.getenv('MODELSTUDIO_WORKSPACE_ID', str(uuid.uuid4()))}"
+        )
         await _oss_create_bucket_if_not_exists(client, bucket_name)
         filename = wheel_path.name
         with wheel_path.open("rb") as f:
@@ -379,14 +491,33 @@ class ModelstudioDeployManager(LocalDeployManager):
         )
 
         logger.info("Triggering Modelstudio Full-Code deploy for %s", name)
-        await _modelstudio_deploy(
+        deploy_identifier = await _modelstudio_deploy(
             cfg=self.modelstudio_config,
             file_url=artifact_url,
             filename=filename,
             deploy_name=name,
             telemetry_enabled=telemetry_enabled,
         )
-        return artifact_url
+
+        def _build_console_url(endpoint: str, identifier: str) -> str:
+            # Map API endpoint to console domain (no fragment in base)
+            base = (
+                "https://pre-bailian.console.aliyun.com/?tab=app&efm_v=3.4.108#"
+                if ("bailian-pre" in endpoint or "pre" in endpoint)
+                else "https://bailian.console.aliyun.com/?tab=app"
+            )
+            # Optional query can be appended if needed; keep path clean
+            return f"{base}/app-center/high-code-detail/{identifier}"
+
+        console_url = (
+            _build_console_url(
+                self.modelstudio_config.endpoint,
+                deploy_identifier,
+            )
+            if deploy_identifier
+            else ""
+        )
+        return artifact_url, console_url
 
     async def deploy(
         self,
@@ -397,15 +528,13 @@ class ModelstudioDeployManager(LocalDeployManager):
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
-        base_image: str = "python:3.9-slim",
         environment: Optional[Dict[str, str]] = None,
-        runtime_config: Optional[Dict] = None,
+        # runtime_config: Optional[Dict] = None,
         # ModelStudio-specific/packaging args (required)
         project_dir: Optional[Union[str, Path]] = None,
         cmd: Optional[str] = None,
         deploy_name: Optional[str] = None,
         skip_upload: bool = False,
-        output_file: Optional[Union[str, Path]] = None,
         telemetry_enabled: bool = True,
         external_whl_path: Optional[str] = None,
         **kwargs,
@@ -416,10 +545,6 @@ class ModelstudioDeployManager(LocalDeployManager):
         Returns a dict containing deploy_id, wheel_path, artifact_url (if uploaded),
         resource_name (deploy_name), and workspace_id.
         """
-        _assert_cloud_sdks_available()
-        self.oss_config.ensure_valid()
-        self.modelstudio_config.ensure_valid()
-
         if not runner and not project_dir and not external_whl_path:
             raise ValueError("")
 
@@ -463,8 +588,13 @@ class ModelstudioDeployManager(LocalDeployManager):
                 )
 
             artifact_url = ""
+            console_url = ""
             if not skip_upload:
-                artifact_url = await self._upload_and_deploy(
+                # Only require cloud SDKs and credentials when performing upload/deploy
+                _assert_cloud_sdks_available()
+                self.oss_config.ensure_valid()
+                self.modelstudio_config.ensure_valid()
+                artifact_url, console_url = await self._upload_and_deploy(
                     wheel_path,
                     name,
                     telemetry_enabled,
@@ -476,16 +606,19 @@ class ModelstudioDeployManager(LocalDeployManager):
                 "artifact_url": artifact_url,
                 "resource_name": name,
                 "workspace_id": self.modelstudio_config.workspace_id or "",
-                "url": "",
+                "url": console_url,
             }
 
             return result
         except Exception as e:
-            logger.error("Failed to deploy to modelstudio: %s", e)
-            raise e
+            # Print richer error message to improve UX
+            err_text = str(e)
+            logger.error("Failed to deploy to modelstudio: %s", err_text)
+            print(f"[ModelStudio Deploy Error] {err_text}")
+            raise
 
-    async def stop(self) -> bool:  # pragma: no cover - not supported yet
-        return False
+    async def stop(self) -> None:  # pragma: no cover - not supported yet
+        pass
 
     def get_status(self) -> str:  # pragma: no cover - not supported yet
         return "unknown"

@@ -26,8 +26,15 @@ async def deploy_agent_to_modelstudio():
     # 1. 配置OSS
     oss_config = OSSConfig(
         region="cn-hangzhou",
-        access_key_id=os.environ.get("OSS_ACCESS_KEY_ID"),
-        access_key_secret=os.environ.get("OSS_ACCESS_KEY_SECRET"),
+        # OSS AK/SK optional; fallback to Alibaba Cloud AK/SK
+        access_key_id=os.environ.get(
+            "OSS_ACCESS_KEY_ID",
+            os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+        ),
+        access_key_secret=os.environ.get(
+            "OSS_ACCESS_KEY_SECRET",
+            os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+        ),
         bucket_prefix="tmpbucket-agentscope-runtime",
     )
 
@@ -80,8 +87,6 @@ async def deploy_agent_to_modelstudio():
             "LOG_LEVEL": "INFO",
             "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
         },
-        # 输出文件（可选）
-        "output_file": "modelstudio_deploy_result.txt",
     }
 
     try:
@@ -125,7 +130,6 @@ async def deploy_from_project_directory():
         "cmd": "python agent_run.py",  # 启动命令
         "deploy_name": "agent-llm-project",
         "telemetry_enabled": True,
-        "output_file": "project_deploy_result.txt",
     }
 
     try:
@@ -166,7 +170,6 @@ async def deploy_from_existing_wheel():
         "external_whl_path": wheel_path,
         "deploy_name": "agent-from-wheel",
         "telemetry_enabled": True,
-        "output_file": "wheel_deploy_result.txt",
     }
 
     try:
@@ -195,8 +198,7 @@ async def main():
 
     # 检查环境变量
     required_env_vars = [
-        "OSS_ACCESS_KEY_ID",
-        "OSS_ACCESS_KEY_SECRET",
+        # OSS_ creds are optional; Alibaba Cloud creds are required
         "MODELSTUDIO_WORKSPACE_ID",
         "ALIBABA_CLOUD_ACCESS_KEY_ID",
         "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
@@ -248,7 +250,7 @@ async def main():
         1. 在ModelStudio控制台检查部署状态
         2. 部署成功后，可以通过ModelStudio提供的API端点访问您的Agent
         3. 配置网关和域名（如需要）
-        """
+        """,
         )
 
     except Exception as e:

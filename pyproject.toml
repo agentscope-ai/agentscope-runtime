@@ -89,10 +89,20 @@ memory-ext = [
     "reme-ai==0.1.9 ; python_full_version >= '3.12'",
 ]
 
+
 deployment = [
     "alibabacloud-oss-v2",
-    "alibabacloud-bailian20231229",
+    "alibabacloud-bailian20231229>=2.5.0",
     "build",
-    "setuptools",
-    "wheel"
+    "setuptools>=40.8.0",
+    "wheel",
+    "steel-sdk>=0.1.0",
+    "alibabacloud-credentials",
+    "jinja2",
+    "psutil",
+    "shortuuid>=1.0.13",
+    "docker>=7.1.0",
+    "kubernetes>=33.1.0",
+    "PyYAML",
+    "oss2>=2.19.1"
 ]

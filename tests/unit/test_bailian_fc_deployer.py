@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
-import os
-import io
-import asyncio
+# pylint:disable=unused-variable
 from pathlib import Path
-from typing import Optional
 from unittest.mock import patch, MagicMock
 
 import pytest
-
 from agentscope_runtime.engine.deployers.modelstudio_deployer import (
     ModelstudioDeployManager,
     OSSConfig,
@@ -26,19 +22,23 @@ def _make_temp_project(tmp_path: Path) -> Path:
 
 @pytest.mark.asyncio
 async def test_deploy_build_only_generates_wheel_without_upload(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ):
     project_dir = _make_temp_project(tmp_path)
 
     # Avoid requiring real SDKs
     monkeypatch.setattr(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer._assert_cloud_sdks_available",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        "._assert_cloud_sdks_available",
         lambda: None,
     )
 
     # Provide valid configs to bypass ensure_valid checks
     oss_cfg = OSSConfig(
-        region="cn-hangzhou", access_key_id="id", access_key_secret="secret"
+        region="cn-hangzhou",
+        access_key_id="id",
+        access_key_secret="secret",
     )
     bailian_cfg = ModelstudioConfig(
         endpoint="bailian-pre.cn-hangzhou.aliyuncs.com",
@@ -55,7 +55,8 @@ async def test_deploy_build_only_generates_wheel_without_upload(
     fake_wheel.write_bytes(b"wheel-bytes")
 
     with patch(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer.generate_wrapper_project",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        ".generate_wrapper_project",
         return_value=(wrapper_dir, wrapper_dir / "dist"),
     ) as gen_mock, patch(
         "agentscope_runtime.engine.deployers.bailian_fc_deployer.build_wheel",
@@ -89,18 +90,22 @@ async def test_deploy_build_only_generates_wheel_without_upload(
 
 @pytest.mark.asyncio
 async def test_deploy_with_upload_calls_cloud_and_writes_output(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ):
     project_dir = _make_temp_project(tmp_path)
 
     # Avoid requiring real SDKs
     monkeypatch.setattr(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer._assert_cloud_sdks_available",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        "._assert_cloud_sdks_available",
         lambda: None,
     )
 
     oss_cfg = OSSConfig(
-        region="cn-hangzhou", access_key_id="id", access_key_secret="secret"
+        region="cn-hangzhou",
+        access_key_id="id",
+        access_key_secret="secret",
     )
     bailian_cfg = ModelstudioConfig(
         endpoint="bailian-pre.cn-hangzhou.aliyuncs.com",
@@ -115,27 +120,31 @@ async def test_deploy_with_upload_calls_cloud_and_writes_output(
     fake_wheel.parent.mkdir(parents=True, exist_ok=True)
     fake_wheel.write_bytes(b"wheel-bytes")
 
-    output_file = tmp_path / "result.txt"
-
     with patch(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer.generate_wrapper_project",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        ".generate_wrapper_project",
         return_value=(wrapper_dir, wrapper_dir / "dist"),
     ) as gen_mock, patch(
         "agentscope_runtime.engine.deployers.bailian_fc_deployer.build_wheel",
         return_value=fake_wheel,
     ) as build_mock, patch(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer._oss_get_client",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        "._oss_get_client",
         return_value=MagicMock(),
     ) as get_client_mock, patch(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer._create_bucket_name",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        "._create_bucket_name",
         return_value="bucket-xyz",
     ) as bucket_name_mock, patch(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer._oss_create_bucket_if_not_exists",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        "._oss_create_bucket_if_not_exists",
     ) as ensure_bucket_mock, patch(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer._oss_put_and_presign",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        "._oss_put_and_presign",
         return_value="https://oss/presigned",
     ) as presign_mock, patch(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer._bailian_deploy",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        "._bailian_deploy",
     ) as bailian_deploy_mock:
         deployer = ModelstudioDeployManager(
             oss_config=oss_cfg,
@@ -147,7 +156,6 @@ async def test_deploy_with_upload_calls_cloud_and_writes_output(
             cmd="python app.py",
             deploy_name="upload-deploy",
             skip_upload=False,
-            output_file=str(output_file),
             telemetry_enabled=True,
         )
 
@@ -173,24 +181,23 @@ async def test_deploy_with_upload_calls_cloud_and_writes_output(
     assert result["resource_name"] == "upload-deploy"
     assert result["wheel_path"].endswith(".whl")
 
-    # Output file written
-    content = output_file.read_text(encoding="utf-8")
-    assert "artifact_url=https://oss/presigned" in content
-    assert "resource_name=upload-deploy" in content
-
 
 @pytest.mark.asyncio
 async def test_deploy_invalid_inputs_raise(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ):
     # Avoid real SDK check to test early validation paths
     monkeypatch.setattr(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer._assert_cloud_sdks_available",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        "._assert_cloud_sdks_available",
         lambda: None,
     )
 
     oss_cfg = OSSConfig(
-        region="cn-hangzhou", access_key_id="id", access_key_secret="secret"
+        region="cn-hangzhou",
+        access_key_id="id",
+        access_key_secret="secret",
     )
     bailian_cfg = ModelstudioConfig(
         endpoint="bailian-pre.cn-hangzhou.aliyuncs.com",
@@ -205,12 +212,19 @@ async def test_deploy_invalid_inputs_raise(
     )
 
     with pytest.raises(ValueError):
-        await deployer.deploy(project_dir=None, cmd="python app.py")  # type: ignore
+        await deployer.deploy(
+            project_dir=None,
+            cmd="python app.py",
+        )  # type: ignore
 
     with pytest.raises(ValueError):
-        await deployer.deploy(project_dir=str(tmp_path), cmd=None)  # type: ignore
+        await deployer.deploy(
+            project_dir=str(tmp_path),
+            cmd=None,
+        )  # type: ignore
 
     with pytest.raises(FileNotFoundError):
         await deployer.deploy(
-            project_dir=str(tmp_path / "missing"), cmd="python app.py"
+            project_dir=str(tmp_path / "missing"),
+            cmd="python app.py",
         )
