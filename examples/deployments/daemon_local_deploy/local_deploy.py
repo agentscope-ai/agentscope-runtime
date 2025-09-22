@@ -63,34 +63,34 @@ async def create_runner():
                 context_manager=context_manager,
                 environment_manager=env_manager,
             )
-            print("✅ Runner创建成功")
+            print("✅ Runner created successfully")
             yield runner
 
 
 async def deploy_agent(runner):
-    # 创建部署管理器
+    # Create deployment manager
     deploy_manager = LocalDeployManager(
         host="localhost",
         port=8090,
     )
 
-    # 将智能体部署为流式服务
+    # Deploy agent as streaming service
     deploy_result = await runner.deploy(
         deploy_manager=deploy_manager,
         endpoint_path="/process",
         stream=True,  # Enable streaming responses
     )
-    print(f"🚀智能体部署在: {deploy_result}")
-    print(f"🌐服务URL: {deploy_result['url']}")
-    print(f"💚 健康检查: {deploy_result['url']}/health")
+    print(f"🚀 Agent deployed at: {deploy_result}")
+    print(f"🌐 Service URL: {deploy_result['url']}")
+    print(f"💚 Health check: {deploy_result['url']}/health")
     print(
         f"""
-    🎯 服务已部署完成，可以使用以下命令测试:
+    🎯 Service deployment completed, you can test with the following commands:
 
-    # 健康检查
+    # Health check
     curl {deploy_result['url']}/health
 
-    # 流式请求
+    # Streaming request
     curl -X POST {deploy_result['url']}/process \\
       -H "Content-Type: application/json" \\
       -H "Accept: text/event-stream" \\

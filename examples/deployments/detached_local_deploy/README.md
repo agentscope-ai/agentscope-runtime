@@ -1,75 +1,75 @@
 # Detached Local Deploy Example
 
-这个示例展示了如何使用 AgentScope Runtime 将 Agent 部署为独立进程服务。
+This example demonstrates how to deploy an Agent as a detached process service using AgentScope Runtime.
 
-## 文件说明
+## File Description
 
-- `agent_run.py` - Agent 定义，使用 QwenLLM
-- `quick_deploy.py` - 快速部署脚本，用于简单测试
+- `agent_run.py` - Agent definition using QwenLLM
+- `quick_deploy.py` - Quick deployment script for simple testing
 
-## 独立进程部署的特点
+## Features of Detached Process Deployment
 
-1. **独立运行**: 服务在独立进程中运行，主程序可以退出
-2. **进程管理**: 支持进程状态查询和远程关闭
-3. **配置化服务**: 支持 InMemory 和 Redis 服务配置
-4. **统一API**: 与其他部署模式使用相同的 FastAPI 架构
+1. **Independent Execution**: Service runs in a separate process, main program can exit
+2. **Process Management**: Supports process status queries and remote shutdown
+3. **Configurable Services**: Supports InMemory and Redis service configurations
+4. **Unified API**: Uses the same FastAPI architecture as other deployment modes
 
-## 环境准备
+## Environment Setup
 
 ```bash
-# 设置 API Key
+# Set API Key
 export DASHSCOPE_API_KEY="your_qwen_api_key"
 
-# 可选：使用 Redis 服务
+# Optional: Use Redis service
 export USE_REDIS=true
 export REDIS_HOST=localhost
 export REDIS_PORT=6379
 ```
 
-## 使用方法
+## Usage
 
-### 1. 完整示例（推荐）
+### 1. Complete Example (Recommended)
 
 ```bash
 python deploy_detached.py
 ```
 
-这个脚本提供完整的部署生命周期管理：
-- 自动部署 Agent 到独立进程
-- 测试服务功能
-- 交互式管理界面
-- 优雅停止服务
+This script provides complete deployment lifecycle management:
+- Automatically deploy Agent to detached process
+- Test service functionality
+- Interactive management interface
+- Graceful service shutdown
 
-### 2. 快速测试
+### 2. Quick Testing
 
 ```bash
 python quick_deploy.py
 ```
 
-用于快速部署测试，适合开发调试。
+For quick deployment testing, suitable for development and debugging.
 
-## API 端点
+## API Endpoints
 
-部署成功后，服务将提供以下端点：
+After successful deployment, the service will provide the following endpoints:
 
-### 基础端点
-- `GET /` - 服务信息
-- `GET /health` - 健康检查
-- `POST /process` - 标准对话接口
-- `POST /process/stream` - 流式对话接口
+### Basic Endpoints
+- `GET /` - Service information
+- `GET /health` - Health check
+- `POST /process` - Standard conversation interface
+- `POST /process/stream` - Streaming conversation interface
 
-### 独立进程管理端点
-- `GET /admin/status` - 进程状态信息
-- `POST /admin/shutdown` - 远程关闭服务
+### Detached Process Management Endpoints
+- `GET /admin/status` - Process status information
+- `POST /admin/shutdown` - Remote service shutdown
 
-## 测试命令
+## Test Commands
 
-### 健康检查
+### Health Check
 ```bash
 curl http://127.0.0.1:8080/health
 ```
 
-### 流式请求
+### Streaming Request
 ```bash
 curl -X POST http://127.0.0.1:8080/process \
   -H "Content-Type: application/json" \
@@ -90,32 +90,32 @@ curl -X POST http://127.0.0.1:8080/process \
   }'
 ```
 
-### 进程管理
+### Process Management
 ```bash
-# 查看进程状态
+# Check process status
 curl http://127.0.0.1:8080/admin/status
 
-# 停止服务
+# Stop service
 curl -X POST http://127.0.0.1:8080/admin/shutdown
 ```
 
-## 配置选项
+## Configuration Options
 
-### 服务配置
-可以通过环境变量配置不同的服务提供商：
+### Service Configuration
+You can configure different service providers through environment variables:
 
 ```bash
-# 使用 Redis
+# Use Redis
 export MEMORY_PROVIDER=redis
 export SESSION_HISTORY_PROVIDER=redis
 export REDIS_HOST=localhost
 export REDIS_PORT=6379
 
-# 使用配置文件
+# Use configuration file
 export AGENTSCOPE_SERVICES_CONFIG=/path/to/services_config.json
 ```
 
-### 服务配置文件示例
+### Service Configuration File Example
 ```json
 {
   "memory": {
@@ -137,36 +137,36 @@ export AGENTSCOPE_SERVICES_CONFIG=/path/to/services_config.json
 }
 ```
 
-## 注意事项
+## Important Notes
 
-1. **进程管理**: 独立进程需要手动停止或使用管理接口停止
-2. **监控**: 生产环境建议配置适当的进程监控和日志
-3. **安全**: 管理接口应该限制访问权限
-4. **资源**: 独立进程会消耗额外的内存和CPU资源
+1. **Process Management**: Detached processes need to be stopped manually or using management interface
+2. **Monitoring**: Production environments should configure appropriate process monitoring and logging
+3. **Security**: Management interfaces should have restricted access permissions
+4. **Resources**: Detached processes consume additional memory and CPU resources
 
-## 故障排除
+## Troubleshooting
 
-### 端口被占用
+### Port Already in Use
 ```bash
-# 检查端口占用
+# Check port usage
 lsof -i :8080
 
-# 或者更换端口
-python deploy_detached.py  # 修改脚本中的 port 参数
+# Or change port
+python deploy_detached.py  # Modify port parameter in script
 ```
 
-### 进程清理
-如果服务异常退出，可能需要手动清理：
+### Process Cleanup
+If service exits abnormally, manual cleanup may be needed:
 ```bash
-# 查找进程
+# Find process
 ps aux | grep "agentscope"
 
-# 终止进程
+# Terminate process
 kill -TERM <pid>
 ```
 
-### 日志查看
-独立进程模式的日志输出会重定向，可以通过以下方式查看：
-- 检查 `/tmp/agentscope_runtime_*.log` (如果有日志文件)
-- 使用进程状态接口查看运行状态
-- 检查系统日志
+### Log Viewing
+Log output in detached process mode is redirected, you can view it through:
+- Check `/tmp/agentscope_runtime_*.log` (if log files exist)
+- Use process status interface to check running status
+- Check system logs

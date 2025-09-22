@@ -21,9 +21,9 @@ load_dotenv(".env")
 
 
 async def deploy_agent_to_modelstudio():
-    """部署agent到阿里云ModelStudio"""
+    """Deploy agent to Alibaba Cloud ModelStudio"""
 
-    # 1. 配置OSS
+    # 1. Configure OSS
     oss_config = OSSConfig(
         region="cn-hangzhou",
         access_key_id=os.environ.get("OSS_ACCESS_KEY_ID"),
@@ -31,7 +31,7 @@ async def deploy_agent_to_modelstudio():
         bucket_prefix="tmpbucket-agentscope-runtime",
     )
 
-    # 2. 配置ModelStudio
+    # 2. Configure ModelStudio
     modelstudio_config = ModelstudioConfig(
         endpoint="bailian-pre.cn-hangzhou.aliyuncs.com",
         workspace_id=os.environ.get("MODELSTUDIO_WORKSPACE_ID"),
@@ -40,27 +40,27 @@ async def deploy_agent_to_modelstudio():
         dashscope_api_key=os.environ.get("DASHSCOPE_API_KEY"),
     )
 
-    # 3. 创建ModelstudioDeployManager
+    # 3. Create ModelstudioDeployManager
     deployer = ModelstudioDeployManager(
         oss_config=oss_config,
         modelstudio_config=modelstudio_config,
     )
 
-    # 4. 创建Runner
+    # 4. Create Runner
     runner = Runner(
         agent=llm_agent,
-        # environment_manager=None,  # 可选
-        # context_manager=None       # 可选
+        # environment_manager=None,  # Optional
+        # context_manager=None       # Optional
     )
 
-    # 5. 部署配置
+    # 5. Deployment configuration
     deployment_config = {
-        # 基础配置
+        # Basic configuration
         "endpoint_path": "/process",
         "stream": True,
         "deploy_name": "agent-llm-example",
         "telemetry_enabled": True,
-        # 依赖配置
+        # Dependencies configuration
         "requirements": [
             "agentscope",
             "fastapi",
@@ -74,43 +74,43 @@ async def deploy_agent_to_modelstudio():
                 "other_project.py",
             ),
         ],
-        # 环境变量
+        # Environment variables
         "environment": {
             "PYTHONPATH": "/app",
             "LOG_LEVEL": "INFO",
             "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
         },
-        # 输出文件（可选）
+        # Output file (optional)
         "output_file": "modelstudio_deploy_result.txt",
     }
 
     try:
-        print("🚀 开始部署Agent到阿里云ModelStudio...")
+        print("🚀 Starting Agent deployment to Alibaba Cloud ModelStudio...")
 
-        # 6. 执行部署
+        # 6. Execute deployment
         result = await runner.deploy(
             deploy_manager=deployer,
             **deployment_config,
         )
 
-        print("✅ 部署成功！")
-        print(f"📍 部署ID: {result['deploy_id']}")
-        print(f"📦 Wheel路径: {result['wheel_path']}")
-        print(f"🌐 OSS文件URL: {result['artifact_url']}")
-        print(f"🏷️ 资源名称: {result['resource_name']}")
-        print(f"🏢 工作空间ID: {result['workspace_id']}")
+        print("✅ Deployment successful!")
+        print(f"📍 Deployment ID: {result['deploy_id']}")
+        print(f"📦 Wheel path: {result['wheel_path']}")
+        print(f"🌐 OSS file URL: {result['artifact_url']}")
+        print(f"🏷️ Resource name: {result['resource_name']}")
+        print(f"🏢 Workspace ID: {result['workspace_id']}")
 
         return result, deployer
 
     except Exception as e:
-        print(f"❌ 部署失败: {e}")
+        print(f"❌ Deployment failed: {e}")
         raise
 
 
 async def deploy_from_project_directory():
-    """从项目目录直接部署（不使用Runner）"""
+    """Deploy directly from project directory (without using Runner)"""
 
-    # 配置
+    # Configuration
     oss_config = OSSConfig.from_env()
     modelstudio_config = ModelstudioConfig.from_env()
 
@@ -119,38 +119,40 @@ async def deploy_from_project_directory():
         modelstudio_config=modelstudio_config,
     )
 
-    # 项目部署配置
+    # Project deployment configuration
     project_config = {
-        "project_dir": os.path.dirname(__file__),  # 当前目录作为项目目录
-        "cmd": "python agent_run.py",  # 启动命令
+        "project_dir": os.path.dirname(
+            __file__,
+        ),  # Current directory as project directory
+        "cmd": "python agent_run.py",  # Startup command
         "deploy_name": "agent-llm-project",
         "telemetry_enabled": True,
         "output_file": "project_deploy_result.txt",
     }
 
     try:
-        print("🚀 开始从项目目录部署到ModelStudio...")
+        print("🚀 Starting deployment from project directory to ModelStudio...")
 
         result = await deployer.deploy(**project_config)
 
-        print("✅ 项目部署成功！")
-        print(f"📍 部署ID: {result['deploy_id']}")
-        print(f"📦 Wheel路径: {result['wheel_path']}")
-        print(f"🌐 OSS文件URL: {result['artifact_url']}")
-        print(f"🏷️ 资源名称: {result['resource_name']}")
-        print(f"🏢 工作空间ID: {result['workspace_id']}")
+        print("✅ Project deployment successful!")
+        print(f"📍 Deployment ID: {result['deploy_id']}")
+        print(f"📦 Wheel path: {result['wheel_path']}")
+        print(f"🌐 OSS file URL: {result['artifact_url']}")
+        print(f"🏷️ Resource name: {result['resource_name']}")
+        print(f"🏢 Workspace ID: {result['workspace_id']}")
 
         return result, deployer
 
     except Exception as e:
-        print(f"❌ 项目部署失败: {e}")
+        print(f"❌ Project deployment failed: {e}")
         raise
 
 
 async def deploy_from_existing_wheel():
-    """从已有的wheel文件部署"""
+    """Deploy from existing wheel file"""
 
-    # 配置
+    # Configuration
     oss_config = OSSConfig.from_env()
     modelstudio_config = ModelstudioConfig.from_env()
 
@@ -159,7 +161,7 @@ async def deploy_from_existing_wheel():
         modelstudio_config=modelstudio_config,
     )
 
-    # 假设有一个已经构建好的wheel文件
+    # Assume there's an already built wheel file
     wheel_path = "/path/to/your/agent-1.0.0-py3-none-any.whl"
 
     wheel_config = {
@@ -170,30 +172,30 @@ async def deploy_from_existing_wheel():
     }
 
     try:
-        print("🚀 开始从Wheel文件部署到ModelStudio...")
+        print("🚀 Starting deployment from Wheel file to ModelStudio...")
 
         result = await deployer.deploy(**wheel_config)
 
-        print("✅ Wheel部署成功！")
-        print(f"📍 部署ID: {result['deploy_id']}")
-        print(f"📦 Wheel路径: {result['wheel_path']}")
-        print(f"🌐 OSS文件URL: {result['artifact_url']}")
-        print(f"🏷️ 资源名称: {result['resource_name']}")
-        print(f"🏢 工作空间ID: {result['workspace_id']}")
+        print("✅ Wheel deployment successful!")
+        print(f"📍 Deployment ID: {result['deploy_id']}")
+        print(f"📦 Wheel path: {result['wheel_path']}")
+        print(f"🌐 OSS file URL: {result['artifact_url']}")
+        print(f"🏷️ Resource name: {result['resource_name']}")
+        print(f"🏢 Workspace ID: {result['workspace_id']}")
 
         return result, deployer
 
     except Exception as e:
-        print(f"❌ Wheel部署失败: {e}")
+        print(f"❌ Wheel deployment failed: {e}")
         raise
 
 
 async def main():
-    """主函数 - 演示不同的部署方式"""
-    print("🎯 ModelStudio部署示例")
+    """Main function - demonstrates different deployment methods"""
+    print("🎯 ModelStudio Deployment Example")
     print("=" * 50)
 
-    # 检查环境变量
+    # Check environment variables
     required_env_vars = [
         "OSS_ACCESS_KEY_ID",
         "OSS_ACCESS_KEY_SECRET",
@@ -207,18 +209,20 @@ async def main():
         var for var in required_env_vars if not os.environ.get(var)
     ]
     if missing_vars:
-        print(f"❌ 缺少必需的环境变量: {', '.join(missing_vars)}")
-        print("\n请设置以下环境变量:")
+        print(
+            f"Missing required environment vars: {', '.join(missing_vars)}",
+        )
+        print("\nPlease set the following environment variables:")
         for var in missing_vars:
             print(f"export {var}=your_value")
         return
 
     deployment_type = input(
-        "\n选择部署方式:\n"
-        "1. 使用Runner部署 (推荐)\n"
-        "2. 从项目目录直接部署\n"
-        "3. 从已有Wheel文件部署\n"
-        "请输入选择 (1-3): ",
+        "\nChoose deployment method:\n"
+        "1. Deploy using Runner (Recommended)\n"
+        "2. Deploy directly from project directory\n"
+        "3. Deploy from existing Wheel file\n"
+        "Please enter your choice (1-3): ",
     ).strip()
 
     try:
@@ -229,35 +233,37 @@ async def main():
         elif deployment_type == "3":
             result, deployer = await deploy_from_existing_wheel()
         else:
-            print("❌ 无效选择")
+            print("❌ Invalid choice")
             return
-
+        print(f"deployer type: {deployer}")
         print(
             f"""
-        🎯 部署完成！详细信息已保存到输出文件。
+        Deployment completed! Detailed information has been
+        saved to the output file.
 
-        📝 部署信息:
-        - 部署ID: {result['deploy_id']}
-        - 资源名称: {result['resource_name']}
-        - 工作空间ID: {result['workspace_id']}
+        📝 Deployment Information:
+        - Deployment ID: {result['deploy_id']}
+        - Resource Name: {result['resource_name']}
+        - Workspace ID: {result['workspace_id']}
 
-        🔗 在ModelStudio控制台查看部署状态:
+        🔗 Check deployment status in ModelStudio console:
         https://bailian.console.aliyun.com/workspace/{result['workspace_id']}/high-code-deploy
 
-        📋 下一步:
-        1. 在ModelStudio控制台检查部署状态
-        2. 部署成功后，可以通过ModelStudio提供的API端点访问您的Agent
-        3. 配置网关和域名（如需要）
-        """
+        📋 Next Steps:
+        1. Check deployment status in ModelStudio console
+        2. After successful deployment, you can access your Agent through the
+         API endpoint provided by ModelStudio
+        3. Configure gateway and domain name (if needed)
+        """,
         )
 
     except Exception as e:
-        print(f"❌ 执行过程中出现错误: {e}")
+        print(f"❌ Error occurred during execution: {e}")
         import traceback
 
         traceback.print_exc()
 
 
 if __name__ == "__main__":
-    # 运行部署
+    # Run deployment
     asyncio.run(main())
