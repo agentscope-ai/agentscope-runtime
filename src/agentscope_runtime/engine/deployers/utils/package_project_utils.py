@@ -7,17 +7,58 @@ import ast
 import hashlib
 import inspect
 import os
+import re
 import shutil
 import tarfile
 import tempfile
+from pathlib import Path
 from typing import List, Optional, Any, Tuple
 
 from pydantic import BaseModel
+
+try:
+    import tomllib  # Python 3.11+
+except ImportError:
+    try:
+        import tomli as tomllib  # type: ignore[no-redef]
+    except ImportError:
+        tomllib = None
 
 from .service_utils.fastapi_templates import FastAPITemplateManager
 from .service_utils.service_config import ServicesConfig
 
 # Default template will be loaded from template file
+
+
+def _get_package_version() -> str:
+    """
+    Get the package version from pyproject.toml file.
+
+    Returns:
+        str: The version string, or empty string if not found
+    """
+    # Try to find pyproject.toml in the current directory and parent
+    # directories
+    current_dir = Path(__file__).parent
+    for _ in range(6):  # Look up to 6 levels up
+        pyproject_path = current_dir / "pyproject.toml"
+        if pyproject_path.exists():
+            break
+        current_dir = current_dir.parent
+    else:
+        # Also try the current working directory
+        pyproject_path = Path(os.getcwd()) / "pyproject.toml"
+        if not pyproject_path.exists():
+            return ""
+
+    try:
+        # Use tomllib to parse
+        with open(pyproject_path, "rb") as f:
+            data = tomllib.load(f)
+        project = data.get("project", {})
+        return project.get("version", "")
+    except Exception:
+        return ""
 
 
 class PackageConfig(BaseModel):
@@ -107,8 +148,6 @@ def _find_agent_source_file(
 
             # Check if this file contains an import statement for the agent
             # If so, we should look for the original source file
-            import re
-
             import_patterns = [
                 rf"^[^\#]*from\s+(\w+)\s+import\s+.*"
                 rf"{re.escape(agent_name_in_file)}",
@@ -729,36 +768,46 @@ def package_project(
             f.write(main_content)
 
         # Generate requirements.txt with unified dependencies
-        if config.requirements:
-            requirements_path = os.path.join(temp_dir, "requirements.txt")
-            with open(requirements_path, "w", encoding="utf-8") as f:
-                # Add base requirements for the unified runtime
+        requirements_path = os.path.join(temp_dir, "requirements.txt")
+        with open(requirements_path, "w", encoding="utf-8") as f:
+            # Get the current package version
+            package_version = _get_package_version()
+
+            # Add base requirements for the unified runtime
+            if package_version:
+                base_requirements = [
+                    "fastapi",
+                    "uvicorn",
+                    f"agentscope-runtime=={package_version}",
+                    f"agentscope-runtime[sandbox]=={package_version}",
+                    f"agentscope-runtime[deployment]=={package_version}",
+                    "pydantic",
+                    "jinja2",  # For template rendering
+                    "psutil",
+                    "redis",  # For process management
+                ]
+            else:
+                # Fallback to unversioned if version cannot be determined
                 base_requirements = [
                     "fastapi",
                     "uvicorn",
                     "agentscope-runtime",
                     "agentscope-runtime[sandbox]",
+                    "agentscope-runtime[deployment]",
                     "pydantic",
                     "jinja2",  # For template rendering
                     "psutil",  # For process management
+                    "redis",  # For process management
                 ]
+            if not config.requirements:
+                config.requirements = []
 
-                # Add optional requirements based on configuration
-                if config.services_config:
-                    # Check if Redis services are configured
-                    services = config.services_config
-                    if any(
-                        service.provider == "redis" for service in services
-                    ):
-                        base_requirements.append("redis")
-
-                # Combine base requirements with user requirements
-                all_requirements = sorted(
-                    list(set(base_requirements + config.requirements)),
-                )
-
-                for req in all_requirements:
-                    f.write(f"{req}\n")
+            # Combine base requirements with user requirements
+            all_requirements = sorted(
+                list(set(base_requirements + config.requirements)),
+            )
+            for req in all_requirements:
+                f.write(f"{req}\n")
 
         # Generate services configuration file if specified
         if config.services_config:
