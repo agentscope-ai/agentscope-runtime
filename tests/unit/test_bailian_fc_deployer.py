@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=unused-variable
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
@@ -28,7 +29,8 @@ async def test_deploy_build_only_generates_wheel_without_upload(
 
     # Avoid requiring real SDKs
     monkeypatch.setattr(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer._assert_cloud_sdks_available",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        "._assert_cloud_sdks_available",
         lambda: None,
     )
 
@@ -53,7 +55,8 @@ async def test_deploy_build_only_generates_wheel_without_upload(
     fake_wheel.write_bytes(b"wheel-bytes")
 
     with patch(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer.generate_wrapper_project",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        ".generate_wrapper_project",
         return_value=(wrapper_dir, wrapper_dir / "dist"),
     ) as gen_mock, patch(
         "agentscope_runtime.engine.deployers.bailian_fc_deployer.build_wheel",
@@ -94,7 +97,8 @@ async def test_deploy_with_upload_calls_cloud_and_writes_output(
 
     # Avoid requiring real SDKs
     monkeypatch.setattr(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer._assert_cloud_sdks_available",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        "._assert_cloud_sdks_available",
         lambda: None,
     )
 
@@ -117,24 +121,30 @@ async def test_deploy_with_upload_calls_cloud_and_writes_output(
     fake_wheel.write_bytes(b"wheel-bytes")
 
     with patch(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer.generate_wrapper_project",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        ".generate_wrapper_project",
         return_value=(wrapper_dir, wrapper_dir / "dist"),
     ) as gen_mock, patch(
         "agentscope_runtime.engine.deployers.bailian_fc_deployer.build_wheel",
         return_value=fake_wheel,
     ) as build_mock, patch(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer._oss_get_client",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        "._oss_get_client",
         return_value=MagicMock(),
     ) as get_client_mock, patch(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer._create_bucket_name",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        "._create_bucket_name",
         return_value="bucket-xyz",
     ) as bucket_name_mock, patch(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer._oss_create_bucket_if_not_exists",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        "._oss_create_bucket_if_not_exists",
     ) as ensure_bucket_mock, patch(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer._oss_put_and_presign",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        "._oss_put_and_presign",
         return_value="https://oss/presigned",
     ) as presign_mock, patch(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer._bailian_deploy",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        "._bailian_deploy",
     ) as bailian_deploy_mock:
         deployer = ModelstudioDeployManager(
             oss_config=oss_cfg,
@@ -179,7 +189,8 @@ async def test_deploy_invalid_inputs_raise(
 ):
     # Avoid real SDK check to test early validation paths
     monkeypatch.setattr(
-        "agentscope_runtime.engine.deployers.bailian_fc_deployer._assert_cloud_sdks_available",
+        "agentscope_runtime.engine.deployers.bailian_fc_deployer"
+        "._assert_cloud_sdks_available",
         lambda: None,
     )
 
@@ -201,10 +212,16 @@ async def test_deploy_invalid_inputs_raise(
     )
 
     with pytest.raises(ValueError):
-        await deployer.deploy(project_dir=None, cmd="python app.py")  # type: ignore
+        await deployer.deploy(
+            project_dir=None,
+            cmd="python app.py",
+        )  # type: ignore
 
     with pytest.raises(ValueError):
-        await deployer.deploy(project_dir=str(tmp_path), cmd=None)  # type: ignore
+        await deployer.deploy(
+            project_dir=str(tmp_path),
+            cmd=None,
+        )  # type: ignore
 
     with pytest.raises(FileNotFoundError):
         await deployer.deploy(

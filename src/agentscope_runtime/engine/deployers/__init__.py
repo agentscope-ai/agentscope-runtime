@@ -11,5 +11,6 @@ from .modelstudio_deployer import (
 __all__ = [
     "DeployManager",
     "LocalDeployManager",
-    "KubernetesDeployer",
+    "KubernetesDeployManager",
+    "ModelstudioDeployManager",
 ]

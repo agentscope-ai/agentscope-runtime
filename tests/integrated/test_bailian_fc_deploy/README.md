@@ -17,18 +17,21 @@ pip install agentscope-runtime && pip install "agentscope-runtime[deployment]"
 
 - Set the required environment variables:
 ```bash
-export ALIBABA_CLOUD_ACCESS_KEY_ID=...
-export ALIBABA_CLOUD_ACCESS_KEY_SECRET=...
-export MODELSTUDIO_WORKSPACE_ID=...
+export ALIBABA_CLOUD_ACCESS_KEY_ID=...            # Your Alibaba Cloud AccessKey
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET=...        # Your Alibaba Cloud AccessKey Secret
+export MODELSTUDIO_WORKSPACE_ID=...               # Your ModelStudio workspace ID
 
-# Optional: if you prefer separate OSS AK/SK (otherwise will fallback to Alibaba Cloud AK/SK)
-# export OSS_ACCESS_KEY_ID=...
-# export OSS_ACCESS_KEY_SECRET=...
-# export OSS_REGION=cn-hangzhou
+# Optional: If you prefer to use separate OSS AK/SK, set the following.
+# If not set, the Alibaba Cloud AK/SK above will be used. Ensure the account has OSS read/write permissions.
+export OSS_ACCESS_KEY_ID=...
+export OSS_ACCESS_KEY_SECRET=...
+export OSS_REGION=cn-beijing
 ```
 
 #### Quick start (CLI)
 Once installed, you can run a short command anywhere to package and deploy your project.
+
+Ensure the health check endpoint at `localhost:8080/health` is healthy.
 
 ```bash
 # Build only (no upload/deploy)
@@ -75,7 +78,6 @@ async def main():
         cmd="python app.py",
         deploy_name=None,  # optional, auto-generated if None
         skip_upload=False,  # set True to only build the wheel
-        output_file="fc_deploy.txt",  # optional
         telemetry_enabled=True,  # or False
     )
     print(result)
@@ -86,6 +88,6 @@ asyncio.run(main())
 
 #### Notes
 - The wrapper wheel contains your source tree under `deploy_starter/user_bundle`, plus minimal boot logic to run your `CMD` inside that directory at runtime.
-- Uploading to OSS and invoking Bailian HighCode deployment require the Alibaba Cloud SDKs installed locally.
+- You can run `python main.py` under the `deploy_starter` path to validate the build result behaves the same as your original service.
 
 

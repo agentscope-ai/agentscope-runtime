@@ -10,13 +10,15 @@ from .utils.wheel_packager import build_wheel
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="One-click deploy your service to Alibaba Bailian Function Compute (FC)",
+        description="One-click deploy your service to Alibaba Bailian "
+        "Function Compute (FC)",
     )
     parser.add_argument(
         "--mode",
         choices=["wrapper", "native"],
         default="wrapper",
-        help="Build mode: wrapper (default) packages your project into a starter; native builds your current project directly.",
+        help="Build mode: wrapper (default) packages your project into a "
+        "starter; native builds your current project directly.",
     )
     parser.add_argument(
         "--whl-path",
@@ -32,7 +34,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--cmd",
         default=None,
-        help="Command to start your service (wrapper mode), e.g., 'python app.py'",
+        help="Command to start your service (wrapper mode), e.g., 'python "
+        "app.py'",
     )
     parser.add_argument(
         "--deploy-name",
@@ -52,12 +55,6 @@ def _parse_args() -> argparse.Namespace:
         help="Enable or disable telemetry (default: enable)",
     )
     parser.add_argument(
-        "--output-file",
-        dest="output_file",
-        default="fc_deploy.txt",
-        help="Write deploy result key=value lines to a txt file",
-    )
-    parser.add_argument(
         "--build-root",
         dest="build_root",
         default=None,
@@ -74,7 +71,6 @@ async def _run(
     deploy_name: Optional[str],
     skip_upload: bool,
     telemetry_enabled: bool,
-    output_file: Optional[str],
     build_root: Optional[str],
     mode: str,
     whl_path: Optional[str],
@@ -89,7 +85,6 @@ async def _run(
             cmd=None,
             deploy_name=deploy_name,
             skip_upload=skip_upload,
-            output_file=output_file,
             telemetry_enabled=telemetry_enabled,
             external_whl_path=whl_path,
             agent_id=agent_id,
@@ -105,7 +100,6 @@ async def _run(
             cmd=None,
             deploy_name=deploy_name,
             skip_upload=skip_upload,
-            output_file=output_file,
             telemetry_enabled=telemetry_enabled,
             external_whl_path=str(built_whl),
             agent_id=agent_id,
@@ -115,14 +109,14 @@ async def _run(
     # wrapper mode (default): require dir and cmd
     if not dir_path or not cmd:
         raise SystemExit(
-            "In wrapper mode, --dir and --cmd are required. Alternatively use --mode native or --whl-path.",
+            "In wrapper mode, --dir and --cmd are required. Alternatively "
+            "use --mode native or --whl-path.",
         )
     return await deployer.deploy(
         project_dir=dir_path,
         cmd=cmd,
         deploy_name=deploy_name,
         skip_upload=skip_upload,
-        output_file=output_file,
         telemetry_enabled=telemetry_enabled,
         agent_id=agent_id,
         agent_desc=agent_desc,
@@ -139,7 +133,6 @@ def main() -> None:
             deploy_name=args.deploy_name,
             skip_upload=args.skip_upload,
             telemetry_enabled=telemetry_enabled,
-            output_file=args.output_file,
             build_root=args.build_root,
             mode=args.mode,
             whl_path=args.whl_path,
@@ -154,8 +147,6 @@ def main() -> None:
     print("Resource Name:", result.get("resource_name"))
     if result.get("workspace_id"):
         print("Workspace:", result.get("workspace_id"))
-    if args.output_file:
-        print("Result written to:", args.output_file)
     if result.get("url"):
         print("Console Url:", result.get("url"))
 

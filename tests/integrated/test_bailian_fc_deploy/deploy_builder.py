@@ -17,7 +17,8 @@ def run(
     telemetry_enabled: bool = True,
 ) -> Path:
     """
-    Backward compatible helper that builds the wheel (and optionally uploads/deploys)
+    Backward compatible helper that builds
+    the wheel (and optionally uploads/deploys)
     and returns the wheel path.
     """
     deployer = ModelstudioDeployManager()
@@ -35,7 +36,8 @@ def run(
 
 def main_cli():
     parser = argparse.ArgumentParser(
-        description="Package and deploy a Python project into AgentDev starter template (Bailian FC)",
+        description="Package and deploy a Python project "
+        "into AgentDev starter template (Bailian FC)",
     )
     parser.add_argument(
         "--dir",
@@ -65,12 +67,6 @@ def main_cli():
         default="enable",
         help="Enable or disable telemetry (default: enable)",
     )
-    parser.add_argument(
-        "--output-file",
-        dest="output_file",
-        default="fc_deploy.txt",
-        help="Write deploy result key=value lines to a txt file",
-    )
 
     args = parser.parse_args()
 
@@ -83,7 +79,6 @@ def main_cli():
             cmd=args.cmd,
             deploy_name=args.deploy_name,
             skip_upload=args.skip_upload,
-            output_file=args.output_file,
             telemetry_enabled=telemetry_enabled,
         ),
     )
@@ -95,8 +90,6 @@ def main_cli():
     print("Resource Name:", result.get("resource_name"))
     if result.get("workspace_id"):
         print("Workspace:", result.get("workspace_id"))
-    if args.output_file:
-        print("Result written to:", args.output_file)
 
 
 if __name__ == "__main__":
