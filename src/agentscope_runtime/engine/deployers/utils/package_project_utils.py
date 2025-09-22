@@ -15,14 +15,6 @@ from typing import List, Optional, Any, Tuple
 
 from pydantic import BaseModel
 
-try:
-    import tomllib  # Python 3.11+
-except ImportError:
-    try:
-        import tomli as tomllib  # type: ignore[no-redef]
-    except ImportError:
-        tomllib = None
-
 from .service_utils.fastapi_templates import FastAPITemplateManager
 from .service_utils.service_config import ServicesConfig
 
@@ -51,23 +43,15 @@ def _get_package_version() -> str:
             return ""
 
     try:
-        if tomllib is None:
-            # Fallback: read as text and parse manually
-            with open(pyproject_path, "r", encoding="utf-8") as f:
-                content = f.read()
-            # Simple regex to find version = "x.y.z"
-            import re
+        with open(pyproject_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        # Simple regex to find version = "x.y.z"
+        import re
 
-            match = re.search(r'version = "([^"]+)"', content)
-            if match:
-                return match.group(1)
-            return ""
-        else:
-            # Use tomllib to parse
-            with open(pyproject_path, "rb") as f:
-                data = tomllib.load(f)
-            project = data.get("project", {})
-            return project.get("version", "")
+        match = re.search(r'version = "([^"]+)"', content)
+        if match:
+            return match.group(1)
+        return ""
     except Exception:
         return ""
 
