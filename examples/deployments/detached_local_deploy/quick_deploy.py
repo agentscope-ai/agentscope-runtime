@@ -26,7 +26,7 @@ from agent_run import llm_agent  # noqa: E402
 async def quick_deploy():
     """Quick deployment for testing purposes."""
 
-    print("🚀 快速部署测试...")
+    print("🚀 Quick deployment test...")
     a2a_protocol = A2AFastAPIDefaultAdapter(agent=llm_agent)
 
     # Create deployment manager
@@ -46,17 +46,17 @@ async def quick_deploy():
         mode=DeploymentMode.DETACHED_PROCESS,
         protocol_adapters=[a2a_protocol],
     )
-    print(f"✅ 部署成功: {deployment_info['url']}")
-    print(f"📍 部署ID: {deployment_info['deploy_id']}")
+    print(f"✅ Deployment successful: {deployment_info['url']}")
+    print(f"📍 Deployment ID: {deployment_info['deploy_id']}")
 
     print(
         f"""
-🎯 服务已启动，可以使用以下命令测试:
+🎯 Service started, you can test with the following commands:
 
-# 健康检查
+# Health check
 curl {deployment_info['url']}/health
 
-# 流式请求
+# Streaming request
 curl -X POST {deployment_info['url']}/process \\
   -H "Content-Type: application/json" \\
   -H "Accept: text/event-stream" \\
@@ -76,10 +76,11 @@ curl -X POST {deployment_info['url']}/process \\
     "session_id": "123"
   }}'
 
-# 停止服务
+# Stop service
 curl -X POST {deployment_info['url']}/admin/shutdown
 
-⚠️ 注意: 这是快速测试脚本，服务将在独立进程中运行
+⚠️ Note: This is a quick test script, the service will run in a detached
+process
 """,
     )
 

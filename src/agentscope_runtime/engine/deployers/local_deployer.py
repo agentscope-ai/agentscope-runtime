@@ -209,7 +209,7 @@ class LocalDeployManager(DeployManager):
         agent = runner._agent
 
         # Create package project for detached deployment
-        project_dir = await self._create_detached_project(
+        project_dir = await self.create_detached_project(
             agent=agent,
             services_config=services_config,
             protocol_adapters=protocol_adapters,
@@ -264,19 +264,17 @@ class LocalDeployManager(DeployManager):
                     pass
             raise e
 
-    async def _create_detached_project(
-        self,
+    @staticmethod
+    async def create_detached_project(
         agent: Any,
         endpoint_path: str = "/process",
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
         services_config: Optional[ServicesConfig] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
-        **kwargs,
+        **kwargs,  # pylint: disable=unused-argument
     ) -> str:
         """Create detached project using package_project method."""
-        self._logger.debug(f"additional kwargs: {kwargs}")
-
         if requirements is None:
             requirements = [
                 "fastapi",
@@ -320,7 +318,6 @@ class LocalDeployManager(DeployManager):
             config=package_config,
         )
 
-        self._logger.info(f"Created detached project at: {project_dir}")
         return project_dir
 
     async def stop(self) -> None:

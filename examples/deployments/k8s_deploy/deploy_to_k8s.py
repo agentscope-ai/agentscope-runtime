@@ -17,9 +17,9 @@ from agent_run import llm_agent  # noqa: E402
 
 
 async def deploy_agent_to_k8s():
-    """部署agent到Kubernetes"""
+    """Deploy agent to Kubernetes"""
 
-    # 1. 配置Registry
+    # 1. Configure Registry
     registry_config = RegistryConfig(
         registry_url=(
             "crpi-p44cuw4wgxu8xn0b.cn-hangzhou.personal.cr.aliyuncs.com"
@@ -27,7 +27,7 @@ async def deploy_agent_to_k8s():
         namespace="agentscope-runtime",
     )
 
-    # 3. 配置K8s连接
+    # 3. Configure K8s connection
     k8s_config = K8sConfig(
         k8s_namespace="agentscope-runtime",
         kubeconfig_path=None,
@@ -35,31 +35,31 @@ async def deploy_agent_to_k8s():
 
     port = 8080
 
-    # 5. 创建KubernetesDeployManager
+    # 5. Create KubernetesDeployManager
     deployer = KubernetesDeployManager(
         kube_config=k8s_config,
         registry_config=registry_config,
-        use_deployment=True,  # 使用Deployment模式，支持扩缩容
+        use_deployment=True,  # Use Deployment mode, supports scaling
     )
 
-    # 6. 创建Runner
+    # 6. Create Runner
     runner = Runner(
         agent=llm_agent,
-        # environment_manager=None,  # 可选
-        # context_manager=None       # 可选
+        # environment_manager=None,  # Optional
+        # context_manager=None       # Optional
     )
 
     runtime_config = {
-        # 资源限制（将使用我们设置的默认值）
+        # Resource limits (will use our default values)
         "resources": {
             "requests": {"cpu": "200m", "memory": "512Mi"},
             "limits": {"cpu": "1000m", "memory": "2Gi"},
         },
-        # 镜像拉取策略
+        # Image pull policy
         "image_pull_policy": "IfNotPresent",
-        # 节点选择器（可选）
+        # Node selector (optional)
         # "node_selector": {"node-type": "gpu"},
-        # 容忍度（可选）
+        # Tolerations (optional)
         # "tolerations": [{
         #     "key": "gpu",
         #     "operator": "Equal",
@@ -68,16 +68,16 @@ async def deploy_agent_to_k8s():
         # }]
     }
 
-    # 7. 部署配置
+    # 7. Deployment configuration
     deployment_config = {
-        # 基础配置
+        # Basic configuration
         "api_endpoint": "/process",
         "stream": True,
         "port": str(port),
-        "replicas": 1,  # 部署2个副本
+        "replicas": 1,  # Deploy 1 replica
         "image_tag": "linux-amd64-8-2",
         "image_name": "agent_llm",
-        # 依赖配置
+        # Dependencies configuration
         "requirements": [
             "agentscope",
             "fastapi",
@@ -92,15 +92,15 @@ async def deploy_agent_to_k8s():
             ),
         ],
         "base_image": "python:3.10-slim-bookworm",
-        # 环境变量
+        # Environment variables
         "environment": {
             "PYTHONPATH": "/app",
             "LOG_LEVEL": "INFO",
             "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
         },
-        # K8s运行时配置
+        # K8s runtime configuration
         "runtime_config": runtime_config,
-        # 部署超时
+        # Deployment timeout
         "deploy_timeout": 300,
         "health_check": True,
         "platform": "linux/amd64",
@@ -108,34 +108,34 @@ async def deploy_agent_to_k8s():
     }
 
     try:
-        print("🚀 开始部署Agent到Kubernetes...")
+        print("🚀 Starting Agent deployment to Kubernetes...")
 
-        # 8. 执行部署
+        # 8. Execute deployment
         result = await runner.deploy(
             deploy_manager=deployer,
             **deployment_config,
         )
 
-        print("✅ 部署成功！")
-        print(f"📍 部署ID: {result['deploy_id']}")
-        print(f"🌐 服务URL: {result['url']}")
-        print(f"📦 资源名称: {result['resource_name']}")
-        print(f"🔢 副本数: {result['replicas']}")
+        print("✅ Deployment successful!")
+        print(f"📍 Deployment ID: {result['deploy_id']}")
+        print(f"🌐 Service URL: {result['url']}")
+        print(f"📦 Resource name: {result['resource_name']}")
+        print(f"🔢 Replicas: {result['replicas']}")
 
-        # 9. 检查部署状态
-        print("\n📊 检查部署状态...")
+        # 9. Check deployment status
+        print("\n📊 Checking deployment status...")
         status = deployer.get_status()
-        print(f"状态: {status}")
+        print(f"Status: {status}")
 
         return result, deployer
 
     except Exception as e:
-        print(f"❌ 部署失败: {e}")
+        print(f"❌ Deployment failed: {e}")
         raise
 
 
 async def deployed_service(service_url: str):
-    """测试部署的服务"""
+    """Test the deployed service"""
     import aiohttp
 
     test_request = {
@@ -153,36 +153,36 @@ async def deployed_service(service_url: str):
             ) as response:
                 if response.status == 200:
                     result = await response.json()
-                    print(f"✅ 服务测试成功: {result}")
+                    print(f"✅ Service test successful: {result}")
                     return result
                 else:
-                    print(f"❌ 服务测试失败: {response.status}")
+                    print(f"❌ Service test failed: {response.status}")
                     return None
     except Exception as e:
-        print(f"❌ 服务测试异常: {e}")
+        print(f"❌ Service test exception: {e}")
         return None
 
 
 async def main():
-    """主函数"""
+    """Main function"""
     try:
-        # 部署
+        # Deploy
         result, deployer = await deploy_agent_to_k8s()
         service_url = result["url"]
 
-        # 测试服务
-        print("\n🧪 测试部署的服务...")
+        # Test service
+        print("\n🧪 Testing the deployed service...")
         await deployed_service(service_url)
 
-        # 保持运行状态，您可以手动测试
+        # Keep running, you can test manually
         print(
             f"""
-        🎯 服务已部署完成，可以使用以下命令测试:
+        Service deployment completed, you can test with the following commands:
 
-        # 健康检查
+        # Health check
         curl {service_url}/health
 
-        # 流式请求
+        # Streaming request
         curl -X POST {service_url}/process \\
           -H "Content-Type: application/json" \\
           -H "Accept: text/event-stream" \\
@@ -204,7 +204,7 @@ async def main():
         """,
         )
 
-        print("\n📝 或者使用kubectl查看:")
+        print("\n📝 Or use kubectl to check:")
         print("kubectl get pods -n agentscope-runtime")
         print("kubectl get svc -n agentscope-runtime")
         print(
@@ -212,24 +212,24 @@ async def main():
             "-n agentscope-runtime",
         )
 
-        # 等待用户确认后清理
-        input("\n按Enter键清理部署...")
+        # Wait for user confirmation before cleanup
+        input("\nPress Enter to cleanup deployment...")
 
-        # 清理部署
-        print("🧹 清理部署...")
+        # Cleanup deployment
+        print("🧹 Cleaning up deployment...")
         cleanup_result = await deployer.stop()
         if cleanup_result:
-            print("✅ 清理完成")
+            print("✅ Cleanup completed")
         else:
-            print("❌ 清理失败，请手动检查")
+            print("❌ Cleanup failed, please check manually")
 
     except Exception as e:
-        print(f"❌ 执行过程中出现错误: {e}")
+        print(f"❌ Error occurred during execution: {e}")
         import traceback
 
         traceback.print_exc()
 
 
 if __name__ == "__main__":
-    # 运行部署
+    # Run deployment
     asyncio.run(main())
