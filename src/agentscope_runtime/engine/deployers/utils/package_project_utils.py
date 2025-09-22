@@ -7,6 +7,7 @@ import ast
 import hashlib
 import inspect
 import os
+import re
 import shutil
 import tarfile
 import tempfile
@@ -14,6 +15,14 @@ from pathlib import Path
 from typing import List, Optional, Any, Tuple
 
 from pydantic import BaseModel
+
+try:
+    import tomllib  # Python 3.11+
+except ImportError:
+    try:
+        import tomli as tomllib  # type: ignore[no-redef]
+    except ImportError:
+        tomllib = None
 
 from .service_utils.fastapi_templates import FastAPITemplateManager
 from .service_utils.service_config import ServicesConfig
@@ -43,15 +52,11 @@ def _get_package_version() -> str:
             return ""
 
     try:
-        with open(pyproject_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        # Simple regex to find version = "x.y.z"
-        import re
-
-        match = re.search(r'version = "([^"]+)"', content)
-        if match:
-            return match.group(1)
-        return ""
+        # Use tomllib to parse
+        with open(pyproject_path, "rb") as f:
+            data = tomllib.load(f)
+        project = data.get("project", {})
+        return project.get("version", "")
     except Exception:
         return ""
 
@@ -143,8 +148,6 @@ def _find_agent_source_file(
 
             # Check if this file contains an import statement for the agent
             # If so, we should look for the original source file
-            import re
-
             import_patterns = [
                 rf"^[^\#]*from\s+(\w+)\s+import\s+.*"
                 rf"{re.escape(agent_name_in_file)}",
