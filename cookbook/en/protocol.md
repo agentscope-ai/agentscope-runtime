@@ -53,7 +53,7 @@ class MessageType:
     MCP_APPROVAL_REQUEST = "mcp_approval_request"
     MCP_TOOL_CALL = "mcp_call"
     MCP_APPROVAL_RESPONSE = "mcp_approval_response"
-    REASONING = "reasoning" 
+    REASONING = "reasoning"
     HEARTBEAT = "heartbeat"
     ERROR = "error"
 ```
@@ -69,7 +69,7 @@ class RunStatus:
     Failed = "failed"
     Rejected = "rejected"
     Unknown = "unknown"
-    Queued = "queued" 
+    Queued = "queued"
     Incomplete = "incomplete"
 ```
 
@@ -491,7 +491,7 @@ def generate_streaming_response(text_tokens):
     """Generate streaming response sequence"""
     # Create response builder
     response_builder = ResponseBuilder(session_id="session_123")
-    
+
     # Generate complete streaming response sequence
     for event in response_builder.generate_streaming_response(
         text_tokens=["Hello", " ", "World", "!"],

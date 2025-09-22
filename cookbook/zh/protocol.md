@@ -56,7 +56,7 @@ class MessageType:
     REASONING = "reasoning"  # 新增：推理过程消息类型
     HEARTBEAT = "heartbeat"
     ERROR = "error"
-    
+
     @classmethod
     def all_values(cls):
         """返回MessageType中所有常量值"""
@@ -497,7 +497,7 @@ def generate_streaming_response(text_tokens):
     """生成流式响应序列"""
     # 创建响应构建器
     response_builder = ResponseBuilder(session_id="session_123")
-    
+
     # 生成完整的流式响应序列
     for event in response_builder.generate_streaming_response(
         text_tokens=["Hello", " ", "World", "!"],

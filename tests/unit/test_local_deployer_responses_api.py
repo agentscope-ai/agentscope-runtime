@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=line-too-long
 import asyncio
 import os
-from time import sleep
 
 import pytest
 
 from agentscope_runtime.engine import Runner, LocalDeployManager
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
-
-from agentscope_runtime.engine.deployers.adapter.responses.response_api_protocol_adapter import \
-    ResponseAPIDefaultAdapter
-from agentscope_runtime.engine.llms import QwenLLM
+from agentscope_runtime.engine.deployers.adapter.responses.response_api_protocol_adapter import (  # noqa: E501
+    ResponseAPIDefaultAdapter,
+)
 from agentscope_runtime.engine.services.context_manager import ContextManager
 from agentscope_runtime.engine.services.memory_service import (
     InMemoryMemoryService,
@@ -78,7 +76,7 @@ async def _local_deploy():
         print("\nAgent Service is running in the background.")
 
         # Run the service for a short duration
-        await asyncio.sleep(8677576575)
+        await asyncio.sleep(1)
 
     except (KeyboardInterrupt, asyncio.CancelledError):
         # This block will be executed when you press Ctrl+C.

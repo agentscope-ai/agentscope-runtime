@@ -139,16 +139,16 @@ class ContentBuilder:
 
     def set_refusal(self, text: str) -> RefusalContent:
         """
-        Set complete text content (only applicable to text type)
+        Set complete refusal content (only applicable to refusal type)
 
         Args:
-            text: Complete text content
+            text: Complete refusal content
 
         Returns:
             Content object
         """
         if self.content_type != ContentType.REFUSAL:
-            raise ValueError("set_text only supported for text content")
+            raise ValueError("set_refusal only supported for refusal content")
 
         self.content.refusal = text
         self.content.in_progress()

@@ -101,7 +101,7 @@ from agentscope_runtime.engine.services.session_history_service import InMemoryS
 async def main():
     # Load environment variables
     load_dotenv()
-    
+
     # Read environment variables
     server_port = int(os.environ.get("SERVER_PORT", "8090"))
     server_endpoint = os.environ.get("SERVER_ENDPOINT", "agent")
