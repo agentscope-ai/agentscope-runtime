@@ -60,8 +60,19 @@ def _parse_args() -> argparse.Namespace:
         default=None,
         help="Custom directory for temporary build artifacts (optional)",
     )
-    parser.add_argument("--update", dest="agent_id", default=None, help="Update an existing agent. Specify agent_id to update a particular agent (optional)")
-    parser.add_argument("--desc", dest="agent_desc", default=None, help="Add description to current agent(optional)")
+    parser.add_argument(
+        "--update",
+        dest="agent_id",
+        default=None,
+        help="Update an existing agent. "
+        "Specify agent_id to update a particular agent (optional)",
+    )
+    parser.add_argument(
+        "--desc",
+        dest="agent_desc",
+        default=None,
+        help="Add description to current agent(optional)",
+    )
     return parser.parse_args()
 
 
@@ -139,7 +150,7 @@ def main() -> None:
             whl_path=args.whl_path,
             agent_id=args.agent_id,
             agent_desc=args.agent_desc,
-        )
+        ),
     )
     print("Built wheel at:", result.get("wheel_path", ""))
     if result.get("artifact_url"):
@@ -154,5 +165,3 @@ def main() -> None:
 
 if __name__ == "__main__":  # pragma: no cover
     main()
-
-
