@@ -220,6 +220,8 @@ async def _modelstudio_deploy(
     file_url: str,
     filename: str,
     deploy_name: str,
+    agent_desc: str,
+    agent_id: str,
     telemetry_enabled: bool = True,
 ) -> str:
     cfg.ensure_valid()
@@ -230,6 +232,8 @@ async def _modelstudio_deploy(
     config.endpoint = cfg.endpoint
     client_modelstudio = ModelstudioClient(config)
     req = ModelstudioTypes.HighCodeDeployRequest(
+        agent_desc=agent_desc,
+        agent_id=agent_id,
         source_code_name=filename,
         source_code_oss_url=file_url,
         agent_name=deploy_name,
@@ -473,14 +477,17 @@ class ModelstudioDeployManager(DeployManager):
         self,
         wheel_path: Path,
         name: str,
+        agent_desc: str,
+        agent_id: str,
         telemetry_enabled: bool = True,
     ) -> Tuple[str, str]:
         logger.info("Uploading wheel to OSS and generating presigned URL")
         client = _oss_get_client(self.oss_config)
-        bucket_name = (
-            f"tmp-bucket-for-code-deployment-"
-            f"{os.getenv('MODELSTUDIO_WORKSPACE_ID', str(uuid.uuid4()))}"
-        )
+
+        bucket_suffix = (
+            os.getenv("MODELSTUDIO_WORKSPACE_ID", str(uuid.uuid4()))
+        ).lower()
+        bucket_name = (f"tmp-code-deploy-" f"{bucket_suffix}")[:63]
         await _oss_create_bucket_if_not_exists(client, bucket_name)
         filename = wheel_path.name
         with wheel_path.open("rb") as f:
@@ -494,6 +501,8 @@ class ModelstudioDeployManager(DeployManager):
 
         logger.info("Triggering Modelstudio Full-Code deploy for %s", name)
         deploy_identifier = await _modelstudio_deploy(
+            agent_desc=agent_desc,
+            agent_id=agent_id,
             cfg=self.modelstudio_config,
             file_url=artifact_url,
             filename=filename,
@@ -504,9 +513,9 @@ class ModelstudioDeployManager(DeployManager):
         def _build_console_url(endpoint: str, identifier: str) -> str:
             # Map API endpoint to console domain (no fragment in base)
             base = (
-                "https://pre-bailian.console.aliyun.com/?tab=app&efm_v=3.4.108#"
+                "https://pre-bailian.console.aliyun.com/?tab=app#"
                 if ("bailian-pre" in endpoint or "pre" in endpoint)
-                else "https://bailian.console.aliyun.com/?tab=app"
+                else "https://bailian.console.aliyun.com/?tab=app#"
             )
             # Optional query can be appended if needed; keep path clean
             return f"{base}/app-center/high-code-detail/{identifier}"
@@ -538,6 +547,8 @@ class ModelstudioDeployManager(DeployManager):
         skip_upload: bool = False,
         telemetry_enabled: bool = True,
         external_whl_path: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        agent_desc: Optional[str] = None,
         **kwargs,
     ) -> Dict[str, str]:
         """
@@ -546,8 +557,9 @@ class ModelstudioDeployManager(DeployManager):
         Returns a dict containing deploy_id, wheel_path, artifact_url (if uploaded),
         resource_name (deploy_name), and workspace_id.
         """
-        if not runner and not project_dir and not external_whl_path:
-            raise ValueError("")
+        if not agent_id:
+            if not runner and not project_dir and not external_whl_path:
+                raise ValueError("")
 
         # convert services_config to Model body
         if services_config and isinstance(services_config, dict):
@@ -571,6 +583,11 @@ class ModelstudioDeployManager(DeployManager):
                 cmd = "python main.py"
                 deploy_name = deploy_name or default_deploy_name()
 
+            if agent_id:
+                if not external_whl_path:
+                    raise FileNotFoundError(
+                        "wheel file not found. Please specify your .whl file path by '--whl-path <whlpath>' in command line."
+                    )
             # if whl exists then skip the project package method
             if external_whl_path:
                 wheel_path = Path(external_whl_path).resolve()
@@ -579,6 +596,9 @@ class ModelstudioDeployManager(DeployManager):
                         f"External wheel file not found: {wheel_path}",
                     )
                 name = deploy_name or default_deploy_name()
+                # 如果是更新agent，且没有传deploy_name, 则不更新名字
+                if agent_id and (deploy_name is None):
+                    name = None
             else:
                 (
                     wheel_path,
@@ -600,6 +620,8 @@ class ModelstudioDeployManager(DeployManager):
                 artifact_url, console_url = await self._upload_and_deploy(
                     wheel_path,
                     name,
+                    agent_desc,
+                    agent_id,
                     telemetry_enabled,
                 )
 
