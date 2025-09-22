@@ -557,8 +557,9 @@ class ModelstudioDeployManager(DeployManager):
         Returns a dict containing deploy_id, wheel_path, artifact_url (if uploaded),
         resource_name (deploy_name), and workspace_id.
         """
-        if not runner and not project_dir and not external_whl_path:
-            raise ValueError("")
+        if not agent_id:
+            if not runner and not project_dir and not external_whl_path:
+                raise ValueError("")
 
         # convert services_config to Model body
         if services_config and isinstance(services_config, dict):
