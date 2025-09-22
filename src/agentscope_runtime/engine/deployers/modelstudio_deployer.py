@@ -172,10 +172,10 @@ async def _oss_create_bucket_if_not_exists(client, bucket_name: str) -> None:
         except oss.exceptions.OperationError as e:
             logger.error(
                 "OSS PutBucket failed: Http Status: %s, ErrorCode: %s, RequestId: %s, Message: %s",
-                getattr(e, 'http_code', None),
-                getattr(e, 'error_code', None),
-                getattr(e, 'request_id', None),
-                getattr(e, 'message', str(e))
+                getattr(e, "http_code", None),
+                getattr(e, "error_code", None),
+                getattr(e, "request_id", None),
+                getattr(e, "message", str(e)),
             )
             raise
         except Exception as e:
@@ -635,6 +635,7 @@ class ModelstudioDeployManager(DeployManager):
 
             artifact_url = ""
             console_url = ""
+            deploy_identifier = ""
             if not skip_upload:
                 # Only require cloud SDKs and credentials when performing upload/deploy
                 _assert_cloud_sdks_available()
@@ -653,13 +654,14 @@ class ModelstudioDeployManager(DeployManager):
                 )
 
             result: Dict[str, str] = {
-                "deploy_id": deploy_identifier,
                 "wheel_path": str(wheel_path),
                 "artifact_url": artifact_url,
                 "resource_name": name,
                 "workspace_id": self.modelstudio_config.workspace_id or "",
                 "url": console_url,
             }
+            if deploy_identifier:
+                result["deploy_id"] = deploy_identifier
 
             return result
         except Exception as e:
