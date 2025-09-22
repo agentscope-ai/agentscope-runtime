@@ -40,7 +40,7 @@ def _get_package_version() -> str:
     # Try to find pyproject.toml in the current directory and parent
     # directories
     current_dir = Path(__file__).parent
-    for _ in range(6):  # Look up to 5 levels up
+    for _ in range(6):  # Look up to 6 levels up
         pyproject_path = current_dir / "pyproject.toml"
         if pyproject_path.exists():
             break
