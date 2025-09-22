@@ -479,9 +479,9 @@ class ModelstudioDeployManager(DeployManager):
         client = _oss_get_client(self.oss_config)
 
         bucket_suffix = (
-            os.getenv('MODELSTUDIO_WORKSPACE_ID', str(uuid.uuid4()))).lower()
-        bucket_name = (f"tmp-code-deploy-"
-                       f"{bucket_suffix}")[:63]
+            os.getenv("MODELSTUDIO_WORKSPACE_ID", str(uuid.uuid4()))
+        ).lower()
+        bucket_name = (f"tmp-code-deploy-" f"{bucket_suffix}")[:63]
         await _oss_create_bucket_if_not_exists(client, bucket_name)
         filename = wheel_path.name
         with wheel_path.open("rb") as f:
