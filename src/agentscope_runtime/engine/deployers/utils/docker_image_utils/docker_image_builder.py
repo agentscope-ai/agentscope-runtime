@@ -108,7 +108,8 @@ class DockerImageBuilder:
         full_image_name = self.get_full_name(image_name, image_tag)
 
         if not source_updated:
-            return full_image_name
+            # return full_image_name
+            pass
 
         # Prepare docker build command
         build_cmd = ["docker", "build", "-t", full_image_name]

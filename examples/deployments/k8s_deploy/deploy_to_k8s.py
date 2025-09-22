@@ -75,7 +75,7 @@ async def deploy_agent_to_k8s():
         "stream": True,
         "port": str(port),
         "replicas": 1,  # Deploy 1 replica
-        "image_tag": "linux-amd64-8-2",
+        "image_tag": "linux-amd64",
         "image_name": "agent_llm",
         # Dependencies configuration
         "requirements": [
