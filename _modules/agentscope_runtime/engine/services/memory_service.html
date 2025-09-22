@@ -672,7 +672,8 @@
         <span class="k">if</span> <span class="n">storage_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="p">[</span><span class="n">user_id</span><span class="p">]:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="p">[</span><span class="n">user_id</span><span class="p">][</span><span class="n">storage_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="p">[</span><span class="n">user_id</span><span class="p">][</span><span class="n">storage_key</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span></div>
+        <span class="k">if</span> <span class="n">messages</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="p">[</span><span class="n">user_id</span><span class="p">][</span><span class="n">storage_key</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="InMemoryMemoryService.search_memory">
@@ -834,7 +835,7 @@
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-09-17</div>
+              Last updated on 2025-09-22</div>
           </div>
           <div class="right-details">
             <div class="icons">
