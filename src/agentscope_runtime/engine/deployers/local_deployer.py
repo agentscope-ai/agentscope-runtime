@@ -276,15 +276,7 @@ class LocalDeployManager(DeployManager):
     ) -> str:
         """Create detached project using package_project method."""
         if requirements is None:
-            requirements = [
-                "fastapi",
-                "uvicorn",
-                "agentscope-runtime[sandbox]",
-                "agentscope-runtime",
-                "pydantic",
-                "jinja2",
-                "psutil",
-            ]
+            requirements = []
 
         if isinstance(requirements, str):
             requirements = [requirements]

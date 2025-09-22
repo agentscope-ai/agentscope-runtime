@@ -156,9 +156,6 @@ class RunnerImageFactory:
         try:
             # Validation
             self._validate_runner(runner)
-            self._validate_requirements(
-                config.requirements,
-            )
 
             logger.info(f"Building Runner image: {config.image_tag}")
 
