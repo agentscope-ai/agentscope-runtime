@@ -32,6 +32,7 @@ build-backend = "setuptools.build_meta"
 runtime-sandbox-mcp = "agentscope_runtime.sandbox.mcp_server:main"
 runtime-sandbox-server = "agentscope_runtime.sandbox.manager.server.app:main"
 runtime-sandbox-builder = "agentscope_runtime.sandbox.build:main"
+runtime-fc-deploy = "agentscope_runtime.engine.deployers.cli_fc_deploy:main"
 
 [project.optional-dependencies]
 dev = [
@@ -91,4 +92,22 @@ aliyun_tablestore_ext=[
 memory-ext = [
     "reme-ai==0.1.9 ; python_full_version >= '3.12'",
     "mem0ai>=0.1.117"
+]
+
+
+deployment = [
+    "alibabacloud-oss-v2",
+    "alibabacloud-bailian20231229>=2.5.0",
+    "build",
+    "setuptools>=40.8.0",
+    "wheel",
+    "steel-sdk>=0.1.0",
+    "alibabacloud-credentials",
+    "jinja2",
+    "psutil",
+    "shortuuid>=1.0.13",
+    "docker>=7.1.0",
+    "kubernetes>=33.1.0",
+    "PyYAML",
+    "oss2>=2.19.1"
 ]

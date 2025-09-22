@@ -16,6 +16,7 @@ cookbook/_build
 
 # production
 /build
+dist/
 
 # misc
 .env
@@ -26,6 +27,7 @@ __pycache__/
 *.db
 *.rdb
 *.egg-info/
+*.zip
 
 # IDEs and editors
 .idea/
@@ -61,3 +63,5 @@ uv.lock
 # Logs
 logs/
 *.log
+/tests/integrated/test_bailian_fc_deploy/.agentdev_builds/
+/tests/integrated/test_bailian_fc_deploy/.agentscope_runtime_builds/

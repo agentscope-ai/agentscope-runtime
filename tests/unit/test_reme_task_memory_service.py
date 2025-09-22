@@ -2,8 +2,6 @@
 # pylint: disable=redefined-outer-name, protected-access, unused-argument, wrong-import-position
 # flake8: noqa: E402
 import sys
-from unittest.mock import AsyncMock, patch
-
 import pytest
 import pytest_asyncio
 
@@ -34,20 +32,20 @@ def create_message(role: str, content: str) -> Message:
 
 
 @pytest_asyncio.fixture
-async def mock_task_memory_service():
+async def mock_task_memory_service(mocker):
     """Mock the TaskMemoryService from reme_ai."""
-    with patch(
+    mock_class = mocker.patch(
         "reme_ai.service.task_memory_service.TaskMemoryService",
-    ) as mock_class:
-        instance = mock_class.return_value
-        instance.start = AsyncMock()
-        instance.stop = AsyncMock()
-        instance.health = AsyncMock(return_value=True)
-        instance.add_memory = AsyncMock()
-        instance.search_memory = AsyncMock(return_value=[])
-        instance.list_memory = AsyncMock(return_value=[])
-        instance.delete_memory = AsyncMock()
-        yield instance
+    )
+    instance = mock_class.return_value
+    instance.start = mocker.AsyncMock()
+    instance.stop = mocker.AsyncMock()
+    instance.health = mocker.AsyncMock(return_value=True)
+    instance.add_memory = mocker.AsyncMock()
+    instance.search_memory = mocker.AsyncMock(return_value=[])
+    instance.list_memory = mocker.AsyncMock(return_value=[])
+    instance.delete_memory = mocker.AsyncMock()
+    yield instance
 
 
 @pytest.fixture

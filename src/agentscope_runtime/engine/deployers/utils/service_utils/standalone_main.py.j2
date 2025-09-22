@@ -1,0 +1,111 @@
+import os
+import uvicorn
+from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
+from agentscope_runtime.engine.deployers.utils.service_utils import (
+    FastAPIAppFactory,
+    ServicesConfig,
+    ServiceConfig,
+)
+
+from agent_file import {{agent_name}} as agent
+
+{% if protocol_adapters %}{{protocol_adapters}}{% endif %}
+
+
+def load_services_config() -> ServicesConfig:
+    """Load services configuration from environment variables or config file."""
+    config_file = os.getenv('AGENTSCOPE_SERVICES_CONFIG')
+
+    if config_file and os.path.exists(config_file):
+        # Load from JSON config file
+        import json
+        with open(config_file, 'r', encoding='utf-8') as f:
+            config_data = json.load(f)
+            return ServicesConfig.model_validate(config_data)
+    else:
+        # Load from environment variables
+        memory_provider = os.getenv('MEMORY_PROVIDER', 'in_memory')
+        session_provider = os.getenv('SESSION_HISTORY_PROVIDER', 'in_memory')
+
+        memory_config = {}
+        session_config = {}
+
+        # Add Redis configuration if using Redis
+        if memory_provider == 'redis':
+            memory_config = {
+                'host': os.getenv('REDIS_HOST', 'localhost'),
+                'port': int(os.getenv('REDIS_PORT', 6379)),
+                'db': int(os.getenv('REDIS_MEMORY_DB', 0))
+            }
+
+        if session_provider == 'redis':
+            session_config = {
+                'host': os.getenv('REDIS_HOST', 'localhost'),
+                'port': int(os.getenv('REDIS_PORT', 6379)),
+                'db': int(os.getenv('REDIS_SESSION_DB', 1))
+            }
+
+        return ServicesConfig(
+            memory=ServiceConfig(provider=memory_provider, config=memory_config),
+            session_history=ServiceConfig(provider=session_provider, config=session_config)
+        )
+
+
+async def setup_runner_with_agent(app):
+    """Setup runner with the agent instance."""
+    if hasattr(app.state, 'runner') and app.state.runner:
+        # Set the agent on the runner
+        app.state.runner._agent = agent
+
+
+async def before_start(app, **kwargs):
+    """Application startup callback."""
+    await setup_runner_with_agent(app)
+
+
+async def after_finish(app, **kwargs):
+    """Application shutdown callback."""
+    # Runner cleanup is handled by the factory
+    pass
+
+
+# Load services configuration
+services_config = load_services_config()
+
+# Determine deployment mode from environment or use default
+deployment_mode_str = os.getenv('DEPLOYMENT_MODE', '{{deployment_mode|default("standalone")}}')
+if deployment_mode_str == 'detached_process':
+    deployment_mode = DeploymentMode.DETACHED_PROCESS
+elif deployment_mode_str == 'standalone':
+    deployment_mode = DeploymentMode.STANDALONE
+else:
+    deployment_mode = DeploymentMode.STANDALONE  # fallback
+
+# Create FastAPI application using the factory
+app = FastAPIAppFactory.create_app(
+    endpoint_path="{{endpoint_path}}",
+    mode=deployment_mode,
+    services_config=services_config,
+    before_start=before_start,
+    after_finish=after_finish,
+    stream=True{% if protocol_adapters %},
+    protocol_adapters=protocol_adapters{% endif %}
+)
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="AgentScope Runtime Standalone Service")
+    parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
+    parser.add_argument("--port", type=int, default=8080, help="Port to bind to")
+    parser.add_argument("--workers", type=int, default=1, help="Number of worker processes")
+
+    args = parser.parse_args()
+
+    uvicorn.run(
+        app,
+        host=args.host,
+        port=args.port,
+        workers=args.workers if args.workers > 1 else None
+    )
