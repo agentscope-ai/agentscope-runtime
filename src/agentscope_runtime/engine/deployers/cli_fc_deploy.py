@@ -160,7 +160,20 @@ def main() -> None:
     if result.get("workspace_id"):
         print("Workspace:", result.get("workspace_id"))
     if result.get("url"):
-        print("Console Url:", result.get("url"))
+        console_url = result.get("url")
+        title = "Console URL"
+        url_len = len(console_url)
+        box_width = max(url_len, len(title), 20)
+
+        # print title
+        print("")
+        print(title.center(box_width + 4))
+
+        # print content
+        print("┏" + "━" * (box_width + 2) + "┓")
+        print(f"┃ {console_url.ljust(box_width)} ┃")
+        print("┗" + "━" * (box_width + 2) + "┛")
+        print("")
 
 
 if __name__ == "__main__":  # pragma: no cover

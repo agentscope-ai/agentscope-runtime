@@ -163,11 +163,24 @@ async def _oss_create_bucket_if_not_exists(client, bucket_name: str) -> None:
                 storage_class="IA",
             ),
         )
-        put_bucket_result = client.put_bucket(req)
-        logger.info(
-            f"put bucket status code: {put_bucket_result.status_code},"
-            f" request id: {put_bucket_result.request_id}",
-        )
+        try:
+            put_bucket_result = client.put_bucket(req)
+            logger.info(
+                f"put bucket status code: {put_bucket_result.status_code},"
+                f" request id: {put_bucket_result.request_id}",
+            )
+        except oss.exceptions.OperationError as e:
+            logger.error(
+                "OSS PutBucket failed: Http Status: %s, ErrorCode: %s, RequestId: %s, Message: %s",
+                getattr(e, 'http_code', None),
+                getattr(e, 'error_code', None),
+                getattr(e, 'request_id', None),
+                getattr(e, 'message', str(e))
+            )
+            raise
+        except Exception as e:
+            logger.error("Unexpected put bucket failure: %s", e, exc_info=True)
+            raise
         result = client.put_bucket_tags(
             oss.PutBucketTagsRequest(
                 bucket=bucket_name,
