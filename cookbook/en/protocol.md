@@ -35,6 +35,7 @@ class Role:
     ASSISTANT = "assistant"
     USER = "user"
     SYSTEM = "system"
+    TOOL = "tool"  # New: Tool role
 ```
 
 **Message Types**:
@@ -52,6 +53,7 @@ class MessageType:
     MCP_APPROVAL_REQUEST = "mcp_approval_request"
     MCP_TOOL_CALL = "mcp_call"
     MCP_APPROVAL_RESPONSE = "mcp_approval_response"
+    REASONING = "reasoning"
     HEARTBEAT = "heartbeat"
     ERROR = "error"
 ```
@@ -67,6 +69,8 @@ class RunStatus:
     Failed = "failed"
     Rejected = "rejected"
     Unknown = "unknown"
+    Queued = "queued"
+    Incomplete = "incomplete"
 ```
 
 ### 2. Tool Definitions
@@ -181,6 +185,42 @@ class DataContent(Content):
 
     data: Optional[Dict] = None
     """The data content."""
+
+
+class AudioContent(Content):
+    type: str = ContentType.AUDIO
+    """The type of the content part."""
+
+    data: Optional[str] = None
+    """The audio data details."""
+
+    format: Optional[str] = None
+    """The format of the audio data."""
+
+
+class FileContent(Content):
+    type: str = ContentType.FILE
+    """The type of the content part."""
+
+    file_url: Optional[str] = None
+    """The file URL details."""
+
+    file_id: Optional[str] = None
+    """The file ID details."""
+
+    filename: Optional[str] = None
+    """The file name details."""
+
+    file_data: Optional[str] = None
+    """The file data details."""
+
+
+class RefusalContent(Content):
+    type: str = ContentType.REFUSAL
+    """The type of the content part."""
+
+    refusal: Optional[str] = None
+    """The refusal content."""
 ```
 
 ### 4. Message Model
@@ -369,3 +409,172 @@ When `stream=True` in request:
 {"id":"msg_abc","status":"completed","object":"message"}
 {"id":"response_123","status":"completed","object":"response"}
 ```
+
+## Agent API Protocol Builder
+
+The Agent API protocol provides a layered Builder pattern for generating streaming response data that conforms to protocol specifications. Using the `agent_api_builder` module, developers can easily construct complex streaming response sequences.
+
+### 1. Builder Architecture
+
+The Agent API builder adopts a three-layer architecture design:
+
+- **ResponseBuilder**: Response builder, responsible for managing the entire response flow
+- **MessageBuilder**: Message builder, responsible for building and managing individual message objects
+- **ContentBuilder**: Content builder, responsible for building and managing individual content objects
+
+### 2. Core Classes
+
+#### ResponseBuilder (Response Builder)
+
+```python
+from agentscope_runtime.engine.helpers.agent_api_builder import ResponseBuilder
+
+# Create response builder
+response_builder = ResponseBuilder(session_id="session_123")
+
+# Set response status
+response_builder.created()      # Created status
+response_builder.in_progress()  # In progress status
+response_builder.completed()    # Completed status
+
+# Create message builder
+message_builder = response_builder.create_message_builder(
+    role="assistant",
+    message_type="message"
+)
+```
+
+#### MessageBuilder (Message Builder)
+
+```python
+# Create content builder
+content_builder = message_builder.create_content_builder(
+    content_type="text",
+    index=0
+)
+
+# Add content to message
+message_builder.add_content(content)
+
+# Complete message building
+message_builder.complete()
+```
+
+#### ContentBuilder (Content Builder)
+
+```python
+# Add text delta
+content_builder.add_text_delta("Hello")
+content_builder.add_text_delta(" World")
+
+# Set complete text content
+content_builder.set_text("Hello World")
+
+# Set image content
+content_builder.set_image_url("https://example.com/image.jpg")
+
+# Set data content
+content_builder.set_data({"key": "value"})
+
+# Complete content building
+content_builder.complete()
+```
+
+### 3. Complete Usage Example
+
+The following example demonstrates how to use the Agent API builder to generate a complete streaming response sequence:
+
+```python
+from agentscope_runtime.engine.helpers.agent_api_builder import ResponseBuilder
+
+def generate_streaming_response(text_tokens):
+    """Generate streaming response sequence"""
+    # Create response builder
+    response_builder = ResponseBuilder(session_id="session_123")
+
+    # Generate complete streaming response sequence
+    for event in response_builder.generate_streaming_response(
+        text_tokens=["Hello", " ", "World", "!"],
+        role="assistant"
+    ):
+        yield event
+
+# Usage example
+for event in generate_streaming_response(["Hello", " ", "World", "!"]):
+    print(event)
+```
+
+### 4. Streaming Response Sequence
+
+Using the `generate_streaming_response` method generates a standard streaming response sequence:
+
+1. **Response Creation** (`response.created`)
+2. **Response Start** (`response.in_progress`)
+3. **Message Creation** (`message.created`)
+4. **Content Streaming Output** (`content.delta` events)
+5. **Content Completion** (`content.completed`)
+6. **Message Completion** (`message.completed`)
+7. **Response Completion** (`response.completed`)
+
+### 5. Supported Content Types
+
+ContentBuilder supports multiple content types:
+
+- **TextContent**: Text content, supports incremental output
+- **ImageContent**: Image content, supports URL and base64 formats
+- **DataContent**: Data content, supports arbitrary JSON data
+- **AudioContent**: Audio content, supports multiple audio formats
+- **FileContent**: File content, supports file URLs and file data
+- **RefusalContent**: Refusal content, used to indicate refusal to execute
+
+### 6. Best Practices
+
+1. **State Management**: Ensure calling status methods in correct order (created → in_progress → completed)
+2. **Content Indexing**: Properly set index values for multi-content messages
+3. **Incremental Output**: Use add_delta method to implement streaming text output
+4. **Error Handling**: Appropriately handle exceptions during building process
+5. **Resource Cleanup**: Timely call complete method to finish building
+
+### 7. Advanced Usage
+
+#### Multi-Content Message Building
+
+```python
+# Create message containing text and image
+message_builder = response_builder.create_message_builder()
+
+# Add text content
+text_builder = message_builder.create_content_builder("text", index=0)
+text_builder.set_text("This is an image:")
+text_builder.complete()
+
+# Add image content
+image_builder = message_builder.create_content_builder("image", index=1)
+image_builder.set_image_url("https://example.com/image.jpg")
+image_builder.complete()
+
+# Complete message
+message_builder.complete()
+```
+
+#### Data Content Building
+
+```python
+# Create message containing structured data
+data_builder = message_builder.create_content_builder("data", index=0)
+
+# Set data content
+data_builder.set_data({
+    "type": "function_call",
+    "name": "get_weather",
+    "arguments": '{"city": "Beijing"}'
+})
+
+# Add data deltas
+data_builder.add_data_delta({"status": "processing"})
+data_builder.add_data_delta({"result": "sunny"})
+
+data_builder.complete()
+```
+
+By using the Agent API builder, developers can easily construct complex streaming responses that conform to protocol specifications, achieving better user experience and more flexible response control.

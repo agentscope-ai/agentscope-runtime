@@ -137,7 +137,8 @@ class InMemoryMemoryService(MemoryService):
         if storage_key not in self._store[user_id]:
             self._store[user_id][storage_key] = []
 
-        self._store[user_id][storage_key].extend(messages)
+        if messages:
+            self._store[user_id][storage_key].extend(messages)
 
     async def search_memory(
         self,

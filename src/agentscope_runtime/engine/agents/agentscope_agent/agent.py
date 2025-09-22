@@ -317,6 +317,9 @@ class AgentScopeAgent(Agent):
                                         index = text_delta_content.index
                                         yield text_delta_content
                                         if hasattr(msg, "is_last"):
+                                            yield message.content_completed(
+                                                index,
+                                            )
                                             yield message.completed()
                                             message = Message(
                                                 type=MessageType.MESSAGE,
