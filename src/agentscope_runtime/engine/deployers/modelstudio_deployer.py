@@ -163,7 +163,24 @@ async def _oss_create_bucket_if_not_exists(client, bucket_name: str) -> None:
                 storage_class="IA",
             ),
         )
-        client.put_bucket(req)
+        try:
+            put_bucket_result = client.put_bucket(req)
+            logger.info(
+                f"put bucket status code: {put_bucket_result.status_code},"
+                f" request id: {put_bucket_result.request_id}",
+            )
+        except oss.exceptions.OperationError as e:
+            logger.error(
+                "OSS PutBucket failed: Http Status: %s, ErrorCode: %s, RequestId: %s, Message: %s",
+                getattr(e, "http_code", None),
+                getattr(e, "error_code", None),
+                getattr(e, "request_id", None),
+                getattr(e, "message", str(e)),
+            )
+            raise
+        except Exception as e:
+            logger.error("Unexpected put bucket failure: %s", e, exc_info=True)
+            raise
         result = client.put_bucket_tags(
             oss.PutBucketTagsRequest(
                 bucket=bucket_name,
@@ -220,8 +237,8 @@ async def _modelstudio_deploy(
     file_url: str,
     filename: str,
     deploy_name: str,
-    agent_desc: str,
-    agent_id: str,
+    agent_id: Optional[str] = None,
+    agent_desc: Optional[str] = None,
     telemetry_enabled: bool = True,
 ) -> str:
     cfg.ensure_valid()
@@ -247,6 +264,10 @@ async def _modelstudio_deploy(
         headers,
         runtime,
     )
+
+    # logger.info(json.dumps(resp.to_map(), indent=2, ensure_ascii=False))
+    request_id = resp.to_map()["headers"].get("x-acs-request-id")
+    logger.info("deploy request id: %s", request_id)
 
     # Extract deploy identifier string from response
     def _extract_deploy_identifier(response_obj) -> str:
@@ -477,10 +498,10 @@ class ModelstudioDeployManager(DeployManager):
         self,
         wheel_path: Path,
         name: str,
-        agent_desc: str,
-        agent_id: str,
+        agent_id: Optional[str] = None,
+        agent_desc: Optional[str] = None,
         telemetry_enabled: bool = True,
-    ) -> Tuple[str, str]:
+    ) -> Tuple[str, str, str]:
         logger.info("Uploading wheel to OSS and generating presigned URL")
         client = _oss_get_client(self.oss_config)
 
@@ -528,7 +549,7 @@ class ModelstudioDeployManager(DeployManager):
             if deploy_identifier
             else ""
         )
-        return artifact_url, console_url
+        return artifact_url, console_url, deploy_identifier
 
     async def deploy(
         self,
@@ -579,14 +600,17 @@ class ModelstudioDeployManager(DeployManager):
                     extra_packages=extra_packages,
                     **kwargs,
                 )
-                self._generate_env_file(project_dir, environment)
+                if project_dir:
+                    self._generate_env_file(project_dir, environment)
                 cmd = "python main.py"
                 deploy_name = deploy_name or default_deploy_name()
 
             if agent_id:
                 if not external_whl_path:
                     raise FileNotFoundError(
-                        "wheel file not found. Please specify your .whl file path by '--whl-path <whlpath>' in command line."
+                        "wheel file not found. "
+                        "Please specify your .whl file path by "
+                        "'--whl-path <whlpath>' in command line.",
                     )
             # if whl exists then skip the project package method
             if external_whl_path:
@@ -612,27 +636,33 @@ class ModelstudioDeployManager(DeployManager):
 
             artifact_url = ""
             console_url = ""
+            deploy_identifier = ""
             if not skip_upload:
                 # Only require cloud SDKs and credentials when performing upload/deploy
                 _assert_cloud_sdks_available()
                 self.oss_config.ensure_valid()
                 self.modelstudio_config.ensure_valid()
-                artifact_url, console_url = await self._upload_and_deploy(
+                (
+                    artifact_url,
+                    console_url,
+                    deploy_identifier,
+                ) = await self._upload_and_deploy(
                     wheel_path,
                     name,
-                    agent_desc,
                     agent_id,
+                    agent_desc,
                     telemetry_enabled,
                 )
 
             result: Dict[str, str] = {
-                "deploy_id": self.deploy_id,
                 "wheel_path": str(wheel_path),
                 "artifact_url": artifact_url,
                 "resource_name": name,
                 "workspace_id": self.modelstudio_config.workspace_id or "",
                 "url": console_url,
             }
+            if deploy_identifier:
+                result["deploy_id"] = deploy_identifier
 
             return result
         except Exception as e:
