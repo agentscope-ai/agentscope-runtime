@@ -77,6 +77,17 @@ async def tablestore_rag_service():
     access_key_id = os.getenv("TABLESTORE_ACCESS_KEY_ID")
     access_key_secret = os.getenv("TABLESTORE_ACCESS_KEY_SECRET")
 
+    if (
+        endpoint is None
+        or instance_name is None
+        or access_key_id is None
+        or access_key_secret is None
+    ):
+        pytest.skip(
+            "tablestore endpoint is None or instance_name is None or "
+            "access_key_id is None or access_key_secret is None"
+        )
+
     tablestore_rag_service = TablestoreRAGService(
         tablestore_client=create_tablestore_client(
             end_point=endpoint,

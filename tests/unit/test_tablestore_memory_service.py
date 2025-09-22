@@ -54,6 +54,17 @@ async def tablestore_memory_service():
     access_key_id = os.getenv("TABLESTORE_ACCESS_KEY_ID")
     access_key_secret = os.getenv("TABLESTORE_ACCESS_KEY_SECRET")
 
+    if (
+        endpoint is None
+        or instance_name is None
+        or access_key_id is None
+        or access_key_secret is None
+    ):
+        pytest.skip(
+            "tablestore endpoint is None or instance_name is None or "
+            "access_key_id is None or access_key_secret is None"
+        )
+
     tablestore_memory_service = TablestoreMemoryService(
         tablestore_client=create_tablestore_client(
             end_point=endpoint,
@@ -81,6 +92,17 @@ async def tablestore_memory_service_vector():
     instance_name = os.getenv("TABLESTORE_INSTANCE_NAME")
     access_key_id = os.getenv("TABLESTORE_ACCESS_KEY_ID")
     access_key_secret = os.getenv("TABLESTORE_ACCESS_KEY_SECRET")
+
+    if (
+        endpoint is None
+        or instance_name is None
+        or access_key_id is None
+        or access_key_secret is None
+    ):
+        pytest.skip(
+            "tablestore endpoint is None or instance_name is None or "
+            "access_key_id is None or access_key_secret is None"
+        )
 
     tablestore_memory_service_vector = TablestoreMemoryService(
         tablestore_client=create_tablestore_client(
@@ -110,6 +132,17 @@ async def test_create_error_state_client():
     instance_name = os.getenv("TABLESTORE_INSTANCE_NAME")
     access_key_id = os.getenv("TABLESTORE_ACCESS_KEY_ID")
     access_key_secret = os.getenv("TABLESTORE_ACCESS_KEY_SECRET")
+
+    if (
+        endpoint is None
+        or instance_name is None
+        or access_key_id is None
+        or access_key_secret is None
+    ):
+        pytest.skip(
+            "tablestore endpoint is None or instance_name is None or "
+            "access_key_id is None or access_key_secret is None"
+        )
 
     try:
         TablestoreMemoryService(
