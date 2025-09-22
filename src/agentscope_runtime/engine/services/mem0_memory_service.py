@@ -105,15 +105,10 @@ class Mem0MemoryService(MemoryService):
         user_id: str,
         filters: Optional[Dict[str, Any]] = None,
     ) -> list:
+        kwargs = {"user_id": user_id}
         if filters:
-            return await self.service.get_all(
-                user_id=user_id,
-                filters=filters,
-            )
-        else:
-            return await self.service.get_all(
-                user_id=user_id,
-            )
+            kwargs["filters"] = filters
+        return await self.service.get_all(**kwargs)
 
     async def delete_memory(
         self,
