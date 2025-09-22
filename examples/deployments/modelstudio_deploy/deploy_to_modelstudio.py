@@ -26,8 +26,15 @@ async def deploy_agent_to_modelstudio():
     # 1. Configure OSS
     oss_config = OSSConfig(
         region="cn-hangzhou",
-        access_key_id=os.environ.get("OSS_ACCESS_KEY_ID"),
-        access_key_secret=os.environ.get("OSS_ACCESS_KEY_SECRET"),
+        # OSS AK/SK optional; fallback to Alibaba Cloud AK/SK
+        access_key_id=os.environ.get(
+            "OSS_ACCESS_KEY_ID",
+            os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+        ),
+        access_key_secret=os.environ.get(
+            "OSS_ACCESS_KEY_SECRET",
+            os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+        ),
         bucket_prefix="tmpbucket-agentscope-runtime",
     )
 
@@ -127,7 +134,6 @@ async def deploy_from_project_directory():
         "cmd": "python agent_run.py",  # Startup command
         "deploy_name": "agent-llm-project",
         "telemetry_enabled": True,
-        "output_file": "project_deploy_result.txt",
     }
 
     try:
@@ -168,7 +174,6 @@ async def deploy_from_existing_wheel():
         "external_whl_path": wheel_path,
         "deploy_name": "agent-from-wheel",
         "telemetry_enabled": True,
-        "output_file": "wheel_deploy_result.txt",
     }
 
     try:
@@ -197,8 +202,7 @@ async def main():
 
     # Check environment variables
     required_env_vars = [
-        "OSS_ACCESS_KEY_ID",
-        "OSS_ACCESS_KEY_SECRET",
+        # OSS_ creds are optional; Alibaba Cloud creds are required
         "MODELSTUDIO_WORKSPACE_ID",
         "ALIBABA_CLOUD_ACCESS_KEY_ID",
         "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
