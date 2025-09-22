@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import asyncio
+import copy
 from enum import Enum
 from typing import Optional, Dict, Any, List
 
@@ -21,6 +22,8 @@ from tablestore_for_agent_memory.knowledge.async_knowledge_store import (
 )
 from tablestore_for_agent_memory.base.filter import Filters
 
+from pydantic import Field
+
 
 class SearchStrategy(Enum):
     FULL_TEXT = "full_text"
@@ -40,33 +43,28 @@ class OTSMemoryService(MemoryService):
         self,
         tablestore_client: tablestore.AsyncOTSClient,
         search_strategy: SearchStrategy = SearchStrategy.FULL_TEXT,
-        embedding_model: Optional[Embeddings] = None,
+        embedding_model: Optional[Embeddings] = DashScopeEmbeddings(),
         vector_dimension: int = 1536,
         table_name: Optional[str] = "agentscope_runtime_memory",
-        search_index_schema: Optional[List[tablestore.FieldSchema]] = None,
+        search_index_schema: Optional[List[tablestore.FieldSchema]] = (
+            tablestore.FieldSchema("user_id", tablestore.FieldType.KEYWORD),
+            tablestore.FieldSchema("session_id", tablestore.FieldType.KEYWORD),
+        ),
         text_field: Optional[str] = "text",
         embedding_field: Optional[str] = "embedding",
         vector_metric_type: tablestore.VectorMetricType = tablestore.VectorMetricType.VM_COSINE,
         **kwargs: Any,
     ):
         self._search_strategy = search_strategy
-        self._embedding_model = None
-        if self._search_strategy == SearchStrategy.VECTOR:
-            self._embedding_model = (
-                embedding_model if embedding_model else DashScopeEmbeddings()
-            )
+        self._embedding_model = embedding_model # the parameter is None, don't store vector
+
+        if self._search_strategy == SearchStrategy.VECTOR and self._embedding_model is None:
+            raise ValueError("Embedding model is required when search strategy is VECTOR.")
 
         self._tablestore_client = tablestore_client
         self._vector_dimension = vector_dimension
         self._table_name = table_name
-        self._search_index_schema = (
-            search_index_schema
-            if search_index_schema is not None
-            else [
-                tablestore.FieldSchema("user_id", tablestore.FieldType.KEYWORD),
-                tablestore.FieldSchema("session_id", tablestore.FieldType.KEYWORD),
-            ]
-        )
+        self._search_index_schema = list(search_index_schema) if search_index_schema is not None else None
         self._text_field = text_field
         self._embedding_field = embedding_field
         self._vector_metric_type = vector_metric_type
@@ -81,7 +79,7 @@ class OTSMemoryService(MemoryService):
             # enable multi tenant will make user be confused, we unify the usage of session id and user id, and allow users to configure the index themselves.
             table_name=self._table_name,
             search_index_name=OTSMemoryService._SEARCH_INDEX_NAME,
-            search_index_schema=self._search_index_schema,  # the append function of search_index_schema will be using, but we can't use list as default value in __init__
+            search_index_schema=copy.deepcopy(self._search_index_schema),
             text_field=self._text_field,
             embedding_field=self._embedding_field,
             vector_metric_type=self._vector_metric_type,
