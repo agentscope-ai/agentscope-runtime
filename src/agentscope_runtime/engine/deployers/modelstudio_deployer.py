@@ -477,10 +477,11 @@ class ModelstudioDeployManager(DeployManager):
     ) -> Tuple[str, str]:
         logger.info("Uploading wheel to OSS and generating presigned URL")
         client = _oss_get_client(self.oss_config)
-        bucket_name = (
-            f"tmp-bucket-for-code-deployment-"
-            f"{os.getenv('MODELSTUDIO_WORKSPACE_ID', str(uuid.uuid4()))}"
-        )
+
+        bucket_suffix = (
+            os.getenv('MODELSTUDIO_WORKSPACE_ID', str(uuid.uuid4()))).lower()
+        bucket_name = (f"tmp-code-deploy-"
+                       f"{bucket_suffix}")[:63]
         await _oss_create_bucket_if_not_exists(client, bucket_name)
         filename = wheel_path.name
         with wheel_path.open("rb") as f:
@@ -504,9 +505,9 @@ class ModelstudioDeployManager(DeployManager):
         def _build_console_url(endpoint: str, identifier: str) -> str:
             # Map API endpoint to console domain (no fragment in base)
             base = (
-                "https://pre-bailian.console.aliyun.com/?tab=app&efm_v=3.4.108#"
+                "https://pre-bailian.console.aliyun.com/?tab=app#"
                 if ("bailian-pre" in endpoint or "pre" in endpoint)
-                else "https://bailian.console.aliyun.com/?tab=app"
+                else "https://bailian.console.aliyun.com/?tab=app#"
             )
             # Optional query can be appended if needed; keep path clean
             return f"{base}/app-center/high-code-detail/{identifier}"
