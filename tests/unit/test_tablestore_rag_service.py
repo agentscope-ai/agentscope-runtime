@@ -17,19 +17,25 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
 from agentscope_runtime.engine.services.context_manager import (
     create_context_manager,
 )
-from agentscope_runtime.engine.services.ots_rag_service import OTSRAGService
+from agentscope_runtime.engine.services.tablestore_rag_service import (
+    TablestoreRAGService,
+)
 import pytest_asyncio
 
 from tablestore_for_agent_memory.util.tablestore_helper import TablestoreHelper
 
-import tablestore
+from agentscope_runtime.engine.services.utils.tablestore_service_utils import (
+    create_tablestore_client,
+)
+
+from langchain_community.embeddings import DashScopeEmbeddings
 
 
-async def wait_for_index_ready(ots_rag_service: OTSRAGService, length):
+async def wait_for_index_ready(tablestore_rag_service: TablestoreRAGService, length):
     await TablestoreHelper.async_wait_search_index_ready(
-        tablestore_client=ots_rag_service._tablestore_client,
-        table_name=ots_rag_service._knowledge_store._table_name,
-        index_name=ots_rag_service._knowledge_store._search_index_name,
+        tablestore_client=tablestore_rag_service._tablestore_client,
+        table_name=tablestore_rag_service._knowledge_store._table_name,
+        index_name=tablestore_rag_service._knowledge_store._search_index_name,
         total_count=length,
     )
 
@@ -65,48 +71,47 @@ def load_docs():
 
 
 @pytest_asyncio.fixture
-async def ots_rag_service():
+async def tablestore_rag_service():
     endpoint = os.getenv("TABLESTORE_ENDPOINT")
     instance_name = os.getenv("TABLESTORE_INSTANCE_NAME")
     access_key_id = os.getenv("TABLESTORE_ACCESS_KEY_ID")
     access_key_secret = os.getenv("TABLESTORE_ACCESS_KEY_SECRET")
 
-    ots_rag_service = OTSRAGService(
-        tablestore_client=tablestore.AsyncOTSClient(
+    tablestore_rag_service = TablestoreRAGService(
+        tablestore_client=create_tablestore_client(
             end_point=endpoint,
             instance_name=instance_name,
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
-            retry_policy=tablestore.WriteRetryPolicy(),
         )
     )
 
-    await ots_rag_service.start()
-    healthy = await ots_rag_service.health()
+    await tablestore_rag_service.start()
+    healthy = await tablestore_rag_service.health()
     if not healthy:
         raise RuntimeError(
-            "OTS is unavailable.",
+            "Tablestore is unavailable.",
         )
     try:
-        yield ots_rag_service
+        yield tablestore_rag_service
     finally:
-        await ots_rag_service.stop()
+        await tablestore_rag_service.stop()
 
 
 @pytest.mark.asyncio
-async def test_service_lifecycle(ots_rag_service: OTSRAGService):
-    assert await ots_rag_service.health() is True
-    await ots_rag_service.stop()
-    assert await ots_rag_service.health() is False
+async def test_service_lifecycle(tablestore_rag_service: TablestoreRAGService):
+    assert await tablestore_rag_service.health() is True
+    await tablestore_rag_service.stop()
+    assert await tablestore_rag_service.health() is False
 
 
 @pytest.mark.asyncio
-async def test_add_docs(ots_rag_service):
+async def test_add_docs(tablestore_rag_service):
     docs = load_docs()
-    await ots_rag_service.add_docs(docs)
-    await wait_for_index_ready(ots_rag_service, len(docs))
+    await tablestore_rag_service.add_docs(docs)
+    await wait_for_index_ready(tablestore_rag_service, len(docs))
 
-    ret_docs = await ots_rag_service.retrieve(
+    ret_docs = await tablestore_rag_service.retrieve(
         "What is self-reflection of an AI Agent?",
     )
     assert len(ret_docs) == 1
@@ -114,7 +119,7 @@ async def test_add_docs(ots_rag_service):
 
 
 @pytest.mark.asyncio
-async def test_rag(ots_rag_service):
+async def test_rag(tablestore_rag_service):
     USER_ID = "user2"
     SESSION_ID = "session1"
     query = "What is self-reflection of an AI Agent?"
@@ -126,7 +131,7 @@ async def test_rag(ots_rag_service):
     )
 
     async with create_context_manager(
-        rag_service=ots_rag_service,
+        rag_service=tablestore_rag_service,
     ) as context_manager:
         runner = Runner(
             agent=llm_agent,
@@ -165,5 +170,5 @@ async def test_rag(ots_rag_service):
                 all_result = message.content[0].text
 
         print(all_result)
-        await ots_rag_service._knowledge_store.delete_all_documents()
-        await wait_for_index_ready(ots_rag_service, 0)
+        await tablestore_rag_service._knowledge_store.delete_all_documents()
+        await wait_for_index_ready(tablestore_rag_service, 0)

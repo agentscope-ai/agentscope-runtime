@@ -10,17 +10,18 @@ from langchain_core.embeddings import Embeddings
 from langchain_community.embeddings import DashScopeEmbeddings
 
 import tablestore
+from tablestore import AsyncOTSClient as AsyncTablestoreClient
 from tablestore_for_agent_memory.knowledge.async_knowledge_store import (
     AsyncKnowledgeStore,
 )
 from tablestore_for_agent_memory.base.base_knowledge_store import (
-    Document as OTSDocument,
+    Document as TablestoreDocument,
 )
 
 
-class OTSRAGService(RAGService):
+class TablestoreRAGService(RAGService):
     """
-    RAG Service using OTS(aliyun tablestore)
+    RAG Service using Tablestore(aliyun tablestore)
     based on tablestore_for_agent_memory(https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory/blob/main/python/docs/knowledge_store_tutorial.ipynb).
     """
 
@@ -29,7 +30,7 @@ class OTSRAGService(RAGService):
 
     def __init__(
         self,
-        tablestore_client: tablestore.AsyncOTSClient,
+        tablestore_client: AsyncTablestoreClient,
         embedding_model: Optional[Embeddings] = None,
         vector_dimension: int = 1536,
         table_name: Optional[str] = "agentscope_runtime_rag",
@@ -57,22 +58,23 @@ class OTSRAGService(RAGService):
             vector_dimension=self._vector_dimension,
             enable_multi_tenant=False,
             table_name=self._table_name,
-            search_index_name=OTSRAGService._SEARCH_INDEX_NAME,
+            search_index_name=TablestoreRAGService._SEARCH_INDEX_NAME,
             text_field=self._text_field,
             embedding_field=self._embedding_field,
             vector_metric_type=self._vector_metric_type,
             **self._knowledge_store_init_parameter_kwargs,
         )
 
+        await self._knowledge_store.init_table()
+
     async def start(self) -> None:
-        """Start the ots service"""
+        """Start the tablestore service"""
         if self._knowledge_store:
             return
         await self._init_knowledge_store()
-        await self._knowledge_store.init_table()
 
     async def stop(self) -> None:
-        """Close the ots service"""
+        """Close the tablestore service"""
         if self._knowledge_store is None:
             return
         knowledge_store = self._knowledge_store
@@ -81,7 +83,15 @@ class OTSRAGService(RAGService):
 
     async def health(self) -> bool:
         """Checks the health of the service."""
-        return self._knowledge_store is not None
+        if self._knowledge_store is None:
+            return False
+
+        try:
+            async for _ in await self._knowledge_store.get_all_documents():
+                return True
+            return True
+        except Exception:
+            return False
 
     async def add_docs(self, docs: Union[Document, List[Document]]):
         if not isinstance(docs, List):
@@ -94,7 +104,7 @@ class OTSRAGService(RAGService):
         put_tasks = [
             # The conversion logic here is simple, so no separate conversion function is defined.
             self._knowledge_store.put_document(
-                document=OTSDocument(
+                document=TablestoreDocument(
                     document_id=f"document_{uuid.uuid4()}",
                     text=doc.page_content,
                     embedding=embedding,

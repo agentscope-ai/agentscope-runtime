@@ -1,11 +1,15 @@
 import os
 import pytest_asyncio
-import tablestore
-from agentscope_runtime.engine.services.ots_memory_service import OTSMemoryService
-from agentscope_runtime.engine.services.ots_session_history_service import (
-    OTSSessionHistoryService,
+
+from agentscope_runtime.engine.services.tablestore_memory_service import (
+    TablestoreMemoryService,
 )
-from agentscope_runtime.engine.services.ots_rag_service import OTSRAGService
+from agentscope_runtime.engine.services.tablestore_session_history_service import (
+    TablestoreSessionHistoryService,
+)
+from agentscope_runtime.engine.services.tablestore_rag_service import (
+    TablestoreRAGService,
+)
 import pytest
 
 from agentscope_runtime.engine.agents.llm_agent import LLMAgent
@@ -20,53 +24,66 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
 from agentscope_runtime.engine.services.context_manager import ContextManager
 from tablestore_for_agent_memory.util.tablestore_helper import TablestoreHelper
 
+from agentscope_runtime.engine.services.utils.tablestore_service_utils import (
+    create_tablestore_client,
+)
+
 
 @pytest_asyncio.fixture
-async def ots_client():
-    return tablestore.AsyncOTSClient(
+async def tablestore_client():
+    return create_tablestore_client(
         end_point=os.getenv("TABLESTORE_ENDPOINT"),
         instance_name=os.getenv("TABLESTORE_INSTANCE_NAME"),
         access_key_id=os.getenv("TABLESTORE_ACCESS_KEY_ID"),
         access_key_secret=os.getenv("TABLESTORE_ACCESS_KEY_SECRET"),
-        retry_policy=tablestore.WriteRetryPolicy(),
     )
 
 
-async def wait_for_index_ready(ots_memory_service: OTSMemoryService, length):
+async def wait_for_index_ready(
+    tablestore_memory_service: TablestoreMemoryService, length
+):
     await TablestoreHelper.async_wait_search_index_ready(
-        tablestore_client=ots_memory_service._tablestore_client,
-        table_name=ots_memory_service._knowledge_store._table_name,
-        index_name=ots_memory_service._knowledge_store._search_index_name,
+        tablestore_client=tablestore_memory_service._tablestore_client,
+        table_name=tablestore_memory_service._knowledge_store._table_name,
+        index_name=tablestore_memory_service._knowledge_store._search_index_name,
         total_count=length,
     )
 
 
 @pytest_asyncio.fixture
-async def ots_memory_service(ots_client):
-    ots_memory_service = OTSMemoryService(tablestore_client=ots_client)
+async def tablestore_memory_service(tablestore_client):
+    tablestore_memory_service = TablestoreMemoryService(
+        tablestore_client=tablestore_client
+    )
 
-    await ots_memory_service.start()
-    return ots_memory_service
-
-
-@pytest_asyncio.fixture
-async def ots_session_history_service(ots_client):
-    ots_session_history_service = OTSSessionHistoryService(tablestore_client=ots_client)
-
-    await ots_session_history_service.start()
-    return ots_session_history_service
+    await tablestore_memory_service.start()
+    return tablestore_memory_service
 
 
 @pytest_asyncio.fixture
-async def ots_rag_service(ots_client):
-    ots_rag_service = OTSRAGService(tablestore_client=ots_client)
+async def tablestore_session_history_service(tablestore_client):
+    tablestore_session_history_service = TablestoreSessionHistoryService(
+        tablestore_client=tablestore_client
+    )
 
-    await ots_rag_service.start()
-    return ots_rag_service
+    await tablestore_session_history_service.start()
+    return tablestore_session_history_service
+
+
+@pytest_asyncio.fixture
+async def tablestore_rag_service(tablestore_client):
+    tablestore_rag_service = TablestoreRAGService(tablestore_client=tablestore_client)
+
+    await tablestore_rag_service.start()
+    return tablestore_rag_service
 
 
 @pytest.mark.asyncio
-async def test_runner(ots_session_history_service, ots_memory_service, ots_rag_service):
+async def test_runner(
+    tablestore_session_history_service,
+    tablestore_memory_service,
+    tablestore_rag_service,
+):
     from dotenv import load_dotenv
 
     load_dotenv("../../.env")
@@ -79,15 +96,15 @@ async def test_runner(ots_session_history_service, ots_memory_service, ots_rag_s
 
     USER_ID = "user_1"
     SESSION_ID = "session_001"  # Using a fixed ID for simplicity
-    await ots_session_history_service.create_session(
+    await tablestore_session_history_service.create_session(
         user_id=USER_ID,
         session_id=SESSION_ID,
     )
 
     context_manager = ContextManager(
-        session_history_service=ots_session_history_service,
-        memory_service=ots_memory_service,
-        rag_service=ots_rag_service,
+        session_history_service=tablestore_session_history_service,
+        memory_service=tablestore_memory_service,
+        rag_service=tablestore_rag_service,
     )
     async with context_manager:
         runner = Runner(
@@ -177,7 +194,7 @@ async def test_runner(ots_session_history_service, ots_memory_service, ots_rag_s
                         print(res)
 
         print("finish")
-        await wait_for_index_ready(ots_memory_service, 4)
-        await ots_session_history_service.delete_user_sessions(USER_ID)
-        await ots_memory_service.delete_memory(USER_ID)
-        await wait_for_index_ready(ots_memory_service, 0)
+        await wait_for_index_ready(tablestore_memory_service, 4)
+        await tablestore_session_history_service.delete_user_sessions(USER_ID)
+        await tablestore_memory_service.delete_memory(USER_ID)
+        await wait_for_index_ready(tablestore_memory_service, 0)

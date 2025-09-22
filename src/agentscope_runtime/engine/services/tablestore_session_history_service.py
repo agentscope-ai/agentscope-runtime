@@ -7,17 +7,21 @@ from ..schemas.agent_schemas import Message
 from .session_history_service import SessionHistoryService, Session
 
 import tablestore
+from tablestore import AsyncOTSClient as AsyncTablestoreClient
 from tablestore_for_agent_memory.memory.async_memory_store import AsyncMemoryStore
 from tablestore_for_agent_memory.base.common import MetaType, Order
-from tablestore_for_agent_memory.base.base_memory_store import Session as OTSSession
+from tablestore_for_agent_memory.base.base_memory_store import (
+    Session as TablestoreSession,
+)
 
-from .utils.ots_service_utils import (
-    convert_ots_session_to_session,
-    convert_message_to_ots_message,
+from .utils.tablestore_service_utils import (
+    convert_tablestore_session_to_session,
+    convert_message_to_tablestore_message,
+    print_log,
 )
 
 
-class OTSSessionHistoryService(SessionHistoryService):
+class TablestoreSessionHistoryService(SessionHistoryService):
     """An aliyun tablestore implementation of the SessionHistoryService
     based on tablestore_for_agent_memory(https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory/blob/main/python/docs/memory_store_tutorial.ipynb).
     """
@@ -29,7 +33,7 @@ class OTSSessionHistoryService(SessionHistoryService):
 
     def __init__(
         self,
-        tablestore_client: tablestore.AsyncOTSClient,
+        tablestore_client: AsyncTablestoreClient,
         session_table_name: Optional[str] = "agentscope_runtime_session",
         message_table_name: Optional[str] = "agentscope_runtime_message",
         session_secondary_index_meta: Optional[Dict[str, MetaType]] = None,
@@ -37,7 +41,7 @@ class OTSSessionHistoryService(SessionHistoryService):
         message_search_index_schema: Optional[List[tablestore.FieldSchema]] = None,
         **kwargs: Any,
     ) -> None:
-        """Initializes the OTSSessionHistoryService."""
+        """Initializes the TablestoreSessionHistoryService."""
         self._tablestore_client = tablestore_client
         self._session_table_name = session_table_name
         self._message_table_name = message_table_name
@@ -52,26 +56,27 @@ class OTSSessionHistoryService(SessionHistoryService):
             tablestore_client=self._tablestore_client,
             session_table_name=self._session_table_name,
             message_table_name=self._message_table_name,
-            session_secondary_index_name=OTSSessionHistoryService._SESSION_SECONDARY_INDEX_NAME,
-            session_search_index_name=OTSSessionHistoryService._SESSION_SEARCH_INDEX_NAME,
-            message_secondary_index_name=OTSSessionHistoryService._MESSAGE_SECONDARY_INDEX_NAME,
-            message_search_index_name=OTSSessionHistoryService._MESSAGE_SEARCH_INDEX_NAME,
+            session_secondary_index_name=TablestoreSessionHistoryService._SESSION_SECONDARY_INDEX_NAME,
+            session_search_index_name=TablestoreSessionHistoryService._SESSION_SEARCH_INDEX_NAME,
+            message_secondary_index_name=TablestoreSessionHistoryService._MESSAGE_SECONDARY_INDEX_NAME,
+            message_search_index_name=TablestoreSessionHistoryService._MESSAGE_SEARCH_INDEX_NAME,
             session_secondary_index_meta=self._session_secondary_index_meta,
             session_search_index_schema=self._session_search_index_schema,
             message_search_index_schema=self._message_search_index_schema,
             **self._memory_store_init_parameter_kwargs,
         )
 
-    async def start(self) -> None:
-        """Start the ots service"""
-        if self._memory_store:
-            return
-        await self._init_memory_store()
         await self._memory_store.init_table()
         await self._memory_store.init_search_index()
 
+    async def start(self) -> None:
+        """Start the tablestore service"""
+        if self._memory_store:
+            return
+        await self._init_memory_store()
+
     async def stop(self) -> None:
-        """Close the ots service"""
+        """Close the tablestore service"""
         if self._memory_store is None:
             return
         memory_store = self._memory_store
@@ -80,7 +85,15 @@ class OTSSessionHistoryService(SessionHistoryService):
 
     async def health(self) -> bool:
         """Checks the health of the service."""
-        return self._memory_store is not None
+        if self._memory_store is None:
+            return False
+
+        try:
+            async for _ in await self._memory_store.list_all_sessions():
+                return True
+            return True
+        except Exception:
+            return False
 
     async def create_session(
         self,
@@ -101,10 +114,10 @@ class OTSSessionHistoryService(SessionHistoryService):
             if session_id and session_id.strip()
             else str(uuid.uuid4())
         )
-        ots_session = OTSSession(session_id=session_id, user_id=user_id)
+        tablestore_session = TablestoreSession(session_id=session_id, user_id=user_id)
 
-        await self._memory_store.put_session(ots_session)
-        return convert_ots_session_to_session(ots_session)
+        await self._memory_store.put_session(tablestore_session)
+        return convert_tablestore_session_to_session(tablestore_session)
 
     async def get_session(
         self,
@@ -121,22 +134,28 @@ class OTSSessionHistoryService(SessionHistoryService):
             A Session object if found, otherwise None.
         """
 
-        ots_session = await self._memory_store.get_session(
+        tablestore_session = await self._memory_store.get_session(
             user_id=user_id, session_id=session_id
         )
 
-        if not ots_session:
-            ots_session = OTSSession(session_id=session_id, user_id=user_id)
-            await self._memory_store.put_session(ots_session)
-            ots_messages = None
+        if not tablestore_session:
+            tablestore_session = TablestoreSession(
+                session_id=session_id, user_id=user_id
+            )
+            await self._memory_store.put_session(tablestore_session)
+            tablestore_messages = None
         else:
-            ots_messages_iterator = await self._memory_store.list_messages(
+            tablestore_messages_iterator = await self._memory_store.list_messages(
                 session_id=session_id,
                 order=Order.ASC,  # Sort by timestamp, keeping the most recent information at the end of the list.
             )
-            ots_messages = [message async for message in ots_messages_iterator]
+            tablestore_messages = [
+                message async for message in tablestore_messages_iterator
+            ]
 
-        return convert_ots_session_to_session(ots_session, ots_messages)
+        return convert_tablestore_session_to_session(
+            tablestore_session, tablestore_messages
+        )
 
     async def delete_session(self, user_id: str, session_id: str) -> None:
         """Deletes a specific session from memory.
@@ -163,10 +182,10 @@ class OTSSessionHistoryService(SessionHistoryService):
         Returns:
             A list of Session objects belonging to the user, without history.
         """
-        ots_sessions = await self._memory_store.list_sessions(user_id)
+        tablestore_sessions = await self._memory_store.list_sessions(user_id)
         return [
-            convert_ots_session_to_session(ots_session)
-            async for ots_session in ots_sessions
+            convert_tablestore_session_to_session(tablestore_session)
+            async for tablestore_session in tablestore_sessions
         ]
 
     async def append_message(
@@ -202,21 +221,21 @@ class OTSSessionHistoryService(SessionHistoryService):
             norm_message.append(msg)
         session.messages.extend(norm_message)
 
-        ots_session = await self._memory_store.get_session(
+        tablestore_session = await self._memory_store.get_session(
             session_id=session.id, user_id=session.user_id
         )
-        if ots_session:
+        if tablestore_session:
             put_tasks = [
                 self._memory_store.put_message(
-                    convert_message_to_ots_message(message, session)
+                    convert_message_to_tablestore_message(message, session)
                 )
                 for message in norm_message
             ]
             await asyncio.gather(*put_tasks)
 
         else:
-            print(
-                f"Warning: Session {session.id} not found in ots storage for "
+            print_log(
+                f"Warning: Session {session.id} not found in tablestore storage for "
                 f"append_message.",
             )
 
