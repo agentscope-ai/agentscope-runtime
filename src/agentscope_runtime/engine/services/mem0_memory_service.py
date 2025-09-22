@@ -16,7 +16,8 @@ class Mem0MemoryService(MemoryService):
         super().__init__(**kwargs)
         from mem0 import AsyncMemoryClient
 
-        if os.getenv("MEM0_API_KEY") is None:
+        mem0_api_key = os.getenv("MEM0_API_KEY")
+        if mem0_api_key is None:
             raise ValueError("MEM0_API_KEY is not set")
         mem0_api_key = os.getenv("MEM0_API_KEY")
 
@@ -91,17 +92,13 @@ class Mem0MemoryService(MemoryService):
         filters: Optional[Dict[str, Any]] = None,
     ) -> list:
         query = await self.get_query_text(messages[-1])
+        kwargs = {
+            "query": query,
+            "user_id": user_id,
+        }
         if filters:
-            return await self.service.search(
-                filters=filters,
-                query=query,
-                user_id=user_id,
-            )
-        else:
-            return await self.service.search(
-                query=query,
-                user_id=user_id,
-            )
+            kwargs["filters"] = filters
+        return await self.service.search(**kwargs)
 
     async def list_memory(
         self,
