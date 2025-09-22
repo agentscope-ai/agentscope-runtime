@@ -94,7 +94,7 @@ class SearchOptions(BaseModel):
     """Options for intentions recognition and processing during searches."""
 
 
-# 知识库拼装片段数范围 [1, 20]
+# maximum chunk size from knowledge base [1, 20]
 PARAM_MAXIMUM_ALLOWED_CHUNK_NUM_MIN = int(
     os.getenv(
         "PARAM_MAXIMUM_ALLOWED_CHUNK_NUM_MIN",
