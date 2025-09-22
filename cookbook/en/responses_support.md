@@ -201,22 +201,7 @@ Responses API uses OpenAI Response API compatible request format:
 }
 ```
 
-## 7. Response Format
-
-Streaming responses are returned through SSE, with each event containing:
-
-```json
-event: response.created
-data: {"id": "response_id", "object": "response", "status": "created", ...}
-
-event: response.in_progress
-data: {"id": "response_id", "object": "response", "status": "in_progress", ...}
-
-event: response.completed
-data: {"id": "response_id", "object": "response", "status": "completed", ...}
-```
-
-## 8. Important Notes
+## 7. Important Notes
 
 1. **Protocol Adapter**: To enable Responses API protocol, you must wrap your agent with `ResponseAPIDefaultAdapter` and pass it through the `protocol_adapters` parameter.
 
@@ -228,7 +213,7 @@ data: {"id": "response_id", "object": "response", "status": "completed", ...}
 
 5. **Environment Variables**: Ensure correct API keys (such as `DASHSCOPE_API_KEY`) and other necessary environment variables are set.
 
-## 9. Troubleshooting
+## 8. Troubleshooting
 
 - **Service Startup Failure**: Check if the port is occupied and ensure environment variables are set correctly
 - **API Call Failure**: Check if the request format complies with OpenAI Response API specifications

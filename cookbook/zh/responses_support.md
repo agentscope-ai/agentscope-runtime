@@ -201,16 +201,7 @@ Responses API 使用与 OpenAI Response API 兼容的请求格式：
 }
 ```
 
-## 7. 响应格式
-
-流式响应通过 SSE 返回，每个事件包含：
-
-```json
-data: {"id": "response_id", "object": "response", "status": "in_progress", ...}
-data: {"id": "response_id", "object": "response", "status": "completed", ...}
-```
-
-## 8. 注意事项
+## 7. 注意事项
 
 1. **协议适配器**: 启用 Responses API 协议，必须将你的 agent 用 `ResponseAPIDefaultAdapter` 包装，并通过 `protocol_adapters` 参数进行传递。
 
@@ -222,7 +213,7 @@ data: {"id": "response_id", "object": "response", "status": "completed", ...}
 
 5. **环境变量**: 确保设置正确的 API 密钥（如 `DASHSCOPE_API_KEY`）和其他必要的环境变量。
 
-## 9. 故障排除
+## 8. 故障排除
 
 - **服务启动失败**: 检查端口是否被占用，确保环境变量设置正确
 - **API 调用失败**: 检查请求格式是否符合 OpenAI Response API 规范
