@@ -247,8 +247,8 @@ async def main():
         - Resource Name: {result['resource_name']}
         - Workspace ID: {result['workspace_id']}
 
-        🔗 Check deployment status in ModelStudio console:
-        https://bailian.console.aliyun.com/workspace/{result['workspace_id']}/high-code-deploy
+        🔗 Check deployment status in ModelStudio console: {result['url']}
+
 
         📋 Next Steps:
         1. Check deployment status in ModelStudio console
