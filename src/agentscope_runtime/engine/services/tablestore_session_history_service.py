@@ -220,6 +220,9 @@ class TablestoreSessionHistoryService(SessionHistoryService):
 
         norm_message = []
         for msg in message:
+            if msg is None:
+                continue
+
             if not isinstance(msg, Message):
                 msg = Message.model_validate(msg)
             norm_message.append(msg)
