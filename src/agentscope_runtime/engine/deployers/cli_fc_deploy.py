@@ -155,14 +155,17 @@ def main() -> None:
     print("Built wheel at:", result.get("wheel_path", ""))
     if result.get("artifact_url"):
         print("Artifact URL:", result.get("artifact_url"))
-    print("Deploy ID:", result.get("deploy_id"))
     print("Resource Name:", result.get("resource_name"))
     if result.get("workspace_id"):
         print("Workspace:", result.get("workspace_id"))
-    if result.get("url"):
-        console_url = result.get("url")
-        title = "Console URL"
-        url_len = len(console_url)
+
+    console_url = result.get("url")
+    deploy_id = result.get("deploy_id")
+    if console_url and deploy_id:
+        title = "Deploy Result"
+        console_url_str = f"Console URL: {console_url}"
+        deploy_id_str = f"Deploy ID: {deploy_id}"
+        url_len = len(console_url_str)
         box_width = max(url_len, len(title), 20)
 
         # print title
@@ -171,7 +174,8 @@ def main() -> None:
 
         # print content
         print("┏" + "━" * (box_width + 2) + "┓")
-        print(f"┃ {console_url.ljust(box_width)} ┃")
+        print(f"┃ {console_url_str.ljust(box_width)} ┃")
+        print(f"┃ {deploy_id_str.ljust(box_width)} ┃")
         print("┗" + "━" * (box_width + 2) + "┛")
         print("")
 
