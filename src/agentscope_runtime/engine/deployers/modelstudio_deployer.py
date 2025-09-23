@@ -539,7 +539,7 @@ class ModelstudioDeployManager(DeployManager):
                 else "https://bailian.console.aliyun.com/?tab=app#"
             )
             # Optional query can be appended if needed; keep path clean
-            return f"{base}/app-center/high-code-detail"
+            return f"{base}/app-center"
 
         console_url = (
             _build_console_url(
