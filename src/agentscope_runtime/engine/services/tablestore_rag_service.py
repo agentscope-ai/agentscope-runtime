@@ -95,7 +95,7 @@ class TablestoreRAGService(RAGService):
             return True
         except Exception as e:
             tablestore_log(
-                f"Tablestore memory service cannot access Tablestore, error: {str(e)}."
+                f"Tablestore rag service cannot access Tablestore, error: {str(e)}."
             )
             return False
 
