@@ -599,7 +599,8 @@ class ModelstudioDeployManager(DeployManager):
                     extra_packages=extra_packages,
                     **kwargs,
                 )
-                self._generate_env_file(project_dir, environment)
+                if project_dir:
+                    self._generate_env_file(project_dir, environment)
                 cmd = "python main.py"
                 deploy_name = deploy_name or default_deploy_name()
 

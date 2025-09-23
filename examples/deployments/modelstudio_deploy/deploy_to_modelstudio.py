@@ -25,7 +25,6 @@ async def deploy_agent_to_modelstudio():
 
     # 1. Configure OSS
     oss_config = OSSConfig(
-        region="cn-hangzhou",
         # OSS AK/SK optional; fallback to Alibaba Cloud AK/SK
         access_key_id=os.environ.get(
             "OSS_ACCESS_KEY_ID",
@@ -35,12 +34,10 @@ async def deploy_agent_to_modelstudio():
             "OSS_ACCESS_KEY_SECRET",
             os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
         ),
-        bucket_prefix="tmpbucket-agentscope-runtime",
     )
 
     # 2. Configure ModelStudio
     modelstudio_config = ModelstudioConfig(
-        endpoint="bailian-pre.cn-hangzhou.aliyuncs.com",
         workspace_id=os.environ.get("MODELSTUDIO_WORKSPACE_ID"),
         access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
         access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
@@ -250,8 +247,8 @@ async def main():
         - Resource Name: {result['resource_name']}
         - Workspace ID: {result['workspace_id']}
 
-        🔗 Check deployment status in ModelStudio console:
-        https://bailian.console.aliyun.com/workspace/{result['workspace_id']}/high-code-deploy
+        🔗 Check deployment status in ModelStudio console: {result['url']}
+
 
         📋 Next Steps:
         1. Check deployment status in ModelStudio console

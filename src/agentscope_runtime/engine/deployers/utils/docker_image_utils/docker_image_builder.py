@@ -103,12 +103,12 @@ class DockerImageBuilder:
         """
         if not os.path.exists(build_context):
             raise ValueError(f"Build context does not exist: {build_context}")
-
         config = config or BuildConfig()
         full_image_name = self.get_full_name(image_name, image_tag)
 
-        if not source_updated:
-            return full_image_name
+        # if not source_updated:
+        #     return full_image_name
+        logger.info(f"Source Updated: {source_updated}")
 
         # Prepare docker build command
         build_cmd = ["docker", "build", "-t", full_image_name]
