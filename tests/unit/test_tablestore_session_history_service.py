@@ -4,19 +4,21 @@ import os
 
 import pytest
 import pytest_asyncio
-from agentscope_runtime.engine.schemas.agent_schemas import (
-    TextContent,
-    DataContent,
-    MessageType,
-    Message,
-)
-from agentscope_runtime.engine.services.session_history_service import (
-    Session,
-)
 
-from agentscope_runtime.engine.services.tablestore_session_history_service import (
-    TablestoreSessionHistoryService,
+from agentscope_runtime.engine.schemas.agent_schemas import (
+    DataContent,
+    Message,
+    MessageType,
+    TextContent,
 )
+from agentscope_runtime.engine.services.session_history_service import Session
+
+# fmt: off
+from agentscope_runtime.engine.services.tablestore_session_history_service \
+    import (
+        TablestoreSessionHistoryService,
+    )
+# fmt: on
 
 from agentscope_runtime.engine.services.utils.tablestore_service_utils import (
     create_tablestore_client,
@@ -38,7 +40,7 @@ async def tablestore_session_history_service():
     ):
         pytest.skip(
             "tablestore endpoint is None or instance_name is None or "
-            "access_key_id is None or access_key_secret is None"
+            "access_key_id is None or access_key_secret is None",
         )
 
     tablestore_session_history_service = TablestoreSessionHistoryService(
@@ -47,7 +49,7 @@ async def tablestore_session_history_service():
             instance_name=instance_name,
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
-        )
+        ),
     )
 
     await tablestore_session_history_service.start()
@@ -94,9 +96,9 @@ async def test_create_session(
         session.id,
     )
     assert stored_session is not None
-    assert stored_session.messages == [], (
-        "Modification to returned session should not affect stored session."
-    )
+    assert (
+        stored_session.messages == []
+    ), "Modification to returned session should not affect stored session."
 
 
 @pytest.mark.asyncio
@@ -131,7 +133,9 @@ async def test_get_session(
 ) -> None:
     """Tests retrieving a session and ensures it's a deep copy."""
     await tablestore_session_history_service.delete_user_sessions(user_id)
-    created_session = await tablestore_session_history_service.create_session(user_id)
+    created_session = await tablestore_session_history_service.create_session(
+        user_id,
+    )
     retrieved_session = await tablestore_session_history_service.get_session(
         user_id,
         created_session.id,
@@ -151,9 +155,11 @@ async def test_get_session(
     assert refetched_session.messages == []
 
     # Test getting a non-existent session (should create a new one)
-    non_existent_session = await tablestore_session_history_service.get_session(
-        user_id,
-        "non_existent_id",
+    non_existent_session = (
+        await tablestore_session_history_service.get_session(
+            user_id,
+            "non_existent_id",
+        )
     )
     assert non_existent_session is not None
     assert non_existent_session.id == "non_existent_id"
@@ -182,13 +188,19 @@ async def test_delete_session(
 
     # Ensure session exists before deletion
     assert (
-        await tablestore_session_history_service.get_session(user_id, session.id)
+        await tablestore_session_history_service.get_session(
+            user_id,
+            session.id,
+        )
         is not None
     )
 
-    await tablestore_session_history_service.delete_session(user_id, session.id)
+    await tablestore_session_history_service.delete_session(
+        user_id,
+        session.id,
+    )
 
-    # Ensure session is deleted - get_session will create a new empty session
+    # Ensure session is deleted - get_session will create a new empty session.
     retrieved_session = await tablestore_session_history_service.get_session(
         user_id,
         session.id,
@@ -196,10 +208,15 @@ async def test_delete_session(
     assert retrieved_session is not None
     assert retrieved_session.id == session.id
     assert retrieved_session.user_id == user_id
-    assert retrieved_session.messages == []  # Should be empty as it's a new session
+    assert (
+        retrieved_session.messages == []
+    )  # Should be empty as it's a new session
 
     # Test deleting a non-existent session (should not raise error)
-    await tablestore_session_history_service.delete_session(user_id, "non_existent_id")
+    await tablestore_session_history_service.delete_session(
+        user_id,
+        "non_existent_id",
+    )
 
 
 @pytest.mark.asyncio
@@ -210,7 +227,9 @@ async def test_list_sessions(
     """Tests listing sessions for a user."""
     await tablestore_session_history_service.delete_user_sessions(user_id)
     other_user_id = "other_user"
-    await tablestore_session_history_service.delete_user_sessions(other_user_id)
+    await tablestore_session_history_service.delete_user_sessions(
+        other_user_id,
+    )
     # Initially, no sessions
     sessions = await tablestore_session_history_service.list_sessions(user_id)
     assert sessions == []
@@ -225,7 +244,9 @@ async def test_list_sessions(
         {"role": "user", "content": [TextContent(text="Hello")]},
     )
 
-    listed_sessions = await tablestore_session_history_service.list_sessions(user_id)
+    listed_sessions = await tablestore_session_history_service.list_sessions(
+        user_id,
+    )
     assert len(listed_sessions) == 2
 
     session_ids = {s.id for s in listed_sessions}
@@ -236,8 +257,10 @@ async def test_list_sessions(
         assert s.messages == [], "History should be empty in list view."
 
     # Test listing for a user with no sessions
-    other_user_sessions = await tablestore_session_history_service.list_sessions(
-        other_user_id,
+    other_user_sessions = (
+        await tablestore_session_history_service.list_sessions(
+            other_user_id,
+        )
     )
     assert other_user_sessions == []
 
@@ -322,12 +345,15 @@ async def test_append_message(
         "non_existent",
     )
     assert retrieved_session is not None
-    assert retrieved_session.messages == []  # Empty as it's a newly created session
+    assert (
+        retrieved_session.messages == []
+    )  # Empty as it's a newly created session
 
 
 @pytest.mark.asyncio
 async def test_append_abnormal_message(
-    tablestore_session_history_service: TablestoreSessionHistoryService, user_id: str
+    tablestore_session_history_service: TablestoreSessionHistoryService,
+    user_id: str,
 ) -> None:
     await tablestore_session_history_service.delete_user_sessions(user_id)
 
@@ -377,20 +403,31 @@ async def test_append_abnormal_message(
         {
             "id": "msg_1",
             "role": "user",
-            "content": [DataContent(data={"a": 1}), TextContent(text="Hello World!")],
+            "content": [
+                DataContent(data={"a": 1}),
+                TextContent(text="Hello World!"),
+            ],
             "type": MessageType.MESSAGE,
         },
         {
             "id": "msg_1",
             "role": "user",
-            "content": [DataContent(data={"a": 1}), TextContent(text="Hello World!")],
+            "content": [
+                DataContent(data={"a": 1}),
+                TextContent(text="Hello World!"),
+            ],
             "type": MessageType.ERROR,
         },
     ]
 
     for message in messages:
-        session = await tablestore_session_history_service.create_session(user_id)
-        await tablestore_session_history_service.append_message(session, message)
+        session = await tablestore_session_history_service.create_session(
+            user_id,
+        )
+        await tablestore_session_history_service.append_message(
+            session,
+            message,
+        )
 
         # The local session object should also be updated
         assert len(session.messages) == 1

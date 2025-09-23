@@ -1,32 +1,64 @@
+# -*- coding: utf-8 -*-
+# pylint: disable=all
 import os
-import pytest_asyncio
 
-from agentscope_runtime.engine.services.tablestore_memory_service import (
-    TablestoreMemoryService,
-)
-from agentscope_runtime.engine.services.tablestore_session_history_service import (
-    TablestoreSessionHistoryService,
-)
-from agentscope_runtime.engine.services.tablestore_rag_service import (
-    TablestoreRAGService,
-)
 import pytest
-
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
-from agentscope_runtime.engine.llms.qwen_llm import QwenLLM
+import pytest_asyncio
+from tablestore_for_agent_memory.util.tablestore_helper import TablestoreHelper
 
 from agentscope_runtime.engine import Runner
+from agentscope_runtime.engine.agents.llm_agent import LLMAgent
+from agentscope_runtime.engine.llms.qwen_llm import QwenLLM
 from agentscope_runtime.engine.schemas.agent_schemas import (
     AgentRequest,
     MessageType,
     RunStatus,
 )
 from agentscope_runtime.engine.services.context_manager import ContextManager
-from tablestore_for_agent_memory.util.tablestore_helper import TablestoreHelper
+from agentscope_runtime.engine.services.tablestore_memory_service import (
+    TablestoreMemoryService,
+)
+
+from agentscope_runtime.engine.services.tablestore_rag_service import (
+    TablestoreRAGService,
+)
+
+# fmt: off
+from agentscope_runtime.engine.services.tablestore_session_history_service \
+    import (
+        TablestoreSessionHistoryService,
+    )
+# fmt: on
 
 from agentscope_runtime.engine.services.utils.tablestore_service_utils import (
     create_tablestore_client,
 )
+
+
+async def wait_for_index_ready(
+    length,
+):
+    endpoint = os.getenv("TABLESTORE_ENDPOINT")
+    instance_name = os.getenv("TABLESTORE_INSTANCE_NAME")
+    access_key_id = os.getenv("TABLESTORE_ACCESS_KEY_ID")
+    access_key_secret = os.getenv("TABLESTORE_ACCESS_KEY_SECRET")
+
+    client = create_tablestore_client(
+        end_point=endpoint,
+        instance_name=instance_name,
+        access_key_id=access_key_id,
+        access_key_secret=access_key_secret,
+    )
+
+    table_name = "agentscope_runtime_memory"
+    index_name = "agentscope_runtime_knowledge_search_index_name"
+
+    await TablestoreHelper.async_wait_search_index_ready(
+        tablestore_client=client,
+        table_name=table_name,
+        index_name=index_name,
+        total_count=length,
+    )
 
 
 @pytest_asyncio.fixture
@@ -44,7 +76,7 @@ async def tablestore_client():
     ):
         pytest.skip(
             "tablestore endpoint is None or instance_name is None or "
-            "access_key_id is None or access_key_secret is None"
+            "access_key_id is None or access_key_secret is None",
         )
 
     return create_tablestore_client(
@@ -55,21 +87,10 @@ async def tablestore_client():
     )
 
 
-async def wait_for_index_ready(
-    tablestore_memory_service: TablestoreMemoryService, length
-):
-    await TablestoreHelper.async_wait_search_index_ready(
-        tablestore_client=tablestore_memory_service._tablestore_client,
-        table_name=tablestore_memory_service._knowledge_store._table_name,
-        index_name=tablestore_memory_service._knowledge_store._search_index_name,
-        total_count=length,
-    )
-
-
 @pytest_asyncio.fixture
 async def tablestore_memory_service(tablestore_client):
     tablestore_memory_service = TablestoreMemoryService(
-        tablestore_client=tablestore_client
+        tablestore_client=tablestore_client,
     )
 
     await tablestore_memory_service.start()
@@ -79,7 +100,7 @@ async def tablestore_memory_service(tablestore_client):
 @pytest_asyncio.fixture
 async def tablestore_session_history_service(tablestore_client):
     tablestore_session_history_service = TablestoreSessionHistoryService(
-        tablestore_client=tablestore_client
+        tablestore_client=tablestore_client,
     )
 
     await tablestore_session_history_service.start()
@@ -88,7 +109,9 @@ async def tablestore_session_history_service(tablestore_client):
 
 @pytest_asyncio.fixture
 async def tablestore_rag_service(tablestore_client):
-    tablestore_rag_service = TablestoreRAGService(tablestore_client=tablestore_client)
+    tablestore_rag_service = TablestoreRAGService(
+        tablestore_client=tablestore_client,
+    )
 
     await tablestore_rag_service.start()
     return tablestore_rag_service
@@ -128,45 +151,45 @@ async def test_runner(
             context_manager=context_manager,
             environment_manager=None,
         )
-
-        request = AgentRequest.model_validate(
+        request_input = [
             {
-                "input": [
+                "role": "user",
+                "content": [
                     {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": "杭州的天气怎么样？",
-                            },
-                        ],
-                    },
-                    {
-                        "type": "function_call",
-                        "content": [
-                            {
-                                "type": "data",
-                                "data": {
-                                    "call_id": "call_eb113ba709d54ab6a4dcbf",
-                                    "name": "get_current_weather",
-                                    "arguments": '{"location": "杭州"}',
-                                },
-                            },
-                        ],
-                    },
-                    {
-                        "type": "function_call_output",
-                        "content": [
-                            {
-                                "type": "data",
-                                "data": {
-                                    "call_id": "call_eb113ba709d54ab6a4dcbf",
-                                    "output": '{"temperature": 25, "unit": "Celsius"}',
-                                },
-                            },
-                        ],
+                        "type": "text",
+                        "text": "杭州的天气怎么样？",
                     },
                 ],
+            },
+            {
+                "type": "function_call",
+                "content": [
+                    {
+                        "type": "data",
+                        "data": {
+                            "call_id": "call_eb113ba709d54ab6a4dcbf",
+                            "name": "get_current_weather",
+                            "arguments": '{"location": "杭州"}',
+                        },
+                    },
+                ],
+            },
+            {
+                "type": "function_call_output",
+                "content": [
+                    {
+                        "type": "data",
+                        "data": {
+                            "call_id": "call_eb113ba709d54ab6a4dcbf",
+                            "output": '{"temperature": 25, "unit": "Celsius"}',
+                        },
+                    },
+                ],
+            },
+        ]
+        request = AgentRequest.model_validate(
+            {
+                "input": request_input,
                 "stream": True,
                 "session_id": SESSION_ID,
                 "tools": [
@@ -209,8 +232,11 @@ async def test_runner(
                         res = message.content
                         print(res)
 
-        print("finish")
-        await wait_for_index_ready(tablestore_memory_service, 4)
+        print("finish!")
+        await wait_for_index_ready(4)
         await tablestore_session_history_service.delete_user_sessions(USER_ID)
         await tablestore_memory_service.delete_memory(USER_ID)
-        await wait_for_index_ready(tablestore_memory_service, 0)
+        await wait_for_index_ready(0)
+
+
+# pylint: enable=all

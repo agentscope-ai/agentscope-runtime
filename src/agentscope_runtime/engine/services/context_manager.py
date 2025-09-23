@@ -60,7 +60,6 @@ class ContextComposer:
                 role=Role.SYSTEM,
                 content=[TextContent(type=ContentType.TEXT, text=cooked_doc)],
             )
-
             session.messages = [message] + session.messages
 
 

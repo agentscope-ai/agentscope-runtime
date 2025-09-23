@@ -1,30 +1,30 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import uuid
-from langchain_core.documents import Document
+from typing import Any, List, Optional, Union
 
-from .rag_service import RAGService
-from typing import Optional, Any, List, Union
-
-from langchain_core.embeddings import Embeddings
 from langchain_community.embeddings import DashScopeEmbeddings
-
-import tablestore
+from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
 from tablestore import AsyncOTSClient as AsyncTablestoreClient
-from tablestore_for_agent_memory.knowledge.async_knowledge_store import (
-    AsyncKnowledgeStore,
-)
+from tablestore import VectorMetricType
 from tablestore_for_agent_memory.base.base_knowledge_store import (
     Document as TablestoreDocument,
 )
+from tablestore_for_agent_memory.knowledge.async_knowledge_store import (
+    AsyncKnowledgeStore,
+)
 
+from .rag_service import RAGService
 from .utils.tablestore_service_utils import tablestore_log
 
 
 class TablestoreRAGService(RAGService):
     """
     RAG Service using Tablestore(aliyun tablestore)
-    based on tablestore_for_agent_memory(https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory/blob/main/python/docs/knowledge_store_tutorial.ipynb).
+    based on tablestore_for_agent_memory
+    (https://github.com/aliyun/
+    alibabacloud-tablestore-for-agent-memory/blob/main/python/docs/knowledge_store_tutorial.ipynb).
     """
 
     _SEARCH_INDEX_NAME = "agentscope_runtime_knowledge_search_index_name"
@@ -38,7 +38,7 @@ class TablestoreRAGService(RAGService):
         table_name: Optional[str] = "agentscope_runtime_rag",
         text_field: Optional[str] = "text",
         embedding_field: Optional[str] = "embedding",
-        vector_metric_type: tablestore.VectorMetricType = tablestore.VectorMetricType.VM_COSINE,
+        vector_metric_type: VectorMetricType = VectorMetricType.VM_COSINE,
         **kwargs: Any,
     ):
         self._embedding_model = (
@@ -95,7 +95,8 @@ class TablestoreRAGService(RAGService):
             return True
         except Exception as e:
             tablestore_log(
-                f"Tablestore rag service cannot access Tablestore, error: {str(e)}."
+                f"Tablestore rag service "
+                f"cannot access Tablestore, error: {str(e)}.",
             )
             return False
 
@@ -108,14 +109,15 @@ class TablestoreRAGService(RAGService):
         embeddings = self._embedding_model.embed_documents(contents)
 
         put_tasks = [
-            # The conversion logic here is simple, so no separate conversion function is defined.
+            # The conversion logic here is simple,
+            # so no separate conversion function is defined.
             self._knowledge_store.put_document(
                 document=TablestoreDocument(
                     document_id=f"document_{uuid.uuid4()}",
                     text=doc.page_content,
                     embedding=embedding,
                     metadata=doc.metadata,
-                )
+                ),
             )
             for doc, embedding in zip(docs, embeddings)
         ]

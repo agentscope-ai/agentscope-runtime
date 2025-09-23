@@ -1,65 +1,24 @@
+# -*- coding: utf-8 -*-
 import copy
 import json
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+import tablestore
+from langchain_core.embeddings import Embeddings
+from tablestore import AsyncOTSClient as AsyncTablestoreClient
+from tablestore.credentials import CredentialsProvider
 from tablestore_for_agent_memory.base.base_knowledge_store import (
     Document as TablestoreDocument,
 )
-
-import tablestore
-from tablestore import AsyncOTSClient as AsyncTablestoreClient
-from tablestore.credentials import CredentialsProvider
-
 from tablestore_for_agent_memory.base.base_memory_store import (
-    Session as TablestoreSession,
     Message as TablestoreMessage,
 )
-from ..session_history_service import Session, Message
+from tablestore_for_agent_memory.base.base_memory_store import (
+    Session as TablestoreSession,
+)
+
 from ...schemas.agent_schemas import ContentType, MessageType
-
-from langchain_core.embeddings import Embeddings
-
-
-"""
-Dependency Tree:
-                           |**convert_session_to_tablestore_session**|
-                              │                          \
-                    |**convert_message_to_tablestore_message**|  exclude_None_fields_in_place
-                           /            \
-                          /              \
-_generate_tablestore_content_from_message  exclude_None_fields_in_place
-
-
-                |**convert_tablestore_session_to_session**|
-                              │
-               _generate_init_json_from_tablestore_session
-                              │
-                |**convert_tablestore_message_to_message**|
-                              │
-                _generate_init_json_from_tablestore_message
-                              │
-                  _generate_content_from_tablestore_content
-
-
-               |**convert_messages_to_tablestore_documents**|
-                              │
-                |**convert_message_to_tablestore_document**|
-                       /            \
-                      /              \
-_generate_tablestore_content_from_message  exclude_None_fields_in_place
-
-
-                |**convert_tablestore_document_to_message**|
-                              │
-               _generate_init_json_from_tablestore_document
-                              │
-                  _generate_content_from_tablestore_content
-
-Utility functions:
-exclude_None_fields_in_place
-
-Metadata helper:
-get_message_metadata_names
-"""
+from ..session_history_service import Message, Session
 
 
 def create_tablestore_client(
@@ -107,18 +66,21 @@ def convert_tablestore_session_to_session(
 ) -> Session:
     """Convert TablestoreSession to Session"""
     init_json = _generate_init_json_from_tablestore_session(
-        tablestore_session, tablestore_messages
+        tablestore_session,
+        tablestore_messages,
     )
     return Session.model_validate(init_json)
 
 
-# now, the func is not be used, because the interface of session history service don't need this func, just for future
+# now, the func is not be used,
+# because the interface of session history service don't need this func,
+# just for future
 def convert_session_to_tablestore_session(
     session: Session,
 ) -> Tuple[TablestoreSession, List[TablestoreMessage]]:
     """Convert Session to TablestoreSession and list of TablestoreMessage"""
     tablestore_session_metadata = session.model_dump(
-        exclude={"id", "user_id", "messages"}
+        exclude={"id", "user_id", "messages"},
     )
     exclude_None_fields_in_place(tablestore_session_metadata)
     tablestore_session = TablestoreSession(
@@ -143,13 +105,15 @@ def convert_tablestore_message_to_message(
 
 
 def convert_message_to_tablestore_message(
-    message: Message, session: Session
+    message: Message,
+    session: Session,
 ) -> TablestoreMessage:
     """Convert Message to TablestoreMessage"""
     content, content_list = _generate_tablestore_content_from_message(message)
     tablestore_message_metadata = message.model_dump(exclude={"content", "id"})
     tablestore_message_metadata[content_list_name] = json.dumps(
-        content_list, ensure_ascii=False
+        content_list,
+        ensure_ascii=False,
     )
     exclude_None_fields_in_place(tablestore_message_metadata)
     tablestore_message = TablestoreMessage(
@@ -161,25 +125,35 @@ def convert_message_to_tablestore_message(
     return tablestore_message
 
 
-# This function is designed to facilitate batch embedding computation for better performance.
+# This function is designed to
+# facilitate batch embedding computation for better performance.
 def convert_messages_to_tablestore_documents(
     messages: List[Message],
     user_id: str,
     session_id: str,
     embedding_model: Optional[Embeddings] = None,
 ) -> List[TablestoreDocument]:
-    """Convert list of messages to TablestoreDocuments with optional batch embedding"""
+    """Convert list of messages
+    to TablestoreDocuments with optional batch embedding"""
     if not embedding_model:
         return [
-            convert_message_to_tablestore_document(message, user_id, session_id)
+            convert_message_to_tablestore_document(
+                message,
+                user_id,
+                session_id,
+            )
             for message in messages
         ]
 
-    # Batch embed messages: extract content, filter non-empty, compute embeddings, and align results with original messages
+    # Batch embed messages: extract content, filter non-empty,
+    # compute embeddings, and align results with original messages
     contents = [
-        _generate_tablestore_content_from_message(message)[0] for message in messages
+        _generate_tablestore_content_from_message(message)[0]
+        for message in messages
     ]
-    contents_not_none = [content for content in contents if content is not None]
+    contents_not_none = [
+        content for content in contents if content is not None
+    ]
 
     embeddings_not_none = embedding_model.embed_documents(contents_not_none)
     embeddings = []
@@ -192,7 +166,12 @@ def convert_messages_to_tablestore_documents(
         embeddings.append(None)
 
     return [
-        convert_message_to_tablestore_document(message, user_id, session_id, embedding)
+        convert_message_to_tablestore_document(
+            message,
+            user_id,
+            session_id,
+            embedding,
+        )
         for message, embedding in zip(messages, embeddings)
     ]
 
@@ -205,13 +184,15 @@ def convert_message_to_tablestore_document(
 ) -> TablestoreDocument:
     """Convert Message to TablestoreDocument"""
     content, content_list = _generate_tablestore_content_from_message(message)
-    tablestore_document_metadata = message.model_dump(exclude={"content", "id"})
+    tablestore_document_metadata = message.model_dump(
+        exclude={"content", "id"},
+    )
     tablestore_document_metadata.update(
         {
             "user_id": user_id,
             "session_id": session_id,
             content_list_name: json.dumps(content_list, ensure_ascii=False),
-        }
+        },
     )
     exclude_None_fields_in_place(tablestore_document_metadata)
     tablestore_document = TablestoreDocument(
@@ -227,7 +208,9 @@ def convert_tablestore_document_to_message(
     tablestore_document: TablestoreDocument,
 ) -> Message:
     """Convert TablestoreDocument to Message"""
-    init_json = _generate_init_json_from_tablestore_document(tablestore_document)
+    init_json = _generate_init_json_from_tablestore_document(
+        tablestore_document,
+    )
     return Message.model_validate(init_json)
 
 
@@ -239,12 +222,14 @@ def _generate_init_json_from_tablestore_session(
     init_json = {
         "id": tablestore_session.session_id,
         "user_id": tablestore_session.user_id,
-        "messages": [
-            convert_tablestore_message_to_message(tablestore_message)
-            for tablestore_message in tablestore_messages
-        ]
-        if tablestore_messages is not None
-        else [],
+        "messages": (
+            [
+                convert_tablestore_message_to_message(tablestore_message)
+                for tablestore_message in tablestore_messages
+            ]
+            if tablestore_messages is not None
+            else []
+        ),
     }
     # for fit future, having more fields in Session
     init_json.update(tablestore_session.metadata)
@@ -257,15 +242,18 @@ def _generate_init_json_from_tablestore_message(
     """Generate initialization JSON from TablestoreMessage"""
     tablestore_message = copy.deepcopy(tablestore_message)
     tablestore_message_content_list = tablestore_message.metadata.pop(
-        content_list_name, None
+        content_list_name,
+        None,
     )
     init_json = {
         "id": tablestore_message.message_id,
         "content": _generate_content_from_tablestore_content(
             text=tablestore_message.content,
-            content_list=json.loads(tablestore_message_content_list)
-            if tablestore_message_content_list
-            else None,
+            content_list=(
+                json.loads(tablestore_message_content_list)
+                if tablestore_message_content_list
+                else None
+            ),
         ),
     }
     init_json.update(tablestore_message.metadata)
@@ -278,15 +266,18 @@ def _generate_init_json_from_tablestore_document(
     """Generate initialization JSON from TablestoreDocument"""
     tablestore_document = copy.deepcopy(tablestore_document)
     tablestore_document_content_list = tablestore_document.metadata.pop(
-        content_list_name, None
+        content_list_name,
+        None,
     )
     init_json = {
         "id": tablestore_document.document_id,
         "content": _generate_content_from_tablestore_content(
             text=tablestore_document.text,
-            content_list=json.loads(tablestore_document_content_list)
-            if tablestore_document_content_list
-            else None,
+            content_list=(
+                json.loads(tablestore_document_content_list)
+                if tablestore_document_content_list
+                else None
+            ),
         ),
     }
     init_json.update(tablestore_document.metadata)
@@ -294,7 +285,8 @@ def _generate_init_json_from_tablestore_document(
 
 
 def _generate_content_from_tablestore_content(
-    text: str, content_list: List[Dict[str, Any]]
+    text: str,
+    content_list: List[Dict[str, Any]],
 ) -> Optional[List[Dict[str, Any]]]:
     """Generate final content from text and content list"""
     content_list = copy.deepcopy(content_list)

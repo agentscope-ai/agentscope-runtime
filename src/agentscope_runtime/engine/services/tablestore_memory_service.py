@@ -2,26 +2,26 @@
 import asyncio
 import copy
 from enum import Enum
-from typing import Optional, Dict, Any, List
-
-from langchain_core.embeddings import Embeddings
-from langchain_community.embeddings import DashScopeEmbeddings
-
-from .memory_service import MemoryService
-from .utils.tablestore_service_utils import (
-    get_message_metadata_names,
-    convert_tablestore_document_to_message,
-    convert_messages_to_tablestore_documents,
-    tablestore_log,
-)
-from ..schemas.agent_schemas import Message, MessageType
+from typing import Any, Dict, List, Optional
 
 import tablestore
+from langchain_community.embeddings import DashScopeEmbeddings
+from langchain_core.embeddings import Embeddings
 from tablestore import AsyncOTSClient as AsyncTablestoreClient
+from tablestore import VectorMetricType
+from tablestore_for_agent_memory.base.filter import Filters
 from tablestore_for_agent_memory.knowledge.async_knowledge_store import (
     AsyncKnowledgeStore,
 )
-from tablestore_for_agent_memory.base.filter import Filters
+
+from ..schemas.agent_schemas import Message, MessageType
+from .memory_service import MemoryService
+from .utils.tablestore_service_utils import (
+    convert_messages_to_tablestore_documents,
+    convert_tablestore_document_to_message,
+    get_message_metadata_names,
+    tablestore_log,
+)
 
 
 class SearchStrategy(Enum):
@@ -32,7 +32,9 @@ class SearchStrategy(Enum):
 class TablestoreMemoryService(MemoryService):
     """
     A Tablestore-based implementation of the memory service.
-    based on tablestore_for_agent_memory(https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory/blob/main/python/docs/knowledge_store_tutorial.ipynb).
+    based on tablestore_for_agent_memory
+    (https://github.com/aliyun/
+    alibabacloud-tablestore-for-agent-memory/blob/main/python/docs/knowledge_store_tutorial.ipynb).
     """
 
     _SEARCH_INDEX_NAME = "agentscope_runtime_knowledge_search_index_name"
@@ -51,12 +53,12 @@ class TablestoreMemoryService(MemoryService):
         ),
         text_field: Optional[str] = "text",
         embedding_field: Optional[str] = "embedding",
-        vector_metric_type: tablestore.VectorMetricType = tablestore.VectorMetricType.VM_COSINE,
+        vector_metric_type: VectorMetricType = VectorMetricType.VM_COSINE,
         **kwargs: Any,
     ):
         self._search_strategy = search_strategy
         self._embedding_model = (
-            embedding_model  # the parameter is None, don't store vector
+            embedding_model  # the parameter is None, don't store vector.
         )
 
         if (
@@ -64,14 +66,16 @@ class TablestoreMemoryService(MemoryService):
             and self._embedding_model is None
         ):
             raise ValueError(
-                "Embedding model is required when search strategy is VECTOR."
+                "Embedding model is required when search strategy is VECTOR.",
             )
 
         self._tablestore_client = tablestore_client
         self._vector_dimension = vector_dimension
         self._table_name = table_name
         self._search_index_schema = (
-            list(search_index_schema) if search_index_schema is not None else None
+            list(search_index_schema)
+            if search_index_schema is not None
+            else None
         )
         self._text_field = text_field
         self._embedding_field = embedding_field
@@ -84,7 +88,9 @@ class TablestoreMemoryService(MemoryService):
             tablestore_client=self._tablestore_client,
             vector_dimension=self._vector_dimension,
             enable_multi_tenant=False,
-            # enable multi tenant will make user be confused, we unify the usage of session id and user id, and allow users to configure the index themselves.
+            # enable multi tenant will make user be confused,
+            # we unify the usage of session id and user id,
+            # and allow users to configure the index themselves.
             table_name=self._table_name,
             search_index_name=TablestoreMemoryService._SEARCH_INDEX_NAME,
             search_index_schema=copy.deepcopy(self._search_index_schema),
@@ -122,7 +128,8 @@ class TablestoreMemoryService(MemoryService):
             return True
         except Exception as e:
             tablestore_log(
-                f"Tablestore memory service cannot access Tablestore, error: {str(e)}."
+                f"Tablestore memory service "
+                f"cannot access Tablestore, error: {str(e)}.",
             )
             return False
 
@@ -138,11 +145,16 @@ class TablestoreMemoryService(MemoryService):
         if not messages:
             return
 
+        tablestore_documents = convert_messages_to_tablestore_documents(
+            messages,
+            user_id,
+            session_id,
+            self._embedding_model,
+        )
+
         put_tasks = [
             self._knowledge_store.put_document(tablestore_document)
-            for tablestore_document in convert_messages_to_tablestore_documents(
-                messages, user_id, session_id, self._embedding_model
-            )
+            for tablestore_document in tablestore_documents
         ]
         await asyncio.gather(*put_tasks)
 
@@ -163,7 +175,11 @@ class TablestoreMemoryService(MemoryService):
         messages: list,
         filters: Optional[Dict[str, Any]] = None,
     ) -> list:
-        if not messages or not isinstance(messages, list) or len(messages) == 0:
+        if (
+            not messages
+            or not isinstance(messages, list)
+            or len(messages) == 0
+        ):
             return []
 
         query = await TablestoreMemoryService.get_query_text(messages[-1])
@@ -171,7 +187,11 @@ class TablestoreMemoryService(MemoryService):
             return []
 
         top_k = 100
-        if filters and "top_k" in filters and isinstance(filters["top_k"], int):
+        if (
+            filters
+            and "top_k" in filters
+            and isinstance(filters["top_k"], int)
+        ):
             top_k = filters["top_k"]
 
         if self._search_strategy == SearchStrategy.FULL_TEXT:
@@ -199,7 +219,9 @@ class TablestoreMemoryService(MemoryService):
                 ).hits
             ]
         else:
-            raise ValueError(f"Unsupported search strategy: {self._search_strategy}")
+            raise ValueError(
+                f"Unsupported search strategy: {self._search_strategy}",
+            )
 
         return matched_messages
 
@@ -225,7 +247,8 @@ class TablestoreMemoryService(MemoryService):
             ).next_token
             if not next_token:
                 tablestore_log(
-                    "Page number exceeds the total number of pages, return empty list."
+                    "Page number exceeds the total number of pages, "
+                    "return empty list.",
                 )
                 return []
 
@@ -252,19 +275,23 @@ class TablestoreMemoryService(MemoryService):
             hit.document
             for hit in (
                 await self._knowledge_store.search_documents(
-                    metadata_filter=Filters.eq("user_id", user_id)
-                    if not session_id
-                    else Filters.logical_and(
-                        [
-                            Filters.eq("user_id", user_id),
-                            Filters.eq("session_id", session_id),
-                        ]
-                    )
+                    metadata_filter=(
+                        Filters.eq("user_id", user_id)
+                        if not session_id
+                        else Filters.logical_and(
+                            [
+                                Filters.eq("user_id", user_id),
+                                Filters.eq("session_id", session_id),
+                            ],
+                        )
+                    ),
                 )
             ).hits
         ]
         delete_tasks = [
-            self._knowledge_store.delete_document(tablestore_document.document_id)
+            self._knowledge_store.delete_document(
+                tablestore_document.document_id,
+            )
             for tablestore_document in delete_tablestore_documents
         ]
         await asyncio.gather(*delete_tasks)
