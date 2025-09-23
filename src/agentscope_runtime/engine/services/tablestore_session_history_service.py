@@ -1,34 +1,41 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import uuid
-from typing import List, Dict, Optional, Union, Any
-
-from ..schemas.agent_schemas import Message
-from .session_history_service import SessionHistoryService, Session
+from typing import Any, Dict, List, Optional, Union
 
 import tablestore
 from tablestore import AsyncOTSClient as AsyncTablestoreClient
-from tablestore_for_agent_memory.memory.async_memory_store import AsyncMemoryStore
-from tablestore_for_agent_memory.base.common import MetaType, Order
 from tablestore_for_agent_memory.base.base_memory_store import (
     Session as TablestoreSession,
 )
+from tablestore_for_agent_memory.base.common import MetaType, Order
+from tablestore_for_agent_memory.memory.async_memory_store import (
+    AsyncMemoryStore,
+)
 
+from ..schemas.agent_schemas import Message
+from .session_history_service import Session, SessionHistoryService
 from .utils.tablestore_service_utils import (
-    convert_tablestore_session_to_session,
     convert_message_to_tablestore_message,
+    convert_tablestore_session_to_session,
     tablestore_log,
 )
 
 
 class TablestoreSessionHistoryService(SessionHistoryService):
     """An aliyun tablestore implementation of the SessionHistoryService
-    based on tablestore_for_agent_memory(https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory/blob/main/python/docs/memory_store_tutorial.ipynb).
+    based on tablestore_for_agent_memory
+    (https://github.com/aliyun/
+    alibabacloud-tablestore-for-agent-memory/blob/main/python/docs/memory_store_tutorial.ipynb).
     """
 
-    _SESSION_SECONDARY_INDEX_NAME = "agentscope_runtime_session_secondary_index"
+    _SESSION_SECONDARY_INDEX_NAME = (
+        "agentscope_runtime_session_secondary_index"
+    )
     _SESSION_SEARCH_INDEX_NAME = "agentscope_runtime_session_search_index"
-    _MESSAGE_SECONDARY_INDEX_NAME = "agentscope_runtime_message_secondary_index"
+    _MESSAGE_SECONDARY_INDEX_NAME = (
+        "agentscope_runtime_message_secondary_index"
+    )
     _MESSAGE_SEARCH_INDEX_NAME = "agentscope_runtime_message_search_index"
 
     def __init__(
@@ -37,8 +44,12 @@ class TablestoreSessionHistoryService(SessionHistoryService):
         session_table_name: Optional[str] = "agentscope_runtime_session",
         message_table_name: Optional[str] = "agentscope_runtime_message",
         session_secondary_index_meta: Optional[Dict[str, MetaType]] = None,
-        session_search_index_schema: Optional[List[tablestore.FieldSchema]] = None,
-        message_search_index_schema: Optional[List[tablestore.FieldSchema]] = None,
+        session_search_index_schema: Optional[
+            List[tablestore.FieldSchema]
+        ] = None,
+        message_search_index_schema: Optional[
+            List[tablestore.FieldSchema]
+        ] = None,
         **kwargs: Any,
     ) -> None:
         """Initializes the TablestoreSessionHistoryService."""
@@ -56,10 +67,10 @@ class TablestoreSessionHistoryService(SessionHistoryService):
             tablestore_client=self._tablestore_client,
             session_table_name=self._session_table_name,
             message_table_name=self._message_table_name,
-            session_secondary_index_name=TablestoreSessionHistoryService._SESSION_SECONDARY_INDEX_NAME,
-            session_search_index_name=TablestoreSessionHistoryService._SESSION_SEARCH_INDEX_NAME,
-            message_secondary_index_name=TablestoreSessionHistoryService._MESSAGE_SECONDARY_INDEX_NAME,
-            message_search_index_name=TablestoreSessionHistoryService._MESSAGE_SEARCH_INDEX_NAME,
+            session_secondary_index_name=self._SESSION_SECONDARY_INDEX_NAME,
+            session_search_index_name=self._SESSION_SEARCH_INDEX_NAME,
+            message_secondary_index_name=self._MESSAGE_SECONDARY_INDEX_NAME,
+            message_search_index_name=self._MESSAGE_SEARCH_INDEX_NAME,
             session_secondary_index_meta=self._session_secondary_index_meta,
             session_search_index_schema=self._session_search_index_schema,
             message_search_index_schema=self._message_search_index_schema,
@@ -86,7 +97,9 @@ class TablestoreSessionHistoryService(SessionHistoryService):
     async def health(self) -> bool:
         """Checks the health of the service."""
         if self._memory_store is None:
-            tablestore_log("Tablestore session history service is not started.")
+            tablestore_log(
+                "Tablestore session history service is not started.",
+            )
             return False
 
         try:
@@ -95,7 +108,8 @@ class TablestoreSessionHistoryService(SessionHistoryService):
             return True
         except Exception as e:
             tablestore_log(
-                f"Tablestore session history service cannot access Tablestore, error: {str(e)}."
+                f"Tablestore session history service "
+                f"cannot access Tablestore, error: {str(e)}.",
             )
             return False
 
@@ -118,7 +132,10 @@ class TablestoreSessionHistoryService(SessionHistoryService):
             if session_id and session_id.strip()
             else str(uuid.uuid4())
         )
-        tablestore_session = TablestoreSession(session_id=session_id, user_id=user_id)
+        tablestore_session = TablestoreSession(
+            session_id=session_id,
+            user_id=user_id,
+        )
 
         await self._memory_store.put_session(tablestore_session)
         return convert_tablestore_session_to_session(tablestore_session)
@@ -139,26 +156,31 @@ class TablestoreSessionHistoryService(SessionHistoryService):
         """
 
         tablestore_session = await self._memory_store.get_session(
-            user_id=user_id, session_id=session_id
+            user_id=user_id,
+            session_id=session_id,
         )
 
         if not tablestore_session:
             tablestore_session = TablestoreSession(
-                session_id=session_id, user_id=user_id
+                session_id=session_id,
+                user_id=user_id,
             )
             await self._memory_store.put_session(tablestore_session)
             tablestore_messages = None
         else:
-            tablestore_messages_iterator = await self._memory_store.list_messages(
+            messages_iterator = await self._memory_store.list_messages(
                 session_id=session_id,
-                order=Order.ASC,  # Sort by timestamp, keeping the most recent information at the end of the list.
+                order=Order.ASC,
+                # Sort by timestamp,
+                # keeping the most recent information at the end of the list.
             )
             tablestore_messages = [
-                message async for message in tablestore_messages_iterator
+                message async for message in messages_iterator
             ]
 
         return convert_tablestore_session_to_session(
-            tablestore_session, tablestore_messages
+            tablestore_session,
+            tablestore_messages,
         )
 
     async def delete_session(self, user_id: str, session_id: str) -> None:
@@ -171,7 +193,8 @@ class TablestoreSessionHistoryService(SessionHistoryService):
             session_id: The identifier for the session to delete.
         """
         await self._memory_store.delete_session_and_messages(
-            user_id=user_id, session_id=session_id
+            user_id=user_id,
+            session_id=session_id,
         )
 
     async def list_sessions(self, user_id: str) -> list[Session]:
@@ -229,12 +252,13 @@ class TablestoreSessionHistoryService(SessionHistoryService):
         session.messages.extend(norm_message)
 
         tablestore_session = await self._memory_store.get_session(
-            session_id=session.id, user_id=session.user_id
+            session_id=session.id,
+            user_id=session.user_id,
         )
         if tablestore_session:
             put_tasks = [
                 self._memory_store.put_message(
-                    convert_message_to_tablestore_message(message, session)
+                    convert_message_to_tablestore_message(message, session),
                 )
                 for message in norm_message
             ]
@@ -242,7 +266,8 @@ class TablestoreSessionHistoryService(SessionHistoryService):
 
         else:
             tablestore_log(
-                f"Warning: Session {session.id} not found in tablestore storage for "
+                f"Warning: Session {session.id} not found "
+                f"in tablestore storage for "
                 f"append_message.",
             )
 

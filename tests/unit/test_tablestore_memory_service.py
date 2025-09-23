@@ -1,39 +1,49 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=redefined-outer-name, protected-access
-import asyncio
 import os
-from time import sleep
 
 import pytest
 import pytest_asyncio
-
-from agentscope_runtime.engine.services.tablestore_memory_service import (
-    TablestoreMemoryService,
-    SearchStrategy,
-)
-from agentscope_runtime.engine.schemas.agent_schemas import (
-    Message,
-    MessageType,
-    TextContent,
-    ContentType,
-    Role,
-)
 from tablestore_for_agent_memory.util.tablestore_helper import TablestoreHelper
 
-import tablestore
-
+from agentscope_runtime.engine.schemas.agent_schemas import (
+    ContentType,
+    Message,
+    MessageType,
+    Role,
+    TextContent,
+)
+from agentscope_runtime.engine.services.tablestore_memory_service import (
+    SearchStrategy,
+    TablestoreMemoryService,
+)
 from agentscope_runtime.engine.services.utils.tablestore_service_utils import (
     create_tablestore_client,
 )
 
 
 async def wait_for_index_ready(
-    tablestore_memory_service: TablestoreMemoryService, length
+    length,
 ):
+    endpoint = os.getenv("TABLESTORE_ENDPOINT")
+    instance_name = os.getenv("TABLESTORE_INSTANCE_NAME")
+    access_key_id = os.getenv("TABLESTORE_ACCESS_KEY_ID")
+    access_key_secret = os.getenv("TABLESTORE_ACCESS_KEY_SECRET")
+
+    tablestore_client = create_tablestore_client(
+        end_point=endpoint,
+        instance_name=instance_name,
+        access_key_id=access_key_id,
+        access_key_secret=access_key_secret,
+    )
+
+    table_name = "agentscope_runtime_memory"
+    index_name = "agentscope_runtime_knowledge_search_index_name"
+
     await TablestoreHelper.async_wait_search_index_ready(
-        tablestore_client=tablestore_memory_service._tablestore_client,
-        table_name=tablestore_memory_service._knowledge_store._table_name,
-        index_name=tablestore_memory_service._knowledge_store._search_index_name,
+        tablestore_client=tablestore_client,
+        table_name=table_name,
+        index_name=index_name,
         total_count=length,
     )
 
@@ -62,7 +72,7 @@ async def tablestore_memory_service():
     ):
         pytest.skip(
             "tablestore endpoint is None or instance_name is None or "
-            "access_key_id is None or access_key_secret is None"
+            "access_key_id is None or access_key_secret is None",
         )
 
     tablestore_memory_service = TablestoreMemoryService(
@@ -71,7 +81,7 @@ async def tablestore_memory_service():
             instance_name=instance_name,
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
-        )
+        ),
     )
 
     await tablestore_memory_service.start()
@@ -101,7 +111,7 @@ async def tablestore_memory_service_vector():
     ):
         pytest.skip(
             "tablestore endpoint is None or instance_name is None or "
-            "access_key_id is None or access_key_secret is None"
+            "access_key_id is None or access_key_secret is None",
         )
 
     tablestore_memory_service_vector = TablestoreMemoryService(
@@ -141,7 +151,7 @@ async def test_create_error_state_client():
     ):
         pytest.skip(
             "tablestore endpoint is None or instance_name is None or "
-            "access_key_id is None or access_key_secret is None"
+            "access_key_id is None or access_key_secret is None",
         )
 
     try:
@@ -158,11 +168,16 @@ async def test_create_error_state_client():
         assert False
     except Exception as e:
         assert isinstance(e, ValueError)
-        assert str(e) == "Embedding model is required when search strategy is VECTOR."
+        assert (
+            str(e)
+            == "Embedding model is required when search strategy is VECTOR."
+        )
 
 
 @pytest.mark.asyncio
-async def test_service_lifecycle(tablestore_memory_service: TablestoreMemoryService):
+async def test_service_lifecycle(
+    tablestore_memory_service: TablestoreMemoryService,
+):
     assert await tablestore_memory_service.health() is True
     await tablestore_memory_service.stop()
     assert await tablestore_memory_service.health() is False
@@ -176,12 +191,15 @@ async def test_add_and_search_memory_no_session(
     await tablestore_memory_service.delete_memory(user_id)
     messages = [create_message(Role.USER, "hello world")]
     await tablestore_memory_service.add_memory(user_id, messages)
-    await wait_for_index_ready(tablestore_memory_service, 1)
-    retrieved = await tablestore_memory_service.search_memory(user_id, messages)
+    await wait_for_index_ready(1)
+    retrieved = await tablestore_memory_service.search_memory(
+        user_id,
+        messages,
+    )
     assert [m.dict() for m in retrieved] == [m.dict() for m in messages]
 
     await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(tablestore_memory_service, 0)
+    await wait_for_index_ready(0)
 
 
 @pytest.mark.asyncio
@@ -193,12 +211,15 @@ async def test_add_and_search_memory_with_session(
     await tablestore_memory_service.delete_memory(user_id)
     messages = [create_message(Role.USER, "hello from session")]
     await tablestore_memory_service.add_memory(user_id, messages, session_id)
-    await wait_for_index_ready(tablestore_memory_service, 1)
-    retrieved = await tablestore_memory_service.search_memory(user_id, messages)
+    await wait_for_index_ready(1)
+    retrieved = await tablestore_memory_service.search_memory(
+        user_id,
+        messages,
+    )
     assert [m.dict() for m in retrieved] == [m.dict() for m in messages]
 
     await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(tablestore_memory_service, 0)
+    await wait_for_index_ready(0)
 
 
 @pytest.mark.asyncio
@@ -212,9 +233,12 @@ async def test_search_memory_multiple_sessions(
     await tablestore_memory_service.add_memory(user_id, messages1, "session1")
     await tablestore_memory_service.add_memory(user_id, messages2, "session2")
 
-    await wait_for_index_ready(tablestore_memory_service, 2)
+    await wait_for_index_ready(2)
     search_query = [create_message(Role.USER, "banana")]
-    retrieved = await tablestore_memory_service.search_memory(user_id, search_query)
+    retrieved = await tablestore_memory_service.search_memory(
+        user_id,
+        search_query,
+    )
     # The order is not guaranteed, so check for content
     assert len(retrieved) == 2
     ret_dicts = [m.dict() for m in retrieved]
@@ -230,7 +254,7 @@ async def test_search_memory_multiple_sessions(
     assert messages1[0].dict() == retrieved_apple[0].dict()
 
     await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(tablestore_memory_service, 0)
+    await wait_for_index_ready(0)
 
 
 @pytest.mark.asyncio
@@ -240,11 +264,12 @@ async def test_search_memory_with_top_k(
     user_id = "user4"
     await tablestore_memory_service.delete_memory(user_id)
     messages = [
-        create_message(Role.USER, f"message with keyword {i}") for i in range(5)
+        create_message(Role.USER, f"message with keyword {i}")
+        for i in range(5)
     ]
     await tablestore_memory_service.add_memory(user_id, messages)
 
-    await wait_for_index_ready(tablestore_memory_service, 5)
+    await wait_for_index_ready(5)
     search_query = [create_message(Role.USER, "keyword")]
     retrieved = await tablestore_memory_service.search_memory(
         user_id,
@@ -254,7 +279,7 @@ async def test_search_memory_with_top_k(
     assert len(retrieved) == 3
 
     await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(tablestore_memory_service, 0)
+    await wait_for_index_ready(0)
 
 
 @pytest.mark.asyncio
@@ -266,13 +291,16 @@ async def test_search_memory_no_match(
     messages = [create_message(Role.USER, "some content here")]
     await tablestore_memory_service.add_memory(user_id, messages)
 
-    await wait_for_index_ready(tablestore_memory_service, 1)
+    await wait_for_index_ready(1)
     search_query = [create_message(Role.USER, "xyz")]
-    retrieved = await tablestore_memory_service.search_memory(user_id, search_query)
+    retrieved = await tablestore_memory_service.search_memory(
+        user_id,
+        search_query,
+    )
     assert retrieved == []
 
     await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(tablestore_memory_service, 0)
+    await wait_for_index_ready(0)
 
 
 @pytest.mark.asyncio
@@ -286,7 +314,7 @@ async def test_list_memory_pagination(
     await tablestore_memory_service.add_memory(user_id, messages1, "session1")
     await tablestore_memory_service.add_memory(user_id, messages2, "session2")
 
-    await wait_for_index_ready(tablestore_memory_service, 51)
+    await wait_for_index_ready(51)
 
     for page_num in range(5):
         listed_page = await tablestore_memory_service.list_memory(
@@ -310,7 +338,7 @@ async def test_list_memory_pagination(
     assert len(listed_page) == 0
 
     await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(tablestore_memory_service, 0)
+    await wait_for_index_ready(0)
 
 
 @pytest.mark.asyncio
@@ -328,10 +356,10 @@ async def test_delete_memory_session(
         [msg2],
         "another_session",
     )
-    await wait_for_index_ready(tablestore_memory_service, 2)
+    await wait_for_index_ready(2)
 
     await tablestore_memory_service.delete_memory(user_id, session_id)
-    await wait_for_index_ready(tablestore_memory_service, 1)
+    await wait_for_index_ready(1)
 
     # After deleting session, msg1 should not be found
     retrieved = await tablestore_memory_service.search_memory(
@@ -349,21 +377,23 @@ async def test_delete_memory_session(
     assert msg2.dict() == retrieved[0].dict()
 
     await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(tablestore_memory_service, 0)
+    await wait_for_index_ready(0)
 
 
 @pytest.mark.asyncio
-async def test_delete_memory_user(tablestore_memory_service: TablestoreMemoryService):
+async def test_delete_memory_user(
+    tablestore_memory_service: TablestoreMemoryService,
+):
     user_id = "user_to_delete"
     await tablestore_memory_service.delete_memory(user_id)
     await tablestore_memory_service.add_memory(
         user_id,
         [create_message(Role.USER, "some message")],
     )
-    await wait_for_index_ready(tablestore_memory_service, 1)
+    await wait_for_index_ready(1)
 
     await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(tablestore_memory_service, 0)
+    await wait_for_index_ready(0)
 
     retrieved = await tablestore_memory_service.search_memory(
         user_id,
@@ -372,7 +402,7 @@ async def test_delete_memory_user(tablestore_memory_service: TablestoreMemorySer
     assert retrieved == []
 
     await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(tablestore_memory_service, 0)
+    await wait_for_index_ready(0)
 
 
 @pytest.mark.asyncio
@@ -396,7 +426,7 @@ async def test_operations_on_non_existent_user(
     await tablestore_memory_service.delete_memory(user_id, "some_session")
 
     await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(tablestore_memory_service, 0)
+    await wait_for_index_ready(0)
 
 
 @pytest.mark.asyncio
@@ -409,12 +439,13 @@ async def test_vector_search(tablestore_memory_service_vector):
         create_message(Role.USER, "The cat is sleeping"),
     ]
     await tablestore_memory_service_vector.add_memory(user_id, messages)
-    await wait_for_index_ready(tablestore_memory_service_vector, 3)
+    await wait_for_index_ready(3)
 
     # Test vector search with semantic query
     search_query = [create_message(Role.USER, "What is the weather like?")]
     retrieved = await tablestore_memory_service_vector.search_memory(
-        user_id, search_query
+        user_id,
+        search_query,
     )
     assert len(retrieved) == 3
     # The first result should be the most similar message
@@ -422,19 +453,23 @@ async def test_vector_search(tablestore_memory_service_vector):
 
     # Test vector search with top_k parameter
     retrieved_top1 = await tablestore_memory_service_vector.search_memory(
-        user_id, search_query, filters={"top_k": 1}
+        user_id,
+        search_query,
+        filters={"top_k": 1},
     )
     assert len(retrieved_top1) == 1
     assert "sunny" in retrieved_top1[0].content[0].text
 
     retrieved_top2 = await tablestore_memory_service_vector.search_memory(
-        user_id, search_query, filters={"top_k": 2}
+        user_id,
+        search_query,
+        filters={"top_k": 2},
     )
     assert len(retrieved_top2) == 2
     assert "sunny" in retrieved_top1[0].content[0].text
 
     await tablestore_memory_service_vector.delete_memory(user_id)
-    await wait_for_index_ready(tablestore_memory_service_vector, 0)
+    await wait_for_index_ready(0)
 
     # Test vector search with error message
     messages = [
@@ -444,7 +479,7 @@ async def test_vector_search(tablestore_memory_service_vector):
     ]
     messages[0].type = MessageType.ERROR
     await tablestore_memory_service_vector.add_memory(user_id, messages)
-    await wait_for_index_ready(tablestore_memory_service_vector, 3)
+    await wait_for_index_ready(3)
 
     retrieved = await tablestore_memory_service_vector.list_memory(user_id)
     assert len(retrieved) == 3
@@ -453,7 +488,8 @@ async def test_vector_search(tablestore_memory_service_vector):
 
     search_query = [create_message(Role.USER, "What is the weather like?")]
     retrieved = await tablestore_memory_service_vector.search_memory(
-        user_id, search_query
+        user_id,
+        search_query,
     )
 
     assert len(retrieved) == 2
@@ -461,11 +497,13 @@ async def test_vector_search(tablestore_memory_service_vector):
 
     search_query = [create_message(Role.USER, "What is the cat doing?")]
     retrieved = await tablestore_memory_service_vector.search_memory(
-        user_id, search_query, filters={"top_k": 1}
+        user_id,
+        search_query,
+        filters={"top_k": 1},
     )
 
     assert len(retrieved) == 1
     assert "sleeping" in retrieved[0].content[0].text
 
     await tablestore_memory_service_vector.delete_memory(user_id)
-    await wait_for_index_ready(tablestore_memory_service_vector, 0)
+    await wait_for_index_ready(0)

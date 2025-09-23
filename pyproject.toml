@@ -84,11 +84,13 @@ llamaindex_rag=[
     "langchain-community>=0.3.27",
     "bs4>=0.0.2",
 ]
+
 aliyun_tablestore=[
     "tablestore-for-agent-memory>=1.1.0",
     "dashscope>=1.24.4",
     "langchain-community>=0.3.27",
 ]
+
 memory-ext = [
     "reme-ai==0.1.9 ; python_full_version >= '3.12'",
     "mem0ai>=0.1.117"

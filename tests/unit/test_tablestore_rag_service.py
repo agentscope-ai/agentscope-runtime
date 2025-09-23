@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
-import asyncio
 import os
 
 import pytest
+import pytest_asyncio
 from dotenv import load_dotenv
+from tablestore_for_agent_memory.util.tablestore_helper import TablestoreHelper
 
 from agentscope_runtime.engine import Runner
 from agentscope_runtime.engine.agents.llm_agent import LLMAgent
 from agentscope_runtime.engine.llms import QwenLLM
 from agentscope_runtime.engine.schemas.agent_schemas import (
-    MessageType,
     AgentRequest,
-    RunStatus,
     Message,
+    MessageType,
+    RunStatus,
 )
 from agentscope_runtime.engine.services.context_manager import (
     create_context_manager,
@@ -20,22 +21,33 @@ from agentscope_runtime.engine.services.context_manager import (
 from agentscope_runtime.engine.services.tablestore_rag_service import (
     TablestoreRAGService,
 )
-import pytest_asyncio
-
-from tablestore_for_agent_memory.util.tablestore_helper import TablestoreHelper
-
 from agentscope_runtime.engine.services.utils.tablestore_service_utils import (
     create_tablestore_client,
 )
 
-from langchain_community.embeddings import DashScopeEmbeddings
 
+async def wait_for_index_ready(
+    length,
+):
+    endpoint = os.getenv("TABLESTORE_ENDPOINT")
+    instance_name = os.getenv("TABLESTORE_INSTANCE_NAME")
+    access_key_id = os.getenv("TABLESTORE_ACCESS_KEY_ID")
+    access_key_secret = os.getenv("TABLESTORE_ACCESS_KEY_SECRET")
 
-async def wait_for_index_ready(tablestore_rag_service: TablestoreRAGService, length):
+    tablestore_client = create_tablestore_client(
+        end_point=endpoint,
+        instance_name=instance_name,
+        access_key_id=access_key_id,
+        access_key_secret=access_key_secret,
+    )
+
+    table_name = "agentscope_runtime_rag"
+    index_name = "agentscope_runtime_knowledge_search_index_name"
+
     await TablestoreHelper.async_wait_search_index_ready(
-        tablestore_client=tablestore_rag_service._tablestore_client,
-        table_name=tablestore_rag_service._knowledge_store._table_name,
-        index_name=tablestore_rag_service._knowledge_store._search_index_name,
+        tablestore_client=tablestore_client,
+        table_name=table_name,
+        index_name=index_name,
         total_count=length,
     )
 
@@ -52,7 +64,8 @@ def load_docs():
     loader = WebBaseLoader(
         web_paths=(
             "https://lilianweng.github.io/posts/2023-06-23-agent/",
-            "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/",
+            "https://lilianweng.github.io/posts/"
+            "2023-03-15-prompt-engineering/",
         ),
         bs_kwargs={
             "parse_only": bs4.SoupStrainer(
@@ -85,7 +98,7 @@ async def tablestore_rag_service():
     ):
         pytest.skip(
             "tablestore endpoint is None or instance_name is None or "
-            "access_key_id is None or access_key_secret is None"
+            "access_key_id is None or access_key_secret is None",
         )
 
     tablestore_rag_service = TablestoreRAGService(
@@ -94,7 +107,7 @@ async def tablestore_rag_service():
             instance_name=instance_name,
             access_key_id=access_key_id,
             access_key_secret=access_key_secret,
-        )
+        ),
     )
 
     await tablestore_rag_service.start()
@@ -120,7 +133,7 @@ async def test_service_lifecycle(tablestore_rag_service: TablestoreRAGService):
 async def test_add_docs(tablestore_rag_service):
     docs = load_docs()
     await tablestore_rag_service.add_docs(docs)
-    await wait_for_index_ready(tablestore_rag_service, len(docs))
+    await wait_for_index_ready(len(docs))
 
     ret_docs = await tablestore_rag_service.retrieve(
         "What is self-reflection of an AI Agent?",
@@ -163,7 +176,7 @@ async def test_rag(tablestore_rag_service):
                                 "text": query,
                             },
                         ],
-                    }
+                    },
                 ),
             ],
             session_id=SESSION_ID,
@@ -181,5 +194,7 @@ async def test_rag(tablestore_rag_service):
                 all_result = message.content[0].text
 
         print(all_result)
+        # pylint: disable=all
         await tablestore_rag_service._knowledge_store.delete_all_documents()
-        await wait_for_index_ready(tablestore_rag_service, 0)
+        # pylint: enable=all
+        await wait_for_index_ready(0)
