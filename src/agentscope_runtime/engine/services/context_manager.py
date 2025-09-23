@@ -60,13 +60,8 @@ class ContextComposer:
                 role=Role.SYSTEM,
                 content=[TextContent(type=ContentType.TEXT, text=cooked_doc)],
             )
-            if len(session.messages) >= 1:
-                last_message = session.messages[-1]
-                session.messages.remove(last_message)
-                session.messages.append(message)
-                session.messages.append(last_message)
-            else:
-                session.messages.append(message)
+
+            session.messages = [message] + session.messages
 
 
 class ContextManager(ServiceManager):

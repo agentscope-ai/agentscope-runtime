@@ -135,6 +135,9 @@ class TablestoreMemoryService(MemoryService):
         if not session_id:
             session_id = TablestoreMemoryService._DEFAULT_SESSION_ID
 
+        if not messages:
+            return
+
         put_tasks = [
             self._knowledge_store.put_document(tablestore_document)
             for tablestore_document in convert_messages_to_tablestore_documents(
