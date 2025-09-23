@@ -531,7 +531,7 @@ class ModelstudioDeployManager(DeployManager):
             telemetry_enabled=telemetry_enabled,
         )
 
-        def _build_console_url(endpoint: str, identifier: str) -> str:
+        def _build_console_url(endpoint: str) -> str:
             # Map API endpoint to console domain (no fragment in base)
             base = (
                 "https://pre-bailian.console.aliyun.com/?tab=app#"
@@ -539,12 +539,11 @@ class ModelstudioDeployManager(DeployManager):
                 else "https://bailian.console.aliyun.com/?tab=app#"
             )
             # Optional query can be appended if needed; keep path clean
-            return f"{base}/app-center/high-code-detail/{identifier}"
+            return f"{base}/app-center/high-code-detail"
 
         console_url = (
             _build_console_url(
                 self.modelstudio_config.endpoint,
-                deploy_identifier,
             )
             if deploy_identifier
             else ""
