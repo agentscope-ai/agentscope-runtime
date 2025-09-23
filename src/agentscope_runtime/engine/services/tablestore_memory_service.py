@@ -12,7 +12,7 @@ from .utils.tablestore_service_utils import (
     get_message_metadata_names,
     convert_tablestore_document_to_message,
     convert_messages_to_tablestore_documents,
-    print_log,
+    tablestore_log,
 )
 from ..schemas.agent_schemas import Message, MessageType
 
@@ -113,13 +113,17 @@ class TablestoreMemoryService(MemoryService):
     async def health(self) -> bool:
         """Checks the health of the service."""
         if self._knowledge_store is None:
+            tablestore_log("Tablestore memory service is not started.")
             return False
 
         try:
             async for _ in await self._knowledge_store.get_all_documents():
                 return True
             return True
-        except Exception:
+        except Exception as e:
+            tablestore_log(
+                f"Tablestore memory service cannot access Tablestore, error: {str(e)}."
+            )
             return False
 
     async def add_memory(
@@ -141,11 +145,13 @@ class TablestoreMemoryService(MemoryService):
 
     @staticmethod
     async def get_query_text(message: Message) -> str:
-        if message:
-            if message.type == MessageType.MESSAGE:
-                for content in message.content:
-                    if content.type == "text":
-                        return content.text
+        if not message or message.type != MessageType.MESSAGE:
+            return ""
+
+        for content in message.content:
+            if content.type == "text":
+                return content.text
+
         return ""
 
     async def search_memory(
@@ -215,7 +221,7 @@ class TablestoreMemoryService(MemoryService):
                 )
             ).next_token
             if not next_token:
-                print_log(
+                tablestore_log(
                     "Page number exceeds the total number of pages, return empty list."
                 )
                 return []

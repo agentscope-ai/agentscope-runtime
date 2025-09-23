@@ -18,6 +18,8 @@ from tablestore_for_agent_memory.base.base_knowledge_store import (
     Document as TablestoreDocument,
 )
 
+from .utils.tablestore_service_utils import tablestore_log
+
 
 class TablestoreRAGService(RAGService):
     """
@@ -84,13 +86,17 @@ class TablestoreRAGService(RAGService):
     async def health(self) -> bool:
         """Checks the health of the service."""
         if self._knowledge_store is None:
+            tablestore_log("Tablestore rag service is not started.")
             return False
 
         try:
             async for _ in await self._knowledge_store.get_all_documents():
                 return True
             return True
-        except Exception:
+        except Exception as e:
+            tablestore_log(
+                f"Tablestore memory service cannot access Tablestore, error: {str(e)}."
+            )
             return False
 
     async def add_docs(self, docs: Union[Document, List[Document]]):
