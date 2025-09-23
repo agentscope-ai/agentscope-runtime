@@ -17,7 +17,7 @@ from tablestore_for_agent_memory.base.base_memory_store import (
 from .utils.tablestore_service_utils import (
     convert_tablestore_session_to_session,
     convert_message_to_tablestore_message,
-    print_log,
+    tablestore_log,
 )
 
 
@@ -86,13 +86,17 @@ class TablestoreSessionHistoryService(SessionHistoryService):
     async def health(self) -> bool:
         """Checks the health of the service."""
         if self._memory_store is None:
+            tablestore_log("Tablestore session history service is not started.")
             return False
 
         try:
             async for _ in await self._memory_store.list_all_sessions():
                 return True
             return True
-        except Exception:
+        except Exception as e:
+            tablestore_log(
+                f"Tablestore session history service cannot access Tablestore, error: {str(e)}."
+            )
             return False
 
     async def create_session(
@@ -234,7 +238,7 @@ class TablestoreSessionHistoryService(SessionHistoryService):
             await asyncio.gather(*put_tasks)
 
         else:
-            print_log(
+            tablestore_log(
                 f"Warning: Session {session.id} not found in tablestore storage for "
                 f"append_message.",
             )

@@ -97,7 +97,7 @@ def exclude_None_fields_in_place(obj: Dict):
             del obj[key]
 
 
-def print_log(msg: str):
+def tablestore_log(msg: str):
     print(msg)
 
 
@@ -317,13 +317,15 @@ def _generate_tablestore_content_from_message(
         return None, None
 
     content_json_list = [content.model_dump() for content in message.content]
-
     content = None
-    if message.type == MessageType.MESSAGE:
-        for content_json in content_json_list:
-            if content_json["type"] == ContentType.TEXT:
-                content = content_json.pop("text")
-                break
+
+    if message.type != MessageType.MESSAGE:
+        return content, content_json_list
+
+    for content_json in content_json_list:
+        if content_json["type"] == ContentType.TEXT:
+            content = content_json.pop("text")
+            break
 
     return content, content_json_list
 
