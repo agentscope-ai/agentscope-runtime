@@ -1,11 +1,11 @@
 [project]
 name = "agentscope-runtime"
-version = "0.1.4"
+version = "0.1.5"
 description = "A production-ready runtime framework for agent applications, providing secure sandboxed execution environments and scalable deployment solutions with multi-framework support."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "mcp>=1.8.0,<1.10.0",
+    "mcp>=1.13",
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
     "openai",
@@ -85,5 +85,6 @@ llamaindex_rag=[
     "bs4>=0.0.2",
 ]
 memory-ext = [
-    "reme-ai==0.1.8 ; python_full_version >= '3.12'",
+    "reme-ai==0.1.9 ; python_full_version >= '3.12'",
+    "mem0ai>=0.1.117"
 ]
