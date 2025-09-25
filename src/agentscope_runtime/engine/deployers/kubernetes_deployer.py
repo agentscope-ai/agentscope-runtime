@@ -205,7 +205,11 @@ class KubernetesDeployManager(DeployManager):
                     f"{resource_name}, {traceback.format_exc()}",
                 )
 
-            url = f"http://{ip}:{ports[0]}"
+            if ports:
+                url = f"http://{ip}:{ports[0]}"
+            else:
+                url = f"http://{ip}:8080"
+
             logger.info(f"Deployment {deploy_id} successful: {url}")
 
             self._deployed_resources[deploy_id] = {
