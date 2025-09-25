@@ -16,7 +16,7 @@ import shortuuid
 from ..client import SandboxHttpClient, TrainingSandboxClient
 from ..constant import BROWSER_SESSION_ID
 from ..enums import SandboxType
-from ..manager.collections import (
+from ...common.collections import (
     RedisMapping,
     RedisQueue,
     InMemoryMapping,
