@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=too-many-nested-blocks, too-many-branches, too-many-statements
 # pylint:disable=line-too-long, protected-access
-
+import inspect
+import logging
 import json
 import threading
 import uuid
@@ -9,7 +10,7 @@ from functools import partial
 from typing import Optional, Type
 
 from agentscope import setup_logger
-from agentscope.agent import ReActAgent
+from agentscope.agent import AgentBase, ReActAgent
 from agentscope.formatter import (
     FormatterBase,
     DashScopeChatFormatter,
@@ -53,6 +54,7 @@ from ...schemas.context import Context
 
 # Disable logging from agentscope
 setup_logger(level="CRITICAL")
+logger = logging.getLogger(__name__)
 
 
 class AgentScopeContextAdapter:
@@ -195,7 +197,7 @@ class AgentScopeAgent(Agent):
         model: ChatModelBase,
         tools=None,
         agent_config=None,
-        agent_builder: Optional[Type[ReActAgent]] = ReActAgent,
+        agent_builder: Optional[Type[AgentBase]] = ReActAgent,
     ):
         super().__init__(name=name, agent_config=agent_config)
         assert isinstance(
@@ -209,7 +211,7 @@ class AgentScopeAgent(Agent):
 
         assert issubclass(
             agent_builder,
-            ReActAgent,
+            AgentBase,
         ), "agent_builder must be a subclass of AgentBase in AgentScope"
 
         # Replace name if not exists
@@ -228,13 +230,50 @@ class AgentScopeAgent(Agent):
         return AgentScopeAgent(**self._attr)
 
     def build(self, as_context):
-        self._agent = self._attr["agent_builder"](
+        params = {
             **self._attr["agent_config"],
-            model=as_context.model,
-            formatter=as_context.formatter,
-            memory=as_context.memory,
-            toolkit=as_context.toolkit,
-        )
+            **{
+                "model": as_context.model,
+                "formatter": self._attr["agent_config"].get(
+                    "formatter",
+                    as_context.formatter,
+                ),
+                "memory": as_context.memory,
+                "toolkit": as_context.toolkit,
+            },
+        }
+
+        builder_cls = self._attr["agent_builder"]
+        try:
+            sig = inspect.signature(
+                builder_cls.__init__,
+            )
+            allowed_params = set(sig.parameters.keys())
+            allowed_params.discard("self")
+        except (TypeError, ValueError):
+            allowed_params = set(params.keys())
+
+        filtered_params = {}
+        unsupported = []
+
+        for k, v in params.items():
+            if k in allowed_params:
+                filtered_params[k] = v
+            else:
+                unsupported.append(f"{k}={v!r}")
+
+        if unsupported:
+            unsupported_str = ", ".join(unsupported)
+            logger.warning(
+                f"The following parameters are not supported by"
+                f" {builder_cls.__name__} and have been ignored:"
+                f" {unsupported_str}. If you require these parameters, "
+                f"please update the `__init__` method of "
+                f"{builder_cls.__name__} to accept and handle them.",
+            )
+
+        self._agent = builder_cls(**filtered_params)
+
         self._agent._disable_console_output = True
 
         self._agent.register_instance_hook(
