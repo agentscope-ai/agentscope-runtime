@@ -6,10 +6,6 @@ from typing import Optional, Dict, List, Union, Any
 
 from pydantic import BaseModel, Field
 
-from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.common.container_clients import (
-    KubernetesClient,
-)
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .utils.docker_image_utils import (
@@ -18,6 +14,10 @@ from .utils.docker_image_utils import (
 )
 from .utils.service_utils import (
     ServicesConfig,
+)
+from ..runner import Runner
+from ...common.container_clients import (
+    KubernetesClient,
 )
 
 logger = logging.getLogger(__name__)

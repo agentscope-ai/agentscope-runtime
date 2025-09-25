@@ -13,10 +13,6 @@ from urllib.parse import urlparse, urlunparse
 import requests
 import shortuuid
 
-from agentscope_runtime.common.container_clients import (
-    DockerClient,
-    KubernetesClient,
-)
 from ..client import SandboxHttpClient, TrainingSandboxClient
 from ..constant import BROWSER_SESSION_ID
 from ..enums import SandboxType
@@ -35,6 +31,10 @@ from ..model import (
     SandboxManagerEnvConfig,
 )
 from ..registry import SandboxRegistry
+from ...common.container_clients import (
+    DockerClient,
+    KubernetesClient,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
