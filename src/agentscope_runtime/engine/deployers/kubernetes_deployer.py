@@ -7,7 +7,7 @@ from typing import Optional, Dict, List, Union, Any
 from pydantic import BaseModel, Field
 
 from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.sandbox.manager.container_clients import (
+from agentscope_runtime.common.container_clients import (
     KubernetesClient,
 )
 from .adapter.protocol_adapter import ProtocolAdapter
