@@ -1,200 +1,286 @@
 # -*- coding: utf-8 -*-
-import os
+# pylint: disable=redefined-outer-name, protected-access, unused-argument
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import pytest_asyncio
-from dotenv import load_dotenv
-from tablestore_for_agent_memory.util.tablestore_helper import TablestoreHelper
+from langchain_core.documents import Document
 
-from agentscope_runtime.engine import Runner
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
-from agentscope_runtime.engine.llms import QwenLLM
-from agentscope_runtime.engine.schemas.agent_schemas import (
-    AgentRequest,
-    Message,
-    MessageType,
-    RunStatus,
-)
-from agentscope_runtime.engine.services.context_manager import (
-    create_context_manager,
-)
 from agentscope_runtime.engine.services.tablestore_rag_service import (
     TablestoreRAGService,
 )
-from agentscope_runtime.engine.services.utils.tablestore_service_utils import (
-    create_tablestore_client,
-)
 
 
-async def wait_for_index_ready(
-    length,
-):
-    endpoint = os.getenv("TABLESTORE_ENDPOINT")
-    instance_name = os.getenv("TABLESTORE_INSTANCE_NAME")
-    access_key_id = os.getenv("TABLESTORE_ACCESS_KEY_ID")
-    access_key_secret = os.getenv("TABLESTORE_ACCESS_KEY_SECRET")
-
-    tablestore_client = create_tablestore_client(
-        end_point=endpoint,
-        instance_name=instance_name,
-        access_key_id=access_key_id,
-        access_key_secret=access_key_secret,
-    )
-
-    table_name = "agentscope_runtime_rag"
-    index_name = "agentscope_runtime_knowledge_search_index_name"
-
-    await TablestoreHelper.async_wait_search_index_ready(
-        tablestore_client=tablestore_client,
-        table_name=table_name,
-        index_name=index_name,
-        total_count=length,
-    )
+# Mock the AsyncKnowledgeStore and DashScopeEmbeddings
+@pytest.fixture
+def mock_knowledge_store():
+    with patch(
+        "agentscope_runtime.engine.services."
+        "tablestore_rag_service.AsyncKnowledgeStore",
+    ) as mock:
+        instance = mock.return_value
+        instance.init_table = AsyncMock()
+        instance.close = AsyncMock()
+        instance.put_document = AsyncMock()
+        instance.vector_search = AsyncMock()
+        instance.delete_all_documents = AsyncMock()
+        instance.get_all_documents = AsyncMock()
+        yield instance
 
 
-if os.path.exists("../../.env"):
-    load_dotenv("../../.env")
-
-
-def load_docs():
-    import bs4
-    from langchain_community.document_loaders import WebBaseLoader
-    from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-    loader = WebBaseLoader(
-        web_paths=(
-            "https://lilianweng.github.io/posts/2023-06-23-agent/",
-            "https://lilianweng.github.io/posts/"
-            "2023-03-15-prompt-engineering/",
-        ),
-        bs_kwargs={
-            "parse_only": bs4.SoupStrainer(
-                class_=("post-content", "post-title", "post-header"),
-            ),
-        },
-    )
-    documents = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=2000,
-        chunk_overlap=200,
-    )
-
-    docs = text_splitter.split_documents(documents)
-    return docs
+@pytest.fixture
+def mock_embedding_model():
+    with patch(
+        "agentscope_runtime.engine.services."
+        "tablestore_rag_service.DashScopeEmbeddings",
+    ) as mock:
+        instance = mock.return_value
+        instance.embed_documents = MagicMock(
+            side_effect=lambda texts: [[0.1, 0.2, 0.3] for _ in texts],
+        )
+        instance.embed_query = MagicMock(return_value=[0.1, 0.2, 0.3])
+        yield instance
 
 
 @pytest_asyncio.fixture
-async def tablestore_rag_service():
-    endpoint = os.getenv("TABLESTORE_ENDPOINT")
-    instance_name = os.getenv("TABLESTORE_INSTANCE_NAME")
-    access_key_id = os.getenv("TABLESTORE_ACCESS_KEY_ID")
-    access_key_secret = os.getenv("TABLESTORE_ACCESS_KEY_SECRET")
-
-    if (
-        endpoint is None
-        or instance_name is None
-        or access_key_id is None
-        or access_key_secret is None
-    ):
-        pytest.skip(
-            "tablestore endpoint is None or instance_name is None or "
-            "access_key_id is None or access_key_secret is None",
-        )
+async def tablestore_rag_service(mock_knowledge_store, mock_embedding_model):
+    # Create a mock tablestore client
+    mock_tablestore_client = MagicMock()
 
     tablestore_rag_service = TablestoreRAGService(
-        tablestore_client=create_tablestore_client(
-            end_point=endpoint,
-            instance_name=instance_name,
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
-        ),
+        tablestore_client=mock_tablestore_client,
+        embedding_model=mock_embedding_model,
     )
 
     await tablestore_rag_service.start()
-    healthy = await tablestore_rag_service.health()
-    if not healthy:
-        raise RuntimeError(
-            "Tablestore is unavailable.",
-        )
     try:
         yield tablestore_rag_service
     finally:
         await tablestore_rag_service.stop()
 
 
+# Tests for __init__ method
+def test_init_default_embedding_model():
+    mock_tablestore_client = MagicMock()
+
+    service = TablestoreRAGService(
+        tablestore_client=mock_tablestore_client,
+    )
+
+    assert service._tablestore_client == mock_tablestore_client
+    # When no embedding model is provided,
+    # it should use DashScopeEmbeddings by default
+    assert service._embedding_model is not None
+
+
+def test_init_with_custom_embedding_model(mock_embedding_model):
+    mock_tablestore_client = MagicMock()
+
+    service = TablestoreRAGService(
+        tablestore_client=mock_tablestore_client,
+        embedding_model=mock_embedding_model,
+    )
+
+    assert id(service._tablestore_client) == id(mock_tablestore_client)
+    assert id(service._embedding_model) == id(mock_embedding_model)
+
+
+# Tests for start method
 @pytest.mark.asyncio
-async def test_service_lifecycle(tablestore_rag_service: TablestoreRAGService):
-    assert await tablestore_rag_service.health() is True
+async def test_start_initializes_knowledge_store(
+    mock_knowledge_store,
+    mock_embedding_model,
+):
+    mock_tablestore_client = MagicMock()
+
+    tablestore_rag_service = TablestoreRAGService(
+        tablestore_client=mock_tablestore_client,
+        embedding_model=mock_embedding_model,
+    )
+
+    # Initially knowledge_store should be None
+    assert tablestore_rag_service._knowledge_store is None
+
+    # After start, it should be initialized
+    await tablestore_rag_service.start()
+
+    assert tablestore_rag_service._knowledge_store is not None
+    mock_knowledge_store.init_table.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_start_when_already_started(
+    mock_knowledge_store,
+    mock_embedding_model,
+):
+    mock_tablestore_client = MagicMock()
+
+    tablestore_rag_service = TablestoreRAGService(
+        tablestore_client=mock_tablestore_client,
+        embedding_model=mock_embedding_model,
+    )
+
+    tablestore_rag_service._knowledge_store = mock_knowledge_store
+
+    # Calling start again should not reinitialize
+    await tablestore_rag_service.start()
+
+    # init_table should not be called again
+    mock_knowledge_store.init_table.assert_not_called()
+
+
+# Tests for stop method
+@pytest.mark.asyncio
+async def test_stop_closes_knowledge_store(
+    mock_knowledge_store,
+    mock_embedding_model,
+):
+    mock_tablestore_client = MagicMock()
+
+    tablestore_rag_service = TablestoreRAGService(
+        tablestore_client=mock_tablestore_client,
+        embedding_model=mock_embedding_model,
+    )
+
+    tablestore_rag_service._knowledge_store = mock_knowledge_store
+
     await tablestore_rag_service.stop()
-    assert await tablestore_rag_service.health() is False
+
+    # Knowledge store should be set to None and close should be called
+    assert tablestore_rag_service._knowledge_store is None
+    mock_knowledge_store.close.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_add_docs(tablestore_rag_service):
-    docs = load_docs()
+async def test_stop_when_not_started(mock_embedding_model):
+    mock_tablestore_client = MagicMock()
+
+    tablestore_rag_service = TablestoreRAGService(
+        tablestore_client=mock_tablestore_client,
+        embedding_model=mock_embedding_model,
+    )
+
+    # When knowledge_store is None, stop should do nothing
+    assert tablestore_rag_service._knowledge_store is None
+
+    await tablestore_rag_service.stop()
+
+    # Should still be None, no exception raised
+    assert tablestore_rag_service._knowledge_store is None
+
+
+# Tests for health method
+@pytest.mark.asyncio
+async def test_health_when_not_started(mock_embedding_model):
+    mock_tablestore_client = MagicMock()
+
+    tablestore_rag_service = TablestoreRAGService(
+        tablestore_client=mock_tablestore_client,
+        embedding_model=mock_embedding_model,
+    )
+
+    # When not started, health should return False
+    result = await tablestore_rag_service.health()
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_health_when_started(mock_knowledge_store, mock_embedding_model):
+    mock_tablestore_client = MagicMock()
+
+    tablestore_rag_service = TablestoreRAGService(
+        tablestore_client=mock_tablestore_client,
+        embedding_model=mock_embedding_model,
+    )
+
+    tablestore_rag_service._knowledge_store = mock_knowledge_store
+    mock_knowledge_store.get_all_documents.return_value = AsyncMock()
+
+    # When started and no exception, health should return True
+    result = await tablestore_rag_service.health()
+    assert result is True
+
+
+@pytest.mark.asyncio
+async def test_health_when_exception(
+    mock_knowledge_store,
+    mock_embedding_model,
+):
+    mock_tablestore_client = MagicMock()
+
+    tablestore_rag_service = TablestoreRAGService(
+        tablestore_client=mock_tablestore_client,
+        embedding_model=mock_embedding_model,
+    )
+
+    tablestore_rag_service._knowledge_store = mock_knowledge_store
+    mock_knowledge_store.get_all_documents.side_effect = Exception(
+        "Connection error",
+    )
+
+    # When an exception occurs, health should return False
+    result = await tablestore_rag_service.health()
+    assert result is False
+
+
+# Tests for add_docs method
+@pytest.mark.asyncio
+async def test_add_single_doc(
+    tablestore_rag_service,
+    mock_knowledge_store,
+    mock_embedding_model,
+):
+    doc = Document(
+        page_content="Test document content",
+        metadata={"source": "test"},
+    )
+
+    await tablestore_rag_service.add_docs(doc)
+
+    # Should call put_document once
+    mock_knowledge_store.put_document.assert_called_once()
+    mock_embedding_model.embed_documents.assert_called_once_with(
+        ["Test document content"],
+    )
+
+
+@pytest.mark.asyncio
+async def test_add_multiple_docs(
+    tablestore_rag_service,
+    mock_knowledge_store,
+    mock_embedding_model,
+):
+    docs = [
+        Document(page_content="First document", metadata={"source": "test1"}),
+        Document(page_content="Second document", metadata={"source": "test2"}),
+    ]
+
     await tablestore_rag_service.add_docs(docs)
-    await wait_for_index_ready(len(docs))
 
-    ret_docs = await tablestore_rag_service.retrieve(
-        "What is self-reflection of an AI Agent?",
+    # Should call put_document twice
+    assert mock_knowledge_store.put_document.call_count == 2
+    mock_embedding_model.embed_documents.assert_called_once_with(
+        ["First document", "Second document"],
     )
-    assert len(ret_docs) == 1
-    assert ret_docs[0].startswith("Self-Reflection")
 
 
+# Tests for retrieve method
 @pytest.mark.asyncio
-async def test_rag(tablestore_rag_service):
-    USER_ID = "user2"
-    SESSION_ID = "session1"
-    query = "What is self-reflection of an AI Agent?"
+async def test_retrieve_docs(
+    tablestore_rag_service,
+    mock_knowledge_store,
+    mock_embedding_model,
+):
+    # Mock the search result
+    mock_hit = MagicMock()
+    mock_hit.document.text = "Retrieved document content"
+    mock_search_result = MagicMock()
+    mock_search_result.hits = [mock_hit]
+    mock_knowledge_store.vector_search.return_value = mock_search_result
 
-    llm_agent = LLMAgent(
-        model=QwenLLM(),
-        name="llm_agent",
-        description="A simple LLM agent",
-    )
+    results = await tablestore_rag_service.retrieve("Test query", k=1)
 
-    async with create_context_manager(
-        rag_service=tablestore_rag_service,
-    ) as context_manager:
-        runner = Runner(
-            agent=llm_agent,
-            context_manager=context_manager,
-            environment_manager=None,
-        )
-
-        all_result = ""
-        # print("\n")
-        request = AgentRequest(
-            input=[
-                Message.model_validate(
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": query,
-                            },
-                        ],
-                    },
-                ),
-            ],
-            session_id=SESSION_ID,
-        )
-
-        async for message in runner.stream_query(
-            user_id=USER_ID,
-            request=request,
-        ):
-            if (
-                message.object == "message"
-                and MessageType.MESSAGE == message.type
-                and RunStatus.Completed == message.status
-            ):
-                all_result = message.content[0].text
-
-        print(all_result)
-        # pylint: disable=all
-        await tablestore_rag_service._knowledge_store.delete_all_documents()
-        # pylint: enable=all
-        await wait_for_index_ready(0)
+    assert len(results) == 1
+    assert results[0] == "Retrieved document content"
+    mock_embedding_model.embed_query.assert_called_once_with("Test query")
+    mock_knowledge_store.vector_search.assert_called_once()
