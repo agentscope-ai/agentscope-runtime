@@ -39,11 +39,9 @@ async def wait_for_index_ready(
     tablestore_memory_service: TablestoreMemoryService,
     length,
 ):
-    tablestore_client = (tablestore_memory_service._tablestore_client,)
-    table_name = (tablestore_memory_service._knowledge_store._table_name,)
-    index_name = (
-        tablestore_memory_service._knowledge_store._search_index_name,
-    )
+    tablestore_client = tablestore_memory_service._tablestore_client
+    table_name = tablestore_memory_service._knowledge_store._table_name
+    index_name = tablestore_memory_service._knowledge_store._search_index_name
 
     await TablestoreHelper.async_wait_search_index_ready(
         tablestore_client=tablestore_client,
