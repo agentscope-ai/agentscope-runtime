@@ -11,6 +11,10 @@ import requests
 
 from .enums import SandboxType
 from .registry import SandboxRegistry
+from .utils import dynamic_import
+
+
+logger = logging.getLogger(__name__)
 
 
 def find_free_port(start_port, end_port):
@@ -18,7 +22,7 @@ def find_free_port(start_port, end_port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             if sock.connect_ex(("localhost", port)) != 0:
                 return port
-    logging.error(
+    logger.error(
         f"No free ports available in the range {start_port}-{end_port}",
     )
     raise RuntimeError(
@@ -30,7 +34,7 @@ def check_health(url, secret_token, timeout=120, interval=5):
     headers = {"Authorization": f"Bearer {secret_token}"}
     spent_time = 0
     while spent_time < timeout:
-        logging.info(
+        logger.info(
             f"Attempting to connect to {url} (Elapsed time: {spent_time} "
             f"seconds)...",
         )
@@ -41,13 +45,13 @@ def check_health(url, secret_token, timeout=120, interval=5):
                 return True
         except requests.exceptions.RequestException:
             pass
-        logging.info(
+        logger.info(
             f"Health check failed for {url}. Retrying in {interval} "
             f"seconds...",
         )
         time.sleep(interval)
         spent_time += interval
-    logging.error(f"Health check failed for {url} after {timeout} seconds.")
+    logger.error(f"Health check failed for {url} after {timeout} seconds.")
     return False
 
 
@@ -57,10 +61,10 @@ def build_image(build_type, dockerfile_path=None):
             f"src/agentscope_runtime/sandbox/box/{build_type}/Dockerfile"
         )
 
-    logging.info(f"Building {build_type} with `{dockerfile_path}`...")
+    logger.info(f"Building {build_type} with `{dockerfile_path}`...")
 
     # Initialize and update Git submodule
-    logging.info("Initializing and updating Git submodule...")
+    logger.info("Initializing and updating Git submodule...")
     subprocess.run(
         ["git", "submodule", "update", "--init", "--recursive"],
         check=True,
@@ -69,7 +73,7 @@ def build_image(build_type, dockerfile_path=None):
     secret_token = "secret_token123"
     image_name = SandboxRegistry.get_image_by_type(build_type)
 
-    logging.info(f"Building Docker image {image_name}...")
+    logger.info(f"Building Docker image {image_name}...")
 
     # Check if image exists
     result = subprocess.run(
@@ -87,7 +91,7 @@ def build_image(build_type, dockerfile_path=None):
             f"you want to overwrite it? (y/N): ",
         )
         if choice.lower() != "y":
-            logging.info("Exiting without overwriting the existing image.")
+            logger.info("Exiting without overwriting the existing image.")
             return
 
     if not os.path.exists(dockerfile_path):
@@ -109,9 +113,9 @@ def build_image(build_type, dockerfile_path=None):
         ],
         check=False,
     )
-    logging.info(f"Docker image {image_name}dev built successfully.")
+    logger.info(f"Docker image {image_name}dev built successfully.")
 
-    logging.info(f"Start to build image {image_name}.")
+    logger.info(f"Start to build image {image_name}.")
 
     # Run the container with port mapping and environment variable
     free_port = find_free_port(8080, 8090)
@@ -131,7 +135,7 @@ def build_image(build_type, dockerfile_path=None):
         check=False,
     )
     container_id = result.stdout.strip()
-    logging.info(f"Running container {container_id} on port {free_port}")
+    logger.info(f"Running container {container_id} on port {free_port}")
 
     # Check health endpoints
     fastapi_health_url = f"http://localhost:{free_port}/fastapi/healthz"
@@ -149,18 +153,18 @@ def build_image(build_type, dockerfile_path=None):
         browser_healthy = True
 
     if browser_healthy and fastapi_healthy:
-        logging.info("Health checks passed.")
+        logger.info("Health checks passed.")
         subprocess.run(
             ["docker", "commit", container_id, f"{image_name}"],
             check=True,
         )
-        logging.info(
+        logger.info(
             f"Docker image {image_name} committed successfully.",
         )
         subprocess.run(["docker", "stop", container_id], check=True)
         subprocess.run(["docker", "rm", container_id], check=True)
     else:
-        logging.error("Health checks failed.")
+        logger.error("Health checks failed.")
         subprocess.run(["docker", "stop", container_id], check=True)
 
     choice = input(
@@ -171,9 +175,9 @@ def build_image(build_type, dockerfile_path=None):
             ["docker", "rmi", "-f", f"{image_name}dev"],
             check=True,
         )
-        logging.info(f"Dev image {image_name}dev deleted.")
+        logger.info(f"Dev image {image_name}dev deleted.")
     else:
-        logging.info(f"Dev image {image_name}dev retained.")
+        logger.info(f"Dev image {image_name}dev retained.")
 
 
 def main():
@@ -182,8 +186,8 @@ def main():
     )
     parser.add_argument(
         "build_type",
+        nargs="?",
         default="base",
-        choices=[x.value for x in SandboxType] + ["all"],
         help="Specify the build type to execute.",
     )
 
@@ -193,13 +197,29 @@ def main():
         help="Specify the path for the Dockerfile.",
     )
 
+    parser.add_argument(
+        "--extension",
+        action="append",
+        help="Path to a Python file or module name to load as an extension",
+    )
+
     args = parser.parse_args()
+
+    if args.extension:
+        for ext in args.extension:
+            logger.info(f"Loading extension: {ext}")
+            mod = dynamic_import(ext)
+            logger.info(f"Extension loaded: {mod.__name__}")
 
     if args.build_type == "all":
         # Only build the built-in images
         for build_type in [x.value for x in SandboxType.get_builtin_members()]:
             build_image(build_type)
     else:
+        assert args.build_type in [
+            x.value for x in SandboxType
+        ], f"Invalid build type: {args.build_type}"
+
         if args.build_type not in [
             x.value for x in SandboxType.get_builtin_members()
         ]:

@@ -92,11 +92,9 @@ class KubernetesClient(BaseClient):
         container_name = name or "main-container"
 
         # Container specification
-        # TODO: use image from docker registry first
         container = client.V1Container(
             name=container_name,
-            image=f"agentscope-registry.ap-southeast-1.cr.aliyuncs.com"
-            f"/{image}",
+            image=image,
             image_pull_policy=runtime_config.get(
                 "image_pull_policy",
                 "IfNotPresent",

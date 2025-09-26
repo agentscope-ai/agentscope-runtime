@@ -12,6 +12,7 @@ from agno.run.response import (
 )
 from agno.tools.function import Function
 
+from .utils import build_agent
 from ..agents import Agent
 from ..schemas.context import Context
 from ..schemas.agent_schemas import (
@@ -64,7 +65,7 @@ class AgnoContextAdapter:
         return self.attr["model"]
 
     async def adapt_tools(self):
-        toolkit = self.attr["agent_config"].get("toolkit", [])
+        toolkit = self.attr["agent_config"].get("tools", [])
         tools = self.attr["tools"]
 
         # in case, tools is None and tools == []
@@ -138,11 +139,16 @@ class AgnoAgent(Agent):
         return AgnoAgent(**self._attr)
 
     def build(self, as_context):
-        self._agent = self._attr["agent_builder"](
+        params = {
             **self._attr["agent_config"],
-            model=as_context.model,
-            tools=as_context.toolkit,
-        )
+            **{
+                "model": as_context.model,
+                "tools": as_context.toolkit,
+            },  # Context will be added at `self._agent.arun`
+        }
+
+        builder_cls = self._attr["agent_builder"]
+        self._agent = build_agent(builder_cls, params)
 
         return self._agent
 

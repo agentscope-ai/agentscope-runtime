@@ -106,7 +106,7 @@ agent = AgentScopeAgent(
         api_key=os.getenv("OPENAI_API_KEY"),
     ),
     agent_config={
-        "sys_prompt": "You're a helpful assistant named {name}.",
+        "sys_prompt": "You're a helpful assistant named Friday.",
     },
     agent_builder=ReActAgent,
 )
@@ -414,21 +414,6 @@ def test_deployed_agent():
         print("✅ Streaming test completed")
     except requests.exceptions.RequestException as e:
         print(f"❌ Streaming test failed: {e}")
-
-    # Test JSON responses (if available)
-    try:
-        response = requests.post(
-            "http://localhost:8090/process",
-            json=payload,
-            timeout=30,
-        )
-
-        if response.status_code == 200:
-            print(f"📄 JSON Response: {response.content}")
-            print("✅ JSON test completed")
-        else:
-            print(f"⚠️ JSON endpoint returned status: {response.status_code}")
-
     except requests.exceptions.RequestException as e:
         print(f"ℹ️ JSON endpoint not available or failed: {e}")
 

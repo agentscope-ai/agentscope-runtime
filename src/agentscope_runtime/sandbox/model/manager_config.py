@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=no-self-argument
 import os
-from typing import Optional, Literal, Tuple
+from typing import Optional, Literal, Tuple, Dict
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -36,6 +36,13 @@ class SandboxManagerEnvConfig(BaseModel):
     default_mount_dir: Optional[str] = Field(
         None,
         description="Path for local file system storage.",
+    )
+
+    readonly_mounts: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Read-only mount mapping: host_path -> container_path. "
+        "Example: { '/data/shared': '/mnt/shared', '/etc/timezone': "
+        "'/etc/timezone' }",
     )
 
     port_range: Tuple[int, int] = Field(

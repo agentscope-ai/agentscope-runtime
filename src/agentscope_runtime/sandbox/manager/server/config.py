@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-from typing import Optional, Tuple, Literal
+from typing import Optional, Tuple, Literal, Dict
 from pydantic_settings import BaseSettings
 from pydantic import field_validator, ConfigDict
 from dotenv import load_dotenv
@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     CONTAINER_PREFIX_KEY: str = "runtime_sandbox_container_"
     CONTAINER_DEPLOYMENT: Literal["docker", "cloud", "k8s"] = "docker"
     DEFAULT_MOUNT_DIR: str = "sessions_mount_dir"
+    # Read-only mounts (host_path -> container_path)
+    # Example in .env:
+    # READONLY_MOUNTS={"\/opt\/shared": "\/mnt\/shared", "\/etc\/timezone":
+    # "\/etc\/timezone"}
+    READONLY_MOUNTS: Optional[Dict[str, str]] = None
     STORAGE_FOLDER: str = "runtime_sandbox_storage"
     PORT_RANGE: Tuple[int, int] = (49152, 59152)
 

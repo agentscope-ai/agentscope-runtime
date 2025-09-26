@@ -11,6 +11,7 @@ parts:
     sections:
     - file: en/sandbox_advanced.md
     - file: en/training_sandbox.md
+    - file: en/sandbox_troubleshooting.md
   - file: en/react_agent.md
   - file: en/protocol.md
     sections:
@@ -51,6 +52,7 @@ parts:
     sections:
       - file: zh/sandbox_advanced.md
       - file: zh/training_sandbox.md
+      - file: zh/sandbox_troubleshooting.md
   - file: zh/react_agent.md
   - file: zh/protocol.md
     sections:
