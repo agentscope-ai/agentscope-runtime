@@ -69,7 +69,7 @@ class SandboxHttpClient:
     def __init__(
         self,
         model: Optional[ContainerModel] = None,
-        timeout: int = 30,
+        timeout: int = 60,
         enable_browser: bool = True,
         domain: str = "localhost",
     ) -> None:
@@ -95,7 +95,10 @@ class SandboxHttpClient:
         self.secret = model.runtime_token
 
         # Update headers with secret if provided
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "Content-Type": "application/json",
+            "x-agentrun-session-id": "s" + self.session_id,
+        }
         if self.secret:
             headers["Authorization"] = f"Bearer {self.secret}"
         self.session.headers.update(headers)
@@ -112,16 +115,20 @@ class SandboxHttpClient:
                 base_url=self.browser_url,
             )
 
+            headers = {"x-agentrun-session-id": "s" + self.session_id}
+
             # Create a new browser session if it doesn't exist
             try:
                 # Try to connet to existing session
                 self.steel_client.sessions.retrieve(
                     BROWSER_SESSION_ID,
+                    extra_headers=headers,
                 )
             except Exception:
                 # Session not found, create a new one
                 self.steel_client.sessions.create(
                     session_id=BROWSER_SESSION_ID,
+                    extra_headers=headers,
                 )
 
         return self
@@ -139,8 +146,9 @@ class SandboxHttpClient:
         """
         endpoint = f"{self.base_url}/healthz"
         browser_endpoint = f"{self.browser_url}/v1/health"
+        headers = {"x-agentrun-session-id": "s" + self.session_id}
         try:
-            response_api = self.session.get(endpoint)
+            response_api = self.session.get(endpoint, headers=headers)
             if self.enable_browser:
                 response_browser = self.session.get(browser_endpoint)
                 return (
@@ -190,7 +198,8 @@ class SandboxHttpClient:
     def list_tools(self, tool_type=None, **kwargs) -> dict:
         try:
             endpoint = f"{self.base_url}/mcp/list_tools"
-            response = self.session.get(endpoint)
+            headers = {"x-agentrun-session-id": "s" + self.session_id}
+            response = self.session.get(endpoint, headers=headers)
             response.raise_for_status()
             mcp_tools = response.json()
             mcp_tools["generic"] = self.generic_tools
@@ -220,12 +229,14 @@ class SandboxHttpClient:
 
         try:
             endpoint = f"{self.base_url}/mcp/call_tool"
+            headers = {"x-agentrun-session-id": "s" + self.session_id}
             response = self.session.post(
                 endpoint,
                 json={
                     "tool_name": name,
                     "arguments": arguments,
                 },
+                headers=headers,
             )
             response.raise_for_status()
 
@@ -246,7 +257,12 @@ class SandboxHttpClient:
         """Run an IPython cell."""
         try:
             endpoint = f"{self.base_url}/tools/run_ipython_cell"
-            response = self.session.post(endpoint, json={"code": code})
+            headers = {"x-agentrun-session-id": "s" + self.session_id}
+            response = self.session.post(
+                endpoint,
+                json={"code": code},
+                headers=headers,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -286,9 +302,11 @@ class SandboxHttpClient:
         """
         try:
             endpoint = f"{self.base_url}/watcher/commit_changes"
+            headers = {"x-agentrun-session-id": "s" + self.session_id}
             response = self.session.post(
                 endpoint,
                 json={"commit_message": commit_message},
+                headers=headers,
             )
             response.raise_for_status()
             return response.json()
@@ -310,9 +328,11 @@ class SandboxHttpClient:
         """
         try:
             endpoint = f"{self.base_url}/watcher/generate_diff"
+            headers = {"x-agentrun-session-id": "s" + self.session_id}
             response = self.session.post(
                 endpoint,
                 json={"commit_a": commit_a, "commit_b": commit_b},
+                headers=headers,
             )
             response.raise_for_status()
             return response.json()
@@ -329,7 +349,8 @@ class SandboxHttpClient:
         """
         try:
             endpoint = f"{self.base_url}/watcher/git_logs"
-            response = self.session.get(endpoint)
+            headers = {"x-agentrun-session-id": "s" + self.session_id}
+            response = self.session.get(endpoint, headers=headers)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -377,9 +398,15 @@ class SandboxHttpClient:
         """
         try:
             endpoint = f"{self.base_url}/workspace/files"
+            headers = {"x-agentrun-session-id": "s" + self.session_id}
             params = {"file_path": file_path}
             data = {"content": content}
-            response = self.session.post(endpoint, params=params, json=data)
+            response = self.session.post(
+                endpoint,
+                params=params,
+                json=data,
+                headers=headers,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -401,8 +428,13 @@ class SandboxHttpClient:
         """
         try:
             endpoint = f"{self.base_url}/workspace/list-directories"
+            headers = {"x-agentrun-session-id": "s" + self.session_id}
             params = {"directory": directory}
-            response = self.session.get(endpoint, params=params)
+            response = self.session.get(
+                endpoint,
+                params=params,
+                headers=headers,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -418,8 +450,13 @@ class SandboxHttpClient:
         """
         try:
             endpoint = f"{self.base_url}/workspace/directories"
+            headers = {"x-agentrun-session-id": "s" + self.session_id}
             params = {"directory_path": directory_path}
-            response = self.session.post(endpoint, params=params)
+            response = self.session.post(
+                endpoint,
+                params=params,
+                headers=headers,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -437,8 +474,13 @@ class SandboxHttpClient:
         """
         try:
             endpoint = f"{self.base_url}/workspace/files"
+            headers = {"x-agentrun-session-id": "s" + self.session_id}
             params = {"file_path": file_path}
-            response = self.session.delete(endpoint, params=params)
+            response = self.session.delete(
+                endpoint,
+                params=params,
+                headers=headers,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -460,8 +502,13 @@ class SandboxHttpClient:
         """
         try:
             endpoint = f"{self.base_url}/workspace/directories"
+            headers = {"x-agentrun-session-id": "s" + self.session_id}
             params = {"directory_path": directory_path, "recursive": recursive}
-            response = self.session.delete(endpoint, params=params)
+            response = self.session.delete(
+                endpoint,
+                params=params,
+                headers=headers,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -483,11 +530,16 @@ class SandboxHttpClient:
         """
         try:
             endpoint = f"{self.base_url}/workspace/move"
+            headers = {"x-agentrun-session-id": "s" + self.session_id}
             params = {
                 "source_path": source_path,
                 "destination_path": destination_path,
             }
-            response = self.session.put(endpoint, params=params)
+            response = self.session.put(
+                endpoint,
+                params=params,
+                headers=headers,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -510,11 +562,16 @@ class SandboxHttpClient:
         """
         try:
             endpoint = f"{self.base_url}/workspace/copy"
+            headers = {"x-agentrun-session-id": "s" + self.session_id}
             params = {
                 "source_path": source_path,
                 "destination_path": destination_path,
             }
-            response = self.session.post(endpoint, params=params)
+            response = self.session.post(
+                endpoint,
+                params=params,
+                headers=headers,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
