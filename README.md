@@ -3,8 +3,9 @@
 # AgentScope Runtime
 
 [![PyPI](https://img.shields.io/pypi/v/agentscope-runtime?label=PyPI&color=brightgreen&logo=python)](https://pypi.org/project/agentscope-runtime/)
+[![Downloads](https://static.pepy.tech/badge/agentscope-runtime)](https://pepy.tech/project/agentscope-runtime)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg?logo=python&label=Python)](https://python.org)
-[![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=Liscnese)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=License)](LICENSE)
 [![Code Style](https://img.shields.io/badge/code%20style-black-black.svg?logo=python&label=CodeStyle)](https://github.com/psf/black)
 [![GitHub Stars](https://img.shields.io/github/stars/agentscope-ai/agentscope-runtime?style=flat&logo=github&color=yellow&label=Stars)](https://github.com/agentscope-ai/agentscope-runtime/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/agentscope-ai/agentscope-runtime?style=flat&logo=github&color=purple&label=Forks)](https://github.com/agentscope-ai/agentscope-runtime/network)
@@ -277,6 +278,8 @@ agent = LangGraphAgent(graph=compiled_graph)
 
 ## 🏗️ Deployment
 
+### Local Deployer
+
 The agent runner exposes a `deploy` method that takes a `DeployManager` instance and deploys the agent. The service port is set as the parameter `port` when creating the `LocalDeployManager`. The service endpoint path is set as the parameter `endpoint_path` when deploying the agent. In this example, we set the endpoint path to `/process`. After deployment, you can access the service at `http://localhost:8090/process`.
 
 ```python
@@ -296,6 +299,135 @@ deploy_result = await runner.deploy(
 )
 ```
 
+### AgentRun Deployer
+
+You can also deploy agents to AgentRun. For more information about AgentRun, please refer to the [AgentRun console](https://functionai.console.aliyun.com/cn-hangzhou/agent/infra).
+
+> Note: Deploying an agent to AgentRun requires Alibaba Cloud AKSK credentials with the AliyunAgentRunFullAccess permission. Before first use, please log in to the console and create the service-linked role AliyunServiceRoleForAgentRun.
+
+- Deploy agents to AgentRun via Zip code package
+
+```python
+import base64
+from agentscope_runtime.engine.deployers import AgentRunDeployer
+from agentscope_runtime.engine.deployers.agentrun_deployer import (
+    CodeConfig,
+    NetworkConfig,
+    LogConfig,
+)
+
+def read_zip_file_as_base64(file_path):
+    """Read a zip file and return its content as base64 encoded string."""
+    with open(file_path, "rb") as f:
+        zip_content = f.read()
+        return base64.b64encode(zip_content).decode("utf-8")
+
+# Create deployment manager
+deployer = AgentRunDeployer(
+    account_id="<your-account-id>", # Alibaba Cloud account ID
+    access_key_id="<your-access-key-id>", # Alibaba Cloud AccessKey ID, need AliyunAgentRunFullAccess
+    access_key_secret="<your-access-key-secret>", # Alibaba Cloud AccessKey Secret
+    region_id="<deploy-region-id>", # AgentRun deployment region ID
+)
+
+code_config = CodeConfig(
+    language="python3.10", # Code language
+    command=["python3", "app.py"], # Code startup command
+    zip_file=read_zip_file_as_base64("app.zip"), # Zip code package, needs to be read as base64 encoded string
+)
+
+network_config = NetworkConfig(
+    network_mode="PUBLIC"
+)
+
+log_config = LogConfig(
+    logstore="<your-sls-logstore>", # SLS log store
+    project="<your-sls-project>" # SLS log project
+)
+
+deploy_result = await deployer.deploy(
+    agent_runtime_name="<your-agent-runtime-name>", # Agent runtime name
+    artifact_type="Code", # Code type
+    cpu=0.5, # vCPU specification
+    memory=512, # Memory specification
+    port=8080, # Application port
+    code_configuration=code_config, # Code configuration
+    network_configuration=network_config, # Network configuration
+    log_configuration=log_config # Log configuration (optional)
+)
+
+```
+
+- Deploy agents to AgentRun via container image
+
+```python
+import base64
+from agentscope_runtime.engine.deployers import AgentRunDeployer
+from agentscope_runtime.engine.deployers.agentrun_deployer import (
+    ContainerConfig,
+    NetworkConfig,
+    LogConfig,
+)
+
+# Create deployment manager
+deployer = AgentRunDeployer(
+    account_id="<your-account-id>", # Alibaba Cloud account ID
+    access_key_id="<your-access-key-id>", # Alibaba Cloud AccessKey ID, need AliyunAgentRunFullAccess
+    access_key_secret="<your-access-key-secret>", # Alibaba Cloud AccessKey Secret
+    region_id="<deploy-region-id>", # AgentRun deployment region ID
+)
+
+container_config = ContainerConfig(
+    command=["python3", "app.py"], # Image startup command
+    image="xxx.cn-hangzhou.cr.aliyuncs.com/xxx/xxxxxx:xxx" # Image address, Alibaba Cloud ACR image repository address in the same region
+)
+
+network_config = NetworkConfig(
+    network_mode="PUBLIC"
+)
+
+log_config = LogConfig(
+    logstore="<your-sls-logstore>", # SLS log store
+    project="<your-sls-project>" # SLS log project
+)
+
+deploy_result = await deployer.deploy(
+    agent_runtime_name="<your-agent-runtime-name>", # Agent runtime name
+    artifact_type="Container", # Code type
+    cpu=0.5, # vCPU specification
+    memory=512, # Memory specification
+    port=8080, # Application port
+    container_configuration=container_config, # Container configuration
+    network_configuration=network_config, # Network configuration
+    log_configuration=log_config # Log configuration (optional)
+)
+
+```
+
+After successfully calling the `deploy` method of `AgentRun`, the returned response is as follows:
+```json
+{
+    "success": true,
+    "agent_runtime_id": "cf1a205e-****-****-****-4df2fb7d153e",
+    "agent_runtime_endpoint_id": "79d709fd-****-****-****-3c37a045dfaa",
+    "agent_runtime_endpoint_name": "agent-runtime-test-202****025",
+    "agent_runtime_public_endpoint_url": "https://1760****6195983.funagent-data.cn-hangzhou.aliyuncs.com/2025-09-10/agents/runtimes/cf1a205e-****-****-****-4df2fb7d153e/endpoints/agent-runtime-test-2025****025/invocations",
+    "status": "READY",
+    "request_id": "88E06CF5-****-****-****-000F****C83",
+    "deploy_id": "73aaecdf-****-****-****-f1743823e106"
+}
+```
+You can obtain the agent's access address through the returned `agent_runtime_public_endpoint_url` field and call the agent service through this address. After deployment, you can log in to the [AgentRun console]() and view the agent's deployment details through `agent_runtime_endpoint_id`.
+
+Example of calling the agent service via curl:
+```bash
+curl -v -X POST <agent_runtime_public_endpoint_url> \
+  -H "Content-Type: application/json" \
+  -H "X-Agentrun-Session-Id: funagent-87af2ff9-cf30-42bb-893d-fbf143b75f73" \   # Specify X-Agentrun-Session-Id in the header to schedule requests from the same session to the same instance
+  -d '{
+    "input": "Query the weather in Beijing"
+  }'
+```
 ---
 
 ## 🤝 Contributing
@@ -345,7 +477,7 @@ limitations under the License.
 
 ## Contributors ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-9-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-10-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
@@ -367,6 +499,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Osier-Yi"><img src="https://avatars.githubusercontent.com/u/8287381?v=4?s=100" width="100px;" alt="Osier-Yi"/><br /><sub><b>Osier-Yi</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Osier-Yi" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Osier-Yi" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/kevinlin09"><img src="https://avatars.githubusercontent.com/u/26913335?v=4?s=100" width="100px;" alt="Kevin Lin"/><br /><sub><b>Kevin Lin</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=kevinlin09" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://davdgao.github.io/"><img src="https://avatars.githubusercontent.com/u/102287034?v=4?s=100" width="100px;" alt="DavdGao"/><br /><sub><b>DavdGao</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/pulls?q=is%3Apr+reviewed-by%3ADavdGao" title="Reviewed Pull Requests">👀</a></td>
     </tr>
   </tbody>
   <tfoot>

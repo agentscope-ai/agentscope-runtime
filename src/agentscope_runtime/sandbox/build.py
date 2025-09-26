@@ -8,6 +8,7 @@ import subprocess
 import time
 
 import requests
+import shortuuid
 
 from .enums import SandboxType
 from .registry import SandboxRegistry
@@ -28,6 +29,7 @@ def find_free_port(start_port, end_port):
 
 def check_health(url, secret_token, timeout=120, interval=5):
     headers = {"Authorization": f"Bearer {secret_token}"}
+    headers["x-agentrun-session-id"] = "s" + shortuuid.uuid()
     spent_time = 0
     while spent_time < timeout:
         logging.info(

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from .base import DeployManager
 from .local_deployer import LocalDeployManager
+from .agentrun_deployer import AgentRunDeployer
 from .kubernetes_deployer import (
     KubernetesDeployManager,
 )
