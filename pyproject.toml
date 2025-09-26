@@ -66,6 +66,10 @@ autogen = [
     "autogen-agentchat>=0.7.4",
     "autogen-ext[openai]>=0.7.4",
 ]
+agentrun = [
+    "alibabacloud-agentrun20250910>=1.0.0",
+    "alibabacloud_tea_openapi>=0.4.0"
+]
 
 langchain_rag=[
     "langchain>=0.3.25",

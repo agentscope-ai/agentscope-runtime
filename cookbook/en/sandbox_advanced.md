@@ -162,6 +162,27 @@ To configure settings specific to Kubernetes in your sandbox server, ensure you 
 | `K8S_NAMESPACE`   | Kubernetes namespace to be used | `default` | Set the namespace for resource deployment            |
 | `KUBECONFIG_PATH` | Path to the kubeconfig file     | `None`    | Specifies the kubeconfig location for cluster access |
 
+### (Optional) AgentRun Settings
+
+[AgentRun](https://functionai.console.aliyun.com/cn-hangzhou/agent/) is a serverless intelligent Agent development framework launched by Alibaba Cloud. It provides a complete set of tools to help developers quickly build, deploy, and manage AI Agent applications. You can deploy the sandbox servers on AgentRun.
+
+To configure settings specific to [AgentRun](https://functionai.console.aliyun.com/cn-hangzhou/agent/) in your sandbox server, ensure you set `CONTAINER_DEPLOYMENT=agentrun`. Consider adjusting the following parameters:
+
+| Parameter                     | Description              | Default                          | Notes                                                                                     |
+|-------------------------------| ------------------------ |----------------------------------|-------------------------------------------------------------------------------------------|
+| `AGENT_RUN_ACCOUNT_ID`        | Alibaba Cloud Account ID             | Empty                           | Alibaba Cloud main account ID. Log in to the [RAM console](https://ram.console.aliyun.com/profile/access-keys) to get the Alibaba Cloud account ID and AK/SK |
+| `AGENT_RUN_ACCESS_KEY_ID`     | Access Key ID               | Empty             | Alibaba Cloud AccessKey ID, requires `AliyunAgentRunFullAccess` permission                                           |
+| `AGENT_RUN_ACCESS_KEY_SECRET` | Access Key Secret           | Empty         | Alibaba Cloud AccessKey Secret                                                                       |
+| `AGENT_RUN_REGION_ID`         | Deployment Region ID               | Empty | AgentRun deployment region ID                                                                            |
+| `AGENT_RUN_CPU`               | CPU Specification                  | `2.0`                            | vCPU specification                                                                                    |
+| `AGENT_RUN_MEMORY`            | Memory Specification                 | `2048`                           | Memory specification(MB)                                                                                  |
+| `AGENT_RUN_VPC_ID`            | VPC ID                   | `None`                           | VPC network ID (optional)                                                                               |
+| `AGENT_RUN_VSWITCH_IDS`       | Switch ID List             | `None`                           | VSwitch ID list (optional)                                                                          |
+| `AGENT_RUN_SECURITY_GROUP_ID` | Security Group ID                 | `None`                           | Security group ID (optional)                                                                                 |
+| `AGENT_RUN_PREFIX`            | Resource Name Prefix             | `agentscope-sandbox`             | Prefix for created resource names                                                                                 |
+| `AGENT_RUN_LOG_PROJECT`       | SLS Log Project              | `None`                           | SLS log project name (optional)                                                                             |
+| `AGENT_RUN_LOG_STORE`         | SLS Log Store                | `None`                           | SLS log store name (optional)                                                                              |
+
 ### Loading Custom Sandbox
 
 In addition to the default basic sandbox types, you can implement a custom sandbox by writing an extension module and loading it with the `--extension` parameter.

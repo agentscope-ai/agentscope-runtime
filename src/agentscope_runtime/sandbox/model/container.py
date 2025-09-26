@@ -44,7 +44,7 @@ class ContainerModel(BaseModel):
         ...,
         description="Socketio URL for the artifacts used by frontend",
     )
-    ports: List[int] = Field(
+    ports: List[int | str] = Field(
         ...,
         description="List of occupied port numbers",
     )

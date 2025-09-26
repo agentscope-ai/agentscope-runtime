@@ -163,6 +163,27 @@ Redis 为沙箱状态和状态管理提供缓存。如果只有一个工作进�
 | `K8S_NAMESPACE`   | 要使用的 Kubernetes 命名空间 | `default` | 设置资源部署的命名空间             |
 | `KUBECONFIG_PATH` | kubeconfig 文件的路径        | `None`    | 指定用于访问集群的 kubeconfig 位置 |
 
+### （可选）AgentRun设置
+
+AgentRun是阿里云推出的基于Serverless架构的智能Agent开发框架，提供了一套完整的工具集，帮助开发者快速构建、部署和管理AI Agent应用。您可将沙盒服务器部署到AgentRun上。
+
+要在沙盒服务器中配置特定于 [AgentRun](https://functionai.console.aliyun.com/cn-hangzhou/agent/) 的设置，请确保设置 `CONTAINER_DEPLOYMENT=agentrun` 。可以考虑调整以下参数：
+
+| Parameter                     | Description              | Default                          | Notes                                                                                    |
+|-------------------------------| ------------------------ |----------------------------------|------------------------------------------------------------------------------------------|
+| `AGENT_RUN_ACCOUNT_ID`        | 阿里云账号ID             | Empty                           | 阿里云主账号ID，登录阿里云[RAM控制台](https://ram.console.aliyun.com/profile/access-keys)获取阿里云账号ID和AK、SK |
+| `AGENT_RUN_ACCESS_KEY_ID`     | 访问密钥ID               | Empty             | 阿里云AccessKey ID，需要`AliyunAgentRunFullAccess`权限                                           |
+| `AGENT_RUN_ACCESS_KEY_SECRET` | 访问密钥Secret           | Empty         | 阿里云AccessKey Secret                                                                      |
+| `AGENT_RUN_REGION_ID`         | 部署区域ID               | Empty | AgentRun部署地域ID                                                                           |
+| `AGENT_RUN_CPU`               | CPU规格                  | `2.0`                            | vCPU规格                                                                                   |
+| `AGENT_RUN_MEMORY`            | 内存规格                 | `2048`                           | 内存规格(MB)                                                                                 |
+| `AGENT_RUN_VPC_ID`            | VPC ID                   | `None`                           | VPC网络ID（可选）                                                                              |
+| `AGENT_RUN_VSWITCH_IDS`       | 交换机ID列表             | `None`                           | VSwitch ID列表（可选）                                                                         |
+| `AGENT_RUN_SECURITY_GROUP_ID` | 安全组ID                 | `None`                           | 安全组ID（可选）                                                                                |
+| `AGENT_RUN_PREFIX`            | 资源名称前缀             | `agentscope-sandbox`             | 创建的资源名称前缀                                                                                |
+| `AGENT_RUN_LOG_PROJECT`       | SLS日志项目              | `None`                           | SLS日志项目名称（可选）                                                                            |
+| `AGENT_RUN_LOG_STORE`         | SLS日志库                | `None`                           | SLS日志库名称（可选）                                                                             |
+
 ### 导入自定义沙箱
 
 除了默认提供的基础沙箱类型外，您还可以通过编写扩展模块并使用 `--extension` 参数加载，实现自定义沙箱的功能，例如修改镜像、增加环境变量、定义超时时间等。

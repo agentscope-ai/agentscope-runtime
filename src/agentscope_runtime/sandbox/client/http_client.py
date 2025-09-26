@@ -69,7 +69,7 @@ class SandboxHttpClient:
     def __init__(
         self,
         model: Optional[ContainerModel] = None,
-        timeout: int = 30,
+        timeout: int = 60,
         enable_browser: bool = True,
         domain: str = "localhost",
     ) -> None:
@@ -95,7 +95,10 @@ class SandboxHttpClient:
         self.secret = model.runtime_token
 
         # Update headers with secret if provided
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "Content-Type": "application/json",
+            "x-agentrun-session-id": "s" + self.session_id,
+        }
         if self.secret:
             headers["Authorization"] = f"Bearer {self.secret}"
         self.session.headers.update(headers)
@@ -112,16 +115,20 @@ class SandboxHttpClient:
                 base_url=self.browser_url,
             )
 
+            headers = {"x-agentrun-session-id": "s" + self.session_id}
+
             # Create a new browser session if it doesn't exist
             try:
                 # Try to connet to existing session
                 self.steel_client.sessions.retrieve(
                     BROWSER_SESSION_ID,
+                    extra_headers=headers,
                 )
             except Exception:
                 # Session not found, create a new one
                 self.steel_client.sessions.create(
                     session_id=BROWSER_SESSION_ID,
+                    extra_headers=headers,
                 )
 
         return self
@@ -246,7 +253,10 @@ class SandboxHttpClient:
         """Run an IPython cell."""
         try:
             endpoint = f"{self.base_url}/tools/run_ipython_cell"
-            response = self.session.post(endpoint, json={"code": code})
+            response = self.session.post(
+                endpoint,
+                json={"code": code},
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -379,7 +389,11 @@ class SandboxHttpClient:
             endpoint = f"{self.base_url}/workspace/files"
             params = {"file_path": file_path}
             data = {"content": content}
-            response = self.session.post(endpoint, params=params, json=data)
+            response = self.session.post(
+                endpoint,
+                params=params,
+                json=data,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -402,7 +416,10 @@ class SandboxHttpClient:
         try:
             endpoint = f"{self.base_url}/workspace/list-directories"
             params = {"directory": directory}
-            response = self.session.get(endpoint, params=params)
+            response = self.session.get(
+                endpoint,
+                params=params,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -419,7 +436,10 @@ class SandboxHttpClient:
         try:
             endpoint = f"{self.base_url}/workspace/directories"
             params = {"directory_path": directory_path}
-            response = self.session.post(endpoint, params=params)
+            response = self.session.post(
+                endpoint,
+                params=params,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -438,7 +458,10 @@ class SandboxHttpClient:
         try:
             endpoint = f"{self.base_url}/workspace/files"
             params = {"file_path": file_path}
-            response = self.session.delete(endpoint, params=params)
+            response = self.session.delete(
+                endpoint,
+                params=params,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -461,7 +484,10 @@ class SandboxHttpClient:
         try:
             endpoint = f"{self.base_url}/workspace/directories"
             params = {"directory_path": directory_path, "recursive": recursive}
-            response = self.session.delete(endpoint, params=params)
+            response = self.session.delete(
+                endpoint,
+                params=params,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -487,7 +513,10 @@ class SandboxHttpClient:
                 "source_path": source_path,
                 "destination_path": destination_path,
             }
-            response = self.session.put(endpoint, params=params)
+            response = self.session.put(
+                endpoint,
+                params=params,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -514,7 +543,10 @@ class SandboxHttpClient:
                 "source_path": source_path,
                 "destination_path": destination_path,
             }
-            response = self.session.post(endpoint, params=params)
+            response = self.session.post(
+                endpoint,
+                params=params,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
