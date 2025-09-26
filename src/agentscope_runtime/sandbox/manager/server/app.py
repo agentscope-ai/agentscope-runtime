@@ -108,6 +108,7 @@ def verify_token(
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
     return credentials
 
 
@@ -173,6 +174,19 @@ async def startup_event():
     """Initialize the SandboxManager on startup"""
     get_sandbox_manager()
     register_routes(app, _sandbox_manager)
+
+    settings = get_settings()
+
+    if settings.E2B_SDK_COMPATIBLE:
+        try:
+            from .routers.e2b_router import get_e2b_router
+
+            app.include_router(get_e2b_router(_sandbox_manager, settings))
+            logger.info("E2B router mounted successfully.")
+        except ImportError as exc:
+            raise ImportError(
+                "E2B router not found. Please install e2b_code_interpreter",
+            ) from exc
 
 
 @app.on_event("shutdown")
@@ -311,6 +325,7 @@ def main():
         default="INFO",
         help="Set the logging level (default: INFO)",
     )
+
     args = parser.parse_args()
 
     # Setup logging based on command line argument
