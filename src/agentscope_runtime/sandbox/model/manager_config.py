@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=no-self-argument
+# pylint: disable=no-self-argument, line-too-long
+# flake8: noqa: E501
 import os
 from typing import Optional, Literal, Tuple
 from pydantic import BaseModel, Field, model_validator
@@ -27,10 +28,15 @@ class SandboxManagerEnvConfig(BaseModel):
         ...,
         description="Indicates if Redis is enabled.",
     )
-    container_deployment: Literal["docker", "cloud", "k8s"] = Field(
+    container_deployment: Literal[
+        "docker",
+        "cloud",
+        "k8s",
+        "agentrun",
+    ] = Field(
         ...,
-        description="Container deployment backend: 'docker', 'cloud', "
-        "or 'k8s'.",
+        description="Container deployment backend: 'docker', 'cloud', 'k8s'"
+        "or 'agentrun'.",
     )
 
     default_mount_dir: Optional[str] = Field(
@@ -110,6 +116,56 @@ class SandboxManagerEnvConfig(BaseModel):
         None,
         description="Path to kubeconfig file. If not set, will try "
         "in-cluster config or default kubeconfig.",
+    )
+
+    # AgentRun settings
+    agent_run_access_key_id: Optional[str] = Field(
+        None,
+        description="Access key ID for AgentRun. Required if container_deployment is 'agentrun'.",
+    )
+    agent_run_access_key_secret: Optional[str] = Field(
+        None,
+        description="Access key secret for AgentRun. Required if container_deployment is 'agentrun'.",
+    )
+    agent_run_account_id: Optional[str] = Field(
+        None,
+        description="Account ID for AgentRun. Required if container_deployment is 'agentrun'.",
+    )
+    agent_run_region_id: str = Field(
+        "cn-hangzhou",
+        description="Region ID for AgentRun.",
+    )
+    agent_run_cpu: float = Field(
+        2,
+        description="CPU allocation for AgentRun containers.",
+    )
+    agent_run_memory: int = Field(
+        2048,
+        description="Memory allocation for AgentRun containers in MB.",
+    )
+    agent_run_vpc_id: Optional[str] = Field(
+        None,
+        description="VPC ID for AgentRun. Required if container_deployment is 'agentrun'.",
+    )
+    agent_run_vswitch_ids: Optional[list[str]] = Field(
+        None,
+        description="VSwitch IDs for AgentRun. Required if container_deployment is 'agentrun'.",
+    )
+    agent_run_security_group_id: Optional[str] = Field(
+        None,
+        description="Security group ID for AgentRun. Required if container_deployment is 'agentrun'.",
+    )
+    agent_run_prefix: str = Field(
+        "agentscope-sandbox_",
+        description="Prefix for AgentRun resources.",
+    )
+    agentrun_log_project: Optional[str] = Field(
+        None,
+        description="Log project for AgentRun.",
+    )
+    agentrun_log_store: Optional[str] = Field(
+        None,
+        description="Log store for AgentRun.",
     )
 
     @model_validator(mode="after")

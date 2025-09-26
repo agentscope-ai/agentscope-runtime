@@ -275,6 +275,8 @@ agent = LangGraphAgent(graph=compiled_graph)
 
 ## 🏗️ 部署
 
+### 本地部署器
+
 智能体运行器使用了`deploy` 方法，该方法采用一个 `DeployManager` 实例并部署智能体。服务端口在创建 `LocalDeployManager` 时设置为参数 `port`。服务端点路径在部署智能体时设置为参数 `endpoint_path`。在此示例中，我们将端点路径设置为 `/process`。部署后，您可以通过 [http://localhost:8090/process](http://localhost:8090/process) 访问该服务。
 
 ```python
@@ -293,7 +295,134 @@ deploy_result = await runner.deploy(
     stream=True,  # 启用流式响应
 )
 ```
+### AgentRun部署器
 
+您也可以将智能体部署到阿里云AgentRun上，关于AgentRun的更多信息，可以登录[AgentRun控制台](https://functionai.console.aliyun.com/cn-hangzhou/agent/infra)查看。
+
+> 注：将智能体部署到AgentRun上需要含有AliyunAgentRunFullAccess权限的阿里云AKSK，第一次使用前请先登录控制台，创建服务关联角色AliyunServiceRoleForAgentRun。
+
+- 通过Zip代码包部署智能体到AgentRun
+
+```python
+import base64
+from agentscope_runtime.engine.deployers import AgentRunDeployer
+from agentscope_runtime.engine.deployers.agentrun_deployer import (
+    CodeConfig,
+    NetworkConfig,
+    LogConfig,
+)
+
+def read_zip_file_as_base64(file_path):
+    """Read a zip file and return its content as base64 encoded string."""
+    with open(file_path, "rb") as f:
+        zip_content = f.read()
+        return base64.b64encode(zip_content).decode("utf-8")
+
+# 创建部署管理器
+deployer = AgentRunDeployer(
+    account_id="<your-account-id>", # 阿里云主账号ID
+    access_key_id="<your-access-key-id>", # 阿里云AccessKeyID，需要AliyunAgentRunFullAccess权限
+    access_key_secret="<your-access-key-secret>", # 阿里云AccessKeySecret
+    region_id="<deploy-region-id>", # AgentRun部署地域ID
+)
+
+code_config = CodeConfig(
+    language="python3.10", # 代码语言
+    command=["python3", "app.py"], # 代码启动命令
+    zip_file=read_zip_file_as_base64("app.zip"), # zip代码包，需要读取为base64编码形式
+)
+
+network_config = NetworkConfig(
+    network_mode="PUBLIC"
+)
+
+log_config = LogConfig(
+    logstore="<your-sls-logstore>", # SLS日志存储
+    project="<your-sls-project>" # SLS日志项目
+)
+
+deploy_result = await deployer.deploy(
+    agent_runtime_name="<your-agent-runtime-name>", # 智能体运行器名称
+    artifact_type="Code", # 代码类型
+    cpu=0.5, # vCPU规格
+    memory=512, # 内存规格
+    port=8080, # 程序运行端口
+    code_configuration=code_config, # 代码配置
+    network_configuration=network_config, # 网络配置
+    log_configuration=log_config # 日志配置（可选）
+)
+
+```
+
+- 通过容器镜像部署智能体到AgentRun
+
+```python
+import base64
+from agentscope_runtime.engine.deployers import AgentRunDeployer
+from agentscope_runtime.engine.deployers.agentrun_deployer import (
+    ContainerConfig,
+    NetworkConfig,
+    LogConfig,
+)
+
+# 创建部署管理器
+deployer = AgentRunDeployer(
+    account_id="<your-account-id>", # 阿里云主账号ID
+    access_key_id="<your-access-key-id>", # 阿里云AccessKeyID, 需要AliyunAgentRunFullAccess权限
+    access_key_secret="<your-access-key-secret>", # 阿里云AccessKeySecret
+    region_id="<deploy-region-id>", # AgentRun部署地域ID
+)
+
+container_config = ContainerConfig(
+    command=["python3", "app.py"], # 镜像启动命令
+    image="xxx.cn-hangzhou.cr.aliyuncs.com/xxx/xxxxxx:xxx" # 镜像地址，同地域下阿里云ACR镜像仓库地址
+)
+
+network_config = NetworkConfig(
+    network_mode="PUBLIC"
+)
+
+log_config = LogConfig(
+    logstore="<your-sls-logstore>", # SLS日志存储
+    project="<your-sls-project>" # SLS日志项目
+)
+
+deploy_result = await deployer.deploy(
+    agent_runtime_name="<your-agent-runtime-name>", # 智能体运行器名称
+    artifact_type="Container", # 代码类型
+    cpu=0.5, # vCPU规格
+    memory=512, # 内存规格
+    port=8080, # 程序运行端口
+    container_configuration=container_config, # 容器配置
+    network_configuration=network_config, # 网络配置
+    log_configuration=log_config # 日志配置（可选）
+)
+```
+
+在成功调用完`AgentRun`的`deploy`方法后，返回的响应如下：
+```json
+{
+    "success": true,
+    "agent_runtime_id": "cf1a205e-****-****-****-4df2fb7d153e",
+    "agent_runtime_endpoint_id": "79d709fd-****-****-****-3c37a045dfaa",
+    "agent_runtime_endpoint_name": "agent-runtime-test-202****025",
+    "agent_runtime_public_endpoint_url": "https://1760****6195983.funagent-data.cn-hangzhou.aliyuncs.com/2025-09-10/agents/runtimes/cf1a205e-****-****-****-4df2fb7d153e/endpoints/agent-runtime-test-2025****025/invocations",
+    "status": "READY",
+    "request_id": "88E06CF5-****-****-****-000F****C83",
+    "deploy_id": "73aaecdf-****-****-****-f1743823e106"
+}
+```
+您可以通过返回的`agent_runtime_public_endpoint_url`字段获取智能体的访问地址，并通过此地址调用智能体服务。部署完毕后，您可以登录[AgentRun控制台]()，通过`agent_runtime_endpoint_id`查看智能体的部署详细信息。
+
+通过curl调用智能体服务示例：
+```bash
+curl -v -X POST <agent_runtime_public_endpoint_url> \
+  -H "Content-Type: application/json" \
+  -H "X-Agentrun-Session-Id: funagent-87af2ff9-cf30-42bb-893d-fbf143b75f73" \   # 在header中指定X-Agentrun-Session-Id，使同一session的请求调度到同一实例中
+  -d '{
+    "input": "查询下北京的天气"
+  }'
+```
 ---
 
 ## 🤝 贡献

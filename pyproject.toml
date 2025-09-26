@@ -47,6 +47,8 @@ sandbox = [
     "dotenv>=0.9.9",
     "kubernetes>=33.1.0",
     "shortuuid>=1.0.13",
+    "alibabacloud-agentrun20250910>=1.0.0",
+    "alibabacloud_tea_openapi>=0.4.0"
 ]
 
 agentscope = [
@@ -66,6 +68,10 @@ a2a = [
 autogen = [
     "autogen-agentchat>=0.7.4",
     "autogen-ext[openai]>=0.7.4",
+]
+agentrun = [
+    "alibabacloud-agentrun20250910>=1.0.0",
+    "alibabacloud_tea_openapi>=0.4.0"
 ]
 
 langchain_rag=[
