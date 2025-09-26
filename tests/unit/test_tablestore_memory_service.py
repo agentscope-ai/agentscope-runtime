@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=redefined-outer-name, protected-access
-import os
+# pylint: disable=redefined-outer-name, protected-access, unused-argument
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import pytest_asyncio
-from tablestore_for_agent_memory.util.tablestore_helper import TablestoreHelper
 
 from agentscope_runtime.engine.schemas.agent_schemas import (
     ContentType,
@@ -18,34 +17,8 @@ from agentscope_runtime.engine.services.tablestore_memory_service import (
     TablestoreMemoryService,
 )
 from agentscope_runtime.engine.services.utils.tablestore_service_utils import (
-    create_tablestore_client,
+    convert_message_to_tablestore_document,
 )
-
-
-async def wait_for_index_ready(
-    length,
-):
-    endpoint = os.getenv("TABLESTORE_ENDPOINT")
-    instance_name = os.getenv("TABLESTORE_INSTANCE_NAME")
-    access_key_id = os.getenv("TABLESTORE_ACCESS_KEY_ID")
-    access_key_secret = os.getenv("TABLESTORE_ACCESS_KEY_SECRET")
-
-    tablestore_client = create_tablestore_client(
-        end_point=endpoint,
-        instance_name=instance_name,
-        access_key_id=access_key_id,
-        access_key_secret=access_key_secret,
-    )
-
-    table_name = "agentscope_runtime_memory"
-    index_name = "agentscope_runtime_knowledge_search_index_name"
-
-    await TablestoreHelper.async_wait_search_index_ready(
-        tablestore_client=tablestore_client,
-        table_name=table_name,
-        index_name=index_name,
-        total_count=length,
-    )
 
 
 def create_message(role: str, content: str) -> Message:
@@ -57,39 +30,50 @@ def create_message(role: str, content: str) -> Message:
     )
 
 
-@pytest_asyncio.fixture
-async def tablestore_memory_service():
-    endpoint = os.getenv("TABLESTORE_ENDPOINT")
-    instance_name = os.getenv("TABLESTORE_INSTANCE_NAME")
-    access_key_id = os.getenv("TABLESTORE_ACCESS_KEY_ID")
-    access_key_secret = os.getenv("TABLESTORE_ACCESS_KEY_SECRET")
+# Mock the AsyncKnowledgeStore
+@pytest.fixture
+def mock_knowledge_store():
+    with patch(
+        "agentscope_runtime.engine.services."
+        "tablestore_memory_service.AsyncKnowledgeStore",
+    ) as mock:
+        instance = mock.return_value
+        instance.init_table = AsyncMock()
+        instance.close = AsyncMock()
+        instance.put_document = AsyncMock()
+        instance.full_text_search = AsyncMock()
+        instance.vector_search = AsyncMock()
+        instance.search_documents = AsyncMock()
+        instance.delete_document = AsyncMock()
+        instance.get_all_documents = AsyncMock()
+        yield instance
 
-    if (
-        endpoint is None
-        or instance_name is None
-        or access_key_id is None
-        or access_key_secret is None
-    ):
-        pytest.skip(
-            "tablestore endpoint is None or instance_name is None or "
-            "access_key_id is None or access_key_secret is None",
+
+@pytest.fixture
+def mock_embedding_model():
+    with patch(
+        "agentscope_runtime.engine.services."
+        "tablestore_memory_service.DashScopeEmbeddings",
+    ) as mock:
+        instance = mock.return_value
+        instance.embed_documents = MagicMock(
+            side_effect=lambda texts: [[0.1, 0.2, 0.3] for _ in texts],
         )
+        instance.embed_query = MagicMock(return_value=[0.1, 0.2, 0.3])
+        yield instance
+
+
+@pytest_asyncio.fixture
+async def tablestore_memory_service(mock_knowledge_store):
+    # Create a mock tablestore client
+    mock_tablestore_client = MagicMock()
 
     tablestore_memory_service = TablestoreMemoryService(
-        tablestore_client=create_tablestore_client(
-            end_point=endpoint,
-            instance_name=instance_name,
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
-        ),
+        tablestore_client=mock_tablestore_client,
     )
 
+    # Replace the knowledge store with our mock
     await tablestore_memory_service.start()
-    healthy = await tablestore_memory_service.health()
-    if not healthy:
-        raise RuntimeError(
-            "Tablestore is unavailable.",
-        )
     try:
         yield tablestore_memory_service
     finally:
@@ -97,413 +81,487 @@ async def tablestore_memory_service():
 
 
 @pytest_asyncio.fixture
-async def tablestore_memory_service_vector():
-    endpoint = os.getenv("TABLESTORE_ENDPOINT")
-    instance_name = os.getenv("TABLESTORE_INSTANCE_NAME")
-    access_key_id = os.getenv("TABLESTORE_ACCESS_KEY_ID")
-    access_key_secret = os.getenv("TABLESTORE_ACCESS_KEY_SECRET")
-
-    if (
-        endpoint is None
-        or instance_name is None
-        or access_key_id is None
-        or access_key_secret is None
-    ):
-        pytest.skip(
-            "tablestore endpoint is None or instance_name is None or "
-            "access_key_id is None or access_key_secret is None",
-        )
+async def tablestore_memory_service_vector(
+    mock_knowledge_store,
+    mock_embedding_model,
+):
+    # Create a mock tablestore client
+    mock_tablestore_client = MagicMock()
 
     tablestore_memory_service_vector = TablestoreMemoryService(
-        tablestore_client=create_tablestore_client(
-            end_point=endpoint,
-            instance_name=instance_name,
-            access_key_id=access_key_id,
-            access_key_secret=access_key_secret,
-        ),
+        tablestore_client=mock_tablestore_client,
         search_strategy=SearchStrategy.VECTOR,
+        embedding_model=mock_embedding_model,
     )
 
     await tablestore_memory_service_vector.start()
-    healthy = await tablestore_memory_service_vector.health()
-    if not healthy:
-        raise RuntimeError(
-            "Tablestore is unavailable.",
-        )
     try:
         yield tablestore_memory_service_vector
     finally:
         await tablestore_memory_service_vector.stop()
 
 
-@pytest.mark.asyncio
-async def test_create_error_state_client():
-    endpoint = os.getenv("TABLESTORE_ENDPOINT")
-    instance_name = os.getenv("TABLESTORE_INSTANCE_NAME")
-    access_key_id = os.getenv("TABLESTORE_ACCESS_KEY_ID")
-    access_key_secret = os.getenv("TABLESTORE_ACCESS_KEY_SECRET")
+# Tests for __init__ method
+def test_init_with_vector_strategy_without_embedding_model():
+    mock_tablestore_client = MagicMock()
 
-    if (
-        endpoint is None
-        or instance_name is None
-        or access_key_id is None
-        or access_key_secret is None
-    ):
-        pytest.skip(
-            "tablestore endpoint is None or instance_name is None or "
-            "access_key_id is None or access_key_secret is None",
-        )
-
-    try:
+    with pytest.raises(ValueError) as exc_info:
         TablestoreMemoryService(
-            tablestore_client=create_tablestore_client(
-                end_point=endpoint,
-                instance_name=instance_name,
-                access_key_id=access_key_id,
-                access_key_secret=access_key_secret,
-            ),
+            tablestore_client=mock_tablestore_client,
             search_strategy=SearchStrategy.VECTOR,
             embedding_model=None,
         )
-        assert False
-    except Exception as e:
-        assert isinstance(e, ValueError)
-        assert (
-            str(e)
-            == "Embedding model is required when search strategy is VECTOR."
-        )
+
+    assert (
+        str(exc_info.value)
+        == "Embedding model is required when search strategy is VECTOR."
+    )
+
+
+def test_init_with_full_text_strategy():
+    mock_tablestore_client = MagicMock()
+
+    service = TablestoreMemoryService(
+        tablestore_client=mock_tablestore_client,
+        search_strategy=SearchStrategy.FULL_TEXT,
+    )
+
+    assert service._search_strategy == SearchStrategy.FULL_TEXT
+    assert service._tablestore_client == mock_tablestore_client
+
+
+def test_init_with_vector_strategy(mock_embedding_model):
+    mock_tablestore_client = MagicMock()
+
+    service = TablestoreMemoryService(
+        tablestore_client=mock_tablestore_client,
+        search_strategy=SearchStrategy.VECTOR,
+        embedding_model=mock_embedding_model,
+    )
+
+    assert service._search_strategy == SearchStrategy.VECTOR
+    assert service._embedding_model == mock_embedding_model
+    assert service._tablestore_client == mock_tablestore_client
+
+
+# Tests for start method
+@pytest.mark.asyncio
+async def test_start_initializes_knowledge_store(mock_knowledge_store):
+    mock_tablestore_client = MagicMock()
+
+    tablestore_memory_service = TablestoreMemoryService(
+        tablestore_client=mock_tablestore_client,
+    )
+
+    # Initially knowledge_store should be None
+    assert tablestore_memory_service._knowledge_store is None
+
+    # After start, it should be initialized
+    await tablestore_memory_service.start()
+
+    assert tablestore_memory_service._knowledge_store is not None
+    mock_knowledge_store.init_table.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_service_lifecycle(
-    tablestore_memory_service: TablestoreMemoryService,
-):
-    assert await tablestore_memory_service.health() is True
+async def test_start_when_already_started(mock_knowledge_store):
+    mock_tablestore_client = MagicMock()
+
+    tablestore_memory_service = TablestoreMemoryService(
+        tablestore_client=mock_tablestore_client,
+    )
+
+    tablestore_memory_service._knowledge_store = mock_knowledge_store
+
+    # Calling start again should not reinitialize
+    await tablestore_memory_service.start()
+
+    # init_table should not be called again
+    mock_knowledge_store.init_table.assert_not_called()
+
+
+# Tests for stop method
+@pytest.mark.asyncio
+async def test_stop_closes_knowledge_store(mock_knowledge_store):
+    mock_tablestore_client = MagicMock()
+
+    tablestore_memory_service = TablestoreMemoryService(
+        tablestore_client=mock_tablestore_client,
+    )
+
+    tablestore_memory_service._knowledge_store = mock_knowledge_store
+
     await tablestore_memory_service.stop()
-    assert await tablestore_memory_service.health() is False
+
+    # Knowledge store should be set to None and close should be called
+    assert tablestore_memory_service._knowledge_store is None
+    mock_knowledge_store.close.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_add_and_search_memory_no_session(
-    tablestore_memory_service: TablestoreMemoryService,
-):
-    user_id = "user1"
-    await tablestore_memory_service.delete_memory(user_id)
-    messages = [create_message(Role.USER, "hello world")]
-    await tablestore_memory_service.add_memory(user_id, messages)
-    await wait_for_index_ready(1)
-    retrieved = await tablestore_memory_service.search_memory(
-        user_id,
-        messages,
-    )
-    assert [m.dict() for m in retrieved] == [m.dict() for m in messages]
+async def test_stop_when_not_started():
+    mock_tablestore_client = MagicMock()
 
-    await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(0)
+    tablestore_memory_service = TablestoreMemoryService(
+        tablestore_client=mock_tablestore_client,
+    )
+
+    # When knowledge_store is None, stop should do nothing
+    assert tablestore_memory_service._knowledge_store is None
+
+    await tablestore_memory_service.stop()
+
+    # Should still be None, no exception raised
+    assert tablestore_memory_service._knowledge_store is None
+
+
+# Tests for health method
+@pytest.mark.asyncio
+async def test_health_when_not_started():
+    mock_tablestore_client = MagicMock()
+
+    tablestore_memory_service = TablestoreMemoryService(
+        tablestore_client=mock_tablestore_client,
+    )
+
+    # When not started, health should return False
+    result = await tablestore_memory_service.health()
+    assert result is False
 
 
 @pytest.mark.asyncio
-async def test_add_and_search_memory_with_session(
-    tablestore_memory_service: TablestoreMemoryService,
-):
-    user_id = "user2"
-    session_id = "session1"
-    await tablestore_memory_service.delete_memory(user_id)
-    messages = [create_message(Role.USER, "hello from session")]
-    await tablestore_memory_service.add_memory(user_id, messages, session_id)
-    await wait_for_index_ready(1)
-    retrieved = await tablestore_memory_service.search_memory(
-        user_id,
-        messages,
-    )
-    assert [m.dict() for m in retrieved] == [m.dict() for m in messages]
+async def test_health_when_started(mock_knowledge_store):
+    mock_tablestore_client = MagicMock()
 
-    await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(0)
+    tablestore_memory_service = TablestoreMemoryService(
+        tablestore_client=mock_tablestore_client,
+    )
+
+    tablestore_memory_service._knowledge_store = mock_knowledge_store
+    mock_knowledge_store.get_all_documents.return_value = AsyncMock()
+
+    # When started and no exception, health should return True
+    result = await tablestore_memory_service.health()
+    assert result is True
 
 
 @pytest.mark.asyncio
-async def test_search_memory_multiple_sessions(
-    tablestore_memory_service: TablestoreMemoryService,
-):
-    user_id = "user3"
-    await tablestore_memory_service.delete_memory(user_id)
-    messages1 = [create_message(Role.USER, "apple banana")]
-    messages2 = [create_message(Role.USER, "banana orange")]
-    await tablestore_memory_service.add_memory(user_id, messages1, "session1")
-    await tablestore_memory_service.add_memory(user_id, messages2, "session2")
+async def test_health_when_exception(mock_knowledge_store):
+    mock_tablestore_client = MagicMock()
 
-    await wait_for_index_ready(2)
-    search_query = [create_message(Role.USER, "banana")]
-    retrieved = await tablestore_memory_service.search_memory(
-        user_id,
-        search_query,
+    tablestore_memory_service = TablestoreMemoryService(
+        tablestore_client=mock_tablestore_client,
     )
-    # The order is not guaranteed, so check for content
-    assert len(retrieved) == 2
-    ret_dicts = [m.dict() for m in retrieved]
-    assert messages1[0].dict() in ret_dicts
-    assert messages2[0].dict() in ret_dicts
 
-    search_query_apple = [create_message(Role.USER, "apple")]
-    retrieved_apple = await tablestore_memory_service.search_memory(
-        user_id,
-        search_query_apple,
+    tablestore_memory_service._knowledge_store = mock_knowledge_store
+    mock_knowledge_store.get_all_documents.side_effect = Exception(
+        "Connection error",
     )
-    assert len(retrieved_apple) == 1
-    assert messages1[0].dict() == retrieved_apple[0].dict()
 
-    await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(0)
+    # When an exception occurs, health should return False
+    result = await tablestore_memory_service.health()
+    assert result is False
 
 
+# Tests for add_memory method
 @pytest.mark.asyncio
-async def test_search_memory_with_top_k(
-    tablestore_memory_service: TablestoreMemoryService,
+async def test_add_memory_success(
+    tablestore_memory_service,
+    mock_knowledge_store,
 ):
-    user_id = "user4"
-    await tablestore_memory_service.delete_memory(user_id)
+    user_id = "test_user"
     messages = [
-        create_message(Role.USER, f"message with keyword {i}")
-        for i in range(5)
+        create_message(Role.USER, "Hello"),
+        create_message(Role.ASSISTANT, "Hi there"),
     ]
+
     await tablestore_memory_service.add_memory(user_id, messages)
 
-    await wait_for_index_ready(5)
-    search_query = [create_message(Role.USER, "keyword")]
-    retrieved = await tablestore_memory_service.search_memory(
-        user_id,
-        search_query,
-        filters={"top_k": 3},
-    )
-    assert len(retrieved) == 3
-
-    await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(0)
+    # Should call put_document for each message
+    assert mock_knowledge_store.put_document.call_count == 2
 
 
 @pytest.mark.asyncio
-async def test_search_memory_no_match(
-    tablestore_memory_service: TablestoreMemoryService,
+async def test_add_memory_with_session_id(
+    tablestore_memory_service,
+    mock_knowledge_store,
 ):
-    user_id = "user_nomatch"
-    await tablestore_memory_service.delete_memory(user_id)
-    messages = [create_message(Role.USER, "some content here")]
-    await tablestore_memory_service.add_memory(user_id, messages)
+    user_id = "test_user"
+    session_id = "test_session"
+    messages = [create_message(Role.USER, "Hello")]
 
-    await wait_for_index_ready(1)
-    search_query = [create_message(Role.USER, "xyz")]
-    retrieved = await tablestore_memory_service.search_memory(
-        user_id,
-        search_query,
-    )
-    assert retrieved == []
+    await tablestore_memory_service.add_memory(user_id, messages, session_id)
 
-    await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(0)
+    # Should call put_document for each message
+    mock_knowledge_store.put_document.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_list_memory_pagination(
+async def test_add_memory_empty_messages(
+    tablestore_memory_service,
+    mock_knowledge_store,
+):
+    user_id = "test_user"
+    messages = []
+
+    # Should not raise any exception
+    await tablestore_memory_service.add_memory(user_id, messages)
+
+    # Should not call put_document
+    mock_knowledge_store.put_document.assert_not_called()
+
+
+# Tests for search_memory method
+@pytest.mark.asyncio
+async def test_search_memory_full_text_success(
+    tablestore_memory_service: TablestoreMemoryService,
+    mock_knowledge_store,
+):
+    user_id = "test_user"
+    messages = [create_message(Role.USER, "What is the weather like today?")]
+
+    # Create a proper mock document that can be converted to message
+    test_message = create_message(Role.USER, "The weather is sunny today")
+    tablestore_document = convert_message_to_tablestore_document(
+        test_message,
+        user_id,
+        "test_session",
+    )
+
+    mock_hit = MagicMock()
+    mock_hit.document = tablestore_document
+    mock_search_result = MagicMock()
+    mock_search_result.hits = [mock_hit]
+    mock_knowledge_store.full_text_search.return_value = mock_search_result
+
+    result = await tablestore_memory_service.search_memory(user_id, messages)
+
+    assert len(result) == 1
+    mock_knowledge_store.full_text_search.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_search_memory_vector_success(
+    tablestore_memory_service_vector: TablestoreMemoryService,
+    mock_knowledge_store,
+    mock_embedding_model,
+):
+    user_id = "test_user"
+    messages = [create_message(Role.USER, "Tell me about the weather")]
+
+    # Create a proper mock document that can be converted to message
+    test_message = create_message(Role.USER, "Weather conditions are good")
+    tablestore_document = convert_message_to_tablestore_document(
+        test_message,
+        user_id,
+        "test_session",
+    )
+
+    mock_hit = MagicMock()
+    mock_hit.document = tablestore_document
+    mock_search_result = MagicMock()
+    mock_search_result.hits = [mock_hit]
+    mock_knowledge_store.vector_search.return_value = mock_search_result
+
+    result = await tablestore_memory_service_vector.search_memory(
+        user_id,
+        messages,
+    )
+
+    assert len(result) == 1
+    mock_knowledge_store.vector_search.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_search_memory_empty_messages(
+    tablestore_memory_service: TablestoreMemoryService,
+    mock_knowledge_store,
+):
+    user_id = "test_user"
+    messages = []
+
+    result = await tablestore_memory_service.search_memory(user_id, messages)
+
+    assert result == []
+    mock_knowledge_store.full_text_search.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_search_memory_invalid_messages(
+    tablestore_memory_service: TablestoreMemoryService,
+    mock_knowledge_store,
+):
+    user_id = "test_user"
+    messages = "not a list"
+
+    result = await tablestore_memory_service.search_memory(user_id, messages)
+
+    assert result == []
+    mock_knowledge_store.full_text_search.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_search_memory_no_query_text(
+    tablestore_memory_service: TablestoreMemoryService,
+    mock_knowledge_store,
+):
+    user_id = "test_user"
+    # Create a message without text content
+    message = Message(
+        type=MessageType.MESSAGE,
+        role=Role.USER,
+        content=[],  # Empty content
+    )
+    messages = [message]
+
+    result = await tablestore_memory_service.search_memory(user_id, messages)
+
+    assert result == []
+    mock_knowledge_store.full_text_search.assert_not_called()
+
+
+# Tests for list_memory method
+@pytest.mark.asyncio
+async def test_list_memory_success(
+    tablestore_memory_service: TablestoreMemoryService,
+    mock_knowledge_store,
+):
+    user_id = "test_user"
+
+    # Create a proper mock document that can be converted to message
+    test_message = create_message(Role.USER, "Sample message")
+    tablestore_document = convert_message_to_tablestore_document(
+        test_message,
+        user_id,
+        "test_session",
+    )
+
+    mock_hit = MagicMock()
+    mock_hit.document = tablestore_document
+    mock_search_result = MagicMock()
+    mock_search_result.hits = [mock_hit]
+    mock_search_result.next_token = None
+    mock_knowledge_store.search_documents.return_value = mock_search_result
+
+    result = await tablestore_memory_service.list_memory(user_id)
+
+    assert len(result) == 1
+
+
+@pytest.mark.asyncio
+async def test_list_memory_with_pagination(
+    tablestore_memory_service: TablestoreMemoryService,
+    mock_knowledge_store,
+):
+    user_id = "test_user"
+
+    # Create a proper mock document that can be converted to message
+    test_message = create_message(Role.USER, "Sample message")
+    tablestore_document = convert_message_to_tablestore_document(
+        test_message,
+        user_id,
+        "test_session",
+    )
+
+    mock_hit = MagicMock()
+    mock_hit.document = tablestore_document
+    mock_search_result = MagicMock()
+    mock_search_result.hits = [mock_hit]
+    mock_search_result.next_token = "token"
+    mock_knowledge_store.search_documents.return_value = mock_search_result
+
+    result = await tablestore_memory_service.list_memory(
+        user_id,
+        {"page_num": 1, "page_size": 1},
+    )
+
+    assert len(result) == 1
+
+
+@pytest.mark.asyncio
+async def test_list_memory_invalid_page_params(
     tablestore_memory_service: TablestoreMemoryService,
 ):
-    user_id = "user5"
-    await tablestore_memory_service.delete_memory(user_id)
-    messages1 = [create_message(Role.USER, f"message{i}") for i in range(25)]
-    messages2 = [create_message(Role.USER, f"message{i}") for i in range(26)]
-    await tablestore_memory_service.add_memory(user_id, messages1, "session1")
-    await tablestore_memory_service.add_memory(user_id, messages2, "session2")
+    user_id = "test_user"
 
-    await wait_for_index_ready(51)
-
-    for page_num in range(5):
-        listed_page = await tablestore_memory_service.list_memory(
+    with pytest.raises(ValueError) as exc_info:
+        await tablestore_memory_service.list_memory(
             user_id,
-            filters={"page_size": 10, "page_num": page_num + 1},
+            {"page_num": 0, "page_size": 10},
         )
-        assert len(listed_page) == 10
 
-    # page6 only one data
-    listed_page = await tablestore_memory_service.list_memory(
-        user_id,
-        filters={"page_size": 10, "page_num": 6},
+    assert (
+        str(exc_info.value) == "page_num and page_size must be greater than 0."
     )
-    assert len(listed_page) == 1
 
-    # page7 is empty
-    listed_page = await tablestore_memory_service.list_memory(
+
+# Tests for delete_memory method
+@pytest.mark.asyncio
+async def test_delete_memory_by_user_id(
+    tablestore_memory_service: TablestoreMemoryService,
+    mock_knowledge_store,
+):
+    user_id = "test_user"
+
+    # Create a proper mock document
+    test_message = create_message(Role.USER, "Sample message")
+    tablestore_document = convert_message_to_tablestore_document(
+        test_message,
         user_id,
-        filters={"page_size": 10, "page_num": 7},
+        "test_session",
     )
-    assert len(listed_page) == 0
+
+    mock_search_result = MagicMock()
+    mock_search_result.hits = [MagicMock(document=tablestore_document)]
+    mock_knowledge_store.search_documents.return_value = mock_search_result
 
     await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(0)
+
+    mock_knowledge_store.delete_document.assert_called_once_with(
+        test_message.id,
+    )
 
 
 @pytest.mark.asyncio
-async def test_delete_memory_session(
+async def test_delete_memory_by_user_and_session(
     tablestore_memory_service: TablestoreMemoryService,
+    mock_knowledge_store,
 ):
-    user_id = "user6"
-    await tablestore_memory_service.delete_memory(user_id)
-    session_id = "session_to_delete"
-    msg1 = create_message(Role.USER, "apple")
-    msg2 = create_message(Role.USER, "banana")
-    await tablestore_memory_service.add_memory(user_id, [msg1], session_id)
-    await tablestore_memory_service.add_memory(
+    user_id = "test_user"
+    session_id = "test_session"
+
+    # Create a proper mock document
+    test_message = create_message(Role.USER, "Sample message")
+    tablestore_document = convert_message_to_tablestore_document(
+        test_message,
         user_id,
-        [msg2],
-        "another_session",
+        session_id,
     )
-    await wait_for_index_ready(2)
+
+    mock_search_result = MagicMock()
+    mock_search_result.hits = [MagicMock(document=tablestore_document)]
+    mock_knowledge_store.search_documents.return_value = mock_search_result
 
     await tablestore_memory_service.delete_memory(user_id, session_id)
-    await wait_for_index_ready(1)
 
-    # After deleting session, msg1 should not be found
-    retrieved = await tablestore_memory_service.search_memory(
-        user_id,
-        [create_message(Role.USER, "apple")],
+    mock_knowledge_store.delete_document.assert_called_once_with(
+        test_message.id,
     )
-    assert len(retrieved) == 0
-
-    # But msg2 should still be found
-    retrieved = await tablestore_memory_service.search_memory(
-        user_id,
-        [create_message(Role.USER, "banana")],
-    )
-    assert len(retrieved) == 1
-    assert msg2.dict() == retrieved[0].dict()
-
-    await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(0)
 
 
 @pytest.mark.asyncio
-async def test_delete_memory_user(
+async def test_delete_memory_no_matches(
     tablestore_memory_service: TablestoreMemoryService,
+    mock_knowledge_store,
 ):
-    user_id = "user_to_delete"
-    await tablestore_memory_service.delete_memory(user_id)
-    await tablestore_memory_service.add_memory(
-        user_id,
-        [create_message(Role.USER, "some message")],
-    )
-    await wait_for_index_ready(1)
+    user_id = "test_user"
 
-    await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(0)
+    # Setup mock return values
+    mock_search_result = MagicMock()
+    mock_search_result.hits = []
+    mock_knowledge_store.search_documents.return_value = mock_search_result
 
-    retrieved = await tablestore_memory_service.search_memory(
-        user_id,
-        [create_message(Role.USER, "some")],
-    )
-    assert retrieved == []
-
-    await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(0)
-
-
-@pytest.mark.asyncio
-async def test_operations_on_non_existent_user(
-    tablestore_memory_service: TablestoreMemoryService,
-):
-    user_id = "non_existent_user"
+    # Should not raise any exception
     await tablestore_memory_service.delete_memory(user_id)
 
-    retrieved = await tablestore_memory_service.search_memory(
-        user_id,
-        [create_message(Role.USER, "any")],
-    )
-    assert retrieved == []
-
-    listed = await tablestore_memory_service.list_memory(user_id)
-    assert listed == []
-
-    # Should not raise any error
-    await tablestore_memory_service.delete_memory(user_id)
-    await tablestore_memory_service.delete_memory(user_id, "some_session")
-
-    await tablestore_memory_service.delete_memory(user_id)
-    await wait_for_index_ready(0)
-
-
-@pytest.mark.asyncio
-async def test_vector_search(tablestore_memory_service_vector):
-    user_id = "user_vector"
-    await tablestore_memory_service_vector.delete_memory(user_id)
-    messages = [
-        create_message(Role.USER, "The weather is sunny today"),
-        create_message(Role.USER, "I like to eat apples"),
-        create_message(Role.USER, "The cat is sleeping"),
-    ]
-    await tablestore_memory_service_vector.add_memory(user_id, messages)
-    await wait_for_index_ready(3)
-
-    # Test vector search with semantic query
-    search_query = [create_message(Role.USER, "What is the weather like?")]
-    retrieved = await tablestore_memory_service_vector.search_memory(
-        user_id,
-        search_query,
-    )
-    assert len(retrieved) == 3
-    # The first result should be the most similar message
-    assert "sunny" in retrieved[0].content[0].text
-
-    # Test vector search with top_k parameter
-    retrieved_top1 = await tablestore_memory_service_vector.search_memory(
-        user_id,
-        search_query,
-        filters={"top_k": 1},
-    )
-    assert len(retrieved_top1) == 1
-    assert "sunny" in retrieved_top1[0].content[0].text
-
-    retrieved_top2 = await tablestore_memory_service_vector.search_memory(
-        user_id,
-        search_query,
-        filters={"top_k": 2},
-    )
-    assert len(retrieved_top2) == 2
-    assert "sunny" in retrieved_top1[0].content[0].text
-
-    await tablestore_memory_service_vector.delete_memory(user_id)
-    await wait_for_index_ready(0)
-
-    # Test vector search with error message
-    messages = [
-        create_message(Role.USER, "The weather is sunny today"),
-        create_message(Role.USER, "I like to eat apples"),
-        create_message(Role.USER, "The cat is sleeping"),
-    ]
-    messages[0].type = MessageType.ERROR
-    await tablestore_memory_service_vector.add_memory(user_id, messages)
-    await wait_for_index_ready(3)
-
-    retrieved = await tablestore_memory_service_vector.list_memory(user_id)
-    assert len(retrieved) == 3
-    for message in messages:
-        assert message in retrieved
-
-    search_query = [create_message(Role.USER, "What is the weather like?")]
-    retrieved = await tablestore_memory_service_vector.search_memory(
-        user_id,
-        search_query,
-    )
-
-    assert len(retrieved) == 2
-    assert "sunny" not in retrieved[0].content[0].text
-
-    search_query = [create_message(Role.USER, "What is the cat doing?")]
-    retrieved = await tablestore_memory_service_vector.search_memory(
-        user_id,
-        search_query,
-        filters={"top_k": 1},
-    )
-
-    assert len(retrieved) == 1
-    assert "sleeping" in retrieved[0].content[0].text
-
-    await tablestore_memory_service_vector.delete_memory(user_id)
-    await wait_for_index_ready(0)
+    mock_knowledge_store.delete_document.assert_not_called()

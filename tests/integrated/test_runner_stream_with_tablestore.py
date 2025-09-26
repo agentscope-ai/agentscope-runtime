@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=all
+# pylint: disable=redefined-outer-name, protected-access
 import os
 
 import pytest
@@ -36,25 +36,17 @@ from agentscope_runtime.engine.services.utils.tablestore_service_utils import (
 
 
 async def wait_for_index_ready(
+    tablestore_memory_service: TablestoreMemoryService,
     length,
 ):
-    endpoint = os.getenv("TABLESTORE_ENDPOINT")
-    instance_name = os.getenv("TABLESTORE_INSTANCE_NAME")
-    access_key_id = os.getenv("TABLESTORE_ACCESS_KEY_ID")
-    access_key_secret = os.getenv("TABLESTORE_ACCESS_KEY_SECRET")
-
-    client = create_tablestore_client(
-        end_point=endpoint,
-        instance_name=instance_name,
-        access_key_id=access_key_id,
-        access_key_secret=access_key_secret,
+    tablestore_client = (tablestore_memory_service._tablestore_client,)
+    table_name = (tablestore_memory_service._knowledge_store._table_name,)
+    index_name = (
+        tablestore_memory_service._knowledge_store._search_index_name,
     )
 
-    table_name = "agentscope_runtime_memory"
-    index_name = "agentscope_runtime_knowledge_search_index_name"
-
     await TablestoreHelper.async_wait_search_index_ready(
-        tablestore_client=client,
+        tablestore_client=tablestore_client,
         table_name=table_name,
         index_name=index_name,
         total_count=length,
@@ -233,10 +225,7 @@ async def test_runner(
                         print(res)
 
         print("finish!")
-        await wait_for_index_ready(4)
+        await wait_for_index_ready(tablestore_memory_service, 4)
         await tablestore_session_history_service.delete_user_sessions(USER_ID)
         await tablestore_memory_service.delete_memory(USER_ID)
-        await wait_for_index_ready(0)
-
-
-# pylint: enable=all
+        await wait_for_index_ready(tablestore_memory_service, 0)
