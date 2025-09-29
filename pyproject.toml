@@ -85,7 +85,7 @@ llamaindex_rag=[
     "bs4>=0.0.2",
 ]
 
-aliyun_tablestore=[
+aliyun_tablestore_ext=[
     "tablestore-for-agent-memory>=1.1.0",
     "dashscope>=1.24.4",
     "langchain-community>=0.3.27",
