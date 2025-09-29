@@ -784,6 +784,24 @@
 <span class="n">vectorstore</span> <span class="o">=</span> <span class="n">Pinecone</span><span class="o">.</span><span class="n">from_documents</span><span class="p">(</span><span class="n">docs</span><span class="p">,</span> <span class="n">DashScopeEmbeddings</span><span class="p">(),</span> <span class="n">index_name</span><span class="o">=</span><span class="n">index_name</span><span class="p">)</span>
 </pre></div>
 </div>
+<ol class="arabic simple" start="5">
+<li><p>Tablestore</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.tablestore_rag_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">TablestoreRAGService</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.utils.tablestore_service_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_tablestore_client</span>
+
+<span class="n">tablestore_rag_service</span> <span class="o">=</span> <span class="n">TablestoreRAGService</span><span class="p">(</span>
+    <span class="n">tablestore_client</span><span class="o">=</span><span class="n">create_tablestore_client</span><span class="p">(</span>
+        <span class="n">end_point</span><span class="o">=</span><span class="s2">&quot;your_endpoint&quot;</span><span class="p">,</span>
+        <span class="n">instance_name</span><span class="o">=</span><span class="s2">&quot;your_instance_name&quot;</span><span class="p">,</span>
+        <span class="n">access_key_id</span><span class="o">=</span><span class="s2">&quot;your_access_key_id&quot;</span><span class="p">,</span>
+        <span class="n">access_key_secret</span><span class="o">=</span><span class="s2">&quot;your_access_key_secret&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+
+<span class="k">await</span> <span class="n">tablestore_rag_service</span><span class="o">.</span><span class="n">add_docs</span><span class="p">(</span><span class="n">docs</span><span class="p">)</span>
+</pre></div>
+</div>
 </section>
 </section>
 </section>
@@ -841,7 +859,7 @@
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-09-26</div>
+              Last updated on 2025-09-29</div>
           </div>
           <div class="right-details">
             <div class="icons">

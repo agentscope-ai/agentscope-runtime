@@ -682,6 +682,10 @@ The <code class="docutils literal notranslate"><span class="pre">ContextComposer
 <td><p></p></td>
 <td class="text-center"><p></p></td>
 </tr>
+<tr class="row-odd"><td class="text-center"><p>TablestoreMemoryService ｜<code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">agentscope_runtime.engine.services.tablestore_memory_service</span> <span class="pre">import</span> <span class="pre">TablestoreMemoryService</span></code></p></td>
+<td><p></p></td>
+<td class="text-center"><p></p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -693,7 +697,34 @@ The <code class="docutils literal notranslate"><span class="pre">ContextComposer
 <li><p><strong>ReMe.PersonalMemoryService</strong>: ReMe’s personalized memory service (formerly MemoryScope) empowers you to generate, retrieve, and share customized memories. Leveraging advanced LLM, embedding, and vector store technologies, it builds a comprehensive memory system with intelligent, context- and time-aware memory management—seamlessly enabling you to configure and deploy powerful AI agents.</p></li>
 <li><p><strong>ReMe.TaskMemoryService</strong>: ReMe’s task-oriented memory service helps you efficiently manage and schedule task-related memories, enhancing both the accuracy and efficiency of task execution. Powered by LLM capabilities, it supports flexible creation, retrieval, update, and deletion of memories across diverse task scenarios—enabling you to effortlessly build and scale robust agent-based task systems.</p></li>
 <li><p><strong>Mem0MemoryService</strong>: An intelligent memory service powered by the mem0 platform, providing long-term memory storage and management capabilities. Supports asynchronous operations and automatically extracts, stores, and retrieves key information from conversations, enabling context-aware memory for AI agents. Ideal for complex conversational scenarios and agent applications requiring persistent memory. (For more details, see <a class="reference external" href="https://docs.mem0.ai/platform/quickstart">mem0 platform documentation</a>)</p></li>
+<li><p><strong>TablestoreMemoryService</strong>: A memory service based on aliyun tablestore (Tablestore provides Serverless table storage services for massive structured data, and provides a one-stop IoTstore solution for deep optimization of IoT scenarios. It is suitable for structured data storage in scenarios such as massive bills, IM messages, IoT, Internet of Vehicles, risk control, and recommendations, and provides low-cost storage of massive data, millisecond-level online data query and retrieval, and flexible data analysis capabilities), develop by <a class="reference external" href="https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory/blob/main/python/docs/knowledge_store_tutorial.ipynb">tablestore-for-agent-memory</a>. Example:</p></li>
 </ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.tablestore_memory_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">TablestoreMemoryService</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.utils.tablestore_service_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_tablestore_client</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.tablestore_memory_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">SearchStrategy</span>
+
+<span class="c1"># create tablestore memory service, default search strategy is full text</span>
+<span class="n">tablestore_memory_service</span> <span class="o">=</span> <span class="n">TablestoreMemoryService</span><span class="p">(</span>
+    <span class="n">tablestore_client</span><span class="o">=</span><span class="n">create_tablestore_client</span><span class="p">(</span>
+        <span class="n">end_point</span><span class="o">=</span><span class="s2">&quot;your_endpoint&quot;</span><span class="p">,</span>
+        <span class="n">instance_name</span><span class="o">=</span><span class="s2">&quot;your_instance_name&quot;</span><span class="p">,</span>
+        <span class="n">access_key_id</span><span class="o">=</span><span class="s2">&quot;your_access_key_id&quot;</span><span class="p">,</span>
+        <span class="n">access_key_secret</span><span class="o">=</span><span class="s2">&quot;your_access_key_secret&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># Create a tablestore memory service based on vector retrieval, with DashScopeEmbeddings() as the default embedding model</span>
+<span class="n">tablestore_memory_service</span> <span class="o">=</span> <span class="n">TablestoreMemoryService</span><span class="p">(</span>
+    <span class="n">tablestore_client</span><span class="o">=</span><span class="n">create_tablestore_client</span><span class="p">(</span>
+        <span class="n">end_point</span><span class="o">=</span><span class="s2">&quot;your_endpoint&quot;</span><span class="p">,</span>
+        <span class="n">instance_name</span><span class="o">=</span><span class="s2">&quot;your_instance_name&quot;</span><span class="p">,</span>
+        <span class="n">access_key_id</span><span class="o">=</span><span class="s2">&quot;your_access_key_id&quot;</span><span class="p">,</span>
+        <span class="n">access_key_secret</span><span class="o">=</span><span class="s2">&quot;your_access_key_secret&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">search_strategy</span><span class="o">=</span><span class="n">SearchStrategy</span><span class="o">.</span><span class="n">VECTOR</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
 </section>
 </section>
 <section id="details-about-session-history-service">
@@ -1168,6 +1199,20 @@ Other complicated search algorithms could be used to replace the simple method b
 <li><p>Keyword-based search is case-insensitive</p></li>
 <li><p>Messages are stored in chronological order within each session</p></li>
 </ul>
+<p><code class="docutils literal notranslate"><span class="pre">TablestoreSessionHistoryService</span></code> stores data in aliyun tablestore, example：</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.tablestore_session_history_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">TablestoreSessionHistoryService</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.utils.tablestore_service_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_tablestore_client</span>
+
+<span class="n">tablestore_session_history_service</span> <span class="o">=</span> <span class="n">TablestoreSessionHistoryService</span><span class="p">(</span>
+    <span class="n">tablestore_client</span><span class="o">=</span><span class="n">create_tablestore_client</span><span class="p">(</span>
+        <span class="n">end_point</span><span class="o">=</span><span class="s2">&quot;your_endpoint&quot;</span><span class="p">,</span>
+        <span class="n">instance_name</span><span class="o">=</span><span class="s2">&quot;your_instance_name&quot;</span><span class="p">,</span>
+        <span class="n">access_key_id</span><span class="o">=</span><span class="s2">&quot;your_access_key_id&quot;</span><span class="p">,</span>
+        <span class="n">access_key_secret</span><span class="o">=</span><span class="s2">&quot;your_access_key_secret&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>For more advanced memory implementations, consider extending the <code class="docutils literal notranslate"><span class="pre">MemoryService</span></code> abstract base class to support persistent storage or vector databases.</p>
@@ -1230,7 +1275,7 @@ Other complicated search algorithms could be used to replace the simple method b
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-09-26</div>
+              Last updated on 2025-09-29</div>
           </div>
           <div class="right-details">
             <div class="icons">
