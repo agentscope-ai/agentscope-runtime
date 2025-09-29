@@ -17,7 +17,7 @@ try:
 except ImportError as e:
     raise ImportError(
         "aliyun_tablestore is not available. "
-        "Please run pip install agentscope-runtime[aliyun_tablestore]",
+        "Please run pip install agentscope-runtime[aliyun_tablestore_ext]",
     ) from e
 
 from ..schemas.agent_schemas import Message
