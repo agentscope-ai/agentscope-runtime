@@ -283,3 +283,20 @@ index = pinecone.Index(index_name)
 
 vectorstore = Pinecone.from_documents(docs, DashScopeEmbeddings(), index_name=index_name)
 ```
+
+5. Tablestore
+```python
+from agentscope_runtime.engine.services.tablestore_rag_service import TablestoreRAGService
+from agentscope_runtime.engine.services.utils.tablestore_service_utils import create_tablestore_client
+
+tablestore_rag_service = TablestoreRAGService(
+    tablestore_client=create_tablestore_client(
+        end_point="your_endpoint",
+        instance_name="your_instance_name",
+        access_key_id="your_access_key_id",
+        access_key_secret="your_access_key_secret",
+    ),
+)
+
+await tablestore_rag_service.add_docs(docs)
+```

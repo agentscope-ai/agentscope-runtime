@@ -1,19 +1,26 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=redefined-outer-name
 import asyncio
 import uuid
 from typing import Any, List, Optional, Union
 
-from langchain_community.embeddings import DashScopeEmbeddings
-from langchain_core.documents import Document
-from langchain_core.embeddings import Embeddings
-from tablestore import AsyncOTSClient as AsyncTablestoreClient
-from tablestore import VectorMetricType
-from tablestore_for_agent_memory.base.base_knowledge_store import (
-    Document as TablestoreDocument,
-)
-from tablestore_for_agent_memory.knowledge.async_knowledge_store import (
-    AsyncKnowledgeStore,
-)
+try:
+    from langchain_community.embeddings import DashScopeEmbeddings
+    from langchain_core.documents import Document
+    from langchain_core.embeddings import Embeddings
+    from tablestore import AsyncOTSClient as AsyncTablestoreClient
+    from tablestore import VectorMetricType
+    from tablestore_for_agent_memory.base.base_knowledge_store import (
+        Document as TablestoreDocument,
+    )
+    from tablestore_for_agent_memory.knowledge.async_knowledge_store import (
+        AsyncKnowledgeStore,
+    )
+except ImportError as e:
+    raise ImportError(
+        "aliyun_tablestore is not available. "
+        "Please run pip install agentscope-runtime[aliyun_tablestore]",
+    ) from e
 
 from .rag_service import RAGService
 from .utils.tablestore_service_utils import tablestore_log
