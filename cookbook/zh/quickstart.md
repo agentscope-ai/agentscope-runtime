@@ -106,7 +106,7 @@ agent = AgentScopeAgent(
         api_key=os.getenv("OPENAI_API_KEY"),
     ),
     agent_config={
-        "sys_prompt": "You're a helpful assistant named {name}.",
+        "sys_prompt": "You're a helpful assistant named Friday.",
     },
     agent_builder=ReActAgent,
 )
@@ -414,21 +414,6 @@ def test_deployed_agent():
         print("✅ 流式测试完成")
     except requests.exceptions.RequestException as e:
         print(f"❌ 流式测试失败: {e}")
-
-    # 测试JSON响应（如果可用）
-    try:
-        response = requests.post(
-            "http://localhost:8090/process",
-            json=payload,
-            timeout=30,
-        )
-
-        if response.status_code == 200:
-            print(f"📄 JSON响应: {response.content}")
-            print("✅ JSON测试完成")
-        else:
-            print(f"⚠️ JSON端点返回状态: {response.status_code}")
-
     except requests.exceptions.RequestException as e:
         print(f"ℹ️ JSON端点不可用或失败: {e}")
 

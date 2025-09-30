@@ -3,7 +3,7 @@
 from typing import Optional
 from urllib.parse import urlparse, urlunparse
 
-from ...constant import IMAGE_TAG
+from ...utils import build_image_uri
 from ...registry import SandboxRegistry
 from ...enums import SandboxType
 from ...box.sandbox import Sandbox
@@ -27,7 +27,7 @@ def http_to_ws(url, use_localhost=True):
 
 
 @SandboxRegistry.register(
-    f"agentscope/runtime-sandbox-browser:{IMAGE_TAG}",
+    build_image_uri("runtime-sandbox-browser"),
     sandbox_type=SandboxType.BROWSER,
     security_level="medium",
     timeout=60,

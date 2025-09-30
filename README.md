@@ -157,6 +157,9 @@ with BaseSandbox() as box:
 > [!NOTE]
 >
 > Current version requires Docker or Kubernetes to be installed and running on your system. Please refer to [this tutorial](https://runtime.agentscope.io/en/sandbox.html) for more details.
+>
+> If pulling the Docker image fails, try setting:
+> `export RUNTIME_SANDBOX_REGISTRY="agentscope-registry.ap-southeast-1.cr.aliyuncs.com"`
 
 ---
 
@@ -189,7 +192,7 @@ agent = AgentScopeAgent(
         api_key=os.getenv("OPENAI_API_KEY"),
     ),
     agent_config={
-        "sys_prompt": "You're a helpful assistant named {name}.",
+        "sys_prompt": "You're a helpful assistant named Friday.",
     },
     agent_builder=ReActAgent,
 )

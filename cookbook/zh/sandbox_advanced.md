@@ -46,6 +46,12 @@ runtime-sandbox-server
 runtime-sandbox-server --config custom.env
 ```
 
+```{note}
+如果您计划在生产中大规模使用沙箱，推荐直接在阿里云中进行托管部署。
+
+[在阿里云一键部署沙箱](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83)
+```
+
 ### 自定义配置
 
 对于自定义部署或特定需求，您可以通过在工作目录中创建 `.env` 文件来自定义服务器配置：
@@ -90,9 +96,9 @@ K8S_NAMESPACE=default
 KUBECONFIG_PATH=
 ```
 
-### Configuration Reference
+### 配置参考
 
-#### Service Settings
+#### API服务设置
 
 | Parameter      | Description    | Default     | Example                          |
 | -------------- | -------------- | ----------- | -------------------------------- |
@@ -102,7 +108,7 @@ KUBECONFIG_PATH=
 | `DEBUG`        | 启用调试模式   | `False`     | `False` 或 `True` 用于 `FastAPI` |
 | `BEARER_TOKEN` | 身份验证令牌   | Empty       | `your-secret-token`              |
 
-#### Runtime Manager Settings
+#### Runtime Manager 设置
 
 | Parameter              | Description    | Default                    | Notes                                                        |
 | ---------------------- | -------------- | -------------------------- | ------------------------------------------------------------ |
@@ -112,6 +118,7 @@ KUBECONFIG_PATH=
 | `CONTAINER_PREFIX_KEY` | 容器名称前缀   | `agent-runtime-container-` | 用于标识                                                     |
 | `CONTAINER_DEPLOYMENT` | 容器运行时     | `docker`                   | 目前支持`docker`和`k8s`                                      |
 | `DEFAULT_MOUNT_DIR`    | 默认挂载目录   | `sessions_mount_dir`       | 用于持久存储路径，存储`/workspace` 文件                      |
+| `READONLY_MOUNTS`      | 只读目录挂载   | `None`                     | 一个字典，映射 **宿主机路径** → **容器路径**，以 **只读** 方式挂载。用于共享文件 / 配置，但禁止容器修改数据。示例：<br/>`{"\/Users\/alice\/data": "\/data"}` 会把宿主机 `/Users/alice/data` 挂载到容器的 `/data`（只读）。 |
 | `PORT_RANGE`           | 可用端口范围   | `[49152,59152]`            | 用于服务端口分配                                             |
 
 #### （可选）Redis 设置
@@ -135,7 +142,7 @@ Redis 为沙箱状态和状态管理提供缓存。如果只有一个工作进�
 | `REDIS_PORT_KEY`           | 端口跟踪键       | `_agent_runtime_container_occupied_ports` | 内部使用                              |
 | `REDIS_CONTAINER_POOL_KEY` | 容器池键         | `_agent_runtime_container_container_pool` | 内部使用                              |
 
-#### OSS 设置 (Optional)
+#### （可选）OSS 设置
 
 使用[阿里云对象存储服务](https://www.aliyun.com/product/oss)进行分布式文件存储：
 
@@ -147,7 +154,7 @@ Redis 为沙箱状态和状态管理提供缓存。如果只有一个工作进�
 | `OSS_ACCESS_KEY_SECRET` | OSS 访问密钥秘钥 | 空      | 保持安全        |
 | `OSS_BUCKET_NAME`       | OSS 存储桶名称   | 空      | 预创建的存储桶  |
 
-### （可选）K8S 设置
+#### （可选）K8S 设置
 
 要在沙盒服务器中配置特定于 Kubernetes 的设置，请确保设置 `CONTAINER_DEPLOYMENT=k8s` 。可以考虑调整以下参数：
 
@@ -156,9 +163,37 @@ Redis 为沙箱状态和状态管理提供缓存。如果只有一个工作进�
 | `K8S_NAMESPACE`   | 要使用的 Kubernetes 命名空间 | `default` | 设置资源部署的命名空间             |
 | `KUBECONFIG_PATH` | kubeconfig 文件的路径        | `None`    | 指定用于访问集群的 kubeconfig 位置 |
 
+### 导入自定义沙箱
+
+除了默认提供的基础沙箱类型外，您还可以通过编写扩展模块并使用 `--extension` 参数加载，实现自定义沙箱的功能，例如修改镜像、增加环境变量、定义超时时间等。
+
+#### 编写自定义沙箱扩展（例如 `custom_sandbox.py`）
+
+参考{ref}`自定义沙箱类 <custom_sandbox_zh>`
+
+> - `@SandboxRegistry.register` 会将该类注册到沙箱管理器中，启动时可被识别和使用。
+> - `environment` 字段可以向沙箱注入外部 API Key 或其他必要配置。
+> - 类继承自 `Sandbox`，可覆盖其方法来实现更多自定义逻辑。
+
+#### 启动时加载扩展
+
+将 `custom_sandbox.py` 放在项目或可导入的 Python 模块路径中，然后启动服务器时指定 `--extension` 参数：
+
+```bash
+runtime-sandbox-server --extension custom_sandbox.py
+```
+
+如果有多个沙箱扩展，可以重复添加 `--extension`，例如：
+
+```bash
+runtime-sandbox-server \
+    --extension custom_sandbox1.py \
+    --extension custom_sandbox2.py
+```
+
 ### 启动服务器
 
-配置好`.env` 文件后，启动服务器：
+你也可以不使用启动选项，配置好`.env` 文件后直接启动服务器：
 
 ```bash
 runtime-sandbox-server
@@ -205,27 +240,28 @@ pip install -e ".[sandbox]"
 - 迭代开发和测试自定义工具
 ```
 
+(custom_sandbox_zh)=
+
 ### 创建自定义沙箱类
 
 您可以定义自定义沙箱类型并将其注册到系统中以满足特殊需求。只需继承 `Sandbox` 并使用 `SandboxRegistry.register`装饰器，然后将文件放在 `src/agentscope_runtime/sandbox/custom` 中（例如，`src/agentscope_runtime/sandbox/custom/custom_sandbox.py`）:
 
 ```python
-# src/agentscope_runtime/sandbox/custom/custom_sandbox.py
 # -*- coding: utf-8 -*-
 import os
 
 from typing import Optional
 
-from ..version import __version__
-from ..registry import SandboxRegistry
-from ..enums import SandboxType
-from ..box.sandbox import Sandbox
+from agentscope_runtime.sandbox.utils import build_image_uri
+from agentscope_runtime.sandbox.registry import SandboxRegistry
+from agentscope_runtime.sandbox.enums import SandboxType
+from agentscope_runtime.sandbox.box.sandbox import Sandbox
 
-SANDBOXTYPE = "custom_sandbox"
+SANDBOXTYPE = "my_custom_sandbox"
 
 
 @SandboxRegistry.register(
-    f"agentscope/runtime-sandbox-{SANDBOXTYPE}:{__version__}",
+    build_image_uri(f"runtime-sandbox-{SANDBOXTYPE}"),
     sandbox_type=SANDBOXTYPE,
     security_level="medium",
     timeout=60,
@@ -235,7 +271,7 @@ SANDBOXTYPE = "custom_sandbox"
         "AMAP_MAPS_API_KEY": os.getenv("AMAP_MAPS_API_KEY", ""),
     },
 )
-class CustomSandbox(Sandbox):
+class MyCustomSandbox(Sandbox):
     def __init__(
         self,
         sandbox_id: Optional[str] = None,
@@ -250,7 +286,6 @@ class CustomSandbox(Sandbox):
             bearer_token,
             SandboxType(SANDBOXTYPE),
         )
-
 ```
 
 ### 准备Docker镜像
@@ -359,13 +394,14 @@ CMD ["/bin/sh", "-c", "envsubst '$SECRET_TOKEN' < /etc/nginx/nginx.conf.template
 准备好Dockerfile 和自定义沙箱类后，使用内置构建器工具构建您的自定义沙箱镜像：
 
 ```bash
-runtime-sandbox-builder custom_sandbox --dockerfile_path examples/custom_sandbox/custom_sandbox/Dockerfile
+runtime-sandbox-builder my_custom_sandbox --dockerfile_path examples/custom_sandbox/custom_sandbox/Dockerfile --extention PATH_TO_YOUR_SANDBOX_MODULE
 ```
 
 **命令参数：**
 
 - `custom_sandbox`: 您的自定义沙箱镜像的名称/标签
 - `--dockerfile_path`: 您的自定义Dockerfile 的路径
+- `--extension`: 自定义沙箱模块的路径
 
 构建完成后，您的自定义沙箱镜像将准备好与您定义的相应沙箱类一起使用。
 
@@ -401,3 +437,13 @@ runtime-sandbox-builder filesystem
 ```bash
 export RUNTIME_SANDBOX_IMAGE_TAG="my_custom"
 ```
+
+### 更改 Sandbox 镜像相关配置
+
+Sandbox 模块运行所用的 Docker 镜像由以下三个环境变量共同决定，你可以根据需要修改其中任意一个，来改变镜像的来源或版本。
+
+| 环境变量                            | 作用                                                    | 默认值         | 修改示例                                                     |
+| --------------------------------- | ------------------------------------------------------- | -------------- | ------------------------------------------------------------ |
+| `RUNTIME_SANDBOX_REGISTRY`     | 镜像注册中心地址（Registry）。为空表示使用 Docker Hub。 | `""`           | `export RUNTIME_SANDBOX_REGISTRY="agentscope-registry.ap-southeast-1.cr.aliyuncs.com"` |
+| `RUNTIME_SANDBOX_IMAGE_NAMESPACE` | 镜像命名空间（Namespace），类似账号名。                 | `"agentscope"` | `export RUNTIME_SANDBOX_IMAGE_NAMESPACE="my_namespace"`      |
+| `RUNTIME_SANDBOX_IMAGE_TAG`   | 镜像版本标签（Tag）。                                   | `"latest"`     | `export RUNTIME_SANDBOX_IMAGE_TAG="my_custom"`               |

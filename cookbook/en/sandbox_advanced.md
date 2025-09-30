@@ -46,6 +46,12 @@ For advanced configurations, you can use the `--config` option to specify a diff
 runtime-sandbox-server --config custom.env
 ```
 
+```{note}
+If you plan to use the sandbox on a large scale in production, we recommend deploying it directly in Alibaba Cloud for managed hosting.
+
+[One-click deploy sandbox on Alibaba Cloud](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83)
+```
+
 ### Custom Configuration
 
 For custom deployments or specific requirements, you can customize the server configuration by creating a `.env` file in your working directory:
@@ -111,6 +117,7 @@ KUBECONFIG_PATH=
 | `CONTAINER_PREFIX_KEY` | Container name prefix | `agent-runtime-container-` | For identification |
 | `CONTAINER_DEPLOYMENT` | Container runtime | `docker`                   | Currently, `docker` and `k8s` are supported |
 | `DEFAULT_MOUNT_DIR` | Default mount directory | `sessions_mount_dir`       | For persistent storage path where the `/workspace` file is stored |
+| `READONLY_MOUNTS` | Read-only directory mounts | `None` | A dictionary mapping **host paths** to **container paths**, mounted in **read-only** mode. Used to share files/configurations without allowing container writes. Example:<br/>`{"\/Users\/alice\/data": "\/data"}` mounts the host's `/Users/alice/data` to `/data` inside the container as read-only. |
 | `PORT_RANGE` | Available port range | `[49152,59152]`            | For service port allocation |
 
 ####  (Optional) Redis Settings
@@ -146,7 +153,7 @@ For distributed file storage using [Alibaba Cloud Object Storage Service](https:
 | `OSS_ACCESS_KEY_SECRET` | OSS access key secret | Empty | Keep secure |
 | `OSS_BUCKET_NAME` | OSS bucket name | Empty | Pre-created bucket |
 
-### (Optional) K8S Settings
+#### (Optional) K8S Settings
 
 To configure settings specific to Kubernetes in your sandbox server, ensure you set `CONTAINER_DEPLOYMENT=k8s` to activate this feature. Consider adjusting the following parameters:
 
@@ -155,9 +162,38 @@ To configure settings specific to Kubernetes in your sandbox server, ensure you 
 | `K8S_NAMESPACE`   | Kubernetes namespace to be used | `default` | Set the namespace for resource deployment            |
 | `KUBECONFIG_PATH` | Path to the kubeconfig file     | `None`    | Specifies the kubeconfig location for cluster access |
 
+### Loading Custom Sandbox
+
+In addition to the default basic sandbox types, you can implement a custom sandbox by writing an extension module and loading it with the `--extension` parameter.
+This allows you to modify the security level, add environment variables, define custom timeouts, and more.
+
+#### Writing a custom sandbox extension (e.g. `custom_sandbox.py`)
+
+See {ref}`Custom Sandbox Class <custom_sandbox>`
+
+> - `@SandboxRegistry.register` will register the class into the sandbox manager, so it can be recognized and used at startup.
+> - The `environment` field can inject external API keys or other necessary configurations into the sandbox.
+> - The class inherits from `Sandbox` and can override its methods to implement more customized logic.
+
+#### Loading the extension at startup
+
+Place `custom_sandbox.py` in the project directory or in a Python module path where it can be imported, then start the server specifying the `--extension` parameter:
+
+```bash
+runtime-sandbox-server --extension custom_sandbox.py
+```
+
+If you have multiple sandbox extensions, you can add multiple `--extension` options, for example:
+
+```bash
+runtime-sandbox-server \
+    --extension custom_sandbox1.py \
+    --extension custom_sandbox2.py
+```
+
 ### Starting the Server
 
-Once your `.env` file is configured, start the server:
+You can also start the server directly without using startup options after configuring the `.env` file.
 
 ```bash
 runtime-sandbox-server
@@ -204,27 +240,28 @@ The `-e` (editable) flag is essential when creating custom sandboxes because it 
 - Develop and test custom tools iteratively
 ```
 
+(custom_sandbox)=
+
 ### Creating a Custom Sandbox Class
 
 You can define your custom sandbox type and register it in the system to meet special requirements. Just inherit from `Sandbox` and decorate with `SandboxRegistry.register`, then put the file in `src/agentscope_runtime/sandbox/custom` (e.g., `src/agentscope_runtime/sandbox/custom/custom_sandbox.py`):
 
 ```python
-# src/agentscope_runtime/sandbox/custom/custom_sandbox.py
 # -*- coding: utf-8 -*-
 import os
 
 from typing import Optional
 
-from ..version import __version__
-from ..registry import SandboxRegistry
-from ..enums import SandboxType
-from ..box.sandbox import Sandbox
+from agentscope_runtime.sandbox.utils import build_image_uri
+from agentscope_runtime.sandbox.registry import SandboxRegistry
+from agentscope_runtime.sandbox.enums import SandboxType
+from agentscope_runtime.sandbox.box.sandbox import Sandbox
 
-SANDBOXTYPE = "custom_sandbox"
+SANDBOXTYPE = "my_custom_sandbox"
 
 
 @SandboxRegistry.register(
-    f"agentscope/runtime-sandbox-{SANDBOXTYPE}:{__version__}",
+    build_image_uri(f"runtime-sandbox-{SANDBOXTYPE}"),
     sandbox_type=SANDBOXTYPE,
     security_level="medium",
     timeout=60,
@@ -234,7 +271,7 @@ SANDBOXTYPE = "custom_sandbox"
         "AMAP_MAPS_API_KEY": os.getenv("AMAP_MAPS_API_KEY", ""),
     },
 )
-class CustomSandbox(Sandbox):
+class MyCustomSandbox(Sandbox):
     def __init__(
         self,
         sandbox_id: Optional[str] = None,
@@ -358,13 +395,14 @@ CMD ["/bin/sh", "-c", "envsubst '$SECRET_TOKEN' < /etc/nginx/nginx.conf.template
 After preparing your Dockerfile and custom sandbox class, use the built-in builder tool to build your custom sandbox image:
 
 ```bash
-runtime-sandbox-builder custom_sandbox --dockerfile_path examples/custom_sandbox/custom_sandbox/Dockerfile
+runtime-sandbox-builder my_custom_sandbox --dockerfile_path examples/custom_sandbox/custom_sandbox/Dockerfile --extention PATH_TO_YOUR_SANDBOX_MODULE
 ```
 
 **Command Parameters:**
 
 - `custom_sandbox`: The name/tag for your custom sandbox image
 - `--dockerfile_path`: Path to your custom Dockerfile
+- `--extension`: Path to your custom sandbox python module
 
 Once built, your custom sandbox image will be ready to use with the corresponding sandbox class you defined.
 
@@ -392,13 +430,13 @@ The above commands are useful when you want to:
 - Ensure you have the latest version of the built-in images
 - Work in air-gapped environments
 
-### Change The Used Image Tag
+### Change Sandbox Image Configuration
 
-You can change the environment variable to use a different image tag for the Sandbox module. By default, the tag used is `"latest"`.
+The Docker image used by the Sandbox module is determined by the following three environment variables.
+You can modify any of them as needed to change the image source or version.
 
-```bash
-export RUNTIME_SANDBOX_IMAGE_TAG="my_custom"
-```
-
-
-
+| Environment Variable              | Purpose                                                      | Default Value  | Example Modification                                         |
+| --------------------------------- | ------------------------------------------------------------ | -------------- | ------------------------------------------------------------ |
+| `RUNTIME_SANDBOX_REGISTRY`        | Docker registry address. An empty value means Docker Hub will be used. | `""`           | `export RUNTIME_SANDBOX_REGISTRY="agentscope-registry.ap-southeast-1.cr.aliyuncs.com"` |
+| `RUNTIME_SANDBOX_IMAGE_NAMESPACE` | Image namespace, similar to an account name.                 | `"agentscope"` | `export RUNTIME_SANDBOX_IMAGE_NAMESPACE="my_namespace"`      |
+| `RUNTIME_SANDBOX_IMAGE_TAG`       | Image version tag.                                           | `"latest"`     | `export RUNTIME_SANDBOX_IMAGE_TAG="my_custom"`               |

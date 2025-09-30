@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=redefined-outer-name, protected-access, too-many-branches
+# pylint: disable=too-many-statements
 import logging
 import os
 import json
@@ -119,6 +120,7 @@ class SandboxManager:
         self.pool_size = self.config.pool_size
         self.prefix = self.config.container_prefix_key
         self.default_mount_dir = self.config.default_mount_dir
+        self.readonly_mounts = self.config.readonly_mounts
         self.storage_folder = (
             self.config.storage_folder or self.default_mount_dir
         )
@@ -380,7 +382,7 @@ class SandboxManager:
     def create(
         self,
         sandbox_type=None,
-        mount_dir=None,
+        mount_dir=None,  # TODO: remove to avoid leaking
         storage_path=None,
         environment: Optional[Dict] = None,
     ):
@@ -457,6 +459,15 @@ class SandboxManager:
                 }
             else:
                 volume_bindings = {}
+
+            if self.readonly_mounts:
+                for host_path, container_path in self.readonly_mounts.items():
+                    if not os.path.isabs(host_path):
+                        host_path = os.path.abspath(host_path)
+                    volume_bindings[host_path] = {
+                        "bind": container_path,
+                        "mode": "ro",
+                    }
 
             _id, ports, ip = self.client.create(
                 image,
@@ -632,7 +643,7 @@ class SandboxManager:
                 self._generate_container_key(identity),
             )
         if container_model is None:
-            return None
+            raise RuntimeError(f"No container found with id: {identity}.")
         if hasattr(container_model, "model_dump_json"):
             container_model = container_model.model_dump_json()
 

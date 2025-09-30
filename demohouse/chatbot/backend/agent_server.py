@@ -34,7 +34,7 @@ async def _local_deploy():
             api_key=os.getenv("DASHSCOPE_API_KEY"),
         ),
         agent_config={
-            "sys_prompt": "You're a helpful assistant named {name}.",
+            "sys_prompt": "You're a helpful assistant named Friday.",
         },
         agent_builder=ReActAgent,
     )

@@ -444,22 +444,3 @@ The `runtime-sandbox-mcp` command accepts the following arguments:
 |                      | `browser_console_messages()`                                 | Get all console messages from the page             |
 |                      | `browser_network_requests()`                                 | Get all network requests since page load           |
 |                      | `browser_handle_dialog(accept: bool, promptText: str)`       | Handle browser dialogs (alert, confirm, prompt)    |
-
-## Troubleshooting
-If you encounter any issues while using the browser module, here are some troubleshooting steps:
-
-### Docker Connection Error
-
-If you encounter the following error:
-
-```
-docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))
-```
-
-This error typically indicates that the Docker Python SDK is unable to connect to the Docker service. If you are using Colima, you need to ensure that the Docker Python SDK is configured to use Colima's Docker service. You can do this by setting the `DOCKER_HOST` environment variable:
-
-```bash
-export DOCKER_HOST=unix://$HOME/.colima/docker.sock
-```
-
-After setting the `DOCKER_HOST` environment variable, try running your command again. This should resolve the connection issue.

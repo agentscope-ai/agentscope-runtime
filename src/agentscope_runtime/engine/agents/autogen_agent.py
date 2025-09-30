@@ -11,6 +11,7 @@ from autogen_agentchat.messages import (
     ModelClientStreamingChunkEvent,
 )
 
+from .utils import build_agent
 from ..agents import Agent
 from ..schemas.context import Context
 from ..schemas.agent_schemas import (
@@ -143,11 +144,16 @@ class AutogenAgent(Agent):
         return AutogenAgent(**self._attr)
 
     def build(self, as_context):
-        self._agent = self._attr["agent_builder"](
+        params = {
             **self._attr["agent_config"],
-            model_client=as_context.model,
-            tools=as_context.toolkit,
-        )
+            **{
+                "model_client": as_context.model,
+                "tools": as_context.toolkit,
+            },  # Context will be added at `self._agent.run_stream`
+        }
+
+        builder_cls = self._attr["agent_builder"]
+        self._agent = build_agent(builder_cls, params)
 
         return self._agent
 
