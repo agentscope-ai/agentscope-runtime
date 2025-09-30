@@ -678,13 +678,13 @@ The <code class="docutils literal notranslate"><span class="pre">ContextComposer
 <td><p><code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">reme_ai.service.task_memory_service</span> <span class="pre">import</span> <span class="pre">TaskMemoryService</span></code></p></td>
 <td class="text-center"><p><a class="reference external" href="https://github.com/modelscope/ReMe">User Guide</a></p></td>
 </tr>
-<tr class="row-even"><td class="text-center"><p>Mem0MemoryService ｜<code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">agentscope_runtime.engine.services.mem0_memory_service</span> <span class="pre">import</span> <span class="pre">Mem0MemoryService</span></code></p></td>
-<td><p></p></td>
+<tr class="row-even"><td class="text-center"><p>Mem0MemoryService</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">agentscope_runtime.engine.services.mem0_memory_service</span> <span class="pre">import</span> <span class="pre">Mem0MemoryService</span></code></p></td>
 <td class="text-center"><p></p></td>
 </tr>
-<tr class="row-odd"><td class="text-center"><p>TablestoreMemoryService ｜<code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">agentscope_runtime.engine.services.tablestore_memory_service</span> <span class="pre">import</span> <span class="pre">TablestoreMemoryService</span></code></p></td>
-<td><p></p></td>
-<td class="text-center"><p></p></td>
+<tr class="row-odd"><td class="text-center"><p>TablestoreMemoryService</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">agentscope_runtime.engine.services.tablestore_memory_service</span> <span class="pre">import</span> <span class="pre">TablestoreMemoryService</span></code></p></td>
+<td class="text-center"><p>develop by <a class="reference external" href="https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory/blob/main/python/docs/knowledge_store_tutorial.ipynb">tablestore-for-agent-memory</a></p></td>
 </tr>
 </tbody>
 </table>
@@ -1027,6 +1027,20 @@ The <code class="docutils literal notranslate"><span class="pre">ContextComposer
 <li><p>Session IDs are auto-generated using UUID if not provided</p></li>
 <li><p>Empty or whitespace-only session IDs are replaced with auto-generated IDs</p></li>
 </ul>
+<p><code class="docutils literal notranslate"><span class="pre">TablestoreSessionHistoryService</span></code> stores data in aliyun tablestore, example：</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.tablestore_session_history_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">TablestoreSessionHistoryService</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.utils.tablestore_service_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_tablestore_client</span>
+
+<span class="n">tablestore_session_history_service</span> <span class="o">=</span> <span class="n">TablestoreSessionHistoryService</span><span class="p">(</span>
+    <span class="n">tablestore_client</span><span class="o">=</span><span class="n">create_tablestore_client</span><span class="p">(</span>
+        <span class="n">end_point</span><span class="o">=</span><span class="s2">&quot;your_endpoint&quot;</span><span class="p">,</span>
+        <span class="n">instance_name</span><span class="o">=</span><span class="s2">&quot;your_instance_name&quot;</span><span class="p">,</span>
+        <span class="n">access_key_id</span><span class="o">=</span><span class="s2">&quot;your_access_key_id&quot;</span><span class="p">,</span>
+        <span class="n">access_key_secret</span><span class="o">=</span><span class="s2">&quot;your_access_key_secret&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>For production use, consider implementing persistent storage by extending the <code class="docutils literal notranslate"><span class="pre">SessionHistoryService</span></code> abstract base class to support databases or file systems.</p>
@@ -1199,20 +1213,6 @@ Other complicated search algorithms could be used to replace the simple method b
 <li><p>Keyword-based search is case-insensitive</p></li>
 <li><p>Messages are stored in chronological order within each session</p></li>
 </ul>
-<p><code class="docutils literal notranslate"><span class="pre">TablestoreSessionHistoryService</span></code> stores data in aliyun tablestore, example：</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.tablestore_session_history_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">TablestoreSessionHistoryService</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.utils.tablestore_service_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_tablestore_client</span>
-
-<span class="n">tablestore_session_history_service</span> <span class="o">=</span> <span class="n">TablestoreSessionHistoryService</span><span class="p">(</span>
-    <span class="n">tablestore_client</span><span class="o">=</span><span class="n">create_tablestore_client</span><span class="p">(</span>
-        <span class="n">end_point</span><span class="o">=</span><span class="s2">&quot;your_endpoint&quot;</span><span class="p">,</span>
-        <span class="n">instance_name</span><span class="o">=</span><span class="s2">&quot;your_instance_name&quot;</span><span class="p">,</span>
-        <span class="n">access_key_id</span><span class="o">=</span><span class="s2">&quot;your_access_key_id&quot;</span><span class="p">,</span>
-        <span class="n">access_key_secret</span><span class="o">=</span><span class="s2">&quot;your_access_key_secret&quot;</span><span class="p">,</span>
-    <span class="p">),</span>
-<span class="p">)</span>
-</pre></div>
-</div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>For more advanced memory implementations, consider extending the <code class="docutils literal notranslate"><span class="pre">MemoryService</span></code> abstract base class to support persistent storage or vector databases.</p>
@@ -1275,7 +1275,7 @@ Other complicated search algorithms could be used to replace the simple method b
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-09-29</div>
+              Last updated on 2025-09-30</div>
           </div>
           <div class="right-details">
             <div class="icons">
