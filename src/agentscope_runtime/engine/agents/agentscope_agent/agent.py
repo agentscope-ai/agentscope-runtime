@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=too-many-nested-blocks, too-many-branches, too-many-statements
 # pylint:disable=line-too-long, protected-access
+import copy
 import inspect
 import logging
 import json
@@ -152,6 +153,10 @@ class AgentScopeContextAdapter:
             )
 
         toolkit = self.attr["agent_config"].get("toolkit", Toolkit())
+        # Deepcopy to avoid modify the original toolkit
+        # TODO: when toolkit contains live sessions, deepcopy fails,
+        #  need further fixed in AgentScope
+        toolkit = copy.deepcopy(toolkit)
         tools = self.attr["tools"]
 
         # in case, tools is None and tools == []
