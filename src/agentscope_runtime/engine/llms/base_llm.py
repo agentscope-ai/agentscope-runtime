@@ -47,8 +47,8 @@ class BaseLLM:
         **kwargs,
     ) -> AsyncGenerator[str, None]:
         # call model
-        # TODO: use async client
-        generator = self.client.chat.completions.create(
+        # Use async client for non-blocking streaming
+        generator = await self.async_client.chat.completions.create(
             model=self.model_name,
             messages=messages,
             tools=tools,
@@ -56,5 +56,5 @@ class BaseLLM:
             **kwargs,
         )
 
-        for chunk in generator:
+        async for chunk in generator:
             yield chunk
