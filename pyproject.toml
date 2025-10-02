@@ -46,6 +46,7 @@ sandbox = [
     "dotenv>=0.9.9",
     "kubernetes>=33.1.0",
     "shortuuid>=1.0.13",
+    "e2b-code-interpreter>=2.0.0",
 ]
 
 agentscope = [
