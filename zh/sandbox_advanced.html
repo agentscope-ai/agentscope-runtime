@@ -392,6 +392,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../en/sandbox.html">4. Tool Sandbox</a><input aria-label="Toggle navigation of 4. Tool Sandbox" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../en/sandbox_advanced.html">Advanced Usage of Tool Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../en/training_sandbox.html">Training Sandbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/sandbox_troubleshooting.html">Sandbox Troubleshooting</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../en/react_agent.html">5. Deploy a ReAct Agent with Tool Sandbox</a></li>
@@ -432,6 +433,7 @@
 <li class="toctree-l1 current has-children"><a class="reference internal" href="sandbox.html">4. 工具沙箱</a><input aria-label="Toggle navigation of 4. 工具沙箱" checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">工具沙箱高级用法</a></li>
 <li class="toctree-l2"><a class="reference internal" href="training_sandbox.html">训练用沙箱</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sandbox_troubleshooting.html">沙盒故障排除</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="react_agent.html">5. 部署配备工具沙箱的ReAct智能体</a></li>
@@ -524,6 +526,11 @@
 runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>custom.env
 </pre></div>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>如果您计划在生产中大规模使用沙箱，推荐直接在阿里云中进行托管部署。</p>
+<p><a class="reference external" href="https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83">在阿里云一键部署沙箱</a></p>
+</div>
 </section>
 <section id="id4">
 <h3>自定义配置<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
@@ -568,10 +575,10 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </pre></div>
 </div>
 </section>
-<section id="configuration-reference">
-<h3>Configuration Reference<a class="headerlink" href="#configuration-reference" title="Link to this heading">¶</a></h3>
-<section id="service-settings">
-<h4>Service Settings<a class="headerlink" href="#service-settings" title="Link to this heading">¶</a></h4>
+<section id="id5">
+<h3>配置参考<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<section id="api">
+<h4>API服务设置<a class="headerlink" href="#api" title="Link to this heading">¶</a></h4>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -611,8 +618,8 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </table>
 </div>
 </section>
-<section id="runtime-manager-settings">
-<h4>Runtime Manager Settings<a class="headerlink" href="#runtime-manager-settings" title="Link to this heading">¶</a></h4>
+<section id="runtime-manager">
+<h4>Runtime Manager 设置<a class="headerlink" href="#runtime-manager" title="Link to this heading">¶</a></h4>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -653,7 +660,12 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 <td><p><code class="docutils literal notranslate"><span class="pre">sessions_mount_dir</span></code></p></td>
 <td><p>用于持久存储路径，存储<code class="docutils literal notranslate"><span class="pre">/workspace</span></code> 文件</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PORT_RANGE</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">READONLY_MOUNTS</span></code></p></td>
+<td><p>只读目录挂载</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>一个字典，映射 <strong>宿主机路径</strong> → <strong>容器路径</strong>，以 <strong>只读</strong> 方式挂载。用于共享文件 / 配置，但禁止容器修改数据。示例：<br/><code class="docutils literal notranslate"><span class="pre">{&quot;\/Users\/alice\/data&quot;:</span> <span class="pre">&quot;\/data&quot;}</span></code> 会把宿主机 <code class="docutils literal notranslate"><span class="pre">/Users/alice/data</span></code> 挂载到容器的 <code class="docutils literal notranslate"><span class="pre">/data</span></code>（只读）。</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">PORT_RANGE</span></code></p></td>
 <td><p>可用端口范围</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">[49152,59152]</span></code></p></td>
 <td><p>用于服务端口分配</p></td>
@@ -727,8 +739,8 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </table>
 </div>
 </section>
-<section id="oss-optional">
-<h4>OSS 设置 (Optional)<a class="headerlink" href="#oss-optional" title="Link to this heading">¶</a></h4>
+<section id="oss">
+<h4>（可选）OSS 设置<a class="headerlink" href="#oss" title="Link to this heading">¶</a></h4>
 <p>使用<a class="reference external" href="https://www.aliyun.com/product/oss">阿里云对象存储服务</a>进行分布式文件存储：</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -769,9 +781,8 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </table>
 </div>
 </section>
-</section>
 <section id="k8s">
-<h3>（可选）K8S 设置<a class="headerlink" href="#k8s" title="Link to this heading">¶</a></h3>
+<h4>（可选）K8S 设置<a class="headerlink" href="#k8s" title="Link to this heading">¶</a></h4>
 <p>要在沙盒服务器中配置特定于 Kubernetes 的设置，请确保设置 <code class="docutils literal notranslate"><span class="pre">CONTAINER_DEPLOYMENT=k8s</span></code> 。可以考虑调整以下参数：</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -797,16 +808,45 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </table>
 </div>
 </section>
-<section id="id5">
-<h3>启动服务器<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
-<p>配置好<code class="docutils literal notranslate"><span class="pre">.env</span></code> 文件后，启动服务器：</p>
+</section>
+<section id="id6">
+<h3>导入自定义沙箱<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<p>除了默认提供的基础沙箱类型外，您还可以通过编写扩展模块并使用 <code class="docutils literal notranslate"><span class="pre">--extension</span></code> 参数加载，实现自定义沙箱的功能，例如修改镜像、增加环境变量、定义超时时间等。</p>
+<section id="custom-sandbox-py">
+<h4>编写自定义沙箱扩展（例如 <code class="docutils literal notranslate"><span class="pre">custom_sandbox.py</span></code>）<a class="headerlink" href="#custom-sandbox-py" title="Link to this heading">¶</a></h4>
+<p>参考<a class="reference internal" href="#custom-sandbox-zh"><span class="std std-ref">自定义沙箱类</span></a></p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&#64;SandboxRegistry.register</span></code> 会将该类注册到沙箱管理器中，启动时可被识别和使用。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">environment</span></code> 字段可以向沙箱注入外部 API Key 或其他必要配置。</p></li>
+<li><p>类继承自 <code class="docutils literal notranslate"><span class="pre">Sandbox</span></code>，可覆盖其方法来实现更多自定义逻辑。</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="id7">
+<h4>启动时加载扩展<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h4>
+<p>将 <code class="docutils literal notranslate"><span class="pre">custom_sandbox.py</span></code> 放在项目或可导入的 Python 模块路径中，然后启动服务器时指定 <code class="docutils literal notranslate"><span class="pre">--extension</span></code> 参数：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-server<span class="w"> </span>--extension<span class="w"> </span>custom_sandbox.py
+</pre></div>
+</div>
+<p>如果有多个沙箱扩展，可以重复添加 <code class="docutils literal notranslate"><span class="pre">--extension</span></code>，例如：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-server<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--extension<span class="w"> </span>custom_sandbox1.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--extension<span class="w"> </span>custom_sandbox2.py
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id8">
+<h3>启动服务器<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
+<p>你也可以不使用启动选项，配置好<code class="docutils literal notranslate"><span class="pre">.env</span></code> 文件后直接启动服务器：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-server
 </pre></div>
 </div>
 <p>服务器将自动从<code class="docutils literal notranslate"><span class="pre">.env</span></code> 文件加载配置并使用您的自定义设置启动。</p>
 </section>
-<section id="id6">
-<h3>连接到远程服务器<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<section id="id9">
+<h3>连接到远程服务器<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
 <p>从您的客户端应用程序连接到远程服务器：</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSandbox</span>
 
@@ -822,11 +862,11 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </div>
 </section>
 </section>
-<section id="id7">
-<h2>自定义构建沙箱<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h2>
+<section id="id10">
+<h2>自定义构建沙箱<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h2>
 <p>虽然内置沙箱类型涵盖了常见用例，但您可能会遇到需要专门环境或独特工具组合的场景。创建自定义沙箱允许您根据特定需求定制执行环境。本节演示如何构建和注册您的自定义沙箱类型。</p>
-<section id="id8">
-<h3>从源码安装（自定义沙箱必需）<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
+<section id="id11">
+<h3>从源码安装（自定义沙箱必需）<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
 <p>要创建自定义沙箱，您需要以可编辑模式从源码安装AgentScope Runtime，这允许您修改代码并立即看到更改：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/agentscope-ai/agentscope-runtime.git
 <span class="nb">cd</span><span class="w"> </span>agentscope-runtime
@@ -844,25 +884,24 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 </ul>
 </div>
 </section>
-<section id="id9">
-<h3>创建自定义沙箱类<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
+<section id="custom-sandbox-zh">
+<span id="id12"></span><h3>创建自定义沙箱类<a class="headerlink" href="#custom-sandbox-zh" title="Link to this heading">¶</a></h3>
 <p>您可以定义自定义沙箱类型并将其注册到系统中以满足特殊需求。只需继承 <code class="docutils literal notranslate"><span class="pre">Sandbox</span></code> 并使用 <code class="docutils literal notranslate"><span class="pre">SandboxRegistry.register</span></code>装饰器，然后将文件放在 <code class="docutils literal notranslate"><span class="pre">src/agentscope_runtime/sandbox/custom</span></code> 中（例如，<code class="docutils literal notranslate"><span class="pre">src/agentscope_runtime/sandbox/custom/custom_sandbox.py</span></code>）:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># src/agentscope_runtime/sandbox/custom/custom_sandbox.py</span>
-<span class="c1"># -*- coding: utf-8 -*-</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">..version</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxRegistry</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxType</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..box.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sandbox</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_image_uri</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxRegistry</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.box.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sandbox</span>
 
-<span class="n">SANDBOXTYPE</span> <span class="o">=</span> <span class="s2">&quot;custom_sandbox&quot;</span>
+<span class="n">SANDBOXTYPE</span> <span class="o">=</span> <span class="s2">&quot;my_custom_sandbox&quot;</span>
 
 
 <span class="nd">@SandboxRegistry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">&quot;agentscope/runtime-sandbox-</span><span class="si">{</span><span class="n">SANDBOXTYPE</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">build_image_uri</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;runtime-sandbox-</span><span class="si">{</span><span class="n">SANDBOXTYPE</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
     <span class="n">sandbox_type</span><span class="o">=</span><span class="n">SANDBOXTYPE</span><span class="p">,</span>
     <span class="n">security_level</span><span class="o">=</span><span class="s2">&quot;medium&quot;</span><span class="p">,</span>
     <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
@@ -872,7 +911,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
         <span class="s2">&quot;AMAP_MAPS_API_KEY&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;AMAP_MAPS_API_KEY&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
     <span class="p">},</span>
 <span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">CustomSandbox</span><span class="p">(</span><span class="n">Sandbox</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyCustomSandbox</span><span class="p">(</span><span class="n">Sandbox</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">sandbox_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -887,7 +926,6 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
             <span class="n">bearer_token</span><span class="p">,</span>
             <span class="n">SandboxType</span><span class="p">(</span><span class="n">SANDBOXTYPE</span><span class="p">),</span>
         <span class="p">)</span>
-
 </pre></div>
 </div>
 </section>
@@ -991,20 +1029,21 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 </pre></div>
 </div>
 </section>
-<section id="id10">
-<h3>构建您的自定义镜像<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
+<section id="id13">
+<h3>构建您的自定义镜像<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h3>
 <p>准备好Dockerfile 和自定义沙箱类后，使用内置构建器工具构建您的自定义沙箱镜像：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-builder<span class="w"> </span>custom_sandbox<span class="w"> </span>--dockerfile_path<span class="w"> </span>examples/custom_sandbox/custom_sandbox/Dockerfile
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-builder<span class="w"> </span>my_custom_sandbox<span class="w"> </span>--dockerfile_path<span class="w"> </span>examples/custom_sandbox/custom_sandbox/Dockerfile<span class="w"> </span>--extention<span class="w"> </span>PATH_TO_YOUR_SANDBOX_MODULE
 </pre></div>
 </div>
 <p><strong>命令参数：</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">custom_sandbox</span></code>: 您的自定义沙箱镜像的名称/标签</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--dockerfile_path</span></code>: 您的自定义Dockerfile 的路径</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--extension</span></code>: 自定义沙箱模块的路径</p></li>
 </ul>
 <p>构建完成后，您的自定义沙箱镜像将准备好与您定义的相应沙箱类一起使用。</p>
-<section id="id11">
-<h4>本地构建内置镜像<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h4>
+<section id="id14">
+<h4>本地构建内置镜像<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h4>
 <p>您也可以使用构建器在本地构建内置沙箱镜像：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 构建所有内置镜像</span>
 runtime-sandbox-builder<span class="w"> </span>all
@@ -1028,11 +1067,43 @@ runtime-sandbox-builder<span class="w"> </span>filesystem
 </ul>
 </section>
 </section>
-<section id="id12">
-<h3>更改所使用的镜像标签<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
+<section id="id15">
+<h3>更改所使用的镜像标签<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h3>
 <p>您可以更改环境变量以为 Sandbox 模块使用不同的镜像标签。默认情况下，使用的标签是 <code class="docutils literal notranslate"><span class="pre">&quot;latest&quot;</span></code>。</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">RUNTIME_SANDBOX_IMAGE_TAG</span><span class="o">=</span><span class="s2">&quot;my_custom&quot;</span>
 </pre></div>
+</div>
+</section>
+<section id="sandbox">
+<h3>更改 Sandbox 镜像相关配置<a class="headerlink" href="#sandbox" title="Link to this heading">¶</a></h3>
+<p>Sandbox 模块运行所用的 Docker 镜像由以下三个环境变量共同决定，你可以根据需要修改其中任意一个，来改变镜像的来源或版本。</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>环境变量</p></th>
+<th class="head"><p>作用</p></th>
+<th class="head"><p>默认值</p></th>
+<th class="head"><p>修改示例</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RUNTIME_SANDBOX_REGISTRY</span></code></p></td>
+<td><p>镜像注册中心地址（Registry）。为空表示使用 Docker Hub。</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">RUNTIME_SANDBOX_REGISTRY=&quot;agentscope-registry.ap-southeast-1.cr.aliyuncs.com&quot;</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RUNTIME_SANDBOX_IMAGE_NAMESPACE</span></code></p></td>
+<td><p>镜像命名空间（Namespace），类似账号名。</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;agentscope&quot;</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">RUNTIME_SANDBOX_IMAGE_NAMESPACE=&quot;my_namespace&quot;</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RUNTIME_SANDBOX_IMAGE_TAG</span></code></p></td>
+<td><p>镜像版本标签（Tag）。</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;latest&quot;</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">RUNTIME_SANDBOX_IMAGE_TAG=&quot;my_custom&quot;</span></code></p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </section>
 </section>
@@ -1091,7 +1162,7 @@ runtime-sandbox-builder<span class="w"> </span>filesystem
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-09-30</div>
+              Last updated on 2025-10-09</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -1130,27 +1201,33 @@ runtime-sandbox-builder<span class="w"> </span>filesystem
 <li><a class="reference internal" href="#id2">远程沙箱服务器</a><ul>
 <li><a class="reference internal" href="#id3">使用默认配置快速启动</a></li>
 <li><a class="reference internal" href="#id4">自定义配置</a></li>
-<li><a class="reference internal" href="#configuration-reference">Configuration Reference</a><ul>
-<li><a class="reference internal" href="#service-settings">Service Settings</a></li>
-<li><a class="reference internal" href="#runtime-manager-settings">Runtime Manager Settings</a></li>
+<li><a class="reference internal" href="#id5">配置参考</a><ul>
+<li><a class="reference internal" href="#api">API服务设置</a></li>
+<li><a class="reference internal" href="#runtime-manager">Runtime Manager 设置</a></li>
 <li><a class="reference internal" href="#redis">（可选）Redis 设置</a></li>
-<li><a class="reference internal" href="#oss-optional">OSS 设置 (Optional)</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#oss">（可选）OSS 设置</a></li>
 <li><a class="reference internal" href="#k8s">（可选）K8S 设置</a></li>
-<li><a class="reference internal" href="#id5">启动服务器</a></li>
-<li><a class="reference internal" href="#id6">连接到远程服务器</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id7">自定义构建沙箱</a><ul>
-<li><a class="reference internal" href="#id8">从源码安装（自定义沙箱必需）</a></li>
-<li><a class="reference internal" href="#id9">创建自定义沙箱类</a></li>
+<li><a class="reference internal" href="#id6">导入自定义沙箱</a><ul>
+<li><a class="reference internal" href="#custom-sandbox-py">编写自定义沙箱扩展（例如 <code class="docutils literal notranslate"><span class="pre">custom_sandbox.py</span></code>）</a></li>
+<li><a class="reference internal" href="#id7">启动时加载扩展</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id8">启动服务器</a></li>
+<li><a class="reference internal" href="#id9">连接到远程服务器</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id10">自定义构建沙箱</a><ul>
+<li><a class="reference internal" href="#id11">从源码安装（自定义沙箱必需）</a></li>
+<li><a class="reference internal" href="#custom-sandbox-zh">创建自定义沙箱类</a></li>
 <li><a class="reference internal" href="#docker">准备Docker镜像</a></li>
-<li><a class="reference internal" href="#id10">构建您的自定义镜像</a><ul>
-<li><a class="reference internal" href="#id11">本地构建内置镜像</a></li>
+<li><a class="reference internal" href="#id13">构建您的自定义镜像</a><ul>
+<li><a class="reference internal" href="#id14">本地构建内置镜像</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id12">更改所使用的镜像标签</a></li>
+<li><a class="reference internal" href="#id15">更改所使用的镜像标签</a></li>
+<li><a class="reference internal" href="#sandbox">更改 Sandbox 镜像相关配置</a></li>
 </ul>
 </li>
 </ul>

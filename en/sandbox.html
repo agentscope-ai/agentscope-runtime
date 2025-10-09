@@ -392,6 +392,7 @@
 <li class="toctree-l1 current has-children current-page"><a class="current reference internal" href="#">4. Tool Sandbox</a><input aria-label="Toggle navigation of 4. Tool Sandbox" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="sandbox_advanced.html">Advanced Usage of Tool Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="training_sandbox.html">Training Sandbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sandbox_troubleshooting.html">Sandbox Troubleshooting</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="react_agent.html">5. Deploy a ReAct Agent with Tool Sandbox</a></li>
@@ -432,6 +433,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../zh/sandbox.html">4. 工具沙箱</a><input aria-label="Toggle navigation of 4. 工具沙箱" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../zh/sandbox_advanced.html">工具沙箱高级用法</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zh/training_sandbox.html">训练用沙箱</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zh/sandbox_troubleshooting.html">沙盒故障排除</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../zh/react_agent.html">5. 部署配备工具沙箱的ReAct智能体</a></li>
@@ -1119,22 +1121,6 @@ Tools behave like regular Python functions, making them easy to use and integrat
 </table>
 </div>
 </section>
-<section id="troubleshooting">
-<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">¶</a></h2>
-<p>If you encounter any issues while using the browser module, here are some troubleshooting steps:</p>
-<section id="docker-connection-error">
-<h3>Docker Connection Error<a class="headerlink" href="#docker-connection-error" title="Link to this heading">¶</a></h3>
-<p>If you encounter the following error:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">DockerException</span><span class="p">:</span> <span class="n">Error</span> <span class="k">while</span> <span class="n">fetching</span> <span class="n">server</span> <span class="n">API</span> <span class="n">version</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;Connection aborted.&#39;</span><span class="p">,</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;No such file or directory&#39;</span><span class="p">))</span>
-</pre></div>
-</div>
-<p>This error typically indicates that the Docker Python SDK is unable to connect to the Docker service. If you are using Colima, you need to ensure that the Docker Python SDK is configured to use Colima’s Docker service. You can do this by setting the <code class="docutils literal notranslate"><span class="pre">DOCKER_HOST</span></code> environment variable:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">DOCKER_HOST</span><span class="o">=</span>unix://<span class="nv">$HOME</span>/.colima/docker.sock
-</pre></div>
-</div>
-<p>After setting the <code class="docutils literal notranslate"><span class="pre">DOCKER_HOST</span></code> environment variable, try running your command again. This should resolve the connection issue.</p>
-</section>
-</section>
 <div class="toctree-wrapper compound">
 </div>
 </section>
@@ -1192,7 +1178,7 @@ Tools behave like regular Python functions, making them easy to use and integrat
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-09-30</div>
+              Last updated on 2025-10-09</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -1265,10 +1251,6 @@ Tools behave like regular Python functions, making them easy to use and integrat
 </ul>
 </li>
 <li><a class="reference internal" href="#tool-list">Tool List</a></li>
-<li><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
-<li><a class="reference internal" href="#docker-connection-error">Docker Connection Error</a></li>
-</ul>
-</li>
 </ul>
 </li>
 </ul>

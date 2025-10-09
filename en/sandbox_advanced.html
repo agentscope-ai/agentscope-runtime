@@ -392,6 +392,7 @@
 <li class="toctree-l1 current has-children"><a class="reference internal" href="sandbox.html">4. Tool Sandbox</a><input aria-label="Toggle navigation of 4. Tool Sandbox" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Advanced Usage of Tool Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="training_sandbox.html">Training Sandbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sandbox_troubleshooting.html">Sandbox Troubleshooting</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="react_agent.html">5. Deploy a ReAct Agent with Tool Sandbox</a></li>
@@ -432,6 +433,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../zh/sandbox.html">4. 工具沙箱</a><input aria-label="Toggle navigation of 4. 工具沙箱" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../zh/sandbox_advanced.html">工具沙箱高级用法</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zh/training_sandbox.html">训练用沙箱</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zh/sandbox_troubleshooting.html">沙盒故障排除</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../zh/react_agent.html">5. 部署配备工具沙箱的ReAct智能体</a></li>
@@ -523,6 +525,11 @@
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># This command will load the settings defined in the `custom.env` file</span>
 runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>custom.env
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you plan to use the sandbox on a large scale in production, we recommend deploying it directly in Alibaba Cloud for managed hosting.</p>
+<p><a class="reference external" href="https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83">One-click deploy sandbox on Alibaba Cloud</a></p>
 </div>
 </section>
 <section id="custom-configuration">
@@ -653,7 +660,12 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 <td><p><code class="docutils literal notranslate"><span class="pre">sessions_mount_dir</span></code></p></td>
 <td><p>For persistent storage path where the <code class="docutils literal notranslate"><span class="pre">/workspace</span></code> file is stored</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PORT_RANGE</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">READONLY_MOUNTS</span></code></p></td>
+<td><p>Read-only directory mounts</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>A dictionary mapping <strong>host paths</strong> to <strong>container paths</strong>, mounted in <strong>read-only</strong> mode. Used to share files/configurations without allowing container writes. Example:<br/><code class="docutils literal notranslate"><span class="pre">{&quot;\/Users\/alice\/data&quot;:</span> <span class="pre">&quot;\/data&quot;}</span></code> mounts the host’s <code class="docutils literal notranslate"><span class="pre">/Users/alice/data</span></code> to <code class="docutils literal notranslate"><span class="pre">/data</span></code> inside the container as read-only.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">PORT_RANGE</span></code></p></td>
 <td><p>Available port range</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">[49152,59152]</span></code></p></td>
 <td><p>For service port allocation</p></td>
@@ -769,9 +781,8 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </table>
 </div>
 </section>
-</section>
 <section id="optional-k8s-settings">
-<h3>(Optional) K8S Settings<a class="headerlink" href="#optional-k8s-settings" title="Link to this heading">¶</a></h3>
+<h4>(Optional) K8S Settings<a class="headerlink" href="#optional-k8s-settings" title="Link to this heading">¶</a></h4>
 <p>To configure settings specific to Kubernetes in your sandbox server, ensure you set <code class="docutils literal notranslate"><span class="pre">CONTAINER_DEPLOYMENT=k8s</span></code> to activate this feature. Consider adjusting the following parameters:</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -797,9 +808,39 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </table>
 </div>
 </section>
+</section>
+<section id="loading-custom-sandbox">
+<h3>Loading Custom Sandbox<a class="headerlink" href="#loading-custom-sandbox" title="Link to this heading">¶</a></h3>
+<p>In addition to the default basic sandbox types, you can implement a custom sandbox by writing an extension module and loading it with the <code class="docutils literal notranslate"><span class="pre">--extension</span></code> parameter.
+This allows you to modify the security level, add environment variables, define custom timeouts, and more.</p>
+<section id="writing-a-custom-sandbox-extension-e-g-custom-sandbox-py">
+<h4>Writing a custom sandbox extension (e.g. <code class="docutils literal notranslate"><span class="pre">custom_sandbox.py</span></code>)<a class="headerlink" href="#writing-a-custom-sandbox-extension-e-g-custom-sandbox-py" title="Link to this heading">¶</a></h4>
+<p>See <a class="reference internal" href="#custom-sandbox"><span class="std std-ref">Custom Sandbox Class</span></a></p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&#64;SandboxRegistry.register</span></code> will register the class into the sandbox manager, so it can be recognized and used at startup.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">environment</span></code> field can inject external API keys or other necessary configurations into the sandbox.</p></li>
+<li><p>The class inherits from <code class="docutils literal notranslate"><span class="pre">Sandbox</span></code> and can override its methods to implement more customized logic.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="loading-the-extension-at-startup">
+<h4>Loading the extension at startup<a class="headerlink" href="#loading-the-extension-at-startup" title="Link to this heading">¶</a></h4>
+<p>Place <code class="docutils literal notranslate"><span class="pre">custom_sandbox.py</span></code> in the project directory or in a Python module path where it can be imported, then start the server specifying the <code class="docutils literal notranslate"><span class="pre">--extension</span></code> parameter:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-server<span class="w"> </span>--extension<span class="w"> </span>custom_sandbox.py
+</pre></div>
+</div>
+<p>If you have multiple sandbox extensions, you can add multiple <code class="docutils literal notranslate"><span class="pre">--extension</span></code> options, for example:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-server<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--extension<span class="w"> </span>custom_sandbox1.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--extension<span class="w"> </span>custom_sandbox2.py
+</pre></div>
+</div>
+</section>
+</section>
 <section id="starting-the-server">
 <h3>Starting the Server<a class="headerlink" href="#starting-the-server" title="Link to this heading">¶</a></h3>
-<p>Once your <code class="docutils literal notranslate"><span class="pre">.env</span></code> file is configured, start the server:</p>
+<p>You can also start the server directly without using startup options after configuring the <code class="docutils literal notranslate"><span class="pre">.env</span></code> file.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-server
 </pre></div>
 </div>
@@ -845,24 +886,23 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 </div>
 </section>
 <section id="creating-a-custom-sandbox-class">
-<h3>Creating a Custom Sandbox Class<a class="headerlink" href="#creating-a-custom-sandbox-class" title="Link to this heading">¶</a></h3>
+<span id="custom-sandbox"></span><h3>Creating a Custom Sandbox Class<a class="headerlink" href="#creating-a-custom-sandbox-class" title="Link to this heading">¶</a></h3>
 <p>You can define your custom sandbox type and register it in the system to meet special requirements. Just inherit from <code class="docutils literal notranslate"><span class="pre">Sandbox</span></code> and decorate with <code class="docutils literal notranslate"><span class="pre">SandboxRegistry.register</span></code>, then put the file in <code class="docutils literal notranslate"><span class="pre">src/agentscope_runtime/sandbox/custom</span></code> (e.g., <code class="docutils literal notranslate"><span class="pre">src/agentscope_runtime/sandbox/custom/custom_sandbox.py</span></code>):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># src/agentscope_runtime/sandbox/custom/custom_sandbox.py</span>
-<span class="c1"># -*- coding: utf-8 -*-</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">..version</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxRegistry</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxType</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..box.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sandbox</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_image_uri</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxRegistry</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.box.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sandbox</span>
 
-<span class="n">SANDBOXTYPE</span> <span class="o">=</span> <span class="s2">&quot;custom_sandbox&quot;</span>
+<span class="n">SANDBOXTYPE</span> <span class="o">=</span> <span class="s2">&quot;my_custom_sandbox&quot;</span>
 
 
 <span class="nd">@SandboxRegistry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">&quot;agentscope/runtime-sandbox-</span><span class="si">{</span><span class="n">SANDBOXTYPE</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">build_image_uri</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;runtime-sandbox-</span><span class="si">{</span><span class="n">SANDBOXTYPE</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
     <span class="n">sandbox_type</span><span class="o">=</span><span class="n">SANDBOXTYPE</span><span class="p">,</span>
     <span class="n">security_level</span><span class="o">=</span><span class="s2">&quot;medium&quot;</span><span class="p">,</span>
     <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
@@ -872,7 +912,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
         <span class="s2">&quot;AMAP_MAPS_API_KEY&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;AMAP_MAPS_API_KEY&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
     <span class="p">},</span>
 <span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">CustomSandbox</span><span class="p">(</span><span class="n">Sandbox</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyCustomSandbox</span><span class="p">(</span><span class="n">Sandbox</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">sandbox_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -994,13 +1034,14 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <section id="building-your-custom-image">
 <h3>Building Your Custom Image<a class="headerlink" href="#building-your-custom-image" title="Link to this heading">¶</a></h3>
 <p>After preparing your Dockerfile and custom sandbox class, use the built-in builder tool to build your custom sandbox image:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-builder<span class="w"> </span>custom_sandbox<span class="w"> </span>--dockerfile_path<span class="w"> </span>examples/custom_sandbox/custom_sandbox/Dockerfile
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-builder<span class="w"> </span>my_custom_sandbox<span class="w"> </span>--dockerfile_path<span class="w"> </span>examples/custom_sandbox/custom_sandbox/Dockerfile<span class="w"> </span>--extention<span class="w"> </span>PATH_TO_YOUR_SANDBOX_MODULE
 </pre></div>
 </div>
 <p><strong>Command Parameters:</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">custom_sandbox</span></code>: The name/tag for your custom sandbox image</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--dockerfile_path</span></code>: Path to your custom Dockerfile</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--extension</span></code>: Path to your custom sandbox python module</p></li>
 </ul>
 <p>Once built, your custom sandbox image will be ready to use with the corresponding sandbox class you defined.</p>
 <section id="building-built-in-images-locally">
@@ -1028,11 +1069,37 @@ runtime-sandbox-builder<span class="w"> </span>filesystem
 </ul>
 </section>
 </section>
-<section id="change-the-used-image-tag">
-<h3>Change The Used Image Tag<a class="headerlink" href="#change-the-used-image-tag" title="Link to this heading">¶</a></h3>
-<p>You can change the environment variable to use a different image tag for the Sandbox module. By default, the tag used is <code class="docutils literal notranslate"><span class="pre">&quot;latest&quot;</span></code>.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">RUNTIME_SANDBOX_IMAGE_TAG</span><span class="o">=</span><span class="s2">&quot;my_custom&quot;</span>
-</pre></div>
+<section id="change-sandbox-image-configuration">
+<h3>Change Sandbox Image Configuration<a class="headerlink" href="#change-sandbox-image-configuration" title="Link to this heading">¶</a></h3>
+<p>The Docker image used by the Sandbox module is determined by the following three environment variables.
+You can modify any of them as needed to change the image source or version.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Environment Variable</p></th>
+<th class="head"><p>Purpose</p></th>
+<th class="head"><p>Default Value</p></th>
+<th class="head"><p>Example Modification</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RUNTIME_SANDBOX_REGISTRY</span></code></p></td>
+<td><p>Docker registry address. An empty value means Docker Hub will be used.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">RUNTIME_SANDBOX_REGISTRY=&quot;agentscope-registry.ap-southeast-1.cr.aliyuncs.com&quot;</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RUNTIME_SANDBOX_IMAGE_NAMESPACE</span></code></p></td>
+<td><p>Image namespace, similar to an account name.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;agentscope&quot;</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">RUNTIME_SANDBOX_IMAGE_NAMESPACE=&quot;my_namespace&quot;</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RUNTIME_SANDBOX_IMAGE_TAG</span></code></p></td>
+<td><p>Image version tag.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;latest&quot;</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">RUNTIME_SANDBOX_IMAGE_TAG=&quot;my_custom&quot;</span></code></p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </section>
 </section>
@@ -1091,7 +1158,7 @@ runtime-sandbox-builder<span class="w"> </span>filesystem
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-09-30</div>
+              Last updated on 2025-10-09</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -1135,9 +1202,14 @@ runtime-sandbox-builder<span class="w"> </span>filesystem
 <li><a class="reference internal" href="#runtime-manager-settings">Runtime Manager Settings</a></li>
 <li><a class="reference internal" href="#optional-redis-settings">(Optional) Redis Settings</a></li>
 <li><a class="reference internal" href="#optional-oss-settings">(Optional) OSS Settings</a></li>
+<li><a class="reference internal" href="#optional-k8s-settings">(Optional) K8S Settings</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#optional-k8s-settings">(Optional) K8S Settings</a></li>
+<li><a class="reference internal" href="#loading-custom-sandbox">Loading Custom Sandbox</a><ul>
+<li><a class="reference internal" href="#writing-a-custom-sandbox-extension-e-g-custom-sandbox-py">Writing a custom sandbox extension (e.g. <code class="docutils literal notranslate"><span class="pre">custom_sandbox.py</span></code>)</a></li>
+<li><a class="reference internal" href="#loading-the-extension-at-startup">Loading the extension at startup</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#starting-the-server">Starting the Server</a></li>
 <li><a class="reference internal" href="#connecting-to-remote-server">Connecting to Remote Server</a></li>
 </ul>
@@ -1150,7 +1222,7 @@ runtime-sandbox-builder<span class="w"> </span>filesystem
 <li><a class="reference internal" href="#building-built-in-images-locally">Building Built-in Images Locally</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#change-the-used-image-tag">Change The Used Image Tag</a></li>
+<li><a class="reference internal" href="#change-sandbox-image-configuration">Change Sandbox Image Configuration</a></li>
 </ul>
 </li>
 </ul>

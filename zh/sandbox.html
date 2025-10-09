@@ -392,6 +392,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../en/sandbox.html">4. Tool Sandbox</a><input aria-label="Toggle navigation of 4. Tool Sandbox" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../en/sandbox_advanced.html">Advanced Usage of Tool Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../en/training_sandbox.html">Training Sandbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/sandbox_troubleshooting.html">Sandbox Troubleshooting</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../en/react_agent.html">5. Deploy a ReAct Agent with Tool Sandbox</a></li>
@@ -432,6 +433,7 @@
 <li class="toctree-l1 current has-children current-page"><a class="current reference internal" href="#">4. 工具沙箱</a><input aria-label="Toggle navigation of 4. 工具沙箱" checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="sandbox_advanced.html">工具沙箱高级用法</a></li>
 <li class="toctree-l2"><a class="reference internal" href="training_sandbox.html">训练用沙箱</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sandbox_troubleshooting.html">沙盒故障排除</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="react_agent.html">5. 部署配备工具沙箱的ReAct智能体</a></li>
@@ -509,7 +511,7 @@
 <p>对于使用<strong>苹果芯片</strong>（如M1/M2）的设备，我们建议以下选项来运行<strong>x86</strong> Docker环境以获得最大兼容性：</p>
 <ul class="simple">
 <li><p>Docker Desktop：请参阅<a class="reference external" href="https://docs.docker.com/desktop/setup/install/mac-install/">Docker Desktop安装指南</a>以启用Rosetta2，确保与x86_64镜像的兼容性。</p></li>
-<li><p>Colima：确保启用Rosetta 2支持。您可以使用以下命令启动<a class="reference external" href="https://github.com/abiosoft/colima">Colima</a>以实现兼容性：<code class="docutils literal notranslate"><span class="pre">colima</span> <span class="pre">start</span> <span class="pre">--vm-type=vz</span> <span class="pre">--vz-rosetta</span> <span class="pre">--memory8</span> <span class="pre">--cpu</span> <span class="pre">1</span></code></p></li>
+<li><p>Colima：确保启用Rosetta 2支持。您可以使用以下命令启动<a class="reference external" href="https://github.com/abiosoft/colima">Colima</a>以实现兼容性：<code class="docutils literal notranslate"><span class="pre">colima</span> <span class="pre">start</span> <span class="pre">--vm-type=vz</span> <span class="pre">--vz-rosetta</span> <span class="pre">--memory</span> <span class="pre">8</span> <span class="pre">--cpu</span> <span class="pre">1</span></code></p></li>
 </ul>
 </div>
 <ul class="simple">
@@ -1119,21 +1121,6 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </table>
 </div>
 </section>
-<section id="id22">
-<h2>故障排除<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h2>
-<section id="id23">
-<h3>Docker连接错误<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h3>
-<p>如果您遇到以下错误：</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">DockerException</span><span class="p">:</span> <span class="n">Error</span> <span class="k">while</span> <span class="n">fetching</span> <span class="n">server</span> <span class="n">API</span> <span class="n">version</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;Connection aborted.&#39;</span><span class="p">,</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;No such file or directory&#39;</span><span class="p">))</span>
-</pre></div>
-</div>
-<p>此错误通常表示Docker Python SDK无法连接到Docker服务。如果您使用的是Colima，需要确保Docker Python SDK配置为使用Colima的Docker服务。您可以通过设置<code class="docutils literal notranslate"><span class="pre">DOCKER_HOST</span></code>环境变量来实现：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">DOCKER_HOST</span><span class="o">=</span>unix://<span class="nv">$HOME</span>/.colima/docker.sock
-</pre></div>
-</div>
-<p>设置<code class="docutils literal notranslate"><span class="pre">DOCKER_HOST</span></code>环境变量后，请重新尝试运行您的命令。这应该可以解决连接问题。</p>
-</section>
-</section>
 <div class="toctree-wrapper compound">
 </div>
 </section>
@@ -1191,7 +1178,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-09-30</div>
+              Last updated on 2025-10-09</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -1264,10 +1251,6 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </ul>
 </li>
 <li><a class="reference internal" href="#id21">工具列表</a></li>
-<li><a class="reference internal" href="#id22">故障排除</a><ul>
-<li><a class="reference internal" href="#id23">Docker连接错误</a></li>
-</ul>
-</li>
 </ul>
 </li>
 </ul>

@@ -392,6 +392,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="sandbox.html">4. Tool Sandbox</a><input aria-label="Toggle navigation of 4. Tool Sandbox" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="sandbox_advanced.html">Advanced Usage of Tool Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="training_sandbox.html">Training Sandbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sandbox_troubleshooting.html">Sandbox Troubleshooting</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="react_agent.html">5. Deploy a ReAct Agent with Tool Sandbox</a></li>
@@ -432,6 +433,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../zh/sandbox.html">4. 工具沙箱</a><input aria-label="Toggle navigation of 4. 工具沙箱" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../zh/sandbox_advanced.html">工具沙箱高级用法</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zh/training_sandbox.html">训练用沙箱</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zh/sandbox_troubleshooting.html">沙盒故障排除</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../zh/react_agent.html">5. 部署配备工具沙箱的ReAct智能体</a></li>
@@ -591,7 +593,7 @@
         <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">),</span>
     <span class="p">),</span>
     <span class="n">agent_config</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;sys_prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;You&#39;re a helpful assistant named </span><span class="si">{name}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;sys_prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;You&#39;re a helpful assistant named Friday.&quot;</span><span class="p">,</span>
     <span class="p">},</span>
     <span class="n">agent_builder</span><span class="o">=</span><span class="n">ReActAgent</span><span class="p">,</span>
 <span class="p">)</span>
@@ -928,21 +930,6 @@ After deployment, you can access the service at <code class="docutils literal no
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ Streaming test completed&quot;</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">RequestException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Streaming test failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="c1"># Test JSON responses (if available)</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-            <span class="s2">&quot;http://localhost:8090/process&quot;</span><span class="p">,</span>
-            <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span>
-            <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📄 JSON Response: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ JSON test completed&quot;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;⚠️ JSON endpoint returned status: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
     <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">RequestException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ℹ️ JSON endpoint not available or failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
@@ -1065,7 +1052,7 @@ After deployment, you can access the service at <code class="docutils literal no
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-09-30</div>
+              Last updated on 2025-10-09</div>
           </div>
           <div class="right-details">
             <div class="icons">
