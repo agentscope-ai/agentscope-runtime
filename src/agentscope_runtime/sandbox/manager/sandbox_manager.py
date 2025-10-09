@@ -1,28 +1,22 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=redefined-outer-name, protected-access, too-many-branches
+import inspect
+import json
 import logging
 import os
-import json
 import secrets
-import inspect
 import traceback
-
 from functools import wraps
 from typing import Optional, Dict
 from urllib.parse import urlparse, urlunparse
 
-import shortuuid
 import requests
+import shortuuid
 
-from ..model import (
-    ContainerModel,
-    SandboxManagerEnvConfig,
-)
-from ..enums import SandboxType
-from ..registry import SandboxRegistry
 from ..client import SandboxHttpClient, TrainingSandboxClient
-
-from ..manager.collections import (
+from ..constant import BROWSER_SESSION_ID
+from ..enums import SandboxType
+from ...common.collections import (
     RedisMapping,
     RedisQueue,
     InMemoryMapping,
@@ -32,8 +26,15 @@ from ..manager.storage import (
     LocalStorage,
     OSSStorage,
 )
-from ..manager.container_clients import DockerClient, KubernetesClient
-from ..constant import BROWSER_SESSION_ID
+from ..model import (
+    ContainerModel,
+    SandboxManagerEnvConfig,
+)
+from ..registry import SandboxRegistry
+from ...common.container_clients import (
+    DockerClient,
+    KubernetesClient,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
