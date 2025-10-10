@@ -148,9 +148,11 @@ It composes all data from memory, session and rag into context.
 
 
 ```python
+import os
 from agentscope_runtime.engine import Runner
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
-from agentscope_runtime.engine.llms import QwenLLM
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+from agentscope.agent import ReActAgent
+from agentscope.model import OpenAIChatModel
 from agentscope_runtime.engine.schemas.agent_schemas import (
     MessageType,
     AgentRequest,
@@ -163,17 +165,23 @@ USER_ID = "user1"
 SESSION_ID = "session1"
 query = "What is self-reflection of an AI Agent?"
 
-llm_agent = LLMAgent(
-    model=QwenLLM(),
-    name="llm_agent",
-    description="A simple LLM agent",
+agent = AgentScopeAgent(
+    name="Friday",
+    model=OpenAIChatModel(
+        "gpt-4",
+        api_key=os.getenv("OPENAI_API_KEY"),
+    ),
+    agent_config={
+        "sys_prompt": "You're a helpful assistant named Friday.",
+    },
+    agent_builder=ReActAgent,
 )
 
 async with create_context_manager(
     rag_service=rag_service,
 ) as context_manager:
     runner = Runner(
-        agent=llm_agent,
+        agent=agent,
         context_manager=context_manager,
         environment_manager=None,
     )
