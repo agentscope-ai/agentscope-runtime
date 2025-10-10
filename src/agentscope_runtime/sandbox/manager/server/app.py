@@ -79,6 +79,11 @@ def get_config() -> SandboxManagerEnvConfig:
             redis_container_pool_key=settings.REDIS_CONTAINER_POOL_KEY,
             k8s_namespace=settings.K8S_NAMESPACE,
             kubeconfig_path=settings.KUBECONFIG_PATH,
+            s3_endpoint_url=settings.S3_ENDPOINT_URL,
+            s3_access_key_id=settings.S3_ACCESS_KEY_ID,
+            s3_access_key_secret=settings.S3_ACCESS_KEY_SECRET,
+            s3_bucket_name=settings.S3_BUCKET_NAME,
+            s3_region_name=settings.S3_REGION_NAME,
         )
     return _config
 

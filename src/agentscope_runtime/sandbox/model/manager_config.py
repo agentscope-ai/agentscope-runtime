@@ -15,9 +15,9 @@ class SandboxManagerEnvConfig(BaseModel):
         max_length=63 - UUID_LENGTH,  # Max length for k8s pod name
     )
 
-    file_system: Literal["local", "oss"] = Field(
+    file_system: Literal["local", "oss", "s3"] = Field(
         ...,
-        description="Type of file system to use: 'local' or 'oss'.",
+        description="Type of file system to use: 'local', 'oss', or 's3'.",
     )
     storage_folder: Optional[str] = Field(
         "",
@@ -72,6 +72,28 @@ class SandboxManagerEnvConfig(BaseModel):
     oss_bucket_name: Optional[str] = Field(
         None,
         description="Bucket name in OSS. Required if file_system is 'oss'.",
+    )
+
+    # S3 settings
+    s3_endpoint_url: Optional[str] = Field(
+        None,
+        description="S3 endpoint URL. Required if file_system is 's3'. For MinIO, use http://localhost:9000",
+    )
+    s3_access_key_id: Optional[str] = Field(
+        None,
+        description="Access key ID for S3. Required if file_system is 's3'.",
+    )
+    s3_access_key_secret: Optional[str] = Field(
+        None,
+        description="Access key secret for S3. Required if file_system is 's3'.",
+    )
+    s3_bucket_name: Optional[str] = Field(
+        None,
+        description="Bucket name in S3. Required if file_system is 's3'.",
+    )
+    s3_region_name: Optional[str] = Field(
+        "us-east-1",
+        description="Region name for S3. Required if file_system is 's3'.",
     )
 
     # Redis settings
@@ -143,6 +165,25 @@ class SandboxManagerEnvConfig(BaseModel):
                 if not field_value:
                     raise ValueError(
                         f"{field_name} must be set when file_system is 'oss'",
+                    )
+        
+        if self.file_system == "s3":
+            required_s3_fields = [
+                self.s3_access_key_id,
+                self.s3_access_key_secret,
+                self.s3_bucket_name,
+            ]
+            for field_name, field_value in zip(
+                [
+                    "s3_access_key_id",
+                    "s3_access_key_secret",
+                    "s3_bucket_name",
+                ],
+                required_s3_fields,
+            ):
+                if not field_value:
+                    raise ValueError(
+                        f"{field_name} must be set when file_system is 's3'",
                     )
 
         if self.redis_enabled:
