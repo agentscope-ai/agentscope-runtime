@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 from typing import Optional
 
-from ...constant import IMAGE_TAG
+from ...utils import build_image_uri
 from ...registry import SandboxRegistry
 from ...enums import SandboxType
 from ...box.sandbox import Sandbox
 
 
 @SandboxRegistry.register(
-    f"agentscope/runtime-sandbox-base:{IMAGE_TAG}",
+    build_image_uri("runtime-sandbox-base"),
     sandbox_type=SandboxType.BASE,
     security_level="medium",
     timeout=30,

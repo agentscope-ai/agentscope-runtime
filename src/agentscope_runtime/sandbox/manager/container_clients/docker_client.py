@@ -208,40 +208,6 @@ class DockerClient(BaseClient):
                 "export DOCKER_HOST=unix://$HOME/.colima/docker.sock",
             ) from e
 
-    def _try_pull_from_acr(self, image):
-        """
-        Attempt to pull the image from the Alibaba Cloud Container Registry
-        (ACR) and retag it.
-        """
-        try:
-            acr_registry = "agentscope-registry.ap-southeast-1.cr.aliyuncs.com"
-            acr_image = f"{acr_registry}/{image}"
-
-            logger.info(
-                f"Attempting to pull from ACR: {acr_image}, it might take "
-                f"several minutes.",
-            )
-            self.client.images.pull(acr_image)
-            logger.info(f"Successfully pulled image from ACR: {acr_image}")
-
-            # Retag the image
-            acr_img_obj = self.client.images.get(acr_image)
-            acr_img_obj.tag(image)
-            logger.debug(f"Successfully tagged image as: {image}")
-
-            # Optionally remove the original tag to save space
-            try:
-                self.client.images.remove(acr_image)
-                logger.debug(f"Removed original tag: {acr_image}")
-            except Exception as e:
-                logger.debug(f"Failed to remove original tag: {e}")
-            return True
-        except Exception as e:
-            logger.error(
-                f"Failed to pull from ACR: {e}, {traceback.format_exc()}",
-            )
-            return False
-
     def create(
         self,
         image,
@@ -279,22 +245,11 @@ class DockerClient(BaseClient):
                     )
                     self.client.images.pull(image)
                     logger.debug(
-                        f"Image '{image}' successfully pulled from default "
-                        f"registry.",
+                        f"Image '{image}' successfully pulled.",
                     )
-                    pull_success = True
-                except docker.errors.APIError as e:
-                    logger.warning(
-                        f"Failed to pull from default registry: {e}",
-                    )
-                    logger.warning("Trying to pull from ACR fallback...")
-
-                    pull_success = self._try_pull_from_acr(image)
-
-                if not pull_success:
+                except Exception as e:
                     logger.error(
-                        f"Failed to pull image '{image}' from both "
-                        f"default and ACR",
+                        f"Failed to pull image '{image}': {str(e)}",
                     )
                     return None, None, None
 

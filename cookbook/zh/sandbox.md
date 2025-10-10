@@ -26,7 +26,7 @@ AgentScope Runtime的Sandbox提供了一个**安全**且**隔离**的环境，�
 ````{warning}
 对于使用**苹果芯片**（如M1/M2）的设备，我们建议以下选项来运行**x86** Docker环境以获得最大兼容性：
 * Docker Desktop：请参阅[Docker Desktop安装指南](https://docs.docker.com/desktop/setup/install/mac-install/)以启用Rosetta2，确保与x86_64镜像的兼容性。
-* Colima：确保启用Rosetta 2支持。您可以使用以下命令启动[Colima](https://github.com/abiosoft/colima)以实现兼容性：`colima start --vm-type=vz --vz-rosetta --memory8 --cpu 1`
+* Colima：确保启用Rosetta 2支持。您可以使用以下命令启动[Colima](https://github.com/abiosoft/colima)以实现兼容性：`colima start --vm-type=vz --vz-rosetta --memory 8 --cpu 1`
 ````
 
 - Docker
@@ -446,21 +446,3 @@ with BaseSandbox(base_url="http://your_IP_address:8000") as box:
 |                  | `browser_console_messages()`                                 | 获取页面的所有控制台消息                     |
 |                  | `browser_network_requests()`                                 | 获取页面加载以来的所有网络请求               |
 |                  | `browser_handle_dialog(accept: bool, promptText: str)`       | 处理浏览器对话框（警告、确认、提示）         |
-
-## 故障排除
-
-### Docker连接错误
-
-如果您遇到以下错误：
-
-```
-docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))
-```
-
-此错误通常表示Docker Python SDK无法连接到Docker服务。如果您使用的是Colima，需要确保Docker Python SDK配置为使用Colima的Docker服务。您可以通过设置`DOCKER_HOST`环境变量来实现：
-
-```bash
-export DOCKER_HOST=unix://$HOME/.colima/docker.sock
-```
-
-设置`DOCKER_HOST`环境变量后，请重新尝试运行您的命令。这应该可以解决连接问题。

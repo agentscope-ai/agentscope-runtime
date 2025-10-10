@@ -30,6 +30,11 @@ def calculate_power(base: int, exponent: int) -> int:
 async def test_react_agent_runner(env):
     from agentscope.agent import ReActAgent
     from agentscope.model import DashScopeChatModel
+    from agentscope.tool import Toolkit, view_text_file
+
+    toolkit = Toolkit()
+    # Register an unrelated tool
+    toolkit.register_tool_function(view_text_file)
 
     agent = AgentScopeAgent(
         name="Friday",
@@ -38,7 +43,8 @@ async def test_react_agent_runner(env):
             api_key=os.getenv("DASHSCOPE_API_KEY"),
         ),
         agent_config={
-            "sys_prompt": "You're a helpful assistant named {name}.",
+            "sys_prompt": "You're a helpful assistant named Friday.",
+            "toolkit": toolkit,
         },
         tools=[
             calculate_power,

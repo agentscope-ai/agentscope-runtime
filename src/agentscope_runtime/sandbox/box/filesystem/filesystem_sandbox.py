@@ -2,14 +2,14 @@
 # pylint: disable=dangerous-default-value
 from typing import Optional
 
-from ...constant import IMAGE_TAG
+from ...utils import build_image_uri
 from ...registry import SandboxRegistry
 from ...enums import SandboxType
 from ...box.sandbox import Sandbox
 
 
 @SandboxRegistry.register(
-    f"agentscope/runtime-sandbox-filesystem:{IMAGE_TAG}",
+    build_image_uri("runtime-sandbox-filesystem"),
     sandbox_type=SandboxType.FILESYSTEM,
     security_level="medium",
     timeout=60,

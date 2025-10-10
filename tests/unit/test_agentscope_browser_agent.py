@@ -23,7 +23,7 @@ BROWSER_TOOLS = [
 ]
 
 
-SYSTEM_PROMPT = """You are Web Using AI assistant named {name}.
+SYSTEM_PROMPT = """You are Web Using AI assistant named Friday.
 
 # Objective
 Your goal is to complete given tasks by controlling a browser to navigate web pages.

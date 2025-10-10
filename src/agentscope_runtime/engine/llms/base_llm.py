@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from typing import AsyncGenerator
+from openai.types.chat import ChatCompletionChunk
 
 
 class BaseLLM:
@@ -45,16 +46,27 @@ class BaseLLM:
         messages,
         tools=None,
         **kwargs,
-    ) -> AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[ChatCompletionChunk, None]:
         # call model
-        # TODO: use async client
-        generator = self.client.chat.completions.create(
-            model=self.model_name,
-            messages=messages,
-            tools=tools,
-            stream=True,
-            **kwargs,
-        )
-
-        for chunk in generator:
-            yield chunk
+        if self.async_client is not None:
+            # Use async client for non-blocking streaming
+            generator = await self.async_client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                tools=tools,
+                stream=True,
+                **kwargs,
+            )
+            async for chunk in generator:
+                yield chunk
+        else:
+            # Switch back to the sync method
+            completion = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                tools=tools,
+                stream=True,
+                **kwargs,
+            )
+            for chunk in completion:
+                yield chunk
