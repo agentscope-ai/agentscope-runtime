@@ -20,9 +20,14 @@ class ContainerModel(BaseModel):
         description="Human-readable name for the container",
     )
 
+    url: str = Field(
+        ...,
+        description="URL for accessing the container",
+    )
+
     base_url: str = Field(
         ...,
-        description="Base URL for accessing the container",
+        description="Base URL for accessing the container python backend",
     )
 
     browser_url: str = Field(
