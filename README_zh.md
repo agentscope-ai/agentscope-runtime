@@ -98,23 +98,32 @@ pip install -e ".[sandbox]"
 ```python
 import asyncio
 import os
+
 from agentscope_runtime.engine import Runner
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
-from agentscope_runtime.engine.llms import QwenLLM
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from agentscope_runtime.engine.services.context_manager import ContextManager
+
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
 
 
 async def main():
     # 设置语言模型和智能体
-    model = QwenLLM(
-        model_name="qwen-turbo",
-        api_key=os.getenv("DASHSCOPE_API_KEY"),
+    agent = AgentScopeAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+        ),
+        agent_config={
+            "sys_prompt": "You're a helpful assistant named Friday.",
+        },
+        agent_builder=ReActAgent,
     )
-    llm_agent = LLMAgent(model=model, name="llm_agent")
 
     async with ContextManager() as context_manager:
-        runner = Runner(agent=llm_agent, context_manager=context_manager)
+        runner = Runner(agent=agent, context_manager=context_manager)
 
         # 创建请求并流式传输响应
         request = AgentRequest(
@@ -171,29 +180,6 @@ with BaseSandbox() as box:
 ---
 
 ## 🔌 智能体框架集成
-
-### AgentScope 集成
-
-```python
-# pip install "agentscope-runtime[agentscope]"
-import os
-
-from agentscope.agent import ReActAgent
-from agentscope.model import OpenAIChatModel
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-
-agent = AgentScopeAgent(
-    name="Friday",
-    model=OpenAIChatModel(
-        "gpt-4",
-        api_key=os.getenv("OPENAI_API_KEY"),
-    ),
-    agent_config={
-        "sys_prompt": "You're a helpful assistant named Friday.",
-    },
-    agent_builder=ReActAgent,
-)
-```
 
 ### Agno集成
 

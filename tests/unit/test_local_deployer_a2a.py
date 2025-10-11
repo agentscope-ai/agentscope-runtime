@@ -3,15 +3,14 @@ import asyncio
 import os
 
 import pytest
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
 
 from agentscope_runtime.engine import Runner, LocalDeployManager
-
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
-
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.deployers.adapter.a2a import (
     A2AFastAPIDefaultAdapter,
 )
-from agentscope_runtime.engine.llms import QwenLLM
 from agentscope_runtime.engine.services.context_manager import ContextManager
 from agentscope_runtime.engine.services.memory_service import (
     InMemoryMemoryService,
@@ -33,13 +32,19 @@ async def _local_deploy():
     server_port = int(os.environ.get("SERVER_PORT", "8090"))
     server_endpoint = os.environ.get("SERVER_ENDPOINT", "agent")
 
-    llm_agent = LLMAgent(
-        model=QwenLLM(),
-        name="llm_agent",
-        description="A simple LLM agent to generate a short story",
+    agent = AgentScopeAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+        ),
+        agent_config={
+            "sys_prompt": "You're a helpful assistant named Friday.",
+        },
+        agent_builder=ReActAgent,
     )
 
-    a2a_protocol = A2AFastAPIDefaultAdapter(agent=llm_agent)
+    a2a_protocol = A2AFastAPIDefaultAdapter(agent=agent)
 
     # Create session service and context manager
     session_history_service = InMemorySessionHistoryService()
@@ -50,7 +55,7 @@ async def _local_deploy():
     )
 
     runner = Runner(
-        agent=llm_agent,
+        agent=agent,
         context_manager=context_manager,
     )
 
