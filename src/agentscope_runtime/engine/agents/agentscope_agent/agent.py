@@ -103,6 +103,7 @@ class AgentScopeContextAdapter:
             MessageType.PLUGIN_CALL,
             MessageType.FUNCTION_CALL,
         ):
+            # convert PLUGIN_CALL, FUNCTION_CALL to ToolUseBlock
             result["content"] = [
                 ToolUseBlock(
                     type="tool_use",
@@ -115,6 +116,8 @@ class AgentScopeContextAdapter:
             MessageType.PLUGIN_CALL_OUTPUT,
             MessageType.FUNCTION_CALL_OUTPUT,
         ):
+            # convert PLUGIN_CALL_OUTPUT, FUNCTION_CALL_OUTPUT to
+            # ToolResultBlock
             result["content"] = [
                 ToolResultBlock(
                     type="tool_result",
