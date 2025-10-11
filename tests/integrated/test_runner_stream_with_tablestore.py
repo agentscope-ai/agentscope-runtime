@@ -23,7 +23,9 @@ from agentscope_runtime.engine.services.tablestore_rag_service import (
     TablestoreRAGService,
 )
 # fmt: off
-from agentscope_runtime.engine.services.tablestore_session_history_service import TablestoreSessionHistoryService # noqa E501
+from agentscope_runtime.engine.services.tablestore_session_history_service import ( # noqa E501
+    TablestoreSessionHistoryService,
+)
 from agentscope_runtime.engine.services.utils.tablestore_service_utils import (
     create_tablestore_client,
 )
