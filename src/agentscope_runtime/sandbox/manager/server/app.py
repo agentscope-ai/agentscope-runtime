@@ -79,6 +79,18 @@ def get_config() -> SandboxManagerEnvConfig:
             redis_container_pool_key=settings.REDIS_CONTAINER_POOL_KEY,
             k8s_namespace=settings.K8S_NAMESPACE,
             kubeconfig_path=settings.KUBECONFIG_PATH,
+            agent_run_access_key_id=settings.AGENT_RUN_ACCESS_KEY_ID,
+            agent_run_access_key_secret=settings.AGENT_RUN_ACCESS_KEY_SECRET,
+            agent_run_account_id=settings.AGENT_RUN_ACCOUNT_ID,
+            agent_run_region_id=settings.AGENT_RUN_REGION_ID,
+            agent_run_cpu=settings.AGENT_RUN_CPU,
+            agent_run_memory=settings.AGENT_RUN_MEMORY,
+            agent_run_vpc_id=settings.AGENT_RUN_VPC_ID,
+            agent_run_vswitch_ids=settings.AGENT_RUN_VSWITCH_IDS,
+            agent_run_security_group_id=settings.AGENT_RUN_SECURITY_GROUP_ID,
+            agent_run_prefix=settings.AGENT_RUN_PREFIX,
+            agentrun_log_project=settings.AGENT_RUN_LOG_PROJECT,
+            agentrun_log_store=settings.AGENT_RUN_LOG_STORE,
         )
     return _config
 
