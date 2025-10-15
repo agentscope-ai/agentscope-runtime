@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 import traceback
 import logging
-import platform
 import socket
-import subprocess
 
 import docker
 
 from .base_client import BaseClient
-from ..collections import RedisSetCollection, InMemorySetCollection
+from ..collections import (
+    RedisSetCollection,
+    InMemorySetCollection,
+    RedisMapping,
+    InMemoryMapping,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -32,138 +35,6 @@ def is_port_available(port):
         except OSError:
             # Port is in use
             return False
-
-
-def sweep_port(port):
-    """Sweep all processes found listening on a given port.
-
-    Args:
-        port (int): The port number.
-
-    Returns:
-        bool: True if successful, False if failed.
-    """
-    try:
-        system = platform.system().lower()
-        if system == "windows":
-            return _sweep_port_windows(port)
-        else:
-            return _sweep_port_unix(port)
-    except Exception as e:
-        logger.error(
-            f"An error occurred while killing processes on port {port}: {e}",
-        )
-        return False
-
-
-def _sweep_port_unix(port):
-    """
-    Sweep all processes found listening on a given port.
-
-    Args:
-        port (int): The port number.
-
-    Returns:
-        int: Number of processes swept (terminated).
-    """
-    try:
-        # Use lsof to find the processes using the port
-        # TODO: support windows
-        result = subprocess.run(
-            ["lsof", "-i", f":{port}"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-
-        # Parse the output
-        lines = result.stdout.strip().split("\n")
-        if len(lines) <= 1:
-            # No process is using the port
-            return True
-
-        # Iterate over each line (excluding the header) and kill each process
-        killed_count = 0
-        for line in lines[1:]:
-            parts = line.split()
-            if len(parts) > 1:
-                pid = parts[1]
-
-                # Kill the process using the PID
-                subprocess.run(["kill", "-9", pid], check=False)
-                killed_count += 1
-
-        if not is_port_available(port):
-            logger.warning(
-                f"Port {port} is still in use after killing processes.",
-            )
-
-        return True
-
-    except Exception as e:
-        logger.error(
-            f"An error occurred while killing processes on port {port}: {e}",
-        )
-        return False
-
-
-def _sweep_port_windows(port):
-    """
-    Windows implementation using netstat and taskkill
-    """
-    try:
-        # Use netstat to find the processes using the port
-        result = subprocess.run(
-            ["netstat", "-ano"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-
-        # Parse the output to find processes using the specific port
-        lines = result.stdout.strip().split("\n")
-        pids_to_kill = set()
-
-        for line in lines:
-            if f":{port}" in line and "LISTENING" in line:
-                parts = line.split()
-                if len(parts) >= 5:
-                    pid = parts[-1]  # PID is usually the last column
-                    if pid.isdigit():  # Ensure it's a valid PID
-                        pids_to_kill.add(pid)
-
-        if not pids_to_kill:
-            return True
-
-        # Kill the processes
-        killed_count = 0
-        for pid in pids_to_kill:
-            try:
-                result = subprocess.run(
-                    ["taskkill", "/PID", pid, "/F"],
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                )
-                if result.returncode == 0:
-                    killed_count += 1
-            except Exception as e:
-                logger.debug(f"Failed to kill process {pid}: {e}")
-                continue
-
-        if not is_port_available(port):
-            logger.warning(
-                f"Port {port} is still in use after killing processes.",
-            )
-
-        return True
-
-    except subprocess.CalledProcessError as e:
-        logger.error(f"netstat command failed: {e}")
-        return False
-    except Exception as e:
-        logger.error(f"Error in Windows port sweep: {e}")
-        return False
 
 
 class DockerClient(BaseClient):
@@ -193,8 +64,13 @@ class DockerClient(BaseClient):
                 redis_client,
                 set_name=self.config.redis_port_key,
             )
+            self.ports_cache = RedisMapping(
+                redis_client,
+                prefix=self.config.redis_port_key,
+            )
         else:
             self.port_set = InMemorySetCollection()
+            self.ports_cache = InMemoryMapping()
 
         try:
             self.client = docker.from_env()
@@ -269,6 +145,9 @@ class DockerClient(BaseClient):
             )
             container.reload()
             _id = container.id
+
+            self.ports_cache.set(_id, list(port_mapping.values()))
+
             return _id, list(port_mapping.values()), "localhost"
         except Exception as e:
             logger.error(f"An error occurred: {e}, {traceback.format_exc()}")
@@ -280,16 +159,6 @@ class DockerClient(BaseClient):
             container = self.client.containers.get(
                 container_id,
             )
-
-            # Check whether the ports are occupied by other processes
-            port_mapping = container.attrs["NetworkSettings"]["Ports"]
-            for _, mappings in port_mapping.items():
-                if mappings is not None:
-                    for mapping in mappings:
-                        host_port = int(mapping["HostPort"])
-                        if is_port_available(host_port):
-                            continue
-                        sweep_port(host_port["HostPort"])
 
             container.start()
             return True
@@ -315,16 +184,16 @@ class DockerClient(BaseClient):
             container = self.client.containers.get(
                 container_id,
             )
-            # Remove ports
-            port_mapping = container.attrs["NetworkSettings"]["Ports"]
+            ports = self.ports_cache.get(container_id)
+            self.ports_cache.delete(container_id)
+
+            # Remove container
             container.remove(force=force)
 
-            # Iterate over each port and its mappings
-            for _, mappings in port_mapping.items():
-                if mappings is not None:
-                    for mapping in mappings:
-                        host_port = int(mapping["HostPort"])
-                        self.port_set.remove(host_port)
+            # Remove ports
+            if ports:
+                for host_port in ports:
+                    self.port_set.remove(host_port)
 
             return True
         except Exception as e:

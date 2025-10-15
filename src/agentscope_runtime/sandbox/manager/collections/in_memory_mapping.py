@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from typing import Any
+
 from .base_mapping import Mapping
 
 
@@ -6,10 +8,10 @@ class InMemoryMapping(Mapping):
     def __init__(self):
         self.store = {}
 
-    def set(self, key: str, value: dict):
+    def set(self, key: str, value: Any):
         self.store[key] = value
 
-    def get(self, key: str) -> dict:
+    def get(self, key: str) -> Any:
         return self.store.get(key)
 
     def delete(self, key: str):
