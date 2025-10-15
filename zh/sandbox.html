@@ -523,8 +523,8 @@
 <h2>安装<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h2>
 <section id="id4">
 <h3>安装依赖项<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
-<p>首先，安装带有沙箱支持的AgentScope Runtime：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[sandbox]&quot;</span>
+<p>首先，安装AgentScope Runtime：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>agentscope-runtime
 </pre></div>
 </div>
 </section>
@@ -917,13 +917,13 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <span class="w">            </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uvx&quot;</span><span class="p">,</span>
 <span class="w">            </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">                </span><span class="s2">&quot;--from&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="s2">&quot;agentscope-runtime[sandbox]&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;agentscope-runtime&quot;</span><span class="p">,</span>
 <span class="w">                </span><span class="s2">&quot;runtime-sandbox-mcp&quot;</span><span class="p">,</span>
 <span class="w">                </span><span class="s2">&quot;--type=base&quot;</span><span class="p">,</span>
 <span class="w">                </span><span class="s2">&quot;--base_url=http://127.0.0.1:8000&quot;</span>
-<span class="w">            </span><span class="p">],</span>
+<span class="w">            </span><span class="p">]</span>
 <span class="w">        </span><span class="p">}</span>
-<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
 </div>

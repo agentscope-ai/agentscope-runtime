@@ -514,7 +514,7 @@
 </pre></div>
 </div>
 <p>For the whole experience, including sandbox capabilities and other agent framework integrations:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[sandbox,agentscope,langgraph,agno]&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[langgraph,agno,autogen]&quot;</span>
 </pre></div>
 </div>
 </section>
@@ -595,8 +595,46 @@ pip<span class="w"> </span>install<span class="w"> </span>.
 </section>
 <section id="installation-options-explained">
 <h2>Installation Options Explained<a class="headerlink" href="#installation-options-explained" title="Link to this heading">¶</a></h2>
-<p>This diagram visualizes installation options as a layered architecture, starting with the core runtime (agentscope-runtime) at the base. Optional modules (e.g., sandbox, AgentScope, LangGraph) stack atop the core, each adding specific functionality (e.g., tool execution, framework integrations) and requiring corresponding dependencies (e.g., Docker, testing tools).</p>
-<img src="/_static/installation_options.jpg" alt="Installation Options" style="zoom:25%;" /></section>
+<p>This diagram visualizes installation options as a layered architecture, starting with the core runtime (agentscope-runtime) — which <strong>includes AgentScope Framework and Sandbox dependencies</strong> — at the base. Optional modules (e.g., LangGraph, Agno, AutoGen) stack atop the core, each adding specific functionality (e.g., tool execution, framework integrations) and requiring corresponding dependencies. See details about all installation options at <a class="reference external" href="https://github.com/agentscope-ai/agentscope-runtime/blob/main/pyproject.toml">pyproject.toml</a>.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Component</strong></p></th>
+<th class="head"><p><strong>Package</strong></p></th>
+<th class="head"><p><strong>Use-Case</strong></p></th>
+<th class="head"><p><strong>Dependencies</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Core Runtime</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">agentscope-runtime</span></code></p></td>
+<td><p>Core runtime</p></td>
+<td><p>Minimal including AgentScope Framework and Sandbox Dependencies</p></td>
+</tr>
+<tr class="row-odd"><td><p>Development Tools</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">dev</span></code></p></td>
+<td><p>Dev utilities</p></td>
+<td><p>Testing, Linting, Docs</p></td>
+</tr>
+<tr class="row-even"><td><p>Agno Integration</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">agno</span></code></p></td>
+<td><p>Agno</p></td>
+<td><p>Agno Framework</p></td>
+</tr>
+<tr class="row-odd"><td><p>LangGraph Integration</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">langgraph</span></code></p></td>
+<td><p>LangGraph</p></td>
+<td><p>LangGraph Framework</p></td>
+</tr>
+<tr class="row-even"><td><p>AutoGen Integration</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">autogen</span></code></p></td>
+<td><p>AutoGen</p></td>
+<td><p>AutoGen Framework</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 </section>
 
     <script type="text/x-thebe-config">

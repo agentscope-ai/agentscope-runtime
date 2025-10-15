@@ -513,7 +513,7 @@
 </pre></div>
 </div>
 <p>如需完整功能，包括沙箱功能和其他智能体框架集成：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[sandbox,agentscope,langgraph,agno]&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[langgraph,agno,autogen]&quot;</span>
 </pre></div>
 </div>
 </section>
@@ -594,8 +594,46 @@ pip<span class="w"> </span>install<span class="w"> </span>.
 </section>
 <section id="id5">
 <h2>安装选项说明<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h2>
-<p>这个图展示了安装选项的层次结构，底层是核心运行时（agentscope-runtime）。在核心之上可以选装各种模块（比如 sandbox、AgentScope、LangGraph 等），每个模块都会增加特定的功能（比如工具执行、框架整合等），同时也需要安装对应的依赖包（比如 Docker、测试工具等）。</p>
-<img src="/_static/installation_options_zh.jpg" alt="Installation Options" style="zoom:25%;" /></section>
+<p>这个图展示了安装选项的层次结构，从底层核心运行时（agentscope-runtime）开始——其中 <strong>包含 AgentScope 框架 和 Sandbox 依赖</strong>。可选模块（例如 LangGraph、Agno、AutoGen）堆叠在核心之上，每个模块都增加了特定的功能（如工具执行、框架集成），并需要相应的依赖项。查看所有安装选项的详细信息，请参见 <a class="reference external" href="https://github.com/agentscope-ai/agentscope-runtime/blob/main/pyproject.toml">pyproject.toml</a>。</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>组件</strong></p></th>
+<th class="head"><p><strong>软件包</strong></p></th>
+<th class="head"><p><strong>用途</strong></p></th>
+<th class="head"><p><strong>依赖项</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>核心运行时</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">agentscope-runtime</span></code></p></td>
+<td><p>核心运行环境</p></td>
+<td><p>最小依赖，包括 AgentScope 框架 和 Sandbox 依赖</p></td>
+</tr>
+<tr class="row-odd"><td><p>开发工具</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">dev</span></code></p></td>
+<td><p>开发工具集</p></td>
+<td><p>测试、代码检查（Linting）、文档</p></td>
+</tr>
+<tr class="row-even"><td><p>Agno 集成</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">agno</span></code></p></td>
+<td><p>Agno</p></td>
+<td><p>Agno 框架</p></td>
+</tr>
+<tr class="row-odd"><td><p>LangGraph 集成</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">langgraph</span></code></p></td>
+<td><p>LangGraph</p></td>
+<td><p>LangGraph 框架</p></td>
+</tr>
+<tr class="row-even"><td><p>AutoGen 集成</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">autogen</span></code></p></td>
+<td><p>AutoGen</p></td>
+<td><p>AutoGen 框架</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 </section>
 
     <script type="text/x-thebe-config">
