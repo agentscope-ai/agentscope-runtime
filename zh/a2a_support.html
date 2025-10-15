@@ -507,7 +507,7 @@
 <section id="id2">
 <h2>2. 主要类和方法<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">A2AFastAPIDefaultAdapter(agent)</span></code>：将已有的 agent（如 LLMAgent）包装为符合 A2A 协议的服务端。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">A2AFastAPIDefaultAdapter(agent)</span></code>：将已有的 agent（如 AgentScopeAgent）包装为符合 A2A 协议的服务端。</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">protocol_adapters</span></code>：在部署 runner 时指定支持的协议适配器列表，其中包括 A2A 协议适配器。</p></li>
 </ul>
 </section>
@@ -516,17 +516,23 @@
 <p>你只需按以下关键步骤，即可让你的 agent 支持 A2A 协议：</p>
 <section id="agent">
 <h3><strong>步骤 1：创建 agent 实例</strong><a class="headerlink" href="#agent" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">llm_agent</span> <span class="o">=</span> <span class="n">LLMAgent</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">=</span><span class="n">QwenLLM</span><span class="p">(),</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;llm_agent&quot;</span><span class="p">,</span>
-    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A simple LLM agent to generate a short story&quot;</span><span class="p">,</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">agent</span> <span class="o">=</span> <span class="n">AgentScopeAgent</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">DashScopeChatModel</span><span class="p">(</span>
+        <span class="s2">&quot;qwen-turbo&quot;</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
+    <span class="p">),</span>
+    <span class="n">agent_config</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;sys_prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;You&#39;re a helpful assistant named Friday.&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="n">agent_builder</span><span class="o">=</span><span class="n">ReActAgent</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section id="a2a-agent">
 <h3><strong>步骤 2：使用 A2A 协议适配器包装 agent</strong><a class="headerlink" href="#a2a-agent" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">a2a_protocol</span> <span class="o">=</span> <span class="n">A2AFastAPIDefaultAdapter</span><span class="p">(</span><span class="n">agent</span><span class="o">=</span><span class="n">llm_agent</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">a2a_protocol</span> <span class="o">=</span> <span class="n">A2AFastAPIDefaultAdapter</span><span class="p">(</span><span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -545,7 +551,7 @@
 <section id="runner">
 <h3><strong>步骤 4：构建 Runner</strong><a class="headerlink" href="#runner" title="Link to this heading">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">runner</span> <span class="o">=</span> <span class="n">Runner</span><span class="p">(</span>
-    <span class="n">agent</span><span class="o">=</span><span class="n">llm_agent</span><span class="p">,</span>
+    <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
     <span class="n">context_manager</span><span class="o">=</span><span class="n">context_manager</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
@@ -574,9 +580,10 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runner</span><span class="p">,</span> <span class="n">LocalDeployManager</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.llm_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.agentscope_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentScopeAgent</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.adapter.a2a</span><span class="w"> </span><span class="kn">import</span> <span class="n">A2AFastAPIDefaultAdapter</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.llms</span><span class="w"> </span><span class="kn">import</span> <span class="n">QwenLLM</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.context_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextManager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.memory_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryMemoryService</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.session_history_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemorySessionHistoryService</span>
@@ -587,14 +594,20 @@
     <span class="n">server_endpoint</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;SERVER_ENDPOINT&quot;</span><span class="p">,</span> <span class="s2">&quot;agent&quot;</span><span class="p">)</span>
 
     <span class="c1"># Step 1: Create agent instance</span>
-    <span class="n">llm_agent</span> <span class="o">=</span> <span class="n">LLMAgent</span><span class="p">(</span>
-        <span class="n">model</span><span class="o">=</span><span class="n">QwenLLM</span><span class="p">(),</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;llm_agent&quot;</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A simple LLM agent to generate a short story&quot;</span><span class="p">,</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">AgentScopeAgent</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">DashScopeChatModel</span><span class="p">(</span>
+            <span class="s2">&quot;qwen-turbo&quot;</span><span class="p">,</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">agent_config</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;sys_prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;You&#39;re a helpful assistant named Friday.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">agent_builder</span><span class="o">=</span><span class="n">ReActAgent</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># Step 2: Wrap agent with A2A protocol adapter</span>
-    <span class="n">a2a_protocol</span> <span class="o">=</span> <span class="n">A2AFastAPIDefaultAdapter</span><span class="p">(</span><span class="n">agent</span><span class="o">=</span><span class="n">llm_agent</span><span class="p">)</span>
+    <span class="n">a2a_protocol</span> <span class="o">=</span> <span class="n">A2AFastAPIDefaultAdapter</span><span class="p">(</span><span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">)</span>
 
     <span class="c1"># Step 3: Build context management services</span>
     <span class="n">session_history_service</span> <span class="o">=</span> <span class="n">InMemorySessionHistoryService</span><span class="p">()</span>
@@ -606,7 +619,7 @@
 
     <span class="c1"># Step 4: Build runner and deploy</span>
     <span class="n">runner</span> <span class="o">=</span> <span class="n">Runner</span><span class="p">(</span>
-        <span class="n">agent</span><span class="o">=</span><span class="n">llm_agent</span><span class="p">,</span>
+        <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
         <span class="n">context_manager</span><span class="o">=</span><span class="n">context_manager</span><span class="p">,</span>
     <span class="p">)</span>
 

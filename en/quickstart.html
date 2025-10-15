@@ -527,8 +527,9 @@
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runner</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.llm_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMAgent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.llms</span><span class="w"> </span><span class="kn">import</span> <span class="n">QwenLLM</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.agentscope_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentScopeAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIChatModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">MessageType</span><span class="p">,</span>
     <span class="n">RunStatus</span><span class="p">,</span>
@@ -544,49 +545,12 @@
 </div>
 </div>
 </section>
-<section id="step-2-create-llm-agent">
-<h3>Step 2: Create LLM Agent<a class="headerlink" href="#step-2-create-llm-agent" title="Link to this heading">¶</a></h3>
-<p>Initialize your LLM model and create the agent:</p>
+<section id="step-2-create-agent">
+<h3>Step 2: Create Agent<a class="headerlink" href="#step-2-create-agent" title="Link to this heading">¶</a></h3>
+<p>We will take Agentscope as example.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create an LLM instance</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">QwenLLM</span><span class="p">(</span>
-    <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;qwen-turbo&quot;</span><span class="p">,</span>
-    <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">)</span>
-<span class="p">)</span>
-
-<span class="c1"># Create the LLM Agent</span>
-<span class="n">llm_agent</span> <span class="o">=</span> <span class="n">LLMAgent</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;llm_agent&quot;</span><span class="p">,</span>
-    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A simple LLM agent for text generation&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ LLM Agent created successfully&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For utilizing other LLM and agent implementations from other framework, please refer to <a class="reference internal" href="#agentscope-agent"><span class="std std-ref">AgentScope Agent</span></a>, <a class="reference internal" href="#agno-agent"><span class="std std-ref">Agno Agent</span></a>, <a class="reference internal" href="#autogen-agent"><span class="std std-ref">AutoGen Agent</span></a>, and <a class="reference internal" href="#langgraph-agent"><span class="std std-ref">LangGraph Agent</span></a>.</p>
-</div>
-<section id="optional-with-agentscope-agent">
-<span id="agentscope-agent"></span><h4>(Optional) With AgentScope Agent<a class="headerlink" href="#optional-with-agentscope-agent" title="Link to this heading">¶</a></h4>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If you want to use Agent from AgentScope, you should install AgentScope via:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[agentscope]&quot;</span>
-</pre></div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIChatModel</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.agentscope_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentScopeAgent</span>
-
-<span class="n">agent</span> <span class="o">=</span> <span class="n">AgentScopeAgent</span><span class="p">(</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">agent</span> <span class="o">=</span> <span class="n">AgentScopeAgent</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
     <span class="n">model</span><span class="o">=</span><span class="n">OpenAIChatModel</span><span class="p">(</span>
         <span class="s2">&quot;gpt-4&quot;</span><span class="p">,</span>
@@ -603,7 +567,11 @@
 </div>
 </div>
 </div>
-</section>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>
+```{note}
+For utilizing other LLM and agent implementations from other framework, please refer to {ref}`Agno Agent &lt;agno-agent&gt;`, {ref}`AutoGen Agent &lt;autogen-agent&gt;`, and {ref}`LangGraph Agent &lt;langgraph-agent&gt;`.
+</pre></div>
+</div>
 <section id="optional-with-agno-agent">
 <span id="agno-agent"></span><h4>(Optional) With Agno Agent<a class="headerlink" href="#optional-with-agno-agent" title="Link to this heading">¶</a></h4>
 <div class="admonition note">
@@ -982,7 +950,7 @@ After deployment, you can access the service at <code class="docutils literal no
 <section id="runner-for-simple-agent-interaction">
 <h3>🏃 Runner for Simple Agent Interaction<a class="headerlink" href="#runner-for-simple-agent-interaction" title="Link to this heading">¶</a></h3>
 <p>Build and test agents using the <code class="docutils literal notranslate"><span class="pre">Runner</span></code> class:</p>
-<p>✅ Create and configure agents (LLMAgent, AgentScope, Agno, LangGraph)</p>
+<p>✅ Create and configure agents (AgentScope, Agno, LangGraph)</p>
 <p>✅ Set up Runner with context management</p>
 <p>✅ Test agent responses through streaming</p>
 <p>✅ Validate agent functionality before deployment</p>
@@ -1095,8 +1063,7 @@ After deployment, you can access the service at <code class="docutils literal no
 </li>
 <li><a class="reference internal" href="#step-by-step-implementation">Step-by-Step Implementation</a><ul>
 <li><a class="reference internal" href="#step-1-import-dependencies">Step 1: Import Dependencies</a></li>
-<li><a class="reference internal" href="#step-2-create-llm-agent">Step 2: Create LLM Agent</a><ul>
-<li><a class="reference internal" href="#optional-with-agentscope-agent">(Optional) With AgentScope Agent</a></li>
+<li><a class="reference internal" href="#step-2-create-agent">Step 2: Create Agent</a><ul>
 <li><a class="reference internal" href="#optional-with-agno-agent">(Optional) With Agno Agent</a></li>
 <li><a class="reference internal" href="#optional-with-autogen-agent">(Optional) With AutoGen Agent</a></li>
 <li><a class="reference internal" href="#optional-with-langgraph-agent">(Optional) With LangGraph Agent</a></li>

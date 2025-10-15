@@ -616,9 +616,11 @@
 <section id="id5">
 <h3>构建RAG代理<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
 <p>在Agentscope-runtime中，<code class="docutils literal notranslate"><span class="pre">rag_service</span></code>集成在<code class="docutils literal notranslate"><span class="pre">context_manager</span></code>中。它组合了来自内存、会话和rag的所有数据到上下文中。</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runner</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.llm_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMAgent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.llms</span><span class="w"> </span><span class="kn">import</span> <span class="n">QwenLLM</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runner</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.agentscope_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentScopeAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">MessageType</span><span class="p">,</span>
     <span class="n">AgentRequest</span><span class="p">,</span>
@@ -631,17 +633,23 @@
 <span class="n">SESSION_ID</span> <span class="o">=</span> <span class="s2">&quot;session1&quot;</span>
 <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;What is self-reflection of an AI Agent?&quot;</span>
 
-<span class="n">llm_agent</span> <span class="o">=</span> <span class="n">LLMAgent</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">=</span><span class="n">QwenLLM</span><span class="p">(),</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;llm_agent&quot;</span><span class="p">,</span>
-    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A simple LLM agent&quot;</span><span class="p">,</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">AgentScopeAgent</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">DashScopeChatModel</span><span class="p">(</span>
+        <span class="s2">&quot;qwen-turbo&quot;</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
+    <span class="p">),</span>
+    <span class="n">agent_config</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;sys_prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;You&#39;re a helpful assistant named Friday.&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="n">agent_builder</span><span class="o">=</span><span class="n">ReActAgent</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="k">async</span> <span class="k">with</span> <span class="n">create_context_manager</span><span class="p">(</span>
     <span class="n">rag_service</span><span class="o">=</span><span class="n">rag_service</span><span class="p">,</span>
 <span class="p">)</span> <span class="k">as</span> <span class="n">context_manager</span><span class="p">:</span>
     <span class="n">runner</span> <span class="o">=</span> <span class="n">Runner</span><span class="p">(</span>
-        <span class="n">agent</span><span class="o">=</span><span class="n">llm_agent</span><span class="p">,</span>
+        <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
         <span class="n">context_manager</span><span class="o">=</span><span class="n">context_manager</span><span class="p">,</span>
         <span class="n">environment_manager</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span>

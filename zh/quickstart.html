@@ -527,8 +527,9 @@
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runner</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.llm_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMAgent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.llms</span><span class="w"> </span><span class="kn">import</span> <span class="n">QwenLLM</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.agentscope_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentScopeAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">MessageType</span><span class="p">,</span>
     <span class="n">RunStatus</span><span class="p">,</span>
@@ -544,53 +545,20 @@
 </div>
 </div>
 </section>
-<section id="llm">
-<h3>步骤2：创建LLM智能体<a class="headerlink" href="#llm" title="Link to this heading">¶</a></h3>
-<p>初始化您的LLM模型并创建智能体：</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 创建LLM实例</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">QwenLLM</span><span class="p">(</span>
-    <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;qwen-turbo&quot;</span><span class="p">,</span>
-    <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">)</span>
-<span class="p">)</span>
-
-<span class="c1"># 创建LLM智能体</span>
-<span class="n">llm_agent</span> <span class="o">=</span> <span class="n">LLMAgent</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;llm_agent&quot;</span><span class="p">,</span>
-    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A simple LLM agent for text generation&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ LLM智能体创建成功&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>要使用来自其他框架的其他LLM和智能体实现，请参考 <a class="reference internal" href="#agentscope-agent-zh"><span class="std std-ref">AgentScope智能体</span></a>、<a class="reference internal" href="#agno-agent-zh"><span class="std std-ref">Agno智能体</span></a>、<a class="reference internal" href="#autogen-agent-zh"><span class="std std-ref">AutoGen智能体</span></a>和<a class="reference internal" href="#langgraph-agent-zh"><span class="std std-ref">LangGraph智能体</span></a>。</p>
-</div>
-<section id="agentscope-agent">
-<span id="agentscope-agent-zh"></span><h4>（可选）使用AgentScope Agent<a class="headerlink" href="#agentscope-agent" title="Link to this heading">¶</a></h4>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>如果您想要使用AgentScope的智能体，您应该通过以下命令安装AgentScope：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[agentscope]&quot;</span>
-</pre></div>
-</div>
-</div>
+<section id="id6">
+<h3>步骤2：创建智能体<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<p>我们这里使用agentscope作为示例：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIChatModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.agentscope_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentScopeAgent</span>
 
 <span class="n">agent</span> <span class="o">=</span> <span class="n">AgentScopeAgent</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
-    <span class="n">model</span><span class="o">=</span><span class="n">OpenAIChatModel</span><span class="p">(</span>
-        <span class="s2">&quot;gpt-4&quot;</span><span class="p">,</span>
-        <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">),</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">DashScopeChatModel</span><span class="p">(</span>
+        <span class="s2">&quot;qwen-turbo&quot;</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
     <span class="p">),</span>
     <span class="n">agent_config</span><span class="o">=</span><span class="p">{</span>
         <span class="s2">&quot;sys_prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;You&#39;re a helpful assistant named Friday.&quot;</span><span class="p">,</span>
@@ -603,7 +571,10 @@
 </div>
 </div>
 </div>
-</section>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>要使用来自其他框架的其他LLM和智能体实现，请参考 <a class="reference internal" href="#agno-agent-zh"><span class="std std-ref">Agno智能体</span></a>、<a class="reference internal" href="#autogen-agent-zh"><span class="std std-ref">AutoGen智能体</span></a>和<a class="reference internal" href="#langgraph-agent-zh"><span class="std std-ref">LangGraph智能体</span></a>。</p>
+</div>
 <section id="agno-agent">
 <span id="agno-agent-zh"></span><h4>（可选）使用Agno Agent<a class="headerlink" href="#agno-agent" title="Link to this heading">¶</a></h4>
 <div class="admonition note">
@@ -733,8 +704,8 @@
 </div>
 </div>
 </section>
-<section id="id6">
-<h3>步骤4：定义交互函数<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<section id="id7">
+<h3>步骤4：定义交互函数<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
 <p>实现一个函数来测试您的智能体并获取流式响应：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -773,8 +744,8 @@
 </div>
 </div>
 </section>
-<section id="id7">
-<h3>步骤5：测试智能体交互<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
+<section id="id8">
+<h3>步骤5：测试智能体交互<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
 <p>执行交互流程以测试您的智能体功能：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -789,11 +760,11 @@
 </div>
 </section>
 </section>
-<section id="id8">
-<h2>使用部署器部署智能体<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h2>
-<p>AgentScope Runtime提供了强大的部署系统，允许您将智能体作为Web服务公开。</p>
 <section id="id9">
-<h3>步骤6：创建部署函数<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
+<h2>使用部署器部署智能体<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h2>
+<p>AgentScope Runtime提供了强大的部署系统，允许您将智能体作为Web服务公开。</p>
+<section id="id10">
+<h3>步骤6：创建部署函数<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
 <p>使用 <code class="docutils literal notranslate"><span class="pre">LocalDeployManager</span></code> 设置部署配置：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -822,8 +793,8 @@
 </div>
 </div>
 </section>
-<section id="id10">
-<h3>步骤7：执行部署<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
+<section id="id11">
+<h3>步骤7：执行部署<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
 <p>将您的智能体部署为生产就绪的服务：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -851,8 +822,8 @@
 部署后，您可以在<code class="docutils literal notranslate"><span class="pre">http://localhost:8090/process</span></code> 访问服务。</p>
 </div>
 </section>
-<section id="id11">
-<h3>（可选）步骤8：部署多个智能体<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
+<section id="id12">
+<h3>（可选）步骤8：部署多个智能体<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
 <p>Agentscope Runtime支持在不同端口上部署多个智能体。</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -888,8 +859,8 @@
 </div>
 </div>
 </section>
-<section id="id12">
-<h3>步骤9：测试部署的智能体<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
+<section id="id13">
+<h3>步骤9：测试部署的智能体<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h3>
 <p>使用HTTP请求测试您部署的智能体：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -940,10 +911,10 @@
 </div>
 </div>
 </section>
-<section id="id13">
-<h3>步骤10：服务管理<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h3>
 <section id="id14">
-<h4>服务状态<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h4>
+<h3>步骤10：服务管理<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
+<section id="id15">
+<h4>服务状态<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h4>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 检查服务状态</span>
@@ -954,8 +925,8 @@
 </div>
 </div>
 </section>
-<section id="id15">
-<h4>停止服务<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h4>
+<section id="id16">
+<h4>停止服务<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h4>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop_services</span><span class="p">(</span><span class="o">*</span><span class="n">_deploy_managers</span><span class="p">):</span>
@@ -975,19 +946,19 @@
 </section>
 </section>
 </section>
-<section id="id16">
-<h2>总结<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h2>
-<p>本指南演示了使用AgentScope Runtime框架的两个主要场景：</p>
 <section id="id17">
-<h3>🏃 Runner用于简单的智能体交互<a class="headerlink" href="#id17" title="Link to this heading">¶</a></h3>
+<h2>总结<a class="headerlink" href="#id17" title="Link to this heading">¶</a></h2>
+<p>本指南演示了使用AgentScope Runtime框架的两个主要场景：</p>
+<section id="id18">
+<h3>🏃 Runner用于简单的智能体交互<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h3>
 <p>使用Runner 类构建和测试智能体：</p>
-<p>✅ 创建和配置智能体（LLMAgent、AgentScope、Agno、LangGraph）</p>
+<p>✅ 创建和配置智能体（AgentScope、Agno、LangGraph）</p>
 <p>✅ 使用上下文管理设置<code class="docutils literal notranslate"><span class="pre">Runner</span></code></p>
 <p>✅ 通过流式传输测试智能体响应</p>
 <p>✅ 在部署前验证智能体功能</p>
 </section>
-<section id="id18">
-<h3>🚀 智能体部署为生产服务<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h3>
+<section id="id19">
+<h3>🚀 智能体部署为生产服务<a class="headerlink" href="#id19" title="Link to this heading">¶</a></h3>
 <p>将智能体部署为生产就绪的Web服务：</p>
 <p>✅使用 <code class="docutils literal notranslate"><span class="pre">LocalDeployManager</span></code> 进行本地部署</p>
 <p>✅将智能体公开为FastAPI Web服务</p>
@@ -1094,33 +1065,32 @@
 </li>
 <li><a class="reference internal" href="#id4">分步实现</a><ul>
 <li><a class="reference internal" href="#id5">步骤1：导入依赖</a></li>
-<li><a class="reference internal" href="#llm">步骤2：创建LLM智能体</a><ul>
-<li><a class="reference internal" href="#agentscope-agent">（可选）使用AgentScope Agent</a></li>
+<li><a class="reference internal" href="#id6">步骤2：创建智能体</a><ul>
 <li><a class="reference internal" href="#agno-agent">（可选）使用Agno Agent</a></li>
 <li><a class="reference internal" href="#autogen-agent">（可选）使用AutoGen Agent</a></li>
 <li><a class="reference internal" href="#langgraph-agent">（可选）使用 LangGraph Agent</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#runner">步骤3：创建Runner上下文管理器</a></li>
-<li><a class="reference internal" href="#id6">步骤4：定义交互函数</a></li>
-<li><a class="reference internal" href="#id7">步骤5：测试智能体交互</a></li>
+<li><a class="reference internal" href="#id7">步骤4：定义交互函数</a></li>
+<li><a class="reference internal" href="#id8">步骤5：测试智能体交互</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id8">使用部署器部署智能体</a><ul>
-<li><a class="reference internal" href="#id9">步骤6：创建部署函数</a></li>
-<li><a class="reference internal" href="#id10">步骤7：执行部署</a></li>
-<li><a class="reference internal" href="#id11">（可选）步骤8：部署多个智能体</a></li>
-<li><a class="reference internal" href="#id12">步骤9：测试部署的智能体</a></li>
-<li><a class="reference internal" href="#id13">步骤10：服务管理</a><ul>
-<li><a class="reference internal" href="#id14">服务状态</a></li>
-<li><a class="reference internal" href="#id15">停止服务</a></li>
+<li><a class="reference internal" href="#id9">使用部署器部署智能体</a><ul>
+<li><a class="reference internal" href="#id10">步骤6：创建部署函数</a></li>
+<li><a class="reference internal" href="#id11">步骤7：执行部署</a></li>
+<li><a class="reference internal" href="#id12">（可选）步骤8：部署多个智能体</a></li>
+<li><a class="reference internal" href="#id13">步骤9：测试部署的智能体</a></li>
+<li><a class="reference internal" href="#id14">步骤10：服务管理</a><ul>
+<li><a class="reference internal" href="#id15">服务状态</a></li>
+<li><a class="reference internal" href="#id16">停止服务</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id16">总结</a><ul>
-<li><a class="reference internal" href="#id17">🏃 Runner用于简单的智能体交互</a></li>
-<li><a class="reference internal" href="#id18">🚀 智能体部署为生产服务</a></li>
+<li><a class="reference internal" href="#id17">总结</a><ul>
+<li><a class="reference internal" href="#id18">🏃 Runner用于简单的智能体交互</a></li>
+<li><a class="reference internal" href="#id19">🚀 智能体部署为生产服务</a></li>
 </ul>
 </li>
 </ul>

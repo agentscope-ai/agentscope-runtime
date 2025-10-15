@@ -507,7 +507,7 @@
 <section id="main-classes-and-methods">
 <h2>2. Main Classes and Methods<a class="headerlink" href="#main-classes-and-methods" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">A2AFastAPIDefaultAdapter(agent)</span></code>: Wraps an existing agent (e.g., LLMAgent) as an A2A protocol-compliant server.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">A2AFastAPIDefaultAdapter(agent)</span></code>: Wraps an existing agent (e.g., AgentScopeAgent) as an A2A protocol-compliant server.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">protocol_adapters</span></code>: A list specifying supported protocol adapters when deploying the runner, including the A2A protocol adapter.</p></li>
 </ul>
 </section>
@@ -516,17 +516,23 @@
 <p>Below are the key steps you need to add A2A protocol support to your agent:</p>
 <section id="step-1-create-your-agent-instance">
 <h3><strong>Step 1: Create your agent instance</strong><a class="headerlink" href="#step-1-create-your-agent-instance" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">llm_agent</span> <span class="o">=</span> <span class="n">LLMAgent</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">=</span><span class="n">QwenLLM</span><span class="p">(),</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;llm_agent&quot;</span><span class="p">,</span>
-    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A simple LLM agent to generate a short story&quot;</span><span class="p">,</span>
-<span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">agent</span> <span class="o">=</span> <span class="n">AgentScopeAgent</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">OpenAIChatModel</span><span class="p">(</span>
+            <span class="s2">&quot;gpt-4&quot;</span><span class="p">,</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">agent_config</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;sys_prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;You&#39;re a helpful assistant named Friday.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">agent_builder</span><span class="o">=</span><span class="n">ReActAgent</span><span class="p">,</span>
+    <span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section id="step-2-wrap-agent-with-a2a-protocol-adapter">
 <h3><strong>Step 2: Wrap agent with A2A protocol adapter</strong><a class="headerlink" href="#step-2-wrap-agent-with-a2a-protocol-adapter" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">a2a_protocol</span> <span class="o">=</span> <span class="n">A2AFastAPIDefaultAdapter</span><span class="p">(</span><span class="n">agent</span><span class="o">=</span><span class="n">llm_agent</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">a2a_protocol</span> <span class="o">=</span> <span class="n">A2AFastAPIDefaultAdapter</span><span class="p">(</span><span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -545,7 +551,7 @@
 <section id="step-4-build-runner">
 <h3><strong>Step 4: Build runner</strong><a class="headerlink" href="#step-4-build-runner" title="Link to this heading">¶</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">runner</span> <span class="o">=</span> <span class="n">Runner</span><span class="p">(</span>
-    <span class="n">agent</span><span class="o">=</span><span class="n">llm_agent</span><span class="p">,</span>
+    <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
     <span class="n">context_manager</span><span class="o">=</span><span class="n">context_manager</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
@@ -574,9 +580,10 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runner</span><span class="p">,</span> <span class="n">LocalDeployManager</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.llm_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.agentscope_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentScopeAgent</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.adapter.a2a</span><span class="w"> </span><span class="kn">import</span> <span class="n">A2AFastAPIDefaultAdapter</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.llms</span><span class="w"> </span><span class="kn">import</span> <span class="n">QwenLLM</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIChatModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.context_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextManager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.memory_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryMemoryService</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.session_history_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemorySessionHistoryService</span>
@@ -587,14 +594,20 @@
     <span class="n">server_endpoint</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;SERVER_ENDPOINT&quot;</span><span class="p">,</span> <span class="s2">&quot;agent&quot;</span><span class="p">)</span>
 
     <span class="c1"># Step 1: Create agent instance</span>
-    <span class="n">llm_agent</span> <span class="o">=</span> <span class="n">LLMAgent</span><span class="p">(</span>
-        <span class="n">model</span><span class="o">=</span><span class="n">QwenLLM</span><span class="p">(),</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;llm_agent&quot;</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A simple LLM agent to generate a short story&quot;</span><span class="p">,</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">AgentScopeAgent</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">OpenAIChatModel</span><span class="p">(</span>
+            <span class="s2">&quot;gpt-4&quot;</span><span class="p">,</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">agent_config</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;sys_prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;You&#39;re a helpful assistant named Friday.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">agent_builder</span><span class="o">=</span><span class="n">ReActAgent</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># Step 2: Wrap agent with A2A protocol adapter</span>
-    <span class="n">a2a_protocol</span> <span class="o">=</span> <span class="n">A2AFastAPIDefaultAdapter</span><span class="p">(</span><span class="n">agent</span><span class="o">=</span><span class="n">llm_agent</span><span class="p">)</span>
+    <span class="n">a2a_protocol</span> <span class="o">=</span> <span class="n">A2AFastAPIDefaultAdapter</span><span class="p">(</span><span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">)</span>
 
     <span class="c1"># Step 3: Build context management services</span>
     <span class="n">session_history_service</span> <span class="o">=</span> <span class="n">InMemorySessionHistoryService</span><span class="p">()</span>
@@ -606,7 +619,7 @@
 
     <span class="c1"># Step 4: Build runner and deploy</span>
     <span class="n">runner</span> <span class="o">=</span> <span class="n">Runner</span><span class="p">(</span>
-        <span class="n">agent</span><span class="o">=</span><span class="n">llm_agent</span><span class="p">,</span>
+        <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
         <span class="n">context_manager</span><span class="o">=</span><span class="n">context_manager</span><span class="p">,</span>
     <span class="p">)</span>
 
