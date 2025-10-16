@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     BEARER_TOKEN: Optional[str] = None
 
+    # E2B Compatibility
+    E2B_SDK_COMPATIBLE: bool = False
+
     # Runtime Manager settings
     DEFAULT_SANDBOX_TYPE: str = "base"
     POOL_SIZE: int = 1

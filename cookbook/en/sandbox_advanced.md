@@ -162,6 +162,33 @@ To configure settings specific to Kubernetes in your sandbox server, ensure you 
 | `K8S_NAMESPACE`   | Kubernetes namespace to be used | `default` | Set the namespace for resource deployment            |
 | `KUBECONFIG_PATH` | Path to the kubeconfig file     | `None`    | Specifies the kubeconfig location for cluster access |
 
+### (Optional) E2B SDK Compatibility
+
+If you want to use the sandbox via the [E2B SDK](https://github.com/e2b-dev/code-interpreter), set `E2B_SDK_COMPATIBLE=True`:
+
+```python
+from e2b_code_interpreter import Sandbox
+from agentscope_runtime.sandbox.compatible.e2b import e2b_patch
+
+# Apply patch once
+e2b_patch(base_url="http://127.0.0.1:8000")  # Your remote IP address
+
+# Then use Sandbox normally
+with Sandbox.create() as sandbox:
+    sandbox.run_code("x = 1")
+    execution = sandbox.run_code("x += 1; x")
+    print(execution, execution.text)  # should output 2
+```
+
+| Parameter            | Description                | Default | Notes |
+| -------------------- | -------------------------- | ------- | ----- |
+| `E2B_SDK_COMPATIBLE` | E2B SDK compatibility mode | `False` | -     |
+
+```{warning}
+The E2B compatibility mode currently supports remote mode only and is still in the adaptation phase. Some APIs (such as file management) are not yet supported. If you encounter any issues, please report them via a GitHub Issue.
+```
+
+=======
 ### Loading Custom Sandbox
 
 In addition to the default basic sandbox types, you can implement a custom sandbox by writing an extension module and loading it with the `--extension` parameter.
@@ -197,6 +224,9 @@ You can also start the server directly without using startup options after confi
 
 ```bash
 runtime-sandbox-server
+
+# Debug mode
+runtime-sandbox-server --log-level DEBUG
 ```
 
 The server will automatically load the configuration from the `.env` file and start with your custom settings.
