@@ -129,6 +129,16 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "Sodawyx",
+      "name": "Yuxuan Wu",
+      "avatar_url": "https://avatars.githubusercontent.com/u/34974468?v=4",
+      "profile": "https://github.com/Sodawyx",
+      "contributions": [
+        "code",
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
