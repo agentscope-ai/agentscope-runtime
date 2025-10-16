@@ -809,6 +809,84 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </div>
 </section>
 </section>
+<section id="agentrun">
+<h3>（可选）AgentRun设置<a class="headerlink" href="#agentrun" title="Link to this heading">¶</a></h3>
+<p>AgentRun是阿里云推出的基于Serverless架构的智能Agent开发框架，提供了一套完整的工具集，帮助开发者快速构建、部署和管理AI Agent应用。您可将沙盒服务器部署到AgentRun上。</p>
+<p>要在沙盒服务器中配置特定于 <a class="reference external" href="https://functionai.console.aliyun.com/cn-hangzhou/agent/">AgentRun</a> 的设置，请确保设置 <code class="docutils literal notranslate"><span class="pre">CONTAINER_DEPLOYMENT=agentrun</span></code> 。可以考虑调整以下参数：</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_ACCOUNT_ID</span></code></p></td>
+<td><p>阿里云账号ID</p></td>
+<td><p>Empty</p></td>
+<td><p>阿里云主账号ID，登录阿里云<a class="reference external" href="https://ram.console.aliyun.com/profile/access-keys">RAM控制台</a>获取阿里云账号ID和AK、SK</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_ACCESS_KEY_ID</span></code></p></td>
+<td><p>访问密钥ID</p></td>
+<td><p>Empty</p></td>
+<td><p>阿里云AccessKey ID，需要<code class="docutils literal notranslate"><span class="pre">AliyunAgentRunFullAccess</span></code>权限</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_ACCESS_KEY_SECRET</span></code></p></td>
+<td><p>访问密钥Secret</p></td>
+<td><p>Empty</p></td>
+<td><p>阿里云AccessKey Secret</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_REGION_ID</span></code></p></td>
+<td><p>部署区域ID</p></td>
+<td><p>Empty</p></td>
+<td><p>AgentRun部署地域ID</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_CPU</span></code></p></td>
+<td><p>CPU规格</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2.0</span></code></p></td>
+<td><p>vCPU规格</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_MEMORY</span></code></p></td>
+<td><p>内存规格</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2048</span></code></p></td>
+<td><p>内存规格(MB)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_VPC_ID</span></code></p></td>
+<td><p>VPC ID</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>VPC网络ID（可选）</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_VSWITCH_IDS</span></code></p></td>
+<td><p>交换机ID列表</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>VSwitch ID列表（可选）</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_SECURITY_GROUP_ID</span></code></p></td>
+<td><p>安全组ID</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>安全组ID（可选）</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_PREFIX</span></code></p></td>
+<td><p>资源名称前缀</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">agentscope-sandbox</span></code></p></td>
+<td><p>创建的资源名称前缀</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_LOG_PROJECT</span></code></p></td>
+<td><p>SLS日志项目</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>SLS日志项目名称（可选）</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_LOG_STORE</span></code></p></td>
+<td><p>SLS日志库</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>SLS日志库名称（可选）</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 <section id="id6">
 <h3>导入自定义沙箱<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
 <p>除了默认提供的基础沙箱类型外，您还可以通过编写扩展模块并使用 <code class="docutils literal notranslate"><span class="pre">--extension</span></code> 参数加载，实现自定义沙箱的功能，例如修改镜像、增加环境变量、定义超时时间等。</p>
@@ -1162,7 +1240,7 @@ runtime-sandbox-builder<span class="w"> </span>filesystem
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-10-15</div>
+              Last updated on 2025-10-16</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -1209,6 +1287,7 @@ runtime-sandbox-builder<span class="w"> </span>filesystem
 <li><a class="reference internal" href="#k8s">（可选）K8S 设置</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#agentrun">（可选）AgentRun设置</a></li>
 <li><a class="reference internal" href="#id6">导入自定义沙箱</a><ul>
 <li><a class="reference internal" href="#custom-sandbox-py">编写自定义沙箱扩展（例如 <code class="docutils literal notranslate"><span class="pre">custom_sandbox.py</span></code>）</a></li>
 <li><a class="reference internal" href="#id7">启动时加载扩展</a></li>
