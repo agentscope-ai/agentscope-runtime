@@ -6,10 +6,6 @@ from typing import Optional, Dict, List, Union, Any
 
 from pydantic import BaseModel, Field
 
-from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.sandbox.manager.container_clients import (
-    KubernetesClient,
-)
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .utils.docker_image_utils import (
@@ -18,6 +14,10 @@ from .utils.docker_image_utils import (
 )
 from .utils.service_utils import (
     ServicesConfig,
+)
+from ..runner import Runner
+from ...common.container_clients import (
+    KubernetesClient,
 )
 
 logger = logging.getLogger(__name__)
@@ -205,7 +205,11 @@ class KubernetesDeployManager(DeployManager):
                     f"{resource_name}, {traceback.format_exc()}",
                 )
 
-            url = f"http://{ip}:{ports[0]}"
+            if ports:
+                url = f"http://{ip}:{ports[0]}"
+            else:
+                url = f"http://{ip}:8080"
+
             logger.info(f"Deployment {deploy_id} successful: {url}")
 
             self._deployed_resources[deploy_id] = {
