@@ -20,6 +20,7 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "kubernetes>=33.1.0",
     "shortuuid>=1.0.13",
+    "boto3>=1.40.51",
 ]
 
 [tool.setuptools]
@@ -44,6 +45,21 @@ dev = [
     "pytest-cov>=6.2.1",
     "fakeredis>=2.31.0",
     "sphinx-autoapi>=3.6.0",
+]
+
+sandbox = [
+    "docker>=7.1.0",
+    "steel-sdk>=0.1.0",
+    "redis>=6.0.0b2",
+    "oss2>=2.19.1",
+    "pydantic-settings>=2.9.1",
+    "dotenv>=0.9.9",
+    "kubernetes>=33.1.0",
+    "shortuuid>=1.0.13",
+]
+
+agentscope = [
+    "agentscope>=1.0.1",
 ]
 
 langgraph = [
