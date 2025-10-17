@@ -35,7 +35,6 @@ from ..manager.storage import (
     LocalStorage,
     OSSStorage,
 )
-from ..constant import BROWSER_SESSION_ID
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -491,10 +490,8 @@ class SandboxManager:
             )
 
             http_protocol = "http"
-            ws_protocol = "ws"
             if rest and rest[0] == "https":
                 http_protocol = "https"
-                ws_protocol = "wss"
 
             if _id is None:
                 return None
@@ -513,16 +510,8 @@ class SandboxManager:
                 session_id=session_id,
                 container_id=_id,
                 container_name=container_name,
-                base_url=f"{http_protocol}://{ip}:{ports[0]}/fastapi",
-                browser_url=f"{http_protocol}://{ip}:{ports[0]}/steel-api"
-                f"/{runtime_token}",
-                front_browser_ws=f"{ws_protocol}://{ip}:"
-                f"{ports[0]}/steel-api/"
-                f"{runtime_token}/v1/sessions/cast",
-                client_browser_ws=f"{ws_protocol}://{ip}:"
-                f"{ports[0]}/steel-api/{runtime_token}/&sessionId"
-                f"={BROWSER_SESSION_ID}",
-                artifacts_sio=f"{http_protocol}://{ip}:{ports[0]}/v1",
+                url=f"{http_protocol}://{ip}:{ports[0]}",
+                api_url=f"{http_protocol}://{ip}:{ports[0]}/fastapi",
                 ports=[ports[0]],
                 mount_dir=str(mount_dir),
                 storage_path=storage_path,
@@ -667,16 +656,14 @@ class SandboxManager:
 
     def _establish_connection(self, identity):
         container_model = ContainerModel(**self.get_info(identity))
-        # TODO: make this more robust
-        enable_browser = "browser" in container_model.version
 
         # TODO: remake docker name
         if (
             "sandbox-appworld" in container_model.version
             or "sandbox-bfcl" in container_model.version
         ):
-            parsed = urlparse(container_model.base_url)
-            base_url = urlunparse(
+            parsed = urlparse(container_model.api_url)
+            api_url = urlunparse(
                 (
                     parsed.scheme,
                     parsed.netloc,
@@ -688,12 +675,11 @@ class SandboxManager:
             )
 
             return TrainingSandboxClient(
-                base_url=base_url,
+                base_url=api_url,
             ).__enter__()
 
         return SandboxHttpClient(
             container_model,
-            enable_browser=enable_browser,
         ).__enter__()
 
     @remote_wrapper()

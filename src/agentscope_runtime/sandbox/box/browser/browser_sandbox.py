@@ -6,7 +6,7 @@ from urllib.parse import urlparse, urlunparse
 from ...utils import build_image_uri
 from ...registry import SandboxRegistry
 from ...enums import SandboxType
-from ...box.sandbox import Sandbox
+from ...box.gui import GuiSandbox
 
 
 def http_to_ws(url, use_localhost=True):
@@ -33,28 +33,22 @@ def http_to_ws(url, use_localhost=True):
     timeout=60,
     description="Browser sandbox",
 )
-class BrowserSandbox(Sandbox):
-    def __init__(
+class BrowserSandbox(GuiSandbox):
+    def __init__(  # pylint: disable=useless-parent-delegation
         self,
         sandbox_id: Optional[str] = None,
         timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
+        sandbox_type: SandboxType = SandboxType.BROWSER,
     ):
         super().__init__(
             sandbox_id,
             timeout,
             base_url,
             bearer_token,
-            SandboxType.BROWSER,
+            sandbox_type,
         )
-
-    @property
-    def browser_ws(self):
-        if self.base_url is None:
-            # Local mode
-            return self.get_info()["front_browser_ws"]
-        return http_to_ws(f"{self.base_url}/browser/{self.sandbox_id}/cast")
 
     def browser_close(self):
         return self.call_tool("browser_close", {})

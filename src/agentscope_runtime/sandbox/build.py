@@ -139,20 +139,11 @@ def build_image(build_type, dockerfile_path=None):
 
     # Check health endpoints
     fastapi_health_url = f"http://localhost:{free_port}/fastapi/healthz"
-    steelapi_health_url = (
-        f"http://localhost:{free_port}/steel-api/{secret_token}/v1/health"
-    )
 
     # Check health for FASTAPI
     fastapi_healthy = check_health(fastapi_health_url, secret_token)
 
-    # Check health for Browser
-    if build_type in [SandboxType.BROWSER.value]:
-        browser_healthy = check_health(steelapi_health_url, secret_token)
-    else:
-        browser_healthy = True
-
-    if browser_healthy and fastapi_healthy:
+    if fastapi_healthy:
         logger.info("Health checks passed.")
         subprocess.run(
             ["docker", "commit", container_id, f"{image_name}"],

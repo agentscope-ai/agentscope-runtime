@@ -6,10 +6,8 @@ from typing import Any, Optional
 
 import requests
 from pydantic import Field
-from steel import Steel
 
 from ..model import ContainerModel
-from ..constant import BROWSER_SESSION_ID
 
 
 logging.getLogger("httpx").setLevel(logging.CRITICAL)
@@ -70,7 +68,6 @@ class SandboxHttpClient:
         self,
         model: Optional[ContainerModel] = None,
         timeout: int = 60,
-        enable_browser: bool = True,
         domain: str = "localhost",
     ) -> None:
         """
@@ -81,14 +78,8 @@ class SandboxHttpClient:
             runtime sandbox.
         """
         self.session_id = model.session_id
-        self.base_url = model.base_url.replace("localhost", domain)
-        self.browser_url = model.browser_url.replace("localhost", domain)
-        self.client_browser_ws = model.client_browser_ws.replace(
-            "localhost",
-            domain,
-        )
+        self.base_url = model.api_url.replace("localhost", domain)
 
-        self.enable_browser = enable_browser
         self.timeout = timeout
         self.session = requests.Session()
         self.built_in_tools = []
@@ -103,34 +94,9 @@ class SandboxHttpClient:
             headers["Authorization"] = f"Bearer {self.secret}"
         self.session.headers.update(headers)
 
-        self.steel_client = None
-
     def __enter__(self):
         # Wait for the runtime api server to be healthy
         self.wait_until_healthy()
-
-        if self.enable_browser:
-            self.steel_client = Steel(
-                steel_api_key="dummy",
-                base_url=self.browser_url,
-            )
-
-            headers = {"x-agentrun-session-id": "s" + self.session_id}
-
-            # Create a new browser session if it doesn't exist
-            try:
-                # Try to connet to existing session
-                self.steel_client.sessions.retrieve(
-                    BROWSER_SESSION_ID,
-                    extra_headers=headers,
-                )
-            except Exception:
-                # Session not found, create a new one
-                self.steel_client.sessions.create(
-                    session_id=BROWSER_SESSION_ID,
-                    extra_headers=headers,
-                )
-
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -145,17 +111,9 @@ class SandboxHttpClient:
             bool: True if the service is reachable, False otherwise
         """
         endpoint = f"{self.base_url}/healthz"
-        browser_endpoint = f"{self.browser_url}/v1/health"
         try:
             response_api = self.session.get(endpoint)
-            if self.enable_browser:
-                response_browser = self.session.get(browser_endpoint)
-                return (
-                    response_api.status_code == 200
-                    and response_browser.status_code == 200
-                )
-            else:
-                return response_api.status_code == 200
+            return response_api.status_code == 200
         except requests.RequestException:
             return False
 

@@ -6,11 +6,13 @@ import logging
 
 from typing import Optional
 
+import httpx
 import websockets
+
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from ...manager.server.config import get_settings
@@ -20,7 +22,7 @@ from ...manager.server.models import (
 )
 from ...manager.sandbox_manager import SandboxManager
 from ...model.manager_config import SandboxManagerEnvConfig
-from ...utils import dynamic_import
+from ...utils import dynamic_import, http_to_ws
 from ....version import __version__
 
 # Configure logging
@@ -212,7 +214,27 @@ async def health_check():
     )
 
 
-@app.websocket("/browser/{sandbox_id}/cast")
+@app.get("/desktop/{sandbox_id}/{path:path}")
+async def proxy_vnc_static(sandbox_id: str, path: str):
+    container_json = _sandbox_manager.container_mapping.get(sandbox_id)
+    if not container_json:
+        return Response(status_code=404)
+
+    base_url = container_json.get("url")
+    if not base_url:
+        return Response(status_code=404)
+
+    target_url = f"{base_url}/{path}"
+
+    async with httpx.AsyncClient() as client:
+        upstream = await client.get(target_url)
+        return Response(
+            content=upstream.content,
+            media_type=upstream.headers.get("content-type"),
+        )
+
+
+@app.websocket("/desktop/{sandbox_id}")
 async def websocket_endpoint(
     websocket: WebSocket,
     sandbox_id: str,
@@ -226,7 +248,7 @@ async def websocket_endpoint(
     )
     service_address = None
     if container_json:
-        service_address = container_json.get("front_browser_ws")
+        service_address = http_to_ws(f"{container_json.get('url')}/websockify")
 
     logger.debug(f"service_address: {service_address}")
 
@@ -251,8 +273,17 @@ async def websocket_endpoint(
             # Forward messages from client to target server
             async def forward_to_service():
                 try:
-                    async for message in websocket.iter_text():
-                        await target_ws.send(message)
+                    while True:
+                        message = await websocket.receive()
+
+                        if message["type"] == "websocket.receive":
+                            if "bytes" in message:
+                                await target_ws.send(message["bytes"])
+                            elif "text" in message:
+                                await target_ws.send(message["text"])
+                        elif message["type"] == "websocket.disconnect":
+                            break
+
                 except WebSocketDisconnect:
                     logger.debug(
                         f"WebSocket disconnected from client for sandbox"
@@ -278,9 +309,6 @@ async def websocket_endpoint(
     except Exception as e:
         logger.error(f"Error in sandbox {sandbox_id}: {e}")
         await websocket.close()
-
-
-# TODO: add socketio relay endpoint for filesystem
 
 
 def setup_logging(log_level: str):

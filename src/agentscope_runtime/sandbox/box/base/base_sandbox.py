@@ -21,13 +21,14 @@ class BaseSandbox(Sandbox):
         timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
+        sandbox_type: SandboxType = SandboxType.BASE,
     ):
         super().__init__(
             sandbox_id,
             timeout,
             base_url,
             bearer_token,
-            SandboxType.BASE,
+            sandbox_type,
         )
 
     def run_ipython_cell(self, code: str):

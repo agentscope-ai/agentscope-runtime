@@ -5,7 +5,7 @@ from typing import Optional
 from ...utils import build_image_uri
 from ...registry import SandboxRegistry
 from ...enums import SandboxType
-from ...box.sandbox import Sandbox
+from ...box.gui import GuiSandbox
 
 
 @SandboxRegistry.register(
@@ -15,20 +15,21 @@ from ...box.sandbox import Sandbox
     timeout=60,
     description="Filesystem sandbox",
 )
-class FilesystemSandbox(Sandbox):
-    def __init__(
+class FilesystemSandbox(GuiSandbox):
+    def __init__(  # pylint: disable=useless-parent-delegation
         self,
         sandbox_id: Optional[str] = None,
         timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
+        sandbox_type: SandboxType = SandboxType.FILESYSTEM,
     ):
         super().__init__(
             sandbox_id,
             timeout,
             base_url,
             bearer_token,
-            SandboxType.FILESYSTEM,
+            sandbox_type,
         )
 
     def read_file(self, path: str):

@@ -1,13 +1,15 @@
 {
   "browser": {
     "browserName": "chromium",
+    "launchOptions": {
+      "executablePath": "/usr/bin/chromium"
+    },
     "contextOptions": {
       "viewport": {
-        "width": 1920,
-        "height": 1080
+        "width": 1024,
+        "height": 768
       }
-    },
-    "cdpEndpoint": "ws://127.0.0.1:3000/&sessionId=123e4567-e89b-12d3-a456-426614174000"
+    }
   },
   "capabilities": [
     "core",

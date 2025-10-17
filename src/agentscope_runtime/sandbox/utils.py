@@ -3,6 +3,8 @@ import os
 import importlib
 import platform
 
+from urllib.parse import urlparse, urlunparse
+
 from .constant import REGISTRY, IMAGE_NAMESPACE, IMAGE_TAG
 
 
@@ -95,3 +97,20 @@ def dynamic_import(ext: str):
         return module
     else:
         return importlib.import_module(ext)
+
+
+def http_to_ws(url, use_localhost=True):
+    parsed = urlparse(url)
+    ws_scheme = "wss" if parsed.scheme == "https" else "ws"
+
+    hostname = parsed.hostname
+    if use_localhost and hostname == "127.0.0.1":
+        hostname = "localhost"
+
+    if parsed.port:
+        new_netloc = f"{hostname}:{parsed.port}"
+    else:
+        new_netloc = hostname
+
+    ws_url = urlunparse(parsed._replace(scheme=ws_scheme, netloc=new_netloc))
+    return ws_url
