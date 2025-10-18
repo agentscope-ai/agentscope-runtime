@@ -90,12 +90,15 @@ class ModelstudioConfig(BaseModel):
 
     @classmethod
     def from_env(cls) -> "ModelstudioConfig":
+        raw_ws = os.environ.get("MODELSTUDIO_WORKSPACE_ID")
+        ws = raw_ws.strip() if isinstance(raw_ws, str) else ""
+        resolved_ws = ws if ws else "default"
         return cls(
             endpoint=os.environ.get(
                 "MODELSTUDIO_ENDPOINT",
                 "bailian.cn-beijing.aliyuncs.com",
             ),
-            workspace_id=os.environ.get("MODELSTUDIO_WORKSPACE_ID"),
+            workspace_id=resolved_ws,
             access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
             access_key_secret=os.environ.get(
                 "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
@@ -107,8 +110,6 @@ class ModelstudioConfig(BaseModel):
 
     def ensure_valid(self) -> None:
         missing = []
-        if not self.workspace_id:
-            missing.append("MODELSTUDIO_WORKSPACE_ID")
         if not self.access_key_id:
             missing.append("ALIBABA_CLOUD_ACCESS_KEY_ID")
         if not self.access_key_secret:
@@ -495,10 +496,15 @@ class ModelstudioDeployManager(DeployManager):
         logger.info("Uploading wheel to OSS and generating presigned URL")
         client = _oss_get_client(self.oss_config)
 
-        bucket_suffix = (
-            os.getenv("MODELSTUDIO_WORKSPACE_ID", str(uuid.uuid4()))
-        ).lower()
-        bucket_name = (f"tmp-code-deploy-" f"{bucket_suffix}")[:63]
+        effective_ws = (
+            (self.modelstudio_config.workspace_id or "").strip().lower()
+        )
+        suffix = (
+            uuid.uuid4().hex
+            if (not effective_ws or effective_ws == "default")
+            else effective_ws
+        )
+        bucket_name = (f"tmp-code-deploy-{suffix}")[:63]
         await _oss_create_bucket_if_not_exists(client, bucket_name)
         filename = wheel_path.name
         with wheel_path.open("rb") as f:
@@ -656,9 +662,11 @@ class ModelstudioDeployManager(DeployManager):
                 "wheel_path": str(wheel_path),
                 "artifact_url": artifact_url,
                 "resource_name": name,
-                "workspace_id": self.modelstudio_config.workspace_id or "",
                 "url": console_url,
             }
+            env_ws = os.environ.get("MODELSTUDIO_WORKSPACE_ID")
+            if env_ws and env_ws.strip():
+                result["workspace_id"] = env_ws.strip()
             if deploy_identifier:
                 result["deploy_id"] = deploy_identifier
 
