@@ -659,36 +659,66 @@ Each function call will start an <strong>embedded</strong> sandbox, execute the 
 </div>
 </div>
 </section>
-<section id="convert-mcp-server-to-tools">
-<h3>Convert MCP Server to Tools<a class="headerlink" href="#convert-mcp-server-to-tools" title="Link to this heading">¶</a></h3>
-<p>You can also integrate external MCP servers to extend the tools. This example demonstrates how to convert MCP server configurations into built-in tools using the <code class="docutils literal notranslate"><span class="pre">MCPConfigConverter</span></code> class.</p>
+<section id="converting-an-mcp-server-into-a-tool">
+<h3>Converting an MCP Server into a Tool<a class="headerlink" href="#converting-an-mcp-server-into-a-tool" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">MCPConfigConverter</span></code> is used to convert an external MCP (Model Context Protocol) server configuration into an <code class="docutils literal notranslate"><span class="pre">MCPTool</span></code> that can run inside a <strong>Sandbox</strong>. This allows you to call these external tools safely and in isolation within the sandbox environment:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.tools.mcp_tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">MCPConfigConverter</span>
 
-<span class="n">mcp_tools</span> <span class="o">=</span> <span class="n">MCPConfigConverter</span><span class="p">(</span>
-    <span class="n">server_configs</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;mcpServers&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;command&quot;</span><span class="p">:</span> <span class="s2">&quot;uvx&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="p">[</span>
-                    <span class="s2">&quot;mcp-server-time&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;--local-timezone=America/New_York&quot;</span><span class="p">,</span>
-                <span class="p">],</span>
-            <span class="p">},</span>
+<span class="c1"># Define MCP server configuration</span>
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;mcpServers&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;command&quot;</span><span class="p">:</span> <span class="s2">&quot;uvx&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">&quot;mcp-server-time&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;--local-timezone=America/New_York&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
         <span class="p">},</span>
     <span class="p">},</span>
-<span class="p">)</span><span class="o">.</span><span class="n">to_builtin_tools</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="c1"># Convert into a list of MCPTools runnable inside the Sandbox</span>
+<span class="n">mcp_tools</span> <span class="o">=</span> <span class="n">MCPConfigConverter</span><span class="p">(</span><span class="n">server_configs</span><span class="o">=</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">to_builtin_tools</span><span class="p">()</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">mcp_tools</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
+<section id="optional-parameters">
+<h4>Optional Parameters<a class="headerlink" href="#optional-parameters" title="Link to this heading">¶</a></h4>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">sandbox</span></code></strong>: Pass in an existing Sandbox instance to bind the tool to that sandbox.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">sandbox_type</span></code></strong>: When no <code class="docutils literal notranslate"><span class="pre">sandbox</span></code> is provided, specify the sandbox type (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;base&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;gui&quot;</span></code>) to automatically create a temporary sandbox for running the tool.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">whitelist</span></code> / <code class="docutils literal notranslate"><span class="pre">blacklist</span></code></strong>: Filter imported tools by name.</p></li>
+</ul>
+</section>
+<section id="registering-tools-with-different-sandbox-types">
+<h4>Registering Tools with Different Sandbox Types<a class="headerlink" href="#registering-tools-with-different-sandbox-types" title="Link to this heading">¶</a></h4>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Automatically create a sandbox of the specified type and register tools</span>
+<span class="n">mcp_tools</span> <span class="o">=</span> <span class="n">MCPConfigConverter</span><span class="p">(</span><span class="n">server_configs</span><span class="o">=</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">to_builtin_tools</span><span class="p">(</span>
+    <span class="n">sandbox_type</span><span class="o">=</span><span class="s2">&quot;base&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Use an existing sandbox instance to register tools</span>
+<span class="k">with</span> <span class="n">BaseSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">sandbox</span><span class="p">:</span>
+    <span class="n">mcp_tools</span> <span class="o">=</span> <span class="n">MCPConfigConverter</span><span class="p">(</span><span class="n">server_configs</span><span class="o">=</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">to_builtin_tools</span><span class="p">(</span>
+        <span class="n">sandbox</span><span class="o">=</span><span class="n">sandbox</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The sandbox type selected will determine the environment dependencies used by the converted tools at runtime. Therefore, you should choose the appropriate <code class="docutils literal notranslate"><span class="pre">sandbox_type</span></code> or specific <code class="docutils literal notranslate"><span class="pre">Sandbox</span></code> instance according to your actual needs.</p>
+</section>
 </section>
 <section id="function-tool">
 <h3>Function Tool<a class="headerlink" href="#function-tool" title="Link to this heading">¶</a></h3>
-<p>Besides the tools that run in sandbox environments, you can also add in-process functions as tools for agents. These function tools execute directly within the current Python process without requiring sandbox isolation, making them suitable for lightweight operations and calculations.</p>
+<p>Besides the tools that run in sandbox environments, you can also add in-process functions as tools for agents. These function tools execute directly within the current Python process without running in sandbox, making them suitable for lightweight operations and calculations.</p>
 <p>Function tools offer two creation methods:</p>
 <ul class="simple">
 <li><p><strong><code class="docutils literal notranslate"><span class="pre">FunctionTool</span></code> wrapper</strong>: Wrap existing functions or methods using the <code class="docutils literal notranslate"><span class="pre">FunctionTool</span></code> class</p></li>
@@ -1257,7 +1287,11 @@ Tools behave like regular Python functions, making them easy to use and integrat
 <li><a class="reference internal" href="#tool-usage">Tool Usage</a><ul>
 <li><a class="reference internal" href="#call-a-tool">Call a Tool</a></li>
 <li><a class="reference internal" href="#bind-sandbox-to-a-tool">Bind Sandbox to a Tool</a></li>
-<li><a class="reference internal" href="#convert-mcp-server-to-tools">Convert MCP Server to Tools</a></li>
+<li><a class="reference internal" href="#converting-an-mcp-server-into-a-tool">Converting an MCP Server into a Tool</a><ul>
+<li><a class="reference internal" href="#optional-parameters">Optional Parameters</a></li>
+<li><a class="reference internal" href="#registering-tools-with-different-sandbox-types">Registering Tools with Different Sandbox Types</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#function-tool">Function Tool</a></li>
 <li><a class="reference internal" href="#tool-schema">Tool Schema</a></li>
 <li><a class="reference internal" href="#function-like-tool-design-philosophy">Function-like Tool Design Philosophy</a><ul>

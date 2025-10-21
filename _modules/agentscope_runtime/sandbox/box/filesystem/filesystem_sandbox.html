@@ -499,7 +499,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">...utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_image_uri</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxRegistry</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxType</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">...box.gui</span><span class="w"> </span><span class="kn">import</span> <span class="n">GuiSandbox</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...box.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSandbox</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...box.gui</span><span class="w"> </span><span class="kn">import</span> <span class="n">GUIMixin</span>
 
 
 <div class="viewcode-block" id="FilesystemSandbox">
@@ -511,7 +512,7 @@
     <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
     <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filesystem sandbox&quot;</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">FilesystemSandbox</span><span class="p">(</span><span class="n">GuiSandbox</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FilesystemSandbox</span><span class="p">(</span><span class="n">GUIMixin</span><span class="p">,</span> <span class="n">BaseSandbox</span><span class="p">):</span>
 <div class="viewcode-block" id="FilesystemSandbox.__init__">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.FilesystemSandbox.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>  <span class="c1"># pylint: disable=useless-parent-delegation</span>

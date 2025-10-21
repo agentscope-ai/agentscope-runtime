@@ -499,7 +499,7 @@
         <article role="main" id="furo-main-content">
           <section id="react">
 <h1><span class="section-number">5. </span>部署配备工具沙箱的ReAct智能体<a class="headerlink" href="#react" title="Link to this heading">¶</a></h1>
-<p>本教程演示了如何使用AgentScope Runtime与<a class="reference external" href="https://github.com/modelscope/agentscope"><strong>AgentScope框架</strong></a>创建和部署*”推理与行动”(ReAct)*智能体。</p>
+<p>本教程演示了如何使用AgentScope Runtime与<a class="reference external" href="https://github.com/modelscope/agentscope"><strong>AgentScope框架</strong></a>创建和部署 <em>“推理与行动”(ReAct)</em> 智能体。</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>ReAct（推理与行动）范式使智能体能够将推理轨迹与特定任务的行动交织在一起，使其在工具交互任务中特别有效。通过将AgentScope的<code class="docutils literal notranslate"><span class="pre">ReActAgent</span></code>与AgentScope Runtime的基础设施相结合，您可以同时获得智能决策和安全的工具执行。</p>
@@ -561,7 +561,7 @@
 </section>
 <section id="id5">
 <h3>步骤2：配置浏览器工具<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
-<p>定义您的智能体可访问的浏览器工具：</p>
+<p>定义您的智能体可访问的浏览器工具（如果您想为智能体配置其他工具，请参考<a class="reference internal" href="sandbox.html"><span class="doc">工具沙箱</span></a>中的工具用法）：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.tools.browser</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>

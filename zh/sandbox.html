@@ -661,34 +661,64 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </section>
 <section id="mcp">
 <h3>将 MCP 服务器转换为工具<a class="headerlink" href="#mcp" title="Link to this heading">¶</a></h3>
-<p>您还可以集成外部 MCP 服务器来扩展工具。本示例演示如何使用 <code class="docutils literal notranslate"><span class="pre">MCPConfigConverter</span></code> 类将 MCP 服务器配置转换为内置工具。</p>
+<p><code class="docutils literal notranslate"><span class="pre">MCPConfigConverter</span></code> 用于将外部 MCP（Model Context Protocol）服务器的配置，转换成可在 <strong>Sandbox</strong> 中运行的 <code class="docutils literal notranslate"><span class="pre">MCPTool</span></code>。这样可以在沙箱内调用这些外部工具，保证安全与隔离：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.tools.mcp_tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">MCPConfigConverter</span>
 
-<span class="n">mcp_tools</span> <span class="o">=</span> <span class="n">MCPConfigConverter</span><span class="p">(</span>
-    <span class="n">server_configs</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;mcpServers&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;command&quot;</span><span class="p">:</span> <span class="s2">&quot;uvx&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="p">[</span>
-                    <span class="s2">&quot;mcp-server-time&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;--local-timezone=America/New_York&quot;</span><span class="p">,</span>
-                <span class="p">],</span>
-            <span class="p">},</span>
+<span class="c1"># 定义 MCP 服务器配置</span>
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;mcpServers&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;command&quot;</span><span class="p">:</span> <span class="s2">&quot;uvx&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">&quot;mcp-server-time&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;--local-timezone=America/New_York&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
         <span class="p">},</span>
     <span class="p">},</span>
-<span class="p">)</span><span class="o">.</span><span class="n">to_builtin_tools</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="c1"># 转换为可以在 Sandbox 中运行的 MCPTool 列表</span>
+<span class="n">mcp_tools</span> <span class="o">=</span> <span class="n">MCPConfigConverter</span><span class="p">(</span><span class="n">server_configs</span><span class="o">=</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">to_builtin_tools</span><span class="p">()</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">mcp_tools</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
+<section id="id12">
+<h4>可选参数<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h4>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">sandbox</span></code>：传入已有 Sandbox 实例，工具绑定到该沙箱运行</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sandbox_type</span></code>：未传 <code class="docutils literal notranslate"><span class="pre">sandbox</span></code> 时指定沙箱类型（如 <code class="docutils literal notranslate"><span class="pre">&quot;base&quot;</span></code>、<code class="docutils literal notranslate"><span class="pre">&quot;gui&quot;</span></code>），自动创建临时沙箱运行工具</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">whitelist</span></code> / <code class="docutils literal notranslate"><span class="pre">blacklist</span></code>：按工具名过滤导入的工具</p></li>
+</ul>
+</section>
+<section id="id13">
+<h4>使用不同沙箱类型注册工具<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h4>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 自动创建指定类型的沙箱并注册工具</span>
+<span class="n">mcp_tools</span> <span class="o">=</span> <span class="n">MCPConfigConverter</span><span class="p">(</span><span class="n">server_configs</span><span class="o">=</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">to_builtin_tools</span><span class="p">(</span>
+    <span class="n">sandbox_type</span><span class="o">=</span><span class="s2">&quot;base&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># 使用已有的沙箱实例注册工具</span>
+<span class="k">with</span> <span class="n">BaseSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">sandbox</span><span class="p">:</span>
+    <span class="n">mcp_tools</span> <span class="o">=</span> <span class="n">MCPConfigConverter</span><span class="p">(</span><span class="n">server_configs</span><span class="o">=</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">to_builtin_tools</span><span class="p">(</span>
+        <span class="n">sandbox</span><span class="o">=</span><span class="n">sandbox</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>这里选择的沙箱类型会决定转换好的工具运行时依赖的沙箱类型，因此应根据实际需求选择合适的 <code class="docutils literal notranslate"><span class="pre">sandbox_type</span></code> 或具体的 <code class="docutils literal notranslate"><span class="pre">Sandbox</span></code> 实例。</p>
+</section>
 </section>
 <section id="function-tool">
 <h3>函数工具（Function Tool）<a class="headerlink" href="#function-tool" title="Link to this heading">¶</a></h3>
-<p>除了在沙箱环境中运行的工具，您还可以为Agent添加进程内函数作为工具。这些函数工具直接在当前 Python 进程中执行，而无需沙箱隔离，非常适合轻量级操作和计算。</p>
+<p>除了在沙箱环境中运行的工具，您还可以为Agent添加进程内函数作为工具。这些函数工具直接在当前 Python 进程中执行，而不会在沙箱隔离环境中运行，非常适合轻量级操作和计算。</p>
 <p>函数工具提供两种创建方法：</p>
 <ul class="simple">
 <li><p><strong><code class="docutils literal notranslate"><span class="pre">FunctionTool</span></code> 包装器</strong>：使用 <code class="docutils literal notranslate"><span class="pre">FunctionTool</span></code> 类包装现有函数或方法</p></li>
@@ -741,15 +771,15 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </div>
 </div>
 </section>
-<section id="id12">
-<h3>了解函数式工具设计理念<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
+<section id="id14">
+<h3>了解函数式工具设计理念<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>本节解释了我们工具模块背后的设计理念，如果您只对实际使用感兴趣，可以跳过本节。</p>
 </div>
 <p>我们的工具模块采用<strong>函数式接口</strong>设计，在提供最大灵活性的同时抽象了沙箱管理的复杂性。以下是关键设计原则：</p>
-<section id="id13">
-<h4><strong>1. 直观的函数调用接口</strong><a class="headerlink" href="#id13" title="Link to this heading">¶</a></h4>
+<section id="id15">
+<h4><strong>1. 直观的函数调用接口</strong><a class="headerlink" href="#id15" title="Link to this heading">¶</a></h4>
 <p>我们的工具模块提供了一个类似函数的接口，允许您通过简单的类函数调用来调用工具。</p>
 <p>工具的使用范式类似常规的Python函数，这样使其易于使用和集成：</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 简单的函数式调用</span>
@@ -758,8 +788,8 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </pre></div>
 </div>
 </section>
-<section id="id14">
-<h4><strong>2. 灵活的执行优先级系统</strong><a class="headerlink" href="#id14" title="Link to this heading">¶</a></h4>
+<section id="id16">
+<h4><strong>2. 灵活的执行优先级系统</strong><a class="headerlink" href="#id16" title="Link to this heading">¶</a></h4>
 <p>工具模块支持三个级别的沙箱执行规范，具有清晰的优先级：</p>
 <ul class="simple">
 <li><p><strong>临时沙箱</strong>（最高优先级，初始化时指定）：<code class="docutils literal notranslate"><span class="pre">tool(sandbox=temp_sandbox,</span> <span class="pre">**kwargs)</span></code></p></li>
@@ -767,8 +797,8 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <li><p><strong>干运行模式</strong>（最低优先级，不指定沙箱）：未指定时自动创建临时沙箱</p></li>
 </ul>
 </section>
-<section id="id15">
-<h4><strong>3. 不可变绑定模式</strong><a class="headerlink" href="#id15" title="Link to this heading">¶</a></h4>
+<section id="id17">
+<h4><strong>3. 不可变绑定模式</strong><a class="headerlink" href="#id17" title="Link to this heading">¶</a></h4>
 <p>bind方法会创建新的工具实例而不是修改现有实例：</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 创建新实例，原始工具保持不变</span>
 <span class="n">bound_tool</span> <span class="o">=</span> <span class="n">original_tool</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">sandbox</span><span class="o">=</span><span class="n">my_sandbox</span><span class="p">)</span>
@@ -778,10 +808,10 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </section>
 </section>
 </section>
-<section id="id16">
-<h2>沙箱使用<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h2>
-<section id="id17">
-<h3>创建沙箱<a class="headerlink" href="#id17" title="Link to this heading">¶</a></h3>
+<section id="id18">
+<h2>沙箱使用<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h2>
+<section id="id19">
+<h3>创建沙箱<a class="headerlink" href="#id19" title="Link to this heading">¶</a></h3>
 <p>前面的部分介绍了以工具为中心的使用方法，而本节介绍以沙箱为中心的使用方法。</p>
 <p>您可以通过<code class="docutils literal notranslate"><span class="pre">sandbox</span></code> SDK创建不同类型的沙箱：</p>
 <ul class="simple">
@@ -868,8 +898,8 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <p>我们很快会扩展更多类型的沙箱——敬请期待！</p>
 </div>
 </section>
-<section id="id18">
-<h3>向沙箱添加MCP服务器<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h3>
+<section id="id20">
+<h3>向沙箱添加MCP服务器<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h3>
 <p>MCP（模型上下文协议）是一个标准化协议，使AI应用程序能够安全地连接到外部数据源和工具。通过将MCP服务器集成到您的沙箱中，您可以在不影响安全性的情况下使用专门的工具和服务扩展沙箱的功能。</p>
 <p>沙箱支持通过<code class="docutils literal notranslate"><span class="pre">add_mcp_servers</span></code>方法集成MCP服务器。添加后，您可以使用<code class="docutils literal notranslate"><span class="pre">list_tools</span></code>发现可用工具并使用<code class="docutils literal notranslate"><span class="pre">call_tool</span></code>执行它们。以下是添加提供时区感知的MCP的示例：</p>
 <div class="cell docutils container">
@@ -907,8 +937,8 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </div>
 </div>
 </section>
-<section id="id19">
-<h3>连接到远程沙箱<a class="headerlink" href="#id19" title="Link to this heading">¶</a></h3>
+<section id="id21">
+<h3>连接到远程沙箱<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h3>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>沙箱远程部署特别适用于：</p>
@@ -950,8 +980,8 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <span class="p">}</span>
 </pre></div>
 </div>
-<section id="id20">
-<h4>命令参数<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h4>
+<section id="id22">
+<h4>命令参数<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h4>
 <p><code class="docutils literal notranslate"><span class="pre">runtime-sandbox-mcp</span></code> 命令支持以下参数：</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
@@ -980,8 +1010,8 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </section>
 </section>
 </section>
-<section id="id21">
-<h2>工具列表<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h2>
+<section id="id23">
+<h2>工具列表<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>基础工具（在所有沙箱类型中可用）</p></li>
 <li><p>计算机操作工具（在<code class="docutils literal notranslate"><span class="pre">GuiSandbox</span></code>中可用）</p></li>
@@ -1257,28 +1287,32 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <li><a class="reference internal" href="#id9">工具使用</a><ul>
 <li><a class="reference internal" href="#id10">调用工具</a></li>
 <li><a class="reference internal" href="#id11">将沙箱绑定到工具</a></li>
-<li><a class="reference internal" href="#mcp">将 MCP 服务器转换为工具</a></li>
+<li><a class="reference internal" href="#mcp">将 MCP 服务器转换为工具</a><ul>
+<li><a class="reference internal" href="#id12">可选参数</a></li>
+<li><a class="reference internal" href="#id13">使用不同沙箱类型注册工具</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#function-tool">函数工具（Function Tool）</a></li>
 <li><a class="reference internal" href="#schema">工具Schema</a></li>
-<li><a class="reference internal" href="#id12">了解函数式工具设计理念</a><ul>
-<li><a class="reference internal" href="#id13"><strong>1. 直观的函数调用接口</strong></a></li>
-<li><a class="reference internal" href="#id14"><strong>2. 灵活的执行优先级系统</strong></a></li>
-<li><a class="reference internal" href="#id15"><strong>3. 不可变绑定模式</strong></a></li>
+<li><a class="reference internal" href="#id14">了解函数式工具设计理念</a><ul>
+<li><a class="reference internal" href="#id15"><strong>1. 直观的函数调用接口</strong></a></li>
+<li><a class="reference internal" href="#id16"><strong>2. 灵活的执行优先级系统</strong></a></li>
+<li><a class="reference internal" href="#id17"><strong>3. 不可变绑定模式</strong></a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id16">沙箱使用</a><ul>
-<li><a class="reference internal" href="#id17">创建沙箱</a></li>
-<li><a class="reference internal" href="#id18">向沙箱添加MCP服务器</a></li>
-<li><a class="reference internal" href="#id19">连接到远程沙箱</a></li>
+<li><a class="reference internal" href="#id18">沙箱使用</a><ul>
+<li><a class="reference internal" href="#id19">创建沙箱</a></li>
+<li><a class="reference internal" href="#id20">向沙箱添加MCP服务器</a></li>
+<li><a class="reference internal" href="#id21">连接到远程沙箱</a></li>
 <li><a class="reference internal" href="#sandbox-mcp">将 Sandbox 暴露为 MCP 服务</a><ul>
-<li><a class="reference internal" href="#id20">命令参数</a></li>
+<li><a class="reference internal" href="#id22">命令参数</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id21">工具列表</a></li>
+<li><a class="reference internal" href="#id23">工具列表</a></li>
 </ul>
 </li>
 </ul>
