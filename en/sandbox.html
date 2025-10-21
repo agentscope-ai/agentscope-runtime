@@ -542,6 +542,9 @@
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Base image</span>
 docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-base:latest<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-base:latest<span class="w"> </span>agentscope/runtime-sandbox-base:latest
 
+<span class="c1"># GUI image</span>
+docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-gui:latest<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-gui:latest<span class="w"> </span>agentscope/runtime-sandbox-gui:latest
+
 <span class="c1"># Filesystem image</span>
 docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-filesystem:latest<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-filesystem:latest<span class="w"> </span>agentscope/runtime-sandbox-filesystem:latest
 
@@ -566,15 +569,19 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <td><p>Python code execution, shell commands</p></td>
 <td><p>Essential for basic tool execution</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>Filesystem Image</strong></p></td>
+<tr class="row-odd"><td><p><strong>GUI Image</strong></p></td>
+<td><p>Computer Use</p></td>
+<td><p>When you need a graph UI</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Filesystem Image</strong></p></td>
 <td><p>File system operations</p></td>
 <td><p>When you need file read/write/management</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>Browser Image</strong></p></td>
+<tr class="row-odd"><td><p><strong>Browser Image</strong></p></td>
 <td><p>Web browser automation</p></td>
 <td><p>When you need web scraping or browser control</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>Training Image</strong></p></td>
+<tr class="row-even"><td><p><strong>Training Image</strong></p></td>
 <td><p>Training and evaluating agent</p></td>
 <td><p>Used for training and evaluating agent on some benchmark (see <a class="reference internal" href="training_sandbox.html"><span class="doc">Training Sandbox</span></a> for details)</p></td>
 </tr>
@@ -794,6 +801,22 @@ Tools behave like regular Python functions, making them easy to use and integrat
 </div>
 </div>
 <ul class="simple">
+<li><p><strong>GuiSandbox</strong>: GUI sandbox for computer use.</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">GuiSandbox</span>
+
+<span class="c1"># Create a base sandbox</span>
+<span class="k">with</span> <span class="n">GuiSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_cursor_position&quot;</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_screenshot&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<ul class="simple">
 <li><p><strong>FilesystemSandbox</strong>: Sandbox with file system operations support.</p></li>
 </ul>
 <div class="cell docutils container">
@@ -810,7 +833,7 @@ Tools behave like regular Python functions, making them easy to use and integrat
 </div>
 </div>
 <ul class="simple">
-<li><p><strong>BrowserSandbox</strong>: Sandbox for web automation and browser control powered by <a class="reference external" href="https://github.com/steel-dev/steel-browser">Steel Browser</a>.</p></li>
+<li><p><strong>BrowserSandbox</strong>: Sandbox for web operations and browser control.</p></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -826,7 +849,7 @@ Tools behave like regular Python functions, making them easy to use and integrat
 </div>
 </div>
 <ul class="simple">
-<li><p><strong>TrainingSandbox</strong>: Sandbox for training and evaluation，please refer to <a class="reference internal" href="training_sandbox.html"><span class="doc">Training Sandbox</span></a> for details。</p></li>
+<li><p><strong>TrainingSandbox</strong>: Sandbox for training and evaluation，please refer to <a class="reference internal" href="training_sandbox.html"><span class="doc">Training Sandbox</span></a> for details.</p></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -940,8 +963,8 @@ Tools behave like regular Python functions, making them easy to use and integrat
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--type</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">base</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">browser</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">base</span></code>, <code class="docutils literal notranslate"><span class="pre">gui</span></code>, <code class="docutils literal notranslate"><span class="pre">browser</span></code>, <code class="docutils literal notranslate"><span class="pre">filesystem</span></code></p></td>
+<td><p>Type of sandbox</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--base_url</span></code></p></td>
 <td><p>URL string</p></td>
@@ -961,6 +984,7 @@ Tools behave like regular Python functions, making them easy to use and integrat
 <h2>Tool List<a class="headerlink" href="#tool-list" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Base Tools (Available in all sandbox types)</p></li>
+<li><p>Computer-use Tool (Available in <code class="docutils literal notranslate"><span class="pre">GuiSandbox</span></code>)</p></li>
 <li><p>Browser Tools (Available in <code class="docutils literal notranslate"><span class="pre">BrowserSandbox</span></code>)</p></li>
 <li><p>Filesystem Tools (Available in <code class="docutils literal notranslate"><span class="pre">FilesystemSandbox</span></code>)</p></li>
 </ul>
@@ -1117,6 +1141,10 @@ Tools behave like regular Python functions, making them easy to use and integrat
 <td><p><code class="docutils literal notranslate"><span class="pre">browser_handle_dialog(accept:</span> <span class="pre">bool,</span> <span class="pre">promptText:</span> <span class="pre">str)</span></code></p></td>
 <td><p>Handle browser dialogs (alert, confirm, prompt)</p></td>
 </tr>
+<tr class="row-even"><td><p><strong>Computer Use Tools</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">computer_use(action:</span> <span class="pre">str,</span> <span class="pre">coordinate:</span> <span class="pre">list,</span> <span class="pre">text:</span> <span class="pre">str)</span></code></p></td>
+<td><p>Use a mouse and keyboard to interact with a desktop GUI, supporting actions like moving the cursor, clicking, typing, and taking screenshots</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -1178,7 +1206,7 @@ Tools behave like regular Python functions, making them easy to use and integrat
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-10-20</div>
+              Last updated on 2025-10-21</div>
           </div>
           <div class="right-details">
             <div class="icons">

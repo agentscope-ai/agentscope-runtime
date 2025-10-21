@@ -499,7 +499,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">...utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_image_uri</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxRegistry</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxType</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">...box.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sandbox</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...box.gui</span><span class="w"> </span><span class="kn">import</span> <span class="n">GuiSandbox</span>
 
 
 <div class="viewcode-block" id="FilesystemSandbox">
@@ -511,22 +511,23 @@
     <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
     <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filesystem sandbox&quot;</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">FilesystemSandbox</span><span class="p">(</span><span class="n">Sandbox</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">FilesystemSandbox</span><span class="p">(</span><span class="n">GuiSandbox</span><span class="p">):</span>
 <div class="viewcode-block" id="FilesystemSandbox.__init__">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.FilesystemSandbox.__init__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>  <span class="c1"># pylint: disable=useless-parent-delegation</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">sandbox_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">,</span>
         <span class="n">base_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">bearer_token</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">sandbox_type</span><span class="p">:</span> <span class="n">SandboxType</span> <span class="o">=</span> <span class="n">SandboxType</span><span class="o">.</span><span class="n">FILESYSTEM</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">sandbox_id</span><span class="p">,</span>
             <span class="n">timeout</span><span class="p">,</span>
             <span class="n">base_url</span><span class="p">,</span>
             <span class="n">bearer_token</span><span class="p">,</span>
-            <span class="n">SandboxType</span><span class="o">.</span><span class="n">FILESYSTEM</span><span class="p">,</span>
+            <span class="n">sandbox_type</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
@@ -635,7 +636,7 @@
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-10-20</div>
+              Last updated on 2025-10-21</div>
           </div>
           <div class="right-details">
             <div class="icons">

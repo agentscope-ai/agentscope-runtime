@@ -542,6 +542,9 @@
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 基础镜像</span>
 docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-base:latest<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-base:latest<span class="w"> </span>agentscope/runtime-sandbox-base:latest
 
+<span class="c1"># GUI镜像</span>
+docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-gui:latest<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-gui:latest<span class="w"> </span>agentscope/runtime-sandbox-gui:latest
+
 <span class="c1"># 文件系统镜像</span>
 docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-filesystem:latest<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>tag<span class="w"> </span>agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-filesystem:latest<span class="w"> </span>agentscope/runtime-sandbox-filesystem:latest
 
@@ -566,15 +569,19 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <td><p>Python代码执行，shell命令</p></td>
 <td><p>基本工具执行必需</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>Filesystem Image</strong></p></td>
+<tr class="row-odd"><td><p><strong>GUI Image</strong></p></td>
+<td><p>计算机操作</p></td>
+<td><p>当你需要图形操作页面时</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Filesystem Image</strong></p></td>
 <td><p>文件系统操作</p></td>
 <td><p>当您需要文件读取/写入/管理时</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>Browser Image</strong></p></td>
+<tr class="row-odd"><td><p><strong>Browser Image</strong></p></td>
 <td><p>Web浏览器自动化</p></td>
 <td><p>当您需要网络爬取或浏览器控制时</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>Training Image</strong></p></td>
+<tr class="row-even"><td><p><strong>Training Image</strong></p></td>
 <td><p>训练和评估智能体</p></td>
 <td><p>当你需要在某些基准数据集上训练和评估智能体时 （详情请参考 <a class="reference internal" href="training_sandbox.html"><span class="doc">训练用沙箱</span></a> ）</p></td>
 </tr>
@@ -778,7 +785,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <p>前面的部分介绍了以工具为中心的使用方法，而本节介绍以沙箱为中心的使用方法。</p>
 <p>您可以通过<code class="docutils literal notranslate"><span class="pre">sandbox</span></code> SDK创建不同类型的沙箱：</p>
 <ul class="simple">
-<li><p><strong>BaseSandbox</strong>: 用于Python代码执行和shell命令的基础沙箱。</p></li>
+<li><p><strong>BaseSandbox</strong>：用于Python代码执行和shell命令的基础沙箱。</p></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -794,7 +801,23 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </div>
 </div>
 <ul class="simple">
-<li><p><strong>FilesystemSandbox</strong>: 支持文件系统操作的沙箱。</p></li>
+<li><p><strong>GuiSandbox</strong>： 用于计算机的图形界面沙盒。</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">GuiSandbox</span>
+
+<span class="c1"># Create a base sandbox</span>
+<span class="k">with</span> <span class="n">GuiSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_cursor_position&quot;</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_screenshot&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<ul class="simple">
+<li><p><strong>FilesystemSandbox</strong>：支持文件系统操作的沙箱。</p></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -810,7 +833,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </div>
 </div>
 <ul class="simple">
-<li><p><strong>BrowserSandbox</strong>: 由<a class="reference external" href="https://github.com/steel-dev/steel-browser">Steel浏览器</a>驱动用于Web自动化和浏览器控制的沙箱。</p></li>
+<li><p><strong>BrowserSandbox</strong>: 用于Web操作和浏览器控制的沙箱。</p></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -826,7 +849,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </div>
 </div>
 <ul class="simple">
-<li><p><strong>TrainingSandbox</strong>: 训练评估沙箱，详情请参考：<a class="reference internal" href="training_sandbox.html"><span class="doc">训练用沙箱</span></a>。</p></li>
+<li><p><strong>TrainingSandbox</strong>：训练评估沙箱，详情请参考：<a class="reference internal" href="training_sandbox.html"><span class="doc">训练用沙箱</span></a>。</p></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -940,8 +963,8 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--type</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">base</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">browser</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">base</span></code>, <code class="docutils literal notranslate"><span class="pre">gui</span></code>, <code class="docutils literal notranslate"><span class="pre">browser</span></code>, <code class="docutils literal notranslate"><span class="pre">filesystem</span></code></p></td>
+<td><p>沙箱种类</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--base_url</span></code></p></td>
 <td><p>URL 字符串</p></td>
@@ -961,6 +984,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <h2>工具列表<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>基础工具（在所有沙箱类型中可用）</p></li>
+<li><p>计算机操作工具（在<code class="docutils literal notranslate"><span class="pre">GuiSandbox</span></code>中可用）</p></li>
 <li><p>文件系统工具（在<code class="docutils literal notranslate"><span class="pre">FilesystemSandbox</span></code>中可用）</p></li>
 <li><p>浏览器工具（在<code class="docutils literal notranslate"><span class="pre">BrowserSandbox</span></code>中可用）</p></li>
 </ul>
@@ -1117,6 +1141,10 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <td><p><code class="docutils literal notranslate"><span class="pre">browser_handle_dialog(accept:</span> <span class="pre">bool,</span> <span class="pre">promptText:</span> <span class="pre">str)</span></code></p></td>
 <td><p>处理浏览器对话框（警告、确认、提示）</p></td>
 </tr>
+<tr class="row-even"><td><p><strong>计算机操作工具</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">computer_use(action:</span> <span class="pre">str,</span> <span class="pre">coordinate:</span> <span class="pre">list,</span> <span class="pre">text:</span> <span class="pre">str)</span></code></p></td>
+<td><p>使用鼠标和键盘与桌面 GUI 互动，支持以下操作：移动光标、点击、输入文字以及截图</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -1178,7 +1206,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-10-20</div>
+              Last updated on 2025-10-21</div>
           </div>
           <div class="right-details">
             <div class="icons">

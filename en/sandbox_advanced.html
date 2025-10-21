@@ -631,9 +631,9 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DEFAULT_SANDBOX_TYPE</span></code></p></td>
-<td><p>Default sandbox type</p></td>
+<td><p>Default sandbox type(s)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">base</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">base</span></code>, <code class="docutils literal notranslate"><span class="pre">filesystem</span></code>, <code class="docutils literal notranslate"><span class="pre">browser</span></code></p></td>
+<td><p>Can be a single type or a list of types, enabling multiple independent sandbox pools. Valid values include base, filesystem, browser, etc.<br/>Supported formats:<br/>• Single type: <code class="docutils literal notranslate"><span class="pre">DEFAULT_SANDBOX_TYPE=base</span></code><br/>• Multiple types (comma-separated): <code class="docutils literal notranslate"><span class="pre">DEFAULT_SANDBOX_TYPE=base,gui</span></code><br/>• Multiple types (JSON list): <code class="docutils literal notranslate"><span class="pre">DEFAULT_SANDBOX_TYPE=[&quot;base&quot;,&quot;gui&quot;]</span></code><br/>Each type will have its own separate pre-warmed pool.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">POOL_SIZE</span></code></p></td>
 <td><p>Pre-warmed container pool size</p></td>
@@ -1051,9 +1051,9 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <span class="k">COPY</span><span class="w"> </span>src/agentscope_runtime/sandbox/box/shared/routers/<span class="w"> </span>./routers/
 <span class="k">COPY</span><span class="w"> </span>src/agentscope_runtime/sandbox/box/shared/dependencies/<span class="w"> </span>./dependencies/
 <span class="k">COPY</span><span class="w"> </span>src/agentscope_runtime/sandbox/box/shared/artifacts/<span class="w"> </span>./ext_services/artifacts/
-<span class="k">COPY</span><span class="w"> </span>src/agentscope_runtime/sandbox/box/shared/third_party/markdownify-mcp/<span class="w"> </span>./mcp_project/markdownify-mcp/
-<span class="k">COPY</span><span class="w"> </span>src/agentscope_runtime/sandbox/box/shared/third_party/steel-browser/<span class="w"> </span>./ext_services/steel-browser/
-<span class="k">COPY</span><span class="w"> </span>examples/custom_sandbox/custom_sandbox/box/<span class="w"> </span>./
+<span class="k">COPY</span><span class="w"> </span>examples/custom_sandbox/box/third_party/markdownify-mcp/<span class="w"> </span>./mcp_project/markdownify-mcp/
+<span class="k">COPY</span><span class="w"> </span>examples/custom_sandbox/box/third_party/steel-browser/<span class="w"> </span>./ext_services/steel-browser/
+<span class="k">COPY</span><span class="w"> </span>examples/custom_sandbox/box/<span class="w"> </span>./
 
 <span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
 
@@ -1112,7 +1112,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <section id="building-your-custom-image">
 <h3>Building Your Custom Image<a class="headerlink" href="#building-your-custom-image" title="Link to this heading">¶</a></h3>
 <p>After preparing your Dockerfile and custom sandbox class, use the built-in builder tool to build your custom sandbox image:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-builder<span class="w"> </span>my_custom_sandbox<span class="w"> </span>--dockerfile_path<span class="w"> </span>examples/custom_sandbox/custom_sandbox/Dockerfile<span class="w"> </span>--extention<span class="w"> </span>PATH_TO_YOUR_SANDBOX_MODULE
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-builder<span class="w"> </span>my_custom_sandbox<span class="w"> </span>--dockerfile_path<span class="w"> </span>examples/custom_sandbox/Dockerfile<span class="w"> </span>--extention<span class="w"> </span>PATH_TO_YOUR_SANDBOX_MODULE
 </pre></div>
 </div>
 <p><strong>Command Parameters:</strong></p>
@@ -1131,10 +1131,13 @@ runtime-sandbox-builder<span class="w"> </span>all
 <span class="c1"># Build base image (~1Gb)</span>
 runtime-sandbox-builder<span class="w"> </span>base
 
-<span class="c1"># Build browser image (~2.6Gb)</span>
+<span class="c1"># Build gui image (~2Gb)</span>
+runtime-sandbox-builder<span class="w"> </span>gui
+
+<span class="c1"># Build browser image (~2Gb)</span>
 runtime-sandbox-builder<span class="w"> </span>browser
 
-<span class="c1"># Build filesystem image (~1Gb)</span>
+<span class="c1"># Build filesystem image (~2Gb)</span>
 runtime-sandbox-builder<span class="w"> </span>filesystem
 </pre></div>
 </div>
@@ -1236,7 +1239,7 @@ You can modify any of them as needed to change the image source or version.</p>
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-10-20</div>
+              Last updated on 2025-10-21</div>
           </div>
           <div class="right-details">
             <div class="icons">

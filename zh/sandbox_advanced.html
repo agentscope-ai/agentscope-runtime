@@ -631,9 +631,9 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DEFAULT_SANDBOX_TYPE</span></code></p></td>
-<td><p>默认沙箱类型</p></td>
+<td><p>默认沙箱类型（可多个）</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">base</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">base</span></code>, <code class="docutils literal notranslate"><span class="pre">filesystem</span></code>, <code class="docutils literal notranslate"><span class="pre">browser</span></code></p></td>
+<td><p>可以是单个类型，也可以是多个类型的列表，从而启用多个独立的沙箱预热池。合法取值包括 <code class="docutils literal notranslate"><span class="pre">base</span></code>、<code class="docutils literal notranslate"><span class="pre">filesystem</span></code>、<code class="docutils literal notranslate"><span class="pre">browser</span></code>、<code class="docutils literal notranslate"><span class="pre">gui</span></code> 等。<br/>支持的写法：<br/>• 单类型：<code class="docutils literal notranslate"><span class="pre">DEFAULT_SANDBOX_TYPE=base</span></code><br/>• 多类型（逗号分隔）：<code class="docutils literal notranslate"><span class="pre">DEFAULT_SANDBOX_TYPE=base,gui</span></code><br/>• 多类型（JSON 列表）：<code class="docutils literal notranslate"><span class="pre">DEFAULT_SANDBOX_TYPE=[&quot;base&quot;,&quot;gui&quot;]</span></code><br/>每种类型都会维护自己独立的预热池。</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">POOL_SIZE</span></code></p></td>
 <td><p>预热容器池大小</p></td>
@@ -1049,9 +1049,9 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <span class="k">COPY</span><span class="w"> </span>src/agentscope_runtime/sandbox/box/shared/routers/<span class="w"> </span>./routers/
 <span class="k">COPY</span><span class="w"> </span>src/agentscope_runtime/sandbox/box/shared/dependencies/<span class="w"> </span>./dependencies/
 <span class="k">COPY</span><span class="w"> </span>src/agentscope_runtime/sandbox/box/shared/artifacts/<span class="w"> </span>./ext_services/artifacts/
-<span class="k">COPY</span><span class="w"> </span>src/agentscope_runtime/sandbox/box/shared/third_party/markdownify-mcp/<span class="w"> </span>./mcp_project/markdownify-mcp/
-<span class="k">COPY</span><span class="w"> </span>src/agentscope_runtime/sandbox/box/shared/third_party/steel-browser/<span class="w"> </span>./ext_services/steel-browser/
-<span class="k">COPY</span><span class="w"> </span>examples/custom_sandbox/custom_sandbox/box/<span class="w"> </span>./
+<span class="k">COPY</span><span class="w"> </span>examples/custom_sandbox/box/third_party/markdownify-mcp/<span class="w"> </span>./mcp_project/markdownify-mcp/
+<span class="k">COPY</span><span class="w"> </span>examples/custom_sandbox/box/third_party/steel-browser/<span class="w"> </span>./ext_services/steel-browser/
+<span class="k">COPY</span><span class="w"> </span>examples/custom_sandbox/box/<span class="w"> </span>./
 
 <span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
 
@@ -1110,7 +1110,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <section id="id13">
 <h3>构建您的自定义镜像<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h3>
 <p>准备好Dockerfile 和自定义沙箱类后，使用内置构建器工具构建您的自定义沙箱镜像：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-builder<span class="w"> </span>my_custom_sandbox<span class="w"> </span>--dockerfile_path<span class="w"> </span>examples/custom_sandbox/custom_sandbox/Dockerfile<span class="w"> </span>--extention<span class="w"> </span>PATH_TO_YOUR_SANDBOX_MODULE
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-builder<span class="w"> </span>my_custom_sandbox<span class="w"> </span>--dockerfile_path<span class="w"> </span>examples/custom_sandbox/Dockerfile<span class="w"> </span>--extention<span class="w"> </span>PATH_TO_YOUR_SANDBOX_MODULE
 </pre></div>
 </div>
 <p><strong>命令参数：</strong></p>
@@ -1129,10 +1129,13 @@ runtime-sandbox-builder<span class="w"> </span>all
 <span class="c1"># 构建基础镜像（约1GB）</span>
 runtime-sandbox-builder<span class="w"> </span>base
 
-<span class="c1"># 构建浏览器镜像（约2.6GB）</span>
+<span class="c1"># 构建GUI镜像（约2GB）</span>
+runtime-sandbox-builder<span class="w"> </span>gui
+
+<span class="c1"># 构建浏览器镜像（约2GB）</span>
 runtime-sandbox-builder<span class="w"> </span>browser
 
-<span class="c1"># 构建文件系统镜像（约1GB）</span>
+<span class="c1"># 构建文件系统镜像（约2GB）</span>
 runtime-sandbox-builder<span class="w"> </span>filesystem
 </pre></div>
 </div>
@@ -1240,7 +1243,7 @@ runtime-sandbox-builder<span class="w"> </span>filesystem
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-10-20</div>
+              Last updated on 2025-10-21</div>
           </div>
           <div class="right-details">
             <div class="icons">
