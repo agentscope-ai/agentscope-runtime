@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.dirname(__file__))
 
+from agent_run_agentscope import agent  # noqa: E402
 from agent_run import llm_agent  # noqa: E402
 
 load_dotenv(".env")
@@ -84,8 +85,6 @@ async def deploy_agent_to_modelstudio():
             "LOG_LEVEL": "INFO",
             "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
         },
-        # Output file (optional)
-        "output_file": "modelstudio_deploy_result.txt",
     }
 
     try:
@@ -192,6 +191,66 @@ async def deploy_from_existing_wheel():
         raise
 
 
+async def deploy_agentscope_agent_to_modelstudio():
+    """Example 4: Use agentscope Agent with Runner and deploy to ModelStudio"""
+
+    # Create deploy manager from env
+    oss_config = OSSConfig.from_env()
+    modelstudio_config = ModelstudioConfig.from_env()
+    deployer = ModelstudioDeployManager(
+        oss_config=oss_config,
+        modelstudio_config=modelstudio_config,
+    )
+
+    # Create Runner
+    runner = Runner(agent=agent)
+
+    # Deployment configuration
+    deployment_config = {
+        "endpoint_path": "/process",
+        "stream": True,
+        "deploy_name": "agent-agentscope-example",
+        "telemetry_enabled": True,
+        "requirements": [
+            "agentscope",
+            "fastapi",
+            "uvicorn",
+            "langgraph",
+        ],
+        "extra_packages": [
+            os.path.join(
+                os.path.dirname(__file__),
+                "others",
+                "other_project.py",
+            ),
+        ],
+        "environment": {
+            "PYTHONPATH": "/app",
+            "LOG_LEVEL": "INFO",
+            "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+        },
+    }
+
+    try:
+        print("🚀 Starting AgentScope Agent deployment")
+        result = await runner.deploy(
+            deploy_manager=deployer,
+            **deployment_config,
+        )
+
+        print("✅ Deployment successful!")
+        print(f"📍 Deployment ID: {result['deploy_id']}")
+        print(f"📦 Wheel path: {result['wheel_path']}")
+        print(f"🌐 OSS file URL: {result['artifact_url']}")
+        print(f"🏷️ Resource name: {result['resource_name']}")
+        print(f"🏢 Workspace ID: {result['workspace_id']}")
+        return result, deployer
+
+    except Exception as e:
+        print(f"❌ AgentScope deployment failed: {e}")
+        raise
+
+
 async def main():
     """Main function - demonstrates different deployment methods"""
     print("🎯 ModelStudio Deployment Example")
@@ -223,7 +282,8 @@ async def main():
         "1. Deploy using Runner (Recommended)\n"
         "2. Deploy directly from project directory\n"
         "3. Deploy from existing Wheel file\n"
-        "Please enter your choice (1-3): ",
+        "4. Deploy AgentScope agent using Runner\n"
+        "Please enter your choice (1-4): ",
     ).strip()
 
     try:
@@ -233,6 +293,8 @@ async def main():
             result, deployer = await deploy_from_project_directory()
         elif deployment_type == "3":
             result, deployer = await deploy_from_existing_wheel()
+        elif deployment_type == "4":
+            result, deployer = await deploy_agentscope_agent_to_modelstudio()
         else:
             print("❌ Invalid choice")
             return
