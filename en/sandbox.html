@@ -815,65 +815,73 @@ Tools behave like regular Python functions, making them easy to use and integrat
 <p>The previous section introduced tool-centered usage methods, while this section introduces sandbox-centered usage methods.</p>
 <p>You can create different types of sandboxes via <code class="docutils literal notranslate"><span class="pre">sandbox</span></code> sdk:</p>
 <ul class="simple">
-<li><p><strong>BaseSandbox</strong>: Basic sandbox for Python code execution and shell commands.</p></li>
+<li><p><strong>Base Sandbox</strong>: Use for running <strong>Python code</strong> or <strong>shell commands</strong> in an isolated environment.</p></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSandbox</span>
 
-<span class="c1"># Create a base sandbox</span>
 <span class="k">with</span> <span class="n">BaseSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">run_ipython_cell</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;print(&#39;hi&#39;)&quot;</span><span class="p">))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="s2">&quot;echo hello&quot;</span><span class="p">))</span>
+    <span class="c1"># By default, pulls `agentscope/runtime-sandbox-base:latest` from DockerHub</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span> <span class="c1"># List all available tools</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">run_ipython_cell</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;print(&#39;hi&#39;)&quot;</span><span class="p">))</span>  <span class="c1"># Run Python code</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="s2">&quot;echo hello&quot;</span><span class="p">))</span>  <span class="c1"># Run shell command</span>
+    <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<ul class="simple">
-<li><p><strong>GuiSandbox</strong>: GUI sandbox for computer use.</p></li>
+<ul>
+<li><p><strong>GUI Sandbox</strong>: Provides a <strong>virtual desktop</strong> environment for mouse, keyboard, and screen operations.</p>
+<img src="https://img.alicdn.com/imgextra/i2/O1CN01df5SaM1xKFQP4KGBW_!!6000000006424-2-tps-2958-1802.png" alt="GUI Sandbox" width="800" height="500"></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">GuiSandbox</span>
 
-<span class="c1"># Create a base sandbox</span>
 <span class="k">with</span> <span class="n">GuiSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_cursor_position&quot;</span><span class="p">))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_screenshot&quot;</span><span class="p">))</span>
+    <span class="c1"># By default, pulls `agentscope/runtime-sandbox-gui:latest` from DockerHub</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span> <span class="c1"># List all available tools</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">desktop_url</span><span class="p">)</span>  <span class="c1"># Web desktop access URL</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_cursor_position&quot;</span><span class="p">))</span>  <span class="c1"># Get mouse cursor position</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_screenshot&quot;</span><span class="p">))</span>       <span class="c1"># Capture screenshot</span>
+    <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<ul class="simple">
-<li><p><strong>FilesystemSandbox</strong>: Sandbox with file system operations support.</p></li>
+<ul>
+<li><p><strong>Filesystem Sandbox</strong>: A GUI-based sandbox with <strong>file system operations</strong> such as creating, reading, and deleting files.</p>
+<img src="https://img.alicdn.com/imgextra/i3/O1CN01VocM961vK85gWbJIy_!!6000000006153-2-tps-2730-1686.png" alt="GUI Sandbox" width="800" height="500"></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilesystemSandbox</span>
 
-<span class="c1"># Create a filesystem sandbox</span>
 <span class="k">with</span> <span class="n">FilesystemSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">create_directory</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_allowed_directories</span><span class="p">())</span>
+    <span class="c1"># By default, pulls `agentscope/runtime-sandbox-filesystem:latest` from DockerHub</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span> <span class="c1"># List all available tools</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">desktop_url</span><span class="p">)</span>  <span class="c1"># Web desktop access URL</span>
+    <span class="n">box</span><span class="o">.</span><span class="n">create_directory</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>  <span class="c1"># Create a directory</span>
+    <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<ul class="simple">
-<li><p><strong>BrowserSandbox</strong>: Sandbox for web operations and browser control.</p></li>
+<ul>
+<li><p><strong>Browser Sandbox</strong>: A GUI-based sandbox with <strong>browser operations</strong> inside an isolated sandbox.</p>
+<img src="https://img.alicdn.com/imgextra/i4/O1CN01OIq1dD1gAJMcm0RFR_!!6000000004101-2-tps-2734-1684.png" alt="GUI Sandbox" width="800" height="500"></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">BrowserSandbox</span>
 
-<span class="c1"># Create a browser sandbox</span>
 <span class="k">with</span> <span class="n">BrowserSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">browser_navigate</span><span class="p">(</span><span class="s2">&quot;https://www.example.com/&quot;</span><span class="p">))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">browser_snapshot</span><span class="p">())</span>
+    <span class="c1"># By default, pulls `agentscope/runtime-sandbox-browser:latest` from DockerHub</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span> <span class="c1"># List all available tools</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">desktop_url</span><span class="p">)</span>  <span class="c1"># Web desktop access URL</span>
+    <span class="n">box</span><span class="o">.</span><span class="n">browser_navigate</span><span class="p">(</span><span class="s2">&quot;https://www.google.com/&quot;</span><span class="p">)</span>  <span class="c1"># Open a webpage</span>
+    <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1236,7 +1244,7 @@ Tools behave like regular Python functions, making them easy to use and integrat
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-10-21</div>
+              Last updated on 2025-10-23</div>
           </div>
           <div class="right-details">
             <div class="icons">

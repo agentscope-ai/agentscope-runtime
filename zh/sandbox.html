@@ -815,65 +815,73 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <p>前面的部分介绍了以工具为中心的使用方法，而本节介绍以沙箱为中心的使用方法。</p>
 <p>您可以通过<code class="docutils literal notranslate"><span class="pre">sandbox</span></code> SDK创建不同类型的沙箱：</p>
 <ul class="simple">
-<li><p><strong>BaseSandbox</strong>：用于Python代码执行和shell命令的基础沙箱。</p></li>
+<li><p><strong>基础沙箱（Base Sandbox）</strong>：用于在隔离环境中运行 <strong>Python 代码</strong> 或 <strong>Shell 命令</strong>。</p></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSandbox</span>
 
-<span class="c1"># 创建基础沙箱</span>
 <span class="k">with</span> <span class="n">BaseSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>
+    <span class="c1"># 默认从 DockerHub 拉取 `agentscope/runtime-sandbox-base:latest` 镜像</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span> <span class="c1"># 列出所有可用工具</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">run_ipython_cell</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;print(&#39;hi&#39;)&quot;</span><span class="p">))</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="s2">&quot;echo hello&quot;</span><span class="p">))</span>
+    <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;按 Enter 键继续...&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<ul class="simple">
-<li><p><strong>GuiSandbox</strong>： 用于计算机的图形界面沙盒。</p></li>
+<ul>
+<li><p><strong>GUI 沙箱 （GUI Sandbox）</strong>： 提供<strong>可视化桌面环境</strong>，可执行鼠标、键盘以及屏幕相关操作。</p>
+<img src="https://img.alicdn.com/imgextra/i2/O1CN01df5SaM1xKFQP4KGBW_!!6000000006424-2-tps-2958-1802.png" alt="GUI Sandbox" width="800" height="500"></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">GuiSandbox</span>
 
-<span class="c1"># Create a base sandbox</span>
 <span class="k">with</span> <span class="n">GuiSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_cursor_position&quot;</span><span class="p">))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_screenshot&quot;</span><span class="p">))</span>
+    <span class="c1"># 默认从 DockerHub 拉取 `agentscope/runtime-sandbox-gui:latest` 镜像</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span> <span class="c1"># 列出所有可用工具</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">desktop_url</span><span class="p">)</span>  <span class="c1"># 桌面访问链接</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_cursor_position&quot;</span><span class="p">))</span>  <span class="c1"># 获取鼠标位置</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_screenshot&quot;</span><span class="p">))</span>       <span class="c1"># 获取屏幕截图</span>
+    <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;按 Enter 键继续...&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<ul class="simple">
-<li><p><strong>FilesystemSandbox</strong>：支持文件系统操作的沙箱。</p></li>
+<ul>
+<li><p><strong>文件系统沙箱 （Filesystem Sandbox）</strong>：基于 GUI 的隔离沙箱，可进行文件系统操作，如创建、读取和删除文件。</p>
+<img src="https://img.alicdn.com/imgextra/i3/O1CN01VocM961vK85gWbJIy_!!6000000006153-2-tps-2730-1686.png" alt="GUI Sandbox" width="800" height="500"></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilesystemSandbox</span>
 
-<span class="c1"># 创建文件系统沙箱</span>
 <span class="k">with</span> <span class="n">FilesystemSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">create_directory</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_allowed_directories</span><span class="p">())</span>
+    <span class="c1"># 默认从 DockerHub 拉取 `agentscope/runtime-sandbox-filesystem:latest` 镜像</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span> <span class="c1"># 列出所有可用工具</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">desktop_url</span><span class="p">)</span>  <span class="c1"># 桌面访问链接</span>
+    <span class="n">box</span><span class="o">.</span><span class="n">create_directory</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>  <span class="c1"># 创建目录</span>
+    <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;按 Enter 键继续...&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<ul class="simple">
-<li><p><strong>BrowserSandbox</strong>: 用于Web操作和浏览器控制的沙箱。</p></li>
+<ul>
+<li><p><strong>浏览器沙箱（Browser Sandbox）</strong>: 基于 GUI 的沙箱，可进行浏览器操作。</p>
+<img src="https://img.alicdn.com/imgextra/i4/O1CN01OIq1dD1gAJMcm0RFR_!!6000000004101-2-tps-2734-1684.png" alt="GUI Sandbox" width="800" height="500"></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">BrowserSandbox</span>
 
-<span class="c1"># 创建浏览器沙箱</span>
 <span class="k">with</span> <span class="n">BrowserSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">browser_navigate</span><span class="p">(</span><span class="s2">&quot;https://www.example.com/&quot;</span><span class="p">))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">browser_snapshot</span><span class="p">())</span>
+    <span class="c1"># 默认从 DockerHub 拉取 `agentscope/runtime-sandbox-browser:latest` 镜像</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span> <span class="c1"># 列出所有可用工具</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">desktop_url</span><span class="p">)</span>  <span class="c1"># 浏览器桌面访问链接</span>
+    <span class="n">box</span><span class="o">.</span><span class="n">browser_navigate</span><span class="p">(</span><span class="s2">&quot;https://www.google.com/&quot;</span><span class="p">)</span>  <span class="c1"># 打开网页</span>
+    <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;按 Enter 键继续...&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1236,7 +1244,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-10-21</div>
+              Last updated on 2025-10-23</div>
           </div>
           <div class="right-details">
             <div class="icons">
