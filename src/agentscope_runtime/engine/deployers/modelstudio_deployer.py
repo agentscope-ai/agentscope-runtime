@@ -7,10 +7,11 @@
 import logging
 import os
 import time
-import uuid
+import json
 from pathlib import Path
 from typing import Dict, Optional, List, Union, Tuple
 
+import requests
 from pydantic import BaseModel, Field
 
 from .adapter.protocol_adapter import ProtocolAdapter
@@ -231,6 +232,101 @@ async def _oss_put_and_presign(
         expires=_dt.timedelta(minutes=180),
     )
     return pre.url
+
+
+def _upload_to_oss_with_credentials(
+    api_response,
+    file_path,
+) -> str:
+    response_data = (
+        json.loads(api_response)
+        if isinstance(api_response, str)
+        else api_response
+    )
+    try:
+        body = response_data["body"]
+        data = body["Data"]
+        param = data["Param"]
+        signed_url = param["Url"]
+        headers = param["Headers"]
+    except KeyError as e:
+        raise ValueError(f"Missing expected field in API response: {e}") from e
+    try:
+        with open(file_path, "rb") as file:
+            response = requests.put(signed_url, data=file, headers=headers)
+        logger.info("OSS upload status code: %d", response.status_code)
+        response.raise_for_status()  # Raises for 4xx/5xx
+        logger.info("File uploaded successfully using requests")
+        return data["TempStorageLeaseId"]
+    except Exception as e:
+        logger.error("Failed to upload file to OSS: %s", e)
+        raise
+
+
+def _get_presign_url_and_upload_to_oss(
+    cfg: ModelstudioConfig,
+    wheel_path: Path,
+) -> str:
+    """
+    Request a temporary storage lease, obtain a pre-signed OSS URL, and upload the file.
+
+    Args:
+        cfg: ModelStudio configuration with credentials and endpoint.
+        wheel_path: Path to the wheel file to upload.
+
+    Returns:
+        The TempStorageLeaseId returned by the service.
+
+    Raises:
+        Exception: Any error from the SDK or upload process (not swallowed).
+    """
+    try:
+        config = open_api_models.Config(
+            access_key_id=cfg.access_key_id,
+            access_key_secret=cfg.access_key_secret,
+        )
+        config.endpoint = cfg.endpoint
+        client_modelstudio = ModelstudioClient(config)
+
+        filename = wheel_path.name
+        size = wheel_path.stat().st_size
+
+        apply_temp_storage_lease_request = (
+            ModelstudioTypes.ApplyTempStorageLeaseRequest(
+                file_name=filename,
+                size_in_bytes=size,
+            )
+        )
+        runtime = util_models.RuntimeOptions()
+        headers = {}
+
+        response = client_modelstudio.apply_temp_storage_lease_with_options(
+            "default",
+            apply_temp_storage_lease_request,
+            headers,
+            runtime,
+        )
+
+        temp_storage_lease_id = _upload_to_oss_with_credentials(
+            response.to_map(),
+            wheel_path,
+        )
+        return temp_storage_lease_id
+
+    except Exception as error:
+        # Log detailed error information
+        logger.error(
+            "Error during temporary storage lease or upload: %s",
+            error,
+        )
+        if hasattr(error, "message"):
+            logger.error("Error message: %s", error.message)
+        if hasattr(error, "data") and isinstance(error.data, dict):
+            recommend = error.data.get("Recommend")
+            if recommend:
+                logger.error("Diagnostic recommendation: %s", recommend)
+        # Re-raise the exception to avoid silent failures
+        raise
 
 
 async def _modelstudio_deploy(
@@ -502,37 +598,19 @@ class ModelstudioDeployManager(DeployManager):
         agent_id: Optional[str] = None,
         agent_desc: Optional[str] = None,
         telemetry_enabled: bool = True,
-    ) -> Tuple[str, str, str]:
-        logger.info("Uploading wheel to OSS and generating presigned URL")
-        client = _oss_get_client(self.oss_config)
-
-        effective_ws = (
-            (self.modelstudio_config.workspace_id or "").strip().lower()
+    ) -> Tuple[str, str]:
+        logger.info("Uploading wheel to OSS")
+        temp_storage_lease_id = _get_presign_url_and_upload_to_oss(
+            self.modelstudio_config,
+            wheel_path,
         )
-        suffix = (
-            uuid.uuid4().hex
-            if (not effective_ws or effective_ws == "default")
-            else effective_ws
-        )
-        bucket_name = (f"tmp-code-deploy-{suffix}")[:63]
-        await _oss_create_bucket_if_not_exists(client, bucket_name)
-        filename = wheel_path.name
-        with wheel_path.open("rb") as f:
-            file_bytes = f.read()
-        artifact_url = await _oss_put_and_presign(
-            client,
-            bucket_name,
-            filename,
-            file_bytes,
-        )
-
         logger.info("Triggering Modelstudio Full-Code deploy for %s", name)
         deploy_identifier = await _modelstudio_deploy(
             agent_desc=agent_desc,
             agent_id=agent_id,
             cfg=self.modelstudio_config,
-            file_url=artifact_url,
-            filename=filename,
+            file_url=temp_storage_lease_id,
+            filename=wheel_path.name,
             deploy_name=name,
             telemetry_enabled=telemetry_enabled,
         )
@@ -554,7 +632,7 @@ class ModelstudioDeployManager(DeployManager):
             if deploy_identifier
             else ""
         )
-        return artifact_url, console_url, deploy_identifier
+        return console_url, deploy_identifier
 
     async def deploy(
         self,
@@ -639,7 +717,6 @@ class ModelstudioDeployManager(DeployManager):
                     telemetry_enabled=telemetry_enabled,
                 )
 
-            artifact_url = ""
             console_url = ""
             deploy_identifier = ""
             if not skip_upload:
@@ -648,7 +725,6 @@ class ModelstudioDeployManager(DeployManager):
                 self.oss_config.ensure_valid()
                 self.modelstudio_config.ensure_valid()
                 (
-                    artifact_url,
                     console_url,
                     deploy_identifier,
                 ) = await self._upload_and_deploy(
@@ -661,7 +737,6 @@ class ModelstudioDeployManager(DeployManager):
 
             result: Dict[str, str] = {
                 "wheel_path": str(wheel_path),
-                "artifact_url": artifact_url,
                 "resource_name": name,
                 "url": console_url,
             }
