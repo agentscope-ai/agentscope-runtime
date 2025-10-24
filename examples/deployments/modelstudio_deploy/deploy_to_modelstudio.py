@@ -62,7 +62,7 @@ async def deploy_agent_to_modelstudio():
         # Basic configuration
         "endpoint_path": "/process",
         "stream": True,
-        "deploy_name": "agent-api-tool",
+        "deploy_name": "agent-llm-example",
         "telemetry_enabled": True,
         # Dependencies configuration
         "requirements": [
@@ -84,8 +84,6 @@ async def deploy_agent_to_modelstudio():
             "LOG_LEVEL": "INFO",
             "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
         },
-        # Output file (optional)
-        "output_file": "modelstudio_deploy_result.txt",
     }
 
     try:
