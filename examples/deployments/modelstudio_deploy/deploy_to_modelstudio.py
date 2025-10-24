@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from agent_run import llm_agent  # noqa: E402
+from agent_run import agent  # noqa: E402
 
 load_dotenv(".env")
 
@@ -52,7 +52,7 @@ async def deploy_agent_to_modelstudio():
 
     # 4. Create Runner
     runner = Runner(
-        agent=llm_agent,
+        agent=agent,
         # environment_manager=None,  # Optional
         # context_manager=None       # Optional
     )
@@ -62,7 +62,7 @@ async def deploy_agent_to_modelstudio():
         # Basic configuration
         "endpoint_path": "/process",
         "stream": True,
-        "deploy_name": "agent-llm-example",
+        "deploy_name": "agent-api-tool",
         "telemetry_enabled": True,
         # Dependencies configuration
         "requirements": [
