@@ -100,9 +100,9 @@ class TestPackageProject:
         """Helper method to get the test agent with fallback import
         strategies."""
         try:
-            from tests.unit.assets.agent_for_test import llm_agent
+            from tests.unit.assets.agent_for_test import agent
 
-            return llm_agent
+            return agent
         except ImportError:
             assets_path = os.path.join(os.path.dirname(__file__), "assets")
             if assets_path not in sys.path:
@@ -110,7 +110,7 @@ class TestPackageProject:
             try:
                 import agent_for_test
 
-                return agent_for_test.llm_agent
+                return agent_for_test.agent
             except ImportError:
                 pytest.skip("Cannot import test agent - missing dependencies")
             finally:
@@ -120,14 +120,14 @@ class TestPackageProject:
     def test_package_project_basic_functionality(self):
         """Test basic package_project functionality with minimal config."""
         try:
-            from tests.unit.assets.agent_for_test import llm_agent
+            from tests.unit.assets.agent_for_test import agent
         except ImportError:
             # Fallback to sys.path approach
             assets_path = os.path.join(os.path.dirname(__file__), "assets")
             if assets_path not in sys.path:
                 sys.path.insert(0, assets_path)
             try:
-                from agent_for_test import llm_agent
+                from agent_for_test import agent
             except ImportError:
                 pytest.skip("Cannot import test agent - missing dependencies")
             finally:
@@ -140,7 +140,7 @@ class TestPackageProject:
         )
 
         try:
-            project_dir, updated = package_project(llm_agent, config)
+            project_dir, updated = package_project(agent, config)
 
             # Check basic structure
             assert os.path.exists(project_dir)
@@ -165,7 +165,7 @@ class TestPackageProject:
 
     def test_package_project_with_extra_packages(self):
         """Test package_project with extra packages."""
-        from tests.unit.assets.agent_for_test import llm_agent
+        from tests.unit.assets.agent_for_test import agent
 
         config = PackageConfig(
             requirements=["fastapi"],
@@ -174,7 +174,7 @@ class TestPackageProject:
         )
 
         try:
-            project_dir, updated = package_project(llm_agent, config)
+            project_dir, updated = package_project(agent, config)
 
             # Check that extra directory was copied
             assert updated is True
@@ -194,9 +194,7 @@ class TestPackageProject:
 
     def test_package_project_with_services_config(self):
         """Test package_project with services configuration."""
-        from tests.unit.assets.agent_for_test import llm_agent
-
-        agent = llm_agent
+        from tests.unit.assets.agent_for_test import agent
 
         config = PackageConfig(
             requirements=["fastapi"],
@@ -237,9 +235,7 @@ class TestPackageProject:
     def test_package_project_output_directory_creation(self):
         """Test that package_project creates output directory if it
         doesn't exist."""
-        from tests.unit.assets.agent_for_test import llm_agent
-
-        agent = llm_agent
+        from tests.unit.assets.agent_for_test import agent
 
         # Use a non-existent subdirectory
         output_dir = os.path.join(self.temp_dir, "new_subdir", "deeper_subdir")
@@ -268,9 +264,7 @@ class TestPackageProject:
 
     def test_package_project_directory_comparison(self):
         """Test package_project directory comparison logic."""
-        from tests.unit.assets.agent_for_test import llm_agent
-
-        agent = llm_agent
+        from tests.unit.assets.agent_for_test import agent
 
         config = PackageConfig(
             requirements=["fastapi"],
@@ -300,9 +294,7 @@ class TestPackageProject:
 
     def test_package_project_with_missing_extra_package(self):
         """Test package_project with a non-existent extra package path."""
-        from tests.unit.assets.agent_for_test import llm_agent
-
-        agent = llm_agent
+        from tests.unit.assets.agent_for_test import agent
 
         # Use a non-existent extra package path
         non_existent_path = os.path.join(self.temp_dir, "non_existent_package")
@@ -333,9 +325,8 @@ class TestPackageProject:
 
     def test_package_project_empty_config(self):
         """Test package_project with minimal empty config."""
-        from tests.unit.assets.agent_for_test import llm_agent
+        from tests.unit.assets.agent_for_test import agent
 
-        agent = llm_agent
         config = PackageConfig()
 
         try:
@@ -502,9 +493,7 @@ class TestIntegration:
     def test_package_and_tar_workflow(self):
         """Test the complete workflow of packaging and creating tar.gz."""
         try:
-            from tests.unit.assets.agent_for_test import llm_agent
-
-            agent = llm_agent
+            from tests.unit.assets.agent_for_test import agent
 
             config = PackageConfig(
                 requirements=["fastapi"],

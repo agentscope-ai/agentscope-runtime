@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import io
+import sys
 import logging
 import subprocess
 import traceback
@@ -44,7 +45,25 @@ async def run_ipython_cell(
         stderr_buf = io.StringIO()
 
         with redirect_stdout(stdout_buf), redirect_stderr(stderr_buf):
-            ipy.run_cell(code)
+            preprocessing_exc_tuple = None
+            try:
+                transformed_cell = ipy.transform_cell(code)
+            except Exception:
+                transformed_cell = code
+                preprocessing_exc_tuple = sys.exc_info()
+
+            if transformed_cell is None:
+                raise HTTPException(
+                    status_code=500,
+                    detail="IPython cell transformation failed: "
+                    "transformed_cell is None.",
+                )
+
+            await ipy.run_cell_async(
+                code,
+                transformed_cell=transformed_cell,
+                preprocessing_exc_tuple=preprocessing_exc_tuple,
+            )
 
         stdout_content = stdout_buf.getvalue()
         stderr_content = stderr_buf.getvalue()

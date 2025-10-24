@@ -75,25 +75,23 @@ All deployment methods share the same agent configuration. Let's first create ou
 ```{code-cell}
 # agent.py
 import os
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
-from agentscope_runtime.engine.llms import QwenLLM
 
-# Create the LLM model
-model = QwenLLM(
-    model_name="qwen-turbo",
-    api_key=os.getenv("DASHSCOPE_API_KEY"),
-)
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
+
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 
 # Create the agent
-llm_agent = LLMAgent(
-    model=model,
-    name="ProductionAgent",
+agent = AgentScopeAgent(
+    name="Friday",
+    model=DashScopeChatModel(
+        "qwen-turbo",
+        api_key=os.getenv("DASHSCOPE_API_KEY"),
+    ),
     agent_config={
-        "sys_prompt": (
-            "You are a helpful assistant deployed in production. "
-            "You can help users with various tasks and provide reliable responses."
-        ),
+        "sys_prompt": "You're a helpful assistant named Friday.",
     },
+    agent_builder=ReActAgent,
 )
 
 print("✅ Agent definition ready for deployment")
@@ -114,6 +112,11 @@ print("✅ Agent definition ready for deployment")
 ```{code-cell}
 import asyncio
 from contextlib import asynccontextmanager
+
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
+
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
 from agentscope_runtime.engine.runner import Runner
 from agentscope_runtime.engine.services.context_manager import ContextManager
@@ -122,7 +125,7 @@ from agentscope_runtime.engine.services.environment_manager import create_enviro
 from agentscope_runtime.sandbox.tools.filesystem import run_ipython_cell, edit_file
 
 # Import our agent definition
-from agent_definition import llm_agent
+from agent_definition import agent
 
 async def prepare_services():
     """Prepare context and environment services"""
@@ -147,10 +150,16 @@ async def create_production_runner():
 
     async with context_manager:
         # Add sandbox tools for enhanced functionality
-        enhanced_agent = LLMAgent(
-            model=llm_agent.model,
-            name=llm_agent.name,
-            agent_config=llm_agent.agent_config,
+        enhanced_agent = AgentScopeAgent(
+            name="Friday",
+            model=DashScopeChatModel(
+                "qwen-turbo",
+                api_key=os.getenv("DASHSCOPE_API_KEY"),
+            ),
+            agent_config={
+                "sys_prompt": "You're a helpful assistant named Friday.",
+            },
+            agent_builder=ReActAgent,
             tools=[run_ipython_cell, edit_file],  # Add tools if needed
         )
 
@@ -265,7 +274,7 @@ from agentscope_runtime.engine.deployers.utils.service_utils import ServicesConf
 from agentscope_runtime.engine.runner import Runner
 
 # Import our agent definition
-from agent_definition import llm_agent
+from agent_definition import agent
 
 async def deploy_detached():
     """Deploy agent as detached process"""
@@ -273,7 +282,7 @@ async def deploy_detached():
     print("🚀 Starting detached deployment...")
 
     # Create A2A protocol adapter
-    a2a_protocol = A2AFastAPIDefaultAdapter(agent=llm_agent)
+    a2a_protocol = A2AFastAPIDefaultAdapter(agent=agent)
 
     # Create deployment manager
     deploy_manager = LocalDeployManager(
@@ -282,7 +291,7 @@ async def deploy_detached():
     )
 
     # Create runner
-    runner = Runner(agent=llm_agent)
+    runner = Runner(agent=agent)
 
     # Deploy in detached mode with full configuration
     deployment_info = await runner.deploy(
@@ -421,7 +430,7 @@ from agentscope_runtime.engine.deployers.kubernetes_deployer import (
 from agentscope_runtime.engine.runner import Runner
 
 # Import our agent definition
-from agent_definition import llm_agent
+from agent_definition import agent
 
 async def deploy_to_kubernetes():
     """Deploy agent to Kubernetes cluster"""
@@ -448,7 +457,7 @@ async def deploy_to_kubernetes():
     )
 
     # 4. Create Runner
-    runner = Runner(agent=llm_agent)
+    runner = Runner(agent=agent)
 
     # 5. Configure Runtime Resources
     runtime_config = {

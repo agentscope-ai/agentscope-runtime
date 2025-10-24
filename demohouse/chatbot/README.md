@@ -107,7 +107,7 @@ graph TD;
         WS <-->C
         WS <-->UU((User_id))
         subgraph AS[agent_service]
-            ALM[LLMAgent]
+            ALM[AgentscopeAgent]
             ALD[LocalDeployManager]
             ASS[InMemorySessionHistoryService]
         end

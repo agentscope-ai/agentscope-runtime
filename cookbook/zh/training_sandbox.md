@@ -36,7 +36,7 @@ Sandbox主要用于训练评测的功能。训练沙箱的数据主要基于公�
 首先，安装带有沙箱支持的AgentScope Runtime：
 
 ```bash
-pip install "agentscope-runtime[sandbox]"
+pip install agentscope-runtime
 ```
 
 ### Appworld 案例

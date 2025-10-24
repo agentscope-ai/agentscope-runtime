@@ -6,10 +6,11 @@ import os
 
 import pytest
 import requests
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
 
 from agentscope_runtime.engine import Runner, LocalDeployManager
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
-from agentscope_runtime.engine.llms import QwenLLM
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.services.context_manager import ContextManager
 from agentscope_runtime.engine.services.session_history_service import (
     InMemorySessionHistoryService,
@@ -29,14 +30,20 @@ async def _local_deploy():
     server_port = int(os.environ.get("SERVER_PORT", "8090"))
     server_endpoint = os.environ.get("SERVER_ENDPOINT", "agent")
 
-    llm_agent = LLMAgent(
-        model=QwenLLM(),
-        name="llm_agent",
-        description="A simple LLM agent to generate a short story",
+    agent = AgentScopeAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+        ),
+        agent_config={
+            "sys_prompt": "You're a helpful assistant named Friday.",
+        },
+        agent_builder=ReActAgent,
     )
 
     runner = Runner(
-        agent=llm_agent,
+        agent=agent,
     )
 
     deploy_manager = LocalDeployManager(host="localhost", port=server_port)
@@ -130,10 +137,16 @@ async def test_local_deployer_context():
     url = f"http://{server_host}:{server_port}/{server_endpoint}"
 
     # Create and start the service
-    llm_agent = LLMAgent(
-        model=QwenLLM(),
-        name="llm_agent",
-        description="A simple LLM agent to generate a short story",
+    agent = AgentScopeAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+        ),
+        agent_config={
+            "sys_prompt": "You're a helpful assistant named Friday.",
+        },
+        agent_builder=ReActAgent,
     )
 
     # Create session service and context manager
@@ -143,7 +156,7 @@ async def test_local_deployer_context():
     )
 
     runner = Runner(
-        agent=llm_agent,
+        agent=agent,
         context_manager=context_manager,
     )
     deploy_manager = LocalDeployManager(host=server_host, port=server_port)

@@ -147,13 +147,14 @@ async with create_context_manager() as manager:
 ```
 
 ## Available Memory Services
-|         MemoryType         | Import                                                                                   |                       Note                       |
-|:--------------------------:|------------------------------------------------------------------------------------------|:------------------------------------------------:|
-|   InMemoryMemoryService    | `from agentscope_runtime.engine.services.memory_service import InMemoryMemoryService`    |                                                  |
-|     RedisMemoryService     | `from agentscope_runtime.engine.services.redis_memory_service import RedisMemoryService` |                                                  |
-| ReMe.PersonalMemoryService | `from reme_ai.service.personal_memory_service import PersonalMemoryService`              | [User Guide](https://github.com/modelscope/ReMe) |
-|   ReMe.TaskMemoryService   | `from reme_ai.service.task_memory_service import TaskMemoryService`                      | [User Guide](https://github.com/modelscope/ReMe) |
-| Mem0MemoryService ｜`from agentscope_runtime.engine.services.mem0_memory_service import Mem0MemoryService`|                   |
+|         MemoryType         | Import                                                                                             |                       Note                       |
+|:--------------------------:|----------------------------------------------------------------------------------------------------|:------------------------------------------------:|
+|   InMemoryMemoryService    | `from agentscope_runtime.engine.services.memory_service import InMemoryMemoryService`              |                                                  |
+|     RedisMemoryService     | `from agentscope_runtime.engine.services.redis_memory_service import RedisMemoryService`           |                                                  |
+| ReMe.PersonalMemoryService | `from reme_ai.service.personal_memory_service import PersonalMemoryService`                        | [User Guide](https://github.com/modelscope/ReMe) |
+|   ReMe.TaskMemoryService   | `from reme_ai.service.task_memory_service import TaskMemoryService`                                | [User Guide](https://github.com/modelscope/ReMe) |
+| Mem0MemoryService | `from agentscope_runtime.engine.services.mem0_memory_service import Mem0MemoryService`             |                   |
+| TablestoreMemoryService | `from agentscope_runtime.engine.services.tablestore_memory_service import TablestoreMemoryService` |        develop by [tablestore-for-agent-memory](https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory/blob/main/python/docs/knowledge_store_tutorial.ipynb)                          |
 
 ### Description
 - **InMemoryMemoryService**: An in-memory memory service without persistent storage.
@@ -161,6 +162,33 @@ async with create_context_manager() as manager:
 - **ReMe.PersonalMemoryService**: ReMe's personalized memory service (formerly MemoryScope) empowers you to generate, retrieve, and share customized memories. Leveraging advanced LLM, embedding, and vector store technologies, it builds a comprehensive memory system with intelligent, context- and time-aware memory management—seamlessly enabling you to configure and deploy powerful AI agents.
 - **ReMe.TaskMemoryService**: ReMe's task-oriented memory service helps you efficiently manage and schedule task-related memories, enhancing both the accuracy and efficiency of task execution. Powered by LLM capabilities, it supports flexible creation, retrieval, update, and deletion of memories across diverse task scenarios—enabling you to effortlessly build and scale robust agent-based task systems.
 - **Mem0MemoryService**: An intelligent memory service powered by the mem0 platform, providing long-term memory storage and management capabilities. Supports asynchronous operations and automatically extracts, stores, and retrieves key information from conversations, enabling context-aware memory for AI agents. Ideal for complex conversational scenarios and agent applications requiring persistent memory. (For more details, see [mem0 platform documentation](https://docs.mem0.ai/platform/quickstart))
+- **TablestoreMemoryService**: A memory service based on aliyun tablestore (Tablestore provides Serverless table storage services for massive structured data, and provides a one-stop IoTstore solution for deep optimization of IoT scenarios. It is suitable for structured data storage in scenarios such as massive bills, IM messages, IoT, Internet of Vehicles, risk control, and recommendations, and provides low-cost storage of massive data, millisecond-level online data query and retrieval, and flexible data analysis capabilities), develop by [tablestore-for-agent-memory](https://github.com/aliyun/alibabacloud-tablestore-for-agent-memory/blob/main/python/docs/knowledge_store_tutorial.ipynb). Example:
+```python
+from agentscope_runtime.engine.services.tablestore_memory_service import TablestoreMemoryService
+from agentscope_runtime.engine.services.utils.tablestore_service_utils import create_tablestore_client
+from agentscope_runtime.engine.services.tablestore_memory_service import SearchStrategy
+
+# create tablestore memory service, default search strategy is full text
+tablestore_memory_service = TablestoreMemoryService(
+    tablestore_client=create_tablestore_client(
+        end_point="your_endpoint",
+        instance_name="your_instance_name",
+        access_key_id="your_access_key_id",
+        access_key_secret="your_access_key_secret",
+    ),
+)
+
+# Create a tablestore memory service based on vector retrieval, with DashScopeEmbeddings() as the default embedding model
+tablestore_memory_service = TablestoreMemoryService(
+    tablestore_client=create_tablestore_client(
+        end_point="your_endpoint",
+        instance_name="your_instance_name",
+        access_key_id="your_access_key_id",
+        access_key_secret="your_access_key_secret",
+    ),
+    search_strategy=SearchStrategy.VECTOR,
+)
+```
 
 (session-history-service)=
 
@@ -430,6 +458,21 @@ The `InMemorySessionHistoryService` stores data in a nested dictionary structure
 + Each Session object contains id, user_id, and messages list
 + Session IDs are auto-generated using UUID if not provided
 + Empty or whitespace-only session IDs are replaced with auto-generated IDs
+
+`TablestoreSessionHistoryService` stores data in aliyun tablestore, example：
+```python
+from agentscope_runtime.engine.services.tablestore_session_history_service import TablestoreSessionHistoryService
+from agentscope_runtime.engine.services.utils.tablestore_service_utils import create_tablestore_client
+
+tablestore_session_history_service = TablestoreSessionHistoryService(
+    tablestore_client=create_tablestore_client(
+        end_point="your_endpoint",
+        instance_name="your_instance_name",
+        access_key_id="your_access_key_id",
+        access_key_secret="your_access_key_secret",
+    ),
+)
+```
 
 ```{note}
 For production use, consider implementing persistent storage by extending the `SessionHistoryService` abstract base class to support databases or file systems.

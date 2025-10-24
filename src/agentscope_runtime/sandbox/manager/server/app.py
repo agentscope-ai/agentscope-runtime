@@ -6,11 +6,13 @@ import logging
 
 from typing import Optional
 
+import httpx
 import websockets
+
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from ...manager.server.config import get_settings
@@ -20,6 +22,7 @@ from ...manager.server.models import (
 )
 from ...manager.sandbox_manager import SandboxManager
 from ...model.manager_config import SandboxManagerEnvConfig
+from ...utils import dynamic_import, http_to_ws
 from ....version import __version__
 
 # Configure logging
@@ -61,6 +64,7 @@ def get_config() -> SandboxManagerEnvConfig:
             redis_enabled=settings.REDIS_ENABLED,
             container_deployment=settings.CONTAINER_DEPLOYMENT,
             default_mount_dir=settings.DEFAULT_MOUNT_DIR,
+            readonly_mounts=settings.READONLY_MOUNTS,
             storage_folder=settings.STORAGE_FOLDER,
             port_range=settings.PORT_RANGE,
             pool_size=settings.POOL_SIZE,
@@ -77,6 +81,18 @@ def get_config() -> SandboxManagerEnvConfig:
             redis_container_pool_key=settings.REDIS_CONTAINER_POOL_KEY,
             k8s_namespace=settings.K8S_NAMESPACE,
             kubeconfig_path=settings.KUBECONFIG_PATH,
+            agent_run_access_key_id=settings.AGENT_RUN_ACCESS_KEY_ID,
+            agent_run_access_key_secret=settings.AGENT_RUN_ACCESS_KEY_SECRET,
+            agent_run_account_id=settings.AGENT_RUN_ACCOUNT_ID,
+            agent_run_region_id=settings.AGENT_RUN_REGION_ID,
+            agent_run_cpu=settings.AGENT_RUN_CPU,
+            agent_run_memory=settings.AGENT_RUN_MEMORY,
+            agent_run_vpc_id=settings.AGENT_RUN_VPC_ID,
+            agent_run_vswitch_ids=settings.AGENT_RUN_VSWITCH_IDS,
+            agent_run_security_group_id=settings.AGENT_RUN_SECURITY_GROUP_ID,
+            agent_run_prefix=settings.AGENT_RUN_PREFIX,
+            agentrun_log_project=settings.AGENT_RUN_LOG_PROJECT,
+            agentrun_log_store=settings.AGENT_RUN_LOG_STORE,
         )
     return _config
 
@@ -134,15 +150,21 @@ def create_endpoint(method):
             logger.info(
                 f"Calling {method.__name__} with data: {data}",
             )
-            result = method(**data)
+
+            # Check if the method is asynchronous
+            if inspect.iscoroutinefunction(method):
+                # If async, just await it
+                result = await method(**data)
+            else:
+                # If sync, run it in a thread to avoid blocking the event loop
+                result = await asyncio.to_thread(method, **data)
+
             if hasattr(result, "model_dump_json"):
                 return JSONResponse(content={"data": result.model_dump_json()})
             return JSONResponse(content={"data": result})
+
         except Exception as e:
-            error = (
-                f"Error in {method.__name__}: {str(e)},"
-                # f" {traceback.format_exc()}"
-            )
+            error = f"Error in {method.__name__}: {str(e)}"
             logger.error(error)
             raise HTTPException(status_code=500, detail=error) from e
 
@@ -194,11 +216,38 @@ async def health_check():
     """Health check endpoint"""
     return HealthResponse(
         status="healthy",
-        version=_sandbox_manager.default_type.value,
+        version=str(_sandbox_manager.default_type),
     )
 
 
-@app.websocket("/browser/{sandbox_id}/cast")
+@app.get("/desktop/{sandbox_id}/{path:path}")
+async def proxy_vnc_static(sandbox_id: str, path: str):
+    container_json = _sandbox_manager.container_mapping.get(sandbox_id)
+    if not container_json:
+        return Response(status_code=404)
+
+    base_url = container_json.get("url")
+    if not base_url:
+        return Response(status_code=404)
+
+    target_url = f"{base_url}/{path}"
+
+    try:
+        async with httpx.AsyncClient() as client:
+            upstream = await client.get(target_url)
+            return Response(
+                content=upstream.content,
+                media_type=upstream.headers.get("content-type"),
+            )
+    except httpx.RequestError as exc:
+        logger.error(f"Upstream request to {target_url} failed: {repr(exc)}")
+        return JSONResponse(
+            status_code=502,
+            content={"detail": f"Upstream request failed: {str(exc)}"},
+        )
+
+
+@app.websocket("/desktop/{sandbox_id}")
 async def websocket_endpoint(
     websocket: WebSocket,
     sandbox_id: str,
@@ -212,7 +261,7 @@ async def websocket_endpoint(
     )
     service_address = None
     if container_json:
-        service_address = container_json.get("front_browser_ws")
+        service_address = http_to_ws(f"{container_json.get('url')}/websockify")
 
     logger.debug(f"service_address: {service_address}")
 
@@ -237,8 +286,17 @@ async def websocket_endpoint(
             # Forward messages from client to target server
             async def forward_to_service():
                 try:
-                    async for message in websocket.iter_text():
-                        await target_ws.send(message)
+                    while True:
+                        message = await websocket.receive()
+
+                        if message["type"] == "websocket.receive":
+                            if "bytes" in message:
+                                await target_ws.send(message["bytes"])
+                            elif "text" in message:
+                                await target_ws.send(message["text"])
+                        elif message["type"] == "websocket.disconnect":
+                            break
+
                 except WebSocketDisconnect:
                     logger.debug(
                         f"WebSocket disconnected from client for sandbox"
@@ -264,9 +322,6 @@ async def websocket_endpoint(
     except Exception as e:
         logger.error(f"Error in sandbox {sandbox_id}: {e}")
         await websocket.close()
-
-
-# TODO: add socketio relay endpoint for filesystem
 
 
 def setup_logging(log_level: str):
@@ -311,7 +366,20 @@ def main():
         default="INFO",
         help="Set the logging level (default: INFO)",
     )
+
+    parser.add_argument(
+        "--extension",
+        action="append",
+        help="Path to a Python file or module name to load as an extension",
+    )
+
     args = parser.parse_args()
+
+    if args.extension:
+        for ext in args.extension:
+            logger.info(f"Loading extension: {ext}")
+            mod = dynamic_import(ext)
+            logger.info(f"Extension loaded: {mod.__name__}")
 
     # Setup logging based on command line argument
     setup_logging(args.log_level)

@@ -8,7 +8,7 @@ A2A（Agent-to-Agent）协议定义了智能体之间交互（包括 action、ca
 
 ## 2. 主要类和方法
 
-- `A2AFastAPIDefaultAdapter(agent)`：将已有的 agent（如 LLMAgent）包装为符合 A2A 协议的服务端。
+- `A2AFastAPIDefaultAdapter(agent)`：将已有的 agent（如 AgentScopeAgent）包装为符合 A2A 协议的服务端。
 - `protocol_adapters`：在部署 runner 时指定支持的协议适配器列表，其中包括 A2A 协议适配器。
 
 ## 3. 集成步骤
@@ -17,15 +17,21 @@ A2A（Agent-to-Agent）协议定义了智能体之间交互（包括 action、ca
 
 ### **步骤 1：创建 agent 实例**
 ```python
-llm_agent = LLMAgent(
-    model=QwenLLM(),
-    name="llm_agent",
-    description="A simple LLM agent to generate a short story",
+agent = AgentScopeAgent(
+    name="Friday",
+    model=DashScopeChatModel(
+        "qwen-turbo",
+        api_key=os.getenv("DASHSCOPE_API_KEY"),
+    ),
+    agent_config={
+        "sys_prompt": "You're a helpful assistant named Friday.",
+    },
+    agent_builder=ReActAgent,
 )
 ```
 ### **步骤 2：使用 A2A 协议适配器包装 agent**
 ```python
-a2a_protocol = A2AFastAPIDefaultAdapter(agent=llm_agent)
+a2a_protocol = A2AFastAPIDefaultAdapter(agent=agent)
 ```
 
 ### **步骤 3：构建上下文管理服务**
@@ -42,7 +48,7 @@ context_manager = ContextManager(
 ### **步骤 4：构建 Runner**
 ```python
 runner = Runner(
-    agent=llm_agent,
+    agent=agent,
     context_manager=context_manager,
 )
 ```
@@ -71,9 +77,10 @@ import asyncio
 import os
 
 from agentscope_runtime.engine import Runner, LocalDeployManager
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.deployers.adapter.a2a import A2AFastAPIDefaultAdapter
-from agentscope_runtime.engine.llms import QwenLLM
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
 from agentscope_runtime.engine.services.context_manager import ContextManager
 from agentscope_runtime.engine.services.memory_service import InMemoryMemoryService
 from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
@@ -84,14 +91,20 @@ async def main():
     server_endpoint = os.environ.get("SERVER_ENDPOINT", "agent")
 
     # Step 1: Create agent instance
-    llm_agent = LLMAgent(
-        model=QwenLLM(),
-        name="llm_agent",
-        description="A simple LLM agent to generate a short story",
+    agent = AgentScopeAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+        ),
+        agent_config={
+            "sys_prompt": "You're a helpful assistant named Friday.",
+        },
+        agent_builder=ReActAgent,
     )
 
     # Step 2: Wrap agent with A2A protocol adapter
-    a2a_protocol = A2AFastAPIDefaultAdapter(agent=llm_agent)
+    a2a_protocol = A2AFastAPIDefaultAdapter(agent=agent)
 
     # Step 3: Build context management services
     session_history_service = InMemorySessionHistoryService()
@@ -103,7 +116,7 @@ async def main():
 
     # Step 4: Build runner and deploy
     runner = Runner(
-        agent=llm_agent,
+        agent=agent,
         context_manager=context_manager,
     )
 

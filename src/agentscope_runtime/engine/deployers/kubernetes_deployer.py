@@ -16,7 +16,7 @@ from .utils.service_utils import (
     ServicesConfig,
 )
 from ..runner import Runner
-from ...common.container_clients import (
+from ...common.container_clients.kubernetes_client import (
     KubernetesClient,
 )
 

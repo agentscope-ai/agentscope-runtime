@@ -24,7 +24,7 @@ The engine module in AgentScope Runtime uses a modular architecture with several
 
 #### 1. Agent
 
-The `Agent` is the core component that processes requests and generates responses. It's an abstract base class that defines the interface for all agent types. We'll use `LLMAgent` as our primary example, but the same deployment patterns apply to all agent types.
+The `Agent` is the core component that processes requests and generates responses. It's an abstract base class that defines the interface for all agent types. We'll use `AgentScopeAgent` as our primary example, but the same deployment patterns apply to all agent types.
 
 #### 2. Runner
 

@@ -3,13 +3,12 @@
 import logging
 import time
 from typing import Any, Optional
+from urllib.parse import urljoin
 
 import requests
 from pydantic import Field
-from steel import Steel
 
 from ..model import ContainerModel
-from ..constant import BROWSER_SESSION_ID
 
 
 logging.getLogger("httpx").setLevel(logging.CRITICAL)
@@ -69,8 +68,7 @@ class SandboxHttpClient:
     def __init__(
         self,
         model: Optional[ContainerModel] = None,
-        timeout: int = 30,
-        enable_browser: bool = True,
+        timeout: int = 60,
         domain: str = "localhost",
     ) -> None:
         """
@@ -81,49 +79,28 @@ class SandboxHttpClient:
             runtime sandbox.
         """
         self.session_id = model.session_id
-        self.base_url = model.base_url.replace("localhost", domain)
-        self.browser_url = model.browser_url.replace("localhost", domain)
-        self.client_browser_ws = model.client_browser_ws.replace(
-            "localhost",
-            domain,
+        self.base_url = urljoin(
+            model.url.replace("localhost", domain),
+            "fastapi",
         )
 
-        self.enable_browser = enable_browser
         self.timeout = timeout
         self.session = requests.Session()
         self.built_in_tools = []
         self.secret = model.runtime_token
 
         # Update headers with secret if provided
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "Content-Type": "application/json",
+            "x-agentrun-session-id": "s" + self.session_id,
+        }
         if self.secret:
             headers["Authorization"] = f"Bearer {self.secret}"
         self.session.headers.update(headers)
 
-        self.steel_client = None
-
     def __enter__(self):
         # Wait for the runtime api server to be healthy
         self.wait_until_healthy()
-
-        if self.enable_browser:
-            self.steel_client = Steel(
-                steel_api_key="dummy",
-                base_url=self.browser_url,
-            )
-
-            # Create a new browser session if it doesn't exist
-            try:
-                # Try to connet to existing session
-                self.steel_client.sessions.retrieve(
-                    BROWSER_SESSION_ID,
-                )
-            except Exception:
-                # Session not found, create a new one
-                self.steel_client.sessions.create(
-                    session_id=BROWSER_SESSION_ID,
-                )
-
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -138,17 +115,9 @@ class SandboxHttpClient:
             bool: True if the service is reachable, False otherwise
         """
         endpoint = f"{self.base_url}/healthz"
-        browser_endpoint = f"{self.browser_url}/v1/health"
         try:
             response_api = self.session.get(endpoint)
-            if self.enable_browser:
-                response_browser = self.session.get(browser_endpoint)
-                return (
-                    response_api.status_code == 200
-                    and response_browser.status_code == 200
-                )
-            else:
-                return response_api.status_code == 200
+            return response_api.status_code == 200
         except requests.RequestException:
             return False
 
@@ -246,7 +215,10 @@ class SandboxHttpClient:
         """Run an IPython cell."""
         try:
             endpoint = f"{self.base_url}/tools/run_ipython_cell"
-            response = self.session.post(endpoint, json={"code": code})
+            response = self.session.post(
+                endpoint,
+                json={"code": code},
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -379,7 +351,11 @@ class SandboxHttpClient:
             endpoint = f"{self.base_url}/workspace/files"
             params = {"file_path": file_path}
             data = {"content": content}
-            response = self.session.post(endpoint, params=params, json=data)
+            response = self.session.post(
+                endpoint,
+                params=params,
+                json=data,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -402,7 +378,10 @@ class SandboxHttpClient:
         try:
             endpoint = f"{self.base_url}/workspace/list-directories"
             params = {"directory": directory}
-            response = self.session.get(endpoint, params=params)
+            response = self.session.get(
+                endpoint,
+                params=params,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -419,7 +398,10 @@ class SandboxHttpClient:
         try:
             endpoint = f"{self.base_url}/workspace/directories"
             params = {"directory_path": directory_path}
-            response = self.session.post(endpoint, params=params)
+            response = self.session.post(
+                endpoint,
+                params=params,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -438,7 +420,10 @@ class SandboxHttpClient:
         try:
             endpoint = f"{self.base_url}/workspace/files"
             params = {"file_path": file_path}
-            response = self.session.delete(endpoint, params=params)
+            response = self.session.delete(
+                endpoint,
+                params=params,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -461,7 +446,10 @@ class SandboxHttpClient:
         try:
             endpoint = f"{self.base_url}/workspace/directories"
             params = {"directory_path": directory_path, "recursive": recursive}
-            response = self.session.delete(endpoint, params=params)
+            response = self.session.delete(
+                endpoint,
+                params=params,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -487,7 +475,10 @@ class SandboxHttpClient:
                 "source_path": source_path,
                 "destination_path": destination_path,
             }
-            response = self.session.put(endpoint, params=params)
+            response = self.session.put(
+                endpoint,
+                params=params,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -514,7 +505,10 @@ class SandboxHttpClient:
                 "source_path": source_path,
                 "destination_path": destination_path,
             }
-            response = self.session.post(endpoint, params=params)
+            response = self.session.post(
+                endpoint,
+                params=params,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:

@@ -5,6 +5,7 @@
       "args": [
         "-y",
         "@playwright/mcp@0.0.25",
+        "--no-sandbox",
         "--config",
         "/agentscope_runtime/playwright_mcp_config.json"
       ]

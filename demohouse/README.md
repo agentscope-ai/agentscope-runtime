@@ -51,11 +51,11 @@ Follow these steps to set up and run the sample agents:
 └── README.md                    # This file (Repository overview)
 ```
 
-| project                               | description   | features                                                                |
-|---------------------------------------|----|-------------------------------------------------------------------------|
-| [browser_user](browser_use/README.md) | a demo of using browser in sandbox | ``sandbox`` , ``agentscopt``, ``browser``                               |
-| [qwen_langgraph_search](qwen_langgraph_search/README.md)              | a deep research project with qwen and langgraph | ``qwen`` , ``langgraph``,``websearch``                                    |
-| [chatbot](chatbot/README.md)          | a demo of chatbot with conversation management. | ``llm_agent``,``local_deployment`` , ``multi-user``, ``session_manage`` |
+| project                               | description   | features                                                            |
+|---------------------------------------|----|---------------------------------------------------------------------|
+| [browser_user](browser_use/README.md) | a demo of using browser in sandbox | ``sandbox`` , ``agentscopt``, ``browser``                           |
+| [qwen_langgraph_search](qwen_langgraph_search/README.md)              | a deep research project with qwen and langgraph | ``qwen`` , ``langgraph``,``websearch``                                |
+| [chatbot](chatbot/README.md)          | a demo of chatbot with conversation management. | ``agent``,``local_deployment`` , ``multi-user``, ``session_manage`` |
 
 ## ℹ️ Getting help
 

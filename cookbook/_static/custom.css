@@ -191,10 +191,15 @@ body[data-current-lang="zh"] {
   }
 }
 
-.sidebar-logo-container img {
-  max-height: 100px !important;
-  width: auto !important;
-  margin-left: 0 !important;
-  margin-right: auto !important;
-  display: block !important;
+.sidebar-logo-container .sidebar-logo {
+  max-height: 170px;
+  width: auto;
+  display: block;
+}
+
+.sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 0.6;
 }
