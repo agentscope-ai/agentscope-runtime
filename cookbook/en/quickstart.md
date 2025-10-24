@@ -197,7 +197,7 @@ Establish the runtime context for managing agent lifecycle:
 @asynccontextmanager
 async def create_runner():
     async with Runner(
-        agent=llm_agent,
+        agent=agent,
         context_manager=ContextManager(),
     ) as runner:
         print("✅ Runner created successfully")

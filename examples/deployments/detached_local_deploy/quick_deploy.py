@@ -20,14 +20,14 @@ from agentscope_runtime.engine.runner import Runner
 # Add current directory to path for importing agent
 sys.path.insert(0, os.path.dirname(__file__))
 
-from agent_run import llm_agent  # noqa: E402
+from agent_run import agent  # noqa: E402
 
 
 async def quick_deploy():
     """Quick deployment for testing purposes."""
 
     print("🚀 Quick deployment test...")
-    a2a_protocol = A2AFastAPIDefaultAdapter(agent=llm_agent)
+    a2a_protocol = A2AFastAPIDefaultAdapter(agent=agent)
 
     # Create deployment manager
     deploy_manager = LocalDeployManager(
@@ -36,7 +36,7 @@ async def quick_deploy():
     )
 
     # Create runner
-    runner = Runner(agent=llm_agent)
+    runner = Runner(agent=agent)
 
     # Deploy in detached mode
     deployment_info = await runner.deploy(
