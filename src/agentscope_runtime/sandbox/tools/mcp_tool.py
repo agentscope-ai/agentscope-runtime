@@ -119,6 +119,7 @@ class MCPConfigConverter:
         self,
         *,
         sandbox: Optional[Sandbox] = None,
+        sandbox_type: Optional[SandboxType | str] = None,
     ) -> List[MCPTool]:
         """
         Converts to a list of MCPTool instances.
@@ -130,7 +131,10 @@ class MCPConfigConverter:
         if box is None:
             from ..registry import SandboxRegistry
 
-            cls_ = SandboxRegistry.get_classes_by_type("base")
+            if sandbox_type is None:
+                sandbox_type = SandboxType.BASE
+
+            cls_ = SandboxRegistry.get_classes_by_type(sandbox_type)
             # Use proper context manager
             with cls_() as tmp_box:
                 return self._process_tools(tmp_box)
@@ -156,7 +160,7 @@ class MCPConfigConverter:
                     MCPTool(
                         sandbox=box,
                         name=tool_name,
-                        sandbox_type=SandboxType.BASE,
+                        sandbox_type=box.sandbox_type,
                         tool_type=server_name,
                         schema=tool_info["json_schema"]["function"],
                         server_configs={

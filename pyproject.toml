@@ -1,6 +1,6 @@
 [project]
 name = "agentscope-runtime"
-version = "0.1.5b2"
+version = "0.2.0b1"
 description = "A production-ready runtime framework for agent applications, providing secure sandboxed execution environments and scalable deployment solutions with multi-framework support."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -8,11 +8,17 @@ dependencies = [
     "mcp>=1.13",
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
-    "openai>=1.108.1",
+    "openai",
     "pydantic>=2.11.7",
     "requests>=2.32.4",
+    "agentscope>=1.0.1",
     "docker>=7.1.0",
+    "redis>=6.0.0",
+    "oss2>=2.19.1",
+    "pydantic-settings>=2.9.1",
+    "python-dotenv>=1.0.1",
     "kubernetes>=33.1.0",
+    "shortuuid>=1.0.13",
 ]
 
 [tool.setuptools]
@@ -40,19 +46,6 @@ dev = [
     "sphinx-autoapi>=3.6.0",
 ]
 
-sandbox = [
-    "steel-sdk>=0.1.0",
-    "redis>=6.0.0b2",
-    "oss2>=2.19.1",
-    "pydantic-settings>=2.9.1",
-    "dotenv>=0.9.9",
-    "shortuuid>=1.0.13",
-]
-
-agentscope = [
-    "agentscope>=1.0.1",
-]
-
 langgraph = [
     "langgraph>=0.5.3",
 ]
@@ -67,10 +60,14 @@ autogen = [
     "autogen-agentchat>=0.7.4",
     "autogen-ext[openai]>=0.7.4",
 ]
+agentrun = [
+    "alibabacloud-agentrun20250910>=1.0.0",
+    "alibabacloud_tea_openapi>=0.4.0"
+]
 
 langchain_rag=[
     "langchain>=0.3.25",
-    "pymilvus>=2.6.0",
+    "pymilvus[milvus-lite]>=2.6.0",
     "langchain-community>=0.3.27",
     "langchain-milvus>=0.2.1",
     "bs4>=0.0.2",
@@ -78,13 +75,20 @@ langchain_rag=[
 
 llamaindex_rag=[
     "llama-index>=0.13.4",
-    "pymilvus>=2.6.0",
+    "pymilvus[milvus-lite]>=2.6.0",
     "llama-index-vector-stores-milvus>=0.9.1",
     "llama-index-readers-web>=0.5.1",
     "llama-index-embeddings-langchain>=0.4.0",
     "langchain-community>=0.3.27",
     "bs4>=0.0.2",
 ]
+
+aliyun_tablestore_ext=[
+    "tablestore-for-agent-memory>=1.1.0",
+    "dashscope>=1.24.4",
+    "langchain-community>=0.3.27",
+]
+
 memory-ext = [
     "reme-ai==0.1.9 ; python_full_version >= '3.12'",
     "mem0ai>=0.1.117"

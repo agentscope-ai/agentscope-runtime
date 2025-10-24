@@ -3,17 +3,17 @@ import os
 
 from typing import Optional
 
-from ..constant import IMAGE_TAG
+from ..utils import build_image_uri
 from ..registry import SandboxRegistry
 from ..enums import SandboxType
 from ..box.sandbox import Sandbox
 
-SANDBOXTYPE = "custom_sandbox"
+SANDBOX_TYPE = "custom_sandbox"
 
 
 @SandboxRegistry.register(
-    f"agentscope/runtime-sandbox-{SANDBOXTYPE}:{IMAGE_TAG}",
-    sandbox_type=SANDBOXTYPE,
+    build_image_uri(f"runtime-sandbox-{SANDBOX_TYPE}"),
+    sandbox_type=SANDBOX_TYPE,
     security_level="medium",
     timeout=60,
     description="my sandbox",
@@ -35,5 +35,5 @@ class CustomSandbox(Sandbox):
             timeout,
             base_url,
             bearer_token,
-            SandboxType(SANDBOXTYPE),
+            SandboxType(SANDBOX_TYPE),
         )

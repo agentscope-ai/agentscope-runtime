@@ -44,8 +44,9 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 import os
 from contextlib import asynccontextmanager
 from agentscope_runtime.engine import Runner
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
-from agentscope_runtime.engine.llms import QwenLLM
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+from agentscope.model import DashScopeChatModel
+from agentscope.agent import ReActAgent
 from agentscope_runtime.engine.schemas.agent_schemas import (
     MessageType,
     RunStatus,
@@ -58,60 +59,31 @@ from agentscope_runtime.engine.services.context_manager import (
 print("✅ 依赖导入成功")
 ```
 
-### 步骤2：创建LLM智能体
+### 步骤2：创建智能体
 
-初始化您的LLM模型并创建智能体：
-
-```{code-cell}
-# 创建LLM实例
-model = QwenLLM(
-    model_name="qwen-turbo",
-    api_key=os.getenv("DASHSCOPE_API_KEY")
-)
-
-# 创建LLM智能体
-llm_agent = LLMAgent(
-    model=model,
-    name="llm_agent",
-    description="A simple LLM agent for text generation",
-)
-
-print("✅ LLM智能体创建成功")
-```
-
-```{note}
-要使用来自其他框架的其他LLM和智能体实现，请参考 {ref}`AgentScope智能体 <agentscope-agent-zh>`、{ref}`Agno智能体<agno-agent-zh>`、{ref}`AutoGen智能体 <autogen-agent-zh>`和{ref}`LangGraph智能体 <langgraph-agent-zh>`。
-```
-
-(agentscope-agent-zh)=
-
-#### （可选）使用AgentScope Agent
-
-````{note}
-如果您想要使用AgentScope的智能体，您应该通过以下命令安装AgentScope：
-```bash
-pip install "agentscope-runtime[agentscope]"
-```
-````
+我们这里使用agentscope作为示例：
 
 ```{code-cell}
 from agentscope.agent import ReActAgent
-from agentscope.model import OpenAIChatModel
+from agentscope.model import DashScopeChatModel
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 
 agent = AgentScopeAgent(
     name="Friday",
-    model=OpenAIChatModel(
-        "gpt-4",
-        api_key=os.getenv("OPENAI_API_KEY"),
+    model=DashScopeChatModel(
+        "qwen-turbo",
+        api_key=os.getenv("DASHSCOPE_API_KEY"),
     ),
     agent_config={
-        "sys_prompt": "You're a helpful assistant named {name}.",
+        "sys_prompt": "You're a helpful assistant named Friday.",
     },
     agent_builder=ReActAgent,
 )
 
 print("✅ AgentScope agent created successfully")
+```
+```{note}
+要使用来自其他框架的其他LLM和智能体实现，请参考 {ref}`Agno智能体<agno-agent-zh>`、{ref}`AutoGen智能体 <autogen-agent-zh>`和{ref}`LangGraph智能体 <langgraph-agent-zh>`。
 ```
 
 (agno-agent-zh)=
@@ -414,21 +386,6 @@ def test_deployed_agent():
         print("✅ 流式测试完成")
     except requests.exceptions.RequestException as e:
         print(f"❌ 流式测试失败: {e}")
-
-    # 测试JSON响应（如果可用）
-    try:
-        response = requests.post(
-            "http://localhost:8090/process",
-            json=payload,
-            timeout=30,
-        )
-
-        if response.status_code == 200:
-            print(f"📄 JSON响应: {response.content}")
-            print("✅ JSON测试完成")
-        else:
-            print(f"⚠️ JSON端点返回状态: {response.status_code}")
-
     except requests.exceptions.RequestException as e:
         print(f"ℹ️ JSON端点不可用或失败: {e}")
 
@@ -470,7 +427,7 @@ await stop_services(deploy_manager)
 
 使用Runner 类构建和测试智能体：
 
-✅ 创建和配置智能体（LLMAgent、AgentScope、Agno、LangGraph）
+✅ 创建和配置智能体（AgentScope、Agno、LangGraph）
 
 ✅ 使用上下文管理设置`Runner`
 

@@ -3,8 +3,9 @@
 # AgentScope Runtime
 
 [![PyPI](https://img.shields.io/pypi/v/agentscope-runtime?label=PyPI&color=brightgreen&logo=python)](https://pypi.org/project/agentscope-runtime/)
+[![Downloads](https://static.pepy.tech/badge/agentscope-runtime)](https://pepy.tech/project/agentscope-runtime)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg?logo=python&label=Python)](https://python.org)
-[![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=Liscnese)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=License)](LICENSE)
 [![Code Style](https://img.shields.io/badge/code%20style-black-black.svg?logo=python&label=CodeStyle)](https://github.com/psf/black)
 [![GitHub Stars](https://img.shields.io/github/stars/agentscope-ai/agentscope-runtime?style=flat&logo=github&color=yellow&label=Stars)](https://github.com/agentscope-ai/agentscope-runtime/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/agentscope-ai/agentscope-runtime?style=flat&logo=github&color=purple&label=Forks)](https://github.com/agentscope-ai/agentscope-runtime/network)
@@ -24,6 +25,12 @@
 *AgentScope Runtime tackles two critical challenges in agent development: secure sandboxed tool execution and scalable agent deployment. Built with a dual-core architecture, it provides framework-agnostic infrastructure for deploying agents with full observability and safe tool interactions.*
 
 </div>
+
+---
+
+## 🆕 NEWS
+
+* **[2025-10]**  **GUI Sandbox** is added with support for virtual desktop environments, mouse, keyboard, and screen operations.  Introduced the **`desktop_url`** property for GUI Sandbox, Browser Sandbox, and Filesystem Sandbox — allowing direct access to the virtual desktop via your browser.  Check our [cookbook](https://runtime.agentscope.io/en/sandbox.html#sandbox-usage) for more details.
 
 ---
 
@@ -74,9 +81,6 @@ From PyPI:
 ```bash
 # Install core dependencies
 pip install agentscope-runtime
-
-# Install sandbox dependencies
-pip install "agentscope-runtime[sandbox]"
 ```
 
 (Optional) From source:
@@ -88,35 +92,41 @@ cd agentscope-runtime
 
 # Install core dependencies
 pip install -e .
-
-# Install sandbox dependencies
-pip install -e ".[sandbox]"
 ```
 
 ### Basic Agent Usage Example
 
-This example demonstrates how to create a simple LLM agent using AgentScope Runtime and stream responses from the Qwen model.
+This example demonstrates how to create an agentscope agent using AgentScope Runtime and
+stream responses from the Qwen model.
+
 
 ```python
 import asyncio
 import os
+
 from agentscope_runtime.engine import Runner
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
-from agentscope_runtime.engine.llms import QwenLLM
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from agentscope_runtime.engine.services.context_manager import ContextManager
 
+from agentscope.agent import ReActAgent
+from agentscope.model import OpenAIChatModel
 
 async def main():
     # Set up the language model and agent
-    model = QwenLLM(
-        model_name="qwen-turbo",
-        api_key=os.getenv("DASHSCOPE_API_KEY"),
+    agent = AgentScopeAgent(
+        name="Friday",
+        model=OpenAIChatModel(
+            "gpt-4",
+            api_key=os.getenv("OPENAI_API_KEY"),
+        ),
+        agent_config={
+            "sys_prompt": "You're a helpful assistant named Friday.",
+        },
+        agent_builder=ReActAgent,
     )
-    llm_agent = LLMAgent(model=model, name="llm_agent")
-
     async with ContextManager() as context_manager:
-        runner = Runner(agent=llm_agent, context_manager=context_manager)
+        runner = Runner(agent=agent, context_manager=context_manager)
 
         # Create a request and stream the response
         request = AgentRequest(
@@ -143,19 +153,128 @@ asyncio.run(main())
 
 ### Basic Sandbox Usage Example
 
-This example demonstrates how to create sandboxed and execute tool within the sandbox.
+These examples demonstrate how to create sandboxed environments and execute tools within them, with some examples featuring interactive frontend interfaces accessible via VNC (Virtual Network Computing):
+
+> [!NOTE]
+>
+> Current version requires Docker or Kubernetes to be installed and running on your system. Please refer to [this tutorial](https://runtime.agentscope.io/en/sandbox.html) for more details.
+>
+> If you plan to use the sandbox on a large scale in production, we recommend deploying it directly in Alibaba Cloud for managed hosting: [One-click deploy sandbox on Alibaba Cloud](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83)
+
+#### Base Sandbox
+
+Use for running **Python code** or **shell commands** in an isolated environment.
 
 ```python
 from agentscope_runtime.sandbox import BaseSandbox
 
 with BaseSandbox() as box:
-    print(box.run_ipython_cell(code="print('hi')"))
-    print(box.run_shell_command(command="echo hello"))
+    # By default, pulls `agentscope/runtime-sandbox-base:latest` from DockerHub
+    print(box.list_tools()) # List all available tools
+    print(box.run_ipython_cell(code="print('hi')"))  # Run Python code
+    print(box.run_shell_command(command="echo hello"))  # Run shell command
+    input("Press Enter to continue...")
 ```
 
-> [!NOTE]
->
-> Current version requires Docker or Kubernetes to be installed and running on your system. Please refer to [this tutorial](https://runtime.agentscope.io/en/sandbox.html) for more details.
+#### GUI Sandbox
+
+Provides a **virtual desktop** environment for mouse, keyboard, and screen operations.
+
+<img src="https://img.alicdn.com/imgextra/i2/O1CN01df5SaM1xKFQP4KGBW_!!6000000006424-2-tps-2958-1802.png" alt="GUI Sandbox" width="800" height="500">
+
+```python
+from agentscope_runtime.sandbox import GuiSandbox
+
+with GuiSandbox() as box:
+    # By default, pulls `agentscope/runtime-sandbox-gui:latest` from DockerHub
+    print(box.list_tools()) # List all available tools
+    print(box.desktop_url)  # Web desktop access URL
+    print(box.computer_use(action="get_cursor_position"))  # Get mouse cursor position
+    print(box.computer_use(action="get_screenshot"))       # Capture screenshot
+    input("Press Enter to continue...")
+```
+
+#### Browser Sandbox
+
+A GUI-based sandbox with **browser operations** inside an isolated sandbox.
+
+<img src="https://img.alicdn.com/imgextra/i4/O1CN01OIq1dD1gAJMcm0RFR_!!6000000004101-2-tps-2734-1684.png" alt="GUI Sandbox" width="800" height="500">
+
+```python
+from agentscope_runtime.sandbox import BrowserSandbox
+
+with BrowserSandbox() as box:
+    # By default, pulls `agentscope/runtime-sandbox-browser:latest` from DockerHub
+    print(box.list_tools()) # List all available tools
+    print(box.desktop_url)  # Web desktop access URL
+    box.browser_navigate("https://www.google.com/")  # Open a webpage
+    input("Press Enter to continue...")
+```
+
+#### Filesystem Sandbox
+
+A GUI-based sandbox with **file system operations** such as creating, reading, and deleting files.
+
+<img src="https://img.alicdn.com/imgextra/i3/O1CN01VocM961vK85gWbJIy_!!6000000006153-2-tps-2730-1686.png" alt="GUI Sandbox" width="800" height="500">
+
+```python
+from agentscope_runtime.sandbox import FilesystemSandbox
+
+with FilesystemSandbox() as box:
+    # By default, pulls `agentscope/runtime-sandbox-filesystem:latest` from DockerHub
+    print(box.list_tools()) # List all available tools
+    print(box.desktop_url)  # Web desktop access URL
+    box.create_directory("test")  # Create a directory
+    input("Press Enter to continue...")
+```
+
+#### Configuring Sandbox Image Registry, Namespace, and Tag
+
+##### 1. Registry
+
+If pulling images from DockerHub fails (for example, due to network restrictions), you can switch the image source to Alibaba Cloud Container Registry for faster access:
+
+```bash
+export RUNTIME_SANDBOX_REGISTRY="agentscope-registry.ap-southeast-1.cr.aliyuncs.com"
+```
+
+##### 2. Namespace
+
+A namespace is used to distinguish images of different teams or projects. You can customize the namespace via an environment variable:
+
+```bash
+export RUNTIME_SANDBOX_IMAGE_NAMESPACE="agentscope"
+```
+
+For example, here `agentscope` will be used as part of the image path.
+
+##### 3. Tag
+
+An image tag specifies the version of the image, for example:
+
+```bash
+export RUNTIME_SANDBOX_IMAGE_TAG="preview"
+```
+
+Details:
+
+- Default is `latest`, which means the image version matches the PyPI latest release.
+- `preview` means the latest preview version built in sync with the **GitHub main branch**.
+- You can also use a specified version number such as `20250909`. You can check all available image versions at [DockerHub](https://hub.docker.com/repositories/agentscope).
+
+##### 4. Complete Image Path
+
+The sandbox SDK will build the full image path based on the above environment variables:
+
+```bash
+<RUNTIME_SANDBOX_REGISTRY>/<RUNTIME_SANDBOX_IMAGE_NAMESPACE>/runtime-sandbox-base:<RUNTIME_SANDBOX_IMAGE_TAG>
+```
+
+Example:
+
+```bash
+agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-base:preview
+```
 
 ---
 
@@ -170,29 +289,6 @@ with BaseSandbox() as box:
 ---
 
 ## 🔌 Agent Framework Integration
-
-### AgentScope Integration
-
-```python
-# pip install "agentscope-runtime[agentscope]"
-import os
-
-from agentscope.agent import ReActAgent
-from agentscope.model import OpenAIChatModel
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-
-agent = AgentScopeAgent(
-    name="Friday",
-    model=OpenAIChatModel(
-        "gpt-4",
-        api_key=os.getenv("OPENAI_API_KEY"),
-    ),
-    agent_config={
-        "sys_prompt": "You're a helpful assistant named {name}.",
-    },
-    agent_builder=ReActAgent,
-)
-```
 
 ### Agno Integration
 
@@ -345,7 +441,7 @@ limitations under the License.
 
 ## Contributors ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-9-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-14-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
@@ -367,6 +463,11 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Osier-Yi"><img src="https://avatars.githubusercontent.com/u/8287381?v=4?s=100" width="100px;" alt="Osier-Yi"/><br /><sub><b>Osier-Yi</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Osier-Yi" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Osier-Yi" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/kevinlin09"><img src="https://avatars.githubusercontent.com/u/26913335?v=4?s=100" width="100px;" alt="Kevin Lin"/><br /><sub><b>Kevin Lin</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=kevinlin09" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://davdgao.github.io/"><img src="https://avatars.githubusercontent.com/u/102287034?v=4?s=100" width="100px;" alt="DavdGao"/><br /><sub><b>DavdGao</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/pulls?q=is%3Apr+reviewed-by%3ADavdGao" title="Reviewed Pull Requests">👀</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/FLyLeaf-coder"><img src="https://avatars.githubusercontent.com/u/122603493?v=4?s=100" width="100px;" alt="FlyLeaf"/><br /><sub><b>FlyLeaf</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=FLyLeaf-coder" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=FLyLeaf-coder" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jinghuan-Chen"><img src="https://avatars.githubusercontent.com/u/42742857?v=4?s=100" width="100px;" alt="jinghuan-Chen"/><br /><sub><b>jinghuan-Chen</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=jinghuan-Chen" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Sodawyx"><img src="https://avatars.githubusercontent.com/u/34974468?v=4?s=100" width="100px;" alt="Yuxuan Wu"/><br /><sub><b>Yuxuan Wu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Sodawyx" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Sodawyx" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/TianYu92"><img src="https://avatars.githubusercontent.com/u/12960468?v=4?s=100" width="100px;" alt="Fear1es5"/><br /><sub><b>Fear1es5</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3ATianYu92" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
   <tfoot>

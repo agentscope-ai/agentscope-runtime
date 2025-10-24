@@ -3,8 +3,9 @@
 # AgentScope Runtime
 
 [![PyPI](https://img.shields.io/pypi/v/agentscope-runtime?label=PyPI&color=brightgreen&logo=python)](https://pypi.org/project/agentscope-runtime/)
+[![Downloads](https://static.pepy.tech/badge/agentscope-runtime)](https://pepy.tech/project/agentscope-runtime)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg?logo=python&label=Python)](https://python.org)
-[![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=Liscnese)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=License)](LICENSE)
 [![Code Style](https://img.shields.io/badge/code%20style-black-black.svg?logo=python&label=CodeStyle)](https://github.com/psf/black)
 [![GitHub Stars](https://img.shields.io/github/stars/agentscope-ai/agentscope-runtime?style=flat&logo=github&color=yellow&label=Stars)](https://github.com/agentscope-ai/agentscope-runtime/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/agentscope-ai/agentscope-runtime?style=flat&logo=github&color=purple&label=Forks)](https://github.com/agentscope-ai/agentscope-runtime/network)
@@ -24,6 +25,12 @@
 *AgentScope Runtime 解决了智能体开发中的两个关键挑战：安全的沙盒工具执行和可扩展的智能体服务化部署。凭借双核架构，AgentScope Runtime提供了与智能体框架无关的基础设施，以实现智能体部署的可观察性和安全工具调用。*
 
 </div>
+
+---
+
+## 🆕 新闻
+
+* **[2025-10]** 添加了 **GUI Sandbox**，支持虚拟桌面环境、鼠标、键盘以及屏幕操作。引入了 **`desktop_url`** 属性，适用于 GUI Sandbox、Browser Sandbox 和 Filesystem Sandbox —— 允许通过浏览器直接访问虚拟桌面。详情请参阅我们的 [cookbook](https://runtime.agentscope.io/zh/sandbox.html#id18)。
 
 ---
 
@@ -71,9 +78,6 @@
 ```bash
 # 安装核心依赖
 pip install agentscope-runtime
-
-# 安装沙盒依赖
-pip install "agentscope-runtime[sandbox]"
 ```
 
 （可选）从源码安装：
@@ -85,9 +89,6 @@ cd agentscope-runtime
 
 # 安装核心依赖
 pip install -e .
-
-# 安装沙盒依赖
-pip install -e ".[sandbox]"
 ```
 
 ### 基本智能体使用示例
@@ -97,23 +98,32 @@ pip install -e ".[sandbox]"
 ```python
 import asyncio
 import os
+
 from agentscope_runtime.engine import Runner
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
-from agentscope_runtime.engine.llms import QwenLLM
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from agentscope_runtime.engine.services.context_manager import ContextManager
+
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
 
 
 async def main():
     # 设置语言模型和智能体
-    model = QwenLLM(
-        model_name="qwen-turbo",
-        api_key=os.getenv("DASHSCOPE_API_KEY"),
+    agent = AgentScopeAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+        ),
+        agent_config={
+            "sys_prompt": "You're a helpful assistant named Friday.",
+        },
+        agent_builder=ReActAgent,
     )
-    llm_agent = LLMAgent(model=model, name="llm_agent")
 
     async with ContextManager() as context_manager:
-        runner = Runner(agent=llm_agent, context_manager=context_manager)
+        runner = Runner(agent=agent, context_manager=context_manager)
 
         # 创建请求并流式传输响应
         request = AgentRequest(
@@ -140,19 +150,128 @@ asyncio.run(main())
 
 ### 基本沙盒使用示例
 
-此示例演示如何创建沙盒并在沙盒中执行工具。
+这些示例演示了如何创建沙箱环境并在其中执行工具，部分示例提供前端可交互页面（通过VNC，即Virtual Network Computing技术实现）
+
+> [!NOTE]
+>
+> 当前版本需要安装并运行Docker或者Kubernetes，未来我们将提供更多公有云部署选项。请参考[此教程](https://runtime.agentscope.io/zh/sandbox.html)了解更多详情。
+>
+> 如果您计划在生产中大规模使用沙箱，推荐直接在阿里云中进行托管部署：[在阿里云一键部署沙箱](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83)
+
+#### 基础沙箱（Base Sandbox）
+
+用于在隔离环境中运行 **Python 代码** 或 **Shell 命令**。
 
 ```python
 from agentscope_runtime.sandbox import BaseSandbox
 
 with BaseSandbox() as box:
-    print(box.run_ipython_cell(code="print('你好')"))
+    # 默认从 DockerHub 拉取 `agentscope/runtime-sandbox-base:latest` 镜像
+    print(box.list_tools()) # 列出所有可用工具
+    print(box.run_ipython_cell(code="print('hi')"))
     print(box.run_shell_command(command="echo hello"))
+    input("按 Enter 键继续...")
 ```
 
-> [!NOTE]
->
-> 当前版本需要安装并运行Docker或者Kubernetes，未来我们将提供更多公有云部署选项。请参考[此教程](https://runtime.agentscope.io/zh/sandbox.html)了解更多详情。
+#### GUI 沙箱 （GUI Sandbox）
+
+提供**可视化桌面环境**，可执行鼠标、键盘以及屏幕相关操作。
+
+<img src="https://img.alicdn.com/imgextra/i2/O1CN01df5SaM1xKFQP4KGBW_!!6000000006424-2-tps-2958-1802.png" alt="GUI Sandbox" width="800" height="500">
+
+```python
+from agentscope_runtime.sandbox import GuiSandbox
+
+with GuiSandbox() as box:
+    # 默认从 DockerHub 拉取 `agentscope/runtime-sandbox-gui:latest` 镜像
+    print(box.list_tools()) # 列出所有可用工具
+    print(box.desktop_url)  # 桌面访问链接
+    print(box.computer_use(action="get_cursor_position"))  # 获取鼠标位置
+    print(box.computer_use(action="get_screenshot"))       # 获取屏幕截图
+    input("按 Enter 键继续...")
+```
+
+#### 浏览器沙箱（Browser Sandbox）
+
+基于 GUI 的沙箱，可进行浏览器操作。
+
+<img src="https://img.alicdn.com/imgextra/i4/O1CN01OIq1dD1gAJMcm0RFR_!!6000000004101-2-tps-2734-1684.png" alt="GUI Sandbox" width="800" height="500">
+
+```python
+from agentscope_runtime.sandbox import BrowserSandbox
+
+with BrowserSandbox() as box:
+    # 默认从 DockerHub 拉取 `agentscope/runtime-sandbox-browser:latest` 镜像
+    print(box.list_tools()) # 列出所有可用工具
+    print(box.desktop_url)  # 浏览器桌面访问链接
+    box.browser_navigate("https://www.google.com/")  # 打开网页
+    input("按 Enter 键继续...")
+```
+
+#### 文件系统沙箱 （Filesystem Sandbox）
+
+基于 GUI 的隔离沙箱，可进行文件系统操作，如创建、读取和删除文件。
+
+<img src="https://img.alicdn.com/imgextra/i3/O1CN01VocM961vK85gWbJIy_!!6000000006153-2-tps-2730-1686.png" alt="GUI Sandbox" width="800" height="500">
+
+```python
+from agentscope_runtime.sandbox import FilesystemSandbox
+
+with FilesystemSandbox() as box:
+    # 默认从 DockerHub 拉取 `agentscope/runtime-sandbox-filesystem:latest` 镜像
+    print(box.list_tools()) # 列出所有可用工具
+    print(box.desktop_url)  # 桌面访问链接
+    box.create_directory("test")  # 创建目录
+    input("按 Enter 键继续...")
+```
+
+#### 配置沙箱镜像的 Registry（镜像仓库）、Namespace（命名空间）和 Tag（标签）
+
+##### 1. Registry（镜像仓库）
+
+如果从 DockerHub 拉取镜像失败（例如由于网络限制），你可以将镜像源切换为阿里云容器镜像服务，以获得更快的访问速度：
+
+```bash
+export RUNTIME_SANDBOX_REGISTRY="agentscope-registry.ap-southeast-1.cr.aliyuncs.com"
+```
+
+##### 2. Namespace（命名空间）
+
+命名空间用于区分不同的团队或项目镜像，你可以通过环境变量自定义 namespace：
+
+```bash
+export RUNTIME_SANDBOX_IMAGE_NAMESPACE="agentscope"
+```
+
+例如，这里会使用 `agentscope` 作为镜像路径的一部分。
+
+##### 3. Tag（标签）
+
+镜像标签用于指定镜像版本，例如：
+
+```bash
+export RUNTIME_SANDBOX_IMAGE_TAG="preview"
+```
+
+其中：
+
+- 默认为`latest`，表示与PyPI发行版本适配的镜像版本
+- `preview` 表示与 **GitHub main 分支** 同步构建的最新预览版本
+- 你也可以使用指定版本号，如 `20250909`，可以在[DockerHub](https://hub.docker.com/repositories/agentscope)查看所有可用镜像版本
+
+##### 4. 完整镜像路径
+
+沙箱 SDK 会根据上述环境变量拼接拉取镜像的完整路径：
+
+```bash
+<RUNTIME_SANDBOX_REGISTRY>/<RUNTIME_SANDBOX_IMAGE_NAMESPACE>/runtime-sandbox-base:<RUNTIME_SANDBOX_IMAGE_TAG>
+```
+
+示例：
+
+```bash
+agentscope-registry.ap-southeast-1.cr.aliyuncs.com/myteam/runtime-sandbox-base:preview
+```
 
 ---
 
@@ -167,29 +286,6 @@ with BaseSandbox() as box:
 ---
 
 ## 🔌 智能体框架集成
-
-### AgentScope 集成
-
-```python
-# pip install "agentscope-runtime[agentscope]"
-import os
-
-from agentscope.agent import ReActAgent
-from agentscope.model import OpenAIChatModel
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-
-agent = AgentScopeAgent(
-    name="Friday",
-    model=OpenAIChatModel(
-        "gpt-4",
-        api_key=os.getenv("OPENAI_API_KEY"),
-    ),
-    agent_config={
-        "sys_prompt": "You're a helpful assistant named {name}.",
-    },
-    agent_builder=ReActAgent,
-)
-```
 
 ### Agno集成
 
@@ -345,7 +441,7 @@ limitations under the License.
 
 ## 贡献者 ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-9-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-14-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 
@@ -368,6 +464,11 @@ limitations under the License.
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Osier-Yi"><img src="https://avatars.githubusercontent.com/u/8287381?v=4?s=100" width="100px;" alt="Osier-Yi"/><br /><sub><b>Osier-Yi</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Osier-Yi" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Osier-Yi" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/kevinlin09"><img src="https://avatars.githubusercontent.com/u/26913335?v=4?s=100" width="100px;" alt="Kevin Lin"/><br /><sub><b>Kevin Lin</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=kevinlin09" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://davdgao.github.io/"><img src="https://avatars.githubusercontent.com/u/102287034?v=4?s=100" width="100px;" alt="DavdGao"/><br /><sub><b>DavdGao</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/pulls?q=is%3Apr+reviewed-by%3ADavdGao" title="Reviewed Pull Requests">👀</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/FLyLeaf-coder"><img src="https://avatars.githubusercontent.com/u/122603493?v=4?s=100" width="100px;" alt="FlyLeaf"/><br /><sub><b>FlyLeaf</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=FLyLeaf-coder" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=FLyLeaf-coder" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jinghuan-Chen"><img src="https://avatars.githubusercontent.com/u/42742857?v=4?s=100" width="100px;" alt="jinghuan-Chen"/><br /><sub><b>jinghuan-Chen</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=jinghuan-Chen" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Sodawyx"><img src="https://avatars.githubusercontent.com/u/34974468?v=4?s=100" width="100px;" alt="Yuxuan Wu"/><br /><sub><b>Yuxuan Wu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Sodawyx" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Sodawyx" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/TianYu92"><img src="https://avatars.githubusercontent.com/u/12960468?v=4?s=100" width="100px;" alt="Fear1es5"/><br /><sub><b>Fear1es5</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3ATianYu92" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
   <tfoot>

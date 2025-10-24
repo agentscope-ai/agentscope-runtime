@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 SYSTEM_PROMPT = """You are playing the role of a Web
- Using AI assistant named {name}.
+ Using AI assistant named Friday.
 
 # Objective
 Your goal is to complete given tasks by controlling

@@ -2,33 +2,35 @@
 # pylint: disable=dangerous-default-value
 from typing import Optional
 
-from ...constant import IMAGE_TAG
+from ...utils import build_image_uri
 from ...registry import SandboxRegistry
 from ...enums import SandboxType
-from ...box.sandbox import Sandbox
+from ...box.base import BaseSandbox
+from ...box.gui import GUIMixin
 
 
 @SandboxRegistry.register(
-    f"agentscope/runtime-sandbox-filesystem:{IMAGE_TAG}",
+    build_image_uri("runtime-sandbox-filesystem"),
     sandbox_type=SandboxType.FILESYSTEM,
     security_level="medium",
     timeout=60,
     description="Filesystem sandbox",
 )
-class FilesystemSandbox(Sandbox):
-    def __init__(
+class FilesystemSandbox(GUIMixin, BaseSandbox):
+    def __init__(  # pylint: disable=useless-parent-delegation
         self,
         sandbox_id: Optional[str] = None,
         timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
+        sandbox_type: SandboxType = SandboxType.FILESYSTEM,
     ):
         super().__init__(
             sandbox_id,
             timeout,
             base_url,
             bearer_token,
-            SandboxType.FILESYSTEM,
+            sandbox_type,
         )
 
     def read_file(self, path: str):

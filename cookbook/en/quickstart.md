@@ -44,8 +44,9 @@ Start by importing all necessary modules:
 import os
 from contextlib import asynccontextmanager
 from agentscope_runtime.engine import Runner
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
-from agentscope_runtime.engine.llms import QwenLLM
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+from agentscope.model import OpenAIChatModel
+from agentscope.agent import ReActAgent
 from agentscope_runtime.engine.schemas.agent_schemas import (
     MessageType,
     RunStatus,
@@ -58,47 +59,11 @@ from agentscope_runtime.engine.services.context_manager import (
 print("✅ Dependencies imported successfully")
 ```
 
-### Step 2: Create LLM Agent
+### Step 2: Create Agent
 
-Initialize your LLM model and create the agent:
-
-```{code-cell}
-# Create an LLM instance
-model = QwenLLM(
-    model_name="qwen-turbo",
-    api_key=os.getenv("DASHSCOPE_API_KEY")
-)
-
-# Create the LLM Agent
-llm_agent = LLMAgent(
-    model=model,
-    name="llm_agent",
-    description="A simple LLM agent for text generation",
-)
-
-print("✅ LLM Agent created successfully")
-```
-
-```{note}
-For utilizing other LLM and agent implementations from other framework, please refer to {ref}`AgentScope Agent <agentscope-agent>`, {ref}`Agno Agent <agno-agent>`, {ref}`AutoGen Agent <autogen-agent>`, and {ref}`LangGraph Agent <langgraph-agent>`.
-```
-
-(agentscope-agent)=
-
-#### (Optional) With AgentScope Agent
-
-````{note}
-If you want to use Agent from AgentScope, you should install AgentScope via:
-```bash
-pip install "agentscope-runtime[agentscope]"
-```
-````
+We will take Agentscope as example.
 
 ```{code-cell}
-from agentscope.agent import ReActAgent
-from agentscope.model import OpenAIChatModel
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-
 agent = AgentScopeAgent(
     name="Friday",
     model=OpenAIChatModel(
@@ -106,12 +71,17 @@ agent = AgentScopeAgent(
         api_key=os.getenv("OPENAI_API_KEY"),
     ),
     agent_config={
-        "sys_prompt": "You're a helpful assistant named {name}.",
+        "sys_prompt": "You're a helpful assistant named Friday.",
     },
     agent_builder=ReActAgent,
 )
 
 print("✅ AgentScope agent created successfully")
+```
+```
+
+```{note}
+For utilizing other LLM and agent implementations from other framework, please refer to {ref}`Agno Agent <agno-agent>`, {ref}`AutoGen Agent <autogen-agent>`, and {ref}`LangGraph Agent <langgraph-agent>`.
 ```
 
 (agno-agent)=
@@ -414,21 +384,6 @@ def test_deployed_agent():
         print("✅ Streaming test completed")
     except requests.exceptions.RequestException as e:
         print(f"❌ Streaming test failed: {e}")
-
-    # Test JSON responses (if available)
-    try:
-        response = requests.post(
-            "http://localhost:8090/process",
-            json=payload,
-            timeout=30,
-        )
-
-        if response.status_code == 200:
-            print(f"📄 JSON Response: {response.content}")
-            print("✅ JSON test completed")
-        else:
-            print(f"⚠️ JSON endpoint returned status: {response.status_code}")
-
     except requests.exceptions.RequestException as e:
         print(f"ℹ️ JSON endpoint not available or failed: {e}")
 
@@ -470,7 +425,7 @@ This guide demonstrates two main scenarios for using the AgentScope Runtime fram
 
 Build and test agents using the `Runner` class:
 
-✅ Create and configure agents (LLMAgent, AgentScope, Agno, LangGraph)
+✅ Create and configure agents (AgentScope, Agno, LangGraph)
 
 ✅ Set up Runner with context management
 

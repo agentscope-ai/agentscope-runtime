@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=too-many-nested-blocks, too-many-branches, too-many-statements
 # pylint:disable=line-too-long, protected-access
-
+import copy
+import os
+import logging
 import json
 import threading
 import uuid
@@ -9,7 +11,7 @@ from functools import partial
 from typing import Optional, Type
 
 from agentscope import setup_logger
-from agentscope.agent import ReActAgent
+from agentscope.agent import AgentBase, ReActAgent
 from agentscope.formatter import (
     FormatterBase,
     DashScopeChatFormatter,
@@ -40,6 +42,7 @@ from .hooks import (
     clear_msg_instances,
     run_async_in_thread,
 )
+from ..utils import build_agent
 from ...agents import Agent
 from ...schemas.agent_schemas import (
     Message,
@@ -53,6 +56,7 @@ from ...schemas.context import Context
 
 # Disable logging from agentscope
 setup_logger(level="CRITICAL")
+logger = logging.getLogger(__name__)
 
 
 class AgentScopeContextAdapter:
@@ -95,7 +99,11 @@ class AgentScopeContextAdapter:
             "name": message.role,
             "role": role_label,
         }
-        if message.type == MessageType.PLUGIN_CALL:
+        if message.type in (
+            MessageType.PLUGIN_CALL,
+            MessageType.FUNCTION_CALL,
+        ):
+            # convert PLUGIN_CALL, FUNCTION_CALL to ToolUseBlock
             result["content"] = [
                 ToolUseBlock(
                     type="tool_use",
@@ -104,7 +112,12 @@ class AgentScopeContextAdapter:
                     input=json.loads(message.content[0].data["arguments"]),
                 ),
             ]
-        elif message.type == MessageType.PLUGIN_CALL_OUTPUT:
+        elif message.type in (
+            MessageType.PLUGIN_CALL_OUTPUT,
+            MessageType.FUNCTION_CALL_OUTPUT,
+        ):
+            # convert PLUGIN_CALL_OUTPUT, FUNCTION_CALL_OUTPUT to
+            # ToolResultBlock
             result["content"] = [
                 ToolResultBlock(
                     type="tool_result",
@@ -150,6 +163,10 @@ class AgentScopeContextAdapter:
             )
 
         toolkit = self.attr["agent_config"].get("toolkit", Toolkit())
+        # Deepcopy to avoid modify the original toolkit
+        # TODO: when toolkit contains live sessions, deepcopy fails,
+        #  need further fixed in AgentScope
+        toolkit = copy.deepcopy(toolkit)
         tools = self.attr["tools"]
 
         # in case, tools is None and tools == []
@@ -195,7 +212,7 @@ class AgentScopeAgent(Agent):
         model: ChatModelBase,
         tools=None,
         agent_config=None,
-        agent_builder: Optional[Type[ReActAgent]] = ReActAgent,
+        agent_builder: Optional[Type[AgentBase]] = ReActAgent,
     ):
         super().__init__(name=name, agent_config=agent_config)
         assert isinstance(
@@ -209,7 +226,7 @@ class AgentScopeAgent(Agent):
 
         assert issubclass(
             agent_builder,
-            ReActAgent,
+            AgentBase,
         ), "agent_builder must be a subclass of AgentBase in AgentScope"
 
         # Replace name if not exists
@@ -228,14 +245,41 @@ class AgentScopeAgent(Agent):
         return AgentScopeAgent(**self._attr)
 
     def build(self, as_context):
-        self._agent = self._attr["agent_builder"](
+        params = {
             **self._attr["agent_config"],
-            model=as_context.model,
-            formatter=as_context.formatter,
-            memory=as_context.memory,
-            toolkit=as_context.toolkit,
+            **{
+                "model": as_context.model,
+                "formatter": self._attr["agent_config"].get(
+                    "formatter",
+                    as_context.formatter,
+                ),
+                "memory": as_context.memory,
+                "toolkit": as_context.toolkit,
+            },
+        }
+
+        builder_cls = self._attr["agent_builder"]
+        self._agent = build_agent(builder_cls, params)
+
+        # Read env variable (default = false)
+        console_output_env = (
+            os.getenv(
+                "AGENTSCOPE_AGENT_CONSOLE_OUTPUT",
+                "false",
+            )
+            .strip()
+            .lower()
         )
-        self._agent._disable_console_output = True
+
+        if console_output_env not in ("true", "false"):
+            raise ValueError(
+                f"Invalid value for AGENTSCOPE_AGENT_CONSOLE_OUTPUT: "
+                f"'{console_output_env}'. "
+                f"Only 'true' or 'false' is allowed.",
+            )
+
+        # If true → enable output; if false → disable output
+        self._agent._disable_console_output = console_output_env == "false"
 
         self._agent.register_instance_hook(
             "pre_print",

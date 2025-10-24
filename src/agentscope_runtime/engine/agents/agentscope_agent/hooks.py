@@ -6,6 +6,7 @@ import os
 import time
 import threading
 import logging
+import traceback
 
 from collections import defaultdict
 from typing import Union, Optional, Generator, Any, List
@@ -33,7 +34,7 @@ def run_async_in_thread(coro):
             logging.error(f"Runtime error in async thread: {e}")
             return None
     except Exception as e:
-        logging.error(f"Error in async thread: {e}")
+        logging.error(f"Error in async thread: {e}, {traceback.format_exc()}")
         return None
 
 

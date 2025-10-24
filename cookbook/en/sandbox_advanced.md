@@ -46,6 +46,12 @@ For advanced configurations, you can use the `--config` option to specify a diff
 runtime-sandbox-server --config custom.env
 ```
 
+```{note}
+If you plan to use the sandbox on a large scale in production, we recommend deploying it directly in Alibaba Cloud for managed hosting.
+
+[One-click deploy sandbox on Alibaba Cloud](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83)
+```
+
 ### Custom Configuration
 
 For custom deployments or specific requirements, you can customize the server configuration by creating a `.env` file in your working directory:
@@ -105,12 +111,13 @@ KUBECONFIG_PATH=
 #### Runtime Manager Settings
 | Parameter | Description | Default                    | Notes |
 | --- | --- |----------------------------| --- |
-| `DEFAULT_SANDBOX_TYPE` | Default sandbox type | `base`                     | `base`, `filesystem`, `browser` |
+| `DEFAULT_SANDBOX_TYPE` | Default sandbox type(s) | `base`                     | Can be a single type or a list of types, enabling multiple independent sandbox pools. Valid values include base, filesystem, browser, etc.<br/>Supported formats:<br/>• Single type: `DEFAULT_SANDBOX_TYPE=base`<br/>• Multiple types (comma-separated): `DEFAULT_SANDBOX_TYPE=base,gui`<br/>• Multiple types (JSON list): `DEFAULT_SANDBOX_TYPE=["base","gui"]`<br/>Each type will have its own separate pre-warmed pool. |
 | `POOL_SIZE` | Pre-warmed container pool size | `1`                        | Cached containers for faster startup. The `POOL_SIZE` parameter controls how many containers are pre-created and cached in a ready-to-use state. When users request a new sandbox, the system will first try to allocate from this pre-warmed pool, significantly reducing startup time compared to creating containers from scratch. For example, with `POOL_SIZE=10`, the system maintains 10 ready containers that can be instantly assigned to new requests. |
 | `AUTO_CLEANUP` | Automatic container cleanup | `True`                     | All sandboxes will be released after the server is closed if set to `True`. |
 | `CONTAINER_PREFIX_KEY` | Container name prefix | `agent-runtime-container-` | For identification |
 | `CONTAINER_DEPLOYMENT` | Container runtime | `docker`                   | Currently, `docker` and `k8s` are supported |
 | `DEFAULT_MOUNT_DIR` | Default mount directory | `sessions_mount_dir`       | For persistent storage path where the `/workspace` file is stored |
+| `READONLY_MOUNTS` | Read-only directory mounts | `None` | A dictionary mapping **host paths** to **container paths**, mounted in **read-only** mode. Used to share files/configurations without allowing container writes. Example:<br/>`{"\/Users\/alice\/data": "\/data"}` mounts the host's `/Users/alice/data` to `/data` inside the container as read-only. |
 | `PORT_RANGE` | Available port range | `[49152,59152]`            | For service port allocation |
 
 ####  (Optional) Redis Settings
@@ -146,7 +153,7 @@ For distributed file storage using [Alibaba Cloud Object Storage Service](https:
 | `OSS_ACCESS_KEY_SECRET` | OSS access key secret | Empty | Keep secure |
 | `OSS_BUCKET_NAME` | OSS bucket name | Empty | Pre-created bucket |
 
-### (Optional) K8S Settings
+#### (Optional) K8S Settings
 
 To configure settings specific to Kubernetes in your sandbox server, ensure you set `CONTAINER_DEPLOYMENT=k8s` to activate this feature. Consider adjusting the following parameters:
 
@@ -155,9 +162,59 @@ To configure settings specific to Kubernetes in your sandbox server, ensure you 
 | `K8S_NAMESPACE`   | Kubernetes namespace to be used | `default` | Set the namespace for resource deployment            |
 | `KUBECONFIG_PATH` | Path to the kubeconfig file     | `None`    | Specifies the kubeconfig location for cluster access |
 
+### (Optional) AgentRun Settings
+
+[AgentRun](https://functionai.console.aliyun.com/cn-hangzhou/agent/) is a serverless intelligent Agent development framework launched by Alibaba Cloud. It provides a complete set of tools to help developers quickly build, deploy, and manage AI Agent applications. You can deploy the sandbox servers on AgentRun.
+
+To configure settings specific to [AgentRun](https://functionai.console.aliyun.com/cn-hangzhou/agent/) in your sandbox server, ensure you set `CONTAINER_DEPLOYMENT=agentrun`. Consider adjusting the following parameters:
+
+| Parameter                     | Description              | Default                          | Notes                                                                                     |
+|-------------------------------| ------------------------ |----------------------------------|-------------------------------------------------------------------------------------------|
+| `AGENT_RUN_ACCOUNT_ID`        | Alibaba Cloud Account ID             | Empty                           | Alibaba Cloud main account ID. Log in to the [RAM console](https://ram.console.aliyun.com/profile/access-keys) to get the Alibaba Cloud account ID and AK/SK |
+| `AGENT_RUN_ACCESS_KEY_ID`     | Access Key ID               | Empty             | Alibaba Cloud AccessKey ID, requires `AliyunAgentRunFullAccess` permission                                           |
+| `AGENT_RUN_ACCESS_KEY_SECRET` | Access Key Secret           | Empty         | Alibaba Cloud AccessKey Secret                                                                       |
+| `AGENT_RUN_REGION_ID`         | Deployment Region ID               | Empty | AgentRun deployment region ID                                                                            |
+| `AGENT_RUN_CPU`               | CPU Specification                  | `2.0`                            | vCPU specification                                                                                    |
+| `AGENT_RUN_MEMORY`            | Memory Specification                 | `2048`                           | Memory specification(MB)                                                                                  |
+| `AGENT_RUN_VPC_ID`            | VPC ID                   | `None`                           | VPC network ID (optional)                                                                               |
+| `AGENT_RUN_VSWITCH_IDS`       | Switch ID List             | `None`                           | VSwitch ID list (optional)                                                                          |
+| `AGENT_RUN_SECURITY_GROUP_ID` | Security Group ID                 | `None`                           | Security group ID (optional)                                                                                 |
+| `AGENT_RUN_PREFIX`            | Resource Name Prefix             | `agentscope-sandbox`             | Prefix for created resource names                                                                                 |
+| `AGENT_RUN_LOG_PROJECT`       | SLS Log Project              | `None`                           | SLS log project name (optional)                                                                             |
+| `AGENT_RUN_LOG_STORE`         | SLS Log Store                | `None`                           | SLS log store name (optional)                                                                              |
+
+### Loading Custom Sandbox
+
+In addition to the default basic sandbox types, you can implement a custom sandbox by writing an extension module and loading it with the `--extension` parameter.
+This allows you to modify the security level, add environment variables, define custom timeouts, and more.
+
+#### Writing a custom sandbox extension (e.g. `custom_sandbox.py`)
+
+See {ref}`Custom Sandbox Class <custom_sandbox>`
+
+> - `@SandboxRegistry.register` will register the class into the sandbox manager, so it can be recognized and used at startup.
+> - The `environment` field can inject external API keys or other necessary configurations into the sandbox.
+> - The class inherits from `Sandbox` and can override its methods to implement more customized logic.
+
+#### Loading the extension at startup
+
+Place `custom_sandbox.py` in the project directory or in a Python module path where it can be imported, then start the server specifying the `--extension` parameter:
+
+```bash
+runtime-sandbox-server --extension custom_sandbox.py
+```
+
+If you have multiple sandbox extensions, you can add multiple `--extension` options, for example:
+
+```bash
+runtime-sandbox-server \
+    --extension custom_sandbox1.py \
+    --extension custom_sandbox2.py
+```
+
 ### Starting the Server
 
-Once your `.env` file is configured, start the server:
+You can also start the server directly without using startup options after configuring the `.env` file.
 
 ```bash
 runtime-sandbox-server
@@ -194,7 +251,7 @@ To create custom sandboxes, you need to install AgentScope Runtime from source i
 git clone https://github.com/agentscope-ai/agentscope-runtime.git
 cd agentscope-runtime
 git submodule update --init --recursive
-pip install -e ".[sandbox]"
+pip install -e .
 ```
 
 ```{note}
@@ -204,27 +261,28 @@ The `-e` (editable) flag is essential when creating custom sandboxes because it 
 - Develop and test custom tools iteratively
 ```
 
+(custom_sandbox)=
+
 ### Creating a Custom Sandbox Class
 
 You can define your custom sandbox type and register it in the system to meet special requirements. Just inherit from `Sandbox` and decorate with `SandboxRegistry.register`, then put the file in `src/agentscope_runtime/sandbox/custom` (e.g., `src/agentscope_runtime/sandbox/custom/custom_sandbox.py`):
 
 ```python
-# src/agentscope_runtime/sandbox/custom/custom_sandbox.py
 # -*- coding: utf-8 -*-
 import os
 
 from typing import Optional
 
-from ..version import __version__
-from ..registry import SandboxRegistry
-from ..enums import SandboxType
-from ..box.sandbox import Sandbox
+from agentscope_runtime.sandbox.utils import build_image_uri
+from agentscope_runtime.sandbox.registry import SandboxRegistry
+from agentscope_runtime.sandbox.enums import SandboxType
+from agentscope_runtime.sandbox.box.sandbox import Sandbox
 
-SANDBOXTYPE = "custom_sandbox"
+SANDBOXTYPE = "my_custom_sandbox"
 
 
 @SandboxRegistry.register(
-    f"agentscope/runtime-sandbox-{SANDBOXTYPE}:{__version__}",
+    build_image_uri(f"runtime-sandbox-{SANDBOXTYPE}"),
     sandbox_type=SANDBOXTYPE,
     security_level="medium",
     timeout=60,
@@ -234,7 +292,7 @@ SANDBOXTYPE = "custom_sandbox"
         "AMAP_MAPS_API_KEY": os.getenv("AMAP_MAPS_API_KEY", ""),
     },
 )
-class CustomSandbox(Sandbox):
+class MyCustomSandbox(Sandbox):
     def __init__(
         self,
         sandbox_id: Optional[str] = None,
@@ -296,9 +354,9 @@ COPY src/agentscope_runtime/sandbox/box/shared/app.py ./
 COPY src/agentscope_runtime/sandbox/box/shared/routers/ ./routers/
 COPY src/agentscope_runtime/sandbox/box/shared/dependencies/ ./dependencies/
 COPY src/agentscope_runtime/sandbox/box/shared/artifacts/ ./ext_services/artifacts/
-COPY src/agentscope_runtime/sandbox/box/shared/third_party/markdownify-mcp/ ./mcp_project/markdownify-mcp/
-COPY src/agentscope_runtime/sandbox/box/shared/third_party/steel-browser/ ./ext_services/steel-browser/
-COPY examples/custom_sandbox/custom_sandbox/box/ ./
+COPY examples/custom_sandbox/box/third_party/markdownify-mcp/ ./mcp_project/markdownify-mcp/
+COPY examples/custom_sandbox/box/third_party/steel-browser/ ./ext_services/steel-browser/
+COPY examples/custom_sandbox/box/ ./
 
 RUN pip install -r requirements.txt
 
@@ -358,13 +416,14 @@ CMD ["/bin/sh", "-c", "envsubst '$SECRET_TOKEN' < /etc/nginx/nginx.conf.template
 After preparing your Dockerfile and custom sandbox class, use the built-in builder tool to build your custom sandbox image:
 
 ```bash
-runtime-sandbox-builder custom_sandbox --dockerfile_path examples/custom_sandbox/custom_sandbox/Dockerfile
+runtime-sandbox-builder my_custom_sandbox --dockerfile_path examples/custom_sandbox/Dockerfile --extension PATH_TO_YOUR_SANDBOX_MODULE
 ```
 
 **Command Parameters:**
 
 - `custom_sandbox`: The name/tag for your custom sandbox image
 - `--dockerfile_path`: Path to your custom Dockerfile
+- `--extension`: Path to your custom sandbox python module
 
 Once built, your custom sandbox image will be ready to use with the corresponding sandbox class you defined.
 
@@ -379,10 +438,13 @@ runtime-sandbox-builder all
 # Build base image (~1Gb)
 runtime-sandbox-builder base
 
-# Build browser image (~2.6Gb)
+# Build gui image (~2Gb)
+runtime-sandbox-builder gui
+
+# Build browser image (~2Gb)
 runtime-sandbox-builder browser
 
-# Build filesystem image (~1Gb)
+# Build filesystem image (~2Gb)
 runtime-sandbox-builder filesystem
 ```
 The above commands are useful when you want to:
@@ -392,13 +454,13 @@ The above commands are useful when you want to:
 - Ensure you have the latest version of the built-in images
 - Work in air-gapped environments
 
-### Change The Used Image Tag
+### Change Sandbox Image Configuration
 
-You can change the environment variable to use a different image tag for the Sandbox module. By default, the tag used is `"latest"`.
+The Docker image used by the Sandbox module is determined by the following three environment variables.
+You can modify any of them as needed to change the image source or version.
 
-```bash
-export RUNTIME_SANDBOX_IMAGE_TAG="my_custom"
-```
-
-
-
+| Environment Variable              | Purpose                                                      | Default Value  | Example Modification                                         |
+| --------------------------------- | ------------------------------------------------------------ | -------------- | ------------------------------------------------------------ |
+| `RUNTIME_SANDBOX_REGISTRY`        | Docker registry address. An empty value means Docker Hub will be used. | `""`           | `export RUNTIME_SANDBOX_REGISTRY="agentscope-registry.ap-southeast-1.cr.aliyuncs.com"` |
+| `RUNTIME_SANDBOX_IMAGE_NAMESPACE` | Image namespace, similar to an account name.                 | `"agentscope"` | `export RUNTIME_SANDBOX_IMAGE_NAMESPACE="my_namespace"`      |
+| `RUNTIME_SANDBOX_IMAGE_TAG`       | Image version tag.                                           | `"latest"`     | `export RUNTIME_SANDBOX_IMAGE_TAG="my_custom"`               |
