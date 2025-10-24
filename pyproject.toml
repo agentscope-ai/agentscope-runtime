@@ -11,7 +11,7 @@ dependencies = [
     "openai",
     "pydantic>=2.11.7",
     "requests>=2.32.4",
-    "agentscope>=1.0.1",
+    "agentscope>=1.0.6",
     "docker>=7.1.0",
     "redis>=6.0.0",
     "oss2>=2.19.1",
