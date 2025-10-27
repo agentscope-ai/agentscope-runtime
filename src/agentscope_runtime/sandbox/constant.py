@@ -26,6 +26,3 @@ IMAGE_NAMESPACE = os.getenv("RUNTIME_SANDBOX_IMAGE_NAMESPACE", "agentscope")
 
 # Image Tag
 IMAGE_TAG = os.getenv("RUNTIME_SANDBOX_IMAGE_TAG", "latest")
-
-# Browser Session ID
-BROWSER_SESSION_ID = "123e4567-e89b-12d3-a456-426614174000"

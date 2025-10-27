@@ -150,7 +150,8 @@ class DockerClient(BaseClient):
 
             return _id, list(port_mapping.values()), "localhost"
         except Exception as e:
-            logger.error(f"An error occurred: {e}, {traceback.format_exc()}")
+            logger.warning(f"An error occurred: {e}")
+            logger.debug(f"{traceback.format_exc()}")
             return None, None, None
 
     def start(self, container_id):
@@ -163,7 +164,8 @@ class DockerClient(BaseClient):
             container.start()
             return True
         except Exception as e:
-            logger.error(f"An error occurred: {e}, {traceback.format_exc()}")
+            logger.warning(f"An error occurred: {e}")
+            logger.debug(f"{traceback.format_exc()}")
             return False
 
     def stop(self, container_id, timeout=None):
@@ -175,7 +177,8 @@ class DockerClient(BaseClient):
             container.stop(timeout=timeout)
             return True
         except Exception as e:
-            logger.error(f"An error occurred: {e}, {traceback.format_exc()}")
+            logger.warning(f"An error occurred: {e}")
+            logger.debug(f"{traceback.format_exc()}")
             return False
 
     def remove(self, container_id, force=False):
@@ -197,7 +200,8 @@ class DockerClient(BaseClient):
 
             return True
         except Exception as e:
-            logger.error(f"An error occurred: {e}, {traceback.format_exc()}")
+            logger.warning(f"An error occurred: {e}")
+            logger.debug(f"{traceback.format_exc()}")
             return False
 
     def inspect(self, container_id):

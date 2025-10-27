@@ -18,7 +18,10 @@ class InMemoryMapping(Mapping):
         if key in self.store:
             del self.store[key]
 
-    def scan(self, prefix: str):
-        for key in list(self.store.keys()):
-            if key.startswith(prefix):
-                yield key
+    def scan(self, prefix: str = None):
+        if prefix is None:
+            yield from list(self.store.keys())
+        else:
+            yield from list(
+                key for key in self.store if key.startswith(prefix)
+            )

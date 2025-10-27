@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
-from typing import Optional, Tuple, Literal, Dict
+import json
+
+from typing import Optional, Tuple, Literal, Dict, Union, List
 from pydantic_settings import BaseSettings
 from pydantic import field_validator, ConfigDict
 from dotenv import load_dotenv
@@ -17,7 +19,7 @@ class Settings(BaseSettings):
     BEARER_TOKEN: Optional[str] = None
 
     # Runtime Manager settings
-    DEFAULT_SANDBOX_TYPE: str = "base"
+    DEFAULT_SANDBOX_TYPE: Union[str, List[str]] = "base"
     POOL_SIZE: int = 1
     AUTO_CLEANUP: bool = True
     CONTAINER_PREFIX_KEY: str = "runtime_sandbox_container_"
@@ -86,6 +88,23 @@ class Settings(BaseSettings):
         if not info.data.get("REDIS_ENABLED", False):
             return 1
         return value
+
+    @field_validator("DEFAULT_SANDBOX_TYPE", mode="before")
+    @classmethod
+    def parse_default_type(cls, v):
+        if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("[") and v.endswith("]"):
+                try:
+                    return json.loads(v)
+                except json.JSONDecodeError:
+                    return [
+                        item.strip()
+                        for item in v[1:-1].split(",")
+                        if item.strip()
+                    ]
+            return [item.strip() for item in v.split(",") if item.strip()]
+        return v
 
 
 _settings: Optional[Settings] = None

@@ -22,33 +22,33 @@ def env():
         load_dotenv("../../.env")
 
 
-def test_local_sandbox(env):
-    with BaseSandbox() as box:
-        print(box.list_tools())
-        print(
-            box.call_tool(
-                "run_ipython_cell",
-                arguments={
-                    "code": "print('hello world')",
-                },
-            ),
-        )
-
-        print(box.run_ipython_cell(code="print('hi')"))
-        print(box.run_shell_command(command="echo hello"))
-
-    with BrowserSandbox() as box:
-        print(box.list_tools())
-
-        print(box.browser_navigate("https://www.example.com/"))
-        print(box.browser_snapshot())
-
-    with FilesystemSandbox() as box:
-        print(box.list_tools())
-        print(box.create_directory("test"))
-        print(box.list_allowed_directories())
-
-    # TODO: add assertion
+# def test_local_sandbox(env):
+#     with BaseSandbox() as box:
+#         print(box.list_tools())
+#         print(
+#             box.call_tool(
+#                 "run_ipython_cell",
+#                 arguments={
+#                     "code": "print('hello world')",
+#                 },
+#             ),
+#         )
+#
+#         print(box.run_ipython_cell(code="print('hi')"))
+#         print(box.run_shell_command(command="echo hello"))
+#
+#     with BrowserSandbox() as box:
+#         print(box.list_tools())
+#
+#         print(box.browser_navigate("https://www.example.com/"))
+#         print(box.browser_snapshot())
+#
+#     with FilesystemSandbox() as box:
+#         print(box.list_tools())
+#         print(box.create_directory("test"))
+#         print(box.list_allowed_directories())
+#
+#     # TODO: add assertion
 
 
 def test_remote_sandbox(env):

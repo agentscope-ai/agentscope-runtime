@@ -113,7 +113,7 @@ COPY src/agentscope_runtime/sandbox/box/shared/dependencies/ ./dependencies/
 COPY src/agentscope_runtime/sandbox/box/shared/artifacts/ ./ext_services/artifacts/
 COPY src/agentscope_runtime/sandbox/box/shared/third_party/markdownify-mcp/ ./mcp_project/markdownify-mcp/
 COPY src/agentscope_runtime/sandbox/box/shared/third_party/steel-browser/ ./ext_services/steel-browser/
-COPY examples/custom_sandbox/custom_sandbox/box/ ./
+COPY examples/custom_sandbox/box/ ./
 
 RUN pip install -r requirements.txt
 
@@ -173,7 +173,7 @@ CMD ["/bin/sh", "-c", "envsubst '$SECRET_TOKEN' < /etc/nginx/nginx.conf.template
 After preparing your Dockerfile and custom sandbox class, use the built-in builder tool to build your custom sandbox image:
 
 ```bash
-runtime-sandbox-builder custom_sandbox --dockerfile_path examples/custom_sandbox/custom_sandbox/Dockerfile
+runtime-sandbox-builder custom_sandbox --dockerfile_path examples/custom_sandbox/Dockerfile
 ```
 
 **Command Parameters:**

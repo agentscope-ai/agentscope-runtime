@@ -110,16 +110,16 @@ KUBECONFIG_PATH=
 
 #### Runtime Manager 设置
 
-| Parameter              | Description    | Default                    | Notes                                                        |
-| ---------------------- | -------------- | -------------------------- | ------------------------------------------------------------ |
-| `DEFAULT_SANDBOX_TYPE` | 默认沙箱类型   | `base`                     | `base`, `filesystem`, `browser`                              |
-| `POOL_SIZE`            | 预热容器池大小 | `1`                        | 缓存的容器以实现更快启动。`POOL_SIZE` 参数控制预创建并缓存在就绪状态的容器数量。当用户请求新沙箱时，系统将首先尝试从这个预热池中分配，相比从零开始创建容器显著减少启动时间。例如，使用 `POOL_SIZE=10`，系统维护 10 个就绪容器，可以立即分配给新请求 |
-| `AUTO_CLEANUP`         | 自动容器清理   | `True`                     | 如果设置为 `True`，服务器关闭后将释放所有沙箱。              |
-| `CONTAINER_PREFIX_KEY` | 容器名称前缀   | `agent-runtime-container-` | 用于标识                                                     |
-| `CONTAINER_DEPLOYMENT` | 容器运行时     | `docker`                   | 目前支持`docker`和`k8s`                                      |
-| `DEFAULT_MOUNT_DIR`    | 默认挂载目录   | `sessions_mount_dir`       | 用于持久存储路径，存储`/workspace` 文件                      |
-| `READONLY_MOUNTS`      | 只读目录挂载   | `None`                     | 一个字典，映射 **宿主机路径** → **容器路径**，以 **只读** 方式挂载。用于共享文件 / 配置，但禁止容器修改数据。示例：<br/>`{"\/Users\/alice\/data": "\/data"}` 会把宿主机 `/Users/alice/data` 挂载到容器的 `/data`（只读）。 |
-| `PORT_RANGE`           | 可用端口范围   | `[49152,59152]`            | 用于服务端口分配                                             |
+| Parameter              | Description            | Default                    | Notes                                                        |
+| ---------------------- | ---------------------- | -------------------------- | ------------------------------------------------------------ |
+| `DEFAULT_SANDBOX_TYPE` | 默认沙箱类型（可多个） | `base`                     | 可以是单个类型，也可以是多个类型的列表，从而启用多个独立的沙箱预热池。合法取值包括 `base`、`filesystem`、`browser`、`gui` 等。<br/>支持的写法：<br/>• 单类型：`DEFAULT_SANDBOX_TYPE=base`<br/>• 多类型（逗号分隔）：`DEFAULT_SANDBOX_TYPE=base,gui`<br/>• 多类型（JSON 列表）：`DEFAULT_SANDBOX_TYPE=["base","gui"]`<br/>每种类型都会维护自己独立的预热池。 |
+| `POOL_SIZE`            | 预热容器池大小         | `1`                        | 缓存的容器以实现更快启动。`POOL_SIZE` 参数控制预创建并缓存在就绪状态的容器数量。当用户请求新沙箱时，系统将首先尝试从这个预热池中分配，相比从零开始创建容器显著减少启动时间。例如，使用 `POOL_SIZE=10`，系统维护 10 个就绪容器，可以立即分配给新请求 |
+| `AUTO_CLEANUP`         | 自动容器清理           | `True`                     | 如果设置为 `True`，服务器关闭后将释放所有沙箱。              |
+| `CONTAINER_PREFIX_KEY` | 容器名称前缀           | `agent-runtime-container-` | 用于标识                                                     |
+| `CONTAINER_DEPLOYMENT` | 容器运行时             | `docker`                   | 目前支持`docker`和`k8s`                                      |
+| `DEFAULT_MOUNT_DIR`    | 默认挂载目录           | `sessions_mount_dir`       | 用于持久存储路径，存储`/workspace` 文件                      |
+| `READONLY_MOUNTS`      | 只读目录挂载           | `None`                     | 一个字典，映射 **宿主机路径** → **容器路径**，以 **只读** 方式挂载。用于共享文件 / 配置，但禁止容器修改数据。示例：<br/>`{"\/Users\/alice\/data": "\/data"}` 会把宿主机 `/Users/alice/data` 挂载到容器的 `/data`（只读）。 |
+| `PORT_RANGE`           | 可用端口范围           | `[49152,59152]`            | 用于服务端口分配                                             |
 
 #### （可选）Redis 设置
 
@@ -353,9 +353,9 @@ COPY src/agentscope_runtime/sandbox/box/shared/app.py ./
 COPY src/agentscope_runtime/sandbox/box/shared/routers/ ./routers/
 COPY src/agentscope_runtime/sandbox/box/shared/dependencies/ ./dependencies/
 COPY src/agentscope_runtime/sandbox/box/shared/artifacts/ ./ext_services/artifacts/
-COPY src/agentscope_runtime/sandbox/box/shared/third_party/markdownify-mcp/ ./mcp_project/markdownify-mcp/
-COPY src/agentscope_runtime/sandbox/box/shared/third_party/steel-browser/ ./ext_services/steel-browser/
-COPY examples/custom_sandbox/custom_sandbox/box/ ./
+COPY examples/custom_sandbox/box/third_party/markdownify-mcp/ ./mcp_project/markdownify-mcp/
+COPY examples/custom_sandbox/box/third_party/steel-browser/ ./ext_services/steel-browser/
+COPY examples/custom_sandbox/box/ ./
 
 RUN pip install -r requirements.txt
 
@@ -415,7 +415,7 @@ CMD ["/bin/sh", "-c", "envsubst '$SECRET_TOKEN' < /etc/nginx/nginx.conf.template
 准备好Dockerfile 和自定义沙箱类后，使用内置构建器工具构建您的自定义沙箱镜像：
 
 ```bash
-runtime-sandbox-builder my_custom_sandbox --dockerfile_path examples/custom_sandbox/custom_sandbox/Dockerfile --extention PATH_TO_YOUR_SANDBOX_MODULE
+runtime-sandbox-builder my_custom_sandbox --dockerfile_path examples/custom_sandbox/Dockerfile --extension PATH_TO_YOUR_SANDBOX_MODULE
 ```
 
 **命令参数：**
@@ -437,10 +437,13 @@ runtime-sandbox-builder all
 # 构建基础镜像（约1GB）
 runtime-sandbox-builder base
 
-# 构建浏览器镜像（约2.6GB）
+# 构建GUI镜像（约2GB）
+runtime-sandbox-builder gui
+
+# 构建浏览器镜像（约2GB）
 runtime-sandbox-builder browser
 
-# 构建文件系统镜像（约1GB）
+# 构建文件系统镜像（约2GB）
 runtime-sandbox-builder filesystem
 ```
 

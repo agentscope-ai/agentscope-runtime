@@ -111,7 +111,7 @@ KUBECONFIG_PATH=
 #### Runtime Manager Settings
 | Parameter | Description | Default                    | Notes |
 | --- | --- |----------------------------| --- |
-| `DEFAULT_SANDBOX_TYPE` | Default sandbox type | `base`                     | `base`, `filesystem`, `browser` |
+| `DEFAULT_SANDBOX_TYPE` | Default sandbox type(s) | `base`                     | Can be a single type or a list of types, enabling multiple independent sandbox pools. Valid values include base, filesystem, browser, etc.<br/>Supported formats:<br/>• Single type: `DEFAULT_SANDBOX_TYPE=base`<br/>• Multiple types (comma-separated): `DEFAULT_SANDBOX_TYPE=base,gui`<br/>• Multiple types (JSON list): `DEFAULT_SANDBOX_TYPE=["base","gui"]`<br/>Each type will have its own separate pre-warmed pool. |
 | `POOL_SIZE` | Pre-warmed container pool size | `1`                        | Cached containers for faster startup. The `POOL_SIZE` parameter controls how many containers are pre-created and cached in a ready-to-use state. When users request a new sandbox, the system will first try to allocate from this pre-warmed pool, significantly reducing startup time compared to creating containers from scratch. For example, with `POOL_SIZE=10`, the system maintains 10 ready containers that can be instantly assigned to new requests. |
 | `AUTO_CLEANUP` | Automatic container cleanup | `True`                     | All sandboxes will be released after the server is closed if set to `True`. |
 | `CONTAINER_PREFIX_KEY` | Container name prefix | `agent-runtime-container-` | For identification |
@@ -354,9 +354,9 @@ COPY src/agentscope_runtime/sandbox/box/shared/app.py ./
 COPY src/agentscope_runtime/sandbox/box/shared/routers/ ./routers/
 COPY src/agentscope_runtime/sandbox/box/shared/dependencies/ ./dependencies/
 COPY src/agentscope_runtime/sandbox/box/shared/artifacts/ ./ext_services/artifacts/
-COPY src/agentscope_runtime/sandbox/box/shared/third_party/markdownify-mcp/ ./mcp_project/markdownify-mcp/
-COPY src/agentscope_runtime/sandbox/box/shared/third_party/steel-browser/ ./ext_services/steel-browser/
-COPY examples/custom_sandbox/custom_sandbox/box/ ./
+COPY examples/custom_sandbox/box/third_party/markdownify-mcp/ ./mcp_project/markdownify-mcp/
+COPY examples/custom_sandbox/box/third_party/steel-browser/ ./ext_services/steel-browser/
+COPY examples/custom_sandbox/box/ ./
 
 RUN pip install -r requirements.txt
 
@@ -416,7 +416,7 @@ CMD ["/bin/sh", "-c", "envsubst '$SECRET_TOKEN' < /etc/nginx/nginx.conf.template
 After preparing your Dockerfile and custom sandbox class, use the built-in builder tool to build your custom sandbox image:
 
 ```bash
-runtime-sandbox-builder my_custom_sandbox --dockerfile_path examples/custom_sandbox/custom_sandbox/Dockerfile --extention PATH_TO_YOUR_SANDBOX_MODULE
+runtime-sandbox-builder my_custom_sandbox --dockerfile_path examples/custom_sandbox/Dockerfile --extension PATH_TO_YOUR_SANDBOX_MODULE
 ```
 
 **Command Parameters:**
@@ -438,10 +438,13 @@ runtime-sandbox-builder all
 # Build base image (~1Gb)
 runtime-sandbox-builder base
 
-# Build browser image (~2.6Gb)
+# Build gui image (~2Gb)
+runtime-sandbox-builder gui
+
+# Build browser image (~2Gb)
 runtime-sandbox-builder browser
 
-# Build filesystem image (~1Gb)
+# Build filesystem image (~2Gb)
 runtime-sandbox-builder filesystem
 ```
 The above commands are useful when you want to:

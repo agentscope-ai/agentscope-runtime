@@ -76,7 +76,7 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
 
 ### Step 2: Configure Browser Tools
 
-Define the browser tools your agent will have access to:
+Define the browser tools your agent will have access to (To configure additional tools for the agent, see the “Tool Usage” section in {doc}`sandbox`):
 
 ```{code-cell}
 from agentscope_runtime.sandbox.tools.browser import (

@@ -17,14 +17,21 @@
 [![Discord](https://img.shields.io/badge/Discord-Join_Us-blueviolet.svg?logo=discord)](https://discord.gg/eYMpfnkG8h)
 [![DingTalk](https://img.shields.io/badge/DingTalk-Join_Us-orange.svg)](https://qr.dingtalk.com/action/joingroup?code=v1,k1,OmDlBXpjW+I2vWjKDsjvI9dhcXjGZi3bQiojOq3dlDw=&_dt_no_comment=1&origin=11)
 
-[[Cookbook]](https://runtime.agentscope.io/)
+[[使用教程]](https://runtime.agentscope.io/zh/intro.html)
 [[English README]](README.md)
+[[示例]](https://github.com/agentscope-ai/agentscope-samples)
 
 **智能体应用的生产就绪运行时框架**
 
 *AgentScope Runtime 解决了智能体开发中的两个关键挑战：安全的沙盒工具执行和可扩展的智能体服务化部署。凭借双核架构，AgentScope Runtime提供了与智能体框架无关的基础设施，以实现智能体部署的可观察性和安全工具调用。*
 
 </div>
+
+---
+
+## 🆕 新闻
+
+* **[2025-10]** 添加了 **GUI Sandbox**，支持虚拟桌面环境、鼠标、键盘以及屏幕操作。引入了 **`desktop_url`** 属性，适用于 GUI Sandbox、Browser Sandbox 和 Filesystem Sandbox —— 允许通过浏览器直接访问虚拟桌面。详情请参阅我们的 [cookbook](https://runtime.agentscope.io/zh/sandbox.html#id18)。
 
 ---
 
@@ -144,25 +151,128 @@ asyncio.run(main())
 
 ### 基本沙盒使用示例
 
-此示例演示如何创建沙盒并在沙盒中执行工具。
-
-```python
-from agentscope_runtime.sandbox import BaseSandbox
-
-with BaseSandbox() as box:
-    print(box.run_ipython_cell(code="print('你好')"))
-    print(box.run_shell_command(command="echo hello"))
-```
+这些示例演示了如何创建沙箱环境并在其中执行工具，部分示例提供前端可交互页面（通过VNC，即Virtual Network Computing技术实现）
 
 > [!NOTE]
 >
 > 当前版本需要安装并运行Docker或者Kubernetes，未来我们将提供更多公有云部署选项。请参考[此教程](https://runtime.agentscope.io/zh/sandbox.html)了解更多详情。
 >
-> 如果镜像拉取失败，可以尝试设置：
-> `export RUNTIME_SANDBOX_REGISTRY="agentscope-registry.ap-southeast-1.cr.aliyuncs.com"`
->
 > 如果您计划在生产中大规模使用沙箱，推荐直接在阿里云中进行托管部署：[在阿里云一键部署沙箱](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83)
->
+
+#### 基础沙箱（Base Sandbox）
+
+用于在隔离环境中运行 **Python 代码** 或 **Shell 命令**。
+
+```python
+from agentscope_runtime.sandbox import BaseSandbox
+
+with BaseSandbox() as box:
+    # 默认从 DockerHub 拉取 `agentscope/runtime-sandbox-base:latest` 镜像
+    print(box.list_tools()) # 列出所有可用工具
+    print(box.run_ipython_cell(code="print('hi')"))
+    print(box.run_shell_command(command="echo hello"))
+    input("按 Enter 键继续...")
+```
+
+#### GUI 沙箱 （GUI Sandbox）
+
+提供**可视化桌面环境**，可执行鼠标、键盘以及屏幕相关操作。
+
+<img src="https://img.alicdn.com/imgextra/i2/O1CN01df5SaM1xKFQP4KGBW_!!6000000006424-2-tps-2958-1802.png" alt="GUI Sandbox" width="800" height="500">
+
+```python
+from agentscope_runtime.sandbox import GuiSandbox
+
+with GuiSandbox() as box:
+    # 默认从 DockerHub 拉取 `agentscope/runtime-sandbox-gui:latest` 镜像
+    print(box.list_tools()) # 列出所有可用工具
+    print(box.desktop_url)  # 桌面访问链接
+    print(box.computer_use(action="get_cursor_position"))  # 获取鼠标位置
+    print(box.computer_use(action="get_screenshot"))       # 获取屏幕截图
+    input("按 Enter 键继续...")
+```
+
+#### 浏览器沙箱（Browser Sandbox）
+
+基于 GUI 的沙箱，可进行浏览器操作。
+
+<img src="https://img.alicdn.com/imgextra/i4/O1CN01OIq1dD1gAJMcm0RFR_!!6000000004101-2-tps-2734-1684.png" alt="GUI Sandbox" width="800" height="500">
+
+```python
+from agentscope_runtime.sandbox import BrowserSandbox
+
+with BrowserSandbox() as box:
+    # 默认从 DockerHub 拉取 `agentscope/runtime-sandbox-browser:latest` 镜像
+    print(box.list_tools()) # 列出所有可用工具
+    print(box.desktop_url)  # 浏览器桌面访问链接
+    box.browser_navigate("https://www.google.com/")  # 打开网页
+    input("按 Enter 键继续...")
+```
+
+#### 文件系统沙箱 （Filesystem Sandbox）
+
+基于 GUI 的隔离沙箱，可进行文件系统操作，如创建、读取和删除文件。
+
+<img src="https://img.alicdn.com/imgextra/i3/O1CN01VocM961vK85gWbJIy_!!6000000006153-2-tps-2730-1686.png" alt="GUI Sandbox" width="800" height="500">
+
+```python
+from agentscope_runtime.sandbox import FilesystemSandbox
+
+with FilesystemSandbox() as box:
+    # 默认从 DockerHub 拉取 `agentscope/runtime-sandbox-filesystem:latest` 镜像
+    print(box.list_tools()) # 列出所有可用工具
+    print(box.desktop_url)  # 桌面访问链接
+    box.create_directory("test")  # 创建目录
+    input("按 Enter 键继续...")
+```
+
+#### 配置沙箱镜像的 Registry（镜像仓库）、Namespace（命名空间）和 Tag（标签）
+
+##### 1. Registry（镜像仓库）
+
+如果从 DockerHub 拉取镜像失败（例如由于网络限制），你可以将镜像源切换为阿里云容器镜像服务，以获得更快的访问速度：
+
+```bash
+export RUNTIME_SANDBOX_REGISTRY="agentscope-registry.ap-southeast-1.cr.aliyuncs.com"
+```
+
+##### 2. Namespace（命名空间）
+
+命名空间用于区分不同的团队或项目镜像，你可以通过环境变量自定义 namespace：
+
+```bash
+export RUNTIME_SANDBOX_IMAGE_NAMESPACE="agentscope"
+```
+
+例如，这里会使用 `agentscope` 作为镜像路径的一部分。
+
+##### 3. Tag（标签）
+
+镜像标签用于指定镜像版本，例如：
+
+```bash
+export RUNTIME_SANDBOX_IMAGE_TAG="preview"
+```
+
+其中：
+
+- 默认为`latest`，表示与PyPI发行版本适配的镜像版本
+- `preview` 表示与 **GitHub main 分支** 同步构建的最新预览版本
+- 你也可以使用指定版本号，如 `20250909`，可以在[DockerHub](https://hub.docker.com/repositories/agentscope)查看所有可用镜像版本
+
+##### 4. 完整镜像路径
+
+沙箱 SDK 会根据上述环境变量拼接拉取镜像的完整路径：
+
+```bash
+<RUNTIME_SANDBOX_REGISTRY>/<RUNTIME_SANDBOX_IMAGE_NAMESPACE>/runtime-sandbox-base:<RUNTIME_SANDBOX_IMAGE_TAG>
+```
+
+示例：
+
+```bash
+agentscope-registry.ap-southeast-1.cr.aliyuncs.com/myteam/runtime-sandbox-base:preview
+```
 
 ---
 
