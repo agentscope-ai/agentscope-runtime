@@ -111,7 +111,7 @@ KUBECONFIG_PATH=
 #### Runtime Manager Settings
 | Parameter | Description | Default                    | Notes |
 | --- | --- |----------------------------| --- |
-| `DEFAULT_SANDBOX_TYPE` | Default sandbox type | `base`                     | `base`, `filesystem`, `browser` |
+| `DEFAULT_SANDBOX_TYPE` | Default sandbox type(s) | `base`                     | Can be a single type or a list of types, enabling multiple independent sandbox pools. Valid values include base, filesystem, browser, etc.<br/>Supported formats:<br/>• Single type: `DEFAULT_SANDBOX_TYPE=base`<br/>• Multiple types (comma-separated): `DEFAULT_SANDBOX_TYPE=base,gui`<br/>• Multiple types (JSON list): `DEFAULT_SANDBOX_TYPE=["base","gui"]`<br/>Each type will have its own separate pre-warmed pool. |
 | `POOL_SIZE` | Pre-warmed container pool size | `1`                        | Cached containers for faster startup. The `POOL_SIZE` parameter controls how many containers are pre-created and cached in a ready-to-use state. When users request a new sandbox, the system will first try to allocate from this pre-warmed pool, significantly reducing startup time compared to creating containers from scratch. For example, with `POOL_SIZE=10`, the system maintains 10 ready containers that can be instantly assigned to new requests. |
 | `AUTO_CLEANUP` | Automatic container cleanup | `True`                     | All sandboxes will be released after the server is closed if set to `True`. |
 | `CONTAINER_PREFIX_KEY` | Container name prefix | `agent-runtime-container-` | For identification |
@@ -161,6 +161,27 @@ To configure settings specific to Kubernetes in your sandbox server, ensure you 
 | ----------------- | ------------------------------- | --------- | ---------------------------------------------------- |
 | `K8S_NAMESPACE`   | Kubernetes namespace to be used | `default` | Set the namespace for resource deployment            |
 | `KUBECONFIG_PATH` | Path to the kubeconfig file     | `None`    | Specifies the kubeconfig location for cluster access |
+
+### (Optional) AgentRun Settings
+
+[AgentRun](https://functionai.console.aliyun.com/cn-hangzhou/agent/) is a serverless intelligent Agent development framework launched by Alibaba Cloud. It provides a complete set of tools to help developers quickly build, deploy, and manage AI Agent applications. You can deploy the sandbox servers on AgentRun.
+
+To configure settings specific to [AgentRun](https://functionai.console.aliyun.com/cn-hangzhou/agent/) in your sandbox server, ensure you set `CONTAINER_DEPLOYMENT=agentrun`. Consider adjusting the following parameters:
+
+| Parameter                     | Description              | Default                          | Notes                                                                                     |
+|-------------------------------| ------------------------ |----------------------------------|-------------------------------------------------------------------------------------------|
+| `AGENT_RUN_ACCOUNT_ID`        | Alibaba Cloud Account ID             | Empty                           | Alibaba Cloud main account ID. Log in to the [RAM console](https://ram.console.aliyun.com/profile/access-keys) to get the Alibaba Cloud account ID and AK/SK |
+| `AGENT_RUN_ACCESS_KEY_ID`     | Access Key ID               | Empty             | Alibaba Cloud AccessKey ID, requires `AliyunAgentRunFullAccess` permission                                           |
+| `AGENT_RUN_ACCESS_KEY_SECRET` | Access Key Secret           | Empty         | Alibaba Cloud AccessKey Secret                                                                       |
+| `AGENT_RUN_REGION_ID`         | Deployment Region ID               | Empty | AgentRun deployment region ID                                                                            |
+| `AGENT_RUN_CPU`               | CPU Specification                  | `2.0`                            | vCPU specification                                                                                    |
+| `AGENT_RUN_MEMORY`            | Memory Specification                 | `2048`                           | Memory specification(MB)                                                                                  |
+| `AGENT_RUN_VPC_ID`            | VPC ID                   | `None`                           | VPC network ID (optional)                                                                               |
+| `AGENT_RUN_VSWITCH_IDS`       | Switch ID List             | `None`                           | VSwitch ID list (optional)                                                                          |
+| `AGENT_RUN_SECURITY_GROUP_ID` | Security Group ID                 | `None`                           | Security group ID (optional)                                                                                 |
+| `AGENT_RUN_PREFIX`            | Resource Name Prefix             | `agentscope-sandbox`             | Prefix for created resource names                                                                                 |
+| `AGENT_RUN_LOG_PROJECT`       | SLS Log Project              | `None`                           | SLS log project name (optional)                                                                             |
+| `AGENT_RUN_LOG_STORE`         | SLS Log Store                | `None`                           | SLS log store name (optional)                                                                              |
 
 ### Loading Custom Sandbox
 
@@ -230,7 +251,7 @@ To create custom sandboxes, you need to install AgentScope Runtime from source i
 git clone https://github.com/agentscope-ai/agentscope-runtime.git
 cd agentscope-runtime
 git submodule update --init --recursive
-pip install -e ".[sandbox]"
+pip install -e .
 ```
 
 ```{note}
@@ -333,9 +354,9 @@ COPY src/agentscope_runtime/sandbox/box/shared/app.py ./
 COPY src/agentscope_runtime/sandbox/box/shared/routers/ ./routers/
 COPY src/agentscope_runtime/sandbox/box/shared/dependencies/ ./dependencies/
 COPY src/agentscope_runtime/sandbox/box/shared/artifacts/ ./ext_services/artifacts/
-COPY src/agentscope_runtime/sandbox/box/shared/third_party/markdownify-mcp/ ./mcp_project/markdownify-mcp/
-COPY src/agentscope_runtime/sandbox/box/shared/third_party/steel-browser/ ./ext_services/steel-browser/
-COPY examples/custom_sandbox/custom_sandbox/box/ ./
+COPY examples/custom_sandbox/box/third_party/markdownify-mcp/ ./mcp_project/markdownify-mcp/
+COPY examples/custom_sandbox/box/third_party/steel-browser/ ./ext_services/steel-browser/
+COPY examples/custom_sandbox/box/ ./
 
 RUN pip install -r requirements.txt
 
@@ -395,7 +416,7 @@ CMD ["/bin/sh", "-c", "envsubst '$SECRET_TOKEN' < /etc/nginx/nginx.conf.template
 After preparing your Dockerfile and custom sandbox class, use the built-in builder tool to build your custom sandbox image:
 
 ```bash
-runtime-sandbox-builder my_custom_sandbox --dockerfile_path examples/custom_sandbox/custom_sandbox/Dockerfile --extention PATH_TO_YOUR_SANDBOX_MODULE
+runtime-sandbox-builder my_custom_sandbox --dockerfile_path examples/custom_sandbox/Dockerfile --extension PATH_TO_YOUR_SANDBOX_MODULE
 ```
 
 **Command Parameters:**
@@ -417,10 +438,13 @@ runtime-sandbox-builder all
 # Build base image (~1Gb)
 runtime-sandbox-builder base
 
-# Build browser image (~2.6Gb)
+# Build gui image (~2Gb)
+runtime-sandbox-builder gui
+
+# Build browser image (~2Gb)
 runtime-sandbox-builder browser
 
-# Build filesystem image (~1Gb)
+# Build filesystem image (~2Gb)
 runtime-sandbox-builder filesystem
 ```
 The above commands are useful when you want to:

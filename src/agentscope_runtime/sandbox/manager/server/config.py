@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
-from typing import Optional, Tuple, Literal, Dict
+import json
+
+from typing import Optional, Tuple, Literal, Dict, Union, List
 from pydantic_settings import BaseSettings
 from pydantic import field_validator, ConfigDict
 from dotenv import load_dotenv
@@ -17,11 +19,16 @@ class Settings(BaseSettings):
     BEARER_TOKEN: Optional[str] = None
 
     # Runtime Manager settings
-    DEFAULT_SANDBOX_TYPE: str = "base"
+    DEFAULT_SANDBOX_TYPE: Union[str, List[str]] = "base"
     POOL_SIZE: int = 1
     AUTO_CLEANUP: bool = True
     CONTAINER_PREFIX_KEY: str = "runtime_sandbox_container_"
-    CONTAINER_DEPLOYMENT: Literal["docker", "cloud", "k8s"] = "docker"
+    CONTAINER_DEPLOYMENT: Literal[
+        "docker",
+        "cloud",
+        "k8s",
+        "agentrun",
+    ] = "docker"
     DEFAULT_MOUNT_DIR: str = "sessions_mount_dir"
     # Read-only mounts (host_path -> container_path)
     # Example in .env:
@@ -52,6 +59,24 @@ class Settings(BaseSettings):
     K8S_NAMESPACE: str = "default"
     KUBECONFIG_PATH: Optional[str] = None
 
+    # AgentRun settings
+    AGENT_RUN_ACCOUNT_ID: Optional[str] = None
+    AGENT_RUN_ACCESS_KEY_ID: Optional[str] = None
+    AGENT_RUN_ACCESS_KEY_SECRET: Optional[str] = None
+    AGENT_RUN_REGION_ID: str = "cn-hangzhou"
+
+    AGENT_RUN_CPU: float = 2.0
+    AGENT_RUN_MEMORY: int = 2048
+
+    AGENT_RUN_VPC_ID: Optional[str] = None
+    AGENT_RUN_VSWITCH_IDS: Optional[list[str]] = None
+    AGENT_RUN_SECURITY_GROUP_ID: Optional[str] = None
+
+    AGENT_RUN_PREFIX: str = "agentscope-sandbox"
+
+    AGENT_RUN_LOG_PROJECT: Optional[str] = None
+    AGENT_RUN_LOG_STORE: Optional[str] = None
+
     model_config = ConfigDict(
         case_sensitive=True,
         extra="allow",
@@ -63,6 +88,23 @@ class Settings(BaseSettings):
         if not info.data.get("REDIS_ENABLED", False):
             return 1
         return value
+
+    @field_validator("DEFAULT_SANDBOX_TYPE", mode="before")
+    @classmethod
+    def parse_default_type(cls, v):
+        if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("[") and v.endswith("]"):
+                try:
+                    return json.loads(v)
+                except json.JSONDecodeError:
+                    return [
+                        item.strip()
+                        for item in v[1:-1].split(",")
+                        if item.strip()
+                    ]
+            return [item.strip() for item in v.split(",") if item.strip()]
+        return v
 
 
 _settings: Optional[Settings] = None

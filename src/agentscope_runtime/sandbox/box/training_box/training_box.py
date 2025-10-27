@@ -227,6 +227,7 @@ class APPWorldSandbox(TrainingSandbox):
         timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
+        sandbox_type: SandboxType = SandboxType.APPWORLD,
     ):
         """
         Initialize the Training Sandbox.
@@ -242,7 +243,7 @@ class APPWorldSandbox(TrainingSandbox):
             timeout,
             base_url,
             bearer_token,
-            SandboxType.APPWORLD,
+            sandbox_type,
         )
 
 
@@ -281,6 +282,7 @@ class BFCLSandbox(TrainingSandbox):
         timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
+        sandbox_type: SandboxType = SandboxType.BFCL,
     ):
         """
         Initialize the Training Sandbox.
@@ -296,7 +298,7 @@ class BFCLSandbox(TrainingSandbox):
             timeout,
             base_url,
             bearer_token,
-            SandboxType.BFCL,
+            sandbox_type,
         )
 
 
@@ -322,6 +324,7 @@ class WebShopSandbox(TrainingSandbox):
         timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
+        sandbox_type: SandboxType = SandboxType.WEBSHOP,
     ):
         """
         Initialize the Training Sandbox.
@@ -337,5 +340,5 @@ class WebShopSandbox(TrainingSandbox):
             timeout,
             base_url,
             bearer_token,
-            SandboxType.BFCL,
+            sandbox_type,
         )

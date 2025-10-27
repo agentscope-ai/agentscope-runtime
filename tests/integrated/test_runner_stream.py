@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-import pytest
+import os
 
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
-from agentscope_runtime.engine.llms.qwen_llm import QwenLLM
+import pytest
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
+
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.runner import Runner
 from agentscope_runtime.engine.schemas.agent_schemas import (
     AgentRequest,
@@ -21,10 +24,16 @@ async def test_runner():
 
     load_dotenv("../../.env")
 
-    llm_agent = LLMAgent(
-        model=QwenLLM(),
-        name="llm_agent",
-        description="A simple LLM agent",
+    agent = AgentScopeAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+        ),
+        agent_config={
+            "sys_prompt": "You're a helpful assistant named Friday.",
+        },
+        agent_builder=ReActAgent,
     )
 
     session_history_service = InMemorySessionHistoryService()
@@ -40,7 +49,7 @@ async def test_runner():
     )
     async with context_manager:
         runner = Runner(
-            agent=llm_agent,
+            agent=agent,
             context_manager=context_manager,
             environment_manager=None,
         )

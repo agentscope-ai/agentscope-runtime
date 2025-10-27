@@ -110,16 +110,16 @@ KUBECONFIG_PATH=
 
 #### Runtime Manager 设置
 
-| Parameter              | Description    | Default                    | Notes                                                        |
-| ---------------------- | -------------- | -------------------------- | ------------------------------------------------------------ |
-| `DEFAULT_SANDBOX_TYPE` | 默认沙箱类型   | `base`                     | `base`, `filesystem`, `browser`                              |
-| `POOL_SIZE`            | 预热容器池大小 | `1`                        | 缓存的容器以实现更快启动。`POOL_SIZE` 参数控制预创建并缓存在就绪状态的容器数量。当用户请求新沙箱时，系统将首先尝试从这个预热池中分配，相比从零开始创建容器显著减少启动时间。例如，使用 `POOL_SIZE=10`，系统维护 10 个就绪容器，可以立即分配给新请求 |
-| `AUTO_CLEANUP`         | 自动容器清理   | `True`                     | 如果设置为 `True`，服务器关闭后将释放所有沙箱。              |
-| `CONTAINER_PREFIX_KEY` | 容器名称前缀   | `agent-runtime-container-` | 用于标识                                                     |
-| `CONTAINER_DEPLOYMENT` | 容器运行时     | `docker`                   | 目前支持`docker`和`k8s`                                      |
-| `DEFAULT_MOUNT_DIR`    | 默认挂载目录   | `sessions_mount_dir`       | 用于持久存储路径，存储`/workspace` 文件                      |
-| `READONLY_MOUNTS`      | 只读目录挂载   | `None`                     | 一个字典，映射 **宿主机路径** → **容器路径**，以 **只读** 方式挂载。用于共享文件 / 配置，但禁止容器修改数据。示例：<br/>`{"\/Users\/alice\/data": "\/data"}` 会把宿主机 `/Users/alice/data` 挂载到容器的 `/data`（只读）。 |
-| `PORT_RANGE`           | 可用端口范围   | `[49152,59152]`            | 用于服务端口分配                                             |
+| Parameter              | Description            | Default                    | Notes                                                        |
+| ---------------------- | ---------------------- | -------------------------- | ------------------------------------------------------------ |
+| `DEFAULT_SANDBOX_TYPE` | 默认沙箱类型（可多个） | `base`                     | 可以是单个类型，也可以是多个类型的列表，从而启用多个独立的沙箱预热池。合法取值包括 `base`、`filesystem`、`browser`、`gui` 等。<br/>支持的写法：<br/>• 单类型：`DEFAULT_SANDBOX_TYPE=base`<br/>• 多类型（逗号分隔）：`DEFAULT_SANDBOX_TYPE=base,gui`<br/>• 多类型（JSON 列表）：`DEFAULT_SANDBOX_TYPE=["base","gui"]`<br/>每种类型都会维护自己独立的预热池。 |
+| `POOL_SIZE`            | 预热容器池大小         | `1`                        | 缓存的容器以实现更快启动。`POOL_SIZE` 参数控制预创建并缓存在就绪状态的容器数量。当用户请求新沙箱时，系统将首先尝试从这个预热池中分配，相比从零开始创建容器显著减少启动时间。例如，使用 `POOL_SIZE=10`，系统维护 10 个就绪容器，可以立即分配给新请求 |
+| `AUTO_CLEANUP`         | 自动容器清理           | `True`                     | 如果设置为 `True`，服务器关闭后将释放所有沙箱。              |
+| `CONTAINER_PREFIX_KEY` | 容器名称前缀           | `agent-runtime-container-` | 用于标识                                                     |
+| `CONTAINER_DEPLOYMENT` | 容器运行时             | `docker`                   | 目前支持`docker`和`k8s`                                      |
+| `DEFAULT_MOUNT_DIR`    | 默认挂载目录           | `sessions_mount_dir`       | 用于持久存储路径，存储`/workspace` 文件                      |
+| `READONLY_MOUNTS`      | 只读目录挂载           | `None`                     | 一个字典，映射 **宿主机路径** → **容器路径**，以 **只读** 方式挂载。用于共享文件 / 配置，但禁止容器修改数据。示例：<br/>`{"\/Users\/alice\/data": "\/data"}` 会把宿主机 `/Users/alice/data` 挂载到容器的 `/data`（只读）。 |
+| `PORT_RANGE`           | 可用端口范围           | `[49152,59152]`            | 用于服务端口分配                                             |
 
 #### （可选）Redis 设置
 
@@ -162,6 +162,27 @@ Redis 为沙箱状态和状态管理提供缓存。如果只有一个工作进�
 | ----------------- | ---------------------------- | --------- | ---------------------------------- |
 | `K8S_NAMESPACE`   | 要使用的 Kubernetes 命名空间 | `default` | 设置资源部署的命名空间             |
 | `KUBECONFIG_PATH` | kubeconfig 文件的路径        | `None`    | 指定用于访问集群的 kubeconfig 位置 |
+
+### （可选）AgentRun设置
+
+AgentRun是阿里云推出的基于Serverless架构的智能Agent开发框架，提供了一套完整的工具集，帮助开发者快速构建、部署和管理AI Agent应用。您可将沙盒服务器部署到AgentRun上。
+
+要在沙盒服务器中配置特定于 [AgentRun](https://functionai.console.aliyun.com/cn-hangzhou/agent/) 的设置，请确保设置 `CONTAINER_DEPLOYMENT=agentrun` 。可以考虑调整以下参数：
+
+| Parameter                     | Description              | Default                          | Notes                                                                                    |
+|-------------------------------| ------------------------ |----------------------------------|------------------------------------------------------------------------------------------|
+| `AGENT_RUN_ACCOUNT_ID`        | 阿里云账号ID             | Empty                           | 阿里云主账号ID，登录阿里云[RAM控制台](https://ram.console.aliyun.com/profile/access-keys)获取阿里云账号ID和AK、SK |
+| `AGENT_RUN_ACCESS_KEY_ID`     | 访问密钥ID               | Empty             | 阿里云AccessKey ID，需要`AliyunAgentRunFullAccess`权限                                           |
+| `AGENT_RUN_ACCESS_KEY_SECRET` | 访问密钥Secret           | Empty         | 阿里云AccessKey Secret                                                                      |
+| `AGENT_RUN_REGION_ID`         | 部署区域ID               | Empty | AgentRun部署地域ID                                                                           |
+| `AGENT_RUN_CPU`               | CPU规格                  | `2.0`                            | vCPU规格                                                                                   |
+| `AGENT_RUN_MEMORY`            | 内存规格                 | `2048`                           | 内存规格(MB)                                                                                 |
+| `AGENT_RUN_VPC_ID`            | VPC ID                   | `None`                           | VPC网络ID（可选）                                                                              |
+| `AGENT_RUN_VSWITCH_IDS`       | 交换机ID列表             | `None`                           | VSwitch ID列表（可选）                                                                         |
+| `AGENT_RUN_SECURITY_GROUP_ID` | 安全组ID                 | `None`                           | 安全组ID（可选）                                                                                |
+| `AGENT_RUN_PREFIX`            | 资源名称前缀             | `agentscope-sandbox`             | 创建的资源名称前缀                                                                                |
+| `AGENT_RUN_LOG_PROJECT`       | SLS日志项目              | `None`                           | SLS日志项目名称（可选）                                                                            |
+| `AGENT_RUN_LOG_STORE`         | SLS日志库                | `None`                           | SLS日志库名称（可选）                                                                             |
 
 ### 导入自定义沙箱
 
@@ -230,7 +251,7 @@ with BaseSandbox(
 git clone https://github.com/agentscope-ai/agentscope-runtime.git
 cd agentscope-runtime
 git submodule update --init --recursive
-pip install -e ".[sandbox]"
+pip install -e .
 ```
 
 ```{note}
@@ -332,9 +353,9 @@ COPY src/agentscope_runtime/sandbox/box/shared/app.py ./
 COPY src/agentscope_runtime/sandbox/box/shared/routers/ ./routers/
 COPY src/agentscope_runtime/sandbox/box/shared/dependencies/ ./dependencies/
 COPY src/agentscope_runtime/sandbox/box/shared/artifacts/ ./ext_services/artifacts/
-COPY src/agentscope_runtime/sandbox/box/shared/third_party/markdownify-mcp/ ./mcp_project/markdownify-mcp/
-COPY src/agentscope_runtime/sandbox/box/shared/third_party/steel-browser/ ./ext_services/steel-browser/
-COPY examples/custom_sandbox/custom_sandbox/box/ ./
+COPY examples/custom_sandbox/box/third_party/markdownify-mcp/ ./mcp_project/markdownify-mcp/
+COPY examples/custom_sandbox/box/third_party/steel-browser/ ./ext_services/steel-browser/
+COPY examples/custom_sandbox/box/ ./
 
 RUN pip install -r requirements.txt
 
@@ -394,7 +415,7 @@ CMD ["/bin/sh", "-c", "envsubst '$SECRET_TOKEN' < /etc/nginx/nginx.conf.template
 准备好Dockerfile 和自定义沙箱类后，使用内置构建器工具构建您的自定义沙箱镜像：
 
 ```bash
-runtime-sandbox-builder my_custom_sandbox --dockerfile_path examples/custom_sandbox/custom_sandbox/Dockerfile --extention PATH_TO_YOUR_SANDBOX_MODULE
+runtime-sandbox-builder my_custom_sandbox --dockerfile_path examples/custom_sandbox/Dockerfile --extension PATH_TO_YOUR_SANDBOX_MODULE
 ```
 
 **命令参数：**
@@ -416,10 +437,13 @@ runtime-sandbox-builder all
 # 构建基础镜像（约1GB）
 runtime-sandbox-builder base
 
-# 构建浏览器镜像（约2.6GB）
+# 构建GUI镜像（约2GB）
+runtime-sandbox-builder gui
+
+# 构建浏览器镜像（约2GB）
 runtime-sandbox-builder browser
 
-# 构建文件系统镜像（约1GB）
+# 构建文件系统镜像（约2GB）
 runtime-sandbox-builder filesystem
 ```
 

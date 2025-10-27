@@ -38,7 +38,7 @@ scenarios. It serves as a crucial testing ground for the AI agents, allowing the
 First, install AgentScope Runtime with sandbox support:
 
 ```bash
-pip install "agentscope-runtime[sandbox]"
+pip install agentscope-runtime
 ```
 
 ### Appworld Example

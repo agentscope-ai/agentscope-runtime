@@ -1,12 +1,12 @@
 # Demo House
 
 ```{note}
-Explore a variety of demos showcasing the use of AgentScope Runtime to build agent applications in our Demo House
+Explore a variety of demos showcasing the use of AgentScope Runtime to build agent applications in our Demo House. These demos, previously hosted in this repository, have now been migrated to [agentscope-ai/agentscope-samples](https://github.com/agentscope-ai/agentscope-samples) to better demonstrate their integration and collaboration with other AgentScope libraries.
 ```
 
 <div class="gallery-container">
     <a class="gallery-item"
-       href="https://github.com/agentscope-ai/agentscope-runtime/tree/main/demohouse/browser_use">
+       href="https://github.com/agentscope-ai/agentscope-samples/tree/main/browser_use/browser_use_fullstack_runtime">
         <div class="gallery-item-card">
             <div class="gallery-item-card-image-container">
                 <img class="gallery-item-card-img"
@@ -23,7 +23,7 @@ Explore a variety of demos showcasing the use of AgentScope Runtime to build age
         </div>
     </a>
     <a class="gallery-item"
-       href="https://github.com/agentscope-ai/agentscope-runtime/tree/main/demohouse/qwen_langgraph_search">
+       href="https://github.com/agentscope-ai/agentscope-samples/tree/main/deep_research/qwen_langgraph_search_fullstack_runtime">
         <div class="gallery-item-card">
             <div class="gallery-item-card-image-container">
                 <img class="gallery-item-card-img"
@@ -40,7 +40,7 @@ Explore a variety of demos showcasing the use of AgentScope Runtime to build age
         </div>
     </a>
     <a class="gallery-item"
-       href="https://github.com/agentscope-ai/agentscope-runtime/tree/main/demohouse/chatbot">
+       href="https://github.com/agentscope-ai/agentscope-samples/tree/main/conversational_agents/chatbot_fullstack_runtime">
         <div class="gallery-item-card">
             <div class="gallery-item-card-image-container">
                 <img class="gallery-item-card-img"
@@ -56,6 +56,7 @@ Explore a variety of demos showcasing the use of AgentScope Runtime to build age
         </div>
     </a>
 </div>
+
 
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');

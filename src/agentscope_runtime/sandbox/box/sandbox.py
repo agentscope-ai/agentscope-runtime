@@ -49,7 +49,7 @@ class Sandbox:
             )
 
             sandbox_id = self.manager_api.create_from_pool(
-                sandbox_type=sandbox_type.value,
+                sandbox_type=SandboxType(sandbox_type).value,
             )
             if sandbox_id is None:
                 raise RuntimeError(
@@ -115,8 +115,11 @@ class Sandbox:
                 # Clean the specific sandbox
                 self.manager_api.release(self.sandbox_id)
         except Exception as e:
+            import traceback
+
             logger.error(
-                f"Cleanup {self.sandbox_id} error: {e}",
+                f"Cleanup {self.sandbox_id} error: {e}\n"
+                f"{traceback.format_exc()}",
             )
 
     def __enter__(self):

@@ -99,7 +99,11 @@ class AgentScopeContextAdapter:
             "name": message.role,
             "role": role_label,
         }
-        if message.type == MessageType.PLUGIN_CALL:
+        if message.type in (
+            MessageType.PLUGIN_CALL,
+            MessageType.FUNCTION_CALL,
+        ):
+            # convert PLUGIN_CALL, FUNCTION_CALL to ToolUseBlock
             result["content"] = [
                 ToolUseBlock(
                     type="tool_use",
@@ -108,7 +112,12 @@ class AgentScopeContextAdapter:
                     input=json.loads(message.content[0].data["arguments"]),
                 ),
             ]
-        elif message.type == MessageType.PLUGIN_CALL_OUTPUT:
+        elif message.type in (
+            MessageType.PLUGIN_CALL_OUTPUT,
+            MessageType.FUNCTION_CALL_OUTPUT,
+        ):
+            # convert PLUGIN_CALL_OUTPUT, FUNCTION_CALL_OUTPUT to
+            # ToolResultBlock
             result["content"] = [
                 ToolResultBlock(
                     type="tool_result",

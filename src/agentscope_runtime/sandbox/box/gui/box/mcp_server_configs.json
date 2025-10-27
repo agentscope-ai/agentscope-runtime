@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "computer-use": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "computer-use-mcp@1.2.0"
+      ]
+    }
+  }
+}

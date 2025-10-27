@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=redefined-outer-name, protected-access, too-many-branches
-# pylint: disable=too-many-statements
+# pylint: disable=redefined-outer-name, protected-access
+# pylint: disable=too-many-branches, too-many-statements
 import logging
 import os
 import json
@@ -9,12 +9,13 @@ import inspect
 import traceback
 
 from functools import wraps
-from typing import Optional, Dict
-from urllib.parse import urlparse, urlunparse
+from typing import Optional, Dict, Union, List
 
 import shortuuid
 import requests
 
+from .container_clients.docker_client import DockerClient
+from .container_clients.kubernetes_client import KubernetesClient
 from ..model import (
     ContainerModel,
     SandboxManagerEnvConfig,
@@ -33,8 +34,6 @@ from ..manager.storage import (
     LocalStorage,
     OSSStorage,
 )
-from ..manager.container_clients import DockerClient, KubernetesClient
-from ..constant import BROWSER_SESSION_ID
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -86,7 +85,11 @@ class SandboxManager:
         config: Optional[SandboxManagerEnvConfig] = None,
         base_url=None,
         bearer_token=None,
-        default_type: SandboxType | str = SandboxType.BASE,
+        default_type: Union[
+            SandboxType,
+            str,
+            List[Union[SandboxType, str]],
+        ] = SandboxType.BASE,
     ):
         if base_url:
             # Initialize HTTP session for remote mode with bearer token
@@ -113,7 +116,12 @@ class SandboxManager:
                 default_mount_dir="sessions_mount_dir",
             )
 
-        self.default_type = SandboxType(default_type)
+        # Support multi sandbox pool
+        if isinstance(default_type, (SandboxType, str)):
+            self.default_type = [SandboxType(default_type)]
+        else:
+            self.default_type = [SandboxType(x) for x in list(default_type)]
+
         self.workdir = "/workspace"
 
         self.config = config
@@ -125,6 +133,7 @@ class SandboxManager:
             self.config.storage_folder or self.default_mount_dir
         )
 
+        self.pool_queues = {}
         if self.config.redis_enabled:
             import redis
 
@@ -144,13 +153,22 @@ class SandboxManager:
                 ) from e
 
             self.container_mapping = RedisMapping(redis_client)
-            self.pool_queue = RedisQueue(
+            self.session_mapping = RedisMapping(
                 redis_client,
-                self.config.redis_container_pool_key,
+                prefix="session_mapping",
             )
+
+            # Init multi sand box pool
+            for t in self.default_type:
+                queue_key = f"{self.config.redis_container_pool_key}:{t.value}"
+                self.pool_queues[t] = RedisQueue(redis_client, queue_key)
         else:
             self.container_mapping = InMemoryMapping()
-            self.pool_queue = InMemoryQueue()
+            self.session_mapping = InMemoryMapping()
+
+            # Init multi sand box pool
+            for t in self.default_type:
+                self.pool_queues[t] = InMemoryQueue()
 
         self.container_deployment = self.config.container_deployment
 
@@ -159,6 +177,10 @@ class SandboxManager:
                 self.client = DockerClient(config=self.config)
             elif self.container_deployment == "k8s":
                 self.client = KubernetesClient(config=self.config)
+            elif self.container_deployment == "agentrun":
+                from .container_clients.agentrun_client import AgentRunClient
+
+                self.client = AgentRunClient(config=self.config)
             else:
                 raise NotImplementedError("Not implemented")
         else:
@@ -245,24 +267,28 @@ class SandboxManager:
         """
         Init runtime pool
         """
-        while self.pool_queue.size() < self.pool_size:
-            try:
-                container_name = self.create()
-                container_model = self.container_mapping.get(container_name)
-                if container_model:
-                    # Check the pool size again to avoid race condition
-                    if self.pool_queue.size() < self.pool_size:
-                        self.pool_queue.enqueue(container_model)
+        for t in self.default_type:
+            queue = self.pool_queues[t]
+            while queue.size() < self.pool_size:
+                try:
+                    container_name = self.create(sandbox_type=t.value)
+                    container_model = self.container_mapping.get(
+                        container_name,
+                    )
+                    if container_model:
+                        # Check the pool size again to avoid race condition
+                        if queue.size() < self.pool_size:
+                            queue.enqueue(container_model)
+                        else:
+                            # The pool size has reached the limit
+                            self.release(container_name)
+                            break
                     else:
-                        # The pool size has reached the limit
-                        self.release(container_name)
+                        logger.error("Failed to create container for pool")
                         break
-                else:
-                    logger.error("Failed to create container for pool")
+                except Exception as e:
+                    logger.error(f"Error initializing runtime pool: {e}")
                     break
-            except Exception as e:
-                logger.error(f"Error initializing runtime pool: {e}")
-                break
 
     @remote_wrapper()
     def cleanup(self):
@@ -271,17 +297,19 @@ class SandboxManager:
         )
 
         # Clean up pool first
-        try:
-            while self.pool_queue.size() > 0:
-                container_json = self.pool_queue.dequeue()
-                if container_json:
-                    container_model = ContainerModel(**container_json)
-                    logger.debug(
-                        f"Destroy container {container_model.container_id}",
-                    )
-                    self.release(container_model.session_id)
-        except Exception as e:
-            logger.error(f"Error cleaning up runtime pool: {e}")
+        for queue in self.pool_queues.values():
+            try:
+                while queue.size() > 0:
+                    container_json = queue.dequeue()
+                    if container_json:
+                        container_model = ContainerModel(**container_json)
+                        logger.debug(
+                            f"Destroy container"
+                            f" {container_model.container_id}",
+                        )
+                        self.release(container_model.session_id)
+            except Exception as e:
+                logger.error(f"Error cleaning up runtime pool: {e}")
 
         # Clean up rest container
         for key in self.container_mapping.scan(self.prefix):
@@ -299,11 +327,15 @@ class SandboxManager:
                 )
 
     @remote_wrapper()
-    def create_from_pool(self, sandbox_type=None):
+    def create_from_pool(self, sandbox_type=None, meta: Optional[Dict] = None):
         """Try to get a container from runtime pool"""
-        sandbox_type = SandboxType(sandbox_type)
-        if sandbox_type != self.default_type:
-            return self.create(sandbox_type=sandbox_type.value)
+        # If not specified, use the first one
+        sandbox_type = SandboxType(sandbox_type or self.default_type[0])
+
+        if sandbox_type not in self.pool_queues:
+            return self.create(sandbox_type=sandbox_type.value, meta=meta)
+
+        queue = self.pool_queues[sandbox_type]
 
         cnt = 0
         try:
@@ -315,17 +347,17 @@ class SandboxManager:
                 cnt += 1
 
                 # Add a new one to container
-                container_name = self.create()
+                container_name = self.create(sandbox_type=sandbox_type)
                 new_container_model = self.container_mapping.get(
                     container_name,
                 )
 
                 if new_container_model:
-                    self.pool_queue.enqueue(
+                    queue.enqueue(
                         new_container_model,
                     )
 
-                container_json = self.pool_queue.dequeue()
+                container_json = queue.dequeue()
 
                 if not container_json:
                     raise RuntimeError(
@@ -333,6 +365,29 @@ class SandboxManager:
                     )
 
                 container_model = ContainerModel(**container_json)
+
+                # Add meta field to container
+                if meta and not container_model.meta:
+                    container_model.meta = meta
+                    self.container_mapping.set(
+                        container_model.container_name,
+                        container_model.model_dump(),
+                    )
+                    # Update session mapping
+                    if "session_ctx_id" in meta:
+                        env_ids = (
+                            self.session_mapping.get(
+                                meta["session_ctx_id"],
+                            )
+                            or []
+                        )
+                        if container_model.container_name not in env_ids:
+                            env_ids.append(container_model.container_name)
+                        self.session_mapping.set(
+                            meta["session_ctx_id"],
+                            env_ids,
+                        )
+
                 logger.debug(
                     f"Retrieved container from pool:"
                     f" {container_model.session_id}",
@@ -341,7 +396,7 @@ class SandboxManager:
                 if (
                     container_model.version
                     != SandboxRegistry.get_image_by_type(
-                        self.default_type,
+                        sandbox_type,
                     )
                 ):
                     logger.warning(
@@ -372,10 +427,10 @@ class SandboxManager:
                     self.release(container_model.session_id)
 
         except Exception as e:
-            logger.error(
-                f"Error getting container from pool, create a "
-                f"new one. {e}: {traceback.format_exc()}",
+            logger.warning(
+                "Error getting container from pool, create a new one.",
             )
+            logger.debug(f"{e}: {traceback.format_exc()}")
             return self.create()
 
     @remote_wrapper()
@@ -385,11 +440,12 @@ class SandboxManager:
         mount_dir=None,  # TODO: remove to avoid leaking
         storage_path=None,
         environment: Optional[Dict] = None,
+        meta: Optional[Dict] = None,
     ):
         if sandbox_type is not None:
             target_sandbox_type = SandboxType(sandbox_type)
         else:
-            target_sandbox_type = self.default_type
+            target_sandbox_type = self.default_type[0]
 
         image = SandboxRegistry.get_image_by_type(target_sandbox_type)
         if not image:
@@ -398,7 +454,7 @@ class SandboxManager:
                 f"using default",
             )
             image = SandboxRegistry.get_image_by_type(
-                self.default_type,
+                self.default_type[0],
             )
 
         # TODO: enable for timeout for the sandbox (auto cleanup)
@@ -424,7 +480,7 @@ class SandboxManager:
                 mount_dir = os.path.join(self.default_mount_dir, session_id)
                 os.makedirs(mount_dir, exist_ok=True)
 
-        if mount_dir:
+        if mount_dir and self.container_deployment != "agentrun":
             if not os.path.isabs(mount_dir):
                 mount_dir = os.path.abspath(mount_dir)
 
@@ -435,12 +491,16 @@ class SandboxManager:
                     session_id,
                 )
 
-        if mount_dir and storage_path:
+        if (
+            mount_dir
+            and storage_path
+            and self.container_deployment != "agentrun"
+        ):
             self.storage.download_folder(storage_path, mount_dir)
 
+        # Check for an existing container with the same name
+        container_name = self._generate_container_key(session_id)
         try:
-            # Check for an existing container with the same name
-            container_name = self._generate_container_key(session_id)
             if self.client.inspect(container_name):
                 raise ValueError(
                     f"Container with name {container_name} already exists.",
@@ -450,7 +510,7 @@ class SandboxManager:
             runtime_token = secrets.token_hex(16)
 
             # Prepare volume bindings if a mount directory is provided
-            if mount_dir:
+            if mount_dir and self.container_deployment != "agentrun":
                 volume_bindings = {
                     mount_dir: {
                         "bind": self.workdir,
@@ -469,7 +529,7 @@ class SandboxManager:
                         "mode": "ro",
                     }
 
-            _id, ports, ip = self.client.create(
+            _id, ports, ip, *rest = self.client.create(
                 image,
                 name=container_name,
                 ports=["80/tcp"],  # Nginx
@@ -480,6 +540,10 @@ class SandboxManager:
                 },
                 runtime_config=config.runtime_config,
             )
+
+            http_protocol = "http"
+            if rest and rest[0] == "https":
+                http_protocol = "https"
 
             if _id is None:
                 return None
@@ -498,27 +562,31 @@ class SandboxManager:
                 session_id=session_id,
                 container_id=_id,
                 container_name=container_name,
-                base_url=f"http://{ip}:{ports[0]}/fastapi",
-                browser_url=f"http://{ip}:{ports[0]}/steel-api"
-                f"/{runtime_token}",
-                front_browser_ws=f"ws://{ip}:"
-                f"{ports[0]}/steel-api/"
-                f"{runtime_token}/v1/sessions/cast",
-                client_browser_ws=f"ws://{ip}:"
-                f"{ports[0]}/steel-api/{runtime_token}/&sessionId"
-                f"={BROWSER_SESSION_ID}",
-                artifacts_sio=f"http://{ip}:{ports[0]}/v1",
+                url=f"{http_protocol}://{ip}:{ports[0]}",
                 ports=[ports[0]],
                 mount_dir=str(mount_dir),
                 storage_path=storage_path,
                 runtime_token=runtime_token,
                 version=image,
+                meta=meta or {},
             )
+
             # Register in mapping
             self.container_mapping.set(
                 container_model.container_name,
                 container_model.model_dump(),
             )
+
+            # Build mapping session_ctx_id to container_name
+            if meta and "session_ctx_id" in meta:
+                env_ids = (
+                    self.session_mapping.get(
+                        meta["session_ctx_id"],
+                    )
+                    or []
+                )
+                env_ids.append(container_model.container_name)
+                self.session_mapping.set(meta["session_ctx_id"], env_ids)
 
             logger.debug(
                 f"Created container {container_name}"
@@ -526,9 +594,11 @@ class SandboxManager:
             )
             return container_name
         except Exception as e:
-            logger.error(
-                f"Failed to create container: {e}: {traceback.format_exc()}",
+            logger.warning(
+                f"Failed to create container: {e}",
             )
+            logger.debug(f"{traceback.format_exc()}")
+            self.release(identity=container_name)
             return None
 
     @remote_wrapper()
@@ -547,6 +617,20 @@ class SandboxManager:
             # remove key in mapping before we remove container
             self.container_mapping.delete(container_json.get("container_name"))
 
+            # remove key in mapping
+            session_ctx_id = container_info.meta.get("session_ctx_id")
+            if session_ctx_id:
+                env_ids = self.session_mapping.get(session_ctx_id) or []
+                env_ids = [
+                    eid
+                    for eid in env_ids
+                    if eid != container_info.container_name
+                ]
+                if env_ids:
+                    self.session_mapping.set(session_ctx_id, env_ids)
+                else:
+                    self.session_mapping.delete(session_ctx_id)
+
             self.client.stop(container_info.container_id, timeout=1)
             self.client.remove(container_info.container_id, force=True)
 
@@ -561,10 +645,10 @@ class SandboxManager:
 
             return True
         except Exception as e:
-            logger.error(
-                f"Failed to destroy container: {e}: "
-                f"{traceback.format_exc()}",
+            logger.warning(
+                f"Failed to destroy container: {e}",
             )
+            logger.debug(f"{traceback.format_exc()}")
             return False
 
     @remote_wrapper()
@@ -651,34 +735,25 @@ class SandboxManager:
 
     def _establish_connection(self, identity):
         container_model = ContainerModel(**self.get_info(identity))
-        # TODO: make this more robust
-        enable_browser = "browser" in container_model.version
 
         # TODO: remake docker name
         if (
             "sandbox-appworld" in container_model.version
             or "sandbox-bfcl" in container_model.version
         ):
-            parsed = urlparse(container_model.base_url)
-            base_url = urlunparse(
-                (
-                    parsed.scheme,
-                    parsed.netloc,
-                    "",
-                    "",
-                    "",
-                    "",
-                ),
-            )
-
             return TrainingSandboxClient(
-                base_url=base_url,
+                base_url=container_model.url,
             ).__enter__()
 
         return SandboxHttpClient(
             container_model,
-            enable_browser=enable_browser,
         ).__enter__()
+
+    @remote_wrapper()
+    def check_health(self, identity):
+        """List tool"""
+        client = self._establish_connection(identity)
+        return client.check_health()
 
     @remote_wrapper()
     def list_tools(self, identity, tool_type=None, **kwargs):
@@ -702,3 +777,16 @@ class SandboxManager:
             server_configs=server_configs,
             overwrite=overwrite,
         )
+
+    @remote_wrapper()
+    def get_session_mapping(self, session_ctx_id: str) -> list:
+        """Get all container names bound to a session context"""
+        return self.session_mapping.get(session_ctx_id) or []
+
+    @remote_wrapper()
+    def list_session_keys(self) -> list:
+        """Return all session_ctx_id keys currently in mapping"""
+        session_keys = []
+        for key in self.session_mapping.scan():
+            session_keys.append(key)
+        return session_keys

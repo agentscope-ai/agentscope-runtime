@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=redefined-outer-name, protected-access
+# pylint: disable=redefined-outer-name, protected-access, line-too-long
 import os
 
 import pytest
 import pytest_asyncio
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
 from tablestore_for_agent_memory.util.tablestore_helper import TablestoreHelper
 
 from agentscope_runtime.engine import Runner
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
-from agentscope_runtime.engine.llms.qwen_llm import QwenLLM
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.schemas.agent_schemas import (
     AgentRequest,
     MessageType,
@@ -18,21 +19,19 @@ from agentscope_runtime.engine.services.context_manager import ContextManager
 from agentscope_runtime.engine.services.tablestore_memory_service import (
     TablestoreMemoryService,
 )
-
 from agentscope_runtime.engine.services.tablestore_rag_service import (
     TablestoreRAGService,
 )
-
 # fmt: off
-from agentscope_runtime.engine.services.tablestore_session_history_service \
-    import (
-        TablestoreSessionHistoryService,
-    )
-# fmt: on
-
+from agentscope_runtime.engine.services.tablestore_session_history_service import ( # noqa E501
+    TablestoreSessionHistoryService,
+)
 from agentscope_runtime.engine.services.utils.tablestore_service_utils import (
     create_tablestore_client,
 )
+
+
+# fmt: on
 
 
 async def wait_for_index_ready(
@@ -117,10 +116,16 @@ async def test_runner(
 
     load_dotenv("../../.env")
 
-    llm_agent = LLMAgent(
-        model=QwenLLM(),
-        name="llm_agent",
-        description="A simple LLM agent",
+    agent = AgentScopeAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+        ),
+        agent_config={
+            "sys_prompt": "You're a helpful assistant named Friday.",
+        },
+        agent_builder=ReActAgent,
     )
 
     USER_ID = "user_1"
@@ -137,7 +142,7 @@ async def test_runner(
     )
     async with context_manager:
         runner = Runner(
-            agent=llm_agent,
+            agent=agent,
             context_manager=context_manager,
             environment_manager=None,
         )
