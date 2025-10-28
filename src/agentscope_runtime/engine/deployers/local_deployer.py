@@ -80,7 +80,8 @@ class LocalDeployManager(DeployManager):
         """
         return asyncio.run(
             self._deploy_async(
-                app=app**kwargs,
+                app=app,
+                **kwargs,
             ),
         )
 

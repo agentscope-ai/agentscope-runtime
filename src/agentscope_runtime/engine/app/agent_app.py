@@ -113,10 +113,7 @@ class AgentApp(BaseApp):
     ):
         try:
             loop = asyncio.get_event_loop()
-            if loop.is_running():
-                loop.run_until_complete(self._runner.__aenter__())
-            else:
-                loop.run_until_complete(self._runner.__aenter__())
+            loop.run_until_complete(self._runner.__aenter__())
 
             logger.info("[AgentApp] Runner initialized.")
 
