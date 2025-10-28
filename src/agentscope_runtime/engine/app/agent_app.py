@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
 import inspect
 import asyncio
+import logging
 import threading
 
-from typing import Callable, Optional
+from typing import Callable, Optional, List
 
 import uvicorn
 
 from celery import Celery
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse
+
+logger = logging.getLogger(__name__)
 
 
 class AgentApp(FastAPI):
@@ -138,23 +141,58 @@ class AgentApp(FastAPI):
 
         return decorator
 
-    def run(self, host="0.0.0.0", port=8000):
+    def run(
+        self,
+        host="0.0.0.0",
+        port=8000,
+        embed_worker=False,
+    ):
         """
-        Start the FastAPI app with uvicorn.
-        If Celery is configured, start a worker thread as well.
+        Run FastAPI with uvicorn.
         """
+        if embed_worker:
+            if self.celery_app is None:
+                raise RuntimeError(
+                    "[AgentApp] Celery is not configured. "
+                    "Cannot run embedded worker.",
+                )
 
-        def start_celery_worker():
-            self.celery_app.worker_main(
-                [
-                    "worker",
-                    "--loglevel=INFO",
-                ],
+            logger.warning(
+                "[AgentApp] embed_worker=True: Running Celery worker in "
+                "embedded thread mode. This is intended for "
+                "development/debug purposes only. In production, run Celery "
+                "worker in a separate process!",
             )
 
-        if self.celery_app is not None:
-            # Note: In production, Celery worker should run in a separate
-            # process.
+            def start_celery_worker():
+                self.celery_app.worker_main(["worker", "--loglevel=INFO"])
+
             threading.Thread(target=start_celery_worker, daemon=True).start()
+            logger.info(
+                "[AgentApp] Embedded Celery worker started in background "
+                "thread (DEV mode).",
+            )
 
         uvicorn.run(self, host=host, port=port)
+
+    def run_worker(
+        self,
+        loglevel: str = "INFO",
+        concurrency: Optional[int] = None,
+        queues: Optional[List[str]] = None,
+    ):
+        """
+        Run Celery worker in this process.
+        Production should run: python app.py worker or equivalent.
+        """
+        if self.celery_app is None:
+            raise RuntimeError("[AgentApp] Celery is not configured.")
+
+        cmd = ["worker", f"--loglevel={loglevel}"]
+
+        if concurrency:
+            cmd.append(f"--concurrency={concurrency}")
+        if queues:
+            cmd.append(f"-Q {','.join(queues)}")
+
+        self.celery_app.worker_main(cmd)
