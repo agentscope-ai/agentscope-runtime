@@ -79,7 +79,7 @@ llamaindex_rag=[
     "llama-index-vector-stores-milvus>=0.9.1",
     "llama-index-readers-web>=0.5.1",
     "llama-index-embeddings-langchain>=0.4.0",
-    "langchain-community>=0.3.27",
+    "llama-index-embeddings-dashscope>=0.4.0",
     "bs4>=0.0.2",
 ]
 
