@@ -39,6 +39,8 @@ class AgentApp(BaseApp):
         response_type: str = "sse",
         stream: bool = True,
         request_model: Optional[type[BaseModel]] = AgentRequest,
+        before_start: Optional[Callable] = None,
+        after_finish: Optional[Callable] = None,
         broker_url: Optional[str] = None,
         backend_url: Optional[str] = None,
         **kwargs,
@@ -55,6 +57,8 @@ class AgentApp(BaseApp):
         self.response_type = response_type
         self.stream = stream
         self.request_model = request_model
+        self.before_start = before_start
+        self.after_finish = after_finish
 
         self._agent = agent
         self._runner = Runner(
@@ -104,7 +108,7 @@ class AgentApp(BaseApp):
     def run(
         self,
         host="0.0.0.0",
-        port=8000,
+        port=8090,
         embed_task_processor=False,
     ):
         try:
@@ -138,6 +142,9 @@ class AgentApp(BaseApp):
                 logger.info("[AgentApp] Runner cleaned up.")
             except Exception as e:
                 logger.error(f"[AgentApp] Error while cleaning up runner: {e}")
+
+    async def deploy(self, deployer, **kwargs):
+        return await deployer.deploy(self, **kwargs)
 
     def _add_middleware(self) -> None:
         """Add middleware"""

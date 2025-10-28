@@ -144,7 +144,7 @@ class BaseApp(FastAPI):
     def run(
         self,
         host="0.0.0.0",
-        port=8000,
+        port=8090,
         embed_task_processor=False,
     ):
         """
