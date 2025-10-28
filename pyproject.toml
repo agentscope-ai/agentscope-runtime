@@ -19,6 +19,7 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "kubernetes>=33.1.0",
     "shortuuid>=1.0.13",
+    "celery[redis]>=5.3.1",
 ]
 
 [tool.setuptools]
