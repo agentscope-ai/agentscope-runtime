@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 
 from agentscope_runtime.engine import Runner
 from agentscope_runtime.engine.schemas.agent_schemas import (
@@ -13,22 +14,28 @@ from agentscope_runtime.engine.services.environment_manager import (
     create_environment_manager,
 )
 
+logger = logging.getLogger(__name__)
+
 
 async def simple_call_agent(query, runner, user_id=None, session_id=None):
-    request = AgentRequest(
-        input=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": query,
-                    },
-                ],
-            },
-        ],
-        session_id=session_id,
-    )
+    if isinstance(query, str):
+        request = AgentRequest(
+            input=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": query,
+                        },
+                    ],
+                },
+            ],
+            session_id=session_id,
+        )
+    else:
+        request = query
+
     all_result = ""
     async for message in runner.stream_query(
         user_id=user_id,
@@ -58,6 +65,23 @@ async def simple_call_agent_direct(agent, query):
 
 
 async def simple_call_agent_tool(agent, query):
+    if isinstance(query, str):
+        request = AgentRequest(
+            input=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": query,
+                        },
+                    ],
+                },
+            ],
+        )
+    else:
+        request = query
+
     all_result = ""
     async with create_context_manager() as context_manager:
         async with create_environment_manager() as environment_manager:
@@ -65,20 +89,6 @@ async def simple_call_agent_tool(agent, query):
                 agent=agent,
                 context_manager=context_manager,
                 environment_manager=environment_manager,
-            )
-
-            request = AgentRequest(
-                input=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": query,
-                            },
-                        ],
-                    },
-                ],
             )
 
             async for message in runner.stream_query(
@@ -94,12 +104,7 @@ async def simple_call_agent_tool(agent, query):
 
 
 async def simple_call_agent_tool_auto_lifecycle(agent, query):
-    all_result = ""
-    async with Runner(
-        agent=agent,
-        context_manager=create_context_manager(),
-        environment_manager=create_environment_manager(),
-    ) as runner:
+    if isinstance(query, str):
         request = AgentRequest(
             input=[
                 {
@@ -113,7 +118,15 @@ async def simple_call_agent_tool_auto_lifecycle(agent, query):
                 },
             ],
         )
+    else:
+        request = query
 
+    all_result = ""
+    async with Runner(
+        agent=agent,
+        context_manager=create_context_manager(),
+        environment_manager=create_environment_manager(),
+    ) as runner:
         async for message in runner.stream_query(
             request=request,
         ):
@@ -127,13 +140,7 @@ async def simple_call_agent_tool_auto_lifecycle(agent, query):
 
 
 async def simple_call_agent_tool_wo_env(agent, query):
-    all_result = ""
-    async with create_context_manager() as context_manager:
-        runner = Runner(
-            agent=agent,
-            context_manager=context_manager,
-        )
-
+    if isinstance(query, str):
         request = AgentRequest(
             input=[
                 {
@@ -147,6 +154,15 @@ async def simple_call_agent_tool_wo_env(agent, query):
                 },
             ],
         )
+    else:
+        request = query
+
+    all_result = ""
+    async with create_context_manager() as context_manager:
+        runner = Runner(
+            agent=agent,
+            context_manager=context_manager,
+        )
 
         async for message in runner.stream_query(
             request=request,
@@ -157,4 +173,7 @@ async def simple_call_agent_tool_wo_env(agent, query):
                 and RunStatus.Completed == message.status
             ):
                 all_result = message.content[0].text
+
+            logger.debug(message.model_dump())
+
     return all_result
