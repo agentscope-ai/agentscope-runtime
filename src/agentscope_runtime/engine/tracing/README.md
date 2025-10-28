@@ -1,38 +1,38 @@
-# 功能简介
-Tracing模块用于组件和任意函数的链路跟踪，包含Log和Report两部分，其中Log按照Dashscope Log格式输出，Report使用 opentelemetry sdk上报跟踪信息。
+# Feature Overview
+The Tracing module is used for tracing components and arbitrary functions, including two parts: Log and Report. The Log part outputs in Dashscope Log format, while the Report part uses the OpenTelemetry SDK to report tracing information.
 
-# 使用方法
-## 日志打印
-1. 配置环境变量（默认开启）
+# Usage
+## Logging
+1. Configure environment variables (enabled by default)
 ```shell
 export TRACE_ENABLE_LOG=true
 ```
-2. 在任意函数上面添加注解，示例如下：
+2. Add decorator to any function, example:
 ```python
-from agentscope_bricks.utils.tracing_utils import trace, TraceType
+from agentscope_runtime.engine.tracing import trace, TraceType
 
 @trace(trace_type=TraceType.LLM, trace_name="llm_func")
 def llm_func():
     pass
 ```
-输出如下：
+Output:
 ```text
 {"time": "2025-08-13 11:23:41.808", "step": "llm_func_start", "model": "", "user_id": "", "code": "", "message": "", "task_id": "", "request_id": "", "context": {}, "interval": {"type": "llm_func_start", "cost": 0}, "ds_service_id": "test_id", "ds_service_name": "test_name"}
 {"time": "2025-08-13 11:23:41.808", "step": "llm_func_end", "model": "", "user_id": "", "code": "", "message": "", "task_id": "", "request_id": "", "context": {}, "interval": {"type": "llm_func_end", "cost": "0.000"}, "ds_service_id": "test_id", "ds_service_name": "test_name"}
 ```
 
-3. 自定义日志打印(前提条件：**函数包含 kwargs 参数**)
+3. Custom logging (prerequisite: **function contains kwargs parameter**)
 ```python
-from agentscope_bricks.utils.tracing_utils import trace, TraceType
+from agentscope_runtime.engine.tracing import trace, TraceType
 
 @trace(trace_type=TraceType.LLM, trace_name="llm_func")
 def llm_func(**kwargs):
     trace_event = kwargs.pop("trace_event", None)
     if trace_event:
-        # 自定义str类型消息
+        # Custom string message
         trace_event.on_log("hello")
 
-        # 格式化step类型消息
+        # Formatted step message
         trace_event.on_log(
             "",
             **{
@@ -43,25 +43,25 @@ def llm_func(**kwargs):
             },
         )
 ```
-输出如下：
+Output:
 ```text
 {"time": "2025-08-13 11:27:14.727", "step": "llm_func_start", "model": "", "user_id": "", "code": "", "message": "", "task_id": "", "request_id": "", "context": {}, "interval": {"type": "llm_func_start", "cost": 0}, "ds_service_id": "test_id", "ds_service_name": "test_name"}
 {"time": "2025-08-13 11:27:14.728", "step": "", "model": "", "user_id": "", "code": "", "message": "hello", "task_id": "", "request_id": "", "context": {}, "interval": {"type": "", "cost": "0"}, "ds_service_id": "test_id", "ds_service_name": "test_name"}
 {"time": "2025-08-13 11:27:14.728", "step": "llm_func_mid_result", "model": "", "user_id": "", "code": "", "message": "", "task_id": "", "request_id": "", "context": {"output": "hello"}, "interval": {"type": "llm_func_mid_result", "cost": "0.000"}, "ds_service_id": "test_id", "ds_service_name": "test_name"}
 {"time": "2025-08-13 11:27:14.728", "step": "llm_func_end", "model": "", "user_id": "", "code": "", "message": "", "task_id": "", "request_id": "", "context": {}, "interval": {"type": "llm_func_end", "cost": "0.000"}, "ds_service_id": "test_id", "ds_service_name": "test_name"}
 ```
-## 信息上报
-1. 配置环境变量（默认关闭）
+## Reporting
+1. Configure environment variables (disabled by default)
 ```shell
 export TRACE_ENABLE_LOG=false
 export TRACE_ENABLE_REPORT=true
 export TRACE_AUTHENTICATION={YOUR_AUTHENTICATION}
 export TRACE_ENDPOINT={YOUR_ENDPOINT}
 ```
-2. 在非流式输出函数上添加注解，示例如下：
+2. Add decorator to non-streaming functions, example:
 
 ```python
-from agentscope_bricks.utils.tracing_utils import trace, TraceType
+from agentscope_runtime.engine.tracing import trace, TraceType
 
 @trace(trace_type=TraceType.LLM,
        trace_name="llm_func")
@@ -70,21 +70,25 @@ def llm_func(args: str):
 ```
 
 
-3. 在流式输出函数上添加注解，示例如下：
+3. Add decorator to streaming functions, example:
 ```python
-from agentscope_bricks.utils.tracing_utils import trace, TraceType
+from agentscope_runtime.engine.tracing import trace, TraceType
+from agentscope_runtime.engine.tracing.message_util import (
+    get_finish_reason,
+    merge_incremental_chunk,
+)
 
 @trace(trace_type=TraceType.LLM,
        trace_name="llm_func",
        get_finish_reason_func=get_finish_reason,
-       merge_output_func=merge_output)
+       merge_output_func=merge_incremental_chunk)
 def llm_func(args: str):
     for i in range(10):
         yield i
 ```
-其中get_finish_reason、merge_output为自定义处理函数，非必填，默认使用message_utils.py中的get_finish_reason和merge_incremental_chunk。
+Where get_finish_reason and merge_incremental_chunk are custom processing functions, optional, defaults to get_finish_reason and merge_incremental_chunk in message_util.py.
 
-get_finish_reason 为自定义的获取 finish_reason 的函数，用于判断流式输出是否结束。示例如下：
+get_finish_reason is a custom function to get finish_reason, used to determine if streaming output has ended. Example:
 ```python
 from openai.types.chat import ChatCompletionChunk
 from typing import List, Optional
@@ -98,7 +102,7 @@ def get_finish_reason(response: ChatCompletionChunk) -> Optional[str]:
     return finish_reason
 ```
 
-merge_output 为自定义的合并输出的函数，用于最终输出信息的构造。示例如下：
+merge_output is a custom function to merge output, used to construct the final output information. Example:
 ```python
 from openai.types.chat import ChatCompletionChunk
 from typing import List, Optional
@@ -128,16 +132,16 @@ def merge_incremental_chunk(
 
 
 
-4. 设置request_id和common attributes
+4. Setting request_id and common attributes
 
-request id用于绑定不同请求的上下文。common attribute为公共的span属性，该请求下所有span都会加上这些属性。
+request_id is used to bind the context of different requests. common attributes are public span attributes, all spans under this request will have these attributes.
 
-**自动设置 request_id**: 当用户没有在请求处理的开始阶段手动调用 `TracingUtil.set_request_id` 时，系统会在 root span 中自动生成并设置一个唯一的 request_id。
+**Automatic request_id setting**: When the user does not manually call `TracingUtil.set_request_id` at the beginning of request processing, the system will automatically generate and set a unique request_id in the root span.
 
-**手动设置**: 在**未被@trace装饰**的函数中设置request_id和common attributes，比如在请求信息解析完成后立即设置。示例如下：
+**Manual setting**: Set request_id and common attributes in functions **not decorated with @trace**, for example, set immediately after request information is parsed. Example:
 
 ```python
-from agentscope_bricks.utils.tracing_utils import TracingUtil
+from agentscope_runtime.engine.tracing import TracingUtil
 
 common_attributes = {
     "gen_ai.user.id": "user_id",
@@ -149,17 +153,17 @@ common_attributes = {
 TracingUtil.set_request_id("request_id")
 TracingUtil.set_common_attributes(common_attributes)
 ```
-5. 自定义信息上报(前提条件：**函数包含 kwargs 参数**)
+5. Custom reporting (prerequisite: **function contains kwargs parameter**)
 ```python
 import json
-from agentscope_bricks.utils.tracing_utils import trace, TraceType
+from agentscope_runtime.engine.tracing import trace, TraceType
 
 @trace(trace_type=TraceType.LLM, trace_name="llm_func")
 def llm_func(**kwargs):
     trace_event = kwargs.pop("trace_event", None)
     if trace_event:
-        # 设置str类型属性
+        # Set string attribute
         trace_event.set_attribute("key", "value")
-        # 设置dict类型属性
+        # Set dict attribute
         trace_event.set_attribute("func_7.key", json.dumps({'key0': 'value0', 'key1': 'value1'}))
 ```
