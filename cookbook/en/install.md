@@ -35,7 +35,7 @@ pip install agentscope-runtime
 For the whole experience, including sandbox capabilities and other agent framework integrations:
 
 ```bash
-pip install "agentscope-runtime[sandbox,agentscope,langgraph,agno]"
+pip install "agentscope-runtime[langgraph,agno,autogen]"
 ```
 
 ### (Optional) Install from Source
@@ -103,6 +103,13 @@ except ImportError as e:
 
 ## Installation Options Explained
 
-This diagram visualizes installation options as a layered architecture, starting with the core runtime (agentscope-runtime) at the base. Optional modules (e.g., sandbox, AgentScope, LangGraph) stack atop the core, each adding specific functionality (e.g., tool execution, framework integrations) and requiring corresponding dependencies (e.g., Docker, testing tools).
+This diagram visualizes installation options as a layered architecture, starting with the core runtime (agentscope-runtime) — which **includes AgentScope Framework and Sandbox dependencies** — at the base. Optional modules (e.g., LangGraph, Agno, AutoGen) stack atop the core, each adding specific functionality (e.g., tool execution, framework integrations) and requiring corresponding dependencies. See details about all installation options at [pyproject.toml](https://github.com/agentscope-ai/agentscope-runtime/blob/main/pyproject.toml).
 
-<img src="/_static/installation_options.jpg" alt="Installation Options" style="zoom:25%;" />
+| **Component**         | **Package**          | **Use-Case**  | **Dependencies**                                             |
+| --------------------- | -------------------- | ------------- | ------------------------------------------------------------ |
+| Core Runtime          | `agentscope-runtime` | Core runtime  | Minimal including AgentScope Framework and Sandbox Dependencies |
+| Development Tools     | `dev`                | Dev utilities | Testing, Linting, Docs                                       |
+| Agno Integration      | `agno`               | Agno          | Agno Framework                                               |
+| LangGraph Integration | `langgraph`          | LangGraph     | LangGraph Framework                                          |
+| AutoGen Integration   | `autogen`            | AutoGen       | AutoGen Framework                                            |
+

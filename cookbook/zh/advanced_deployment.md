@@ -75,25 +75,23 @@ export KUBECONFIG="/path/to/your/kubeconfig"
 ```{code-cell}
 # agent.py
 import os
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
-from agentscope_runtime.engine.llms import QwenLLM
 
-# 创建大语言模型
-model = QwenLLM(
-    model_name="qwen-turbo",
-    api_key=os.getenv("DASHSCOPE_API_KEY"),
-)
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
 
-# 创建智能体
-llm_agent = LLMAgent(
-    model=model,
-    name="ProductionAgent",
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+
+# Create the agent
+agent = AgentScopeAgent(
+    name="Friday",
+    model=DashScopeChatModel(
+        "qwen-turbo",
+        api_key=os.getenv("DASHSCOPE_API_KEY"),
+    ),
     agent_config={
-        "sys_prompt": (
-            "你是一个部署在生产环境中的有用助手。"
-            "你可以帮助用户处理各种任务并提供可靠的回复。"
-        ),
+        "sys_prompt": "You're a helpful assistant named Friday.",
     },
+    agent_builder=ReActAgent,
 )
 
 print("✅ 智能体定义已准备就绪，可进行部署")
@@ -114,6 +112,11 @@ print("✅ 智能体定义已准备就绪，可进行部署")
 ```{code-cell}
 import asyncio
 from contextlib import asynccontextmanager
+
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
+
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
 from agentscope_runtime.engine.runner import Runner
 from agentscope_runtime.engine.services.context_manager import ContextManager
@@ -122,7 +125,7 @@ from agentscope_runtime.engine.services.environment_manager import create_enviro
 from agentscope_runtime.sandbox.tools.filesystem import run_ipython_cell, edit_file
 
 # 导入我们的智能体定义
-from agent_definition import llm_agent
+from agent_definition import agent
 
 async def prepare_services():
     """准备上下文和环境服务"""
@@ -147,13 +150,18 @@ async def create_production_runner():
 
     async with context_manager:
         # 添加沙箱工具以增强功能
-        enhanced_agent = LLMAgent(
-            model=llm_agent.model,
-            name=llm_agent.name,
-            agent_config=llm_agent.agent_config,
-            tools=[run_ipython_cell, edit_file],  # 根据需要添加工具
+        enhanced_agent = AgentScopeAgent(
+            name="Friday",
+            model=DashScopeChatModel(
+                "qwen-turbo",
+                api_key=os.getenv("DASHSCOPE_API_KEY"),
+            ),
+            agent_config={
+                "sys_prompt": "You're a helpful assistant named Friday.",
+            },
+            agent_builder=ReActAgent,
+            tools=[run_ipython_cell, edit_file],  # Add tools if needed
         )
-
         async with create_environment_manager() as env_manager:
             runner = Runner(
                 agent=enhanced_agent,
@@ -265,7 +273,7 @@ from agentscope_runtime.engine.deployers.utils.service_utils import ServicesConf
 from agentscope_runtime.engine.runner import Runner
 
 # 导入我们的智能体定义
-from agent_definition import llm_agent
+from agent_definition import agent
 
 async def deploy_detached():
     """将智能体部署为独立进程"""
@@ -273,7 +281,7 @@ async def deploy_detached():
     print("🚀 开始独立进程部署...")
 
     # 创建A2A协议适配器
-    a2a_protocol = A2AFastAPIDefaultAdapter(agent=llm_agent)
+    a2a_protocol = A2AFastAPIDefaultAdapter(agent=agent)
 
     # 创建部署管理器
     deploy_manager = LocalDeployManager(
@@ -282,7 +290,7 @@ async def deploy_detached():
     )
 
     # 创建运行器
-    runner = Runner(agent=llm_agent)
+    runner = Runner(agent=agent)
 
     # 使用完整配置以独立模式部署
     deployment_info = await runner.deploy(
@@ -421,7 +429,7 @@ from agentscope_runtime.engine.deployers.kubernetes_deployer import (
 from agentscope_runtime.engine.runner import Runner
 
 # 导入我们的智能体定义
-from agent_definition import llm_agent
+from agent_definition import agent
 
 async def deploy_to_kubernetes():
     """将智能体部署到Kubernetes集群"""
@@ -448,7 +456,7 @@ async def deploy_to_kubernetes():
     )
 
     # 4. 创建运行器
-    runner = Runner(agent=llm_agent)
+    runner = Runner(agent=agent)
 
     # 5. 配置运行时资源
     runtime_config = {

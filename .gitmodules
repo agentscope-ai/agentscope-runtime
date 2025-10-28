@@ -1,6 +1,6 @@
-[submodule "src/agentscope_runtime/sandbox/box/shared/third_party/markdownify-mcp"]
-	path = src/agentscope_runtime/sandbox/box/shared/third_party/markdownify-mcp
-	url = https://github.com/zcaceres/markdownify-mcp.git
-[submodule "src/agentscope_runtime/sandbox/box/shared/third_party/steel-browser"]
-	path = src/agentscope_runtime/sandbox/box/shared/third_party/steel-browser
-	url = https://github.com/steel-dev/steel-browser.git
+[submodule "examples/custom_sandbox/box/third_party/markdownify-mcp"]
+        path = examples/custom_sandbox/box/third_party/markdownify-mcp
+        url = https://github.com/zcaceres/markdownify-mcp.git
+[submodule "examples/custom_sandbox/box/third_party/steel-browser"]
+        path = examples/custom_sandbox/box/third_party/steel-browser
+        url = https://github.com/steel-dev/steel-browser.git

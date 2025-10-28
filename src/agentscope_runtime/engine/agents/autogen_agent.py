@@ -11,6 +11,7 @@ from autogen_agentchat.messages import (
     ModelClientStreamingChunkEvent,
 )
 
+from .utils import build_agent
 from ..agents import Agent
 from ..schemas.context import Context
 from ..schemas.agent_schemas import (
@@ -136,20 +137,24 @@ class AutogenAgent(Agent):
             "agent_config": self.agent_config,
             "agent_builder": agent_builder,
         }
-        self._agent = None
         self.tools = tools
 
     def copy(self) -> "AutogenAgent":
         return AutogenAgent(**self._attr)
 
     def build(self, as_context):
-        self._agent = self._attr["agent_builder"](
+        params = {
             **self._attr["agent_config"],
-            model_client=as_context.model,
-            tools=as_context.toolkit,
-        )
+            **{
+                "model_client": as_context.model,
+                "tools": as_context.toolkit,
+            },  # Context will be added at `_agent.run_stream`
+        }
 
-        return self._agent
+        builder_cls = self._attr["agent_builder"]
+        _agent = build_agent(builder_cls, params)
+
+        return _agent
 
     async def run(self, context):
         ag_context = AutogenContextAdapter(context=context, attr=self._attr)
@@ -157,9 +162,9 @@ class AutogenAgent(Agent):
 
         # We should always build a new agent since the state is manage outside
         # the agent
-        self._agent = self.build(ag_context)
+        _agent = self.build(ag_context)
 
-        resp = self._agent.run_stream(
+        resp = _agent.run_stream(
             task=ag_context.memory + [ag_context.new_message],
         )
 

@@ -19,6 +19,7 @@ from .schemas.agent_schemas import (
     AgentRequest,
     RunStatus,
     AgentResponse,
+    SequenceNumberGenerator,
 )
 from .schemas.context import Context
 from .services.context_manager import ContextManager
@@ -141,11 +142,15 @@ class Runner:
         if isinstance(request, dict):
             request = AgentRequest(**request)
 
-        response = AgentResponse()
-        yield response
+        seq_gen = SequenceNumberGenerator()
 
+        # Initial response
+        response = AgentResponse()
+        yield seq_gen.yield_with_sequence(response)
+
+        # Set to in-progress status
         response.in_progress()
-        yield response
+        yield seq_gen.yield_with_sequence(response)
 
         user_id = user_id or str(uuid.uuid4())
         session_id = request.session_id or str(uuid.uuid4())
@@ -193,23 +198,19 @@ class Runner:
             request_input=request_input,
         )
 
-        sequence_number = 0
         async for event in context.agent.run_async(context):
             if (
                 event.status == RunStatus.Completed
                 and event.object == "message"
             ):
                 response.add_new_message(event)
-            event.sequence_number = sequence_number
-            yield event
-            sequence_number += 1
+            yield seq_gen.yield_with_sequence(event)
 
         await context.context_manager.append(
             session=context.session,
             event_output=response.output,
         )
-        response.sequence_number = sequence_number
-        yield response.completed()
+        yield seq_gen.yield_with_sequence(response.completed())
 
     @trace(TraceType.AGENT_STEP)
     async def query(  # pylint:disable=unused-argument
@@ -221,6 +222,7 @@ class Runner:
         """
         Streams the agent.
         """
+        # TODO: fix this @zhicheng
         return self._agent.query(message, session_id)
 
     # TODO: should be sync method?

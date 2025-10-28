@@ -14,7 +14,7 @@ kernelspec:
 
 # 部署配备工具沙箱的ReAct智能体
 
-本教程演示了如何使用AgentScope Runtime与[**AgentScope框架**](https://github.com/modelscope/agentscope)创建和部署*"推理与行动"(ReAct)*智能体。
+本教程演示了如何使用AgentScope Runtime与[**AgentScope框架**](https://github.com/modelscope/agentscope)创建和部署 *“推理与行动”(ReAct)* 智能体。
 
 ```{note}
 ReAct（推理与行动）范式使智能体能够将推理轨迹与特定任务的行动交织在一起，使其在工具交互任务中特别有效。通过将AgentScope的`ReActAgent`与AgentScope Runtime的基础设施相结合，您可以同时获得智能决策和安全的工具执行。
@@ -27,7 +27,7 @@ ReAct（推理与行动）范式使智能体能够将推理轨迹与特定任务
 安装带有必需依赖项的AgentScope Runtime：
 
 ```bash
-pip install "agentscope-runtime[sandbox,agentscope]"
+pip install agentscope-runtime
 ```
 
 ### 🐳 Sandbox Setup
@@ -76,7 +76,7 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
 
 ### 步骤2：配置浏览器工具
 
-定义您的智能体可访问的浏览器工具：
+定义您的智能体可访问的浏览器工具（如果您想为智能体配置其他工具，请参考{doc}`sandbox`中的工具用法）：
 
 ```{code-cell}
 from agentscope_runtime.sandbox.tools.browser import (
@@ -157,7 +157,7 @@ print("✅ 智能体初始化成功")
 @asynccontextmanager
 async def create_runner():
     async with Runner(
-        agent=llm_agent,
+        agent=agent,
         context_manager=ContextManager(),
         environment_manager=EnvironmentManager(),
     ) as runner:

@@ -33,7 +33,7 @@ pip install agentscope-runtime
 如需完整功能，包括沙箱功能和其他智能体框架集成：
 
 ```bash
-pip install "agentscope-runtime[sandbox,agentscope,langgraph,agno]"
+pip install "agentscope-runtime[langgraph,agno,autogen]"
 ```
 
 ### 2. （可选）从源码安装
@@ -101,6 +101,12 @@ except ImportError as e:
 
 ## 安装选项说明
 
-这个图展示了安装选项的层次结构，底层是核心运行时（agentscope-runtime）。在核心之上可以选装各种模块（比如 sandbox、AgentScope、LangGraph 等），每个模块都会增加特定的功能（比如工具执行、框架整合等），同时也需要安装对应的依赖包（比如 Docker、测试工具等）。
+这个图展示了安装选项的层次结构，从底层核心运行时（agentscope-runtime）开始——其中 **包含 AgentScope 框架 和 Sandbox 依赖**。可选模块（例如 LangGraph、Agno、AutoGen）堆叠在核心之上，每个模块都增加了特定的功能（如工具执行、框架集成），并需要相应的依赖项。查看所有安装选项的详细信息，请参见 [pyproject.toml](https://github.com/agentscope-ai/agentscope-runtime/blob/main/pyproject.toml)。
 
-<img src="/_static/installation_options_zh.jpg" alt="Installation Options" style="zoom:25%;" />
+| **组件**       | **软件包**           | **用途**     | **依赖项**                                     |
+| -------------- | -------------------- | ------------ | ---------------------------------------------- |
+| 核心运行时     | `agentscope-runtime` | 核心运行环境 | 最小依赖，包括 AgentScope 框架 和 Sandbox 依赖 |
+| 开发工具       | `dev`                | 开发工具集   | 测试、代码检查（Linting）、文档                |
+| Agno 集成      | `agno`               | Agno         | Agno 框架                                      |
+| LangGraph 集成 | `langgraph`          | LangGraph    | LangGraph 框架                                 |
+| AutoGen 集成   | `autogen`            | AutoGen      | AutoGen 框架                                   |

@@ -12,6 +12,7 @@ from agno.run.response import (
 )
 from agno.tools.function import Function
 
+from .utils import build_agent
 from ..agents import Agent
 from ..schemas.context import Context
 from ..schemas.agent_schemas import (
@@ -64,7 +65,7 @@ class AgnoContextAdapter:
         return self.attr["model"]
 
     async def adapt_tools(self):
-        toolkit = self.attr["agent_config"].get("toolkit", [])
+        toolkit = self.attr["agent_config"].get("tools", [])
         tools = self.attr["tools"]
 
         # in case, tools is None and tools == []
@@ -131,30 +132,38 @@ class AgnoAgent(Agent):
             "agent_config": self.agent_config,
             "agent_builder": agent_builder,
         }
-        self._agent = None
         self.tools = tools
 
     def copy(self) -> "AgnoAgent":
         return AgnoAgent(**self._attr)
 
     def build(self, as_context):
-        self._agent = self._attr["agent_builder"](
+        params = {
             **self._attr["agent_config"],
-            model=as_context.model,
-            tools=as_context.toolkit,
-        )
+            **{
+                "model": as_context.model,
+                "tools": as_context.toolkit,
+            },  # Context will be added at `_agent.arun`
+        }
 
-        return self._agent
+        builder_cls = self._attr["agent_builder"]
+        _agent = build_agent(builder_cls, params)
 
-    async def run(self, context):
+        return _agent
+
+    async def run_async(
+        self,
+        context,
+        **kwargs,
+    ):
         ag_context = AgnoContextAdapter(context=context, attr=self._attr)
         await ag_context.initialize()
 
         # We should always build a new agent since the state is manage outside
         # the agent
-        self._agent = self.build(ag_context)
+        _agent = self.build(ag_context)
 
-        resp = await self._agent.arun(
+        resp = await _agent.arun(
             ag_context.new_message,
             messages=ag_context.memory,
             stream=True,
@@ -211,11 +220,3 @@ class AgnoAgent(Agent):
         if is_text_delta:
             yield text_message.content_completed(text_delta_content.index)
             yield text_message.completed()
-
-    async def run_async(
-        self,
-        context,
-        **kwargs,
-    ):
-        async for event in self.run(context):
-            yield event

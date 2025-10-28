@@ -11,12 +11,6 @@ The engine module contains the core components of AgentScope Runtime.
    :undoc-members:
    :show-inheritance:
    :no-index:
-
-.. automodule:: agentscope_runtime.engine.agents.llm_agent
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :no-index:
 ```
 
 ### Deployers

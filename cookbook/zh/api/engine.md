@@ -11,12 +11,6 @@ Engine模块包含AgentScope Runtime的核心组件。
    :undoc-members:
    :show-inheritance:
    :no-index:
-
-.. automodule:: agentscope_runtime.engine.agents.llm_agent
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :no-index:
 ```
 
 ### Deployers

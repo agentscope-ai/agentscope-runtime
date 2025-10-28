@@ -212,7 +212,6 @@ class TrainingSandboxClient:
     def list_tools(self, **kwargs):
         """list tools"""
         if "instance_id" in kwargs:
-            # 只传get_tools_info的方法参数
             return self.get_tools_info(
                 instance_id=kwargs.get("instance_id"),
                 messages=kwargs.get("messages", {}),

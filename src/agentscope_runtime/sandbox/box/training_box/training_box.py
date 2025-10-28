@@ -5,21 +5,13 @@ Module for the Training Sandbox implementation.
 This module provides a sandbox environment for training tasks
 with specific configuration and tool calling methods.
 """
-import platform
 from typing import Dict, Optional
 import os
 
+from ...utils import build_image_uri
 from ...registry import SandboxRegistry
 from ...enums import SandboxType
 from ...box.sandbox import Sandbox
-from ...constant import IMAGE_TAG
-
-
-def get_image_tag() -> str:
-    machine = platform.machine().lower()
-    if machine in ("arm64", "aarch64", "armv7l", "armv8"):
-        return f"{IMAGE_TAG}-arm64"
-    return IMAGE_TAG
 
 
 class TrainingSandbox(Sandbox):
@@ -214,7 +206,7 @@ class TrainingSandbox(Sandbox):
 
 
 @SandboxRegistry.register(
-    f"agentscope/runtime-sandbox-appworld:{get_image_tag()}",
+    build_image_uri("runtime-sandbox-appworld", arm64_compatible=False),
     sandbox_type=SandboxType.APPWORLD,
     runtime_config={"shm_size": "5.06gb"},
     security_level="medium",
@@ -235,6 +227,7 @@ class APPWorldSandbox(TrainingSandbox):
         timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
+        sandbox_type: SandboxType = SandboxType.APPWORLD,
     ):
         """
         Initialize the Training Sandbox.
@@ -250,7 +243,7 @@ class APPWorldSandbox(TrainingSandbox):
             timeout,
             base_url,
             bearer_token,
-            SandboxType.APPWORLD,
+            sandbox_type,
         )
 
 
@@ -258,7 +251,7 @@ DATASET_SUB_TYPE = os.environ.get("DATASET_SUB_TYPE", "multi_turn")
 
 
 @SandboxRegistry.register(
-    f"agentscope/runtime-sandbox-bfcl:{get_image_tag()}",
+    build_image_uri("runtime-sandbox-bfcl", arm64_compatible=False),
     sandbox_type=SandboxType.BFCL,
     runtime_config={"shm_size": "8.06gb"},
     security_level="medium",
@@ -289,6 +282,7 @@ class BFCLSandbox(TrainingSandbox):
         timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
+        sandbox_type: SandboxType = SandboxType.BFCL,
     ):
         """
         Initialize the Training Sandbox.
@@ -304,12 +298,12 @@ class BFCLSandbox(TrainingSandbox):
             timeout,
             base_url,
             bearer_token,
-            SandboxType.BFCL,
+            sandbox_type,
         )
 
 
 @SandboxRegistry.register(
-    f"agentscope/runtime-sandbox-webshop:{get_image_tag()}",
+    build_image_uri("runtime-sandbox-webshop", arm64_compatible=False),
     sandbox_type=SandboxType.WEBSHOP,
     runtime_config={"shm_size": "5.06gb"},
     security_level="medium",
@@ -330,6 +324,7 @@ class WebShopSandbox(TrainingSandbox):
         timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
+        sandbox_type: SandboxType = SandboxType.WEBSHOP,
     ):
         """
         Initialize the Training Sandbox.
@@ -345,5 +340,5 @@ class WebShopSandbox(TrainingSandbox):
             timeout,
             base_url,
             bearer_token,
-            SandboxType.BFCL,
+            sandbox_type,
         )

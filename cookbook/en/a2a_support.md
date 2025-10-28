@@ -8,7 +8,7 @@ A2A (Agent-to-Agent) protocol defines a standard interface for interaction betwe
 
 ## 2. Main Classes and Methods
 
-- `A2AFastAPIDefaultAdapter(agent)`: Wraps an existing agent (e.g., LLMAgent) as an A2A protocol-compliant server.
+- `A2AFastAPIDefaultAdapter(agent)`: Wraps an existing agent (e.g., AgentScopeAgent) as an A2A protocol-compliant server.
 - `protocol_adapters`: A list specifying supported protocol adapters when deploying the runner, including the A2A protocol adapter.
 
 ## 3. Integration Steps
@@ -17,15 +17,21 @@ Below are the key steps you need to add A2A protocol support to your agent:
 
 ### **Step 1: Create your agent instance**
 ```python
-llm_agent = LLMAgent(
-    model=QwenLLM(),
-    name="llm_agent",
-    description="A simple LLM agent to generate a short story",
-)
+agent = AgentScopeAgent(
+        name="Friday",
+        model=OpenAIChatModel(
+            "gpt-4",
+            api_key=os.getenv("OPENAI_API_KEY"),
+        ),
+        agent_config={
+            "sys_prompt": "You're a helpful assistant named Friday.",
+        },
+        agent_builder=ReActAgent,
+    )
 ```
 ### **Step 2: Wrap agent with A2A protocol adapter**
 ```python
-a2a_protocol = A2AFastAPIDefaultAdapter(agent=llm_agent)
+a2a_protocol = A2AFastAPIDefaultAdapter(agent=agent)
 ```
 
 ### **Step 3: Build context management services**
@@ -42,7 +48,7 @@ context_manager = ContextManager(
 ### **Step 4: Build runner**
 ```python
 runner = Runner(
-    agent=llm_agent,
+    agent=agent,
     context_manager=context_manager,
 )
 ```
@@ -71,9 +77,10 @@ import asyncio
 import os
 
 from agentscope_runtime.engine import Runner, LocalDeployManager
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.deployers.adapter.a2a import A2AFastAPIDefaultAdapter
-from agentscope_runtime.engine.llms import QwenLLM
+from agentscope.agent import ReActAgent
+from agentscope.model import OpenAIChatModel
 from agentscope_runtime.engine.services.context_manager import ContextManager
 from agentscope_runtime.engine.services.memory_service import InMemoryMemoryService
 from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
@@ -84,14 +91,20 @@ async def main():
     server_endpoint = os.environ.get("SERVER_ENDPOINT", "agent")
 
     # Step 1: Create agent instance
-    llm_agent = LLMAgent(
-        model=QwenLLM(),
-        name="llm_agent",
-        description="A simple LLM agent to generate a short story",
+    agent = AgentScopeAgent(
+        name="Friday",
+        model=OpenAIChatModel(
+            "gpt-4",
+            api_key=os.getenv("OPENAI_API_KEY"),
+        ),
+        agent_config={
+            "sys_prompt": "You're a helpful assistant named Friday.",
+        },
+        agent_builder=ReActAgent,
     )
 
     # Step 2: Wrap agent with A2A protocol adapter
-    a2a_protocol = A2AFastAPIDefaultAdapter(agent=llm_agent)
+    a2a_protocol = A2AFastAPIDefaultAdapter(agent=agent)
 
     # Step 3: Build context management services
     session_history_service = InMemorySessionHistoryService()
@@ -103,7 +116,7 @@ async def main():
 
     # Step 4: Build runner and deploy
     runner = Runner(
-        agent=llm_agent,
+        agent=agent,
         context_manager=context_manager,
     )
 
