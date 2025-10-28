@@ -101,6 +101,16 @@ class SandboxService(ServiceWithLifecycleManager):
 
             box_type = SandboxType(env_type)
 
+            # Special handling for AgentBay cloud sandbox
+            if box_type == SandboxType.AGENTBAY:
+                sandbox = self._create_agentbay_sandbox(
+                    session_ctx_id, box_type
+                )
+                if sandbox:
+                    sandboxes.append(sandbox)
+                continue
+
+            # Standard sandbox creation for non-cloud sandboxes
             box_id = self.manager_api.create_from_pool(
                 sandbox_type=box_type.value,
                 meta={"session_ctx_id": session_ctx_id},
@@ -142,9 +152,60 @@ class SandboxService(ServiceWithLifecycleManager):
             sandboxes.append(box)
         return sandboxes
 
+    def _create_agentbay_sandbox(self, session_ctx_id: str, box_type: SandboxType):
+        """
+        Create an AgentBay cloud sandbox.
+        
+        Args:
+            session_ctx_id: Session context ID
+            box_type: Sandbox type (should be AGENTBAY)
+            
+        Returns:
+            AgentBay sandbox instance or None if creation fails
+        """
+        try:
+            from ...sandbox.box.agentbay.agentbay_sandbox import AgentbaySandbox
+            
+            # Create AgentBay sandbox directly (no need for manager API)
+            sandbox = AgentbaySandbox(
+                sandbox_id=None,  # Let AgentBay create a new session
+                base_url=self.base_url,
+                bearer_token=self.bearer_token,
+                sandbox_type=box_type,
+            )
+            
+            return sandbox
+            
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to create AgentBay sandbox: {e}")
+            return None
+
     def _connect_existing_environment(self, env_ids: List[str]):
         boxes = []
         for env_id in env_ids:
+            # Check if this is an AgentBay session ID
+            if self._is_agentbay_session_id(env_id):
+                try:
+                    from ...sandbox.box.agentbay.agentbay_sandbox import AgentbaySandbox
+                    
+                    # Connect to existing AgentBay session
+                    sandbox = AgentbaySandbox(
+                        sandbox_id=env_id,
+                        base_url=self.base_url,
+                        bearer_token=self.bearer_token,
+                        sandbox_type=SandboxType.AGENTBAY,
+                    )
+                    boxes.append(sandbox)
+                    continue
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Failed to connect to AgentBay session {env_id}: {e}")
+                    continue
+
+            # Standard sandbox connection
             info = self.manager_api.get_info(env_id)
             version = info.get("version", "")
 
@@ -174,6 +235,20 @@ class SandboxService(ServiceWithLifecycleManager):
 
         return boxes
 
+    def _is_agentbay_session_id(self, session_id: str) -> bool:
+        """
+        Check if a session ID belongs to AgentBay.
+        
+        AgentBay session IDs typically start with 'session-' prefix.
+        
+        Args:
+            session_id: Session ID to check
+            
+        Returns:
+            True if this appears to be an AgentBay session ID
+        """
+        return session_id.startswith("session-")
+
     def release(self, session_id, user_id):
         session_ctx_id = self._create_session_ctx_id(session_id, user_id)
 
@@ -181,7 +256,14 @@ class SandboxService(ServiceWithLifecycleManager):
 
         if env_ids:
             for env_id in env_ids:
-                self.manager_api.release(env_id)
+                # Check if this is an AgentBay session
+                if self._is_agentbay_session_id(env_id):
+                    # AgentBay sessions are cleaned up automatically
+                    # when the sandbox object is destroyed
+                    continue
+                else:
+                    # Standard sandbox release
+                    self.manager_api.release(env_id)
 
         return True
 

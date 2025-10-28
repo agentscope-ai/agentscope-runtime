@@ -69,3 +69,4 @@ class SandboxType(DynamicEnum):
     APPWORLD = "appworld"
     BFCL = "bfcl"
     WEBSHOP = "webshop"
+    AGENTBAY = "agentbay"
