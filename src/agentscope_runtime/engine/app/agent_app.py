@@ -65,7 +65,7 @@ class AgentApp(BaseApp):
 
         if self._agent:
             self._runner = Runner(
-                agent=agent,
+                agent=self._agent,
                 environment_manager=environment_manager,
                 context_manager=context_manager,
             )
