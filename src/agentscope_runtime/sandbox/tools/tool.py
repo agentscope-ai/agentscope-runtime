@@ -38,6 +38,10 @@ class Tool(ABC):
         self._tool_type = tool_type
 
     @property
+    def __name__(self) -> str:
+        return self.name
+
+    @property
     @abstractmethod
     def name(self) -> str:
         """Get the tool name."""
