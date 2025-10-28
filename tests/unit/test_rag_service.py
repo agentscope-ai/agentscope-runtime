@@ -131,15 +131,23 @@ async def test_langchain_from_db():
 
 @pytest.mark.asyncio
 async def test_llamaindex_from_docs():
-    from langchain_community.embeddings import DashScopeEmbeddings
     from llama_index.core import VectorStoreIndex, StorageContext
     from llama_index.vector_stores.milvus import MilvusVectorStore
+    from llama_index.embeddings.dashscope import (
+        DashScopeEmbedding,
+        DashScopeTextEmbeddingModels,
+        DashScopeTextEmbeddingType,
+    )
 
     # llamaindex+Milvus
     from llama_index.core import Settings
 
     docs = load_llama_index_docs()
-    Settings.embed_model = DashScopeEmbeddings()
+    embed_model = DashScopeEmbedding(
+        model_name=DashScopeTextEmbeddingModels.TEXT_EMBEDDING_V2,
+        text_type=DashScopeTextEmbeddingType.TEXT_TYPE_DOCUMENT,
+    )
+    Settings.embed_model = embed_model
     vector_store = MilvusVectorStore(
         uri="milvus_llamaindex_demo.db",
         dim=1536,
@@ -151,7 +159,7 @@ async def test_llamaindex_from_docs():
     )
     rag_service = LlamaIndexRAGService(
         vectorstore=index,
-        embedding=DashScopeEmbeddings(),
+        embedding=embed_model,
     )
 
     ret_docs = await rag_service.retrieve(
@@ -163,16 +171,24 @@ async def test_llamaindex_from_docs():
 
 @pytest.mark.asyncio
 async def test_llamaindex_from_db():
-    from langchain_community.embeddings import DashScopeEmbeddings
     from llama_index.core import VectorStoreIndex, StorageContext
     from llama_index.vector_stores.milvus import MilvusVectorStore
+    from llama_index.embeddings.dashscope import (
+        DashScopeEmbedding,
+        DashScopeTextEmbeddingModels,
+        DashScopeTextEmbeddingType,
+    )
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(current_dir, "assets", "milvus_llamaindex_demo.db")
     # llamaindex+Milvus
     from llama_index.core import Settings
 
-    Settings.embed_model = DashScopeEmbeddings()
+    embed_model = DashScopeEmbedding(
+        model_name=DashScopeTextEmbeddingModels.TEXT_EMBEDDING_V2,
+        text_type=DashScopeTextEmbeddingType.TEXT_TYPE_DOCUMENT,
+    )
+    Settings.embed_model = embed_model
     vector_store = MilvusVectorStore(
         uri=db_path,
         dim=1536,
@@ -184,7 +200,7 @@ async def test_llamaindex_from_db():
     )
     rag_service = LlamaIndexRAGService(
         vectorstore=index,
-        embedding=DashScopeEmbeddings(),
+        embedding=embed_model,
     )
 
     ret_docs = await rag_service.retrieve(
