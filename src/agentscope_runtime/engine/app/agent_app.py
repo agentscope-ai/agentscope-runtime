@@ -38,7 +38,7 @@ class AgentApp(FastAPI):
         else:
             self.celery_app = None
 
-    def task(self, path: str):
+    def task(self, path: str, queue: str = "celery"):
         """
         Register an asynchronous task endpoint.
         POST <path>  -> Create a task and return task ID
@@ -61,7 +61,7 @@ class AgentApp(FastAPI):
             )
 
         def decorator(func: Callable):
-            celery_task = self._register_celery_task(func)
+            celery_task = self._register_celery_task(func, queue=queue)
 
             @self.post(path)
             async def create_task(request: Request):
@@ -88,8 +88,8 @@ class AgentApp(FastAPI):
 
         return decorator
 
-    def _register_celery_task(self, func: Callable):
-        @self.celery_app.task
+    def _register_celery_task(self, func: Callable, queue: str = "celery"):
+        @self.celery_app.task(queue=queue)
         def wrapper(*args, **kwargs):
             if inspect.iscoroutinefunction(func):
                 return asyncio.run(func(*args, **kwargs))
