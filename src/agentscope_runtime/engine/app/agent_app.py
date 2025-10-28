@@ -61,11 +61,14 @@ class AgentApp(BaseApp):
         self.after_finish = after_finish
 
         self._agent = agent
-        self._runner = Runner(
-            agent=agent,
-            environment_manager=environment_manager,
-            context_manager=context_manager,
-        )
+        self._runner = None
+
+        if self._agent:
+            self._runner = Runner(
+                agent=agent,
+                environment_manager=environment_manager,
+                context_manager=context_manager,
+            )
 
         @asynccontextmanager
         async def lifespan(app: FastAPI) -> Any:
@@ -90,10 +93,11 @@ class AgentApp(BaseApp):
             **kwargs,
         }
 
-        if self.stream:
-            self.func = self._runner.stream_query
-        else:
-            self.func = self._runner.query
+        if self._runner:
+            if self.stream:
+                self.func = self._runner.stream_query
+            else:
+                self.func = self._runner.query
 
         super().__init__(
             broker_url=broker_url,
