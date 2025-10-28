@@ -314,7 +314,7 @@ class AgentScopeAgent(Agent):
             last_content = ""
 
             message = Message(type=MessageType.MESSAGE, role="assistant")
-            yield message.in_progress()
+            should_start_message = True
             index = None
 
             for msg, msg_len in get_msg_instances(thread_id=thread_id):
@@ -330,6 +330,10 @@ class AgentScopeAgent(Agent):
                                     index=index,
                                     text=element,
                                 )
+                                if should_start_message:
+                                    yield message.in_progress()
+                                    should_start_message = False
+
                                 text_delta_content = message.add_delta_content(
                                     new_content=text_delta_content,
                                 )
@@ -342,6 +346,9 @@ class AgentScopeAgent(Agent):
                                         "",
                                     )
                                     if text:
+                                        if should_start_message:
+                                            yield message.in_progress()
+                                            should_start_message = False
                                         text_delta_content = TextContent(
                                             delta=True,
                                             index=index,
@@ -386,6 +393,7 @@ class AgentScopeAgent(Agent):
                                         role="assistant",
                                         content=[data_delta_content],
                                     )
+                                    # end the plugin call
                                     yield plugin_call_message.completed()
                                 elif element.get("type") == "tool_result":
                                     data_delta_content = DataContent(
@@ -401,7 +409,15 @@ class AgentScopeAgent(Agent):
                                         content=[data_delta_content],
                                     )
                                     yield plugin_output_message.completed()
+                                    message = Message(
+                                        type=MessageType.MESSAGE,
+                                        role="assistant",
+                                    )
+                                    should_start_message = True
                                 else:
+                                    if should_start_message:
+                                        yield message.in_progress()
+                                        should_start_message = False
                                     text_delta_content = TextContent(
                                         delta=True,
                                         index=index,
@@ -420,6 +436,8 @@ class AgentScopeAgent(Agent):
                     break
 
             if last_content:
+                if should_start_message:
+                    yield message.in_progress()
                 text_delta_content = TextContent(
                     delta=True,
                     index=index,

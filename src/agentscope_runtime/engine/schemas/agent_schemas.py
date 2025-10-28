@@ -752,6 +752,48 @@ class AgentResponse(BaseResponse):
     """conversation id for dialog"""
 
 
+class SequenceNumberGenerator:
+    """
+    A simple sequence number generator for streaming events.
+
+    This class encapsulates the logic for generating sequential numbers,
+    making the code more maintainable and less error-prone.
+    """
+
+    def __init__(self, start: int = 0):
+        """
+        Initialize the generator with a starting number.
+
+        Args:
+            start: The starting sequence number (default: 0)
+        """
+        self._current = start
+
+    def next(self) -> int:
+        """
+        Get the next sequence number and increment the counter.
+
+        Returns:
+            The current sequence number before incrementing
+        """
+        current = self._current
+        self._current += 1
+        return current
+
+    def yield_with_sequence(self, event: Event) -> Event:
+        """
+        Set the sequence number on an event and increment the counter.
+
+        Args:
+            event: The event to set the sequence number on
+
+        Returns:
+            The same event with sequence number set
+        """
+        event.sequence_number = self.next()
+        return event
+
+
 def convert_to_openai_tool_call(function: FunctionCall):
     return {
         "id": function.get("call_id", None),
