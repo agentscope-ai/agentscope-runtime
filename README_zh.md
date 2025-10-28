@@ -17,8 +17,9 @@
 [![Discord](https://img.shields.io/badge/Discord-Join_Us-blueviolet.svg?logo=discord)](https://discord.gg/eYMpfnkG8h)
 [![DingTalk](https://img.shields.io/badge/DingTalk-Join_Us-orange.svg)](https://qr.dingtalk.com/action/joingroup?code=v1,k1,OmDlBXpjW+I2vWjKDsjvI9dhcXjGZi3bQiojOq3dlDw=&_dt_no_comment=1&origin=11)
 
-[[Cookbook]](https://runtime.agentscope.io/)
+[[使用教程]](https://runtime.agentscope.io/zh/intro.html)
 [[English README]](README.md)
+[[示例]](https://github.com/agentscope-ai/agentscope-samples)
 
 **智能体应用的生产就绪运行时框架**
 

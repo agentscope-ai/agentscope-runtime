@@ -1,12 +1,12 @@
 # Demo 展示厅
 
 ```{note}
-在我们的Demo展示厅中探索各种演示，展示如何使用AgentScope Runtime构建智能体应用程序
+在我们的 展示厅（Demo House） 中，您可以探索各种演示项目，展示如何使用 AgentScope Runtime 构建智能体应用。这些演示项目原先托管在本仓库中，如今已迁移至 [agentscope-ai/agentscope-samples](https://github.com/agentscope-ai/agentscope-samples)，以更好地展示它们与其他 AgentScope 库的集成与协作。
 ```
 
 <div class="gallery-container">
     <a class="gallery-item"
-       href="https://github.com/agentscope-ai/agentscope-runtime/tree/main/demohouse/browser_use">
+       href="https://github.com/agentscope-ai/agentscope-samples/tree/main/browser_use/browser_use_fullstack_runtime">
         <div class="gallery-item-card">
             <div class="gallery-item-card-image-container">
                 <img class="gallery-item-card-img"
@@ -22,7 +22,7 @@
         </div>
     </a>
     <a class="gallery-item"
-       href="https://github.com/agentscope-ai/agentscope-runtime/tree/main/demohouse/qwen_langgraph_search">
+       href="https://github.com/agentscope-ai/agentscope-samples/tree/main/deep_research/qwen_langgraph_search_fullstack_runtime">
         <div class="gallery-item-card">
             <div class="gallery-item-card-image-container">
                 <img class="gallery-item-card-img"
@@ -39,7 +39,7 @@
         </div>
     </a>
     <a class="gallery-item"
-       href="https://github.com/agentscope-ai/agentscope-runtime/tree/main/demohouse/chatbot">
+       href="https://github.com/agentscope-ai/agentscope-samples/tree/main/conversational_agents/chatbot_fullstack_runtime">
         <div class="gallery-item-card">
             <div class="gallery-item-card-image-container">
                 <img class="gallery-item-card-img"

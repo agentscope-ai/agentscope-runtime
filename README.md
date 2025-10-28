@@ -19,6 +19,7 @@
 
 [[Cookbook]](https://runtime.agentscope.io/)
 [[中文README]](README_zh.md)
+[[Samples]](https://github.com/agentscope-ai/agentscope-samples)
 
 **A Production-Ready Runtime Framework for Intelligent Agent Applications**
 
