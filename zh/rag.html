@@ -691,7 +691,11 @@
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">Document</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.readers.web</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleWebPageReader</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core.node_parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">SentenceSplitter</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_community.embeddings</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeEmbeddings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.embeddings.dashscope</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">DashScopeEmbedding</span><span class="p">,</span>
+        <span class="n">DashScopeTextEmbeddingModels</span><span class="p">,</span>
+        <span class="n">DashScopeTextEmbeddingType</span><span class="p">,</span>
+    <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorStoreIndex</span><span class="p">,</span> <span class="n">StorageContext</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.vector_stores.milvus</span><span class="w"> </span><span class="kn">import</span> <span class="n">MilvusVectorStore</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">llama_index.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">Settings</span>
@@ -718,7 +722,11 @@
 <span class="n">docs</span> <span class="o">=</span> <span class="p">[</span><span class="n">Document</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">]</span>
 
 
-<span class="n">Settings</span><span class="o">.</span><span class="n">embed_model</span> <span class="o">=</span> <span class="n">DashScopeEmbeddings</span><span class="p">()</span>
+<span class="n">embed_model</span> <span class="o">=</span> <span class="n">DashScopeEmbedding</span><span class="p">(</span>
+        <span class="n">model_name</span><span class="o">=</span><span class="n">DashScopeTextEmbeddingModels</span><span class="o">.</span><span class="n">TEXT_EMBEDDING_V2</span><span class="p">,</span>
+        <span class="n">text_type</span><span class="o">=</span><span class="n">DashScopeTextEmbeddingType</span><span class="o">.</span><span class="n">TEXT_TYPE_DOCUMENT</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="n">Settings</span><span class="o">.</span><span class="n">embed_model</span> <span class="o">=</span><span class="n">embed_model</span>
 <span class="n">vector_store</span> <span class="o">=</span> <span class="n">MilvusVectorStore</span><span class="p">(</span>
     <span class="n">uri</span><span class="o">=</span><span class="s2">&quot;milvus_llamaindex_demo.db&quot;</span><span class="p">,</span>
     <span class="n">dim</span><span class="o">=</span><span class="mi">1536</span><span class="p">,</span>
@@ -730,7 +738,7 @@
 <span class="p">)</span>
 <span class="n">rag_service</span> <span class="o">=</span> <span class="n">LlamaIndexRAGService</span><span class="p">(</span>
     <span class="n">vectorstore</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
-    <span class="n">embedding</span><span class="o">=</span><span class="n">DashScopeEmbeddings</span><span class="p">(),</span>
+    <span class="n">embedding</span><span class="o">=</span><span class="n">embed_model</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">ret_docs</span> <span class="o">=</span> <span class="k">await</span> <span class="n">rag_service</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span>
