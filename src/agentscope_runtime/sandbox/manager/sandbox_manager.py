@@ -6,17 +6,26 @@ import inspect
 import json
 import logging
 import os
+import json
 import secrets
+import inspect
 import traceback
+
 from functools import wraps
 from typing import Optional, Dict, Union, List
 
-import requests
 import shortuuid
+import requests
 
-from ..client import SandboxHttpClient, TrainingSandboxClient
-from ..constant import BROWSER_SESSION_ID
+
+from ..model import (
+    ContainerModel,
+    SandboxManagerEnvConfig,
+)
 from ..enums import SandboxType
+from ..registry import SandboxRegistry
+from ..client import SandboxHttpClient, TrainingSandboxClient
+
 from ...common.collections import (
     RedisMapping,
     RedisQueue,
@@ -32,11 +41,7 @@ from ..model import (
     SandboxManagerEnvConfig,
 )
 from ..registry import SandboxRegistry
-from ...common.container_clients import (
-    DockerClient,
-    KubernetesClient,
-    AgentRunClient
-)
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -177,12 +182,21 @@ class SandboxManager:
 
         if base_url is None:
             if self.container_deployment == "docker":
+                from ...common.container_clients.docker_client import (
+                    DockerClient,
+                )
+
                 self.client = DockerClient(config=self.config)
             elif self.container_deployment == "k8s":
+                from ...common.container_clients.kubernetes_client import (
+                    KubernetesClient,
+                )
+
                 self.client = KubernetesClient(config=self.config)
             elif self.container_deployment == "agentrun":
                 from ...common.container_clients.agentrun_client import (
-                    AgentRunClient)
+                    AgentRunClient,
+                )
 
                 self.client = AgentRunClient(config=self.config)
             else:

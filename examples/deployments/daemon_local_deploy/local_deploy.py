@@ -1,21 +1,24 @@
 # -*- coding: utf-8 -*-
 import asyncio
+import os
 from contextlib import asynccontextmanager
 
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
+
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.deployers.local_deployer import (
     LocalDeployManager,
 )
 from agentscope_runtime.engine.runner import Runner
 from agentscope_runtime.engine.services.context_manager import ContextManager
-from agentscope_runtime.engine.services.session_history_service import (
-    InMemorySessionHistoryService,
-)
 from agentscope_runtime.engine.services.environment_manager import (
     create_environment_manager,
 )
 from agentscope_runtime.engine.services.sandbox_service import SandboxService
-from agentscope_runtime.engine.agents.llm_agent import LLMAgent
-from agentscope_runtime.engine.llms.qwen_llm import QwenLLM
+from agentscope_runtime.engine.services.session_history_service import (
+    InMemorySessionHistoryService,
+)
 from agentscope_runtime.sandbox.tools.filesystem import (
     run_ipython_cell,
     edit_file,
@@ -41,12 +44,16 @@ async def prepare_context():
 @asynccontextmanager
 async def create_runner():
     # create agent
-    agent = LLMAgent(
-        model=QwenLLM(),
+    agent = AgentScopeAgent(
         name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+        ),
         agent_config={
-            "sys_prompt": "You're a helpful assistant named {name}.",
+            "sys_prompt": "You're a helpful assistant named Friday.",
         },
+        agent_builder=ReActAgent,
         tools=[
             run_ipython_cell,
             edit_file,

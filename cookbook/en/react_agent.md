@@ -157,7 +157,7 @@ Establish the runtime by creating a runner that orchestrates the agent and essen
 @asynccontextmanager
 async def create_runner():
     async with Runner(
-        agent=llm_agent,
+        agent=agent,
         context_manager=ContextManager(),
         environment_manager=EnvironmentManager(),
     ) as runner:

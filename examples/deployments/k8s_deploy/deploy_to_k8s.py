@@ -13,7 +13,7 @@ from agentscope_runtime.engine.runner import Runner
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from agent_run import llm_agent  # noqa: E402
+from agent_run import agent  # noqa: E402
 
 
 async def deploy_agent_to_k8s():
@@ -44,7 +44,7 @@ async def deploy_agent_to_k8s():
 
     # 6. Create Runner
     runner = Runner(
-        agent=llm_agent,
+        agent=agent,
         # environment_manager=None,  # Optional
         # context_manager=None       # Optional
     )

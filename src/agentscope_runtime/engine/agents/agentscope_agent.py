@@ -316,7 +316,7 @@ class AgentScopeAgent(Agent):
         last_content = ""
 
         message = Message(type=MessageType.MESSAGE, role="assistant")
-        yield message.in_progress()
+        should_start_message = True
         index = None
 
         # Run agent
@@ -347,6 +347,9 @@ class AgentScopeAgent(Agent):
             else:
                 for element in content:
                     if isinstance(element, str) and element:
+                        if should_start_message:
+                            yield message.in_progress()
+                            should_start_message = False
                         text_delta_content = TextContent(
                             delta=True,
                             index=index,
@@ -364,6 +367,9 @@ class AgentScopeAgent(Agent):
                                 "",
                             )
                             if text:
+                                if should_start_message:
+                                    yield message.in_progress()
+                                    should_start_message = False
                                 text_delta_content = TextContent(
                                     delta=True,
                                     index=index,
@@ -422,7 +428,15 @@ class AgentScopeAgent(Agent):
                                 content=[data_delta_content],
                             )
                             yield plugin_output_message.completed()
+                            message = Message(
+                                type=MessageType.MESSAGE,
+                                role="assistant",
+                            )
+                            should_start_message = True
                         else:
+                            if should_start_message:
+                                yield message.in_progress()
+                                should_start_message = False
                             text_delta_content = TextContent(
                                 delta=True,
                                 index=index,
@@ -435,6 +449,8 @@ class AgentScopeAgent(Agent):
                             yield text_delta_content
 
         if last_content:
+            if should_start_message:
+                yield message.in_progress()
             text_delta_content = TextContent(
                 delta=True,
                 index=index,
