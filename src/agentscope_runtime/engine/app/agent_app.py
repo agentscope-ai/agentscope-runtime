@@ -145,12 +145,12 @@ class AgentApp(FastAPI):
         self,
         host="0.0.0.0",
         port=8000,
-        embed_worker=False,
+        embed_task_processor=False,
     ):
         """
         Run FastAPI with uvicorn.
         """
-        if embed_worker:
+        if embed_task_processor:
             if self.celery_app is None:
                 raise RuntimeError(
                     "[AgentApp] Celery is not configured. "
@@ -158,8 +158,8 @@ class AgentApp(FastAPI):
                 )
 
             logger.warning(
-                "[AgentApp] embed_worker=True: Running Celery worker in "
-                "embedded thread mode. This is intended for "
+                "[AgentApp] embed_task_processor=True: Running "
+                "task_processor in embedded thread mode. This is intended for "
                 "development/debug purposes only. In production, run Celery "
                 "worker in a separate process!",
             )
@@ -169,13 +169,13 @@ class AgentApp(FastAPI):
 
             threading.Thread(target=start_celery_worker, daemon=True).start()
             logger.info(
-                "[AgentApp] Embedded Celery worker started in background "
+                "[AgentApp] Embedded task processor started in background "
                 "thread (DEV mode).",
             )
 
         uvicorn.run(self, host=host, port=port)
 
-    def run_worker(
+    def run_task_processor(
         self,
         loglevel: str = "INFO",
         concurrency: Optional[int] = None,
