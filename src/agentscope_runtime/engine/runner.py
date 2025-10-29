@@ -204,6 +204,7 @@ class Runner:
         """
         Streams the agent.
         """
+        # TODO: fix this @zhicheng
         return self._agent.query(message, session_id)
 
     # TODO: should be sync method?

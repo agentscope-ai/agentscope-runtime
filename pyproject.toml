@@ -1,6 +1,6 @@
 [project]
 name = "agentscope-runtime"
-version = "0.1.6"
+version = "0.2.0b1"
 description = "A production-ready runtime framework for agent applications, providing secure sandboxed execution environments and scalable deployment solutions with multi-framework support."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -11,7 +11,7 @@ dependencies = [
     "openai",
     "pydantic>=2.11.7",
     "requests>=2.32.4",
-    "agentscope>=1.0.1",
+    "agentscope>=1.0.6",
     "docker>=7.1.0",
     "redis>=6.0.0",
     "oss2>=2.19.1",
@@ -78,7 +78,7 @@ llamaindex_rag=[
     "llama-index-vector-stores-milvus>=0.9.1",
     "llama-index-readers-web>=0.5.1",
     "llama-index-embeddings-langchain>=0.4.0",
-    "langchain-community>=0.3.27",
+    "llama-index-embeddings-dashscope>=0.4.0",
     "bs4>=0.0.2",
 ]
 
