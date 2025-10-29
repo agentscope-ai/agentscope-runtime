@@ -93,7 +93,7 @@ cd agentscope-runtime
 pip install -e .
 ```
 
-### 基础 Agent API 服务器示例
+### 基础 Agent App 示例
 
 本示例演示如何使用 agentscope 的 `ReActAgent` 和 `AgentApp` 创建一个 Agent API 服务器。
 服务器会处理你的输入，并 **以流式方式** 返回 Agent 生成的响应。

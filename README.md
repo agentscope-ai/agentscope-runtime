@@ -96,7 +96,7 @@ cd agentscope-runtime
 pip install -e .
 ```
 
-### Basic Agent API Server Example
+### Basic Agent App Example
 
 This example demonstrates how to create an agent API server using agentscope `ReActAgent` and `AgentApp`. The server will process your input and return streaming agent-generated responses.
 
