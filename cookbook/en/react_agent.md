@@ -60,6 +60,7 @@ Start by importing all necessary modules:
 import os
 
 from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.deployers import LocalDeployManager
 ```
 
@@ -177,7 +178,8 @@ You’ll see output streamed in **Server-Sent Events (SSE)** format.
 The AgentScope Runtime provides a powerful deployment system that allows you to deploy your agent to remote or local container. And we use `LocalDeployManager` as example:
 
 ```{code-cell}
-await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
+async def main():
+    await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```
 
 This will run your agent API Server on the specified port, making it accessible for external requests. In addition to basic HTTP API access, you can interact with the agent through different protocols, such as A2A, Response API, Agent API, and others. Please refer {doc}`protocol` for details.

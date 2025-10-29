@@ -44,6 +44,7 @@ Start by importing all necessary modules:
 import os
 
 from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.deployers import LocalDeployManager
 from agentscope.model import OpenAIChatModel
 from agentscope.agent import ReActAgent
