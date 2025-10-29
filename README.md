@@ -31,6 +31,7 @@
 
 ## 🆕 NEWS
 
+* **[2025-10]** We released `v0.2.0` — introducing **`AgentApp` API server support**, enabling easy use of agent applications and custom API endpoints through synchronous, asynchronous, and streaming interfaces. Check our [cookbook](https://runtime.agentscope.io/en/sandbox.html#sandbox-usage) for more details.
 * **[2025-10]**  **GUI Sandbox** is added with support for virtual desktop environments, mouse, keyboard, and screen operations.  Introduced the **`desktop_url`** property for GUI Sandbox, Browser Sandbox, and Filesystem Sandbox — allowing direct access to the virtual desktop via your browser.  Check our [cookbook](https://runtime.agentscope.io/en/sandbox.html#sandbox-usage) for more details.
 
 ---
@@ -95,61 +96,63 @@ cd agentscope-runtime
 pip install -e .
 ```
 
-### Basic Agent Usage Example
+### Basic Agent API Server Example
 
-This example demonstrates how to create an agentscope agent using AgentScope Runtime and
-stream responses from the Qwen model.
+This example demonstrates how to create an agent API server using agentscope `ReActAgent` and `AgentApp`. The server will process your input and return streaming agent-generated responses.
 
 
 ```python
-import asyncio
 import os
 
-from agentscope_runtime.engine import Runner
+from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agentscope_runtime.engine.services.context_manager import ContextManager
 
 from agentscope.agent import ReActAgent
 from agentscope.model import OpenAIChatModel
 
-async def main():
-    # Set up the language model and agent
-    agent = AgentScopeAgent(
-        name="Friday",
-        model=OpenAIChatModel(
-            "gpt-4",
-            api_key=os.getenv("OPENAI_API_KEY"),
-        ),
-        agent_config={
-            "sys_prompt": "You're a helpful assistant named Friday.",
-        },
-        agent_builder=ReActAgent,
-    )
-    async with ContextManager() as context_manager:
-        runner = Runner(agent=agent, context_manager=context_manager)
 
-        # Create a request and stream the response
-        request = AgentRequest(
-            input=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "What is the capital of France?",
-                        },
-                    ],
-                },
-            ],
-        )
+agent = AgentScopeAgent(
+    name="Friday",
+    model=OpenAIChatModel(
+        "gpt-4",
+        api_key=os.getenv("OPENAI_API_KEY"),
+    ),
+    agent_config={
+        "sys_prompt": "You're a helpful assistant named Friday.",
+    },
+    agent_builder=ReActAgent,  # Or use your own agent builder
+)
+app = AgentApp(agent=agent, endpoint_path="/process")
 
-        async for message in runner.stream_query(request=request):
-            if hasattr(message, "text"):
-                print(f"Streamed Answer: {message.text}")
+app.run(host="0.0.0.0", port=8090)
+```
 
+The server will start and listen on: `http://localhost:8090/process`. You can send JSON input to the API using `curl`:
 
-asyncio.run(main())
+```bash
+curl -N \
+  -X POST "http://localhost:8090/process" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          { "type": "text", "text": "What is the capital of France?" }
+        ]
+      }
+    ]
+  }'
+```
+
+You’ll see output streamed in **Server-Sent Events (SSE)** format:
+
+```bash
+data: {"sequence_number":0,"object":"response","status":"created", ... }
+data: {"sequence_number":1,"object":"response","status":"in_progress", ... }
+data: {"sequence_number":2,"object":"content","status":"in_progress","text":"The" }
+data: {"sequence_number":3,"object":"content","status":"in_progress","text":" capital of France is Paris." }
+data: {"sequence_number":4,"object":"message","status":"completed","text":"The capital of France is Paris." }
 ```
 
 ### Basic Sandbox Usage Example

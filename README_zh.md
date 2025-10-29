@@ -31,6 +31,7 @@
 
 ## 🆕 新闻
 
+* **[2025-10]** 我们发布了 `v0.2.0` ——新增了 **`AgentApp` API 服务器支持**，支持通过同步、异步和流式接口轻松使用智能体应用和自定义API入口。更多详情请查看我们的[cookbook](https://runtime.agentscope.io/en/sandbox.html#sandbox-usage)。
 * **[2025-10]** 添加了 **GUI Sandbox**，支持虚拟桌面环境、鼠标、键盘以及屏幕操作。引入了 **`desktop_url`** 属性，适用于 GUI Sandbox、Browser Sandbox 和 Filesystem Sandbox —— 允许通过浏览器直接访问虚拟桌面。详情请参阅我们的 [cookbook](https://runtime.agentscope.io/zh/sandbox.html#id18)。
 
 ---
@@ -92,61 +93,64 @@ cd agentscope-runtime
 pip install -e .
 ```
 
-### 基本智能体使用示例
+### 基础 Agent API 服务器示例
 
-此示例演示如何使用 AgentScope Runtime 创建简单的 LLM 智能体并从 Qwen 模型流式传输响应。
+本示例演示如何使用 agentscope 的 `ReActAgent` 和 `AgentApp` 创建一个 Agent API 服务器。
+服务器会处理你的输入，并 **以流式方式** 返回 Agent 生成的响应。
+
 
 ```python
-import asyncio
 import os
 
-from agentscope_runtime.engine import Runner
+from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agentscope_runtime.engine.services.context_manager import ContextManager
 
 from agentscope.agent import ReActAgent
-from agentscope.model import DashScopeChatModel
+from agentscope.model import OpenAIChatModel
 
 
-async def main():
-    # 设置语言模型和智能体
-    agent = AgentScopeAgent(
-        name="Friday",
-        model=DashScopeChatModel(
-            "qwen-turbo",
-            api_key=os.getenv("DASHSCOPE_API_KEY"),
-        ),
-        agent_config={
-            "sys_prompt": "You're a helpful assistant named Friday.",
-        },
-        agent_builder=ReActAgent,
-    )
+agent = AgentScopeAgent(
+    name="Friday",
+    model=OpenAIChatModel(
+        "gpt-4",
+        api_key=os.getenv("OPENAI_API_KEY"),
+    ),
+    agent_config={
+        "sys_prompt": "You're a helpful assistant named Friday.",
+    },
+    agent_builder=ReActAgent,  # 或者使用你自己的 agent builder
+)
+app = AgentApp(agent=agent, endpoint_path="/process")
 
-    async with ContextManager() as context_manager:
-        runner = Runner(agent=agent, context_manager=context_manager)
+app.run(host="0.0.0.0", port=8090)
+```
 
-        # 创建请求并流式传输响应
-        request = AgentRequest(
-            input=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "法国的首都是什么？",
-                        },
-                    ],
-                },
-            ],
-        )
+运行后，服务器会启动并监听：`http://localhost:8090/process`。你可以使用 `curl` 向 API 发送 JSON 输入：
 
-        async for message in runner.stream_query(request=request):
-            if hasattr(message, "text"):
-                print(f"流式答案: {message.text}")
+```bash
+curl -N \
+  -X POST "http://localhost:8090/process" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          { "type": "text", "text": "What is the capital of France?" }
+        ]
+      }
+    ]
+  }'
+```
 
+你将会看到以 **Server-Sent Events (SSE)** 格式流式输出的响应：
 
-asyncio.run(main())
+```bash
+data: {"sequence_number":0,"object":"response","status":"created", ... }
+data: {"sequence_number":1,"object":"response","status":"in_progress", ... }
+data: {"sequence_number":2,"object":"content","status":"in_progress","text":"The" }
+data: {"sequence_number":3,"object":"content","status":"in_progress","text":" capital of France is Paris." }
+data: {"sequence_number":4,"object":"message","status":"completed","text":"The capital of France is Paris." }
 ```
 
 ### 基本沙盒使用示例
