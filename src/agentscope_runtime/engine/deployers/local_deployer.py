@@ -6,8 +6,6 @@ import threading
 import time
 from typing import Optional, Dict, Any
 
-import uvicorn
-
 from .base import DeployManager
 
 
@@ -131,18 +129,28 @@ class LocalDeployManager(DeployManager):
             #         protocol_adapter.add_endpoint(app=self._app, func=func)
 
             # Configure uvicorn server
-            config = uvicorn.Config(
-                self._app,
-                host=self.host,
-                port=self.port,
-                log_level="info",
-                access_log=False,
-                timeout_keep_alive=30,
-            )
+            config = {
+                "host": self.host,
+                "port": self.port,
+                "log_level": "info",
+                "access_log": False,
+                "timeout_keep_alive": 30,
+                "embed_task_processor": True,
+            }
 
-            self._server = uvicorn.Server(config)
+            def run_with_event_loop(app_instance, **run_kwargs):
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                app_instance.run(**run_kwargs)
+
             # Run the server in a separate thread
-            self._server_thread = threading.Thread(target=self._server.run)
+            self._server_thread = threading.Thread(
+                target=run_with_event_loop,
+                args=(self._app,),
+                kwargs=config,
+            )
+            self._server = self._app.server
+
             self._server_thread.daemon = (
                 True  # Ensure thread doesn't block exit
             )

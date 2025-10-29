@@ -36,6 +36,9 @@ class BaseApp(FastAPI):
         else:
             self.celery_app = None
 
+        self.server = None
+        self._registered_queues: set[str] = set()
+
         super().__init__(**kwargs)
 
     def task(self, path: str, queue: str = "celery"):
@@ -59,6 +62,8 @@ class BaseApp(FastAPI):
                 "        backend_url='redis://localhost:6379/0'\n"
                 "    )\n",
             )
+
+        self._registered_queues.add(queue)
 
         def decorator(func: Callable):
             celery_task = self._register_celery_task(func, queue=queue)
@@ -146,36 +151,61 @@ class BaseApp(FastAPI):
         host="0.0.0.0",
         port=8090,
         embed_task_processor=False,
+        **kwargs,
     ):
         """
         Run FastAPI with uvicorn.
         """
         if embed_task_processor:
             if self.celery_app is None:
-                raise RuntimeError(
+                logger.warning(
                     "[AgentApp] Celery is not configured. "
                     "Cannot run embedded worker.",
                 )
+            else:
+                logger.warning(
+                    "[AgentApp] embed_task_processor=True: Running "
+                    "task_processor in embedded thread mode. This is "
+                    "intended for development/debug purposes only. In "
+                    "production, run Celery worker in a separate process!",
+                )
 
-            logger.warning(
-                "[AgentApp] embed_task_processor=True: Running "
-                "task_processor in embedded thread mode. This is intended for "
-                "development/debug purposes only. In production, run Celery "
-                "worker in a separate process!",
-            )
+                queues = self._registered_queues or {"celery"}
+                queue_list = ",".join(sorted(queues))
 
-            def start_celery_worker():
-                self.celery_app.worker_main(["worker", "--loglevel=INFO"])
+                def start_celery_worker():
+                    logger.info(
+                        f"[AgentApp] Embedded worker listening "
+                        f"queues: {queue_list}",
+                    )
+                    self.celery_app.worker_main(
+                        [
+                            "worker",
+                            "--loglevel=INFO",
+                            "-Q",
+                            queue_list,
+                        ],
+                    )
 
-            threading.Thread(target=start_celery_worker, daemon=True).start()
-            logger.info(
-                "[AgentApp] Embedded task processor started in background "
-                "thread (DEV mode).",
-            )
+                threading.Thread(
+                    target=start_celery_worker,
+                    daemon=True,
+                ).start()
+                logger.info(
+                    "[AgentApp] Embedded task processor started in background "
+                    "thread (DEV mode).",
+                )
 
         # TODO: Add CLI to main entrypoint to control run/deploy
 
-        uvicorn.run(self, host=host, port=port)
+        config = uvicorn.Config(
+            app=self,
+            host=host,
+            port=port,
+            **kwargs,
+        )
+        self.server = uvicorn.Server(config)
+        self.server.run()
 
     def run_task_processor(
         self,

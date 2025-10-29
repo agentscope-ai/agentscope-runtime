@@ -114,10 +114,12 @@ class AgentApp(BaseApp):
         host="0.0.0.0",
         port=8090,
         embed_task_processor=False,
+        **kwargs,
     ):
         try:
             loop = asyncio.get_event_loop()
-            loop.run_until_complete(self._runner.__aenter__())
+            if self._runner is not None:
+                loop.run_until_complete(self._runner.__aenter__())
 
             logger.info("[AgentApp] Runner initialized.")
 
@@ -137,10 +139,11 @@ class AgentApp(BaseApp):
                 except RuntimeError:
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
-                loop.run_until_complete(
-                    self._runner.__aexit__(None, None, None),
-                )
-                logger.info("[AgentApp] Runner cleaned up.")
+                if self._runner is not None:
+                    loop.run_until_complete(
+                        self._runner.__aexit__(None, None, None),
+                    )
+                    logger.info("[AgentApp] Runner cleaned up.")
             except Exception as e:
                 logger.error(f"[AgentApp] Error while cleaning up runner: {e}")
 
