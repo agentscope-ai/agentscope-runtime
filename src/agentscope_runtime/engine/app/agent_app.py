@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from .base_app import BaseApp
 from ..agents.base_agent import Agent
+from ..deployers.adapter.a2a import A2AFastAPIDefaultAdapter
 from ..runner import Runner
 from ..services.context_manager import ContextManager
 from ..services.environment_manager import EnvironmentManager
@@ -108,6 +109,10 @@ class AgentApp(BaseApp):
         self._add_middleware()
         self._add_health_endpoints()
         self._add_main_endpoint()
+
+        # Support a2a protocol
+        self.a2a_protocol = A2AFastAPIDefaultAdapter(agent=self._agent)
+        self.a2a_protocol.add_endpoint(app=self, func=self.func)
 
     def run(
         self,
