@@ -14,8 +14,6 @@ parts:
     - file: en/sandbox_troubleshooting.md
   - file: en/react_agent.md
   - file: en/protocol.md
-    sections:
-    - file: en/a2a_support.md
   - file: en/manager.md
     sections:
       - file: en/context_manager.md
@@ -55,8 +53,6 @@ parts:
       - file: zh/sandbox_troubleshooting.md
   - file: zh/react_agent.md
   - file: zh/protocol.md
-    sections:
-      - file: zh/a2a_support.md
   - file: zh/manager.md
     sections:
       - file: zh/context_manager.md

@@ -42,19 +42,12 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 
 ```{code-cell}
 import os
-from contextlib import asynccontextmanager
-from agentscope_runtime.engine import Runner
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-from agentscope.model import DashScopeChatModel
+
+from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.deployers import LocalDeployManager
+from agentscope.model import OpenAIChatModel
 from agentscope.agent import ReActAgent
-from agentscope_runtime.engine.schemas.agent_schemas import (
-    MessageType,
-    RunStatus,
-    AgentRequest,
-)
-from agentscope_runtime.engine.services.context_manager import (
-    ContextManager,
-)
+
 
 print("✅ 依赖导入成功")
 ```
@@ -195,8 +188,6 @@ print("✅ LangGraph agent created successfully")
 用agent和 `AgentApp` 创建一个 Agent API 服务器：
 
 ```{code-cell}
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-
 app = AgentApp(agent=agent, endpoint_path="/process")
 
 app.run(host="0.0.0.0", port=8090)
@@ -234,7 +225,7 @@ data: {"sequence_number":3,"object":"content","status":"in_progress","text":" ca
 data: {"sequence_number":4,"object":"message","status":"completed","text":"The capital of France is Paris." }
 ```
 
-### Step 5: 使用 Deployer 部署代理
+### 步骤5: 使用 Deployer 部署代理
 
 AgentScope Runtime 提供了一个功能强大的部署系统，可以将你的智能体部署到远程或本地容器中。这里我们以 `LocalDeployManager` 为例：
 
@@ -243,4 +234,4 @@ async def main():
     await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```
 
-这段代码会在指定的端口运行你的智能体API Server，使其能够响应外部请求。
+这段代码会在指定的端口运行你的智能体API Server，使其能够响应外部请求。除了基本的 HTTP API 访问外，你还可以使用不同的协议与智能体进行交互，例如：A2A、Response API、Agent API等。详情请参考 {doc}`protocol`。

@@ -42,19 +42,12 @@ Start by importing all necessary modules:
 
 ```{code-cell}
 import os
-from contextlib import asynccontextmanager
-from agentscope_runtime.engine import Runner
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+
+from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.deployers import LocalDeployManager
 from agentscope.model import OpenAIChatModel
 from agentscope.agent import ReActAgent
-from agentscope_runtime.engine.schemas.agent_schemas import (
-    MessageType,
-    RunStatus,
-    AgentRequest,
-)
-from agentscope_runtime.engine.services.context_manager import (
-    ContextManager,
-)
+
 
 print("✅ Dependencies imported successfully")
 ```
@@ -193,8 +186,6 @@ print("✅ LangGraph agent created successfully")
 Create an agent API server using agent and `AgentApp`:
 
 ```{code-cell}
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-
 app = AgentApp(agent=agent, endpoint_path="/process")
 
 app.run(host="0.0.0.0", port=8090)
@@ -241,4 +232,4 @@ async def main():
     await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```
 
-This will run your agent API Server on the specified port, making it accessible for external requests.
+This will run your agent API Server on the specified port, making it accessible for external requests. In addition to basic HTTP API access, you can interact with the agent through different protocols, such as A2A, Response API, Agent API, and others. Please refer {doc}`protocol` for details.
