@@ -206,9 +206,6 @@ class AgentRunClient(BaseClient):
                 )
 
             health_check_url = "/"
-            if self._is_browser_image(image):
-                sec_token = environment["SECRET_TOKEN"]
-                health_check_url = f"/steel-api/{sec_token}/v1/health"
             health_check_config = HealthCheckConfiguration(
                 http_get_url=health_check_url,
                 initial_delay_seconds=2,
@@ -270,6 +267,9 @@ class AgentRunClient(BaseClient):
             logger.info(
                 f"endpoint_public_url: {endpoint_public_url}",
             )
+
+            if not endpoint_public_url.endswith("/"):
+                endpoint_public_url = f"{endpoint_public_url}/"
 
             parsed_url = urlparse(endpoint_public_url)
 
@@ -1078,11 +1078,13 @@ class AgentRunClient(BaseClient):
         """
         replacement_map = {
             "agentscope/runtime-sandbox-base": "serverless-registry.cn-hangzhou.cr.aliyuncs.com/functionai"  # noqa: E501
-            "/agentscope_runtime-sandbox-base:d439a",
+            "/agentscope_runtime-sandbox-base:20251027",
             "agentscope/runtime-sandbox-browser": "serverless-registry.cn-hangzhou.cr.aliyuncs.com/functionai"  # noqa: E501
-            "/agentscope_runtime-sandbox-browser:43ea6",
+            "/agentscope_runtime-sandbox-browser:20251027",
             "agentscope/runtime-sandbox-filesystem": "serverless-registry.cn-hangzhou.cr.aliyuncs.com/functionai"  # noqa: E501
-            "/agentscope_runtime-sandbox-filesystem:e5bf4",
+            "/agentscope_runtime-sandbox-filesystem:20251027",
+            "agentscope/runtime-sandbox-gui": "serverless-registry.cn-hangzhou.cr.aliyuncs.com/functionai"  # noqa: E501
+            "/agentscope_runtime-sandbox-gui:20251027",
         }
 
         if ":" in image:

@@ -223,7 +223,11 @@ In Agentscope-runtime, we provide a `LlamaIndexRAGService` to integrate LlamaInd
 from llama_index.core.schema import Document
 from llama_index.readers.web import SimpleWebPageReader
 from llama_index.core.node_parser import SentenceSplitter
-from langchain_community.embeddings import DashScopeEmbeddings
+from llama_index.embeddings.dashscope import (
+        DashScopeEmbedding,
+        DashScopeTextEmbeddingModels,
+        DashScopeTextEmbeddingType,
+    )
 from llama_index.core import VectorStoreIndex, StorageContext
 from llama_index.vector_stores.milvus import MilvusVectorStore
 from llama_index.core import Settings
@@ -249,8 +253,11 @@ nodes = splitter.get_nodes_from_documents(documents)
 # Convert nodes to documents
 docs = [Document(text=node.text) for node in nodes]
 
-
-Settings.embed_model = DashScopeEmbeddings()
+embed_model = DashScopeEmbedding(
+        model_name=DashScopeTextEmbeddingModels.TEXT_EMBEDDING_V2,
+        text_type=DashScopeTextEmbeddingType.TEXT_TYPE_DOCUMENT,
+    )
+Settings.embed_model =embed_model
 vector_store = MilvusVectorStore(
     uri="milvus_llamaindex_demo.db",
     dim=1536,
@@ -262,7 +269,7 @@ index = VectorStoreIndex.from_documents(
 )
 rag_service = LlamaIndexRAGService(
     vectorstore=index,
-    embedding=DashScopeEmbeddings(),
+    embedding=embed_model,
 )
 
 ret_docs = await rag_service.retrieve(
