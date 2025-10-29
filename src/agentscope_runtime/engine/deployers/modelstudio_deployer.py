@@ -243,9 +243,34 @@ def _upload_to_oss_with_credentials(
         if isinstance(api_response, str)
         else api_response
     )
+
     try:
         body = response_data["body"]
         data = body["Data"]
+        if data is None:
+            print(
+                "\n❌ Configuration Error: The current RAM user is not assigned to any workspace.",
+            )
+            print(
+                "Bailian requires RAM users to be associated with "
+                "at least one workspace to use temporary storage.",
+            )
+            print("\n🔧 How to resolve:")
+            print(
+                "1. Ask the primary account to log in to the "
+                "Bailian Console: https://bailian.console.aliyun.com",
+            )
+            print("2. Go to [Permission Management]")
+            print("3. Go to [Add User]")
+            print("4. Assign the user to a workspace")
+            print(
+                "\n💡 Note: If you are not the primary account holder, "
+                "please contact your administrator to complete this step.",
+            )
+            print("=" * 80)
+            raise ValueError(
+                "RAM user is not assigned to any workspace in Bailian",
+            )
         param = data["Param"]
         signed_url = param["Url"]
         headers = param["Headers"]
@@ -299,13 +324,65 @@ def _get_presign_url_and_upload_to_oss(
         )
         runtime = util_models.RuntimeOptions()
         headers = {}
-
-        response = client_modelstudio.apply_temp_storage_lease_with_options(
-            "default",
-            apply_temp_storage_lease_request,
-            headers,
-            runtime,
-        )
+        workspace_id = getattr(cfg, "workspace_id", "default")
+        try:
+            response = (
+                client_modelstudio.apply_temp_storage_lease_with_options(
+                    workspace_id,
+                    apply_temp_storage_lease_request,
+                    headers,
+                    runtime,
+                )
+            )
+        except Exception as error:
+            logger.error(
+                "Error during temporary storage lease or upload: %s",
+                error,
+            )
+            error_code = None
+            recommend_url = None
+            if hasattr(error, "code"):
+                error_code = error.code
+            if hasattr(error, "data") and isinstance(error.data, dict):
+                recommend_url = error.data.get("Recommend")
+            if error_code == "NoPermission":
+                print("\n❌ Permission Denied (NoPermission)")
+                print(
+                    "The current account does not have permission to "
+                    "apply for temporary storage (ApplyTempStorageLease).",
+                )
+                print("\n🔧 How to resolve:")
+                print(
+                    "1. Ask the primary account holder (or an administrator) "
+                    "to grant your RAM user the following permission:",
+                )
+                print("   - Action: `AliyunBailianDataFullAccess`")
+                print("\n2. Steps to grant permission:")
+                print(
+                    "   - Go to Alibaba Cloud RAM Console: https://ram.console.aliyun.com/users",
+                )
+                print("   - Locate your RAM user")
+                print(
+                    "   - Click 'Add Permissions' and attach a "
+                    "policy that includes `AliyunBailianDataFullAccess`",
+                )
+                print("\n3. For further diagnostics:")
+                if recommend_url:
+                    print(
+                        f"   - Official troubleshooting link: {recommend_url}",
+                    )
+                else:
+                    print(
+                        "   - Visit the Alibaba Cloud API troubleshooting page",
+                    )
+                print(f"   - Official document link: {recommend_url}")
+                print(
+                    "\n💡 Note: If you are not an administrator, please contact your "
+                    "cloud account administrator for assistance.",
+                )
+                print("=" * 80)
+            logger.error("Original error details: %s", error)
+            raise
 
         temp_storage_lease_id = _upload_to_oss_with_credentials(
             response.to_map(),
@@ -316,7 +393,7 @@ def _get_presign_url_and_upload_to_oss(
     except Exception as error:
         # Log detailed error information
         logger.error(
-            "Error during temporary storage lease or upload: %s",
+            "Error during temporary storage upload: %s",
             error,
         )
         if hasattr(error, "message"):
