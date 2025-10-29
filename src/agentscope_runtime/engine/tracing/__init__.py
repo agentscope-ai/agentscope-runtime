@@ -3,6 +3,7 @@ from typing import Any, List, Union
 
 from .base import BaseLogHandler, Tracer, TracerHandler
 from .tracing_metric import TraceType
+from .wrapper import trace
 
 
 def create_handler(
