@@ -4,8 +4,9 @@
 
 import asyncio
 import json
+import inspect
 from contextlib import asynccontextmanager
-from typing import Optional, Callable, Type, Any
+from typing import Optional, Callable, Type, Any, List, Dict
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,6 +34,9 @@ class FastAPIAppFactory:
         mode: DeploymentMode = DeploymentMode.DAEMON_THREAD,
         services_config: Optional[ServicesConfig] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
+        custom_endpoints: Optional[
+            List[Dict]
+        ] = None,  # New parameter for custom endpoints
         **kwargs: Any,
     ) -> FastAPI:
         """Create a FastAPI application with unified architecture.
@@ -49,6 +53,7 @@ class FastAPIAppFactory:
             mode: Deployment mode
             services_config: Services configuration
             protocol_adapters: Protocol adapters
+            custom_endpoints: List of custom endpoint configurations
             **kwargs: Additional keyword arguments
 
         Returns:
@@ -93,6 +98,9 @@ class FastAPIAppFactory:
         app.state.external_runner = runner
         app.state.endpoint_path = endpoint_path
         app.state.protocol_adapters = protocol_adapters  # Store for later use
+        app.state.custom_endpoints = (
+            custom_endpoints or []
+        )  # Store custom endpoints
 
         # Add middleware
         FastAPIAppFactory._add_middleware(app, mode)
@@ -167,6 +175,13 @@ class FastAPIAppFactory:
             if effective_func:
                 for protocol_adapter in app.state.protocol_adapters:
                     protocol_adapter.add_endpoint(app=app, func=effective_func)
+
+        # Add custom endpoints after runner is available
+        if (
+            hasattr(app.state, "custom_endpoints")
+            and app.state.custom_endpoints
+        ):
+            FastAPIAppFactory._add_custom_endpoints(app)
 
     @staticmethod
     async def _handle_shutdown(
@@ -502,3 +517,242 @@ class FastAPIAppFactory:
         if hasattr(app.state, "runner"):
             return app.state.runner
         return None
+
+    @staticmethod
+    def _add_custom_endpoints(app: FastAPI):
+        """Add all custom endpoints to the FastAPI application."""
+        if (
+            not hasattr(app.state, "custom_endpoints")
+            or not app.state.custom_endpoints
+        ):
+            return
+
+        for endpoint in app.state.custom_endpoints:
+            FastAPIAppFactory._register_single_custom_endpoint(
+                app,
+                endpoint["path"],
+                endpoint["handler"],
+                endpoint["methods"],
+                endpoint,  # Pass the full endpoint config
+            )
+
+    @staticmethod
+    def _register_single_custom_endpoint(
+        app: FastAPI,
+        path: str,
+        handler: Callable,
+        methods: List[str],
+        endpoint_config: Dict = None,
+    ):
+        """Register a single custom endpoint with proper async/sync
+        handling."""
+
+        for method in methods:
+            # Check if this is a task endpoint
+            if endpoint_config and endpoint_config.get("task_type"):
+                # Create task endpoint with proper execution logic
+                task_handler = FastAPIAppFactory._create_task_handler(
+                    app,
+                    handler,
+                    endpoint_config.get("queue", "default"),
+                )
+                app.add_api_route(path, task_handler, methods=[method])
+
+                # Add task status endpoint
+                status_path = f"{path}/status"
+                status_handler = FastAPIAppFactory._create_task_status_handler(
+                    app,
+                )
+                app.add_api_route(
+                    status_path,
+                    status_handler,
+                    methods=["GET", "POST"],
+                )
+
+            else:
+                # Regular endpoint handling
+                if inspect.iscoroutinefunction(handler):
+                    if inspect.isasyncgenfunction(handler):
+                        # Async generator -> Streaming response
+                        async def async_stream_wrapper(request: dict):
+                            return StreamingResponse(
+                                handler(request),
+                                media_type="text/event-stream",
+                                headers={
+                                    "Cache-Control": "no-cache",
+                                    "Connection": "keep-alive",
+                                },
+                            )
+
+                        app.add_api_route(
+                            path,
+                            async_stream_wrapper,
+                            methods=[method],
+                        )
+                    else:
+                        # Regular async function
+                        app.add_api_route(path, handler, methods=[method])
+                else:
+                    if inspect.isgeneratorfunction(handler):
+                        # Sync generator -> Streaming response
+                        async def sync_stream_wrapper(request: dict):
+                            def generate():
+                                for chunk in handler(request):
+                                    yield str(chunk)
+
+                            return StreamingResponse(
+                                generate(),
+                                media_type="text/plain",
+                            )
+
+                        app.add_api_route(
+                            path,
+                            sync_stream_wrapper,
+                            methods=[method],
+                        )
+                    else:
+                        # Sync function -> Async wrapper
+                        async def sync_wrapper(request: dict):
+                            return handler(request)
+
+                        app.add_api_route(path, sync_wrapper, methods=[method])
+
+    @staticmethod
+    def _create_task_handler(app: FastAPI, task_func: Callable, queue: str):
+        """Create a task handler that executes functions asynchronously."""
+
+        async def task_endpoint(request: dict):
+            try:
+                import uuid
+                import time
+
+                # Generate task ID
+                task_id = str(uuid.uuid4())
+
+                # Initialize task storage if not exists
+                if not hasattr(app.state, "_active_tasks"):
+                    app.state._active_tasks = {}
+
+                # Create task info for tracking
+                task_info = {
+                    "task_id": task_id,
+                    "status": "submitted",
+                    "queue": queue,
+                    "submitted_at": time.time(),
+                    "request": request,
+                }
+                app.state._active_tasks[task_id] = task_info
+
+                # Execute task asynchronously in background
+                asyncio.create_task(
+                    FastAPIAppFactory._execute_background_task(
+                        app,
+                        task_id,
+                        task_func,
+                        request,
+                        queue,
+                    ),
+                )
+
+                return {
+                    "task_id": task_id,
+                    "status": "submitted",
+                    "queue": queue,
+                    "message": f"Task {task_id} submitted to queue {queue}",
+                }
+
+            except Exception as e:
+                return {
+                    "error": str(e),
+                    "type": "task",
+                    "queue": queue,
+                    "status": "failed",
+                }
+
+        return task_endpoint
+
+    @staticmethod
+    async def _execute_background_task(
+        app: FastAPI,
+        task_id: str,
+        func: Callable,
+        request: dict,
+        queue: str,
+    ):
+        """Execute task in background and update status."""
+        try:
+            import time
+            import concurrent.futures
+
+            # Update status to running
+            if (
+                hasattr(app.state, "_active_tasks")
+                and task_id in app.state._active_tasks
+            ):
+                app.state._active_tasks[task_id].update(
+                    {
+                        "status": "running",
+                        "started_at": time.time(),
+                    },
+                )
+
+            # Execute the actual task function
+            if asyncio.iscoroutinefunction(func):
+                result = await func(request)
+            else:
+                # Run sync function in thread pool to avoid blocking
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    result = await asyncio.get_event_loop().run_in_executor(
+                        executor,
+                        func,
+                        request,
+                    )
+
+            # Update status to completed
+            if (
+                hasattr(app.state, "_active_tasks")
+                and task_id in app.state._active_tasks
+            ):
+                app.state._active_tasks[task_id].update(
+                    {
+                        "status": "completed",
+                        "result": result,
+                        "completed_at": time.time(),
+                    },
+                )
+
+        except Exception as e:
+            # Update status to failed
+            if (
+                hasattr(app.state, "_active_tasks")
+                and task_id in app.state._active_tasks
+            ):
+                app.state._active_tasks[task_id].update(
+                    {
+                        "status": "failed",
+                        "error": str(e),
+                        "failed_at": time.time(),
+                    },
+                )
+
+    @staticmethod
+    def _create_task_status_handler(app: FastAPI):
+        """Create a handler for checking task status."""
+
+        async def task_status_handler(request: dict):
+            task_id = request.get("task_id")
+            if not task_id:
+                return {"error": "task_id required"}
+
+            if (
+                not hasattr(app.state, "_active_tasks")
+                or task_id not in app.state._active_tasks
+            ):
+                return {"error": f"Task {task_id} not found"}
+
+            task_info = app.state._active_tasks[task_id].copy()
+            # Remove request data from response for privacy
+            task_info.pop("request", None)
+            return task_info
+
+        return task_status_handler

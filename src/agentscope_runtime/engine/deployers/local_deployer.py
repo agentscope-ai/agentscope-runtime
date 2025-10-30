@@ -272,6 +272,9 @@ class LocalDeployManager(DeployManager):
         extra_packages: Optional[List[str]] = None,
         services_config: Optional[ServicesConfig] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
+        custom_endpoints: Optional[
+            List[Dict]
+        ] = None,  # New parameter for custom endpoints
         **kwargs,  # pylint: disable=unused-argument
     ) -> str:
         """Create detached project using package_project method."""
@@ -288,6 +291,7 @@ class LocalDeployManager(DeployManager):
             extra_packages=extra_packages,
             protocol_adapters=protocol_adapters,
             services_config=services_config,
+            custom_endpoints=custom_endpoints,  # Add custom endpoints
             requirements=requirements
             + (
                 ["redis"]

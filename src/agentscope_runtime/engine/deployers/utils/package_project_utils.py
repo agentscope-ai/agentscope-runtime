@@ -12,7 +12,7 @@ import shutil
 import tarfile
 import tempfile
 from pathlib import Path
-from typing import List, Optional, Any, Tuple
+from typing import List, Optional, Any, Tuple, Dict
 
 from pydantic import BaseModel
 
@@ -61,6 +61,37 @@ def _get_package_version() -> str:
         return ""
 
 
+def _prepare_custom_endpoints_for_template(
+    custom_endpoints: Optional[List[Dict]],
+) -> Optional[List[Dict]]:
+    """Prepare custom endpoints for template rendering."""
+    if not custom_endpoints:
+        return None
+
+    prepared_endpoints = []
+    for endpoint in custom_endpoints:
+        prepared_endpoint = {
+            "path": endpoint.get("path", "/unknown"),
+            "methods": endpoint.get("methods", ["POST"]),
+            "module": endpoint.get("module"),
+            "function_name": endpoint.get("function_name"),
+        }
+
+        # Add inline code if module/function_name not available
+        if (
+            not prepared_endpoint["module"]
+            or not prepared_endpoint["function_name"]
+        ):
+            prepared_endpoint["inline_code"] = endpoint.get(
+                "inline_code",
+                'lambda request: {"error": "Handler not available"}',
+            )
+
+        prepared_endpoints.append(prepared_endpoint)
+
+    return prepared_endpoints
+
+
 class PackageConfig(BaseModel):
     """Configuration for project packaging"""
 
@@ -73,6 +104,9 @@ class PackageConfig(BaseModel):
         ServicesConfig
     ] = None  # New: services configuration
     protocol_adapters: Optional[List[Any]] = None  # New: protocol adapters
+    custom_endpoints: Optional[
+        List[Dict]
+    ] = None  # New: custom endpoints configuration
 
 
 def _find_agent_source_file(
@@ -751,6 +785,9 @@ def package_project(
                 endpoint_path=config.endpoint_path or "/process",
                 deployment_mode=config.deployment_mode or "standalone",
                 protocol_adapters=protocol_adapters_str,
+                custom_endpoints=_prepare_custom_endpoints_for_template(
+                    config.custom_endpoints,
+                ),
             )
         else:
             # Use user-provided template string
@@ -760,6 +797,9 @@ def package_project(
                 endpoint_path=config.endpoint_path,
                 deployment_mode=config.deployment_mode or "standalone",
                 protocol_adapters=protocol_adapters_str,
+                custom_endpoints=_prepare_custom_endpoints_for_template(
+                    config.custom_endpoints,
+                ),
             )
 
         # Write main.py
