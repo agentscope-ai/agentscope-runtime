@@ -236,7 +236,7 @@ def _upload_to_oss_with_credentials(
 
     try:
         body = response_data["body"]
-        data = body["Data"]
+        data = body.get("Data")
         if data is None:
             print(
                 "\n❌ Configuration Error: The current RAM user is not assigned to any workspace.",
