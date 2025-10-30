@@ -91,6 +91,14 @@ OSS_ACCESS_KEY_ID=your-access-key-id
 OSS_ACCESS_KEY_SECRET=your-access-key-secret
 OSS_BUCKET_NAME=your-bucket-name
 
+# S3 settings
+FILE_SYSTEM=s3
+S3_ENDPOINT_URL=http://localhost:9000
+S3_ACCESS_KEY_ID=your-access-key-id
+S3_ACCESS_KEY_SECRET=your-access-key-secret
+S3_BUCKET_NAME=your-bucket-name
+S3_REGION_NAME=us-east-1
+
 # K8S settings
 K8S_NAMESPACE=default
 KUBECONFIG_PATH=
@@ -147,11 +155,24 @@ For distributed file storage using [Alibaba Cloud Object Storage Service](https:
 
 | Parameter | Description | Default | Notes |
 | --- | --- | --- | --- |
-| `FILE_SYSTEM` | File system type | `local` | `local`, or `oss` |
+| `FILE_SYSTEM` | File system type | `local` | `local`, `oss`, or `s3` |
 | `OSS_ENDPOINT` | OSS endpoint URL | Empty | Regional endpoint |
 | `OSS_ACCESS_KEY_ID` | OSS access key ID | Empty | From the OSS console |
 | `OSS_ACCESS_KEY_SECRET` | OSS access key secret | Empty | Keep secure |
 | `OSS_BUCKET_NAME` | OSS bucket name | Empty | Pre-created bucket |
+
+#### (Optional) S3 Settings
+
+For distributed file storage using [Amazon S3](https://aws.amazon.com/s3/) or S3-compatible storage (e.g., MinIO):
+
+| Parameter | Description | Default | Notes |
+| --- | --- | --- | --- |
+| `FILE_SYSTEM` | File system type | `local` | `local`, `oss`, or `s3` |
+| `S3_ENDPOINT_URL` | S3 endpoint URL | Empty | For MinIO, use http://localhost:9000 |
+| `S3_ACCESS_KEY_ID` | S3 access key ID | Empty | AWS access key or MinIO access key |
+| `S3_ACCESS_KEY_SECRET` | S3 access key secret | Empty | AWS secret key or MinIO secret key |
+| `S3_BUCKET_NAME` | S3 bucket name | Empty | Pre-created bucket |
+| `S3_REGION_NAME` | S3 region name | `us-east-1` | AWS region or MinIO region |
 
 #### (Optional) K8S Settings
 
