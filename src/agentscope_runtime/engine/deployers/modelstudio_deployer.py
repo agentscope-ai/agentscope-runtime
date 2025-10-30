@@ -249,7 +249,8 @@ def _upload_to_oss_with_credentials(
         data = body.get("Data")
         if data is None:
             print(
-                "\n❌ Configuration Error: The current RAM user is not assigned to target workspace.",
+                "\n❌ Configuration Error: The current RAM user "
+                "is not assigned to target workspace.",
             )
             print(
                 "Bailian requires RAM users to be associated with "
