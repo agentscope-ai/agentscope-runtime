@@ -14,6 +14,7 @@ AgentScope Runtime使用模块化架构，包含几个关键组件：
 <img src="/_static/agent_architecture_zh.jpg" alt="Installation Options" style="zoom:25%;" />
 
 - **Agent**：处理请求并生成响应的核心AI组件（可以是基于LLM的、基于工作流的或自定义实现，如 Langgraph、Agentscope、Agno）
+- **AgentApp**: 继承于 FastAPI App，作为应用入口，负责对外提供 API 接口、路由注册、配置加载，并将请求交由 Runner 调用执行
 - **Runner**：在运行时编排智能体执行并管理部署
 - **Context**：包含智能体执行所需的所有信息
 - **Context & Env Manager**：提供额外功能服务管理，如会话历史管理、长期记忆管理、沙箱管理
@@ -25,7 +26,19 @@ AgentScope Runtime使用模块化架构，包含几个关键组件：
 
 `Agent` 是处理请求并生成响应的核心组件。它是一个抽象基类，定义了所有智能体类型的接口。我们将使用 `AgentScopeAgent`作为主要示例，但相同的部署步骤适用于所有智能体类型。
 
-#### 2. Runner
+#### 2. AgentApp
+
+`AgentApp` 是 AgentScope Runtime 中的 **应用入口点**，继承自 `BaseApp`（一个扩展了 FastAPI 并可选集成 Celery 的基类），用于将 Agent 部署为可对外提供服务的 API 应用。
+
+它的职责是：
+
+- 初始化并绑定 **Agent** 和 **Runner**，将请求委托给运行时处理
+- 提供标准化的 **HTTP API 接口**（含健康检查）
+- 支持 **Server-Sent Events (SSE)** 以及标准 JSON 响应
+- 允许注册中间件、任务队列（Celery）以及自定义路由
+- 管理应用生命周期（支持 `before_start` / `after_finish` 钩子）
+
+#### 3. Runner
 
 `Runner` 类提供灵活且可扩展的运行时来编排智能体执行并提供部署功能。它管理：
 
@@ -33,7 +46,7 @@ AgentScope Runtime使用模块化架构，包含几个关键组件：
 - 流式响应
 - 服务部署
 
-#### 3. Context
+#### 4. Context
 
 `Context` 对象包含智能体执行所需的所有信息：
 
@@ -42,14 +55,14 @@ AgentScope Runtime使用模块化架构，包含几个关键组件：
 - 用户请求
 - 服务实例
 
-#### 4. Context & Env Manager
+#### 5. Context & Env Manager
 
 包含`ContextManager`和`EnvironmentManager`:
 
 * `ContextManager`：提供会话历史管理、长期记忆管理
 * `EnvironmentManager`:提供沙箱生命周期的管理
 
-#### 5. Deployer
+#### 6. Deployer
 
 `Deployer` 系统提供生产级别的部署功能：
 
@@ -57,38 +70,6 @@ AgentScope Runtime使用模块化架构，包含几个关键组件：
 - 健康检查、监控和生命周期管理
 - 使用SSE的实时响应流式传输
 - 错误处理、日志记录和优雅关闭
-
-##### 部署器架构
-
-部署系统由几个关键组件组成：
-
-- **DeployManager**:部署操作的抽象接口
-- **LocalDeployManager**: 基于本地FastAPI部署的具体实现
-- **FastAPI应用程序**: 具有健康检查和中间件的生产就绪Web服务
-- **流式支持**: 使用服务器发送事件（SSE）的实时响应流式传输
-
-##### 关键特性
-
-###### 1. FastAPI集成
-
-部署器创建一个完整的FastAPI应用程序，具有：
-
-- 健康检查端点（`/health`、`/readiness`、`/liveness`） +用于跨域请求的CORS中间件
-- 请求日志记录和监控
-- 启动/关闭钩子的生命周期管理
-
-###### 2. 多种响应类型
-
-- **JSON**: 标准同步响应
-- **SSE**: 用于流式响应的服务器发送事件
-- **自定义**: 可扩展的响应处理
-
-###### 3. 生产特性
-
-- 请求ID自动生成
-- 错误处理和日志记录
-- 优雅关闭能力
-- 可配置超时
 
 ## 沙箱模块概念
 
@@ -109,19 +90,25 @@ AgentScope Runtime使用模块化架构，包含几个关键组件：
 - **使用场景**: 基础工具执行和脚本编写的必需品
 - **能力**: IPython环境、shell命令执行
 
-#### 2. FilesystemSandbox（文件系统沙箱）
+#### 2. GuiSandbox （GUI沙箱）
+
+- **用途**：具有安全访问控制的图形用户界面（GUI）交互与自动化
+- **使用场景**：用户界面测试、桌面自动化、交互式工作流程
+- **功能**：模拟用户输入（点击、键盘输入）、窗口管理、屏幕捕获等
+
+#### 3. FilesystemSandbox（文件系统沙箱）
 
 - **用途**: 具有安全访问控制的文件系统操作
 - **使用场景**: 文件管理、文本处理和数据操作
 - **能力**: 文件读写、目录操作、文件搜索和元数据等
 
-#### 3. BrowserSandbox（浏览器沙箱）
+#### 4. BrowserSandbox（浏览器沙箱）
 
 - **用途**: Web浏览器自动化和控制
 - **使用场景**: 网页抓取、UI测试和基于浏览器的交互
 - **能力**: 页面导航、元素交互、截图捕获等
 
-#### 4. TrainingSandbox（训练沙箱）
+#### 5. TrainingSandbox（训练沙箱）
 
 - **用途**:智能体训练和评估环境
 - **使用场景**: 基准测试和性能评估

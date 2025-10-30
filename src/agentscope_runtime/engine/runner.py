@@ -40,7 +40,9 @@ class Runner:
         """
         self._agent = agent
         self._environment_manager = environment_manager
-        self._context_manager = context_manager
+        self._context_manager = (
+            context_manager or ContextManager()
+        )  # Add default context manager
         self._deploy_managers = {}
         self._exit_stack = AsyncExitStack()
 

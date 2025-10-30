@@ -58,20 +58,10 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 
 ```{code-cell}
 import os
-from contextlib import asynccontextmanager
-from agentscope_runtime.engine.runner import Runner
+
+from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-from agentscope_runtime.engine.services.context_manager import (
-    ContextManager,
-)
-from agentscope_runtime.engine.services.environment_manager import (
-    EnvironmentManager,
-)
-from agentscope_runtime.engine.schemas.agent_schemas import (
-    MessageType,
-    RunStatus,
-    AgentRequest,
-)
+from agentscope_runtime.engine.deployers import LocalDeployManager
 ```
 
 ### 步骤2：配置浏览器工具
@@ -149,108 +139,52 @@ agent = AgentScopeAgent(
 print("✅ 智能体初始化成功")
 ```
 
-### Step 5: 创建运行器
+### Step 5: 创建并启动Agent App
 
-通过创建一个运行器来建立运行时，该运行器协调智能体和用于会话管理、内存和环境控制的基本服务：
-
-```{code-cell}
-@asynccontextmanager
-async def create_runner():
-    async with Runner(
-        agent=llm_agent,
-        context_manager=ContextManager(),
-        environment_manager=EnvironmentManager(),
-    ) as runner:
-        print("✅ 运行器创建成功")
-        yield runner
-```
-
-### 步骤6：定义本地交互函数
-
-实现本地交互函数，通过直接查询处理和流式响应来测试您的智能体功能：
+用agent和 `AgentApp` 创建一个 Agent API 服务器：
 
 ```{code-cell}
-async def interact(runner):
-    # Create a request
-    request = AgentRequest(
-        input=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "What is in example.com?",
-                    },
-                ],
-            },
-        ],
-    )
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 
-    # Stream interaction with the agent
-    print("🤖 智能体正在处理您的请求...")
-    async for message in runner.stream_query(
-        request=request,
-    ):
-        # Check if this is a completed message
-        if (
-            message.object == "message"
-            and MessageType.MESSAGE == message.type
-            and RunStatus.Completed == message.status
-        ):
-            all_result = message.content[0].text
+app = AgentApp(agent=agent, endpoint_path="/process")
 
-    print("📝 智能体输出:", all_result)
+app.run(host="0.0.0.0", port=8090)
 ```
 
-### 步骤7：运行交互
+运行后，服务器会启动并监听：`http://localhost:8090/process`
 
-执行交互流程，在本地开发环境中测试您的智能体功能：
+### 步骤6：发送一个请求
+
+你可以使用 `curl` 向 API 发送 JSON 输入：
+
+```bash
+curl -N \
+  -X POST "http://localhost:8090/process" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          { "type": "text", "text": "What is in example?" }
+        ]
+      }
+    ]
+  }'
+```
+
+你将会看到以 **Server-Sent Events (SSE)** 格式流式输出的响应。
+
+### 步骤7: 使用 Deployer 部署代理
+
+AgentScope Runtime 提供了一个功能强大的部署系统，可以将你的智能体部署到远程或本地容器中。这里我们以 `LocalDeployManager` 为例：
 
 ```{code-cell}
-async def interact_run():
-    async with create_runner() as runner:
-        await interact(runner)
-
-await interact_run()
+async def main():
+    await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```
 
-### 步骤8：本地部署智能体
-
-使用本地部署管理器将您的智能体转换为生产就绪的服务，以提供HTTP API访问：
-
-```{code-cell}
-from agentscope_runtime.engine.deployers import LocalDeployManager
-
-async def deploy(runner):
-    # 创建部署管理器
-    deploy_manager = LocalDeployManager(
-        host="localhost",
-        port=8090,
-    )
-
-    #将智能体部署为流式服务
-    deploy_result = await runner.deploy(
-        deploy_manager=deploy_manager,
-        endpoint_path="/process",
-        stream=True,  # Enable streaming responses
-    )
-
-    print(f"智能体部署在: {deploy_result}")
-    print(f"服务URL: {deploy_manager.service_url}")
-    print(f"健康检查: {deploy_manager.service_url}/health")
-```
-
-### 步骤9：运行部署
-
-执行完整的部署过程，使您的智能体作为Web服务可用：
-
-```{code-cell}
-async def deploy_run():
-    async with create_runner() as runner:
-        await deploy(runner)
-
-await deploy_run()
-```
+这段代码会在指定的端口运行你的智能体API Server，使其能够响应外部请求。除了基本的 HTTP API 访问外，你还可以使用不同的协议与智能体进行交互，例如：A2A、Response API、Agent API等。详情请参考 {doc}`protocol`。
 
 ### 总结
 

@@ -342,6 +342,7 @@ await main()
 from agentscope_runtime.engine.schemas.agent_schemas import Message, TextContent, MessageType, Role
 
 # 创建会话
+user_id = "u_append"
 session = await session_history_service.create_session(user_id)
 
 # 使用内置Message格式添加单个消息

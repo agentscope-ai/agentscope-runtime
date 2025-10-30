@@ -15,6 +15,7 @@ The engine module in AgentScope Runtime uses a modular architecture with several
 <img src="/_static/agent_architecture.jpg" alt="Installation Options" style="zoom:25%;" />
 
 + **Agent**: The core AI component that processes requests and generates responses (can be LLM-based, workflow-based, or custom implementations, such as Agentscope, Agno, LangGraph)
++ **AgentApp**: Inherits from the FastAPI App and serves as the application entry point. It is responsible for providing external API interfaces, registering routes, loading configurations, and delegating incoming requests to the Runner for execution.
 + **Runner**: Orchestrates the agent execution and manages deployment at runtime
 + **Context**: Contains all the information needed for agent execution
 + **Context & Env Manager**: Provide additional functional services management, such as session history management, long-term memory management, and sandbox management.
@@ -26,7 +27,19 @@ The engine module in AgentScope Runtime uses a modular architecture with several
 
 The `Agent` is the core component that processes requests and generates responses. It's an abstract base class that defines the interface for all agent types. We'll use `AgentScopeAgent` as our primary example, but the same deployment patterns apply to all agent types.
 
-#### 2. Runner
+#### 2. AgentApp
+
+`AgentApp` is the **entry point** of applications in the AgentScope Runtime. It inherits from `BaseApp` (a base class that extends FastAPI and optionally integrates Celery) and is used to deploy an Agent as an API application that provides services externally.
+
+Its responsibilities include:
+
+- Initializing and binding the **Agent** and **Runner**, delegating requests to the runtime for processing
+- Providing standardized **HTTP API endpoints** (including health checks)
+- Supporting **Server-Sent Events (SSE)** as well as standard JSON responses
+- Allowing registration of middlewares, task queues (Celery), and custom routes
+- Managing the application lifecycle (supports `before_start` / `after_finish` hooks)
+
+#### 3. Runner
 
 The `Runner` class provides a flexible and scalable runtime that orchestrates agent execution and offers deployment capabilities. It manages:
 
@@ -35,7 +48,7 @@ The `Runner` class provides a flexible and scalable runtime that orchestrates ag
 + Streaming responses
 + Service deployment
 
-#### 3. Context
+#### 4. Context
 
 The `Context` object contains all the information needed for agent execution:
 
@@ -44,14 +57,14 @@ The `Context` object contains all the information needed for agent execution:
 + User request
 + Service instances
 
-#### 4. Context & Env Manager
+#### 5. Context & Env Manager
 
 Includes `ContextManager` and `EnvironmentManager`:
 
 - `ContextManager`: Provides session history management and long-term memory management.
 - `EnvironmentManager`: Provides sandbox lifecycle management.
 
-#### 5. Deployer
+#### 6. Deployer
 
 The `Deployer` system provides production-ready deployment capabilities:
 
@@ -59,39 +72,6 @@ The `Deployer` system provides production-ready deployment capabilities:
 + Health checks, monitoring, and lifecycle management
 + Real-time response streaming with SSE
 + Error handling, logging, and graceful shutdown
-
-##### Deployer Architecture
-
-The deployment system consists of several key components:
-
-+ **DeployManager**: Abstract interface for deployment operations
-+ **LocalDeployManager**: Concrete implementation for local FastAPI-based deployments
-+ **FastAPI Application**: Production-ready web service with health checks and middleware
-+ **Streaming Support**: Real-time response streaming with Server-Sent Events (SSE)
-
-##### Key Features
-
-1. ###### FastAPI Integration
-
-The deployer creates a complete FastAPI application with:
-
-+ Health check endpoints (`/health`, `/readiness`, `/liveness`)
-+ CORS middleware for cross-origin requests
-+ Request logging and monitoring
-+ Lifespan management for startup/shutdown hooks
-
-2. ###### Multiple Response Types
-
-+ **JSON**: Standard synchronous responses
-+ **SSE**: Server-Sent Events for streaming responses
-+ **Custom**: Extensible response handling
-
-3. ###### Production Features
-
-+ Automatic request ID generation
-+ Error handling and logging
-+ Graceful shutdown capabilities
-+ Configurable timeouts
 
 ## Sandbox Module Concepts
 
@@ -112,19 +92,25 @@ The system supports multiple sandbox types, each optimized for specific use case
 - **Use Case**: Essential for fundamental tool execution and scripting
 - **Capabilities**: IPython environment, shell command execution
 
-#### 2. FilesystemSandbox
+#### 2. GuiSandbox
+
+- **Purpose**: GUI interaction and automation with secure access control
+- **Use Case**: User interface testing, desktop automation, and interactive workflows
+- **Capabilities**: Simulated user input (clicks, typing), window management, screen capture, etc.
+
+#### 3. FilesystemSandbox
 
 - **Purpose**: File system operations with secure access control
 - **Use Case**: File management, text processing, and data manipulation
 - **Capabilities**: File read/write, directory operations, file search and metadata, etc.
 
-#### 3. BrowserSandbox
+#### 4. BrowserSandbox
 
 - **Purpose**: Web browser automation and control
 - **Use Case**: Web scraping, UI testing, and browser-based interactions
 - **Capabilities**: Page navigation, element interaction, screenshot capture, etc.
 
-#### 4. TrainingSandbox
+#### 5. TrainingSandbox
 
 - **Purpose**: Agent training and evaluation environments
 - **Use Case**: Benchmarking and performance evaluation

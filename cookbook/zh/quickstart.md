@@ -42,19 +42,13 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 
 ```{code-cell}
 import os
-from contextlib import asynccontextmanager
-from agentscope_runtime.engine import Runner
+
+from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-from agentscope.model import DashScopeChatModel
+from agentscope_runtime.engine.deployers import LocalDeployManager
+from agentscope.model import OpenAIChatModel
 from agentscope.agent import ReActAgent
-from agentscope_runtime.engine.schemas.agent_schemas import (
-    MessageType,
-    RunStatus,
-    AgentRequest,
-)
-from agentscope_runtime.engine.services.context_manager import (
-    ContextManager,
-)
+
 
 print("✅ 依赖导入成功")
 ```
@@ -190,261 +184,55 @@ agent = LangGraphAgent(graph=compiled_graph)
 print("✅ LangGraph agent created successfully")
 ```
 
-### 步骤3：创建Runner上下文管理器
+### 步骤3：创建并启动Agent App
 
-建立用于管理智能体生命周期的运行时上下文：
-
-```{code-cell}
-@asynccontextmanager
-async def create_runner():
-    async with Runner(
-        agent=llm_agent,
-        context_manager=ContextManager(),
-    ) as runner:
-        print("✅ Runner创建成功")
-        yield runner
-```
-
-### 步骤4：定义交互函数
-
-实现一个函数来测试您的智能体并获取流式响应：
+用agent和 `AgentApp` 创建一个 Agent API 服务器：
 
 ```{code-cell}
-async def interact_with_agent(runner):
-    # Create a request
-    request = AgentRequest(
-        input=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "法国的首都是什么？",
-                    },
-                ],
-            },
-        ],
-    )
+app = AgentApp(agent=agent, endpoint_path="/process")
 
-    # 流式获取响应
-    print("🤖 智能体正在处理您的请求...")
-    all_result = ""
-    async for message in runner.stream_query(request=request):
-        # Check if this is a completed message
-        if (
-            message.object == "message"
-            and MessageType.MESSAGE == message.type
-            and RunStatus.Completed == message.status
-        ):
-            all_result = message.content[0].text
-
-    print(f"📝智能体回复: {all_result}")
-    return all_result
+app.run(host="0.0.0.0", port=8090)
 ```
 
-### 步骤5：测试智能体交互
+运行后，服务器会启动并监听：`http://localhost:8090/process`
 
-执行交互流程以测试您的智能体功能：
+### 步骤4：发送一个请求
+
+你可以使用 `curl` 向 API 发送 JSON 输入：
+
+```bash
+curl -N \
+  -X POST "http://localhost:8090/process" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          { "type": "text", "text": "What is the capital of France?" }
+        ]
+      }
+    ]
+  }'
+```
+
+你将会看到以 **Server-Sent Events (SSE)** 格式流式输出的响应：
+
+```bash
+data: {"sequence_number":0,"object":"response","status":"created", ... }
+data: {"sequence_number":1,"object":"response","status":"in_progress", ... }
+data: {"sequence_number":2,"object":"content","status":"in_progress","text":"The" }
+data: {"sequence_number":3,"object":"content","status":"in_progress","text":" capital of France is Paris." }
+data: {"sequence_number":4,"object":"message","status":"completed","text":"The capital of France is Paris." }
+```
+
+### 步骤5: 使用 Deployer 部署代理
+
+AgentScope Runtime 提供了一个功能强大的部署系统，可以将你的智能体部署到远程或本地容器中。这里我们以 `LocalDeployManager` 为例：
 
 ```{code-cell}
-async def test_interaction():
-    async with create_runner() as runner:
-        await interact_with_agent(runner)
-
-await test_interaction()
+async def main():
+    await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```
 
-## 使用部署器部署智能体
-
-AgentScope Runtime提供了强大的部署系统，允许您将智能体作为Web服务公开。
-
-### 步骤6：创建部署函数
-
-使用 `LocalDeployManager` 设置部署配置：
-
-```{code-cell}
-from agentscope_runtime.engine.deployers import LocalDeployManager
-
-async def deploy_agent(runner):
-    # 创建部署管理器
-    deploy_manager = LocalDeployManager(
-        host="localhost",
-        port=8090,
-    )
-
-    # 将智能体部署为流式服务
-    deploy_result = await runner.deploy(
-        deploy_manager=deploy_manager,
-        endpoint_path="/process",
-        stream=True,  # Enable streaming responses
-    )
-    print(f"🚀智能体部署在: {deploy_result}")
-    print(f"🌐服务URL: {deploy_manager.service_url}")
-    print(f"💚 健康检查: {deploy_manager.service_url}/health")
-
-    return deploy_manager
-```
-
-### 步骤7：执行部署
-
-将您的智能体部署为生产就绪的服务：
-
-```{code-cell}
-async def run_deployment():
-    async with create_runner() as runner:
-        deploy_manager = await deploy_agent(runner)
-
-    # Keep the service running (in production, you'd handle this differently)
-    print("🏃 Service is running...")
-
-    return deploy_manager
-
-# Deploy the agent
-deploy_manager = await run_deployment()
-```
-
-```{note}
-智能体运行器公开了一个`deploy` 方法，该方法接受一个 `DeployManager` 实例并部署智能体。
-服务端口在创建 `LocalDeployManager` 时通过参数 `port`设置。
-服务端点路径在部署智能体时通过参数 `endpoint_path` 设置。
-在此示例中，我们将端点路径设置为 `/process`。
-部署后，您可以在`http://localhost:8090/process` 访问服务。
-```
-
-### （可选）步骤8：部署多个智能体
-
-Agentscope Runtime支持在不同端口上部署多个智能体。
-
-```{code-cell}
-async def deploy_multiple_agents():
-    async with create_runner() as runner:
-        # 在不同端口上部署多个智能体
-        deploy_manager1 = LocalDeployManager(host="localhost", port=8092)
-        deploy_manager2 = LocalDeployManager(host="localhost", port=8093)
-
-        # 部署第一个智能体
-        result1 = await runner.deploy(
-            deploy_manager=deploy_manager1,
-            endpoint_path="/agent1",
-            stream=True,
-        )
-
-        # 部署第二个智能体（您可以使用不同的runner/智能体）
-        result2 = await runner.deploy(
-            deploy_manager=deploy_manager2,
-            endpoint_path="/agent2",
-            stream=True,
-        )
-
-        print(f"🚀 智能体1已部署: {result1}")
-        print(f"🚀 智能体2已部署: {result2}")
-
-        return deploy_manager1, deploy_manager2
-
-# Deploy multiple agents
-deploy_managers = await deploy_multiple_agents()
-```
-
-### 步骤9：测试部署的智能体
-
-使用HTTP请求测试您部署的智能体：
-
-```{code-cell}
-import requests
-
-
-def test_deployed_agent():
-    # 准备测试负载
-    payload = {
-        "input": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "法国的首都是什么？"},
-                ],
-            },
-        ],
-        "session_id": "test_session_001",
-        "user_id": "test_user_001",
-    }
-
-    print("🧪 测试部署的智能体...")
-
-    # 测试流式响应
-    try:
-        response = requests.post(
-            "http://localhost:8090/process",
-            json=payload,
-            stream=True,
-            timeout=30,
-        )
-
-        print("📡 流式响应:")
-        for line in response.iter_lines():
-            if line:
-                print(f"{line.decode('utf-8')}")
-        print("✅ 流式测试完成")
-    except requests.exceptions.RequestException as e:
-        print(f"❌ 流式测试失败: {e}")
-    except requests.exceptions.RequestException as e:
-        print(f"ℹ️ JSON端点不可用或失败: {e}")
-
-
-# Run the test
-test_deployed_agent()
-```
-
-### 步骤10：服务管理
-
-#### 服务状态
-
-```{code-cell}
-# 检查服务状态
-print(f"服务运行中: {deploy_manager.is_running}")
-print(f"服务URL: {deploy_manager.service_url}")
-```
-
-#### 停止服务
-
-```{code-cell}
-async def stop_services(*_deploy_managers):
-    """停止部署的服务"""
-    async def _stop():
-        for i, manager in enumerate(_deploy_managers):
-            if manager.is_running:
-                await manager.stop()
-            print(f"🛑 服务{i}已停止")
-    await _stop()
-
-await stop_services(deploy_manager)
-```
-
-## 总结
-
-本指南演示了使用AgentScope Runtime框架的两个主要场景：
-
-### 🏃 Runner用于简单的智能体交互
-
-使用Runner 类构建和测试智能体：
-
-✅ 创建和配置智能体（AgentScope、Agno、LangGraph）
-
-✅ 使用上下文管理设置`Runner`
-
-✅ 通过流式传输测试智能体响应
-
-✅ 在部署前验证智能体功能
-
-### 🚀 智能体部署为生产服务
-
-将智能体部署为生产就绪的Web服务：
-
-✅使用 `LocalDeployManager` 进行本地部署
-
-✅将智能体公开为FastAPI Web服务
-
-✅ 支持流式和JSON响应
-
-✅ 包括健康检查和服务监控
-
-✅ 处理多个智能体部署
+这段代码会在指定的端口运行你的智能体API Server，使其能够响应外部请求。除了基本的 HTTP API 访问外，你还可以使用不同的协议与智能体进行交互，例如：A2A、Response API、Agent API等。详情请参考 {doc}`protocol`。
