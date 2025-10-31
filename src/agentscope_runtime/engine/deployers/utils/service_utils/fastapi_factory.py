@@ -558,15 +558,15 @@ class FastAPIAppFactory:
                 )
                 app.add_api_route(path, task_handler, methods=[method])
 
-                # Add task status endpoint
-                status_path = f"{path}/status"
+                # Add task status endpoint - align with BaseApp pattern
+                status_path = f"{path}/{{task_id}}"
                 status_handler = FastAPIAppFactory._create_task_status_handler(
                     app,
                 )
                 app.add_api_route(
                     status_path,
                     status_handler,
-                    methods=["GET", "POST"],
+                    methods=["GET"],
                 )
 
             else:
@@ -739,8 +739,7 @@ class FastAPIAppFactory:
     def _create_task_status_handler(app: FastAPI):
         """Create a handler for checking task status."""
 
-        async def task_status_handler(request: dict):
-            task_id = request.get("task_id")
+        async def task_status_handler(task_id: str):
             if not task_id:
                 return {"error": "task_id required"}
 
@@ -750,9 +749,23 @@ class FastAPIAppFactory:
             ):
                 return {"error": f"Task {task_id} not found"}
 
-            task_info = app.state._active_tasks[task_id].copy()
-            # Remove request data from response for privacy
-            task_info.pop("request", None)
-            return task_info
+            task_info = app.state._active_tasks[task_id]
+            task_status = task_info.get("status", "unknown")
+
+            # Align with BaseApp.get_task logic - map internal status to external status format
+            if task_status in ["submitted", "running"]:
+                return {"status": "pending", "result": None}
+            elif task_status == "completed":
+                return {
+                    "status": "finished",
+                    "result": task_info.get("result"),
+                }
+            elif task_status == "failed":
+                return {
+                    "status": "error",
+                    "result": task_info.get("error", "Unknown error"),
+                }
+            else:
+                return {"status": task_status, "result": None}
 
         return task_status_handler

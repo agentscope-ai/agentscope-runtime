@@ -1,25 +1,19 @@
 # -*- coding: utf-8 -*-
 import asyncio
-import time
-import uuid
-import json
 import logging
-
 from contextlib import asynccontextmanager
-from typing import Optional, Dict, Any, Callable, Tuple, Union
+from typing import Optional, Any, Callable, List
 
-from fastapi import FastAPI, HTTPException, Request, Response
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI
 from pydantic import BaseModel
 
 from .base_app import BaseApp
 from ..agents.base_agent import Agent
 from ..deployers.adapter.a2a import A2AFastAPIDefaultAdapter
 from ..runner import Runner
+from ..schemas.agent_schemas import AgentRequest
 from ..services.context_manager import ContextManager
 from ..services.environment_manager import EnvironmentManager
-from ..schemas.agent_schemas import AgentRequest, AgentResponse, Error
 from ...version import __version__
 
 logger = logging.getLogger(__name__)
@@ -63,6 +57,10 @@ class AgentApp(BaseApp):
 
         self._agent = agent
         self._runner = None
+        self.custom_endpoints = []  # Store custom endpoints
+        self.custom_tasks = []  # Store custom tasks
+        a2a_protocol = A2AFastAPIDefaultAdapter(agent=self._agent)
+        self.protocol_adapters = [a2a_protocol]
 
         if self._agent:
             self._runner = Runner(
@@ -106,13 +104,8 @@ class AgentApp(BaseApp):
             **kwargs,
         )
 
-        self._add_middleware()
-        self._add_health_endpoints()
-        self._add_main_endpoint()
-
-        # Support a2a protocol
-        self.a2a_protocol = A2AFastAPIDefaultAdapter(agent=self._agent)
-        self.a2a_protocol.add_endpoint(app=self, func=self.func)
+        # Store custom endpoints and tasks for deployment
+        # but don't add them to FastAPI here - let FastAPIAppFactory handle it
 
     def run(
         self,
@@ -153,259 +146,57 @@ class AgentApp(BaseApp):
                 logger.error(f"[AgentApp] Error while cleaning up runner: {e}")
 
     async def deploy(self, deployer, **kwargs):
-        return await deployer.deploy(self, **kwargs)
+        """Deploy the agent app with custom endpoints support"""
+        # Pass custom endpoints and tasks to the deployer
 
-    def _add_middleware(self) -> None:
-        """Add middleware"""
+        deploy_kwargs = {
+            **kwargs,
+            "custom_endpoints": self.custom_endpoints,
+            "custom_tasks": self.custom_tasks,
+            "agent": self._agent,
+            "runner": self._runner,
+            "endpoint_path": self.endpoint_path,
+            "stream": self.stream,
+            "protocol_adapters": self.protocol_adapters,
+        }
+        return await deployer.deploy(**deploy_kwargs)
 
-        @self.middleware("http")
-        async def log_requests(request: Request, call_next):
-            start_time = time.time()
+    def endpoint(self, path: str, methods: List[str] = ["POST"]):
+        """Decorator to register custom endpoints"""
 
-            logger.info(f"Request: {request.method} {request.url}")
-            response = await call_next(
-                request,
-            )
-            process_time = time.time() - start_time
-            logger.info(
-                f'{request.client.host} - "{request.method} {request.url}" '
-                f"{response.status_code} - {process_time:.3f}s",
-            )
-
-            return response
-
-        @self.middleware("http")
-        async def custom_middleware(
-            request: Request,
-            call_next: Callable,
-        ) -> Response:
-            """Custom middleware for request processing."""
-            response: Response = await call_next(request)
-            return response
-
-        self.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
-
-    def _add_health_endpoints(self) -> None:
-        """Add health check endpoints"""
-
-        @self.get("/health")
-        async def health_check():
-            return {
-                "status": "healthy",
-                "timestamp": time.time(),
-                "service": "agent-service",
+        def decorator(func: Callable):
+            endpoint_info = {
+                "path": path,
+                "handler": func,
+                "methods": methods,
+                "module": getattr(func, "__module__", None),
+                "function_name": getattr(func, "__name__", None),
             }
+            self.custom_endpoints.append(endpoint_info)
+            return func
 
-        @self.get("/readiness")
-        async def readiness() -> str:
-            """Check if the application is ready to serve requests."""
-            if getattr(self.state, "is_ready", True):
-                return "success"
-            raise HTTPException(
-                status_code=500,
-                detail="Application is not ready",
-            )
+        return decorator
 
-        @self.get("/liveness")
-        async def liveness() -> str:
-            """Check if the application is alive and healthy."""
-            if getattr(self.state, "is_healthy", True):
-                return "success"
-            raise HTTPException(
-                status_code=500,
-                detail="Application is not healthy",
-            )
+    def task(self, path: str, queue: str = "default"):
+        """Decorator to register custom task endpoints"""
 
-        @self.get("/")
-        async def root():
-            return {"message": "Agent Service is running"}
+        def decorator(func: Callable):
+            # Store task configuration for FastAPIAppFactory to handle
+            task_info = {
+                "path": path,
+                "handler": func,  # Store original function
+                "methods": ["POST"],
+                "module": getattr(func, "__module__", None),
+                "function_name": getattr(func, "__name__", None),
+                "queue": queue,
+                "task_type": True,  # Mark as task endpoint
+                "original_func": func,
+            }
+            self.custom_tasks.append(task_info)
+            self.custom_endpoints.append(
+                task_info,
+            )  # Add to endpoints for deployment
 
-    def _add_main_endpoint(self) -> None:
-        """Add the main processing endpoint"""
+            return func
 
-        async def _get_request_info(request: Request) -> Tuple[Dict, Any, str]:
-            """Extract request information from the HTTP request."""
-            body = await request.body()
-            request_body = json.loads(body.decode("utf-8")) if body else {}
-
-            user_id = request_body.get("user_id", "")
-
-            if hasattr(self, "request_model") and self.request_model:
-                try:
-                    request_body_obj = self.request_model.model_validate(
-                        request_body,
-                    )
-                except Exception as e:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Invalid request format: {e}",
-                    ) from e
-            else:
-                request_body_obj = request_body
-
-            query_params = dict(request.query_params)
-            return query_params, request_body_obj, user_id
-
-        def _get_request_id(request_body_obj: Any) -> str:
-            """Extract or generate a request ID from the request body."""
-            if hasattr(request_body_obj, "header") and hasattr(
-                request_body_obj.header,
-                "request_id",
-            ):
-                request_id = request_body_obj.header.request_id
-            elif (
-                isinstance(
-                    request_body_obj,
-                    dict,
-                )
-                and "request_id" in request_body_obj
-            ):
-                request_id = request_body_obj["request_id"]
-            else:
-                request_id = str(uuid.uuid4())
-            return request_id
-
-        @self.post(self.endpoint_path)
-        async def main_endpoint(request: Request):
-            """Main endpoint handler for processing requests."""
-            try:
-                (
-                    _,  # query_params
-                    request_body_obj,
-                    user_id,
-                ) = await _get_request_info(
-                    request=request,
-                )
-                request_id = _get_request_id(request_body_obj)
-                if (
-                    hasattr(
-                        self,
-                        "response_type",
-                    )
-                    and self.response_type == "sse"
-                ):
-                    return self._handle_sse_response(
-                        user_id=user_id,
-                        request_body_obj=request_body_obj,
-                        request_id=request_id,
-                    )
-                else:
-                    return await self._handle_standard_response(
-                        user_id=user_id,
-                        request_body_obj=request_body_obj,
-                        request_id=request_id,
-                    )
-
-            except Exception as e:
-                logger.error(f"Request processing failed: {e}")
-                raise HTTPException(status_code=500, detail=str(e)) from e
-
-    def _handle_sse_response(
-        self,
-        user_id: str,
-        request_body_obj: Any,
-        request_id: str,
-    ) -> StreamingResponse:
-        """Handle Server-Sent Events response."""
-
-        async def stream_generator():
-            """Generate streaming response data."""
-            try:
-                if asyncio.iscoroutinefunction(self.func):
-                    async for output in self.func(
-                        user_id=user_id,
-                        request=request_body_obj,
-                        request_id=request_id,
-                    ):
-                        _data = self._create_success_result(
-                            output=output,
-                        )
-                        yield f"data: {_data}\n\n"
-                else:
-                    # For sync functions, we need to handle differently
-                    result = self.func(
-                        user_id=user_id,
-                        request=request_body_obj,
-                        request_id=request_id,
-                    )
-                    if hasattr(result, "__aiter__"):
-                        async for output in result:
-                            _data = self._create_success_result(
-                                output=output,
-                            )
-                            yield f"data: {_data}\n\n"
-                    else:
-                        _data = self._create_success_result(
-                            output=result,
-                        )
-                        yield f"data: {_data}\n\n"
-            except Exception as e:
-                _data = self._create_error_response(
-                    request_id=request_id,
-                    error=e,
-                )
-                yield f"data: {_data}\n\n"
-
-        return StreamingResponse(
-            stream_generator(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-            },
-        )
-
-    async def _handle_standard_response(
-        self,
-        user_id: str,
-        request_body_obj: Any,
-        request_id: str,
-    ):
-        """Handle standard JSON response."""
-        try:
-            if asyncio.iscoroutinefunction(self.func):
-                result = await self.func(
-                    user_id=user_id,
-                    request=request_body_obj,
-                    request_id=request_id,
-                )
-            else:
-                result = self.func(
-                    user_id=user_id,
-                    request=request_body_obj,
-                    request_id=request_id,
-                )
-
-            return self._create_success_result(
-                output=result,
-            )
-        except Exception as e:
-            return self._create_error_response(request_id=request_id, error=e)
-
-    def _create_success_result(
-        self,
-        output: Union[BaseModel, Dict, str],
-    ) -> str:
-        """Create a success response."""
-        if isinstance(output, BaseModel):
-            return output.model_dump_json()
-        elif isinstance(output, dict):
-            return json.dumps(output)
-        else:
-            return output
-
-    def _create_error_response(
-        self,
-        request_id: str,
-        error: Exception,
-    ) -> str:
-        """Create an error response."""
-        response = AgentResponse(id=request_id)
-        response.failed(Error(code=str(error), message=str(error)))
-        return response.model_dump_json()
+        return decorator

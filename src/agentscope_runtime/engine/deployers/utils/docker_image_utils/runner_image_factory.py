@@ -39,6 +39,9 @@ class RunnerImageConfig(BaseModel):
     endpoint_path: str = "/process"
     protocol_adapters: Optional[List] = None  # New: protocol adapters
     services_config: Optional[ServicesConfig] = None
+    custom_endpoints: Optional[
+        List[Dict]
+    ] = None  # New: custom endpoints configuration
 
     # Docker configuration
     base_image: str = "python:3.10-slim-bookworm"
@@ -184,6 +187,7 @@ class RunnerImageFactory:
                     endpoint_path=config.endpoint_path,
                     protocol_adapters=config.protocol_adapters,
                     services_config=config.services_config,
+                    custom_endpoints=config.custom_endpoints,
                 ),
                 dockerfile_path=dockerfile_path,
                 # caller_depth is no longer needed due to automatic
@@ -245,6 +249,9 @@ class RunnerImageFactory:
         push_to_registry: bool = False,
         services_config: Optional[ServicesConfig] = None,
         protocol_adapters: Optional[List] = None,  # New: protocol adapters
+        custom_endpoints: Optional[
+            List[Dict]
+        ] = None,  # New parameter for custom endpoints
         **kwargs,
     ) -> str:
         """
@@ -261,6 +268,7 @@ class RunnerImageFactory:
             push_to_registry: Whether to push to registry
             services_config: Optional services config
             protocol_adapters: Protocol adapters
+            custom_endpoints: Custom endpoints from agent app
             **kwargs: Additional configuration options
 
         Returns:
@@ -276,6 +284,7 @@ class RunnerImageFactory:
             push_to_registry=push_to_registry,
             protocol_adapters=protocol_adapters,
             services_config=services_config,
+            custom_endpoints=custom_endpoints,
             **kwargs,
         )
 

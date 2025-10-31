@@ -77,6 +77,7 @@ class KubernetesDeployManager(DeployManager):
         endpoint_path: str = "/process",
         stream: bool = True,
         services_config: Optional[Union[ServicesConfig, dict]] = None,
+        custom_endpoints: Optional[List[Dict]] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
@@ -100,6 +101,7 @@ class KubernetesDeployManager(DeployManager):
             endpoint_path: API endpoint path
             stream: Enable streaming responses
             services_config: Services configuration for context manager
+            custom_endpoints: Custom endpoints from agent app
             protocol_adapters: protocol adapters
             requirements: PyPI dependencies (following _agent_engines.py
                 pattern)
@@ -156,6 +158,7 @@ class KubernetesDeployManager(DeployManager):
                     port=port,
                     services_config=services_config,  # type: ignore[arg-type]
                     protocol_adapters=protocol_adapters,
+                    custom_endpoints=custom_endpoints,
                     **kwargs,
                 )
                 if not built_image_name:

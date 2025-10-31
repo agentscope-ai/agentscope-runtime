@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 
-from .agent_app import AgentApp
+from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.deployers.local_deployer import (
     LocalDeployManager,
@@ -10,6 +10,8 @@ from agentscope_runtime.engine.deployers.local_deployer import (
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope.tool import Toolkit, view_text_file
+
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 
 toolkit = Toolkit()
 # Register an unrelated tool
@@ -39,7 +41,7 @@ app = AgentApp(
 
 
 @app.endpoint("/sync")
-def sync_handler(request):
+def sync_handler(request: AgentRequest):
     return {"status": "ok"}
 
 

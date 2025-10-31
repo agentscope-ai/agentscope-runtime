@@ -5,6 +5,8 @@ from agentscope_runtime.engine.deployers.utils.service_utils import (
     FastAPIAppFactory,
     ServicesConfig,
     ServiceConfig,
+    create_unified_redis_config,
+    create_celery_config,
 )
 
 from agent_file import {{agent_name}} as agent
@@ -60,6 +62,56 @@ def load_services_config() -> ServicesConfig:
         )
 
 
+def load_celery_config():
+    """Load Celery configuration from environment variables or infer from existing config."""
+    # Method 1: Direct environment variables (highest priority)
+    broker_url = os.getenv('CELERY_BROKER_URL')
+    backend_url = os.getenv('CELERY_BACKEND_URL')
+    enable_embedded_worker = os.getenv('CELERY_EMBEDDED_WORKER', 'false').lower() == 'true'
+
+    # Method 2: Infer from existing Redis configuration if not explicitly set
+    if not broker_url or not backend_url:
+        redis_host = os.getenv('REDIS_HOST', 'localhost')
+        redis_port = os.getenv('REDIS_PORT', '6379')
+
+        # Use different databases for different purposes
+        broker_db = os.getenv('CELERY_BROKER_DB', '2')  # Default DB 2 for Celery broker
+        backend_db = os.getenv('CELERY_BACKEND_DB', '3')  # Default DB 3 for Celery backend
+
+        # Auto-generate URLs if Redis is available
+        if not broker_url:
+            broker_url = f"redis://{redis_host}:{redis_port}/{broker_db}"
+        if not backend_url:
+            backend_url = f"redis://{redis_host}:{redis_port}/{backend_db}"
+
+    # Method 3: Check if Redis is actually available
+    redis_available = _check_redis_availability(broker_url if broker_url else f"redis://localhost:6379/2")
+
+    return {
+        'broker_url': broker_url if redis_available else None,
+        'backend_url': backend_url if redis_available else None,
+        'enable_embedded_worker': enable_embedded_worker,
+        'redis_available': redis_available
+    }
+
+
+def _check_redis_availability(redis_url: str) -> bool:
+    """Check if Redis is available at the given URL."""
+    try:
+        import redis
+        from urllib.parse import urlparse
+
+        parsed = urlparse(redis_url)
+        host = parsed.hostname or 'localhost'
+        port = parsed.port or 6379
+
+        r = redis.Redis(host=host, port=port, socket_connect_timeout=2)
+        r.ping()
+        return True
+    except Exception:
+        return False
+
+
 {% if custom_endpoints %}
 def setup_custom_endpoints():
     """Setup custom endpoints configuration."""
@@ -97,6 +149,9 @@ async def after_finish(app, **kwargs):
 # Load services configuration
 services_config = load_services_config()
 
+# Load Celery configuration
+celery_config = load_celery_config()
+
 # Determine deployment mode from environment or use default
 deployment_mode_str = os.getenv('DEPLOYMENT_MODE', '{{deployment_mode|default("standalone")}}')
 if deployment_mode_str == 'detached_process':
@@ -113,7 +168,10 @@ app = FastAPIAppFactory.create_app(
     services_config=services_config,
     before_start=before_start,
     after_finish=after_finish,
-    stream=True{% if protocol_adapters %},
+    stream=True,
+    broker_url=celery_config['broker_url'],
+    backend_url=celery_config['backend_url'],
+    enable_embedded_worker=celery_config['enable_embedded_worker']{% if protocol_adapters %},
     protocol_adapters=protocol_adapters{% endif %}{% if custom_endpoints %},
     custom_endpoints=setup_custom_endpoints(){% endif %}
 )
