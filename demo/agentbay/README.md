@@ -2,12 +2,12 @@
 
 ## AgentBay 是什么：
 
-Agentbay 是一个阿里云上的 GUI 沙箱环境，底层沙箱底座基于 ECS 实现。
-AgentBay 能够提供 Code Space、Browser Use、Computer Use、Mobile Use 四种沙箱环境。提供 MCP Server 和 Agentbay SDK 的方式接入，目前 Agentbay SDK 已开源。  
+AgentBay 是一个阿里云上的 GUI 沙箱环境。
+AgentBay 能够提供 Code Space、Browser Use、Computer Use、Mobile Use 四种沙箱环境。提供 MCP Server 和 AgentBay SDK 的方式接入，目前 AgentBay SDK 已开源。  
 AgentBay SDK 开源地址: [AgentBay SDK 开源地址](https://github.com/aliyun/wuying-agentbay-sdk)  
 AgentBay 云产品地址: [AgentBay 云产品地址](https://www.aliyun.com/product/agentbay)
 
-## Agentbay 能力
+## AgentBay 能力
 
 - **新增沙箱类型**: Code Space、Browser Use、Computer Use、Mobile Use
 - **接入方式**: MCP Server 和 AgentBay SDK；
@@ -29,13 +29,13 @@ AgentBay 云产品地址: [AgentBay 云产品地址](https://www.aliyun.com/prod
 
 ## AgentBay 集成进 Agentscope-Runtime：
 
-目前，Agentscope-Runtime 的沙箱容器基于 docker 实现，云上容器基于 k8s 实现；AgentBay 集成进 AgentScope-Runtime，能够给使用 Agentscope-Runtime 提供另外一种云上沙箱环境的选择，可以使用除了 docker 容器沙箱之外，也可以选择使用 Agentbay 的 GUI 沙箱；
+目前，Agentscope-Runtime 的沙箱容器基于 docker 实现，云上容器基于 k8s 实现；AgentBay 集成进 AgentScope-Runtime，能够给使用 Agentscope-Runtime 提供另外一种云上沙箱环境的选择，可以使用除了 docker 容器沙箱之外，也可以选择使用 AgentBay 的 GUI 沙箱；
 
 ### 核心思路：
 
-Agentbay 这个云产品是对标国外 e2b、daytona 等云沙箱产品做的，使用 api_key 就开箱即用，无需部署；
-核心思路是把 agentbay 封装成 Agentbay Sandbox 集成进 AgentScope-Runtime，作为另外一种云沙箱的选择，其实 e2b 也可以复用这套逻辑；  
-由于 Agentbay Sandbox 并不依赖容器，所以创建 CloudSandbox 基类继承 Sandbox 类，这样就使得 agentscope-runtime 能够同时支持传统容器沙箱和云原生沙箱，在使用上与传统容器沙箱尽量保持一致；
+AgentBay 这个云产品是对标国外 e2b、daytona 等云沙箱产品做的，使用 api_key 就开箱即用，无需部署；
+核心思路是把 AgentBay 封装成 AgentBay Sandbox 集成进 AgentScope-Runtime，作为另外一种云沙箱的选择，其实 e2b 也可以复用这套逻辑；  
+由于 AgentBay Sandbox 并不依赖容器，所以创建 CloudSandbox 基类继承 Sandbox 类，这样就使得 Agentscope-Runtime 能够同时支持传统容器沙箱和云原生沙箱，在使用上与传统容器沙箱尽量保持一致；
 
 ### 1. 核心架构集成
 
@@ -74,7 +74,7 @@ src/agentscope_runtime/sandbox/
 - **兼容性**：保持与现有沙箱接口的完全兼容
 - **生命周期管理**: 支持创建、连接、释放 AgentBay 会话
 
-## Agentbay Sandbox 如何使用
+## AgentBay Sandbox 如何使用
 
 ### 0. 设置环境变量
 

@@ -12,6 +12,8 @@ from typing import List
 
 from agentscope_runtime.sandbox.enums import SandboxType
 from agentscope_runtime.sandbox.box.agentbay.agentbay_sandbox import AgentbaySandbox
+from agentscope_runtime.engine.services.sandbox_service import SandboxService
+from agentscope_runtime.engine.services.environment_manager import create_environment_manager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -73,44 +75,59 @@ def test_agentbay_sandbox_direct():
         return False
 
 
-def test_sandbox_type_enum():
+async def test_agentbay_sandbox_service():
     """
-    Test that SandboxType.AGENTBAY is properly registered.
+    Test AgentBay sandbox via SandboxService and EnvironmentManager.
     """
-    logger.info("Testing SandboxType.AGENTBAY enum...")
+    logger.info("Testing AgentBay sandbox via SandboxService...")
     
     try:
-        # Check if AGENTBAY is in SandboxType
-        assert hasattr(SandboxType, 'AGENTBAY'), "SandboxType.AGENTBAY not found"
-        assert SandboxType.AGENTBAY.value == "agentbay", "SandboxType.AGENTBAY value incorrect"
+        api_key = os.getenv("AGENTBAY_API_KEY")
+        if not api_key:
+            logger.warning("AGENTBAY_API_KEY not set, skipping service test")
+            return False
         
-        logger.info("SandboxType.AGENTBAY enum test passed")
+        # Initialize sandbox service
+        sandbox_service = SandboxService(bearer_token=api_key)
+        
+        # Create environment manager context
+        async with create_environment_manager(sandbox_service=sandbox_service) as env_manager:
+            # Connect AgentBay sandbox
+            sandboxes = env_manager.connect_sandbox(
+                session_id="demo_service_session",
+                user_id="demo_user",
+                env_types=[SandboxType.AGENTBAY.value],
+            )
+            
+            if not sandboxes:
+                logger.error("No sandboxes returned by SandboxService")
+                return False
+            
+            sandbox = sandboxes[0]
+            logger.info(f"Connected AgentBay sandbox via service: {sandbox.sandbox_id}")
+            
+            # Basic shell command
+            result = sandbox.call_tool("run_shell_command", {"command": "echo 'Service path OK'"})
+            logger.info(f"Service command result: {result}")
+            
+            # File write & read
+            write_res = sandbox.call_tool("write_file", {"path": "/tmp/svc_test.txt", "content": "hello"})
+            logger.info(f"Service write result: {write_res}")
+            read_res = sandbox.call_tool("read_file", {"path": "/tmp/svc_test.txt"})
+            logger.info(f"Service read result: {read_res}")
+            
+            # Session info
+            info = sandbox.get_session_info()
+            logger.info(f"Service session info: {info}")
+        
+        logger.info("AgentBay sandbox service test completed successfully")
         return True
-        
-    except Exception as e:
-        logger.error(f"SandboxType enum test failed: {e}")
-        return False
-
-
-def test_agentbay_registration():
-    """
-    Test that AgentbaySandbox is properly registered.
-    """
-    logger.info("Testing AgentbaySandbox registration...")
-    
-    try:
-        from agentscope_runtime.sandbox.registry import SandboxRegistry
-        
-        # Check if AgentbaySandbox is registered
-        box_cls = SandboxRegistry.get_classes_by_type(SandboxType.AGENTBAY)
-        assert box_cls is not None, "AgentbaySandbox not registered"
-        assert box_cls.__name__ == "AgentbaySandbox", "Wrong class registered for AGENTBAY"
-        
-        logger.info("AgentbaySandbox registration test passed")
+    except ImportError as e:
+        logger.warning(f"AgentBay SDK not installed: {e}")
+        logger.info("This is expected if AgentBay SDK is not available")
         return True
-        
     except Exception as e:
-        logger.error(f"AgentbaySandbox registration test failed: {e}")
+        logger.error(f"AgentBay sandbox service test failed: {e}")
         return False
 
 
@@ -121,10 +138,8 @@ async def main():
     logger.info("Starting AgentBay integration tests...")
     
     tests = [
-        # ("SandboxType Enum", test_sandbox_type_enum),
-        # ("AgentbaySandbox Registration", test_agentbay_registration),
         ("AgentBay Sandbox Direct", test_agentbay_sandbox_direct),
-        # ("AgentBay Sandbox Service", test_agentbay_sandbox_service),
+        ("AgentBay Sandbox Service", test_agentbay_sandbox_service),
     ]
     
     results = []
