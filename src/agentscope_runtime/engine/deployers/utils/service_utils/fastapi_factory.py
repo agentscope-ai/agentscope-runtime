@@ -683,10 +683,7 @@ class FastAPIAppFactory:
             param_annotation = first_param.annotation
 
             # If no annotation or annotation is Request, pass Request directly
-            if (
-                param_annotation == inspect.Parameter.empty
-                or param_annotation == Request
-            ):
+            if param_annotation in [inspect.Parameter.empty, Request]:
                 return handler
 
             # Check if the annotation is a Pydantic model
