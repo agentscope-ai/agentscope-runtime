@@ -1,13 +1,8 @@
 # -*- coding: utf-8 -*-
 import asyncio
-import os
 import time
 
-from agentscope.agent import ReActAgent
-from agentscope.model import DashScopeChatModel
-from agentscope.tool import Toolkit, view_text_file
-
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+from agent_run import agent
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.deployers.local_deployer import (
     LocalDeployManager,
@@ -16,7 +11,6 @@ from agentscope_runtime.engine.deployers.utils.deployment_modes import (
     DeploymentMode,
 )
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agent_run import agent
 
 # Create AgentApp
 app = AgentApp(agent=agent)

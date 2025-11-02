@@ -63,12 +63,28 @@ def _get_package_version() -> str:
 
 def _prepare_custom_endpoints_for_template(
     custom_endpoints: Optional[List[Dict]],
-) -> Optional[List[Dict]]:
-    """Prepare custom endpoints for template rendering."""
+    temp_dir: str,
+) -> Tuple[Optional[List[Dict]], List[str]]:
+    """
+    Prepare custom endpoints for template rendering.
+    Copy handler source directories to ensure all dependencies are available.
+
+    Args:
+        custom_endpoints: List of custom endpoint configurations
+        temp_dir: Temporary directory where files will be copied
+
+    Returns:
+        Tuple of:
+        - Prepared endpoint configurations with file information
+        - List of copied directory names (for sys.path setup)
+    """
     if not custom_endpoints:
-        return None
+        return None, []
 
     prepared_endpoints = []
+    handler_dirs_copied = set()  # Track copied directories to avoid duplicates
+    copied_dir_names = []  # Track directory names for sys.path
+
     for endpoint in custom_endpoints:
         prepared_endpoint = {
             "path": endpoint.get("path", "/unknown"),
@@ -77,8 +93,128 @@ def _prepare_custom_endpoints_for_template(
             "function_name": endpoint.get("function_name"),
         }
 
-        # Add inline code if module/function_name not available
-        if (
+        # Try to get handler source file if handler is provided
+        handler = endpoint.get("handler")
+        if handler and callable(handler):
+            try:
+                # Get the source file of the handler
+                handler_file = inspect.getfile(handler)
+                handler_name = handler.__name__
+
+                # Skip if it's a built-in or from site-packages
+                if (
+                    not handler_file.endswith(".py")
+                    or "site-packages" in handler_file
+                ):
+                    raise ValueError("Handler from non-user code")
+
+                # Get the directory containing the handler file
+                handler_dir = os.path.dirname(os.path.abspath(handler_file))
+
+                # Copy the entire working directory if not already copied
+                if handler_dir not in handler_dirs_copied:
+                    # Create a subdirectory name for this handler's context
+                    dir_name = os.path.basename(handler_dir)
+                    if not dir_name or dir_name == ".":
+                        dir_name = "handler_context"
+
+                    # Sanitize directory name
+                    dir_name = re.sub(r"[^a-zA-Z0-9_]", "_", dir_name)
+
+                    # Ensure unique directory name
+                    counter = 1
+                    base_dir_name = dir_name
+                    dest_context_dir = os.path.join(temp_dir, dir_name)
+                    while os.path.exists(dest_context_dir):
+                        dir_name = f"{base_dir_name}_{counter}"
+                        dest_context_dir = os.path.join(temp_dir, dir_name)
+                        counter += 1
+
+                    # Copy entire directory structure
+                    # Exclude common non-essential directories
+                    ignore_patterns = shutil.ignore_patterns(
+                        "__pycache__",
+                        "*.pyc",
+                        "*.pyo",
+                        ".git",
+                        ".gitignore",
+                        ".pytest_cache",
+                        ".mypy_cache",
+                        ".tox",
+                        "venv",
+                        "env",
+                        ".venv",
+                        ".env",
+                        "node_modules",
+                        ".DS_Store",
+                        "*.egg-info",
+                        "build",
+                        "dist",
+                    )
+
+                    shutil.copytree(
+                        handler_dir,
+                        dest_context_dir,
+                        ignore=ignore_patterns,
+                        dirs_exist_ok=True,
+                    )
+
+                    handler_dirs_copied.add(handler_dir)
+                    copied_dir_names.append(dir_name)
+                else:
+                    # Find the existing copied directory name
+                    for existing_dir in os.listdir(temp_dir):
+                        existing_path = os.path.join(temp_dir, existing_dir)
+                        if os.path.isdir(existing_path):
+                            # Check if this is the directory we already copied
+                            original_handler_basename = os.path.basename(
+                                handler_dir,
+                            )
+                            if existing_dir.startswith(
+                                re.sub(
+                                    r"[^a-zA-Z0-9_]",
+                                    "_",
+                                    original_handler_basename,
+                                ),
+                            ):
+                                dir_name = existing_dir
+                                break
+                    else:
+                        # Fallback if not found
+                        dir_name = re.sub(
+                            r"[^a-zA-Z0-9_]",
+                            "_",
+                            os.path.basename(handler_dir),
+                        )
+
+                # Calculate the module path relative to the handler directory
+                handler_file_rel = os.path.relpath(handler_file, handler_dir)
+                # Convert file path to module path
+                module_parts = os.path.splitext(handler_file_rel)[0].split(
+                    os.sep,
+                )
+                if module_parts[-1] == "__init__":
+                    module_parts = module_parts[:-1]
+
+                # Construct the full import path
+                if module_parts:
+                    module_path = f"{dir_name}.{'.'.join(module_parts)}"
+                else:
+                    module_path = dir_name
+
+                # Set the module and function name for template
+                prepared_endpoint["handler_module"] = module_path
+                prepared_endpoint["function_name"] = handler_name
+
+            except (OSError, TypeError, ValueError) as e:
+                # If source file extraction fails, try module/function_name
+                import traceback
+
+                print(f"Warning: Failed to copy handler directory: {e}")
+                traceback.print_exc()
+
+        # Add inline code if no handler module/function available
+        if not prepared_endpoint.get("handler_module") and (
             not prepared_endpoint["module"]
             or not prepared_endpoint["function_name"]
         ):
@@ -89,7 +225,7 @@ def _prepare_custom_endpoints_for_template(
 
         prepared_endpoints.append(prepared_endpoint)
 
-    return prepared_endpoints
+    return prepared_endpoints, copied_dir_names
 
 
 class PackageConfig(BaseModel):
@@ -806,6 +942,15 @@ def package_project(
         if config_lines:
             celery_config_str = "\n".join(config_lines)
 
+        # Prepare custom endpoints and get copied directory names
+        (
+            custom_endpoints_data,
+            handler_dirs,
+        ) = _prepare_custom_endpoints_for_template(
+            config.custom_endpoints,
+            temp_dir,
+        )
+
         # Render template - use template file by default,
         # or user-provided string
         if template is None:
@@ -816,9 +961,8 @@ def package_project(
                 deployment_mode=config.deployment_mode or "standalone",
                 protocol_adapters=protocol_adapters_str,
                 celery_config=celery_config_str,
-                custom_endpoints=_prepare_custom_endpoints_for_template(
-                    config.custom_endpoints,
-                ),
+                custom_endpoints=custom_endpoints_data,
+                handler_dirs=handler_dirs,
             )
         else:
             # Use user-provided template string
@@ -829,9 +973,8 @@ def package_project(
                 deployment_mode=config.deployment_mode or "standalone",
                 protocol_adapters=protocol_adapters_str,
                 celery_config=celery_config_str,
-                custom_endpoints=_prepare_custom_endpoints_for_template(
-                    config.custom_endpoints,
-                ),
+                custom_endpoints=custom_endpoints_data,
+                handler_dirs=handler_dirs,
             )
 
         # Write main.py
