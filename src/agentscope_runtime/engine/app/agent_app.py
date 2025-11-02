@@ -58,7 +58,7 @@ class AgentApp(BaseApp):
         self._agent = agent
         self._runner = None
         self.custom_endpoints = []  # Store custom endpoints
-        self.custom_tasks = []  # Store custom tasks
+
         a2a_protocol = A2AFastAPIDefaultAdapter(agent=self._agent)
         self.protocol_adapters = [a2a_protocol]
 
@@ -125,6 +125,7 @@ class AgentApp(BaseApp):
                 host=host,
                 port=port,
                 embed_task_processor=embed_task_processor,
+                **kwargs,
             )
 
         except Exception as e:
@@ -152,7 +153,6 @@ class AgentApp(BaseApp):
         deploy_kwargs = {
             **kwargs,
             "custom_endpoints": self.custom_endpoints,
-            "custom_tasks": self.custom_tasks,
             "agent": self._agent,
             "runner": self._runner,
             "endpoint_path": self.endpoint_path,
@@ -161,8 +161,11 @@ class AgentApp(BaseApp):
         }
         return await deployer.deploy(**deploy_kwargs)
 
-    def endpoint(self, path: str, methods: List[str] = ["POST"]):
+    def endpoint(self, path: str, methods: Optional[List[str]] = None):
         """Decorator to register custom endpoints"""
+
+        if methods is None:
+            methods = ["POST"]
 
         def decorator(func: Callable):
             endpoint_info = {
@@ -192,7 +195,6 @@ class AgentApp(BaseApp):
                 "task_type": True,  # Mark as task endpoint
                 "original_func": func,
             }
-            self.custom_tasks.append(task_info)
             self.custom_endpoints.append(
                 task_info,
             )  # Add to endpoints for deployment

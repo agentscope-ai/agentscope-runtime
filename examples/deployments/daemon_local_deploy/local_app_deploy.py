@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 import os
-
-from agentscope_runtime.engine.app import AgentApp
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-from agentscope_runtime.engine.deployers.local_deployer import (
-    LocalDeployManager,
-)
+import time
 
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope.tool import Toolkit, view_text_file
 
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+from agentscope_runtime.engine.app import AgentApp
+from agentscope_runtime.engine.deployers.local_deployer import (
+    LocalDeployManager,
+)
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 
 toolkit = Toolkit()
@@ -42,35 +42,37 @@ app = AgentApp(
 
 @app.endpoint("/sync")
 def sync_handler(request: AgentRequest):
-    return {"status": "ok"}
+    return {"status": "ok", "payload": request.model_dump()}
 
 
 @app.endpoint("/async")
-async def async_handler(request):
-    return {"status": "ok"}
+async def async_handler(request: AgentRequest):
+    return {"status": "ok", "payload": request.model_dump()}
 
 
 @app.endpoint("/stream_async")
-async def stream_async_handler(request):
+async def stream_async_handler(request: AgentRequest):
     for i in range(5):
-        yield f"async chunk {i}\n"
+        yield f"async chunk {i}, with request payload {request.model_dump()}\n"
 
 
 @app.endpoint("/stream_sync")
-def stream_sync_handler(request):
+def stream_sync_handler(request: AgentRequest):
     for i in range(5):
-        yield f"sync chunk {i}\n"
+        yield f"sync chunk {i}, with request payload {request.model_dump()}\n"
 
 
-# @app.task("/task", queue="celery1")
-# def task_handler(request):
-#     time.sleep(15)
-#     return {"status": "ok"}
-#
-# @app.task("/atask")
-# async def atask_handler(request):
-#     await asyncio.sleep(15)
-#     return {"status": "ok"}
+@app.task("/task", queue="celery1")
+def task_handler(request: AgentRequest):
+    time.sleep(30)
+    return {"status": "ok", "payload": request.model_dump()}
+
+
+@app.task("/atask")
+async def atask_handler(request: AgentRequest):
+    await asyncio.sleep(15)
+    return {"status": "ok", "payload": request.model_dump()}
+
 
 # app.run()
 

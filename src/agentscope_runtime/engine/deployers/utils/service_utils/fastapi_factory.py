@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=too-many-branches, unused-argument
+# pylint:disable=too-many-branches, unused-argument, too-many-return-statements
 
 
 import asyncio
@@ -37,6 +37,10 @@ class FastAPIAppFactory:
         custom_endpoints: Optional[
             List[Dict]
         ] = None,  # New parameter for custom endpoints
+        # Celery parameters
+        broker_url: Optional[str] = None,
+        backend_url: Optional[str] = None,
+        enable_embedded_worker: bool = False,
         **kwargs: Any,
     ) -> FastAPI:
         """Create a FastAPI application with unified architecture.
@@ -54,6 +58,9 @@ class FastAPIAppFactory:
             services_config: Services configuration
             protocol_adapters: Protocol adapters
             custom_endpoints: List of custom endpoint configurations
+            broker_url: Celery broker URL
+            backend_url: Celery backend URL
+            enable_embedded_worker: Whether to run embedded Celery worker
             **kwargs: Additional keyword arguments
 
         Returns:
@@ -62,6 +69,20 @@ class FastAPIAppFactory:
         # Use default services config if not provided
         if services_config is None:
             services_config = DEFAULT_SERVICES_CONFIG
+
+        # Initialize Celery mixin if broker and backend URLs are provided
+        celery_mixin = None
+        if broker_url and backend_url:
+            try:
+                from ....app.celery_mixin import CeleryMixin
+
+                celery_mixin = CeleryMixin(
+                    broker_url=broker_url,
+                    backend_url=backend_url,
+                )
+            except ImportError:
+                # CeleryMixin not available, will use fallback task processing
+                celery_mixin = None
 
         # Create lifespan manager
         @asynccontextmanager
@@ -101,6 +122,12 @@ class FastAPIAppFactory:
         app.state.custom_endpoints = (
             custom_endpoints or []
         )  # Store custom endpoints
+
+        # Store Celery configuration
+        app.state.celery_mixin = celery_mixin
+        app.state.broker_url = broker_url
+        app.state.backend_url = backend_url
+        app.state.enable_embedded_worker = enable_embedded_worker
 
         # Add middleware
         FastAPIAppFactory._add_middleware(app, mode)
@@ -182,6 +209,42 @@ class FastAPIAppFactory:
             and app.state.custom_endpoints
         ):
             FastAPIAppFactory._add_custom_endpoints(app)
+
+        # Start embedded Celery worker if enabled
+        if (
+            hasattr(app.state, "enable_embedded_worker")
+            and app.state.enable_embedded_worker
+            and hasattr(app.state, "celery_mixin")
+            and app.state.celery_mixin
+        ):
+            # Start Celery worker in background thread
+            import threading
+
+            def start_celery_worker():
+                try:
+                    celery_mixin = app.state.celery_mixin
+                    # Get registered queues or use default
+                    queues = (
+                        list(celery_mixin.get_registered_queues())
+                        if celery_mixin.get_registered_queues()
+                        else ["celery"]
+                    )
+                    celery_mixin.run_task_processor(
+                        loglevel="INFO",
+                        concurrency=1,
+                        queues=queues,
+                    )
+                except Exception as e:
+                    import logging
+
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Failed to start Celery worker: {e}")
+
+            worker_thread = threading.Thread(
+                target=start_celery_worker,
+                daemon=True,
+            )
+            worker_thread.start()
 
     @staticmethod
     async def _handle_shutdown(
@@ -624,42 +687,73 @@ class FastAPIAppFactory:
         async def task_endpoint(request: dict):
             try:
                 import uuid
-                import time
 
                 # Generate task ID
                 task_id = str(uuid.uuid4())
 
-                # Initialize task storage if not exists
-                if not hasattr(app.state, "_active_tasks"):
-                    app.state._active_tasks = {}
+                # Check if Celery is available
+                if (
+                    hasattr(app.state, "celery_mixin")
+                    and app.state.celery_mixin
+                ):
+                    # Use Celery for task processing
+                    celery_mixin = app.state.celery_mixin
 
-                # Create task info for tracking
-                task_info = {
-                    "task_id": task_id,
-                    "status": "submitted",
-                    "queue": queue,
-                    "submitted_at": time.time(),
-                    "request": request,
-                }
-                app.state._active_tasks[task_id] = task_info
+                    # Register the task function if not already registered
+                    if not hasattr(task_func, "celery_task"):
+                        celery_task = celery_mixin.register_celery_task(
+                            task_func,
+                            queue,
+                        )
+                        task_func.celery_task = celery_task
 
-                # Execute task asynchronously in background
-                asyncio.create_task(
-                    FastAPIAppFactory._execute_background_task(
-                        app,
-                        task_id,
-                        task_func,
-                        request,
-                        queue,
-                    ),
-                )
+                    # Submit task to Celery
+                    result = celery_mixin.submit_task(task_func, request)
 
-                return {
-                    "task_id": task_id,
-                    "status": "submitted",
-                    "queue": queue,
-                    "message": f"Task {task_id} submitted to queue {queue}",
-                }
+                    return {
+                        "task_id": result.id,
+                        "status": "submitted",
+                        "queue": queue,
+                        "message": f"Task {result.id} submitted to Celery "
+                        f"queue {queue}",
+                    }
+
+                else:
+                    # Fallback to in-memory task processing
+                    import time
+
+                    # Initialize task storage if not exists
+                    if not hasattr(app.state, "active_tasks"):
+                        app.state.active_tasks = {}
+
+                    # Create task info for tracking
+                    task_info = {
+                        "task_id": task_id,
+                        "status": "submitted",
+                        "queue": queue,
+                        "submitted_at": time.time(),
+                        "request": request,
+                    }
+                    app.state.active_tasks[task_id] = task_info
+
+                    # Execute task asynchronously in background
+                    asyncio.create_task(
+                        FastAPIAppFactory._execute_background_task(
+                            app,
+                            task_id,
+                            task_func,
+                            request,
+                            queue,
+                        ),
+                    )
+
+                    return {
+                        "task_id": task_id,
+                        "status": "submitted",
+                        "queue": queue,
+                        "message": f"Task {task_id} submitted to queue "
+                        f"{queue}",
+                    }
 
             except Exception as e:
                 return {
@@ -686,10 +780,10 @@ class FastAPIAppFactory:
 
             # Update status to running
             if (
-                hasattr(app.state, "_active_tasks")
-                and task_id in app.state._active_tasks
+                hasattr(app.state, "active_tasks")
+                and task_id in app.state.active_tasks
             ):
-                app.state._active_tasks[task_id].update(
+                app.state.active_tasks[task_id].update(
                     {
                         "status": "running",
                         "started_at": time.time(),
@@ -710,10 +804,10 @@ class FastAPIAppFactory:
 
             # Update status to completed
             if (
-                hasattr(app.state, "_active_tasks")
-                and task_id in app.state._active_tasks
+                hasattr(app.state, "active_tasks")
+                and task_id in app.state.active_tasks
             ):
-                app.state._active_tasks[task_id].update(
+                app.state.active_tasks[task_id].update(
                     {
                         "status": "completed",
                         "result": result,
@@ -724,10 +818,10 @@ class FastAPIAppFactory:
         except Exception as e:
             # Update status to failed
             if (
-                hasattr(app.state, "_active_tasks")
-                and task_id in app.state._active_tasks
+                hasattr(app.state, "active_tasks")
+                and task_id in app.state.active_tasks
             ):
-                app.state._active_tasks[task_id].update(
+                app.state.active_tasks[task_id].update(
                     {
                         "status": "failed",
                         "error": str(e),
@@ -743,29 +837,38 @@ class FastAPIAppFactory:
             if not task_id:
                 return {"error": "task_id required"}
 
-            if (
-                not hasattr(app.state, "_active_tasks")
-                or task_id not in app.state._active_tasks
-            ):
-                return {"error": f"Task {task_id} not found"}
+            # Check if Celery is available
+            if hasattr(app.state, "celery_mixin") and app.state.celery_mixin:
+                # Use Celery for task status checking
+                celery_mixin = app.state.celery_mixin
+                return celery_mixin.get_task_status(task_id)
 
-            task_info = app.state._active_tasks[task_id]
-            task_status = task_info.get("status", "unknown")
-
-            # Align with BaseApp.get_task logic - map internal status to external status format
-            if task_status in ["submitted", "running"]:
-                return {"status": "pending", "result": None}
-            elif task_status == "completed":
-                return {
-                    "status": "finished",
-                    "result": task_info.get("result"),
-                }
-            elif task_status == "failed":
-                return {
-                    "status": "error",
-                    "result": task_info.get("error", "Unknown error"),
-                }
             else:
-                return {"status": task_status, "result": None}
+                # Fallback to in-memory task status checking
+                if (
+                    not hasattr(app.state, "active_tasks")
+                    or task_id not in app.state.active_tasks
+                ):
+                    return {"error": f"Task {task_id} not found"}
+
+                task_info = app.state.active_tasks[task_id]
+                task_status = task_info.get("status", "unknown")
+
+                # Align with BaseApp.get_task logic - map internal status to
+                # external status format
+                if task_status in ["submitted", "running"]:
+                    return {"status": "pending", "result": None}
+                elif task_status == "completed":
+                    return {
+                        "status": "finished",
+                        "result": task_info.get("result"),
+                    }
+                elif task_status == "failed":
+                    return {
+                        "status": "error",
+                        "result": task_info.get("error", "Unknown error"),
+                    }
+                else:
+                    return {"status": task_status, "result": None}
 
         return task_status_handler

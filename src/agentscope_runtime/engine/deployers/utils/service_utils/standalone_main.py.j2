@@ -64,13 +64,19 @@ def load_services_config() -> ServicesConfig:
 
 def load_celery_config():
     """Load Celery configuration from environment variables or infer from existing config."""
-    # Method 1: Direct environment variables (highest priority)
-    broker_url = os.getenv('CELERY_BROKER_URL')
-    backend_url = os.getenv('CELERY_BACKEND_URL')
-    enable_embedded_worker = os.getenv('CELERY_EMBEDDED_WORKER', 'false').lower() == 'true'
+    celery_config = {
+        'broker_url': None,
+        'backend_url': None,
+        'enable_embedded_worker': False,
+        'redis_available': False
+    }
 
-    # Method 2: Infer from existing Redis configuration if not explicitly set
-    if not broker_url or not backend_url:
+    {% if celery_config %}
+    # Apply inline Celery configuration
+    {{celery_config}}
+    {% endif %}
+
+    if not celery_config.get('broker_url') or not celery_config.get('backend_url'):
         redis_host = os.getenv('REDIS_HOST', 'localhost')
         redis_port = os.getenv('REDIS_PORT', '6379')
 
@@ -79,20 +85,12 @@ def load_celery_config():
         backend_db = os.getenv('CELERY_BACKEND_DB', '3')  # Default DB 3 for Celery backend
 
         # Auto-generate URLs if Redis is available
-        if not broker_url:
-            broker_url = f"redis://{redis_host}:{redis_port}/{broker_db}"
-        if not backend_url:
-            backend_url = f"redis://{redis_host}:{redis_port}/{backend_db}"
+        if not celery_config.get('broker_url'):
+            celery_config['broker_url'] = f"redis://{redis_host}:{redis_port}/{broker_db}"
+        if not celery_config.get('backend_url'):
+            celery_config['backend_url'] = f"redis://{redis_host}:{redis_port}/{backend_db}"
 
-    # Method 3: Check if Redis is actually available
-    redis_available = _check_redis_availability(broker_url if broker_url else f"redis://localhost:6379/2")
-
-    return {
-        'broker_url': broker_url if redis_available else None,
-        'backend_url': backend_url if redis_available else None,
-        'enable_embedded_worker': enable_embedded_worker,
-        'redis_available': redis_available
-    }
+    return celery_config
 
 
 def _check_redis_availability(redis_url: str) -> bool:

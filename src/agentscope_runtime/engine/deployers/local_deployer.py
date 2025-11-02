@@ -98,7 +98,8 @@ class LocalDeployManager(DeployManager):
             protocol_adapters: Protocol adapters
             broker_url: Celery broker URL for background task processing
             backend_url: Celery backend URL for result storage
-            enable_embedded_worker: Whether to run Celery worker embedded in the app
+            enable_embedded_worker: Whether to run Celery worker
+                embedded in the app
             **kwargs: Additional keyword arguments
 
         Returns:
@@ -294,6 +295,10 @@ class LocalDeployManager(DeployManager):
         custom_endpoints: Optional[
             List[Dict]
         ] = None,  # New parameter for custom endpoints
+        # Celery parameters
+        broker_url: Optional[str] = None,
+        backend_url: Optional[str] = None,
+        enable_embedded_worker: bool = False,
         **kwargs,  # pylint: disable=unused-argument
     ) -> str:
         """Create detached project using package_project method."""
@@ -311,6 +316,10 @@ class LocalDeployManager(DeployManager):
             protocol_adapters=protocol_adapters,
             services_config=services_config,
             custom_endpoints=custom_endpoints,  # Add custom endpoints
+            # Celery configuration
+            broker_url=broker_url,
+            backend_url=backend_url,
+            enable_embedded_worker=enable_embedded_worker,
             requirements=requirements
             + (
                 ["redis"]
@@ -323,6 +332,14 @@ class LocalDeployManager(DeployManager):
                     ]
                     if config
                 )
+                else []
+            )
+            + (
+                [
+                    "celery",
+                    "redis",
+                ]  # Add Celery and Redis if Celery is configured
+                if broker_url or backend_url
                 else []
             ),
         )

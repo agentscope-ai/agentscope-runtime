@@ -107,6 +107,10 @@ class PackageConfig(BaseModel):
     custom_endpoints: Optional[
         List[Dict]
     ] = None  # New: custom endpoints configuration
+    # Celery configuration parameters
+    broker_url: Optional[str] = None
+    backend_url: Optional[str] = None
+    enable_embedded_worker: bool = False
 
 
 def _find_agent_source_file(
@@ -776,6 +780,32 @@ def package_project(
                     f"# Protocol adapters\nprotocol_adapters = {instances_str}"
                 )
 
+        # Convert celery_config to string representation for template
+        celery_config_str = None
+        config_lines = []
+
+        # Generate celery configuration code
+        config_lines.append("# Celery configuration")
+
+        if config.broker_url:
+            config_lines.append(
+                f'celery_config["broker_url"] = "{config.broker_url}"',
+            )
+
+        if config.backend_url:
+            config_lines.append(
+                f'celery_config["backend_url"] = "{config.backend_url}"',
+            )
+
+        if config.enable_embedded_worker:
+            config_lines.append(
+                f'celery_config["enable_embedded_worker"] = '
+                f"{config.enable_embedded_worker}",
+            )
+
+        if config_lines:
+            celery_config_str = "\n".join(config_lines)
+
         # Render template - use template file by default,
         # or user-provided string
         if template is None:
@@ -785,6 +815,7 @@ def package_project(
                 endpoint_path=config.endpoint_path or "/process",
                 deployment_mode=config.deployment_mode or "standalone",
                 protocol_adapters=protocol_adapters_str,
+                celery_config=celery_config_str,
                 custom_endpoints=_prepare_custom_endpoints_for_template(
                     config.custom_endpoints,
                 ),
@@ -797,6 +828,7 @@ def package_project(
                 endpoint_path=config.endpoint_path,
                 deployment_mode=config.deployment_mode or "standalone",
                 protocol_adapters=protocol_adapters_str,
+                celery_config=celery_config_str,
                 custom_endpoints=_prepare_custom_endpoints_for_template(
                     config.custom_endpoints,
                 ),
@@ -842,9 +874,25 @@ def package_project(
             if not config.requirements:
                 config.requirements = []
 
-            # Combine base requirements with user requirements
+            # Add Celery requirements if Celery is configured
+            celery_requirements = []
+            if (
+                config.broker_url
+                or config.backend_url
+                or config.enable_embedded_worker
+            ):
+                celery_requirements = ["celery", "redis"]
+
+            # Combine base requirements with user requirements and Celery
+            # requirements
             all_requirements = sorted(
-                list(set(base_requirements + config.requirements)),
+                list(
+                    set(
+                        base_requirements
+                        + config.requirements
+                        + celery_requirements,
+                    ),
+                ),
             )
             for req in all_requirements:
                 f.write(f"{req}\n")

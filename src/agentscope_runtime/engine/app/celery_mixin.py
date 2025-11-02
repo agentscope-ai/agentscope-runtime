@@ -30,7 +30,10 @@ class CeleryMixin:
 
         self._registered_queues: set[str] = set()
 
-    def _register_celery_task(self, func: Callable, queue: str = "celery"):
+    def get_registered_queues(self) -> set[str]:
+        return self._registered_queues
+
+    def register_celery_task(self, func: Callable, queue: str = "celery"):
         """Register a Celery task for the given function."""
         if self.celery_app is None:
             raise RuntimeError("Celery is not configured.")
@@ -81,9 +84,9 @@ class CeleryMixin:
 
     def submit_task(self, func: Callable, *args, **kwargs):
         """Submit task directly to Celery queue."""
-        if not hasattr(func, "_celery_task"):
+        if not hasattr(func, "celery_task"):
             raise RuntimeError(
                 f"Function {func.__name__} is not registered as a task",
             )
 
-        return func._celery_task.delay(*args, **kwargs)
+        return func.celery_task.delay(*args, **kwargs)
