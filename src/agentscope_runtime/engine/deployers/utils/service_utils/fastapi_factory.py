@@ -6,11 +6,27 @@ import asyncio
 import json
 import inspect
 from contextlib import asynccontextmanager
-from typing import Optional, Callable, Type, Any, List, Dict
+import sys
+
+# Handle type hints compatibility across Python versions
+if sys.version_info >= (3, 8):
+    from typing import (
+        Optional,
+        Callable,
+        Type,
+        Any,
+        List,
+        Dict,
+        get_type_hints,
+    )
+else:
+    from typing import Optional, Callable, Type, Any, List, Dict
+    from typing_extensions import get_type_hints
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
+from pydantic import BaseModel
 
 from .service_config import ServicesConfig, DEFAULT_SERVICES_CONFIG
 from .service_factory import ServiceFactory
@@ -582,6 +598,149 @@ class FastAPIAppFactory:
         return None
 
     @staticmethod
+    def _create_parameter_wrapper(handler: Callable):
+        """Create a wrapper that handles parameter parsing based on function signature.
+
+        This method inspects the handler function's parameters and creates appropriate
+        wrappers to parse request data into the expected parameter types.
+        """
+        try:
+            sig = inspect.signature(handler)
+            params = list(sig.parameters.values())
+
+            if not params:
+                # No parameters, call function directly
+                return handler
+
+            # Get the first parameter (assuming single parameter for now)
+            first_param = params[0]
+            param_annotation = first_param.annotation
+
+            # If no annotation or annotation is Request, pass Request directly
+            if (
+                param_annotation == inspect.Parameter.empty
+                or param_annotation == Request
+            ):
+                return handler
+
+            # Check if the annotation is a Pydantic model
+            if isinstance(param_annotation, type) and issubclass(
+                param_annotation, BaseModel
+            ):
+                # Create wrapper that parses JSON to Pydantic model
+                if inspect.iscoroutinefunction(handler):
+
+                    async def async_pydantic_wrapper(request: Request):
+                        try:
+                            body = await request.json()
+                            parsed_param = param_annotation(**body)
+                            return await handler(parsed_param)
+                        except Exception as e:
+                            return JSONResponse(
+                                status_code=422,
+                                content={
+                                    "detail": f"Request parsing error: {str(e)}"
+                                },
+                            )
+
+                    return async_pydantic_wrapper
+                else:
+
+                    async def sync_pydantic_wrapper(request: Request):
+                        try:
+                            body = await request.json()
+                            parsed_param = param_annotation(**body)
+                            return handler(parsed_param)
+                        except Exception as e:
+                            return JSONResponse(
+                                status_code=422,
+                                content={
+                                    "detail": f"Request parsing error: {str(e)}"
+                                },
+                            )
+
+                    return sync_pydantic_wrapper
+
+            # For other types, fall back to original behavior
+            return handler
+
+        except Exception:
+            # If anything goes wrong with introspection, fall back to original behavior
+            return handler
+
+    @staticmethod
+    def _create_streaming_parameter_wrapper(
+        handler: Callable, is_async_gen: bool = False
+    ):
+        """Create a wrapper for streaming handlers that handles parameter parsing."""
+        try:
+            sig = inspect.signature(handler)
+            params = list(sig.parameters.values())
+
+            if not params:
+                # No parameters, call function directly
+                return handler
+
+            # Get the first parameter
+            first_param = params[0]
+            param_annotation = first_param.annotation
+
+            # If no annotation or annotation is Request, pass Request directly
+            if (
+                param_annotation == inspect.Parameter.empty
+                or param_annotation == Request
+            ):
+                return handler
+
+            # Check if the annotation is a Pydantic model
+            if isinstance(param_annotation, type) and issubclass(
+                param_annotation, BaseModel
+            ):
+                if is_async_gen:
+
+                    async def async_stream_pydantic_wrapper(request: Request):
+                        try:
+                            body = await request.json()
+                            parsed_param = param_annotation(**body)
+                            async for chunk in handler(parsed_param):
+                                yield chunk
+                        except Exception as e:
+                            yield f"data: {json.dumps({'error': f'Request parsing error: {str(e)}'})}\n\n"
+
+                    return async_stream_pydantic_wrapper
+                else:
+
+                    async def sync_stream_pydantic_wrapper(request: Request):
+                        try:
+                            body = await request.json()
+                            parsed_param = param_annotation(**body)
+
+                            def generate():
+                                for chunk in handler(parsed_param):
+                                    yield str(chunk)
+
+                            return StreamingResponse(
+                                generate(),
+                                media_type="text/plain",
+                            )
+                        except Exception as e:
+                            return JSONResponse(
+                                status_code=422,
+                                content={
+                                    "detail": f"Request parsing error: {str(e)}"
+                                },
+                            )
+
+                    return sync_stream_pydantic_wrapper
+
+            # For other types, fall back to original behavior
+            return handler
+
+        except Exception:
+            # If anything goes wrong with introspection, fall back to original behavior
+            return handler
+
+    @staticmethod
     def _add_custom_endpoints(app: FastAPI):
         """Add all custom endpoints to the FastAPI application."""
         if (
@@ -633,52 +792,57 @@ class FastAPIAppFactory:
                 )
 
             else:
-                # Regular endpoint handling
-                if inspect.iscoroutinefunction(handler):
-                    if inspect.isasyncgenfunction(handler):
-                        # Async generator -> Streaming response
-                        async def async_stream_wrapper(request: dict):
-                            return StreamingResponse(
-                                handler(request),
-                                media_type="text/event-stream",
-                                headers={
-                                    "Cache-Control": "no-cache",
-                                    "Connection": "keep-alive",
-                                },
-                            )
-
-                        app.add_api_route(
-                            path,
-                            async_stream_wrapper,
-                            methods=[method],
+                # Regular endpoint handling with automatic parameter parsing
+                # Check in the correct order: async gen > sync gen > async > sync
+                if inspect.isasyncgenfunction(handler):
+                    # Async generator -> Streaming response with parameter parsing
+                    wrapped_handler = (
+                        FastAPIAppFactory._create_streaming_parameter_wrapper(
+                            handler,
+                            is_async_gen=True,
                         )
-                    else:
-                        # Regular async function
-                        app.add_api_route(path, handler, methods=[method])
+                    )
+
+                    async def async_stream_wrapper(request):
+                        return StreamingResponse(
+                            wrapped_handler(request),
+                            media_type="text/event-stream",
+                            headers={
+                                "Cache-Control": "no-cache",
+                                "Connection": "keep-alive",
+                            },
+                        )
+
+                    app.add_api_route(
+                        path,
+                        async_stream_wrapper,
+                        methods=[method],
+                    )
+                elif inspect.isgeneratorfunction(handler):
+                    # Sync generator -> Streaming response with parameter parsing
+                    wrapped_handler = (
+                        FastAPIAppFactory._create_streaming_parameter_wrapper(
+                            handler,
+                            is_async_gen=False,
+                        )
+                    )
+                    app.add_api_route(
+                        path,
+                        wrapped_handler,
+                        methods=[method],
+                    )
+                elif inspect.iscoroutinefunction(handler):
+                    # Regular async function with parameter parsing
+                    wrapped_handler = (
+                        FastAPIAppFactory._create_parameter_wrapper(handler)
+                    )
+                    app.add_api_route(path, wrapped_handler, methods=[method])
                 else:
-                    if inspect.isgeneratorfunction(handler):
-                        # Sync generator -> Streaming response
-                        async def sync_stream_wrapper(request: dict):
-                            def generate():
-                                for chunk in handler(request):
-                                    yield str(chunk)
-
-                            return StreamingResponse(
-                                generate(),
-                                media_type="text/plain",
-                            )
-
-                        app.add_api_route(
-                            path,
-                            sync_stream_wrapper,
-                            methods=[method],
-                        )
-                    else:
-                        # Sync function -> Async wrapper
-                        async def sync_wrapper(request: dict):
-                            return handler(request)
-
-                        app.add_api_route(path, sync_wrapper, methods=[method])
+                    # Sync function -> Async wrapper with parameter parsing
+                    wrapped_handler = (
+                        FastAPIAppFactory._create_parameter_wrapper(handler)
+                    )
+                    app.add_api_route(path, wrapped_handler, methods=[method])
 
     @staticmethod
     def _create_task_handler(app: FastAPI, task_func: Callable, queue: str):

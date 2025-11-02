@@ -42,36 +42,36 @@ app = AgentApp(
 
 @app.endpoint("/sync")
 def sync_handler(request: AgentRequest):
-    return {"status": "ok", "payload": request.model_dump()}
+    return {"status": "ok", "payload": request}
 
 
 @app.endpoint("/async")
 async def async_handler(request: AgentRequest):
-    return {"status": "ok", "payload": request.model_dump()}
+    return {"status": "ok", "payload": request}
 
 
 @app.endpoint("/stream_async")
 async def stream_async_handler(request: AgentRequest):
     for i in range(5):
-        yield f"async chunk {i}, with request payload {request.model_dump()}\n"
+        yield f"async chunk {i}, with request payload {request}\n"
 
 
 @app.endpoint("/stream_sync")
 def stream_sync_handler(request: AgentRequest):
     for i in range(5):
-        yield f"sync chunk {i}, with request payload {request.model_dump()}\n"
+        yield f"sync chunk {i}, with request payload {request}\n"
 
 
 @app.task("/task", queue="celery1")
 def task_handler(request: AgentRequest):
     time.sleep(30)
-    return {"status": "ok", "payload": request.model_dump()}
+    return {"status": "ok", "payload": request}
 
 
 @app.task("/atask")
 async def atask_handler(request: AgentRequest):
     await asyncio.sleep(15)
-    return {"status": "ok", "payload": request.model_dump()}
+    return {"status": "ok", "payload": request}
 
 
 # app.run()
