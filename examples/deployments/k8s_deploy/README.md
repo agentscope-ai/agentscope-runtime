@@ -4,11 +4,12 @@ This example demonstrates how to deploy an AgentScope Runtime agent to Kubernete
 
 ## Overview
 
-The `deploy_to_k8s.py` script shows how to:
+The `app_deploy_to_k8s.py` script shows how to:
 - Configure a container registry for storing Docker images
 - Set up Kubernetes connection and namespace
-- Deploy an LLM agent with proper resource management
-- Test the deployed service
+- Deploy an LLM agent using AgentApp with multiple endpoints
+- Configure resource management and scaling
+- Test the deployed service with various endpoints
 - Clean up resources after use
 
 ## Prerequisites
@@ -105,19 +106,16 @@ runtime_config = {
 ```python
 deployment_config = {
     # Basic settings
-    "api_endpoint": "/process",
-    "stream": True,
     "port": "8080",
     "replicas": 1,
     "image_tag": "linux-amd64",
-    "image_name": "agent_llm",
+    "image_name": "agent_app",
 
     # Dependencies
     "requirements": [
         "agentscope",
         "fastapi",
         "uvicorn",
-        "langgraph",
     ],
     "extra_packages": [
         os.path.join(os.path.dirname(__file__), "others", "other_project.py"),
@@ -141,8 +139,6 @@ deployment_config = {
 ```
 
 #### Basic Configuration
-- **`api_endpoint`**: The HTTP endpoint path for agent requests (default: `/process`)
-- **`stream`**: Enable streaming responses for real-time communication
 - **`port`**: Container port for the web service
 - **`replicas`**: Number of pod replicas to deploy
 - **`image_tag`**: Docker image tag identifier
@@ -164,7 +160,7 @@ deployment_config = {
 ## Running the Deployment
 
 1. **Customize the configuration**:
-   Edit `deploy_to_k8s.py` to match your environment:
+   Edit `app_deploy_to_k8s.py` to match your environment:
    - Update `registry_url` to your container registry
    - Modify `k8s_namespace` if needed
    - Adjust resource limits based on your cluster capacity
@@ -173,7 +169,7 @@ deployment_config = {
 2. **Run the deployment**:
    ```bash
    cd examples/deployments/k8s_deploy
-   python deploy_to_k8s.py
+   python app_deploy_to_k8s.py
    ```
 
 3. **Monitor the deployment**:
@@ -184,22 +180,34 @@ deployment_config = {
    - Test commands for verification
 
 4. **Test the deployed service**:
-   Use the provided curl commands or kubectl commands to test:
+   Use the provided curl commands to test different endpoints:
    ```bash
    # Health check
    curl http://your-service-url/health
 
-   # Agent request
-   curl -X POST http://your-service-url/process \
+   # Synchronous request
+   curl -X POST http://your-service-url/sync \
      -H "Content-Type: application/json" \
      -d '{"input": [{"role": "user", "content": [{"type": "text", "text": "Hello!"}]}], "session_id": "123"}'
+
+   # Asynchronous request
+   curl -X POST http://your-service-url/async \
+     -H "Content-Type: application/json" \
+     -d '{"input": [{"role": "user", "content": [{"type": "text", "text": "Hello!"}]}], "session_id": "123"}'
+
+   # Streaming request
+   curl -X POST http://your-service-url/stream_async \
+     -H "Content-Type: application/json" \
+     -H "Accept: text/event-stream" \
+     --no-buffer \
+     -d '{"input": [{"role": "user", "content": [{"type": "text", "text": "Tell me a story"}]}], "session_id": "123"}'
    ```
 
 5. **View Kubernetes resources**:
    ```bash
    kubectl get pods -n agentscope-runtime
    kubectl get svc -n agentscope-runtime
-   kubectl logs -l app=agent-llm -n agentscope-runtime
+   kubectl logs -l app=agent-app -n agentscope-runtime
    ```
 
 6. **Cleanup**:
@@ -237,10 +245,59 @@ deployment_config = {
 - Check service endpoints: `kubectl get endpoints -n agentscope-runtime`
 
 
+## Advanced Features
+
+### Multiple Endpoints
+
+The example demonstrates how to create multiple endpoints for different use cases:
+
+```python
+@app.endpoint("/sync")
+def sync_handler(request: AgentRequest):
+    return {"status": "ok", "payload": request}
+
+@app.endpoint("/async")
+async def async_handler(request: AgentRequest):
+    return {"status": "ok", "payload": request}
+
+@app.endpoint("/stream_async")
+async def stream_async_handler(request: AgentRequest):
+    for i in range(5):
+        yield f"async chunk {i}, with request payload {request}\n"
+
+@app.task("/task", queue="celery1")
+def task_handler(request: AgentRequest):
+    time.sleep(30)
+    return {"status": "ok", "payload": request}
+```
+
+### Service Testing
+
+The script includes built-in service testing functionality that:
+- Automatically tests sync and async endpoints after deployment
+- Validates service health and availability
+- Provides example curl commands for manual testing
+
+### Cleanup Management
+
+The deployment includes automatic cleanup capabilities:
+- Interactive cleanup prompt
+- Proper resource deletion through deployer.stop()
+- Kubernetes resource verification
+
+## Comparison with Other Deployment Methods
+
+| Feature | Daemon | Detached Process | Kubernetes | ModelStudio |
+|---------|--------|------------------|------------|-------------|
+| Process Control | Blocking | Independent | Container | Cloud-managed |
+| Scalability | Single | Single Node | Multi-node | Cloud-scale |
+| Resource Isolation | Process-level | Process-level | Container-level | Container-level |
+| Management | Manual | API-based | Orchestrated | Platform-managed |
+| Best For | Development | Production (single) | Enterprise | Cloud users |
+
 ## Files Structure
 
-- `deploy_to_k8s.py`: Main deployment script
-- `agent_run.py`: Agent implementation using basic agent from AgentScope-Runtime engine
-- `others/other_project.py`: Additional package dependencies
+- `app_deploy_to_k8s.py`: Main deployment script using AgentApp with multiple endpoints
+- `others/other_project.py`: Additional package dependencies (optional)
 
 This example provides a complete workflow for deploying AgentScope Runtime agents to Kubernetes with production-ready configurations.

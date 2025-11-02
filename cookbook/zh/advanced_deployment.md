@@ -14,17 +14,18 @@ kernelspec:
 
 # 高级部署指南
 
-本指南演示了AgentScope Runtime中可用的三种高级部署方法，为不同场景提供生产就绪的解决方案：**本地守护进程**、**独立进程**和**Kubernetes部署**。
+本指南演示了AgentScope Runtime中可用的四种高级部署方法，为不同场景提供生产就绪的解决方案：**本地守护进程**、**独立进程**、**Kubernetes部署**和**ModelStudio部署**。
 
 ## 部署方法概述
 
-AgentScope Runtime提供三种不同的部署方式，每种都针对特定的使用场景：
+AgentScope Runtime提供四种不同的部署方式，每种都针对特定的使用场景：
 
 | 部署类型 | 使用场景 | 扩展性 | 管理方式 | 资源隔离 |
 |---------|---------|--------|---------|---------|
 | **本地守护进程** | 开发与测试 | 单进程 | 手动 | 进程级 |
 | **独立进程** | 生产服务 | 单节点 | 自动化 | 进程级 |
 | **Kubernetes** | 企业与云端 | 单节点（将支持多节点） | 编排 | 容器级 |
+| **ModelStudio** | 阿里云平台 | 云端管理 | 平台管理 | 容器级 |
 
 ## 前置条件
 
@@ -70,32 +71,74 @@ export KUBECONFIG="/path/to/your/kubeconfig"
 
 ## 通用智能体配置
 
-所有部署方法共享相同的智能体配置。让我们首先创建基础智能体：
+所有部署方法共享相同的智能体和端点配置。让我们首先创建基础智能体并定义端点：
 
 ```{code-cell}
-# agent.py
+# agent_app.py - 所有部署方法的共享配置
 import os
+import time
 
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
+from agentscope.tool import Toolkit, view_text_file
 
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+from agentscope_runtime.engine.app import AgentApp
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 
-# Create the agent
+# 1. 创建带工具包的智能体
+toolkit = Toolkit()
+toolkit.register_tool_function(view_text_file)
+
 agent = AgentScopeAgent(
     name="Friday",
     model=DashScopeChatModel(
-        "qwen-turbo",
+        "qwen-max",
         api_key=os.getenv("DASHSCOPE_API_KEY"),
     ),
     agent_config={
         "sys_prompt": "You're a helpful assistant named Friday.",
+        "toolkit": toolkit,
     },
     agent_builder=ReActAgent,
 )
 
-print("✅ 智能体定义已准备就绪，可进行部署")
+# 2. 创建带有多个端点的 AgentApp
+app = AgentApp(agent=agent)
+
+@app.endpoint("/sync")
+def sync_handler(request: AgentRequest):
+    return {"status": "ok", "payload": request}
+
+@app.endpoint("/async")
+async def async_handler(request: AgentRequest):
+    return {"status": "ok", "payload": request}
+
+@app.endpoint("/stream_async")
+async def stream_async_handler(request: AgentRequest):
+    for i in range(5):
+        yield f"async chunk {i}, with request payload {request}\n"
+
+@app.endpoint("/stream_sync")
+def stream_sync_handler(request: AgentRequest):
+    for i in range(5):
+        yield f"sync chunk {i}, with request payload {request}\n"
+
+@app.task("/task", queue="celery1")
+def task_handler(request: AgentRequest):
+    time.sleep(30)
+    return {"status": "ok", "payload": request}
+
+@app.task("/atask")
+async def atask_handler(request: AgentRequest):
+    import asyncio
+    await asyncio.sleep(15)
+    return {"status": "ok", "payload": request}
+
+print("✅ 智能体和端点配置成功")
 ```
+
+**注意**：以上配置在下面所有部署方法中共享。每个方法只展示该方法特有的部署代码。
 
 ## 方法1：本地守护进程部署
 
@@ -109,148 +152,28 @@ print("✅ 智能体定义已准备就绪，可进行部署")
 
 ### 实现
 
+使用[通用智能体配置](#通用智能体配置)部分定义的智能体和端点：
+
 ```{code-cell}
+# daemon_deploy.py
 import asyncio
-from contextlib import asynccontextmanager
-
-from agentscope.agent import ReActAgent
-from agentscope.model import DashScopeChatModel
-
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
-from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.engine.services.context_manager import ContextManager
-from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
-from agentscope_runtime.engine.services.environment_manager import create_environment_manager
-from agentscope_runtime.sandbox.tools.filesystem import run_ipython_cell, edit_file
+from agent_app import app  # 导入已配置的 app
 
-# 导入我们的智能体定义
-from agent_definition import agent
+# 以守护进程模式部署
+async def main():
+    await app.deploy(LocalDeployManager())
 
-async def prepare_services():
-    """准备上下文和环境服务"""
-    # 会话管理
-    session_history_service = InMemorySessionHistoryService()
-    await session_history_service.create_session(
-        user_id="production_user",
-        session_id="prod_session_001",
-    )
-
-    # 上下文管理器
-    context_manager = ContextManager(
-        session_history_service=session_history_service,
-    )
-
-    return context_manager
-
-@asynccontextmanager
-async def create_production_runner():
-    """创建具有完整生产服务的运行器"""
-    context_manager = await prepare_services()
-
-    async with context_manager:
-        # 添加沙箱工具以增强功能
-        enhanced_agent = AgentScopeAgent(
-            name="Friday",
-            model=DashScopeChatModel(
-                "qwen-turbo",
-                api_key=os.getenv("DASHSCOPE_API_KEY"),
-            ),
-            agent_config={
-                "sys_prompt": "You're a helpful assistant named Friday.",
-            },
-            agent_builder=ReActAgent,
-            tools=[run_ipython_cell, edit_file],  # Add tools if needed
-        )
-        async with create_environment_manager() as env_manager:
-            runner = Runner(
-                agent=enhanced_agent,
-                context_manager=context_manager,
-                environment_manager=env_manager,
-            )
-            print("✅ 生产运行器创建成功")
-            yield runner
-
-async def deploy_daemon():
-    """将智能体部署为本地守护进程服务"""
-    async with create_production_runner() as runner:
-        # 创建部署管理器
-        deploy_manager = LocalDeployManager(
-            host="0.0.0.0",  # 允许外部连接
-            port=8090,
-        )
-
-        # 使用完整配置进行部署
-        deploy_result = await runner.deploy(
-            deploy_manager=deploy_manager,
-            endpoint_path="/process",
-            stream=True,
-        )
-
-        print(f"🚀 守护进程服务部署成功！")
-        print(f"🌐 服务URL: {deploy_result['url']}")
-        print(f"💚 健康检查: {deploy_result['url']}/health")
-        print(f"""
-🎯 服务管理命令：
-
-# 健康检查
-curl {deploy_result['url']}/health
-
-# 处理请求
-curl -X POST {deploy_result['url']}/process \\
-  -H "Content-Type: application/json" \\
-  -H "Accept: text/event-stream" \\
-  --no-buffer \\
-  -d '{{
-    "input": [{{
-      "role": "user",
-      "content": [{{
-        "type": "text",
-        "text": "你好，今天你能帮我做什么？"
-      }}]
-    }}],
-    "session_id": "prod_session_001"
-  }}'
-        """)
-
-        return deploy_manager
-
-async def run_daemon_deployment():
-    """守护进程部署的主函数"""
-    try:
-        deploy_manager = await deploy_daemon()
-
-        print("🏃 守护进程服务正在运行...")
-        print("按 Ctrl+C 停止服务")
-
-        # 保持服务运行
-        while True:
-            await asyncio.sleep(1)
-
-    except (KeyboardInterrupt, asyncio.CancelledError):
-        print("\n🛑 接收到停止信号。正在停止服务...")
-        if deploy_manager and deploy_manager.is_running:
-            await deploy_manager.stop()
-        print("✅ 守护进程服务已停止。")
-    except Exception as e:
-        print(f"❌ 守护进程部署错误：{e}")
-        if deploy_manager and deploy_manager.is_running:
-            await deploy_manager.stop()
-
-# 运行守护进程部署
-# asyncio.run(run_daemon_deployment())
+if __name__ == "__main__":
+    asyncio.run(main())
+    input("按 Enter 键停止服务器...")
 ```
 
-### 守护进程部署优势
-- ✅ **简单配置**：易于配置和启动
-- ✅ **交互式控制**：直接进程管理
-- ✅ **资源效率**：无进程开销
-- ✅ **开发友好**：易于调试和监控
+**关键点**：
+- 服务在主进程中运行（阻塞式）
+- 通过 Ctrl+C 或结束脚本手动停止
+- 最适合开发和测试
 
-### 守护进程部署注意事项
-- ⚠️ **单点故障**：主进程退出时服务停止
-- ⚠️ **手动管理**：需要手动启动/停止
-- ⚠️ **扩展性有限**：单进程限制
 
 ## 方法2：独立进程部署
 
@@ -264,92 +187,44 @@ async def run_daemon_deployment():
 
 ### 实现
 
+使用[通用智能体配置](#通用智能体配置)部分定义的智能体和端点：
+
 ```{code-cell}
+# detached_deploy.py
 import asyncio
-from agentscope_runtime.engine.deployers.adapter.a2a import A2AFastAPIDefaultAdapter
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
 from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
-from agentscope_runtime.engine.deployers.utils.service_utils import ServicesConfig
-from agentscope_runtime.engine.runner import Runner
+from agent_app import app  # 导入已配置的 app
 
-# 导入我们的智能体定义
-from agent_definition import agent
+async def main():
+    """以独立进程模式部署应用"""
+    print("🚀 以独立进程模式部署 AgentApp...")
 
-async def deploy_detached():
-    """将智能体部署为独立进程"""
-
-    print("🚀 开始独立进程部署...")
-
-    # 创建A2A协议适配器
-    a2a_protocol = A2AFastAPIDefaultAdapter(agent=agent)
-
-    # 创建部署管理器
-    deploy_manager = LocalDeployManager(
-        host="0.0.0.0",
-        port=8080,
+    # 以独立模式部署
+    deployment_info = await app.deploy(
+        LocalDeployManager(host="127.0.0.1", port=8080),
+        mode=DeploymentMode.DETACHED_PROCESS,
     )
 
-    # 创建运行器
-    runner = Runner(agent=agent)
-
-    # 使用完整配置以独立模式部署
-    deployment_info = await runner.deploy(
-        deploy_manager=deploy_manager,
-        endpoint_path="/process",
-        stream=True,
-        mode=DeploymentMode.DETACHED_PROCESS,  # 关键：独立模式
-        services_config=ServicesConfig(),  # 使用默认内存服务
-        protocol_adapters=[a2a_protocol],  # 添加A2A支持
-    )
-
-    print(f"✅ 独立进程部署成功！")
+    print(f"✅ 部署成功：{deployment_info['url']}")
     print(f"📍 部署ID：{deployment_info['deploy_id']}")
-    print(f"🌐 服务URL：{deployment_info['url']}")
-
-    return deployment_info
-
-async def manage_detached_service():
-    """部署和管理独立进程服务"""
-    # 部署服务
-    deployment_info = await deploy_detached()
-    service_url = deployment_info['url']
-
     print(f"""
-🎯 独立进程服务管理：
+🎯 服务已启动，测试命令：
+curl {deployment_info['url']}/health
+curl -X POST {deployment_info['url']}/admin/shutdown  # 停止服务
 
-# 健康检查
-curl {service_url}/health
-
-# 处理请求
-curl -X POST {service_url}/process \\
-  -H "Content-Type: application/json" \\
-  -H "Accept: text/event-stream" \\
-  --no-buffer \\
-  -d '{{
-    "input": [{{
-      "role": "user",
-      "content": [{{
-        "type": "text",
-        "text": "独立进程部署有什么好处？"
-      }}]
-    }}],
-    "session_id": "detached_session"
-  }}'
-
-# 检查进程状态
-curl {service_url}/admin/status
-
-# 远程关闭
-curl -X POST {service_url}/admin/shutdown
-
-⚠️ 注意：该服务在此脚本退出后独立运行。
-    """)
-
+⚠️ 注意：服务在独立进程中运行，直到被停止。
+""")
     return deployment_info
 
-# 部署独立进程服务
-# deployment_info = await manage_detached_service()
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
+
+**关键点**：
+- 服务在独立的分离进程中运行
+- 脚本在部署后退出，服务继续运行
+- 通过 `/admin/shutdown` 端点远程关闭
 
 ### 高级独立进程配置
 
@@ -381,16 +256,6 @@ deployment_info = await runner.deploy(
 )
 ```
 
-### 独立进程部署优势
-- ✅ **进程隔离**：独立进程执行
-- ✅ **自动化管理**：内置生命周期管理
-- ✅ **远程控制**：基于API的进程管理
-- ✅ **生产就绪**：适用于生产环境
-
-### 独立进程部署注意事项
-- ⚠️ **资源开销**：额外的进程开销
-- ⚠️ **需要监控**：需要外部进程监控
-- ⚠️ **单节点限制**：限于单机部署
 
 ## 方法3：Kubernetes部署
 
@@ -418,7 +283,10 @@ docker login your-registry
 
 ### 实现
 
+使用[通用智能体配置](#通用智能体配置)部分定义的智能体和端点：
+
 ```{code-cell}
+# k8s_deploy.py
 import asyncio
 import os
 from agentscope_runtime.engine.deployers.kubernetes_deployer import (
@@ -426,231 +294,147 @@ from agentscope_runtime.engine.deployers.kubernetes_deployer import (
     RegistryConfig,
     K8sConfig,
 )
-from agentscope_runtime.engine.runner import Runner
+from agent_app import app  # 导入已配置的 app
 
-# 导入我们的智能体定义
-from agent_definition import agent
+async def deploy_to_k8s():
+    """将 AgentApp 部署到 Kubernetes"""
 
-async def deploy_to_kubernetes():
-    """将智能体部署到Kubernetes集群"""
-
-    print("🚀 开始Kubernetes部署...")
-
-    # 1. 配置容器镜像仓库
-    registry_config = RegistryConfig(
-        registry_url="your register",
-        namespace="your-acr-namesapce",
-    )
-
-    # 2. 配置Kubernetes连接
-    k8s_config = K8sConfig(
-        k8s_namespace="your-ack-namespace",
-        kubeconfig_path="your-kubeconfig-path"
-    )
-
-    # 3. 创建Kubernetes部署管理器
+    # 配置镜像仓库和 K8s 连接
     deployer = KubernetesDeployManager(
-        kube_config=k8s_config,
-        registry_config=registry_config,
-        use_deployment=True,  # 使用Deployment支持扩展
+        kube_config=K8sConfig(
+            k8s_namespace="agentscope-runtime",
+            kubeconfig_path=None,
+        ),
+        registry_config=RegistryConfig(
+            registry_url="your-registry-url",
+            namespace="agentscope-runtime",
+        ),
+        use_deployment=True,
     )
 
-    # 4. 创建运行器
-    runner = Runner(agent=agent)
-
-    # 5. 配置运行时资源
-    runtime_config = {
+    # 执行部署
+    result = await app.deploy(
+        deployer,
+        port="8080",
+        replicas=1,
+        image_name="agent_app",
+        image_tag="v1.0",
+        requirements=["agentscope", "fastapi", "uvicorn"],
+        base_image="python:3.10-slim-bookworm",
+        environment={
+            "PYTHONPATH": "/app",
+            "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+        },
+        runtime_config={
         "resources": {
             "requests": {"cpu": "200m", "memory": "512Mi"},
             "limits": {"cpu": "1000m", "memory": "2Gi"},
         },
-        "image_pull_policy": "IfNotPresent",
-    }
-
-    # 6. 部署配置
-    deployment_config = {
-        # 服务配置
-        "api_endpoint": "/process",
-        "stream": True,
-        "port": "8080",
-        "replicas": 1,  # 为高可用部署副本
-
-        # 容器配置
-        "image_tag": "production-v1.0",
-        "image_name": "agent-llm-production",
-        "base_image": "python:3.10-slim-bookworm",
-        "platform": "linux/amd64",
-
-        # 依赖
-        "requirements": [
-            "agentscope",
-            "fastapi",
-            "uvicorn",
-            "redis",  # 用于持久化
-        ],
-
-        # 环境变量
-        "environment": {
-            "PYTHONPATH": "/app",
-            "LOG_LEVEL": "INFO",
-            "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
-            "REDIS_HOST": "redis-service.agentscope-runtime.svc.cluster.local",
-            "REDIS_PORT": "6379",
         },
+        platform="linux/amd64",
+        push_to_registry=True,
+    )
 
-        # Kubernetes运行时配置
-        "runtime_config": runtime_config,
+    print(f"✅ 部署成功：{result['url']}")
+    return result, deployer
 
-        # 部署选项
-        "deploy_timeout": 300,
-        "health_check": True,
-        "push_to_registry": True,
-    }
+if __name__ == "__main__":
+    asyncio.run(deploy_to_k8s())
+```
 
-    # 7. 定义生产服务
-    production_services = ServicesConfig(
-        # 使用Redis实现持久化
-        memory=ServiceConfig(
-            provider=ServiceProvider.REDIS,
-            config={
-                "host": "redis-endpoiont",
-                "port": 6379,
-                "db": 0,
-            }
+**关键点**：
+- 容器化部署，支持自动扩展
+- 配置资源限制和健康检查
+- 可使用 `kubectl scale deployment` 进行扩展
+
+
+## 方法4：ModelStudio部署
+
+**最适合**：阿里云用户，需要托管云部署，具有内置监控、扩展和与阿里云生态系统集成。
+
+### 特性
+- 阿里云上的托管云部署
+- 与DashScope LLM服务集成
+- 内置监控和分析
+- 自动扩展和资源管理
+- OSS集成用于制品存储
+- Web控制台进行部署管理
+
+### ModelStudio部署前置条件
+
+```bash
+# 确保设置环境变量
+export DASHSCOPE_API_KEY="your-dashscope-api-key"
+export ALIBABA_CLOUD_ACCESS_KEY_ID="your-access-key-id"
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
+export MODELSTUDIO_WORKSPACE_ID="your-workspace-id"
+
+# 可选的OSS专用凭证
+export OSS_ACCESS_KEY_ID="your-oss-access-key-id"
+export OSS_ACCESS_KEY_SECRET="your-oss-access-key-secret"
+```
+
+### 实现
+
+使用[通用智能体配置](#通用智能体配置)部分定义的智能体和端点：
+
+```{code-cell}
+# modelstudio_deploy.py
+import asyncio
+import os
+from agentscope_runtime.engine.deployers.modelstudio_deployer import (
+    ModelstudioDeployManager,
+    OSSConfig,
+    ModelstudioConfig,
+)
+from agent_app import app  # 导入已配置的 app
+
+async def deploy_to_modelstudio():
+    """将 AgentApp 部署到阿里云 ModelStudio"""
+
+    # 配置 OSS 和 ModelStudio
+    deployer = ModelstudioDeployManager(
+        oss_config=OSSConfig(
+            access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+            access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
         ),
-        session_history=ServiceConfig(
-            provider=ServiceProvider.REDIS,
-            config={
-                "host": "redis-endpoiont",
-                "port": 6379,
-                "db": 0,
-            }
+        modelstudio_config=ModelstudioConfig(
+            workspace_id=os.environ.get("MODELSTUDIO_WORKSPACE_ID"),
+            access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+            access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+            dashscope_api_key=os.environ.get("DASHSCOPE_API_KEY"),
         ),
     )
 
-    try:
-        # 8. 执行部署
-        result = await runner.deploy(
-            deploy_manager=deployer,
-            services_config=production_services,
-            **deployment_config,
-        )
+    # 执行部署
+    result = await app.deploy(
+        deployer,
+        deploy_name="agent-app-example",
+        telemetry_enabled=True,
+        requirements=["agentscope", "fastapi", "uvicorn"],
+        environment={
+            "PYTHONPATH": "/app",
+            "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+        },
+    )
 
-        print("✅ Kubernetes部署成功！")
-        print(f"📍 部署ID：{result['deploy_id']}")
-        print(f"🌐 服务URL：{result['url']}")
-        print(f"📦 资源名称：{result['resource_name']}")
-        print(f"🔢 副本数：{result['replicas']}")
+    print(f"✅ 部署到 ModelStudio：{result['url']}")
+    print(f"📦 制品：{result['artifact_url']}")
+    return result
 
-        return result, deployer
-
-    except Exception as e:
-        print(f"❌ Kubernetes部署失败：{e}")
-        raise
-
-async def manage_kubernetes_deployment():
-    """部署和管理Kubernetes服务"""
-    try:
-        # 部署到Kubernetes
-        result, deployer = await deploy_to_kubernetes()
-        service_url = result["url"]
-
-        # 检查部署状态
-        print("\n📊 检查部署状态...")
-        status = deployer.get_status()
-        print(f"状态：{status}")
-
-        print(f"""
-🎯 Kubernetes服务管理：
-
-# 健康检查
-curl {service_url}/health
-
-# 处理请求
-curl -X POST {service_url}/process \\
-  -H "Content-Type: application/json" \\
-  -H "Accept: text/event-stream" \\
-  --no-buffer \\
-  -d '{{
-    "input": [{{
-      "role": "user",
-      "content": [{{
-        "type": "text",
-        "text": "Kubernetes部署如何扩展？"
-      }}]
-    }}],
-    "session_id": "k8s_session"
-  }}'
-
-# Kubernetes管理命令
-kubectl get pods -n agentscope-runtime
-kubectl get svc -n agentscope-runtime
-kubectl logs -l app={result['resource_name']} -n agentscope-runtime
-
-# 扩展部署
-kubectl scale deployment {result['resource_name']} --replicas=3 -n agentscope-runtime
-        """)
-
-        # 交互式管理
-        input("\n按Enter键清理部署...")
-
-        # 清理
-        print("🧹 清理Kubernetes部署...")
-        cleanup_result = await deployer.stop()
-        if cleanup_result:
-            print("✅ 清理完成")
-        else:
-            print("❌ 清理失败，请手动检查")
-
-        return result
-
-    except Exception as e:
-        print(f"❌ Kubernetes部署管理错误：{e}")
-        import traceback
-        traceback.print_exc()
-
-# 部署到Kubernetes
-# k8s_result = await manage_kubernetes_deployment()
+if __name__ == "__main__":
+    asyncio.run(deploy_to_modelstudio())
 ```
 
-### Kubernetes部署优势
-- ✅ **水平扩展**：轻松的副本扩展
-- ✅ **高可用性**：内置容错能力
-- ✅ **资源管理**：CPU/内存限制和请求
-- ✅ **云原生**：完整的Kubernetes生态系统集成
-- ✅ **自动恢复**：故障时自动重启Pod
+**关键点**：
+- 阿里云上的完全托管云部署
+- 内置监控和自动扩展
+- 与 DashScope LLM 服务集成
 
-### Kubernetes部署注意事项
-- ⚠️ **复杂性**：更复杂的设置和管理
-- ⚠️ **资源需求**：更高的资源开销
-- ⚠️ **集群依赖**：需要Kubernetes集群
-- ⚠️ **容器仓库**：需要可访问的镜像仓库
-
-## 部署对比和最佳实践
-
-### 何时使用各种方法
-
-#### 本地守护进程
-- ✅ **开发和测试**：开发的快速设置
-- ✅ **单用户应用**：个人或小团队使用
-- ✅ **资源受限**：有限的计算资源
-- ✅ **简单需求**：基本部署需求
-
-#### 独立进程
-- ✅ **生产服务**：单节点生产部署
-- ✅ **服务独立性**：需要进程隔离
-- ✅ **自动化管理**：需要远程管理
-- ✅ **中等规模**：中等流量应用
-
-#### Kubernetes
-- ✅ **企业生产**：大规模生产环境
-- ✅ **高可用性**：关键任务应用
-- ✅ **云部署**：云原生架构
-- ✅ **微服务**：大型微服务生态系统的一部分
 
 ## 总结
 
-本指南涵盖了AgentScope Runtime的三种部署方法：
+本指南涵盖了AgentScope Runtime的四种部署方法：
 
 ### 🏃 **本地守护进程**：开发与测试
 - 快速设置和直接控制
@@ -666,6 +450,11 @@ kubectl scale deployment {result['resource_name']} --replicas=3 -n agentscope-ru
 - 完整的容器编排和扩展
 - 高可用性和云原生特性
 - 企业级生产部署
+
+### ☁️ **ModelStudio**：阿里云平台
+- 完全托管的云部署
+- 内置监控和自动扩展
+- 与阿里云服务无缝集成
 
 选择最适合您的用例、基础设施和扩展需求的部署方法。所有方法都使用相同的智能体代码，使得随着需求演变在部署类型之间迁移变得简单。
 

@@ -4,8 +4,7 @@ This example demonstrates how to deploy an Agent as a detached process service u
 
 ## File Description
 
-- `agent_run.py` - Agent definition using QwenLLM
-- `quick_deploy.py` - Quick deployment script for simple testing
+- `app_deploy.py` - Main deployment script using AgentApp with full endpoint configuration
 
 ## Features of Detached Process Deployment
 
@@ -28,25 +27,19 @@ export REDIS_PORT=6379
 
 ## Usage
 
-### 1. Complete Example (Recommended)
+### Complete Example
 
 ```bash
-python deploy_detached.py
+python app_deploy.py
 ```
 
 This script provides complete deployment lifecycle management:
-- Automatically deploy Agent to detached process
-- Test service functionality
-- Interactive management interface
-- Graceful service shutdown
-
-### 2. Quick Testing
-
-```bash
-python quick_deploy.py
-```
-
-For quick deployment testing, suitable for development and debugging.
+- Automatically creates and configures an AgentScopeAgent
+- Deploys Agent to detached process
+- Configured with multiple endpoints (sync, async, streaming, tasks)
+- Service continues running after script exits
+- Provides remote management capabilities
+- Detailed usage examples
 
 ## API Endpoints
 
@@ -55,11 +48,16 @@ After successful deployment, the service will provide the following endpoints:
 ### Basic Endpoints
 - `GET /` - Service information
 - `GET /health` - Health check
-- `POST /process` - Standard conversation interface
-- `POST /process/stream` - Streaming conversation interface
+- `POST /sync` - Synchronous conversation interface
+- `POST /async` - Asynchronous conversation interface
+- `POST /stream_async` - Streaming conversation interface
+- `POST /stream_sync` - Streaming conversation interface
 
-### Detached Process Management Endpoints
-- `GET /admin/status` - Process status information
+### Task Endpoints (Celery)
+- `POST /task` - Celery task endpoint (queue: celery1)
+- `POST /atask` - Async Celery task endpoint
+
+### Management Endpoints
 - `POST /admin/shutdown` - Remote service shutdown
 
 ## Test Commands
@@ -69,9 +67,29 @@ After successful deployment, the service will provide the following endpoints:
 curl http://127.0.0.1:8080/health
 ```
 
+### Synchronous Request
+```bash
+curl -X POST http://127.0.0.1:8080/sync \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello, how are you?"
+          }
+        ]
+      }
+    ],
+    "session_id": "123"
+  }'
+```
+
 ### Streaming Request
 ```bash
-curl -X POST http://127.0.0.1:8080/process \
+curl -X POST http://127.0.0.1:8080/stream_async \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
   --no-buffer \
@@ -86,15 +104,33 @@ curl -X POST http://127.0.0.1:8080/process \
           }
         ]
       }
-    ]
+    ],
+    "session_id": "123"
   }'
 ```
 
-### Process Management
+### Celery Task Request
 ```bash
-# Check process status
-curl http://127.0.0.1:8080/admin/status
+curl -X POST http://127.0.0.1:8080/task \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Process this task"
+          }
+        ]
+      }
+    ],
+    "session_id": "123"
+  }'
+```
 
+### Service Management
+```bash
 # Stop service
 curl -X POST http://127.0.0.1:8080/admin/shutdown
 ```
@@ -152,7 +188,7 @@ export AGENTSCOPE_SERVICES_CONFIG=/path/to/services_config.json
 lsof -i :8080
 
 # Or change port
-python deploy_detached.py  # Modify port parameter in script
+python app_deploy.py  # Modify port parameter in script
 ```
 
 ### Process Cleanup
@@ -168,5 +204,21 @@ kill -TERM <pid>
 ### Log Viewing
 Log output in detached process mode is redirected, you can view it through:
 - Check `/tmp/agentscope_runtime_*.log` (if log files exist)
-- Use process status interface to check running status
+- Use service endpoints to check running status
 - Check system logs
+
+## Key Differences from Daemon Mode
+
+| Feature | Daemon Mode | Detached Process Mode |
+|---------|-------------|----------------------|
+| Process Execution | Blocking (main process) | Independent process |
+| Script Behavior | Blocks until stopped | Exits after deployment |
+| Service Lifecycle | Tied to script | Independent |
+| Remote Management | Manual (Ctrl+C) | API-based shutdown |
+| Use Case | Development/Testing | Production (single node) |
+
+## Files Structure
+
+- `app_deploy.py`: Main deployment script using AgentApp with complete endpoint configuration
+
+This example provides a complete workflow for deploying AgentScope Runtime agents as detached processes with production-ready configurations.

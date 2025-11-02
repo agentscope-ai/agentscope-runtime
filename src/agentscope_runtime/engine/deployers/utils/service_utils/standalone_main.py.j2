@@ -5,22 +5,20 @@ from agentscope_runtime.engine.deployers.utils.service_utils import (
     FastAPIAppFactory,
     ServicesConfig,
     ServiceConfig,
-    create_unified_redis_config,
-    create_celery_config,
 )
 
 from agent_file import {{agent_name}} as agent
-
-{% if protocol_adapters %}{{protocol_adapters}}{% endif %}
 
 {% if custom_endpoints %}
 # Custom endpoint imports
 {% for endpoint in custom_endpoints %}
 {% if endpoint.module and endpoint.function_name %}
-from {{endpoint.module}} import {{endpoint.function_name}}
+from agent_file import {{endpoint.function_name}}
 {% endif %}
 {% endfor %}
 {% endif %}
+
+{% if protocol_adapters %}{{protocol_adapters}}{% endif %}
 
 
 def load_services_config() -> ServicesConfig:

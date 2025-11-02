@@ -591,6 +591,8 @@ class ModelstudioDeployManager(DeployManager):
         try:
             if runner:
                 agent = runner._agent
+                if "agent" in kwargs:
+                    kwargs.pop("agent")
 
                 # Create package project for detached deployment
                 project_dir = await LocalDeployManager.create_detached_project(

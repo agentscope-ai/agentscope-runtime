@@ -14,17 +14,18 @@ kernelspec:
 
 # Advanced Deployment Guide
 
-This guide demonstrates the three advanced deployment methods available in AgentScope Runtime, providing production-ready solutions for different scenarios: **Local Daemon**, **Detached Process**, and **Kubernetes Deployment**.
+This guide demonstrates the four advanced deployment methods available in AgentScope Runtime, providing production-ready solutions for different scenarios: **Local Daemon**, **Detached Process**, **Kubernetes Deployment**, and **ModelStudio Deployment**.
 
 ## Overview of Deployment Methods
 
-AgentScope Runtime offers three distinct deployment approaches, each tailored for specific use cases:
+AgentScope Runtime offers four distinct deployment approaches, each tailored for specific use cases:
 
 | Deployment Type | Use Case | Scalability | Management | Resource Isolation |
 |----------------|----------|-------------|------------|-------------------|
 | **Local Daemon** | Development & Testing | Single Process | Manual | Process-level |
 | **Detached Process** | Production Services | Single Node | Automated | Process-level |
 | **Kubernetes** | Enterprise & Cloud | Single-node(Will support Multi-node) | Orchestrated | Container-level |
+| **ModelStudio** | Alibaba Cloud Platform | Cloud-managed | Platform-managed | Container-level |
 
 ## Prerequisites
 
@@ -68,34 +69,82 @@ export KUBECONFIG="/path/to/your/kubeconfig"
 - kubectl configured
 - Container registry access (for image pushing)
 
+#### For ModelStudio Deployment
+- Alibaba Cloud account with ModelStudio access
+- DashScope API key for LLM services
+- OSS (Object Storage Service) access
+- ModelStudio workspace configured
+
 ## Common Agent Setup
 
-All deployment methods share the same agent configuration. Let's first create our base agent:
+All deployment methods share the same agent and endpoint configuration. Let's first create our base agent and define the endpoints:
 
 ```{code-cell}
-# agent.py
+# agent_app.py - Shared configuration for all deployment methods
 import os
+import time
 
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
+from agentscope.tool import Toolkit, view_text_file
 
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+from agentscope_runtime.engine.app import AgentApp
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 
-# Create the agent
+# 1. Create agent with toolkit
+toolkit = Toolkit()
+toolkit.register_tool_function(view_text_file)
+
 agent = AgentScopeAgent(
     name="Friday",
     model=DashScopeChatModel(
-        "qwen-turbo",
+        "qwen-max",
         api_key=os.getenv("DASHSCOPE_API_KEY"),
     ),
     agent_config={
         "sys_prompt": "You're a helpful assistant named Friday.",
+        "toolkit": toolkit,
     },
     agent_builder=ReActAgent,
 )
 
-print("✅ Agent definition ready for deployment")
+# 2. Create AgentApp with multiple endpoints
+app = AgentApp(agent=agent)
+
+@app.endpoint("/sync")
+def sync_handler(request: AgentRequest):
+    return {"status": "ok", "payload": request}
+
+@app.endpoint("/async")
+async def async_handler(request: AgentRequest):
+    return {"status": "ok", "payload": request}
+
+@app.endpoint("/stream_async")
+async def stream_async_handler(request: AgentRequest):
+    for i in range(5):
+        yield f"async chunk {i}, with request payload {request}\n"
+
+@app.endpoint("/stream_sync")
+def stream_sync_handler(request: AgentRequest):
+    for i in range(5):
+        yield f"sync chunk {i}, with request payload {request}\n"
+
+@app.task("/task", queue="celery1")
+def task_handler(request: AgentRequest):
+    time.sleep(30)
+    return {"status": "ok", "payload": request}
+
+@app.task("/atask")
+async def atask_handler(request: AgentRequest):
+    import asyncio
+    await asyncio.sleep(15)
+    return {"status": "ok", "payload": request}
+
+print("✅ Agent and endpoints configured successfully")
 ```
+
+**Note**: The above configuration is shared across all deployment methods below. Each method will show only the deployment-specific code.
 
 ## Method 1: Local Daemon Deployment
 
@@ -109,149 +158,28 @@ print("✅ Agent definition ready for deployment")
 
 ### Implementation
 
+Using the agent and endpoints defined in the [Common Agent Setup](#common-agent-setup) section:
+
 ```{code-cell}
+# daemon_deploy.py
 import asyncio
-from contextlib import asynccontextmanager
-
-from agentscope.agent import ReActAgent
-from agentscope.model import DashScopeChatModel
-
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
-from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.engine.services.context_manager import ContextManager
-from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
-from agentscope_runtime.engine.services.environment_manager import create_environment_manager
-from agentscope_runtime.sandbox.tools.filesystem import run_ipython_cell, edit_file
+from agent_app import app  # Import the configured app
 
-# Import our agent definition
-from agent_definition import agent
+# Deploy in daemon mode
+async def main():
+    await app.deploy(LocalDeployManager())
 
-async def prepare_services():
-    """Prepare context and environment services"""
-    # Session management
-    session_history_service = InMemorySessionHistoryService()
-    await session_history_service.create_session(
-        user_id="production_user",
-        session_id="prod_session_001",
-    )
-
-    # Context manager
-    context_manager = ContextManager(
-        session_history_service=session_history_service,
-    )
-
-    return context_manager
-
-@asynccontextmanager
-async def create_production_runner():
-    """Create runner with full production services"""
-    context_manager = await prepare_services()
-
-    async with context_manager:
-        # Add sandbox tools for enhanced functionality
-        enhanced_agent = AgentScopeAgent(
-            name="Friday",
-            model=DashScopeChatModel(
-                "qwen-turbo",
-                api_key=os.getenv("DASHSCOPE_API_KEY"),
-            ),
-            agent_config={
-                "sys_prompt": "You're a helpful assistant named Friday.",
-            },
-            agent_builder=ReActAgent,
-            tools=[run_ipython_cell, edit_file],  # Add tools if needed
-        )
-
-        async with create_environment_manager() as env_manager:
-            runner = Runner(
-                agent=enhanced_agent,
-                context_manager=context_manager,
-                environment_manager=env_manager,
-            )
-            print("✅ Production runner created successfully")
-            yield runner
-
-async def deploy_daemon():
-    """Deploy agent as a local daemon service"""
-    async with create_production_runner() as runner:
-        # Create deployment manager
-        deploy_manager = LocalDeployManager(
-            host="0.0.0.0",  # Allow external connections
-            port=8090,
-        )
-
-        # Deploy with full configuration
-        deploy_result = await runner.deploy(
-            deploy_manager=deploy_manager,
-            endpoint_path="/process",
-            stream=True,
-        )
-
-        print(f"🚀 Daemon service deployed successfully!")
-        print(f"🌐 Service URL: {deploy_result['url']}")
-        print(f"💚 Health check: {deploy_result['url']}/health")
-        print(f"""
-🎯 Service Management Commands:
-
-# Health check
-curl {deploy_result['url']}/health
-
-# Process request
-curl -X POST {deploy_result['url']}/process \\
-  -H "Content-Type: application/json" \\
-  -H "Accept: text/event-stream" \\
-  --no-buffer \\
-  -d '{{
-    "input": [{{
-      "role": "user",
-      "content": [{{
-        "type": "text",
-        "text": "Hello, how can you help me today?"
-      }}]
-    }}],
-    "session_id": "prod_session_001"
-  }}'
-        """)
-
-        return deploy_manager
-
-async def run_daemon_deployment():
-    """Main function for daemon deployment"""
-    try:
-        deploy_manager = await deploy_daemon()
-
-        print("🏃 Daemon service is running...")
-        print("Press Ctrl+C to stop the service")
-
-        # Keep service running
-        while True:
-            await asyncio.sleep(1)
-
-    except (KeyboardInterrupt, asyncio.CancelledError):
-        print("\n🛑 Shutdown signal received. Stopping service...")
-        if deploy_manager and deploy_manager.is_running:
-            await deploy_manager.stop()
-        print("✅ Daemon service stopped.")
-    except Exception as e:
-        print(f"❌ Error in daemon deployment: {e}")
-        if deploy_manager and deploy_manager.is_running:
-            await deploy_manager.stop()
-
-# Run daemon deployment
-# asyncio.run(run_daemon_deployment())
+if __name__ == "__main__":
+    asyncio.run(main())
+    input("Press Enter to stop the server...")
 ```
 
-### Daemon Deployment Advantages
-- ✅ **Simple Setup**: Easy to configure and start
-- ✅ **Interactive Control**: Direct process management
-- ✅ **Resource Efficiency**: No process overhead
-- ✅ **Development Friendly**: Easy debugging and monitoring
+**Key Points**:
+- Service runs in the main process (blocking)
+- Manually stopped with Ctrl+C or by ending the script
+- Best for development and testing
 
-### Daemon Deployment Considerations
-- ⚠️ **Single Point of Failure**: Service stops if main process exits
-- ⚠️ **Manual Management**: Requires manual start/stop
-- ⚠️ **Limited Scalability**: Single process limitation
 
 ## Method 2: Detached Process Deployment
 
@@ -265,92 +193,44 @@ async def run_daemon_deployment():
 
 ### Implementation
 
+Using the agent and endpoints defined in the [Common Agent Setup](#common-agent-setup) section:
+
 ```{code-cell}
+# detached_deploy.py
 import asyncio
-from agentscope_runtime.engine.deployers.adapter.a2a import A2AFastAPIDefaultAdapter
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
 from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
-from agentscope_runtime.engine.deployers.utils.service_utils import ServicesConfig
-from agentscope_runtime.engine.runner import Runner
+from agent_app import app  # Import the configured app
 
-# Import our agent definition
-from agent_definition import agent
+async def main():
+    """Deploy app in detached process mode"""
+    print("🚀 Deploying AgentApp in detached process mode...")
 
-async def deploy_detached():
-    """Deploy agent as detached process"""
-
-    print("🚀 Starting detached deployment...")
-
-    # Create A2A protocol adapter
-    a2a_protocol = A2AFastAPIDefaultAdapter(agent=agent)
-
-    # Create deployment manager
-    deploy_manager = LocalDeployManager(
-        host="0.0.0.0",
-        port=8080,
+    # Deploy in detached mode
+    deployment_info = await app.deploy(
+        LocalDeployManager(host="127.0.0.1", port=8080),
+        mode=DeploymentMode.DETACHED_PROCESS,
     )
 
-    # Create runner
-    runner = Runner(agent=agent)
-
-    # Deploy in detached mode with full configuration
-    deployment_info = await runner.deploy(
-        deploy_manager=deploy_manager,
-        endpoint_path="/process",
-        stream=True,
-        mode=DeploymentMode.DETACHED_PROCESS,  # Key: detached mode
-        services_config=ServicesConfig(),  # Use default in-memory services
-        protocol_adapters=[a2a_protocol],  # Add A2A support
-    )
-
-    print(f"✅ Detached deployment successful!")
-    print(f"📍 Deploy ID: {deployment_info['deploy_id']}")
-    print(f"🌐 Service URL: {deployment_info['url']}")
-
-    return deployment_info
-
-async def manage_detached_service():
-    """Deploy and manage detached service"""
-    # Deploy the service
-    deployment_info = await deploy_detached()
-    service_url = deployment_info['url']
-
+    print(f"✅ Deployment successful: {deployment_info['url']}")
+    print(f"📍 Deployment ID: {deployment_info['deploy_id']}")
     print(f"""
-🎯 Detached Service Management:
+🎯 Service started, test with:
+curl {deployment_info['url']}/health
+curl -X POST {deployment_info['url']}/admin/shutdown  # To stop
 
-# Health check
-curl {service_url}/health
-
-# Process request
-curl -X POST {service_url}/process \\
-  -H "Content-Type: application/json" \\
-  -H "Accept: text/event-stream" \\
-  --no-buffer \\
-  -d '{{
-    "input": [{{
-      "role": "user",
-      "content": [{{
-        "type": "text",
-        "text": "What are the benefits of detached deployment?"
-      }}]
-    }}],
-    "session_id": "detached_session"
-  }}'
-
-# Check process status
-curl {service_url}/admin/status
-
-# Remote shutdown
-curl -X POST {service_url}/admin/shutdown
-
-⚠️ Note: The service runs independently after this script exits.
-    """)
-
+⚠️ Note: Service runs independently until stopped.
+""")
     return deployment_info
 
-# Deploy detached service
-# deployment_info = await manage_detached_service()
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
+
+**Key Points**:
+- Service runs in a separate detached process
+- Script exits after deployment, service continues
+- Remote shutdown via `/admin/shutdown` endpoint
 
 ### Advanced Detached Configuration
 
@@ -382,16 +262,6 @@ deployment_info = await runner.deploy(
 )
 ```
 
-### Detached Deployment Advantages
-- ✅ **Process Isolation**: Independent process execution
-- ✅ **Automated Management**: Built-in lifecycle management
-- ✅ **Remote Control**: API-based process management
-- ✅ **Production Ready**: Suitable for production environments
-
-### Detached Deployment Considerations
-- ⚠️ **Resource Overhead**: Additional process overhead
-- ⚠️ **Monitoring Required**: Need external process monitoring
-- ⚠️ **Single Node**: Limited to single machine deployment
 
 ## Method 3: Kubernetes Deployment
 
@@ -419,7 +289,10 @@ docker login  your-registry
 
 ### Implementation
 
+Using the agent and endpoints defined in the [Common Agent Setup](#common-agent-setup) section:
+
 ```{code-cell}
+# k8s_deploy.py
 import asyncio
 import os
 from agentscope_runtime.engine.deployers.kubernetes_deployer import (
@@ -427,228 +300,143 @@ from agentscope_runtime.engine.deployers.kubernetes_deployer import (
     RegistryConfig,
     K8sConfig,
 )
-from agentscope_runtime.engine.runner import Runner
+from agent_app import app  # Import the configured app
 
-# Import our agent definition
-from agent_definition import agent
+async def deploy_to_k8s():
+    """Deploy AgentApp to Kubernetes"""
 
-async def deploy_to_kubernetes():
-    """Deploy agent to Kubernetes cluster"""
-
-    print("🚀 Starting Kubernetes deployment...")
-
-    # 1. Configure Container Registry
-    registry_config = RegistryConfig(
-        registry_url="your register",
-        namespace="your-acr-namesapce",
-    )
-
-    # 2. Configure Kubernetes Connection
-    k8s_config = K8sConfig(
-        k8s_namespace="your-ack-namespace",
-        kubeconfig_path="your-kubeconfig-path"
-    )
-
-    # 3. Create Kubernetes Deploy Manager
+    # Configure registry and K8s connection
     deployer = KubernetesDeployManager(
-        kube_config=k8s_config,
-        registry_config=registry_config,
-        use_deployment=True,  # Use Deployment for scaling support
+        kube_config=K8sConfig(
+            k8s_namespace="agentscope-runtime",
+            kubeconfig_path=None,
+        ),
+        registry_config=RegistryConfig(
+            registry_url="your-registry-url",
+            namespace="agentscope-runtime",
+        ),
+        use_deployment=True,
     )
 
-    # 4. Create Runner
-    runner = Runner(agent=agent)
-
-    # 5. Configure Runtime Resources
-    runtime_config = {
-        "resources": {
-            "requests": {"cpu": "200m", "memory": "512Mi"},
-            "limits": {"cpu": "1000m", "memory": "2Gi"},
-        },
-        "image_pull_policy": "IfNotPresent",
-    }
-    # 6. Deployment Configuration
-    deployment_config = {
-        # Service Configuration
-        "api_endpoint": "/process",
-        "stream": True,
-        "port": "8080",
-        "replicas": 1,  # Deploy 2 replicas for HA
-
-        # Container Configuration
-        "image_tag": "production-v1.0",
-        "image_name": "agent-llm-production",
-        "base_image": "python:3.10-slim-bookworm",
-        "platform": "linux/amd64",
-
-        # Dependencies
-        "requirements": [
-            "agentscope",
-            "fastapi",
-            "uvicorn",
-            "redis",  # For persistence
-        ],
-
-        # Environment Variables
-        "environment": {
+    # Deploy with configuration
+    result = await app.deploy(
+        deployer,
+        port="8080",
+        replicas=1,
+        image_name="agent_app",
+        image_tag="v1.0",
+        requirements=["agentscope", "fastapi", "uvicorn"],
+        base_image="python:3.10-slim-bookworm",
+        environment={
             "PYTHONPATH": "/app",
-            "LOG_LEVEL": "INFO",
             "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
-            "REDIS_HOST": "redis-service.agentscope-runtime.svc.cluster.local",
-            "REDIS_PORT": "6379",
         },
-
-        # Kubernetes Runtime Configuration
-        "runtime_config": runtime_config,
-
-        # Deployment Options
-        "deploy_timeout": 300,
-        "health_check": True,
-        "push_to_registry": True,
-    }
-
-    # 7. define the production services
-    production_services = ServicesConfig(
-        # Use Redis for persistence
-        memory=ServiceConfig(
-            provider=ServiceProvider.REDIS,
-            config={
-                "host": "redis-endpoiont",
-                "port": 6379,
-                "db": 0,
-            }
-        ),
-        session_history=ServiceConfig(
-            provider=ServiceProvider.REDIS,
-            config={
-                "host": "redis-endpoiont",
-                "port": 6379,
-                "db": 0,
-            }
-        ),
+        runtime_config={
+            "resources": {
+                "requests": {"cpu": "200m", "memory": "512Mi"},
+                "limits": {"cpu": "1000m", "memory": "2Gi"},
+            },
+        },
+        platform="linux/amd64",
+        push_to_registry=True,
     )
 
-    try:
-        # 8. Execute Deployment
-        result = await runner.deploy(
-            deploy_manager=deployer,
-            services_config=production_services,
-            **deployment_config,
-        )
+    print(f"✅ Deployed to: {result['url']}")
+    return result, deployer
 
-        print("✅ Kubernetes deployment successful!")
-        print(f"📍 Deploy ID: {result['deploy_id']}")
-        print(f"🌐 Service URL: {result['url']}")
-        print(f"📦 Resource Name: {result['resource_name']}")
-        print(f"🔢 Replicas: {result['replicas']}")
-
-        return result, deployer
-
-    except Exception as e:
-        print(f"❌ Kubernetes deployment failed: {e}")
-        raise
-
-async def manage_kubernetes_deployment():
-    """Deploy and manage Kubernetes service"""
-    try:
-        # Deploy to Kubernetes
-        result, deployer = await deploy_to_kubernetes()
-        service_url = result["url"]
-
-        # Check deployment status
-        print("\n📊 Checking deployment status...")
-        status = deployer.get_status()
-        print(f"Status: {status}")
-
-        print(f"""
-🎯 Kubernetes Service Management:
-
-# Health check
-curl {service_url}/health
-
-# Process request
-curl -X POST {service_url}/process \\
-  -H "Content-Type: application/json" \\
-  -H "Accept: text/event-stream" \\
-  --no-buffer \\
-  -d '{{
-    "input": [{{
-      "role": "user",
-      "content": [{{
-        "type": "text",
-        "text": "How does Kubernetes deployment scale?"
-      }}]
-    }}],
-    "session_id": "k8s_session"
-  }}'
-
-# Kubernetes management commands
-kubectl get pods -n agentscope-runtime
-kubectl get svc -n agentscope-runtime
-kubectl logs -l app={result['resource_name']} -n agentscope-runtime
-
-# Scale deployment
-kubectl scale deployment {result['resource_name']} --replicas=3 -n agentscope-runtime
-        """)
-
-        # Interactive management
-        input("\nPress Enter to cleanup deployment...")
-
-        # Cleanup
-        print("🧹 Cleaning up Kubernetes deployment...")
-        cleanup_result = await deployer.stop()
-        if cleanup_result:
-            print("✅ Cleanup completed successfully")
-        else:
-            print("❌ Cleanup failed, please check manually")
-
-        return result
-
-    except Exception as e:
-        print(f"❌ Error in Kubernetes deployment management: {e}")
-        import traceback
-        traceback.print_exc()
-
-# Deploy to Kubernetes
-# k8s_result = await manage_kubernetes_deployment()
+if __name__ == "__main__":
+    asyncio.run(deploy_to_k8s())
 ```
 
+**Key Points**:
+- Containerized deployment with auto-scaling support
+- Resource limits and health checks configured
+- Can be scaled with `kubectl scale deployment`
 
 
-### Kubernetes Deployment Advantages
-- ✅ **Horizontal Scaling**: Easy replica scaling
-- ✅ **High Availability**: Built-in fault tolerance
-- ✅ **Resource Management**: CPU/memory limits and requests
-- ✅ **Cloud Native**: Full Kubernetes ecosystem integration
-- ✅ **Auto Recovery**: Automatic pod restart on failure
+## Method 4: ModelStudio Deployment
 
-### Kubernetes Deployment Considerations
-- ⚠️ **Complexity**: More complex setup and management
-- ⚠️ **Resource Requirements**: Higher resource overhead
-- ⚠️ **Cluster Dependency**: Requires Kubernetes cluster
-- ⚠️ **Container Registry**: Needs accessible registry
+**Best for**: Alibaba Cloud users requiring managed cloud deployment with built-in monitoring, scaling, and integration with Alibaba Cloud ecosystem.
 
-## Deployment Comparison and Best Practices
+### Features
+- Managed cloud deployment on Alibaba Cloud
+- Integrated with DashScope LLM services
+- Built-in monitoring and analytics
+- Automatic scaling and resource management
+- OSS integration for artifact storage
+- Web console for deployment management
 
-### When to Use Each Method
+### Prerequisites for ModelStudio Deployment
 
-#### Local Daemon
-- ✅ **Development and Testing**: Quick setup for development
-- ✅ **Single User Applications**: Personal or small team usage
-- ✅ **Resource Constrained**: Limited computational resources
-- ✅ **Simple Requirements**: Basic deployment needs
+```bash
+# Ensure environment variables are set
+export DASHSCOPE_API_KEY="your-dashscope-api-key"
+export ALIBABA_CLOUD_ACCESS_KEY_ID="your-access-key-id"
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
+export MODELSTUDIO_WORKSPACE_ID="your-workspace-id"
 
-#### Detached Process
-- ✅ **Production Services**: Single-node production deployments
-- ✅ **Service Independence**: Need process isolation
-- ✅ **Automated Management**: Require remote management
-- ✅ **Medium Scale**: Moderate traffic applications
+# Optional OSS-specific credentials
+export OSS_ACCESS_KEY_ID="your-oss-access-key-id"
+export OSS_ACCESS_KEY_SECRET="your-oss-access-key-secret"
+```
 
-#### Kubernetes
-- ✅ **Enterprise Production**: Large-scale production environments
-- ✅ **High Availability**: Mission-critical applications
-- ✅ **Cloud Deployment**: Cloud-native architectures
-- ✅ **Microservices**: Part of larger microservice ecosystem
+### Implementation
+
+Using the agent and endpoints defined in the [Common Agent Setup](#common-agent-setup) section:
+
+```{code-cell}
+# modelstudio_deploy.py
+import asyncio
+import os
+from agentscope_runtime.engine.deployers.modelstudio_deployer import (
+    ModelstudioDeployManager,
+    OSSConfig,
+    ModelstudioConfig,
+)
+from agent_app import app  # Import the configured app
+
+async def deploy_to_modelstudio():
+    """Deploy AgentApp to Alibaba Cloud ModelStudio"""
+
+    # Configure OSS and ModelStudio
+    deployer = ModelstudioDeployManager(
+        oss_config=OSSConfig(
+            access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+            access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+        ),
+        modelstudio_config=ModelstudioConfig(
+            workspace_id=os.environ.get("MODELSTUDIO_WORKSPACE_ID"),
+            access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+            access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+            dashscope_api_key=os.environ.get("DASHSCOPE_API_KEY"),
+        ),
+    )
+
+    # Deploy to ModelStudio
+    result = await app.deploy(
+        deployer,
+        deploy_name="agent-app-example",
+        telemetry_enabled=True,
+        requirements=["agentscope", "fastapi", "uvicorn"],
+        environment={
+            "PYTHONPATH": "/app",
+            "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+        },
+    )
+
+    print(f"✅ Deployed to ModelStudio: {result['url']}")
+    print(f"📦 Artifact: {result['artifact_url']}")
+    return result
+
+if __name__ == "__main__":
+    asyncio.run(deploy_to_modelstudio())
+```
+
+**Key Points**:
+- Fully managed cloud deployment on Alibaba Cloud
+- Built-in monitoring and auto-scaling
+- Integrated with DashScope LLM services
+
 
 ## Summary
 

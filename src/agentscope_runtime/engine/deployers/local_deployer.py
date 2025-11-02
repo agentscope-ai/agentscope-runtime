@@ -227,6 +227,8 @@ class LocalDeployManager(DeployManager):
             )
 
         agent = runner._agent
+        if "agent" in kwargs:
+            kwargs.pop("agent")
 
         # Create package project for detached deployment
         project_dir = await self.create_detached_project(
