@@ -569,6 +569,9 @@ class ModelstudioDeployManager(DeployManager):
         external_whl_path: Optional[str] = None,
         agent_id: Optional[str] = None,
         agent_desc: Optional[str] = None,
+        custom_endpoints: Optional[
+            List[Dict]
+        ] = None,  # New parameter for custom endpoints
         **kwargs,
     ) -> Dict[str, str]:
         """
@@ -588,6 +591,8 @@ class ModelstudioDeployManager(DeployManager):
         try:
             if runner:
                 agent = runner._agent
+                if "agent" in kwargs:
+                    kwargs.pop("agent")
 
                 # Create package project for detached deployment
                 project_dir = await LocalDeployManager.create_detached_project(
@@ -595,6 +600,7 @@ class ModelstudioDeployManager(DeployManager):
                     endpoint_path=endpoint_path,
                     services_config=services_config,  # type: ignore[arg-type]
                     protocol_adapters=protocol_adapters,
+                    custom_endpoints=custom_endpoints,  # Pass custom endpoints
                     requirements=requirements,
                     extra_packages=extra_packages,
                     **kwargs,

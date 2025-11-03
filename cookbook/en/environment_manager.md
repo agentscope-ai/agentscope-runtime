@@ -79,7 +79,7 @@ sandbox_types = ["browser", "filesystem"]
 sandboxes = sandbox_service.connect(
     session_id=session_id,
     user_id=user_id,
-    sandbox_types=sandbox_types
+    env_types=sandbox_types
 )
 ```
 
@@ -108,10 +108,10 @@ The service efficiently reuses existing sandboxes for the same user session:
 
 ```{code-cell}
 # First connection creates new sandboxes
-sandboxes1 = sandbox_service.connect(session_id, user_id, sandbox_types=["base"])
+sandboxes1 = sandbox_service.connect(session_id, user_id, env_types=["base"])
 
 # Second connection reuses existing sandboxes
-sandboxes2 = sandbox_service.connect(session_id, user_id, sandbox_types=["base"])
+sandboxes2 = sandbox_service.connect(session_id, user_id, env_types=["base"])
 
 # sandboxes1 and sandboxes2 reference the same sandbox instances
 assert len(sandboxes1) == len(sandboxes2)

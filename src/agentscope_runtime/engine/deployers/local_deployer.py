@@ -75,7 +75,11 @@ class LocalDeployManager(DeployManager):
         after_finish: Optional[Callable] = None,
         mode: DeploymentMode = DeploymentMode.DAEMON_THREAD,
         services_config: Optional[ServicesConfig] = None,
+        custom_endpoints: Optional[List[Dict]] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
+        broker_url: Optional[str] = None,
+        backend_url: Optional[str] = None,
+        enable_embedded_worker: bool = False,
         **kwargs: Any,
     ) -> Dict[str, str]:
         """Deploy using unified FastAPI architecture.
@@ -90,7 +94,12 @@ class LocalDeployManager(DeployManager):
             after_finish: Callback function called after server finishes
             mode: Deployment mode
             services_config: Services configuration
+            custom_endpoints: Custom endpoints from agent app
             protocol_adapters: Protocol adapters
+            broker_url: Celery broker URL for background task processing
+            backend_url: Celery backend URL for result storage
+            enable_embedded_worker: Whether to run Celery worker
+                embedded in the app
             **kwargs: Additional keyword arguments
 
         Returns:
@@ -113,7 +122,11 @@ class LocalDeployManager(DeployManager):
                     before_start=before_start,
                     after_finish=after_finish,
                     services_config=services_config,
+                    custom_endpoints=custom_endpoints,
                     protocol_adapters=protocol_adapters,
+                    broker_url=broker_url,
+                    backend_url=backend_url,
+                    enable_embedded_worker=enable_embedded_worker,
                     **kwargs,
                 )
             elif mode == DeploymentMode.DETACHED_PROCESS:
@@ -126,6 +139,7 @@ class LocalDeployManager(DeployManager):
                     before_start=before_start,
                     after_finish=after_finish,
                     services_config=services_config,
+                    custom_endpoints=custom_endpoints,
                     protocol_adapters=protocol_adapters,
                     **kwargs,
                 )
@@ -143,16 +157,22 @@ class LocalDeployManager(DeployManager):
         self,
         runner: Optional[Any] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
+        broker_url: Optional[str] = None,
+        backend_url: Optional[str] = None,
+        enable_embedded_worker: bool = False,
         **kwargs,
     ) -> Dict[str, str]:
         """Deploy in daemon thread mode."""
         self._logger.info("Deploying FastAPI service in daemon thread mode...")
 
-        # Create FastAPI app using factory
+        # Create FastAPI app using factory with Celery support
         app = FastAPIAppFactory.create_app(
             runner=runner,
             mode=DeploymentMode.DAEMON_THREAD,
             protocol_adapters=protocol_adapters,
+            broker_url=broker_url,
+            backend_url=backend_url,
+            enable_embedded_worker=enable_embedded_worker,
             **kwargs,
         )
 
@@ -207,6 +227,8 @@ class LocalDeployManager(DeployManager):
             )
 
         agent = runner._agent
+        if "agent" in kwargs:
+            kwargs.pop("agent")
 
         # Create package project for detached deployment
         project_dir = await self.create_detached_project(
@@ -272,6 +294,13 @@ class LocalDeployManager(DeployManager):
         extra_packages: Optional[List[str]] = None,
         services_config: Optional[ServicesConfig] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
+        custom_endpoints: Optional[
+            List[Dict]
+        ] = None,  # New parameter for custom endpoints
+        # Celery parameters
+        broker_url: Optional[str] = None,
+        backend_url: Optional[str] = None,
+        enable_embedded_worker: bool = False,
         **kwargs,  # pylint: disable=unused-argument
     ) -> str:
         """Create detached project using package_project method."""
@@ -288,6 +317,11 @@ class LocalDeployManager(DeployManager):
             extra_packages=extra_packages,
             protocol_adapters=protocol_adapters,
             services_config=services_config,
+            custom_endpoints=custom_endpoints,  # Add custom endpoints
+            # Celery configuration
+            broker_url=broker_url,
+            backend_url=backend_url,
+            enable_embedded_worker=enable_embedded_worker,
             requirements=requirements
             + (
                 ["redis"]
@@ -300,6 +334,14 @@ class LocalDeployManager(DeployManager):
                     ]
                     if config
                 )
+                else []
+            )
+            + (
+                [
+                    "celery",
+                    "redis",
+                ]  # Add Celery and Redis if Celery is configured
+                if broker_url or backend_url
                 else []
             ),
         )

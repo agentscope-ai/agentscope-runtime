@@ -12,7 +12,7 @@ import shutil
 import tarfile
 import tempfile
 from pathlib import Path
-from typing import List, Optional, Any, Tuple
+from typing import List, Optional, Any, Tuple, Dict
 
 from pydantic import BaseModel
 
@@ -61,6 +61,173 @@ def _get_package_version() -> str:
         return ""
 
 
+def _prepare_custom_endpoints_for_template(
+    custom_endpoints: Optional[List[Dict]],
+    temp_dir: str,
+) -> Tuple[Optional[List[Dict]], List[str]]:
+    """
+    Prepare custom endpoints for template rendering.
+    Copy handler source directories to ensure all dependencies are available.
+
+    Args:
+        custom_endpoints: List of custom endpoint configurations
+        temp_dir: Temporary directory where files will be copied
+
+    Returns:
+        Tuple of:
+        - Prepared endpoint configurations with file information
+        - List of copied directory names (for sys.path setup)
+    """
+    if not custom_endpoints:
+        return None, []
+
+    prepared_endpoints = []
+    handler_dirs_copied = set()  # Track copied directories to avoid duplicates
+    copied_dir_names = []  # Track directory names for sys.path
+
+    for endpoint in custom_endpoints:
+        prepared_endpoint = {
+            "path": endpoint.get("path", "/unknown"),
+            "methods": endpoint.get("methods", ["POST"]),
+            "module": endpoint.get("module"),
+            "function_name": endpoint.get("function_name"),
+        }
+
+        # Try to get handler source file if handler is provided
+        handler = endpoint.get("handler")
+        if handler and callable(handler):
+            try:
+                # Get the source file of the handler
+                handler_file = inspect.getfile(handler)
+                handler_name = handler.__name__
+
+                # Skip if it's a built-in or from site-packages
+                if (
+                    not handler_file.endswith(".py")
+                    or "site-packages" in handler_file
+                ):
+                    raise ValueError("Handler from non-user code")
+
+                # Get the directory containing the handler file
+                handler_dir = os.path.dirname(os.path.abspath(handler_file))
+
+                # Copy the entire working directory if not already copied
+                if handler_dir not in handler_dirs_copied:
+                    # Create a subdirectory name for this handler's context
+                    dir_name = os.path.basename(handler_dir)
+                    if not dir_name or dir_name == ".":
+                        dir_name = "handler_context"
+
+                    # Sanitize directory name
+                    dir_name = re.sub(r"[^a-zA-Z0-9_]", "_", dir_name)
+
+                    # Ensure unique directory name
+                    counter = 1
+                    base_dir_name = dir_name
+                    dest_context_dir = os.path.join(temp_dir, dir_name)
+                    while os.path.exists(dest_context_dir):
+                        dir_name = f"{base_dir_name}_{counter}"
+                        dest_context_dir = os.path.join(temp_dir, dir_name)
+                        counter += 1
+
+                    # Copy entire directory structure
+                    # Exclude common non-essential directories
+                    ignore_patterns = shutil.ignore_patterns(
+                        "__pycache__",
+                        "*.pyc",
+                        "*.pyo",
+                        ".git",
+                        ".gitignore",
+                        ".pytest_cache",
+                        ".mypy_cache",
+                        ".tox",
+                        "venv",
+                        "env",
+                        ".venv",
+                        ".env",
+                        "node_modules",
+                        ".DS_Store",
+                        "*.egg-info",
+                        "build",
+                        "dist",
+                    )
+
+                    shutil.copytree(
+                        handler_dir,
+                        dest_context_dir,
+                        ignore=ignore_patterns,
+                        dirs_exist_ok=True,
+                    )
+
+                    handler_dirs_copied.add(handler_dir)
+                    copied_dir_names.append(dir_name)
+                else:
+                    # Find the existing copied directory name
+                    for existing_dir in os.listdir(temp_dir):
+                        existing_path = os.path.join(temp_dir, existing_dir)
+                        if os.path.isdir(existing_path):
+                            # Check if this is the directory we already copied
+                            original_handler_basename = os.path.basename(
+                                handler_dir,
+                            )
+                            if existing_dir.startswith(
+                                re.sub(
+                                    r"[^a-zA-Z0-9_]",
+                                    "_",
+                                    original_handler_basename,
+                                ),
+                            ):
+                                dir_name = existing_dir
+                                break
+                    else:
+                        # Fallback if not found
+                        dir_name = re.sub(
+                            r"[^a-zA-Z0-9_]",
+                            "_",
+                            os.path.basename(handler_dir),
+                        )
+
+                # Calculate the module path relative to the handler directory
+                handler_file_rel = os.path.relpath(handler_file, handler_dir)
+                # Convert file path to module path
+                module_parts = os.path.splitext(handler_file_rel)[0].split(
+                    os.sep,
+                )
+                if module_parts[-1] == "__init__":
+                    module_parts = module_parts[:-1]
+
+                # Construct the full import path
+                if module_parts:
+                    module_path = f"{dir_name}.{'.'.join(module_parts)}"
+                else:
+                    module_path = dir_name
+
+                # Set the module and function name for template
+                prepared_endpoint["handler_module"] = module_path
+                prepared_endpoint["function_name"] = handler_name
+
+            except (OSError, TypeError, ValueError) as e:
+                # If source file extraction fails, try module/function_name
+                import traceback
+
+                print(f"Warning: Failed to copy handler directory: {e}")
+                traceback.print_exc()
+
+        # Add inline code if no handler module/function available
+        if not prepared_endpoint.get("handler_module") and (
+            not prepared_endpoint["module"]
+            or not prepared_endpoint["function_name"]
+        ):
+            prepared_endpoint["inline_code"] = endpoint.get(
+                "inline_code",
+                'lambda request: {"error": "Handler not available"}',
+            )
+
+        prepared_endpoints.append(prepared_endpoint)
+
+    return prepared_endpoints, copied_dir_names
+
+
 class PackageConfig(BaseModel):
     """Configuration for project packaging"""
 
@@ -73,6 +240,13 @@ class PackageConfig(BaseModel):
         ServicesConfig
     ] = None  # New: services configuration
     protocol_adapters: Optional[List[Any]] = None  # New: protocol adapters
+    custom_endpoints: Optional[
+        List[Dict]
+    ] = None  # New: custom endpoints configuration
+    # Celery configuration parameters
+    broker_url: Optional[str] = None
+    backend_url: Optional[str] = None
+    enable_embedded_worker: bool = False
 
 
 def _find_agent_source_file(
@@ -742,6 +916,41 @@ def package_project(
                     f"# Protocol adapters\nprotocol_adapters = {instances_str}"
                 )
 
+        # Convert celery_config to string representation for template
+        celery_config_str = None
+        config_lines = []
+
+        # Generate celery configuration code
+        config_lines.append("# Celery configuration")
+
+        if config.broker_url:
+            config_lines.append(
+                f'celery_config["broker_url"] = "{config.broker_url}"',
+            )
+
+        if config.backend_url:
+            config_lines.append(
+                f'celery_config["backend_url"] = "{config.backend_url}"',
+            )
+
+        if config.enable_embedded_worker:
+            config_lines.append(
+                f'celery_config["enable_embedded_worker"] = '
+                f"{config.enable_embedded_worker}",
+            )
+
+        if config_lines:
+            celery_config_str = "\n".join(config_lines)
+
+        # Prepare custom endpoints and get copied directory names
+        (
+            custom_endpoints_data,
+            handler_dirs,
+        ) = _prepare_custom_endpoints_for_template(
+            config.custom_endpoints,
+            temp_dir,
+        )
+
         # Render template - use template file by default,
         # or user-provided string
         if template is None:
@@ -751,6 +960,9 @@ def package_project(
                 endpoint_path=config.endpoint_path or "/process",
                 deployment_mode=config.deployment_mode or "standalone",
                 protocol_adapters=protocol_adapters_str,
+                celery_config=celery_config_str,
+                custom_endpoints=custom_endpoints_data,
+                handler_dirs=handler_dirs,
             )
         else:
             # Use user-provided template string
@@ -760,6 +972,9 @@ def package_project(
                 endpoint_path=config.endpoint_path,
                 deployment_mode=config.deployment_mode or "standalone",
                 protocol_adapters=protocol_adapters_str,
+                celery_config=celery_config_str,
+                custom_endpoints=custom_endpoints_data,
+                handler_dirs=handler_dirs,
             )
 
         # Write main.py
@@ -802,9 +1017,25 @@ def package_project(
             if not config.requirements:
                 config.requirements = []
 
-            # Combine base requirements with user requirements
+            # Add Celery requirements if Celery is configured
+            celery_requirements = []
+            if (
+                config.broker_url
+                or config.backend_url
+                or config.enable_embedded_worker
+            ):
+                celery_requirements = ["celery", "redis"]
+
+            # Combine base requirements with user requirements and Celery
+            # requirements
             all_requirements = sorted(
-                list(set(base_requirements + config.requirements)),
+                list(
+                    set(
+                        base_requirements
+                        + config.requirements
+                        + celery_requirements,
+                    ),
+                ),
             )
             for req in all_requirements:
                 f.write(f"{req}\n")

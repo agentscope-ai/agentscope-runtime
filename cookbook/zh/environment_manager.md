@@ -78,7 +78,7 @@ sandbox_types = ["browser", "filesystem"]
 sandboxes = sandbox_service.connect(
     session_id=session_id,
     user_id=user_id,
-    sandbox_types=sandbox_types
+    env_types=sandbox_types
 )
 ```
 
@@ -107,10 +107,10 @@ print(f"配置了 {len(sandboxes)}个沙盒")
 
 ```{code-cell}
 # 第一次连接创建新沙盒
-sandboxes1 = sandbox_service.connect(session_id, user_id, sandbox_types=["base"])
+sandboxes1 = sandbox_service.connect(session_id, user_id, env_types=["base"])
 
 # 第二次连接重用现有沙盒
-sandboxes2 = sandbox_service.connect(session_id, user_id, sandbox_types=["base"])
+sandboxes2 = sandbox_service.connect(session_id, user_id, env_types=["base"])
 
 # sandboxes1和sandboxes2引用相同的沙盒实例
 assert len(sandboxes1) == len(sandboxes2)
