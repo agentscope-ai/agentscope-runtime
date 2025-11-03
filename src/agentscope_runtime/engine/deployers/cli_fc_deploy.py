@@ -4,6 +4,10 @@ import asyncio
 from pathlib import Path
 from typing import Optional
 
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+
 from .modelstudio_deployer import ModelstudioDeployManager
 from .utils.wheel_packager import build_wheel
 
@@ -152,32 +156,47 @@ def main() -> None:
             agent_desc=args.agent_desc,
         ),
     )
-    print("Built wheel at:", result.get("wheel_path", ""))
-    if result.get("artifact_url"):
-        print("Artifact URL:", result.get("artifact_url"))
-    print("Resource Name:", result.get("resource_name"))
-    if result.get("workspace_id"):
-        print("Workspace:", result.get("workspace_id"))
 
+    console = Console()
+
+    # Create a table for basic information
+    info_table = Table(show_header=False, box=None, padding=(0, 2))
+    info_table.add_column("Key", style="bold cyan")
+    info_table.add_column("Value", style="white")
+
+    if result.get("wheel_path"):
+        info_table.add_row("Built wheel at", result.get("wheel_path", ""))
+
+    if result.get("artifact_url"):
+        info_table.add_row("Artifact URL", result.get("artifact_url"))
+
+    if result.get("resource_name"):
+        info_table.add_row("Resource Name", result.get("resource_name"))
+
+    if result.get("workspace_id"):
+        info_table.add_row("Workspace", result.get("workspace_id"))
+
+    console.print(info_table)
+
+    # Display deploy result in a panel
     console_url = result.get("url")
     deploy_id = result.get("deploy_id")
     if console_url and deploy_id:
-        title = "Deploy Result"
-        console_url_str = f"Console URL: {console_url}"
-        deploy_id_str = f"Deploy ID: {deploy_id}"
-        url_len = len(console_url_str)
-        box_width = max(url_len, len(title), 20)
-
-        # print title
-        print("")
-        print(title.center(box_width + 4))
-
-        # print content
-        print("┏" + "━" * (box_width + 2) + "┓")
-        print(f"┃ {console_url_str.ljust(box_width)} ┃")
-        print(f"┃ {deploy_id_str.ljust(box_width)} ┃")
-        print("┗" + "━" * (box_width + 2) + "┛")
-        print("")
+        console.print()  # Add spacing
+        panel_content = (
+            f"[bold cyan]Console URL:[/bold cyan] {console_url}\n"
+            f"[bold cyan]Deploy ID:[/bold cyan] {deploy_id}"
+        )
+        console.print(
+            Panel(
+                panel_content,
+                title="[bold green]Deploy Result[/bold green]",
+                title_align="center",
+                expand=False,
+                border_style="green",
+            ),
+        )
+        console.print()  # Add spacing
 
 
 if __name__ == "__main__":  # pragma: no cover

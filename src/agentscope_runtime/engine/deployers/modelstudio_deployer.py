@@ -582,7 +582,10 @@ class ModelstudioDeployManager(DeployManager):
         """
         if not agent_id:
             if not runner and not project_dir and not external_whl_path:
-                raise ValueError("")
+                raise ValueError(
+                    "Either runner, project_dir, "
+                    "or external_whl_path must be provided.",
+                )
 
         # convert services_config to Model body
         if services_config and isinstance(services_config, dict):

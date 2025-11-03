@@ -26,7 +26,7 @@ from typing import List, Tuple
 
 try:
     import tomllib  # Python 3.11+
-except Exception:  # pragma: no cover - fallback on older Pythons
+except ImportError:  # pragma: no cover - fallback on older Pythons
     tomllib = None  # type: ignore
 
 

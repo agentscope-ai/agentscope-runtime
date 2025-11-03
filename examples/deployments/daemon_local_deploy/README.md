@@ -5,7 +5,6 @@ This example demonstrates how to deploy an Agent as a local daemon service using
 ## File Description
 
 - `app_deploy.py` - Main deployment script using AgentApp with full endpoint configuration
-- `local_deploy.py` - Simple deployment script using Runner directly
 
 ## Features of Daemon Deployment
 

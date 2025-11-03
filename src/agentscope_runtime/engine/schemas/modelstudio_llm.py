@@ -32,7 +32,7 @@ class IntentionOptions(BaseModel):
     """A list of blocked intentions that should not be processed."""
 
     search_model: str = "search_v6"
-    """The searches model version to use for intentions recognition."""
+    """The search model version to use for intentions recognition."""
 
     intensity: Optional[int] = None
     """The intensity level for intentions matching and processing."""
@@ -44,11 +44,11 @@ class IntentionOptions(BaseModel):
 class SearchOptions(BaseModel):
     """
     Search Options on Modelstudio platform for knowledge retrieval and web
-    searches.
+    search.
     """
 
     enable_source: bool = False
-    """Whether to include source information in searches results."""
+    """Whether to include source information in search results."""
 
     enable_citation: bool = False
     """Whether to include citation information for retrieved content."""
@@ -72,26 +72,26 @@ class SearchOptions(BaseModel):
         "turbo",
         "max",
     ] = "turbo"
-    """The searches strategy to use ('standard', 'pro_ultra',
+    """The search strategy to use ('standard', 'pro_ultra',
     'pro', 'lite','pro_max', 'image','turbo','max'). """
 
     forced_search: bool = False
-    """Whether to force searches even when cached results are available."""
+    """Whether to force search even when cached results are available."""
 
     prepend_search_result: bool = False
-    """Whether to prepend searches results to the response."""
+    """Whether to prepend search results to the response."""
 
     enable_search_extension: bool = False
-    """Whether to enable extended searches capabilities."""
+    """Whether to enable extended search capabilities."""
 
     item_cnt: int = 20000
-    """The maximum number of items to retrieve in searches results."""
+    """The maximum number of items to retrieve in search results."""
 
     top_n: int = 0
     """The number of top results to return (0 means return all)."""
 
     intention_options: Union[IntentionOptions, None] = IntentionOptions()
-    """Options for intentions recognition and processing during searches."""
+    """Options for intentions recognition and processing during search."""
 
 
 # maximum chunk size from knowledge base [1, 20]
@@ -148,7 +148,7 @@ class RagOptions(BaseModel):
         default_factory=list,
         alias="file_id_list",
     )
-    """List of specific file IDs to searches within."""
+    """List of specific file IDs to search within."""
 
     prompt_strategy: Optional[str] = Field(
         default="topK",
@@ -173,7 +173,7 @@ class RagOptions(BaseModel):
     """Options for handling cases when RAG retrieval fails."""
 
     enable_web_search: bool = False
-    """Whether to enable web searches as part of the RAG pipeline."""
+    """Whether to enable web search as part of the RAG pipeline."""
 
     session_file_ids: Optional[List[str]] = Field(default_factory=list)
     """List of file IDs that are specific to the current session."""
@@ -214,7 +214,7 @@ class RagOptions(BaseModel):
     """The prompt to use for content rejection filtering."""
 
     enable_agg_search: Optional[bool] = None
-    """Whether to enable aggregation searches."""
+    """Whether to enable aggregation search."""
 
     enable_hybrid_gen: Optional[bool] = None
     """Whether to enable hybrid generations."""
@@ -269,10 +269,10 @@ class ModelstudioParameters(Parameters):
 
     # Search
     enable_search: bool = False
-    """Whether to enable searches capabilities for knowledge retrieval."""
+    """Whether to enable search capabilities for knowledge retrieval."""
 
     search_options: Optional[SearchOptions] = SearchOptions()
-    """Configuration options for searches functionality."""
+    """Configuration options for search functionality."""
 
     # RAG
     enable_rag: bool = False  # RAGs of modelstudio assistant service

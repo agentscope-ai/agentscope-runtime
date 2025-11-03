@@ -10,6 +10,9 @@ from pydantic import BaseModel
 from .base_app import BaseApp
 from ..agents.base_agent import Agent
 from ..deployers.adapter.a2a import A2AFastAPIDefaultAdapter
+from ..deployers.adapter.responses.response_api_protocol_adapter import (
+    ResponseAPIDefaultAdapter,
+)
 from ..runner import Runner
 from ..schemas.agent_schemas import AgentRequest
 from ..services.context_manager import ContextManager
@@ -60,7 +63,8 @@ class AgentApp(BaseApp):
         self.custom_endpoints = []  # Store custom endpoints
 
         a2a_protocol = A2AFastAPIDefaultAdapter(agent=self._agent)
-        self.protocol_adapters = [a2a_protocol]
+        response_protocol = ResponseAPIDefaultAdapter()
+        self.protocol_adapters = [a2a_protocol, response_protocol]
 
         if self._agent:
             self._runner = Runner(
