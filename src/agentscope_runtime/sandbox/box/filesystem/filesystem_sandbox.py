@@ -7,13 +7,14 @@ from ...registry import SandboxRegistry
 from ...enums import SandboxType
 from ...box.base import BaseSandbox
 from ...box.gui import GUIMixin
+from ...constant import TIMEOUT
 
 
 @SandboxRegistry.register(
     build_image_uri("runtime-sandbox-filesystem"),
     sandbox_type=SandboxType.FILESYSTEM,
     security_level="medium",
-    timeout=60,
+    timeout=TIMEOUT,
     description="Filesystem sandbox",
 )
 class FilesystemSandbox(GUIMixin, BaseSandbox):

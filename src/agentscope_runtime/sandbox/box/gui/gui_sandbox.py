@@ -8,6 +8,7 @@ from ...utils import build_image_uri, get_platform
 from ...registry import SandboxRegistry
 from ...enums import SandboxType
 from ...box.base import BaseSandbox
+from ...constant import TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ class GUIMixin:
     build_image_uri("runtime-sandbox-gui"),
     sandbox_type=SandboxType.GUI,
     security_level="high",
-    timeout=30,
+    timeout=TIMEOUT,
     description="GUI Sandbox",
 )
 class GuiSandbox(GUIMixin, BaseSandbox):

@@ -454,18 +454,17 @@ class SandboxManager:
         else:
             target_sandbox_type = self.default_type[0]
 
-        image = SandboxRegistry.get_image_by_type(target_sandbox_type)
-        if not image:
+        config = SandboxRegistry.get_config_by_type(target_sandbox_type)
+
+        if not config:
             logger.warning(
-                f"No image found for sandbox {target_sandbox_type}, "
-                f"using default",
+                f"Not found sandbox {target_sandbox_type}, " f"using default",
             )
-            image = SandboxRegistry.get_image_by_type(
+            config = SandboxRegistry.get_config_by_type(
                 self.default_type[0],
             )
+        image = config.image_name
 
-        # TODO: enable for timeout for the sandbox (auto cleanup)
-        config = SandboxRegistry.get_config_by_type(target_sandbox_type)
         environment = {
             **(config.environment if config.environment else {}),
             **(environment if environment else {}),
@@ -576,6 +575,7 @@ class SandboxManager:
                 runtime_token=runtime_token,
                 version=image,
                 meta=meta or {},
+                timeout=config.timeout,
             )
 
             # Register in mapping
