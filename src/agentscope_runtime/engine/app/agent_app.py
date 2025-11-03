@@ -4,6 +4,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Optional, Any, Callable, List
 
+import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
 
@@ -12,6 +13,11 @@ from ..agents.base_agent import Agent
 from ..deployers.adapter.a2a import A2AFastAPIDefaultAdapter
 from ..deployers.adapter.responses.response_api_protocol_adapter import (
     ResponseAPIDefaultAdapter,
+)
+from ..deployers.utils.deployment_modes import DeploymentMode
+from ..deployers.utils.service_utils.fastapi_factory import FastAPIAppFactory
+from ..deployers.utils.service_utils.service_config import (
+    DEFAULT_SERVICES_CONFIG,
 )
 from ..runner import Runner
 from ..schemas.agent_schemas import AgentRequest
@@ -57,6 +63,8 @@ class AgentApp(BaseApp):
         self.request_model = request_model
         self.before_start = before_start
         self.after_finish = after_finish
+        self.broker_url = broker_url
+        self.backend_url = backend_url
 
         self._agent = agent
         self._runner = None
@@ -116,39 +124,62 @@ class AgentApp(BaseApp):
         host="0.0.0.0",
         port=8090,
         embed_task_processor=False,
+        services_config=None,
         **kwargs,
     ):
+        """
+        Run the AgentApp using FastAPIAppFactory directly.
+
+        Args:
+            host: Host to bind to
+            port: Port to bind to
+            embed_task_processor: Whether to embed task processor
+            services_config: Optional services configuration
+            **kwargs: Additional keyword arguments
+        """
+
         try:
-            loop = asyncio.get_event_loop()
-            if self._runner is not None:
-                loop.run_until_complete(self._runner.__aenter__())
+            logger.info(
+                "[AgentApp] Starting AgentApp with FastAPIAppFactory...",
+            )
 
-            logger.info("[AgentApp] Runner initialized.")
+            # Use default services config if not provided
+            if services_config is None:
+                services_config = DEFAULT_SERVICES_CONFIG
 
-            super().run(
+            # Create FastAPI application using the factory
+            fastapi_app = FastAPIAppFactory.create_app(
+                runner=self._runner,
+                endpoint_path=self.endpoint_path,
+                request_model=self.request_model,
+                response_type=self.response_type,
+                stream=self.stream,
+                before_start=self.before_start,
+                after_finish=self.after_finish,
+                mode=DeploymentMode.DAEMON_THREAD,
+                services_config=services_config,
+                protocol_adapters=self.protocol_adapters,
+                custom_endpoints=self.custom_endpoints,
+                broker_url=self.broker_url,
+                backend_url=self.backend_url,
+                enable_embedded_worker=embed_task_processor,
+                **kwargs,
+            )
+
+            logger.info(f"[AgentApp] Starting server on {host}:{port}")
+
+            # Start the FastAPI application with uvicorn
+            uvicorn.run(
+                fastapi_app,
                 host=host,
                 port=port,
-                embed_task_processor=embed_task_processor,
-                **kwargs,
+                log_level="info",
+                access_log=True,
             )
 
         except Exception as e:
             logger.error(f"[AgentApp] Error while running: {e}")
-
-        finally:
-            try:
-                try:
-                    loop = asyncio.get_event_loop()
-                except RuntimeError:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                if self._runner is not None:
-                    loop.run_until_complete(
-                        self._runner.__aexit__(None, None, None),
-                    )
-                    logger.info("[AgentApp] Runner cleaned up.")
-            except Exception as e:
-                logger.error(f"[AgentApp] Error while cleaning up runner: {e}")
+            raise
 
     async def deploy(self, deployer, **kwargs):
         """Deploy the agent app with custom endpoints support"""
