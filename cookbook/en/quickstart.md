@@ -233,4 +233,20 @@ async def main():
     await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```
 
+
 This will run your agent API Server on the specified port, making it accessible for external requests. In addition to basic HTTP API access, you can interact with the agent through different protocols, such as A2A, Response API, Agent API, and others. Please refer {doc}`protocol` for details.
+
+For example, user could query the deployment by OpenAI SDK with response api.
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://0.0.0.0:8091/compatible-mode/v1")
+
+response = client.responses.create(
+  model="any_name",
+  input="What is the weather in Beijing?"
+)
+
+print(response)
+```

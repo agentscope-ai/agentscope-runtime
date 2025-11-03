@@ -180,6 +180,46 @@ if __name__ == "__main__":
 - Manually stopped with Ctrl+C or by ending the script
 - Best for development and testing
 
+### Testing the Deployed Service
+
+Once deployed, you can test the endpoints using curl or Python:
+
+**Using curl:**
+
+```bash
+# Test health endpoint
+curl http://localhost:8080/health
+
+# Call sync endpoint
+curl -X POST http://localhost:8080/sync \
+  -H "Content-Type: application/json" \
+  -d '{"input": [{"role": "user", "content": [{"type": "text", "text": "What is the weather in Beijing?"}]}], "session_id": "123"}'
+
+# Call streaming endpoint
+curl -X POST http://localhost:8080/stream_sync \
+  -H "Content-Type: application/json" \
+  -d '{"input": [{"role": "user", "content": [{"type": "text", "text": "What is the weather in Beijing?"}]}], "session_id": "123"}'
+
+# Submit a task
+curl -X POST http://localhost:8080/task \
+  -H "Content-Type: application/json" \
+  -d '{"input": [{"role": "user", "content": [{"type": "text", "text": "What is the weather in Beijing?"}]}], "session_id": "123"}'
+```
+
+**Using OpenAI SDK:**
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://0.0.0.0:8080/compatible-mode/v1")
+
+response = client.responses.create(
+  model="any_name",
+  input="What is the weather in Beijing?"
+)
+
+print(response)
+```
+
 
 ## Method 2: Detached Process Deployment
 

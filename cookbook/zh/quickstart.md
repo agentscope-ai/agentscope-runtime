@@ -236,3 +236,18 @@ async def main():
 ```
 
 这段代码会在指定的端口运行你的智能体API Server，使其能够响应外部请求。除了基本的 HTTP API 访问外，你还可以使用不同的协议与智能体进行交互，例如：A2A、Response API、Agent API等。详情请参考 {doc}`protocol`。
+
+例如用户可以通过OpenAI SDK 来请求这个部署。
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://0.0.0.0:8091/compatible-mode/v1")
+
+response = client.responses.create(
+  model="any_name",
+  input="杭州天气如何？"
+)
+
+print(response)
+```

@@ -174,6 +174,46 @@ if __name__ == "__main__":
 - 通过 Ctrl+C 或结束脚本手动停止
 - 最适合开发和测试
 
+### 测试部署的服务
+
+部署后，您可以使用 curl 或 Python 测试端点：
+
+**使用 curl：**
+
+```bash
+# 测试健康检查端点
+curl http://localhost:8080/health
+
+# 调用同步端点
+curl -X POST http://localhost:8080/sync \
+  -H "Content-Type: application/json" \
+  -d '{"input": [{"role": "user", "content": [{"type": "text", "text": "杭州天气如何？"}]}], "session_id": "123"}'
+
+# 调用流式端点
+curl -X POST http://localhost:8080/stream_sync \
+  -H "Content-Type: application/json" \
+  -d '{"input": [{"role": "user", "content": [{"type": "text", "text": "杭州天气如何？"}]}], "session_id": "123"}'
+
+# 提交任务
+curl -X POST http://localhost:8080/task \
+  -H "Content-Type: application/json" \
+  -d '{"input": [{"role": "user", "content": [{"type": "text", "text": "杭州天气如何？"}]}], "session_id": "123"}'
+```
+
+**使用 OpenAI SDK：**
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://0.0.0.0:8080/compatible-mode/v1")
+
+response = client.responses.create(
+  model="any_name",
+  input="杭州天气如何？"
+)
+
+print(response)
+```
 
 ## 方法2：独立进程部署
 
