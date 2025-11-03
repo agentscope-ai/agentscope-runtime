@@ -3,8 +3,6 @@ import uuid
 from contextlib import AsyncExitStack
 from typing import Optional, List, AsyncGenerator, Any, Union, Dict
 
-from openai.types.chat import ChatCompletion
-
 from agentscope_runtime.engine.deployers.utils.service_utils import (
     ServicesConfig,
 )
@@ -214,18 +212,18 @@ class Runner:
         )
         yield seq_gen.yield_with_sequence(response.completed())
 
-    @trace(TraceType.AGENT_STEP)
-    async def query(  # pylint:disable=unused-argument
-        self,
-        message: List[dict],
-        session_id: Optional[str] = None,
-        **kwargs: Any,
-    ) -> ChatCompletion:
-        """
-        Streams the agent.
-        """
-        # TODO: fix this @zhicheng
-        return self._agent.query(message, session_id)
+    #  TODO: will be added before 2025/11/30
+    # @trace(TraceType.AGENT_STEP)
+    # async def query(  # pylint:disable=unused-argument
+    #     self,
+    #     message: List[dict],
+    #     session_id: Optional[str] = None,
+    #     **kwargs: Any,
+    # ) -> ChatCompletion:
+    #     """
+    #     Streams the agent.
+    #     """
+    #     return self._agent.query(message, session_id)
 
     # TODO: should be sync method?
     async def stop(
