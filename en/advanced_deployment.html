@@ -683,7 +683,7 @@ pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot
 </section>
 </section>
 <section id="common-agent-setup">
-<h2>Common Agent Setup<a class="headerlink" href="#common-agent-setup" title="Link to this heading">¶</a></h2>
+<span id="id1"></span><h2>Common Agent Setup<a class="headerlink" href="#common-agent-setup" title="Link to this heading">¶</a></h2>
 <p>All deployment methods share the same agent and endpoint configuration. Let’s first create our base agent and define the endpoints:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -769,7 +769,7 @@ pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot
 </section>
 <section id="implementation">
 <h3>Implementation<a class="headerlink" href="#implementation" title="Link to this heading">¶</a></h3>
-<p>Using the agent and endpoints defined in the <a class="reference internal" href="#common-agent-setup"><span class="xref myst">Common Agent Setup</span></a> section:</p>
+<p>Using the agent and endpoints defined in the <a class="reference internal" href="#common-agent-setup"><span class="std std-ref">Common Agent Setup</span></a> section:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># daemon_deploy.py</span>
@@ -836,8 +836,8 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 <section id="method-2-detached-process-deployment">
 <h2>Method 2: Detached Process Deployment<a class="headerlink" href="#method-2-detached-process-deployment" title="Link to this heading">¶</a></h2>
 <p><strong>Best for</strong>: Production services requiring process isolation, automated management, and independent lifecycle.</p>
-<section id="id1">
-<h3>Features<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<section id="id2">
+<h3>Features<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Independent process execution</p></li>
 <li><p>Automated lifecycle management</p></li>
@@ -845,9 +845,9 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 <li><p>Service persistence after main script exit</p></li>
 </ul>
 </section>
-<section id="id2">
-<h3>Implementation<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
-<p>Using the agent and endpoints defined in the <a class="reference internal" href="#common-agent-setup"><span class="xref myst">Common Agent Setup</span></a> section:</p>
+<section id="id3">
+<h3>Implementation<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<p>Using the agent and endpoints defined in the <a class="reference internal" href="#common-agent-setup"><span class="std std-ref">Common Agent Setup</span></a> section:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># detached_deploy.py</span>
@@ -927,8 +927,8 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 <section id="method-3-kubernetes-deployment">
 <h2>Method 3: Kubernetes Deployment<a class="headerlink" href="#method-3-kubernetes-deployment" title="Link to this heading">¶</a></h2>
 <p><strong>Best for</strong>: Enterprise production environments requiring scalability, high availability, and cloud-native orchestration.</p>
-<section id="id3">
-<h3>Features<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<section id="id4">
+<h3>Features<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Container-based deployment</p></li>
 <li><p>Horizontal scaling support</p></li>
@@ -950,9 +950,9 @@ docker<span class="w"> </span>login<span class="w">  </span>your-registry
 </pre></div>
 </div>
 </section>
-<section id="id4">
-<h3>Implementation<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
-<p>Using the agent and endpoints defined in the <a class="reference internal" href="#common-agent-setup"><span class="xref myst">Common Agent Setup</span></a> section:</p>
+<section id="id5">
+<h3>Implementation<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<p>Using the agent and endpoints defined in the <a class="reference internal" href="#common-agent-setup"><span class="std std-ref">Common Agent Setup</span></a> section:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># k8s_deploy.py</span>
@@ -1024,8 +1024,8 @@ docker<span class="w"> </span>login<span class="w">  </span>your-registry
 <section id="method-4-modelstudio-deployment">
 <h2>Method 4: ModelStudio Deployment<a class="headerlink" href="#method-4-modelstudio-deployment" title="Link to this heading">¶</a></h2>
 <p><strong>Best for</strong>: Alibaba Cloud users requiring managed cloud deployment with built-in monitoring, scaling, and integration with Alibaba Cloud ecosystem.</p>
-<section id="id5">
-<h3>Features<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<section id="id6">
+<h3>Features<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Managed cloud deployment on Alibaba Cloud</p></li>
 <li><p>Integrated with DashScope LLM services</p></li>
@@ -1049,9 +1049,9 @@ docker<span class="w"> </span>login<span class="w">  </span>your-registry
 </pre></div>
 </div>
 </section>
-<section id="id6">
-<h3>Implementation<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
-<p>Using the agent and endpoints defined in the <a class="reference internal" href="#common-agent-setup"><span class="xref myst">Common Agent Setup</span></a> section:</p>
+<section id="id7">
+<h3>Implementation<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
+<p>Using the agent and endpoints defined in the <a class="reference internal" href="#common-agent-setup"><span class="std std-ref">Common Agent Setup</span></a> section:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># modelstudio_deploy.py</span>
@@ -1252,21 +1252,21 @@ docker<span class="w"> </span>login<span class="w">  </span>your-registry
 </ul>
 </li>
 <li><a class="reference internal" href="#method-2-detached-process-deployment">Method 2: Detached Process Deployment</a><ul>
-<li><a class="reference internal" href="#id1">Features</a></li>
-<li><a class="reference internal" href="#id2">Implementation</a></li>
+<li><a class="reference internal" href="#id2">Features</a></li>
+<li><a class="reference internal" href="#id3">Implementation</a></li>
 <li><a class="reference internal" href="#advanced-detached-configuration">Advanced Detached Configuration</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#method-3-kubernetes-deployment">Method 3: Kubernetes Deployment</a><ul>
-<li><a class="reference internal" href="#id3">Features</a></li>
+<li><a class="reference internal" href="#id4">Features</a></li>
 <li><a class="reference internal" href="#prerequisites-for-kubernetes-deployment">Prerequisites for Kubernetes Deployment</a></li>
-<li><a class="reference internal" href="#id4">Implementation</a></li>
+<li><a class="reference internal" href="#id5">Implementation</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#method-4-modelstudio-deployment">Method 4: ModelStudio Deployment</a><ul>
-<li><a class="reference internal" href="#id5">Features</a></li>
+<li><a class="reference internal" href="#id6">Features</a></li>
 <li><a class="reference internal" href="#prerequisites-for-modelstudio-deployment">Prerequisites for ModelStudio Deployment</a></li>
-<li><a class="reference internal" href="#id6">Implementation</a></li>
+<li><a class="reference internal" href="#id7">Implementation</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#summary">Summary</a><ul>
