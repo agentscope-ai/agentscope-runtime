@@ -60,7 +60,7 @@ autogen = [
     "autogen-ext[openai]>=0.7.4",
 ]
 agentrun = [
-    "alibabacloud-agentrun20250910>=1.0.0",
+    "alibabacloud-agentrun20250910>=2.0.1",
     "alibabacloud_tea_openapi>=0.4.0"
 ]
 
@@ -97,6 +97,8 @@ memory-ext = [
 deployment = [
     "alibabacloud-oss-v2",
     "alibabacloud-bailian20231229>=2.5.0",
+    "alibabacloud-agentrun20250910>=2.0.1",
+    "alibabacloud_tea_openapi>=0.4.0",
     "build",
     "setuptools>=40.8.0",
     "wheel",
