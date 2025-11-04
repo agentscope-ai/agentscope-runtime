@@ -19,10 +19,16 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "kubernetes>=33.1.0",
     "shortuuid>=1.0.13",
+    "celery[redis]>=5.3.1",
+    "a2a-sdk>=0.3.0",
 ]
 
 [tool.setuptools]
 packages = { find = { where = ["src"] } }
+include-package-data = true
+
+[tool.setuptools.package-data]
+"agentscope_runtime.engine.deployers.utils.service_utils" = ["*.j2"]
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]
@@ -32,13 +38,14 @@ build-backend = "setuptools.build_meta"
 runtime-sandbox-mcp = "agentscope_runtime.sandbox.mcp_server:main"
 runtime-sandbox-server = "agentscope_runtime.sandbox.manager.server.app:main"
 runtime-sandbox-builder = "agentscope_runtime.sandbox.build:main"
+runtime-fc-deploy = "agentscope_runtime.engine.deployers.cli_fc_deploy:main"
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3.5",
     "pytest-asyncio>=0.23.0",
     "pre-commit>=4.2.0",
-    "jupyter-book>=1.0.4.post1",
+    "jupyter-book>=1.0.4.post1,<2.0.0",
     "furo>=2025.7.19",
     "pytest-cov>=6.2.1",
     "fakeredis>=2.31.0",
@@ -51,9 +58,6 @@ langgraph = [
 
 agno = [
     "agno>=1.7.5,<2.0.0",
-]
-a2a = [
-    "a2a-sdk>=0.3.0",
 ]
 autogen = [
     "autogen-agentchat>=0.7.4",
@@ -91,4 +95,20 @@ aliyun_tablestore_ext=[
 memory-ext = [
     "reme-ai==0.1.9 ; python_full_version >= '3.12'",
     "mem0ai>=0.1.117"
+]
+
+
+deployment = [
+    "alibabacloud-oss-v2",
+    "alibabacloud-bailian20231229>=2.5.0",
+    "build",
+    "setuptools>=40.8.0",
+    "wheel",
+    "steel-sdk>=0.1.0",
+    "alibabacloud-credentials",
+    "jinja2",
+    "psutil",
+    "shortuuid>=1.0.13",
+    "PyYAML",
+    "oss2>=2.19.1"
 ]

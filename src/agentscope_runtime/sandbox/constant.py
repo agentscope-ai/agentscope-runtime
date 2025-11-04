@@ -26,3 +26,6 @@ IMAGE_NAMESPACE = os.getenv("RUNTIME_SANDBOX_IMAGE_NAMESPACE", "agentscope")
 
 # Image Tag
 IMAGE_TAG = os.getenv("RUNTIME_SANDBOX_IMAGE_TAG", "latest")
+
+# Timeout
+TIMEOUT = int(os.getenv("RUNTIME_SANDBOX_TIMEOUT", "60"))

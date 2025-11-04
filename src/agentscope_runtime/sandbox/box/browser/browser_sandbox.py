@@ -8,6 +8,7 @@ from ...registry import SandboxRegistry
 from ...enums import SandboxType
 from ...box.base import BaseSandbox
 from ...box.gui import GUIMixin
+from ...constant import TIMEOUT
 
 
 def http_to_ws(url, use_localhost=True):
@@ -31,7 +32,7 @@ def http_to_ws(url, use_localhost=True):
     build_image_uri("runtime-sandbox-browser"),
     sandbox_type=SandboxType.BROWSER,
     security_level="medium",
-    timeout=60,
+    timeout=TIMEOUT,
     description="Browser sandbox",
 )
 class BrowserSandbox(GUIMixin, BaseSandbox):

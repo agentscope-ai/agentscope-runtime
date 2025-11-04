@@ -5,13 +5,14 @@ from ...utils import build_image_uri
 from ...registry import SandboxRegistry
 from ...enums import SandboxType
 from ...box.sandbox import Sandbox
+from ...constant import TIMEOUT
 
 
 @SandboxRegistry.register(
     build_image_uri("runtime-sandbox-base"),
     sandbox_type=SandboxType.BASE,
     security_level="medium",
-    timeout=30,
+    timeout=TIMEOUT,
     description="Base Sandbox",
 )
 class BaseSandbox(Sandbox):

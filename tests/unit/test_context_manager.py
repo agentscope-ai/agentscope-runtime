@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=redefined-outer-name, protected-access
 # pylint: disable=too-many-public-methods
-from unittest.mock import AsyncMock, Mock
+# Mock classes will be provided by pytest-mock plugin
 
 import pytest
 
@@ -40,20 +40,20 @@ def create_message(role: str, content: str) -> Message:
 
 
 @pytest.fixture
-def mock_session_history_service():
+def mock_session_history_service(mocker):
     """Mock SessionHistoryService for testing."""
-    service = AsyncMock(spec=SessionHistoryService)
-    service.append_message = AsyncMock()
-    service.get_session = AsyncMock()
+    service = mocker.AsyncMock(spec=SessionHistoryService)
+    service.append_message = mocker.AsyncMock()
+    service.get_session = mocker.AsyncMock()
     return service
 
 
 @pytest.fixture
-def mock_memory_service():
+def mock_memory_service(mocker):
     """Mock MemoryService for testing."""
-    service = AsyncMock(spec=MemoryService)
-    service.search_memory = AsyncMock()
-    service.add_memory = AsyncMock()
+    service = mocker.AsyncMock(spec=MemoryService)
+    service.search_memory = mocker.AsyncMock()
+    service.add_memory = mocker.AsyncMock()
     return service
 
 
@@ -308,10 +308,10 @@ class TestContextManager:
             messages=sample_messages,
         )
 
-    def test_register_service_class(self):
+    def test_register_service_class(self, mocker):
         """Test register method with service class."""
         manager = ContextManager()
-        mock_service_class = Mock()
+        mock_service_class = mocker.Mock()
         mock_service_class.__name__ = "TestService"
 
         manager.register(
@@ -329,10 +329,10 @@ class TestContextManager:
         assert service_info[2] == {"kwarg1": "value1"}  # kwargs
         assert service_info[3] == "test"  # name
 
-    def test_register_service_class_auto_name(self):
+    def test_register_service_class_auto_name(self, mocker):
         """Test register method with automatic name generation."""
         manager = ContextManager()
-        mock_service_class = Mock()
+        mock_service_class = mocker.Mock()
         mock_service_class.__name__ = "TestService"
 
         manager.register(mock_service_class)
@@ -340,10 +340,10 @@ class TestContextManager:
         assert len(manager.services) == 1
         assert manager.services[0][3] == "test"  # Service -> test
 
-    def test_register_service_class_duplicate_name(self):
+    def test_register_service_class_duplicate_name(self, mocker):
         """Test register method with duplicate name."""
         manager = ContextManager()
-        mock_service_class = Mock()
+        mock_service_class = mocker.Mock()
         mock_service_class.__name__ = "TestService"
 
         manager.register(mock_service_class, name="test")
@@ -354,19 +354,19 @@ class TestContextManager:
         ):
             manager.register(mock_service_class, name="test")
 
-    def test_register_service_instance(self):
+    def test_register_service_instance(self, mocker):
         """Test register_service method with service instance."""
         manager = ContextManager()
-        mock_service = Mock()
+        mock_service = mocker.Mock()
 
         manager.register_service("test", mock_service)
 
         assert manager.service_instances["test"] == mock_service
 
-    def test_register_service_instance_duplicate(self):
+    def test_register_service_instance_duplicate(self, mocker):
         """Test register_service method with duplicate name."""
         manager = ContextManager()
-        mock_service = Mock()
+        mock_service = mocker.Mock()
 
         manager.register_service("test", mock_service)
 
@@ -377,10 +377,10 @@ class TestContextManager:
             manager.register_service("test", mock_service)
 
     @pytest.mark.asyncio
-    async def test_context_manager_lifecycle(self):
+    async def test_context_manager_lifecycle(self, mocker):
         """Test async context manager lifecycle."""
-        mock_service_class = Mock()
-        mock_service_instance = AsyncMock()
+        mock_service_class = mocker.Mock()
+        mock_service_instance = mocker.AsyncMock()
         mock_service_class.return_value = mock_service_instance
         mock_service_class.__name__ = "TestService"
 
@@ -396,12 +396,15 @@ class TestContextManager:
         assert len(manager.service_instances) == 0
 
     @pytest.mark.asyncio
-    async def test_context_manager_lifecycle_with_pre_instantiated(self):
+    async def test_context_manager_lifecycle_with_pre_instantiated(
+        self,
+        mocker,
+    ):
         """Test async context manager lifecycle with pre-instantiated
         services."""
-        mock_service = AsyncMock()
-        mock_service.__aenter__ = AsyncMock(return_value=mock_service)
-        mock_service.__aexit__ = AsyncMock(return_value=False)
+        mock_service = mocker.AsyncMock()
+        mock_service.__aenter__ = mocker.AsyncMock(return_value=mock_service)
+        mock_service.__aexit__ = mocker.AsyncMock(return_value=False)
 
         manager = ContextManager()
         manager.register_service("test", mock_service)
@@ -415,9 +418,9 @@ class TestContextManager:
         assert len(manager.service_instances) == 0
 
     @pytest.mark.asyncio
-    async def test_context_manager_failure_cleanup(self):
+    async def test_context_manager_failure_cleanup(self, mocker):
         """Test that context manager cleans up properly on failure."""
-        mock_service_class = Mock()
+        mock_service_class = mocker.Mock()
         mock_service_class.side_effect = Exception("Service creation failed")
         mock_service_class.__name__ = "TestService"
 
@@ -430,10 +433,10 @@ class TestContextManager:
 
         assert len(manager.service_instances) == 2
 
-    def test_getattr_access(self):
+    def test_getattr_access(self, mocker):
         """Test __getattr__ method for service access."""
         manager = ContextManager()
-        mock_service = Mock()
+        mock_service = mocker.Mock()
         manager.service_instances["test"] = mock_service
 
         assert manager.test == mock_service
@@ -444,10 +447,10 @@ class TestContextManager:
         ):
             _ = manager.nonexistent
 
-    def test_getitem_access(self):
+    def test_getitem_access(self, mocker):
         """Test __getitem__ method for service access."""
         manager = ContextManager()
-        mock_service = Mock()
+        mock_service = mocker.Mock()
         manager.service_instances["test"] = mock_service
 
         assert manager["test"] == mock_service
@@ -455,41 +458,41 @@ class TestContextManager:
         with pytest.raises(KeyError, match="Service 'nonexistent' not found"):
             _ = manager["nonexistent"]
 
-    def test_get_method(self):
+    def test_get_method(self, mocker):
         """Test get method for service access."""
         manager = ContextManager()
-        mock_service = Mock()
+        mock_service = mocker.Mock()
         manager.service_instances["test"] = mock_service
 
         assert manager.get("test") == mock_service
         assert manager.get("nonexistent") is None
         assert manager.get("nonexistent", "default") == "default"
 
-    def test_has_service(self):
+    def test_has_service(self, mocker):
         """Test has_service method."""
         manager = ContextManager()
-        mock_service = Mock()
+        mock_service = mocker.Mock()
         manager.service_instances["test"] = mock_service
 
         assert manager.has_service("test") is True
         assert manager.has_service("nonexistent") is False
 
-    def test_list_services(self):
+    def test_list_services(self, mocker):
         """Test list_services method."""
         manager = ContextManager()
-        manager.service_instances["test1"] = Mock()
-        manager.service_instances["test2"] = Mock()
+        manager.service_instances["test1"] = mocker.Mock()
+        manager.service_instances["test2"] = mocker.Mock()
 
         services = manager.list_services()
         assert "test1" in services
         assert "test2" in services
         assert len(services) == 4
 
-    def test_all_services_property(self):
+    def test_all_services_property(self, mocker):
         """Test all_services property."""
         manager = ContextManager()
-        mock_service1 = Mock()
-        mock_service2 = Mock()
+        mock_service1 = mocker.Mock()
+        mock_service2 = mocker.Mock()
         manager.service_instances["test1"] = mock_service1
         manager.service_instances["test2"] = mock_service2
 
@@ -499,18 +502,18 @@ class TestContextManager:
         assert len(all_services) == 4
 
         # Ensure it returns a copy
-        all_services["test3"] = Mock()
+        all_services["test3"] = mocker.Mock()
         assert "test3" not in manager.service_instances
 
     @pytest.mark.asyncio
-    async def test_health_check_all_healthy(self):
+    async def test_health_check_all_healthy(self, mocker):
         """Test health_check method with all services healthy."""
         manager = ContextManager()
-        mock_service1 = AsyncMock()
+        mock_service1 = mocker.AsyncMock()
         mock_service1.health.return_value = True
 
         # Create a service without health method
-        mock_service2 = Mock(spec=[])  # Empty spec means no methods
+        mock_service2 = mocker.Mock(spec=[])  # Empty spec means no methods
 
         manager.service_instances["test1"] = mock_service1
         manager.service_instances["test2"] = mock_service2
@@ -522,12 +525,12 @@ class TestContextManager:
         mock_service1.health.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_health_check_with_unhealthy_service(self):
+    async def test_health_check_with_unhealthy_service(self, mocker):
         """Test health_check method with one unhealthy service."""
         manager = ContextManager()
-        mock_service1 = AsyncMock()
+        mock_service1 = mocker.AsyncMock()
         mock_service1.health.return_value = False
-        mock_service2 = AsyncMock()
+        mock_service2 = mocker.AsyncMock()
         mock_service2.health.side_effect = Exception("Health check failed")
 
         manager.service_instances["test1"] = mock_service1

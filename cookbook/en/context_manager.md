@@ -346,6 +346,7 @@ await main()
 from agentscope_runtime.engine.schemas.agent_schemas import Message, TextContent, MessageType, Role
 
 # Create a session
+user_id = "u_append"
 session = await session_history_service.create_session(user_id)
 
 # Add a single message using built-in Message format

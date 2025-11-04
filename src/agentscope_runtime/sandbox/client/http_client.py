@@ -11,6 +11,8 @@ from pydantic import Field
 from ..model import ContainerModel
 
 
+DEFAULT_TIMEOUT = 60
+
 logging.getLogger("httpx").setLevel(logging.CRITICAL)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -84,7 +86,8 @@ class SandboxHttpClient:
             "fastapi",
         )
 
-        self.timeout = timeout
+        self.start_timeout = timeout
+        self.timeout = model.timeout or DEFAULT_TIMEOUT
         self.session = requests.Session()
         self.built_in_tools = []
         self.secret = model.runtime_token
@@ -106,6 +109,11 @@ class SandboxHttpClient:
     def __exit__(self, exc_type, exc_value, traceback):
         pass
 
+    def _request(self, method: str, url: str, **kwargs):
+        if "timeout" not in kwargs:
+            kwargs["timeout"] = self.timeout
+        return self.session.request(method, url, **kwargs)
+
     def check_health(self) -> bool:
         """
         Checks if the runtime service is running by verifying the health
@@ -126,7 +134,7 @@ class SandboxHttpClient:
         Waits until the runtime service is running for a specified timeout.
         """
         start_time = time.time()
-        while time.time() - start_time < self.timeout:
+        while time.time() - start_time < self.start_timeout:
             if self.check_health():
                 return
             time.sleep(1)
@@ -140,7 +148,8 @@ class SandboxHttpClient:
         """
         try:
             endpoint = f"{self.base_url}/mcp/add_servers"
-            response = self.session.post(
+            response = self._request(
+                "post",
                 endpoint,
                 json={
                     "server_configs": server_configs,
@@ -159,7 +168,10 @@ class SandboxHttpClient:
     def list_tools(self, tool_type=None, **kwargs) -> dict:
         try:
             endpoint = f"{self.base_url}/mcp/list_tools"
-            response = self.session.get(endpoint)
+            response = self._request(
+                "get",
+                endpoint,
+            )
             response.raise_for_status()
             mcp_tools = response.json()
             mcp_tools["generic"] = self.generic_tools
@@ -189,7 +201,8 @@ class SandboxHttpClient:
 
         try:
             endpoint = f"{self.base_url}/mcp/call_tool"
-            response = self.session.post(
+            response = self._request(
+                "post",
                 endpoint,
                 json={
                     "tool_name": name,
@@ -215,7 +228,8 @@ class SandboxHttpClient:
         """Run an IPython cell."""
         try:
             endpoint = f"{self.base_url}/tools/run_ipython_cell"
-            response = self.session.post(
+            response = self._request(
+                "post",
                 endpoint,
                 json={"code": code},
             )
@@ -237,7 +251,11 @@ class SandboxHttpClient:
         """Run a shell command."""
         try:
             endpoint = f"{self.base_url}/tools/run_shell_command"
-            response = self.session.post(endpoint, json={"command": command})
+            response = self._request(
+                "post",
+                endpoint,
+                json={"command": command},
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -258,7 +276,8 @@ class SandboxHttpClient:
         """
         try:
             endpoint = f"{self.base_url}/watcher/commit_changes"
-            response = self.session.post(
+            response = self._request(
+                "post",
                 endpoint,
                 json={"commit_message": commit_message},
             )
@@ -282,7 +301,8 @@ class SandboxHttpClient:
         """
         try:
             endpoint = f"{self.base_url}/watcher/generate_diff"
-            response = self.session.post(
+            response = self._request(
+                "post",
                 endpoint,
                 json={"commit_a": commit_a, "commit_b": commit_b},
             )
@@ -301,7 +321,10 @@ class SandboxHttpClient:
         """
         try:
             endpoint = f"{self.base_url}/watcher/git_logs"
-            response = self.session.get(endpoint)
+            response = self._request(
+                "get",
+                endpoint,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -318,7 +341,11 @@ class SandboxHttpClient:
         try:
             endpoint = f"{self.base_url}/workspace/files"
             params = {"file_path": file_path}
-            response = self.session.get(endpoint, params=params)
+            response = self._request(
+                "get",
+                endpoint,
+                params=params,
+            )
             response.raise_for_status()
             # Return the binary content of the file
             # Check for empty content
@@ -351,7 +378,8 @@ class SandboxHttpClient:
             endpoint = f"{self.base_url}/workspace/files"
             params = {"file_path": file_path}
             data = {"content": content}
-            response = self.session.post(
+            response = self._request(
+                "post",
                 endpoint,
                 params=params,
                 json=data,
@@ -378,7 +406,8 @@ class SandboxHttpClient:
         try:
             endpoint = f"{self.base_url}/workspace/list-directories"
             params = {"directory": directory}
-            response = self.session.get(
+            response = self._request(
+                "get",
                 endpoint,
                 params=params,
             )
@@ -398,7 +427,8 @@ class SandboxHttpClient:
         try:
             endpoint = f"{self.base_url}/workspace/directories"
             params = {"directory_path": directory_path}
-            response = self.session.post(
+            response = self._request(
+                "post",
                 endpoint,
                 params=params,
             )
@@ -420,7 +450,8 @@ class SandboxHttpClient:
         try:
             endpoint = f"{self.base_url}/workspace/files"
             params = {"file_path": file_path}
-            response = self.session.delete(
+            response = self._request(
+                "delete",
                 endpoint,
                 params=params,
             )
@@ -446,7 +477,8 @@ class SandboxHttpClient:
         try:
             endpoint = f"{self.base_url}/workspace/directories"
             params = {"directory_path": directory_path, "recursive": recursive}
-            response = self.session.delete(
+            response = self._request(
+                "delete",
                 endpoint,
                 params=params,
             )
@@ -475,7 +507,8 @@ class SandboxHttpClient:
                 "source_path": source_path,
                 "destination_path": destination_path,
             }
-            response = self.session.put(
+            response = self._request(
+                "put",
                 endpoint,
                 params=params,
             )
@@ -505,7 +538,8 @@ class SandboxHttpClient:
                 "source_path": source_path,
                 "destination_path": destination_path,
             }
-            response = self.session.post(
+            response = self._request(
+                "post",
                 endpoint,
                 params=params,
             )
