@@ -224,7 +224,7 @@ class Tracer:
         try:
             yield event_context
         except Exception as e:
-            traceback_info = traceback.format_exc()  # 获取traceback信息
+            traceback_info = traceback.format_exc()
             for handle in self.handlers:
                 handle.on_error(
                     event_name,
@@ -232,7 +232,7 @@ class Tracer:
                     e,
                     start_time,
                     traceback_info=traceback_info,
-                )  # 传递traceback信息
+                )
             raise
 
         event_context.finalize(payload)
