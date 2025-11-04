@@ -5,8 +5,8 @@ from typing import Optional, Type
 
 from agno.agent import Agent as AgAgent
 from agno.models.base import Model
-from agno.run.response import (
-    RunResponseContentEvent,
+from agno.run.agent import (
+    RunContentEvent,
     ToolCallStartedEvent,
     ToolCallCompletedEvent,
 )
@@ -163,12 +163,6 @@ class AgnoAgent(Agent):
         # the agent
         _agent = self.build(ag_context)
 
-        resp = await _agent.arun(
-            ag_context.new_message,
-            messages=ag_context.memory,
-            stream=True,
-        )
-
         text_message = Message(
             type=MessageType.MESSAGE,
             role="assistant",
@@ -178,8 +172,12 @@ class AgnoAgent(Agent):
 
         text_delta_content = TextContent(delta=True)
         is_text_delta = False
-        async for event in resp:
-            if isinstance(event, RunResponseContentEvent):
+        async for event in _agent.arun(
+            ag_context.new_message,
+            session_state=ag_context.memory,
+            stream=True,
+        ):
+            if isinstance(event, RunContentEvent):
                 is_text_delta = True
                 text_delta_content.text = event.content
                 text_delta_content = text_message.add_delta_content(
