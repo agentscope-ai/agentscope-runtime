@@ -70,7 +70,6 @@ class TestLocalDeployManager:
                 "http://localhost:8090/test",
                 json=PAYLOAD,
             )
-            print(response.json())
             assert response.status_code == 200
             response_result = response.json()
             assert response_result["result"] == "ok"
