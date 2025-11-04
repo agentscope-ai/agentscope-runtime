@@ -2,7 +2,7 @@
 # pylint: disable=unused-variable,f-string-without-interpolation
 # pylint: disable=line-too-long, too-many-branches
 from pathlib import Path
-
+import pytest
 from agentscope_runtime.engine.deployers.utils.wheel_packager import (
     generate_wrapper_project,
 )
@@ -24,10 +24,13 @@ dependencies = ["requests>=2.0.0"]
     return proj
 
 
-def test_generate_wrapper_project_writes_config_and_manifest(tmp_path: Path):
+@pytest.mark.asyncio
+async def test_generate_wrapper_project_writes_config_and_manifest(
+    tmp_path: (Path),
+):
     user_proj = _make_user_project(tmp_path)
 
-    wrapper_dir, dist_dir = generate_wrapper_project(
+    wrapper_dir, dist_dir = await generate_wrapper_project(
         build_root=tmp_path / "wrap",
         user_project_dir=user_proj,
         start_cmd="python app.py",
@@ -52,9 +55,10 @@ def test_generate_wrapper_project_writes_config_and_manifest(tmp_path: Path):
     ).is_file()
 
 
-def test_generate_wrapper_project_telemetry_true(tmp_path: Path):
+@pytest.mark.asyncio
+async def test_generate_wrapper_project_telemetry_true(tmp_path: Path):
     user_proj = _make_user_project(tmp_path)
-    wrapper_dir, _ = generate_wrapper_project(
+    wrapper_dir, _ = await generate_wrapper_project(
         build_root=tmp_path / "wrap2",
         user_project_dir=user_proj,
         start_cmd="python app.py",

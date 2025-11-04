@@ -66,6 +66,7 @@ class LocalDeployManager(DeployManager):
 
     async def deploy(
         self,
+        app=None,
         runner: Optional[Any] = None,
         endpoint_path: str = "/process",
         request_model: Optional[Type] = None,
@@ -111,9 +112,13 @@ class LocalDeployManager(DeployManager):
         if self.is_running:
             raise RuntimeError("Service is already running")
 
+        self._app = app
+        if self._app is not None:
+            runner = self._app._runner
         try:
             if mode == DeploymentMode.DAEMON_THREAD:
                 return await self._deploy_daemon_thread(
+                    app=app,
                     runner=runner,
                     endpoint_path=endpoint_path,
                     request_model=request_model,
@@ -131,6 +136,7 @@ class LocalDeployManager(DeployManager):
                 )
             elif mode == DeploymentMode.DETACHED_PROCESS:
                 return await self._deploy_detached_process(
+                    app=app,
                     runner=runner,
                     endpoint_path=endpoint_path,
                     request_model=request_model,
@@ -155,6 +161,7 @@ class LocalDeployManager(DeployManager):
 
     async def _deploy_daemon_thread(
         self,
+        app=None,
         runner: Optional[Any] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         broker_url: Optional[str] = None,
@@ -166,15 +173,16 @@ class LocalDeployManager(DeployManager):
         self._logger.info("Deploying FastAPI service in daemon thread mode...")
 
         # Create FastAPI app using factory with Celery support
-        app = FastAPIAppFactory.create_app(
-            runner=runner,
-            mode=DeploymentMode.DAEMON_THREAD,
-            protocol_adapters=protocol_adapters,
-            broker_url=broker_url,
-            backend_url=backend_url,
-            enable_embedded_worker=enable_embedded_worker,
-            **kwargs,
-        )
+        if self._app is None:
+            app = FastAPIAppFactory.create_app(
+                runner=runner,
+                mode=DeploymentMode.DAEMON_THREAD,
+                protocol_adapters=protocol_adapters,
+                broker_url=broker_url,
+                backend_url=backend_url,
+                enable_embedded_worker=enable_embedded_worker,
+                **kwargs,
+            )
 
         # Create uvicorn server
         config = uvicorn.Config(

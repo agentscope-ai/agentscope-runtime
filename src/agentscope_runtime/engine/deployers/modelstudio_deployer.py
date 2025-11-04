@@ -201,16 +201,6 @@ async def _oss_create_bucket_if_not_exists(client, bucket_name: str) -> None:
         )
 
 
-def _create_bucket_name(prefix: str, base_name: str) -> str:
-    import re as _re
-
-    ts = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
-    base = _re.sub(r"\s+", "-", base_name)
-    base = _re.sub(r"[^a-zA-Z0-9-]", "", base).lower().strip("-")
-    name = f"{prefix}-{base}-{ts}"
-    return name[:63]
-
-
 async def _oss_put_and_presign(
     client,
     bucket_name: str,
