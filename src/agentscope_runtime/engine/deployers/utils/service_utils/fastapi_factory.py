@@ -274,9 +274,10 @@ class FastAPIAppFactory:
             and not app.state.runner_managed_externally
         ):
             runner = app.state.runner
-            if runner and hasattr(runner, "context_manager"):
+            if runner:
                 try:
-                    await runner.context_manager.__aexit__(None, None, None)
+                    # Clean up runner
+                    await runner.__aexit__(None, None, None)
                 except Exception as e:
                     print(f"Warning: Error during runner cleanup: {e}")
 
@@ -297,14 +298,14 @@ class FastAPIAppFactory:
             memory_service=services["memory"],
         )
 
-        # Initialize context manager
-        await context_manager.__aenter__()
-
         # Create runner (agent will be set later)
         runner = Runner(
             agent=None,  # Will be set by the specific deployment
             context_manager=context_manager,
         )
+
+        # Initialize runner
+        await runner.__aenter__()
 
         return runner
 
@@ -673,18 +674,48 @@ class FastAPIAppFactory:
         try:
             sig = inspect.signature(handler)
             params = list(sig.parameters.values())
+            no_params = False
+            param_annotation = None
 
             if not params:
-                # No parameters, call function directly
-                return handler
+                no_params = True
+            else:
+                # Get the first parameter
+                first_param = params[0]
+                param_annotation = first_param.annotation
 
-            # Get the first parameter
-            first_param = params[0]
-            param_annotation = first_param.annotation
+                # If no annotation or annotation is Request, goto no params
+                # logic
+                if param_annotation in [inspect.Parameter.empty, Request]:
+                    no_params = True
 
-            # If no annotation or annotation is Request, pass Request directly
-            if param_annotation in [inspect.Parameter.empty, Request]:
-                return handler
+            if no_params:
+                if is_async_gen:
+
+                    async def async_no_param_wrapper():
+                        async def generate():
+                            async for chunk in handler():
+                                yield str(chunk)
+
+                        return StreamingResponse(
+                            generate(),
+                            media_type="text/plain",
+                        )
+
+                    return async_no_param_wrapper
+                else:
+
+                    async def sync_no_param_wrapper():
+                        def generate():
+                            for chunk in handler():
+                                yield str(chunk)
+
+                        return StreamingResponse(
+                            generate(),
+                            media_type="text/plain",
+                        )
+
+                    return sync_no_param_wrapper
 
             # Check if the annotation is a Pydantic model
             if isinstance(param_annotation, type) and issubclass(
@@ -693,24 +724,20 @@ class FastAPIAppFactory:
             ):
                 if is_async_gen:
 
-                    async def async_stream_pydantic_wrapper(request: Request):
+                    async def async_stream_pydantic_wrapper(
+                        request: Request,
+                    ):
                         try:
                             body = await request.json()
                             parsed_param = param_annotation(**body)
 
-                            # Create async generator and return
-                            # StreamingResponse
                             async def generate():
                                 async for chunk in handler(parsed_param):
                                     yield str(chunk)
 
                             return StreamingResponse(
                                 generate(),
-                                media_type="text/event-stream",
-                                headers={
-                                    "Cache-Control": "no-cache",
-                                    "Connection": "keep-alive",
-                                },
+                                media_type="text/plain",
                             )
                         except Exception as e:
                             return StreamingResponse(
@@ -721,7 +748,9 @@ class FastAPIAppFactory:
                     return async_stream_pydantic_wrapper
                 else:
 
-                    async def sync_stream_pydantic_wrapper(request: Request):
+                    async def sync_stream_pydantic_wrapper(
+                        request: Request,
+                    ):
                         try:
                             body = await request.json()
                             parsed_param = param_annotation(**body)
@@ -738,19 +767,16 @@ class FastAPIAppFactory:
                             return JSONResponse(
                                 status_code=422,
                                 content={
-                                    "detail": f"Request parsing error: "
-                                    f"{str(e)}",
+                                    "detail": f"Request parsing error:"
+                                    f" {str(e)}",
                                 },
                             )
 
                     return sync_stream_pydantic_wrapper
 
-            # For other types, fall back to original behavior
             return handler
 
         except Exception:
-            # If anything goes wrong with introspection, fall back to
-            # original behavior
             return handler
 
     @staticmethod

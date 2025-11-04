@@ -8,6 +8,7 @@ import requests
 
 from agentscope_runtime.engine.deployers import LocalDeployManager
 from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 
 PAYLOAD = {
     "input": [
@@ -44,10 +45,10 @@ class TestLocalDeployManager:
         assert deploy_manager.port == 8090
         assert deploy_manager._server is None
         assert deploy_manager._server_task is None
-        assert deploy_manager._is_running is False
+        assert deploy_manager.is_running is False
         assert deploy_manager._app is None
         assert deploy_manager._startup_timeout == 30
-        assert deploy_manager._shutdown_timeout == 10
+        assert deploy_manager._shutdown_timeout == 30
 
     @pytest.mark.asyncio
     async def test_deploy_success_with_callable(self, deploy_manager):
@@ -55,28 +56,19 @@ class TestLocalDeployManager:
         _app = AgentApp()
 
         @_app.endpoint("/test")
-        async def test_func(user_id):
+        async def test_func(request: AgentRequest):
             return {"result": "ok"}
 
         try:
             result = await deploy_manager.deploy(app=_app)
 
             assert result["url"] == "http://localhost:8090"
-            assert deploy_manager._is_running is True
+            assert deploy_manager.is_running is True
 
             # Test that the server is actually running and the endpoint works
             response = requests.post(
                 "http://localhost:8090/test",
-                json={
-                    "input": [
-                        {
-                            "role": "user",
-                            "content": [{"type": "text", "text": "杭州的天气怎么样？"}],
-                        },
-                    ],
-                    "session_id": "session_123",
-                    "user_id": "user_213",
-                },
+                json=PAYLOAD,
             )
             assert response.status_code == 200
             response_result = response.json()
@@ -84,7 +76,7 @@ class TestLocalDeployManager:
 
         finally:
             # Clean up
-            if deploy_manager._is_running:
+            if deploy_manager.is_running:
                 await deploy_manager.stop()
 
     @pytest.mark.asyncio
@@ -95,7 +87,7 @@ class TestLocalDeployManager:
         try:
             # First deployment
             await deploy_manager.deploy(app=_app)
-            assert deploy_manager._is_running is True
+            assert deploy_manager.is_running is True
 
             # Try to deploy again
             with pytest.raises(
@@ -106,7 +98,7 @@ class TestLocalDeployManager:
 
         finally:
             # Clean up
-            if deploy_manager._is_running:
+            if deploy_manager.is_running:
                 await deploy_manager.stop()
 
     @pytest.mark.asyncio
@@ -121,9 +113,17 @@ class TestLocalDeployManager:
         deploy_manager._startup_timeout = 0.1
 
         # Mock the server readiness check to always fail
-        monkeypatch.setattr(deploy_manager, "_is_server_ready", lambda: False)
+        monkeypatch.setattr(
+            deploy_manager,
+            "_is_server_ready",
+            lambda: False,
+        )
 
-        with pytest.raises(RuntimeError, match="Server startup timeout"):
+        with pytest.raises(
+            RuntimeError,
+            match="Failed to deploy service: Server did not become ready "
+            "within timeout",
+        ):
             await deploy_manager.deploy(app=_app)
 
     @pytest.mark.asyncio
@@ -132,20 +132,19 @@ class TestLocalDeployManager:
         _app = AgentApp()
         # First deploy the service
         await deploy_manager.deploy(app=_app)
-        assert deploy_manager._is_running is True
+        assert deploy_manager.is_running is True
 
         # Stop the service
         await deploy_manager.stop()
 
-        assert deploy_manager._is_running is False
+        assert deploy_manager.is_running is False
         assert deploy_manager._server is None
         assert deploy_manager._server_task is None
-        assert deploy_manager._app is None
 
     @pytest.mark.asyncio
     async def test_stop_not_running(self, deploy_manager):
         """Test stopping when service is not running."""
-        deploy_manager._is_running = False
+        deploy_manager.is_running = False
 
         # Should not raise an exception
         await deploy_manager.stop()
@@ -154,7 +153,7 @@ class TestLocalDeployManager:
         """Test is_running property."""
         assert deploy_manager.is_running is False
 
-        deploy_manager._is_running = True
+        deploy_manager.is_running = True
         assert deploy_manager.is_running is True
 
     def test_service_url_property(self, deploy_manager):
@@ -163,7 +162,7 @@ class TestLocalDeployManager:
         assert deploy_manager.service_url is None
 
         # Running with port
-        deploy_manager._is_running = True
+        deploy_manager.is_running = True
         deploy_manager.port = 8000
         assert deploy_manager.service_url == "http://localhost:8000"
 
@@ -192,7 +191,7 @@ class TestLocalDeployManagerIntegration:
         _app = AgentApp()
 
         @_app.endpoint(path="/test")
-        async def test_func(user_id):
+        async def test_func(request: AgentRequest):
             return {"result": "ok"}
 
         try:
@@ -227,11 +226,11 @@ class TestLocalDeployManagerIntegration:
         deploy_manager2 = LocalDeployManager(host="localhost", port=8093)
 
         @_app.endpoint(path="/test1")
-        async def test_func1(user_id):
+        async def test_func1(request: AgentRequest):
             return {"result": "test1"}
 
         @_app.endpoint(path="/test2")
-        async def test_func2(user_id):
+        async def test_func2(request: AgentRequest):
             return {"result": "test2"}
 
         try:

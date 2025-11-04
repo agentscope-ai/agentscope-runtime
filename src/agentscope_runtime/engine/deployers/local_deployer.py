@@ -29,7 +29,8 @@ class LocalDeployManager(DeployManager):
         self,
         host: str = "127.0.0.1",
         port: int = 8000,
-        shutdown_timeout: int = 120,
+        shutdown_timeout: int = 30,
+        startup_timeout: int = 30,
         logger: Optional[logging.Logger] = None,
     ):
         """Initialize LocalDeployManager.
@@ -44,6 +45,7 @@ class LocalDeployManager(DeployManager):
         self.host = host
         self.port = port
         self._shutdown_timeout = shutdown_timeout
+        self._startup_timeout = startup_timeout
         self._logger = logger or logging.getLogger(__name__)
 
         # State management
@@ -66,6 +68,7 @@ class LocalDeployManager(DeployManager):
 
     async def deploy(
         self,
+        app=None,
         runner: Optional[Any] = None,
         endpoint_path: str = "/process",
         request_model: Optional[Type] = None,
@@ -111,6 +114,19 @@ class LocalDeployManager(DeployManager):
         if self.is_running:
             raise RuntimeError("Service is already running")
 
+        self._app = app
+        if self._app is not None:
+            runner = self._app._runner
+            endpoint_path = self._app.endpoint_path
+            response_type = self._app.response_type
+            stream = self._app.stream
+            request_model = self._app.request_model
+            before_start = self._app.before_start
+            after_finish = self._app.after_finish
+            backend_url = self._app.backend_url
+            broker_url = self._app.broker_url
+            custom_endpoints = self._app.custom_endpoints
+            protocol_adapters = self._app.protocol_adapters
         try:
             if mode == DeploymentMode.DAEMON_THREAD:
                 return await self._deploy_daemon_thread(
@@ -194,7 +210,7 @@ class LocalDeployManager(DeployManager):
         self._server_thread.start()
 
         # Wait for server to start
-        await self._wait_for_server_ready()
+        await self._wait_for_server_ready(self._startup_timeout)
 
         self.is_running = True
         self.deploy_id = f"daemon_{self.host}_{self.port}"

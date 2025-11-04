@@ -25,6 +25,10 @@ dependencies = [
 
 [tool.setuptools]
 packages = { find = { where = ["src"] } }
+include-package-data = true
+
+[tool.setuptools.package-data]
+"agentscope_runtime.engine.deployers.utils.service_utils" = ["*.j2"]
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]
