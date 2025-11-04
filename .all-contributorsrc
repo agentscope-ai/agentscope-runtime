@@ -148,6 +148,16 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "ms-cs",
+      "name": "zhiyong",
+      "avatar_url": "https://avatars.githubusercontent.com/u/43086458?v=4",
+      "profile": "https://github.com/ms-cs",
+      "contributions": [
+        "code",
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,
