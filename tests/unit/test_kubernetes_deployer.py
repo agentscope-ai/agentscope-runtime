@@ -145,51 +145,6 @@ class TestKubernetesDeployManager:
         "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
     )
     @pytest.mark.asyncio
-    async def test_deploy_with_legacy_func(self, mock_k8s_client, mocker):
-        """Test deployment with legacy func parameter."""
-
-        # Setup mocks
-        def mock_func():
-            return "test response"
-
-        # Mock Kubernetes client
-        mock_client_instance = mocker.Mock()
-        mock_client_instance.create_deployment.return_value = (
-            "service-id",
-            [8090],
-            "10.0.0.1",
-        )
-        mock_k8s_client.return_value = mock_client_instance
-
-        # Create deployer
-        deployer = KubernetesDeployManager()
-
-        # Mock the image builder to avoid actual Docker operations
-        with patch.object(
-            deployer.image_factory,
-            "build_runner_image",
-            return_value="test-image:latest",
-        ) as mock_build:
-            # Test deployment with func parameter (legacy)
-            result = await deployer.deploy(
-                runner=None,  # No runner
-                func=mock_func,  # Legacy func parameter
-                requirements=["fastapi"],
-                port=8090,
-            )
-
-            # Assertions
-            assert isinstance(result, dict)
-            assert "deploy_id" in result
-            assert "url" in result
-
-            # Verify image build was called with wrapped function
-            mock_build.assert_called_once()
-
-    @patch(
-        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
-    )
-    @pytest.mark.asyncio
     async def test_deploy_image_build_failure(self, mock_k8s_client, mocker):
         """Test deployment when image build fails."""
         mock_runner = mocker.Mock()

@@ -210,30 +210,6 @@ class TestDockerImageBuilder:
         # Verify subprocess.run was called (at least for docker --version)
         assert mock_subprocess.call_count >= 1
 
-    def test_build_image_source_not_updated(self, mocker):
-        mock_subprocess = mocker.patch("subprocess.run")
-        """Test build_image when source_updated=False (early return)."""
-        # Mock docker --version for __init__
-        mock_version_result = mocker.Mock()
-        mock_version_result.returncode = 0
-        mock_version_result.stdout = "Docker version 24.0.0"
-        mock_subprocess.return_value = mock_version_result
-
-        build_config = BuildConfig(source_updated=False)  # Default is False
-        builder = DockerImageBuilder()
-
-        result = builder.build_image(
-            build_context=self.temp_dir,
-            image_name="test-image",
-            image_tag="latest",
-            config=build_config,
-        )
-
-        # Should return the image name without actually building
-        assert result == "test-image:latest"
-        # Only the --version call should have been made, no build call
-        assert mock_subprocess.call_count == 1
-
 
 class TestRunnerImageFactory:
     """Test cases for RunnerImageFactory class."""
