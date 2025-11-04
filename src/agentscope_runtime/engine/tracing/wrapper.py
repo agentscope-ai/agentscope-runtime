@@ -904,6 +904,7 @@ def _get_tracer() -> Tracer:
     return tracer
 
 
+# TODO: support more tracing protocols and platforms
 def _get_ot_tracer() -> ot_trace.Tracer:
     """Get the OpenTelemetry tracer.
 
