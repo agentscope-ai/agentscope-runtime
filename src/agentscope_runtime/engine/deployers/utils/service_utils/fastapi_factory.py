@@ -274,9 +274,10 @@ class FastAPIAppFactory:
             and not app.state.runner_managed_externally
         ):
             runner = app.state.runner
-            if runner and hasattr(runner, "context_manager"):
+            if runner:
                 try:
-                    await runner.context_manager.__aexit__(None, None, None)
+                    # Clean up runner
+                    await runner.__aexit__(None, None, None)
                 except Exception as e:
                     print(f"Warning: Error during runner cleanup: {e}")
 
@@ -297,14 +298,14 @@ class FastAPIAppFactory:
             memory_service=services["memory"],
         )
 
-        # Initialize context manager
-        await context_manager.__aenter__()
-
         # Create runner (agent will be set later)
         runner = Runner(
             agent=None,  # Will be set by the specific deployment
             context_manager=context_manager,
         )
+
+        # Initialize runner
+        await runner.__aenter__()
 
         return runner
 
