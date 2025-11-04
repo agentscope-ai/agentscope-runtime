@@ -42,19 +42,13 @@ Start by importing all necessary modules:
 
 ```{code-cell}
 import os
-from contextlib import asynccontextmanager
-from agentscope_runtime.engine import Runner
+
+from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+from agentscope_runtime.engine.deployers import LocalDeployManager
 from agentscope.model import OpenAIChatModel
 from agentscope.agent import ReActAgent
-from agentscope_runtime.engine.schemas.agent_schemas import (
-    MessageType,
-    RunStatus,
-    AgentRequest,
-)
-from agentscope_runtime.engine.services.context_manager import (
-    ContextManager,
-)
+
 
 print("✅ Dependencies imported successfully")
 ```
@@ -77,7 +71,6 @@ agent = AgentScopeAgent(
 )
 
 print("✅ AgentScope agent created successfully")
-```
 ```
 
 ```{note}
@@ -189,260 +182,71 @@ agent = LangGraphAgent(graph=compiled_graph)
 print("✅ LangGraph agent created successfully")
 ```
 
-### Step3: Create Runner
+### Step3: Create and Launch Agent App
 
-Establish the runtime context for managing agent lifecycle:
-
-```{code-cell}
-@asynccontextmanager
-async def create_runner():
-    async with Runner(
-        agent=llm_agent,
-        context_manager=ContextManager(),
-    ) as runner:
-        print("✅ Runner created successfully")
-        yield runner
-```
-
-### Step 4: Define Interaction Function
-
-Implement a function to test your agent with streaming responses:
+Create an agent API server using agent and `AgentApp`:
 
 ```{code-cell}
-async def interact_with_agent(runner):
-    # Create a request
-    request = AgentRequest(
-        input=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "What is the capital of France?",
-                    },
-                ],
-            },
-        ],
-    )
+app = AgentApp(agent=agent, endpoint_path="/process")
 
-    # Stream the response
-    print("🤖 Agent is processing your request...")
-    all_result = ""
-    async for message in runner.stream_query(request=request):
-        # Check if this is a completed message
-        if (
-            message.object == "message"
-            and MessageType.MESSAGE == message.type
-            and RunStatus.Completed == message.status
-        ):
-            all_result = message.content[0].text
-
-    print(f"📝 Agent response: {all_result}")
-    return all_result
+app.run(host="0.0.0.0", port=8090)
 ```
 
-### Step 5: Test Agent Interaction
+The server will start and listen on: `http://localhost:8090/process`.
 
-Execute the interaction flow to test your agent's functionality:
+### Step 4: Send Request to Agent
+
+You can send JSON input to the API using `curl`:
+
+```bash
+curl -N \
+  -X POST "http://localhost:8090/process" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          { "type": "text", "text": "What is the capital of France?" }
+        ]
+      }
+    ]
+  }'
+```
+
+You’ll see output streamed in **Server-Sent Events (SSE)** format:
+
+```bash
+data: {"sequence_number":0,"object":"response","status":"created", ... }
+data: {"sequence_number":1,"object":"response","status":"in_progress", ... }
+data: {"sequence_number":2,"object":"content","status":"in_progress","text":"The" }
+data: {"sequence_number":3,"object":"content","status":"in_progress","text":" capital of France is Paris." }
+data: {"sequence_number":4,"object":"message","status":"completed","text":"The capital of France is Paris." }
+```
+
+### Step 5: Deploy the Agent with Deployer
+
+The AgentScope Runtime provides a powerful deployment system that allows you to deploy your agent to remote or local container. And we use `LocalDeployManager` as example:
 
 ```{code-cell}
-async def test_interaction():
-    async with create_runner() as runner:
-        await interact_with_agent(runner)
-
-await test_interaction()
+async def main():
+    await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```
 
-## Deploy the Agent with Deployer
 
-The AgentScope Runtime provides a powerful deployment system that allows you to expose your agents as web services.
+This will run your agent API Server on the specified port, making it accessible for external requests. In addition to basic HTTP API access, you can interact with the agent through different protocols, such as A2A, Response API, Agent API, and others. Please refer {doc}`protocol` for details.
 
-### Step 6: Create Deployment Function
+For example, user could query the deployment by OpenAI SDK with response api.
 
-Set up the deployment configuration with the `LocalDeployManager`:
+```python
+from openai import OpenAI
 
-```{code-cell}
-from agentscope_runtime.engine.deployers import LocalDeployManager
+client = OpenAI(base_url="http://0.0.0.0:8091/compatible-mode/v1")
 
-async def deploy_agent(runner):
-    # Create deployment manager
-    deploy_manager = LocalDeployManager(
-        host="localhost",
-        port=8090,
-    )
+response = client.responses.create(
+  model="any_name",
+  input="What is the weather in Beijing?"
+)
 
-    # Deploy the agent as a streaming service
-    deploy_result = await runner.deploy(
-        deploy_manager=deploy_manager,
-        endpoint_path="/process",
-        stream=True,  # Enable streaming responses
-    )
-    print(f"🚀Agent deployed at: {deploy_result}")
-    print(f"🌐 Service URL: {deploy_manager.service_url}")
-    print(f"💚 Health check: {deploy_manager.service_url}/health")
-
-    return deploy_manager
+print(response)
 ```
-
-### Step 7: Execute Deployment
-
-Deploy your agent as a production-ready service:
-
-```{code-cell}
-async def run_deployment():
-    async with create_runner() as runner:
-        deploy_manager = await deploy_agent(runner)
-
-    # Keep the service running (in production, you'd handle this differently)
-    print("🏃 Service is running...")
-
-    return deploy_manager
-
-# Deploy the agent
-deploy_manager = await run_deployment()
-```
-
-```{note}
-The agent runner exposes a `deploy` method that takes a `DeployManager` instance and deploys the agent.
-The service port is set as the parameter `port` when creating the `LocalDeployManager`.
-The service endpoint path is set as the parameter `endpoint_path` when deploying the agent.
-In this example, we set the endpoint path to `/process`.
-After deployment, you can access the service at `http://localhost:8090/process`.
-```
-
-### (Optional) Step 8: Deploy Multiple Agents
-
-Agentscope Runtime supports deploying multiple agents on different ports.
-```{code-cell}
-async def deploy_multiple_agents():
-    async with create_runner() as runner:
-        # Deploy multiple agents on different ports
-        deploy_manager1 = LocalDeployManager(host="localhost", port=8092)
-        deploy_manager2 = LocalDeployManager(host="localhost", port=8093)
-
-        # Deploy first agent
-        result1 = await runner.deploy(
-            deploy_manager=deploy_manager1,
-            endpoint_path="/agent1",
-            stream=True,
-        )
-
-        # Deploy second agent (you could use different runner/agent)
-        result2 = await runner.deploy(
-            deploy_manager=deploy_manager2,
-            endpoint_path="/agent2",
-            stream=True,
-        )
-
-        print(f"🚀 Agent 1deployed: {result1}")
-        print(f"🚀 Agent2 deployed: {result2}")
-
-        return deploy_manager1, deploy_manager2
-
-# Deploy multiple agents
-deploy_managers = await deploy_multiple_agents()
-```
-
-### Step 9: Test the Deployed Agent
-
-Test your deployed agent using HTTP requests:
-
-```{code-cell}
-import requests
-
-
-def test_deployed_agent():
-    # Prepare the test payload
-    payload = {
-        "input": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "What is the capital of France?"},
-                ],
-            },
-        ],
-        "session_id": "test_session_001",
-        "user_id": "test_user_001",
-    }
-
-    print("🧪 Testing deployed agent...")
-
-    # Test streaming responses
-    try:
-        response = requests.post(
-            "http://localhost:8090/process",
-            json=payload,
-            stream=True,
-            timeout=30,
-        )
-
-        print("📡 Streaming Response:")
-        for line in response.iter_lines():
-            if line:
-                print(f"{line.decode('utf-8')}")
-        print("✅ Streaming test completed")
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Streaming test failed: {e}")
-    except requests.exceptions.RequestException as e:
-        print(f"ℹ️ JSON endpoint not available or failed: {e}")
-
-
-# Run the test
-test_deployed_agent()
-```
-
-### Step 10: Service Management
-
-#### Service Status
-
-```{code-cell}
-# Check service status
-print(f"Service running: {deploy_manager.is_running}")
-print(f"Service URL: {deploy_manager.service_url}")
-```
-
-#### Stopping the Service
-
-```{code-cell}
-async def stop_services(*_deploy_managers):
-    """Stop deployed services"""
-    async def _stop():
-        for i, manager in enumerate(_deploy_managers):
-            if manager.is_running:
-                await manager.stop()
-            print(f"🛑 Service {i} stopped")
-    await _stop()
-
-await stop_services(deploy_manager)
-```
-
-## Summary
-
-This guide demonstrates two main scenarios for using the AgentScope Runtime framework:
-
-### 🏃 Runner for Simple Agent Interaction
-
-Build and test agents using the `Runner` class:
-
-✅ Create and configure agents (AgentScope, Agno, LangGraph)
-
-✅ Set up Runner with context management
-
-✅ Test agent responses through streaming
-
-✅ Validate agent functionality before deployment
-
-### 🚀 Agent Deployment as Production Service
-
-Deploy agents as production-ready web services:
-
-✅ Use `LocalDeployManager` for local deployment
-
-✅ Expose agents as FastAPI web services
-
-✅ Support both streaming and JSON responses
-
-✅ Include health checks and service monitoring
-
-✅ Handle multiple agent deployments

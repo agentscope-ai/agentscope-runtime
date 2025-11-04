@@ -35,6 +35,7 @@ class Role:
     ASSISTANT = "assistant"
     USER = "user"
     SYSTEM = "system"
+    TOOL = "tool"  # 新增：工具角色
 ```
 
 **消息类型**：
@@ -52,8 +53,18 @@ class MessageType:
     MCP_APPROVAL_REQUEST = "mcp_approval_request"
     MCP_TOOL_CALL = "mcp_call"
     MCP_APPROVAL_RESPONSE = "mcp_approval_response"
+    REASONING = "reasoning"  # 新增：推理过程消息类型
     HEARTBEAT = "heartbeat"
     ERROR = "error"
+
+    @classmethod
+    def all_values(cls):
+        """返回MessageType中所有常量值"""
+        return [
+            value
+            for name, value in vars(cls).items()
+            if not name.startswith("_") and isinstance(value, str)
+        ]
 ```
 
 **运行状态**：
@@ -67,6 +78,8 @@ class RunStatus:
     Failed = "failed"
     Rejected = "rejected"
     Unknown = "unknown"
+    Queued = "queued"      # 新增：排队状态
+    Incomplete = "incomplete"  # 新增：未完成状态
 ```
 
 ### 2. 工具定义
@@ -179,6 +192,42 @@ class DataContent(Content):
 
     data: Optional[Dict] = None
     """数据内容"""
+
+
+class AudioContent(Content):
+    type: str = ContentType.AUDIO
+    """内容部分的类型"""
+
+    data: Optional[str] = None
+    """音频数据详情"""
+
+    format: Optional[str] = None
+    """音频数据格式"""
+
+
+class FileContent(Content):
+    type: str = ContentType.FILE
+    """内容部分的类型"""
+
+    file_url: Optional[str] = None
+    """文件URL详情"""
+
+    file_id: Optional[str] = None
+    """文件ID详情"""
+
+    filename: Optional[str] = None
+    """文件名详情"""
+
+    file_data: Optional[str] = None
+    """文件数据详情"""
+
+
+class RefusalContent(Content):
+    type: str = ContentType.REFUSAL
+    """内容部分的类型"""
+
+    refusal: Optional[str] = None
+    """拒绝内容"""
 ```
 
 ### 4. 消息模型
@@ -366,3 +415,172 @@ class Error(BaseModel):
 {"id":"msg_abc","status":"completed","object":"message"}
 {"id":"response_123","status":"completed","object":"response"}
 ```
+
+## Agent API 协议构建方式
+
+Agent API 协议提供了分层Builder模式来生成符合协议规范的流式响应数据。通过使用 `agent_api_builder` 模块，开发者可以轻松构建复杂的流式响应序列。
+
+### 1. 构建器架构
+
+Agent API 构建器采用三层架构设计：
+
+- **ResponseBuilder**: 响应构建器，负责管理整个响应流程
+- **MessageBuilder**: 消息构建器，负责构建和管理单个消息对象
+- **ContentBuilder**: 内容构建器，负责构建和管理单个内容对象
+
+### 2. 核心类说明
+
+#### ResponseBuilder（响应构建器）
+
+```python
+from agentscope_runtime.engine.helpers.agent_api_builder import ResponseBuilder
+
+# 创建响应构建器
+response_builder = ResponseBuilder(session_id="session_123")
+
+# 设置响应状态
+response_builder.created()      # 创建状态
+response_builder.in_progress()  # 进行中状态
+response_builder.completed()    # 完成状态
+
+# 创建消息构建器
+message_builder = response_builder.create_message_builder(
+    role="assistant",
+    message_type="message"
+)
+```
+
+#### MessageBuilder（消息构建器）
+
+```python
+# 创建内容构建器
+content_builder = message_builder.create_content_builder(
+    content_type="text",
+    index=0
+)
+
+# 添加内容到消息
+message_builder.add_content(content)
+
+# 完成消息构建
+message_builder.complete()
+```
+
+#### ContentBuilder（内容构建器）
+
+```python
+# 添加文本增量
+content_builder.add_text_delta("Hello")
+content_builder.add_text_delta(" World")
+
+# 设置完整文本内容
+content_builder.set_text("Hello World")
+
+# 设置图片内容
+content_builder.set_image_url("https://example.com/image.jpg")
+
+# 设置数据内容
+content_builder.set_data({"key": "value"})
+
+# 完成内容构建
+content_builder.complete()
+```
+
+### 3. 完整使用示例
+
+以下示例展示如何使用Agent API构建器生成完整的流式响应序列：
+
+```python
+from agentscope_runtime.engine.helpers.agent_api_builder import ResponseBuilder
+
+def generate_streaming_response(text_tokens):
+    """生成流式响应序列"""
+    # 创建响应构建器
+    response_builder = ResponseBuilder(session_id="session_123")
+
+    # 生成完整的流式响应序列
+    for event in response_builder.generate_streaming_response(
+        text_tokens=["Hello", " ", "World", "!"],
+        role="assistant"
+    ):
+        yield event
+
+# 使用示例
+for event in generate_streaming_response(["Hello", " ", "World", "!"]):
+    print(event)
+```
+
+### 4. 流式响应序列
+
+使用 `generate_streaming_response` 方法可以生成标准的流式响应序列：
+
+1. **响应创建** (`response.created`)
+2. **响应开始** (`response.in_progress`)
+3. **消息创建** (`message.created`)
+4. **内容流式输出** (`content.delta` 事件)
+5. **内容完成** (`content.completed`)
+6. **消息完成** (`message.completed`)
+7. **响应完成** (`response.completed`)
+
+### 5. 支持的内容类型
+
+ContentBuilder 支持多种内容类型：
+
+- **TextContent**: 文本内容，支持增量输出
+- **ImageContent**: 图片内容，支持URL和base64格式
+- **DataContent**: 数据内容，支持任意JSON数据
+- **AudioContent**: 音频内容，支持多种音频格式
+- **FileContent**: 文件内容，支持文件URL和文件数据
+- **RefusalContent**: 拒绝内容，用于表示拒绝执行
+
+### 6. 最佳实践
+
+1. **状态管理**: 确保按正确顺序调用状态方法（created → in_progress → completed）
+2. **内容索引**: 为多内容消息正确设置index值
+3. **增量输出**: 使用add_delta方法实现流式文本输出
+4. **错误处理**: 在构建过程中适当处理异常情况
+5. **资源清理**: 及时调用complete方法完成构建
+
+### 7. 高级用法
+
+#### 多内容消息构建
+
+```python
+# 创建包含文本和图片的消息
+message_builder = response_builder.create_message_builder()
+
+# 添加文本内容
+text_builder = message_builder.create_content_builder("text", index=0)
+text_builder.set_text("这是一张图片：")
+text_builder.complete()
+
+# 添加图片内容
+image_builder = message_builder.create_content_builder("image", index=1)
+image_builder.set_image_url("https://example.com/image.jpg")
+image_builder.complete()
+
+# 完成消息
+message_builder.complete()
+```
+
+#### 数据内容构建
+
+```python
+# 创建包含结构化数据的消息
+data_builder = message_builder.create_content_builder("data", index=0)
+
+# 设置数据内容
+data_builder.set_data({
+    "type": "function_call",
+    "name": "get_weather",
+    "arguments": '{"city": "Beijing"}'
+})
+
+# 添加数据增量
+data_builder.add_data_delta({"status": "processing"})
+data_builder.add_data_delta({"result": "sunny"})
+
+data_builder.complete()
+```
+
+通过使用Agent API构建器，开发者可以轻松构建符合协议规范的复杂流式响应，实现更好的用户体验和更灵活的响应控制。

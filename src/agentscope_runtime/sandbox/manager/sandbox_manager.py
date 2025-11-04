@@ -1,38 +1,35 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=redefined-outer-name, protected-access
 # pylint: disable=too-many-branches, too-many-statements
+# pylint: disable=redefined-outer-name, protected-access, too-many-branches
+import inspect
+import json
 import logging
 import os
-import json
 import secrets
-import inspect
 import traceback
-
 from functools import wraps
 from typing import Optional, Dict, Union, List
 
-import shortuuid
 import requests
+import shortuuid
 
-from .container_clients.docker_client import DockerClient
-from .container_clients.kubernetes_client import KubernetesClient
+from ..client import SandboxHttpClient, TrainingSandboxClient
+from ..enums import SandboxType
+from ..manager.storage import (
+    LocalStorage,
+    OSSStorage,
+)
 from ..model import (
     ContainerModel,
     SandboxManagerEnvConfig,
 )
-from ..enums import SandboxType
 from ..registry import SandboxRegistry
-from ..client import SandboxHttpClient, TrainingSandboxClient
-
-from ..manager.collections import (
+from ...common.collections import (
     RedisMapping,
     RedisQueue,
     InMemoryMapping,
     InMemoryQueue,
-)
-from ..manager.storage import (
-    LocalStorage,
-    OSSStorage,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -174,11 +171,21 @@ class SandboxManager:
 
         if base_url is None:
             if self.container_deployment == "docker":
+                from ...common.container_clients.docker_client import (
+                    DockerClient,
+                )
+
                 self.client = DockerClient(config=self.config)
             elif self.container_deployment == "k8s":
+                from ...common.container_clients.kubernetes_client import (
+                    KubernetesClient,
+                )
+
                 self.client = KubernetesClient(config=self.config)
             elif self.container_deployment == "agentrun":
-                from .container_clients.agentrun_client import AgentRunClient
+                from ...common.container_clients.agentrun_client import (
+                    AgentRunClient,
+                )
 
                 self.client = AgentRunClient(config=self.config)
             else:
@@ -447,18 +454,17 @@ class SandboxManager:
         else:
             target_sandbox_type = self.default_type[0]
 
-        image = SandboxRegistry.get_image_by_type(target_sandbox_type)
-        if not image:
+        config = SandboxRegistry.get_config_by_type(target_sandbox_type)
+
+        if not config:
             logger.warning(
-                f"No image found for sandbox {target_sandbox_type}, "
-                f"using default",
+                f"Not found sandbox {target_sandbox_type}, " f"using default",
             )
-            image = SandboxRegistry.get_image_by_type(
+            config = SandboxRegistry.get_config_by_type(
                 self.default_type[0],
             )
+        image = config.image_name
 
-        # TODO: enable for timeout for the sandbox (auto cleanup)
-        config = SandboxRegistry.get_config_by_type(target_sandbox_type)
         environment = {
             **(config.environment if config.environment else {}),
             **(environment if environment else {}),
@@ -569,6 +575,7 @@ class SandboxManager:
                 runtime_token=runtime_token,
                 version=image,
                 meta=meta or {},
+                timeout=config.timeout,
             )
 
             # Register in mapping

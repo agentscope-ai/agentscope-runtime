@@ -25,9 +25,10 @@ from agentscope.message import (
     ToolResultBlock,
     TextBlock,
     ImageBlock,
-    # AudioBlock,  # TODO: support
+    AudioBlock,
     # VideoBlock,  # TODO: support
     URLSource,
+    Base64Source,
 )
 from agentscope.model import (
     ChatModelBase,
@@ -136,7 +137,7 @@ class AgentScopeContextAdapter:
             type_mapping = {
                 "text": (TextBlock, "text", None),
                 "image": (ImageBlock, "image_url", True),
-                # "audio": (AudioBlock, "audio_url", True),  # TODO: support
+                "audio": (AudioBlock, "data", None),
                 # "video": (VideoBlock, "video_url", True),  # TODO: support
             }
 
@@ -149,14 +150,34 @@ class AgentScopeContextAdapter:
 
                 block_cls, attr_name, is_url = type_mapping[cnt_type]
                 value = getattr(cnt, attr_name)
+                if cnt_type == "audio":
+                    from urllib.parse import urlparse
 
+                    result = urlparse(value)
+                    is_url = all([result.scheme, result.netloc])
                 if is_url:
                     url_source = URLSource(type="url", url=value)
                     msg_content.append(
                         block_cls(type=cnt_type, source=url_source),
                     )
                 else:
-                    msg_content.append(block_cls(type=cnt_type, text=value))
+                    if cnt_type == "audio":
+                        audio_format = getattr(cnt, "format")
+                        base64_source = Base64Source(
+                            type="base64",
+                            media_type=audio_format,
+                            data=value,
+                        )
+                        msg_content.append(
+                            block_cls(
+                                type=cnt_type,
+                                source=base64_source,
+                            ),
+                        )
+                    else:
+                        msg_content.append(
+                            block_cls(type=cnt_type, text=value),
+                        )
 
             result["content"] = msg_content
         return Msg(**result)
@@ -167,6 +188,10 @@ class AgentScopeContextAdapter:
 
     async def adapt_model(self):
         model = self.attr["model"]
+
+        if hasattr(model, "stream"):
+            model.stream = True
+
         formatter = self.attr["agent_config"].get("formatter")
         if formatter and isinstance(formatter, FormatterBase):
             return model, formatter
@@ -316,7 +341,7 @@ class AgentScopeAgent(Agent):
         last_content = ""
 
         message = Message(type=MessageType.MESSAGE, role="assistant")
-        yield message.in_progress()
+        should_start_message = True
         index = None
 
         # Run agent
@@ -347,6 +372,9 @@ class AgentScopeAgent(Agent):
             else:
                 for element in content:
                     if isinstance(element, str) and element:
+                        if should_start_message:
+                            yield message.in_progress()
+                            should_start_message = False
                         text_delta_content = TextContent(
                             delta=True,
                             index=index,
@@ -364,6 +392,9 @@ class AgentScopeAgent(Agent):
                                 "",
                             )
                             if text:
+                                if should_start_message:
+                                    yield message.in_progress()
+                                    should_start_message = False
                                 text_delta_content = TextContent(
                                     delta=True,
                                     index=index,
@@ -422,7 +453,15 @@ class AgentScopeAgent(Agent):
                                 content=[data_delta_content],
                             )
                             yield plugin_output_message.completed()
+                            message = Message(
+                                type=MessageType.MESSAGE,
+                                role="assistant",
+                            )
+                            should_start_message = True
                         else:
+                            if should_start_message:
+                                yield message.in_progress()
+                                should_start_message = False
                             text_delta_content = TextContent(
                                 delta=True,
                                 index=index,
@@ -435,6 +474,8 @@ class AgentScopeAgent(Agent):
                             yield text_delta_content
 
         if last_content:
+            if should_start_message:
+                yield message.in_progress()
             text_delta_content = TextContent(
                 delta=True,
                 index=index,
