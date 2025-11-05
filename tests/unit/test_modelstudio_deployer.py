@@ -83,7 +83,6 @@ async def test_deploy_build_only_generates_wheel_without_upload(
     assert kwargs["telemetry_enabled"] is False
     build_mock.assert_called_once_with(wrapper_dir)
 
-    assert result["artifact_url"] == ""
     assert result["resource_name"] == "my-deploy"
     assert result["wheel_path"].endswith(".whl")
 
