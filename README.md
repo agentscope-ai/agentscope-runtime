@@ -382,10 +382,10 @@ The app exposes a `deploy` method that takes a `DeployManager` instance and depl
 The service port is set as the parameter `port` when creating the `LocalDeployManager`.
 The service endpoint path is set as the parameter `endpoint_path` when deploying the agent.
 
-The deployer will automatically add common agent protocol, such as **A2A**, **Response API** based on the default endpoint `/process`.
+The deployer will automatically add common agent protocols, such as **A2A**, **Response API** based on the default endpoint `/process`.
 
 In this example, we set the endpoint path to `/process`,
-after deployment, user can access the service at `http://localhost:8090/process`, can also access the service from OpenAI SDK by response api.
+after deployment, users can access the service at `http://localhost:8090/process`, and can also access the service from OpenAI SDK by Response API.
 
 ```python
 from agentscope_runtime.engine.deployers import LocalDeployManager
