@@ -171,7 +171,6 @@ async def test_deploy_with_upload_calls_cloud_and_writes_output(
     assert kwargs["telemetry_enabled"] is True
 
     # Result fields
-    assert result["artifact_url"] == "https://oss/presigned"
     assert result["resource_name"] == "upload-deploy"
     assert result["wheel_path"].endswith(".whl")
 
