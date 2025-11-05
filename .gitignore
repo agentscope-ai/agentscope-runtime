@@ -59,6 +59,7 @@ Desktop.ini
 *.py[cod]
 *$py.class
 uv.lock
+venv/
 
 # Logs
 logs/
