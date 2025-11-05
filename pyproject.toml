@@ -1,6 +1,6 @@
 [project]
 name = "agentscope-runtime"
-version = "0.2.0b2"
+version = "0.2.0"
 description = "A production-ready runtime framework for agent applications, providing secure sandboxed execution environments and scalable deployment solutions with multi-framework support."
 readme = "README.md"
 requires-python = ">=3.10"
