@@ -115,7 +115,7 @@ class AgentScopeContextAdapter:
                 ToolUseBlock(
                     type="tool_use",
                     id=message.content[0].data["call_id"],
-                    name=message.role,
+                    name=message.content[0].data["name"],
                     input=json.loads(message.content[0].data["arguments"]),
                 ),
             ]
