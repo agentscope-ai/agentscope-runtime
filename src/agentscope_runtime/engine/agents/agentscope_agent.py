@@ -444,7 +444,7 @@ class AgentScopeAgent(Agent):
                                 index=index,
                                 data=FunctionCallOutput(
                                     call_id=element.get("id"),
-                                    output=str(element.get("output")),
+                                    output=json.dumps(element.get("output")),
                                 ).model_dump(),
                             )
                             plugin_output_message = Message(
