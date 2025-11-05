@@ -378,24 +378,44 @@ agent = LangGraphAgent(graph=compiled_graph)
 
 ## 🏗️ Deployment
 
-The agent runner exposes a `deploy` method that takes a `DeployManager` instance and deploys the agent. The service port is set as the parameter `port` when creating the `LocalDeployManager`. The service endpoint path is set as the parameter `endpoint_path` when deploying the agent. In this example, we set the endpoint path to `/process`. After deployment, you can access the service at `http://localhost:8090/process`.
+The app exposes a `deploy` method that takes a `DeployManager` instance and deploys the agent.
+The service port is set as the parameter `port` when creating the `LocalDeployManager`.
+The service endpoint path is set as the parameter `endpoint_path` when deploying the agent.
+
+The deployer will automatically add common agent protocols, such as **A2A**, **Response API** based on the default endpoint `/process`.
+
+In this example, we set the endpoint path to `/process`,
+after deployment, users can access the service at `http://localhost:8090/process`, and can also access the service from OpenAI SDK by Response API.
 
 ```python
 from agentscope_runtime.engine.deployers import LocalDeployManager
 
 # Create deployment manager
-deploy_manager = LocalDeployManager(
-    host="localhost",
+deployer = LocalDeployManager(
+    host="0.0.0.0",
     port=8090,
 )
 
-# Deploy the agent as a streaming service
-deploy_result = await runner.deploy(
-    deploy_manager=deploy_manager,
-    endpoint_path="/process",
-    stream=True,  # Enable streaming responses
-)
+# Deploy the app as a streaming service
+deploy_result = await app.deploy(deployer=deployer)
+
 ```
+
+Then user could query the deployment by OpenAI SDK.
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://0.0.0.0:8090/compatible-mode/v1")
+
+response = client.responses.create(
+  model="any_name",
+  input="What is the weather in Beijing?"
+)
+
+print(response)
+```
+
 
 ---
 
