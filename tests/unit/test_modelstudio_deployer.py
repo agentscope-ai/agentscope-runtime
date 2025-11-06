@@ -88,7 +88,9 @@ async def test_deploy_build_only_generates_wheel_without_upload(
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip("Skipping until we can delete app after execute unit tests")
+@pytest.mark.skip(
+    "Skipping until we can delete app after executing unit tests",
+)
 async def test_deploy_with_upload_calls_cloud_and_writes_output(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -156,7 +158,9 @@ async def test_deploy_with_upload_calls_cloud_and_writes_output(
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip("Skipping until we can delete app after execute unit tests")
+@pytest.mark.skip(
+    "Skipping until we can delete app after executing unit tests",
+)
 async def test_deploy_invalid_inputs_raise(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

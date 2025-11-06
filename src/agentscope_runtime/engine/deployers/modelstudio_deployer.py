@@ -238,27 +238,25 @@ def _upload_to_oss_with_credentials(
         body = response_data["body"]
         data = body.get("Data")
         if data is None:
-            print(
-                "\n❌ Configuration Error: The current RAM user "
-                "is not assigned to target workspace.",
-            )
-            print(
+            messages = [
+                "\n❌ Configuration Error: "
+                "The current RAM user is not assigned to target workspace.",
                 "Bailian requires RAM users to be associated with "
                 "at least one workspace to use temporary storage.",
-            )
-            print("\n🔧 How to resolve:")
-            print(
+                "\n🔧 How to resolve:",
                 "1. Ask the primary account to log in to the "
                 "Bailian Console: https://bailian.console.aliyun.com",
-            )
-            print("2. Go to [Permission Management]")
-            print("3. Go to [Add User]")
-            print("4. Assign the user to a workspace")
-            print(
-                "\n💡 Note: If you are not the primary account holder, "
-                "please contact your administrator to complete this step.",
-            )
-            print("=" * 80)
+                "2. Go to [Permission Management]",
+                "3. Go to [Add User]",
+                "4. Assign the user to a workspace",
+                "\n💡 Note: If you are not the primary account holder,"
+                " please contact your administrator to complete this step.",
+                "=" * 80,
+            ]
+
+            for msg in messages:
+                logger.error(msg)
+
             raise ValueError(
                 "RAM user is not assigned to any workspace in Bailian",
             )
@@ -336,42 +334,45 @@ def _get_presign_url_and_upload_to_oss(
                 error_code = error.code
             if hasattr(error, "data") and isinstance(error.data, dict):
                 recommend_url = error.data.get("Recommend")
+
             if error_code == "NoPermission":
-                print("\n❌ Permission Denied (NoPermission)")
-                print(
-                    "The current account does not have permission to "
-                    "apply for temporary storage (ApplyTempStorageLease).",
-                )
-                print("\n🔧 How to resolve:")
-                print(
-                    "1. Ask the primary account holder (or an administrator) "
-                    "to grant your RAM user the following permission:",
-                )
-                print("   - Action: `AliyunBailianDataFullAccess`")
-                print("\n2. Steps to grant permission:")
-                print(
+                messages = [
+                    "\n❌ Permission Denied (NoPermission)",
+                    "The current account does not have permission to apply "
+                    "for temporary storage (ApplyTempStorageLease).",
+                    "\n🔧 How to resolve:",
+                    "1. Ask the primary account holder (or an administrator)"
+                    " to grant your RAM user the following permission:",
+                    "   - Action: `AliyunBailianDataFullAccess`",
+                    "\n2. Steps to grant permission:",
                     "   - Go to Alibaba Cloud RAM Console: https://ram.console.aliyun.com/users",
-                )
-                print("   - Locate your RAM user")
-                print(
-                    "   - Click 'Add Permissions' and attach a "
-                    "policy that includes `AliyunBailianDataFullAccess`",
-                )
-                print("\n3. For further diagnostics:")
+                    "   - Locate your RAM user",
+                    "   - Click 'Add Permissions' and attach a policy that includes "
+                    "`AliyunBailianDataFullAccess`",
+                    "\n3. For further diagnostics:",
+                ]
+                official_doc_link = "https://help.aliyun.com/zh/ram/"
                 if recommend_url:
-                    print(
+                    messages.append(
                         f"   - Official troubleshooting link: {recommend_url}",
                     )
                 else:
-                    print(
+                    messages.append(
                         "   - Visit the Alibaba Cloud API troubleshooting page",
                     )
-                print(f"   - Official document link: {recommend_url}")
-                print(
-                    "\n💡 Note: If you are not an administrator, please contact your "
-                    "cloud account administrator for assistance.",
+                messages.append(
+                    f"   - Official document link: {official_doc_link or 'N/A'}",
                 )
-                print("=" * 80)
+                messages.append(
+                    "\n💡 Note: If you are not an administrator, please "
+                    "contact your cloud account administrator for assistance.",
+                )
+                messages.append("=" * 80)
+
+                # 一次性记录多行日志（每行单独一条日志，便于解析）
+                for msg in messages:
+                    logger.error(msg)
+
             logger.error("Original error details: %s", error)
             raise
 
