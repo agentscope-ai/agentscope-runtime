@@ -101,7 +101,7 @@ memory-ext = [
 
 deployment = [
     "alibabacloud-oss-v2",
-    "alibabacloud-bailian20231229>=2.5.0",
+    "alibabacloud-bailian20231229>=2.6.0",
     "build",
     "setuptools>=40.8.0",
     "wheel",

@@ -101,14 +101,9 @@ async def test_deploy_with_upload_calls_cloud_and_writes_output(
         lambda: None,
     )
 
-    oss_cfg = OSSConfig(
-        region="cn-hangzhou",
-        access_key_id="id",
-        access_key_secret="secret",
-    )
     bailian_cfg = ModelstudioConfig(
         endpoint="bailian-pre.cn-hangzhou.aliyuncs.com",
-        workspace_id="ws",
+        workspace_id="default",
         access_key_id="id",
         access_key_secret="secret",
     )
@@ -128,21 +123,9 @@ async def test_deploy_with_upload_calls_cloud_and_writes_output(
         return_value=fake_wheel,
     ) as build_mock, patch(
         "agentscope_runtime.engine.deployers.modelstudio_deployer"
-        "._oss_get_client",
-        return_value=MagicMock(),
-    ) as get_client_mock, patch(
-        "agentscope_runtime.engine.deployers.modelstudio_deployer"
-        "._oss_create_bucket_if_not_exists",
-    ) as ensure_bucket_mock, patch(
-        "agentscope_runtime.engine.deployers.modelstudio_deployer"
-        "._oss_put_and_presign",
-        return_value="https://oss/presigned",
-    ) as presign_mock, patch(
-        "agentscope_runtime.engine.deployers.modelstudio_deployer"
         "._modelstudio_deploy",
     ) as bailian_deploy_mock:
         deployer = ModelstudioDeployManager(
-            oss_config=oss_cfg,
             modelstudio_config=bailian_cfg,
             build_root=tmp_path / ".b2",
         )
@@ -159,15 +142,11 @@ async def test_deploy_with_upload_calls_cloud_and_writes_output(
     build_mock.assert_called_once_with(wrapper_dir)
 
     # Cloud interactions asserted
-    get_client_mock.assert_called_once()
-    ensure_bucket_mock.assert_called_once()
-    presign_mock.assert_called_once()
     bailian_deploy_mock.assert_called_once()
 
     # Bailian deploy call args include telemetry true
     _, kwargs = bailian_deploy_mock.call_args
     assert kwargs["deploy_name"] == "upload-deploy"
-    assert kwargs["file_url"] == "https://oss/presigned"
     assert kwargs["telemetry_enabled"] is True
 
     # Result fields
