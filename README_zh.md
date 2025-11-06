@@ -376,23 +376,41 @@ agent = LangGraphAgent(graph=compiled_graph)
 
 ## 🏗️ 部署
 
-智能体运行器使用了`deploy` 方法，该方法采用一个 `DeployManager` 实例并部署智能体。服务端口在创建 `LocalDeployManager` 时设置为参数 `port`。服务端点路径在部署智能体时设置为参数 `endpoint_path`。在此示例中，我们将端点路径设置为 `/process`。部署后，您可以通过 [http://localhost:8090/process](http://localhost:8090/process) 访问该服务。
+智能体运行器使用了`deploy` 方法，该方法采用一个 `DeployManager` 实例并部署智能体。
+服务端口在创建 `LocalDeployManager` 时设置为参数 `port`。
+服务端点路径在部署智能体时设置为参数 `endpoint_path`。
+
+与此同时，DeployManager将基于默认端点 /process 自动配置添加一些通用的智能体代理协议，例如 A2A 和 Response API。
+
+在此示例中，我们将端点路径设置为 `/process`。部署后，您可以通过 [http://localhost:8090/process](http://localhost:8090/process) 访问该服务，
+用户也可以基于OpenAI SDK的response api访问这个服务。
 
 ```python
 from agentscope_runtime.engine.deployers import LocalDeployManager
 
 # 创建部署管理器
-deploy_manager = LocalDeployManager(
-    host="localhost",
+deployer = LocalDeployManager(
+    host="0.0.0.0",
     port=8090,
 )
 
-# 将智能体部署为流式服务
-deploy_result = await runner.deploy(
-    deploy_manager=deploy_manager,
-    endpoint_path="/process",
-    stream=True,  # 启用流式响应
+# 部署应用
+deploy_result = await app.deploy(deployer=deployer)
+```
+
+部署后用户可以基于OpenAI SDK的代码调用服务。
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://0.0.0.0:8090/compatible-mode/v1")
+
+response = client.responses.create(
+  model="any_name",
+  input="杭州天气如何？"
 )
+
+print(response)
 ```
 
 ---
