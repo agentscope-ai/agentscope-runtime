@@ -158,6 +158,16 @@
         "code",
         "bug"
       ]
+    },
+    {
+      "login": "jooojo",
+      "name": "jooojo",
+      "avatar_url": "https://avatars.githubusercontent.com/u/11719425?v=4",
+      "profile": "https://github.com/jooojo",
+      "contributions": [
+        "code",
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,
