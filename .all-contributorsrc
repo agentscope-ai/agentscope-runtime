@@ -178,6 +178,15 @@
         "code",
         "bug"
       ]
+    },
+    {
+      "login": "taoquanyus",
+      "name": "quanyu",
+      "avatar_url": "https://avatars.githubusercontent.com/u/39740818?v=4",
+      "profile": "http://lokk.cn/about",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,

@@ -7,6 +7,7 @@ import json
 import traceback
 from functools import partial
 from typing import Optional, Type, List
+from urllib.parse import urlparse
 
 from agentscope import setup_logger
 from agentscope.agent import AgentBase, ReActAgent
@@ -24,6 +25,7 @@ from agentscope.message import (
     ToolUseBlock,
     ToolResultBlock,
     TextBlock,
+    ThinkingBlock,
     ImageBlock,
     AudioBlock,
     # VideoBlock,  # TODO: support
@@ -55,6 +57,7 @@ from ..schemas.agent_schemas import (
     FunctionCall,
     FunctionCallOutput,
     MessageType,
+    RunStatus,
 )
 from ..schemas.context import Context
 
@@ -101,7 +104,7 @@ class AgentScopeContextAdapter:
             role_label = message.role
 
         result = {
-            "name": message.role,
+            "name": message.role,  # TODO: protocol support
             "role": role_label,
             "invocation_id": message.id,
         }
@@ -129,8 +132,15 @@ class AgentScopeContextAdapter:
                 ToolResultBlock(
                     type="tool_result",
                     id=message.content[0].data["call_id"],
-                    name=message.role,
-                    output=message.content[0].data["output"],
+                    name=message.role,  # TODO: match id of ToolUseBlock
+                    output=json.loads(message.content[0].data["output"]),
+                ),
+            ]
+        elif message.type in (MessageType.REASONING,):
+            result["content"] = [
+                ThinkingBlock(
+                    type="thinking",
+                    thinking=message.content[0].text,
                 ),
             ]
         else:
@@ -151,8 +161,6 @@ class AgentScopeContextAdapter:
                 block_cls, attr_name, is_url = type_mapping[cnt_type]
                 value = getattr(cnt, attr_name)
                 if cnt_type == "audio":
-                    from urllib.parse import urlparse
-
                     result = urlparse(value)
                     is_url = all([result.scheme, result.netloc])
                 if is_url:
@@ -332,6 +340,7 @@ class AgentScopeAgent(Agent):
         as_context = AgentScopeContextAdapter(context=context, attr=self._attr)
         await as_context.initialize()
         local_truncate_memory = ""
+        local_truncate_reasoning_memory = ""
 
         # We should always build a new agent since the state is manage outside
         # the agent
@@ -341,7 +350,14 @@ class AgentScopeAgent(Agent):
         last_content = ""
 
         message = Message(type=MessageType.MESSAGE, role="assistant")
+        reasoning_message = Message(
+            type=MessageType.REASONING,
+            role="assistant",
+        )
+
         should_start_message = True
+        should_start_reasoning_message = True
+
         index = None
 
         # Run agent
@@ -373,6 +389,7 @@ class AgentScopeAgent(Agent):
                 for element in content:
                     if isinstance(element, str) and element:
                         if should_start_message:
+                            index = None
                             yield message.in_progress()
                             should_start_message = False
                         text_delta_content = TextContent(
@@ -393,8 +410,10 @@ class AgentScopeAgent(Agent):
                             )
                             if text:
                                 if should_start_message:
+                                    index = None
                                     yield message.in_progress()
                                     should_start_message = False
+
                                 text_delta_content = TextContent(
                                     delta=True,
                                     index=index,
@@ -422,8 +441,20 @@ class AgentScopeAgent(Agent):
                                         role="assistant",
                                     )
                                     index = None
+                                    should_start_message = True
 
                         elif element.get("type") == "tool_use":
+                            if (
+                                reasoning_message.status
+                                == RunStatus.InProgress
+                            ):
+                                yield reasoning_message.completed()
+                                reasoning_message = Message(
+                                    type=MessageType.REASONING,
+                                    role="assistant",
+                                )
+                                index = None
+
                             json_str = json.dumps(element.get("input"))
                             data_delta_content = DataContent(
                                 index=index,
@@ -439,12 +470,15 @@ class AgentScopeAgent(Agent):
                                 content=[data_delta_content],
                             )
                             yield plugin_call_message.completed()
+                            index = None
+
                         elif element.get("type") == "tool_result":
+                            json_str = json.dumps(element.get("output"))
                             data_delta_content = DataContent(
                                 index=index,
                                 data=FunctionCallOutput(
                                     call_id=element.get("id"),
-                                    output=json.dumps(element.get("output")),
+                                    output=json_str,
                                 ).model_dump(),
                             )
                             plugin_output_message = Message(
@@ -458,10 +492,54 @@ class AgentScopeAgent(Agent):
                                 role="assistant",
                             )
                             should_start_message = True
+                            index = None
+
+                        elif element.get("type") == "thinking":
+                            reasoning = element.get(
+                                "thinking",
+                                "",
+                            )
+                            if reasoning:
+                                if should_start_reasoning_message:
+                                    index = None
+                                    yield reasoning_message.in_progress()
+                                    should_start_reasoning_message = False
+                                text_delta_content = TextContent(
+                                    delta=True,
+                                    index=index,
+                                    text=reasoning.removeprefix(
+                                        local_truncate_reasoning_memory,
+                                    ),
+                                )
+                                local_truncate_reasoning_memory = element.get(
+                                    "thinking",
+                                    "",
+                                )
+                                text_delta_content = (
+                                    reasoning_message.add_delta_content(
+                                        new_content=text_delta_content,
+                                    )
+                                )
+                                index = text_delta_content.index
+
+                                # Only yield valid text
+                                if text_delta_content.text:
+                                    yield text_delta_content
+
+                                # The last won't happen in the thinking message
+                                if last:
+                                    yield reasoning_message.completed()
+                                    reasoning_message = Message(
+                                        type=MessageType.REASONING,
+                                        role="assistant",
+                                    )
+                                    index = None
                         else:
                             if should_start_message:
+                                index = None
                                 yield message.in_progress()
                                 should_start_message = False
+
                             text_delta_content = TextContent(
                                 delta=True,
                                 index=index,
@@ -475,6 +553,7 @@ class AgentScopeAgent(Agent):
 
         if last_content:
             if should_start_message:
+                index = None
                 yield message.in_progress()
             text_delta_content = TextContent(
                 delta=True,

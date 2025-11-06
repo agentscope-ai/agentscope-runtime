@@ -161,7 +161,12 @@ class Runner:
         response.in_progress()
         yield seq_gen.yield_with_sequence(response)
 
-        user_id = user_id or str(uuid.uuid4())
+        if user_id is None:
+            if getattr(request, "user_id", None):
+                user_id = request.user_id
+            else:
+                user_id = ""  # Default user id
+
         session_id = request.session_id or str(uuid.uuid4())
         request_input = request.input
         session = await self._context_manager.compose_session(
