@@ -378,24 +378,44 @@ agent = LangGraphAgent(graph=compiled_graph)
 
 ## 🏗️ Deployment
 
-The agent runner exposes a `deploy` method that takes a `DeployManager` instance and deploys the agent. The service port is set as the parameter `port` when creating the `LocalDeployManager`. The service endpoint path is set as the parameter `endpoint_path` when deploying the agent. In this example, we set the endpoint path to `/process`. After deployment, you can access the service at `http://localhost:8090/process`.
+The app exposes a `deploy` method that takes a `DeployManager` instance and deploys the agent.
+The service port is set as the parameter `port` when creating the `LocalDeployManager`.
+The service endpoint path is set as the parameter `endpoint_path` when deploying the agent.
+
+The deployer will automatically add common agent protocols, such as **A2A**, **Response API** based on the default endpoint `/process`.
+
+In this example, we set the endpoint path to `/process`,
+after deployment, users can access the service at `http://localhost:8090/process`, and can also access the service from OpenAI SDK by Response API.
 
 ```python
 from agentscope_runtime.engine.deployers import LocalDeployManager
 
 # Create deployment manager
-deploy_manager = LocalDeployManager(
-    host="localhost",
+deployer = LocalDeployManager(
+    host="0.0.0.0",
     port=8090,
 )
 
-# Deploy the agent as a streaming service
-deploy_result = await runner.deploy(
-    deploy_manager=deploy_manager,
-    endpoint_path="/process",
-    stream=True,  # Enable streaming responses
-)
+# Deploy the app as a streaming service
+deploy_result = await app.deploy(deployer=deployer)
+
 ```
+
+Then user could query the deployment by OpenAI SDK.
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://0.0.0.0:8090/compatible-mode/v1")
+
+response = client.responses.create(
+  model="any_name",
+  input="What is the weather in Beijing?"
+)
+
+print(response)
+```
+
 
 ---
 
@@ -446,7 +466,7 @@ limitations under the License.
 
 ## Contributors ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-15-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-16-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
@@ -476,6 +496,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ms-cs"><img src="https://avatars.githubusercontent.com/u/43086458?v=4?s=100" width="100px;" alt="zhiyong"/><br /><sub><b>zhiyong</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=ms-cs" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Ams-cs" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jooojo"><img src="https://avatars.githubusercontent.com/u/11719425?v=4?s=100" width="100px;" alt="jooojo"/><br /><sub><b>jooojo</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=jooojo" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Ajooojo" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
   <tfoot>
