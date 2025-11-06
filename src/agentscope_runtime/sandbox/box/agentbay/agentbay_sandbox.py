@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 @SandboxRegistry.register(
-    "agentbay-cloud", # 虚拟镜像名，表示云服务
+    "agentbay-cloud",  # Virtual image name indicating cloud service
     sandbox_type=SandboxType.AGENTBAY,
     security_level="high",
     timeout=300,
@@ -26,11 +26,11 @@ logger = logging.getLogger(__name__)
 class AgentbaySandbox(CloudSandbox):
     """
     AgentBay cloud sandbox implementation.
-    
+
     This sandbox provides access to AgentBay's cloud-native sandbox environment
     with support for various image types including Linux, Windows, Browser,
     CodeSpace, and Mobile environments.
-    
+
     Features:
     - Cloud-native environment (no local containers)
     - Support for multiple image types
@@ -49,11 +49,11 @@ class AgentbaySandbox(CloudSandbox):
         api_key: Optional[str] = None,
         image_id: str = "linux_latest",
         labels: Optional[Dict[str, str]] = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize the AgentBay sandbox.
-        
+
         Args:
             sandbox_id: Optional sandbox ID for existing sessions
             timeout: Timeout for operations in seconds
@@ -69,76 +69,81 @@ class AgentbaySandbox(CloudSandbox):
         self.api_key = api_key or os.getenv("AGENTBAY_API_KEY") or bearer_token
         if not self.api_key:
             raise ValueError(
-                "AgentBay API key is required. Set AGENTBAY_API_KEY environment "
-                "variable or pass api_key parameter."
+                "AgentBay API key is required. Set AGENTBAY_API_KEY "
+                "environment variable or pass api_key parameter.",
             )
-        
+
         # Store AgentBay-specific configuration
         self.image_id = image_id
         self.labels = labels or {}
         self.base_url = base_url
-        
+
         super().__init__(
             sandbox_id=sandbox_id,
             timeout=timeout,
             base_url=base_url,
             bearer_token=self.api_key,
             sandbox_type=sandbox_type,
-            **kwargs
+            **kwargs,
         )
 
     def _initialize_cloud_client(self):
         """
         Initialize the AgentBay client.
-        
+
         Returns:
             AgentBay client instance
         """
         try:
             # Import AgentBay SDK
             from agentbay import AgentBay
-            
+
             # Initialize client with API key
             client = AgentBay(api_key=self.api_key)
-            
+
             logger.info("AgentBay client initialized successfully")
             return client
-            
+
         except ImportError as e:
             raise ImportError(
                 "AgentBay SDK is not installed. Please install it with: "
-                "pip install agentbay"
+                "pip install wuying-agentbay-sdk",
             ) from e
         except Exception as e:
-            raise RuntimeError(f"Failed to initialize AgentBay client: {e}") from e
+            raise RuntimeError(
+                f"Failed to initialize AgentBay client: {e}",
+            ) from e
 
     def _create_cloud_session(self) -> Optional[str]:
         """
         Create a new AgentBay session.
-        
+
         Returns:
             Session ID if successful, None otherwise
         """
         try:
             from agentbay.session_params import CreateSessionParams
-            
+
             # Create session parameters
             params = CreateSessionParams(
                 image_id=self.image_id,
-                labels=self.labels
+                labels=self.labels,
             )
-            
+
             # Create session
             result = self.cloud_client.create(params)
-            
+
             if result.success:
                 session_id = result.session.session_id
                 logger.info(f"AgentBay session created: {session_id}")
                 return session_id
             else:
-                logger.error(f"Failed to create AgentBay session: {result.error_message}")
+                logger.error(
+                    f"Failed to create AgentBay session: "
+                    f"{result.error_message}",
+                )
                 return None
-                
+
         except Exception as e:
             logger.error(f"Error creating AgentBay session: {e}")
             return None
@@ -146,10 +151,10 @@ class AgentbaySandbox(CloudSandbox):
     def _delete_cloud_session(self, session_id: str) -> bool:
         """
         Delete an AgentBay session.
-        
+
         Args:
             session_id: ID of the session to delete
-            
+
         Returns:
             True if successful, False otherwise
         """
@@ -157,31 +162,42 @@ class AgentbaySandbox(CloudSandbox):
             # Get session object first
             get_result = self.cloud_client.get(session_id)
             if not get_result.success:
-                logger.warning(f"Session {session_id} not found or already deleted")
+                logger.warning(
+                    f"Session {session_id} not found or already deleted",
+                )
                 return True  # Consider it successful if already gone
-            
+
             # Delete the session
             delete_result = self.cloud_client.delete(get_result.session)
-            
+
             if delete_result.success:
-                logger.info(f"AgentBay session {session_id} deleted successfully")
+                logger.info(
+                    f"AgentBay session {session_id} deleted successfully",
+                )
                 return True
             else:
-                logger.error(f"Failed to delete AgentBay session: {delete_result.error_message}")
+                logger.error(
+                    f"Failed to delete AgentBay session: "
+                    f"{delete_result.error_message}",
+                )
                 return False
-                
+
         except Exception as e:
             logger.error(f"Error deleting AgentBay session {session_id}: {e}")
             return False
 
-    def _call_cloud_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
+    def _call_cloud_tool(
+        self,
+        tool_name: str,
+        arguments: Dict[str, Any],
+    ) -> Any:
         """
         Call a tool in the AgentBay environment.
-        
+
         Args:
             tool_name: Name of the tool to call
             arguments: Arguments for the tool
-            
+
         Returns:
             Tool execution result
         """
@@ -190,9 +206,9 @@ class AgentbaySandbox(CloudSandbox):
             get_result = self.cloud_client.get(self._sandbox_id)
             if not get_result.success:
                 raise RuntimeError(f"Session {self._sandbox_id} not found")
-            
+
             session = get_result.session
-            
+
             # Map tool names to AgentBay session methods
             tool_mapping = {
                 "run_shell_command": self._execute_command,
@@ -208,86 +224,108 @@ class AgentbaySandbox(CloudSandbox):
                 "browser_click": self._browser_click,
                 "browser_input": self._browser_input,
             }
-            
+
             if tool_name in tool_mapping:
                 return tool_mapping[tool_name](session, arguments)
             else:
                 # Try to call as a generic method
                 return self._generic_tool_call(session, tool_name, arguments)
-                
+
         except Exception as e:
             logger.error(f"Error calling tool {tool_name}: {e}")
             return {
                 "success": False,
                 "error": str(e),
                 "tool_name": tool_name,
-                "arguments": arguments
+                "arguments": arguments,
             }
 
-    def _execute_command(self, session, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _execute_command(
+        self,
+        session,
+        arguments: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Execute a shell command in AgentBay."""
         command = arguments.get("command", "")
         result = session.command.execute_command(command)
-        
+
         return {
             "success": result.success,
             "output": result.output,
-            "error": result.error if hasattr(result, 'error') else None,
-            "exit_code": result.exit_code if hasattr(result, 'exit_code') else 0,
+            "error": result.error if hasattr(result, "error") else None,
+            "exit_code": result.exit_code
+            if hasattr(result, "exit_code")
+            else 0,
         }
 
-    def _execute_code(self, session, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _execute_code(
+        self,
+        session,
+        arguments: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Execute Python code in AgentBay."""
         code = arguments.get("code", "")
         result = session.code.run_code(code, "python")
-        
+
         return {
             "success": result.success,
             "output": result.result,
-            "error": result.error if hasattr(result, 'error') else None,
+            "error": result.error if hasattr(result, "error") else None,
         }
 
     def _read_file(self, session, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Read a file from AgentBay."""
         path = arguments.get("path", "")
         result = session.file_system.read_file(path)
-        
+
         return {
             "success": result.success,
-            "content": result.content if hasattr(result, 'content') else None,
-            "error": result.error if hasattr(result, 'error') else None,
+            "content": result.content if hasattr(result, "content") else None,
+            "error": result.error if hasattr(result, "error") else None,
         }
 
-    def _write_file(self, session, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _write_file(
+        self,
+        session,
+        arguments: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Write a file to AgentBay."""
         path = arguments.get("path", "")
         content = arguments.get("content", "")
         result = session.file_system.write_file(path, content)
-        
+
         return {
             "success": result.success,
-            "error": result.error if hasattr(result, 'error') else None,
+            "error": result.error if hasattr(result, "error") else None,
         }
 
-    def _list_directory(self, session, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _list_directory(
+        self,
+        session,
+        arguments: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """List directory contents in AgentBay."""
         path = arguments.get("path", ".")
         result = session.file_system.list_directory(path)
-        
+
         return {
             "success": result.success,
-            "files": result.files if hasattr(result, 'files') else [],
-            "error": result.error if hasattr(result, 'error') else None,
+            "files": result.files if hasattr(result, "files") else [],
+            "error": result.error if hasattr(result, "error") else None,
         }
 
-    def _create_directory(self, session, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _create_directory(
+        self,
+        session,
+        arguments: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Create a directory in AgentBay."""
         path = arguments.get("path", "")
         result = session.file_system.create_directory(path)
-        
+
         return {
             "success": result.success,
-            "error": result.error if hasattr(result, 'error') else None,
+            "error": result.error if hasattr(result, "error") else None,
         }
 
     def _move_file(self, session, arguments: Dict[str, Any]) -> Dict[str, Any]:
@@ -295,71 +333,96 @@ class AgentbaySandbox(CloudSandbox):
         source = arguments.get("source", "")
         destination = arguments.get("destination", "")
         result = session.file_system.move_file(source, destination)
-        
+
         return {
             "success": result.success,
-            "error": result.error if hasattr(result, 'error') else None,
+            "error": result.error if hasattr(result, "error") else None,
         }
 
-    def _delete_file(self, session, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _delete_file(
+        self,
+        session,
+        arguments: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Delete a file in AgentBay."""
         path = arguments.get("path", "")
         result = session.file_system.delete_file(path)
-        
+
         return {
             "success": result.success,
-            "error": result.error if hasattr(result, 'error') else None,
+            "error": result.error if hasattr(result, "error") else None,
         }
 
-    def _take_screenshot(self, session, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _take_screenshot(
+        self,
+        session,
+        arguments: Dict[str, Any],  # pylint: disable=unused-argument
+    ) -> Dict[str, Any]:
         """Take a screenshot in AgentBay."""
         result = session.computer.screenshot()
-        
+
         return {
             "success": result.success,
-            "screenshot_url": result.data if hasattr(result, 'data') else None,
-            "error": result.error if hasattr(result, 'error') else None,
+            "screenshot_url": result.data if hasattr(result, "data") else None,
+            "error": result.error if hasattr(result, "error") else None,
         }
 
-    def _browser_navigate(self, session, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _browser_navigate(
+        self,
+        session,
+        arguments: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Navigate browser in AgentBay."""
         url = arguments.get("url", "")
         result = session.browser.agent.navigate(url)
-        
+
         return {
             "success": result.success,
-            "error": result.error if hasattr(result, 'error') else None,
+            "error": result.error if hasattr(result, "error") else None,
         }
 
-    def _browser_click(self, session, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _browser_click(
+        self,
+        session,
+        arguments: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Click element in browser."""
         selector = arguments.get("selector", "")
         result = session.browser.agent.click(selector)
-        
+
         return {
             "success": result.success,
-            "error": result.error if hasattr(result, 'error') else None,
+            "error": result.error if hasattr(result, "error") else None,
         }
 
-    def _browser_input(self, session, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _browser_input(
+        self,
+        session,
+        arguments: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Input text in browser."""
         selector = arguments.get("selector", "")
         text = arguments.get("text", "")
         result = session.browser.agent.input_text(selector, text)
-        
+
         return {
             "success": result.success,
-            "error": result.error if hasattr(result, 'error') else None,
+            "error": result.error if hasattr(result, "error") else None,
         }
 
-    def _generic_tool_call(self, session, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _generic_tool_call(
+        self,
+        session,
+        tool_name: str,
+        arguments: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Generic tool call fallback."""
         try:
             # Try to find and call the method on the session
             if hasattr(session, tool_name):
                 method = getattr(session, tool_name)
                 result = method(**arguments)
-                
+
                 return {
                     "success": True,
                     "result": result,
@@ -367,7 +430,9 @@ class AgentbaySandbox(CloudSandbox):
             else:
                 return {
                     "success": False,
-                    "error": f"Tool '{tool_name}' not found in AgentBay session",
+                    "error": (
+                        f"Tool '{tool_name}' not found in AgentBay session"
+                    ),
                 }
         except Exception as e:
             return {
@@ -382,7 +447,7 @@ class AgentbaySandbox(CloudSandbox):
     def get_session_info(self) -> Dict[str, Any]:
         """
         Get detailed information about the AgentBay session.
-        
+
         Returns:
             Dictionary containing session information
         """
@@ -390,10 +455,10 @@ class AgentbaySandbox(CloudSandbox):
             get_result = self.cloud_client.get(self._sandbox_id)
             if not get_result.success:
                 return {"error": "Session not found"}
-            
+
             session = get_result.session
             info_result = session.info()
-            
+
             if info_result.success:
                 return {
                     "session_id": info_result.data.session_id,
@@ -405,23 +470,26 @@ class AgentbaySandbox(CloudSandbox):
                 }
             else:
                 return {"error": info_result.error_message}
-                
+
         except Exception as e:
             return {"error": str(e)}
 
-    def list_sessions(self, labels: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+    def list_sessions(
+        self,
+        labels: Optional[Dict[str, str]] = None,
+    ) -> Dict[str, Any]:
         """
         List AgentBay sessions.
-        
+
         Args:
             labels: Optional labels to filter sessions
-            
+
         Returns:
             Dictionary containing session list
         """
         try:
             result = self.cloud_client.list(labels=labels)
-            
+
             return {
                 "success": result.success,
                 "session_ids": result.session_ids,

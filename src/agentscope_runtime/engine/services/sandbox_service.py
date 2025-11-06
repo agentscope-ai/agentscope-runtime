@@ -103,9 +103,7 @@ class SandboxService(ServiceWithLifecycleManager):
 
             # Special handling for AgentBay cloud sandbox
             if box_type == SandboxType.AGENTBAY:
-                sandbox = self._create_agentbay_sandbox(
-                    session_ctx_id, box_type
-                )
+                sandbox = self._create_agentbay_sandbox(box_type)
                 if sandbox:
                     sandboxes.append(sandbox)
                 continue
@@ -152,20 +150,24 @@ class SandboxService(ServiceWithLifecycleManager):
             sandboxes.append(box)
         return sandboxes
 
-    def _create_agentbay_sandbox(self, session_ctx_id: str, box_type: SandboxType):
+    def _create_agentbay_sandbox(
+        self,
+        box_type: SandboxType,
+    ):
         """
         Create an AgentBay cloud sandbox.
-        
+
         Args:
-            session_ctx_id: Session context ID
             box_type: Sandbox type (should be AGENTBAY)
-            
+
         Returns:
             AgentBay sandbox instance or None if creation fails
         """
         try:
-            from ...sandbox.box.agentbay.agentbay_sandbox import AgentbaySandbox
-            
+            from ...sandbox.box.agentbay.agentbay_sandbox import (
+                AgentbaySandbox,
+            )
+
             # Create AgentBay sandbox directly (no need for manager API)
             sandbox = AgentbaySandbox(
                 sandbox_id=None,  # Let AgentBay create a new session
@@ -173,11 +175,12 @@ class SandboxService(ServiceWithLifecycleManager):
                 bearer_token=self.bearer_token,
                 sandbox_type=box_type,
             )
-            
+
             return sandbox
-            
+
         except Exception as e:
             import logging
+
             logger = logging.getLogger(__name__)
             logger.error(f"Failed to create AgentBay sandbox: {e}")
             return None
@@ -188,8 +191,10 @@ class SandboxService(ServiceWithLifecycleManager):
             # Check if this is an AgentBay session ID
             if self._is_agentbay_session_id(env_id):
                 try:
-                    from ...sandbox.box.agentbay.agentbay_sandbox import AgentbaySandbox
-                    
+                    from ...sandbox.box.agentbay.agentbay_sandbox import (
+                        AgentbaySandbox,
+                    )
+
                     # Connect to existing AgentBay session
                     sandbox = AgentbaySandbox(
                         sandbox_id=env_id,
@@ -201,8 +206,11 @@ class SandboxService(ServiceWithLifecycleManager):
                     continue
                 except Exception as e:
                     import logging
+
                     logger = logging.getLogger(__name__)
-                    logger.error(f"Failed to connect to AgentBay session {env_id}: {e}")
+                    logger.error(
+                        f"Failed to connect to AgentBay session {env_id}: {e}",
+                    )
                     continue
 
             # Standard sandbox connection
@@ -238,12 +246,12 @@ class SandboxService(ServiceWithLifecycleManager):
     def _is_agentbay_session_id(self, session_id: str) -> bool:
         """
         Check if a session ID belongs to AgentBay.
-        
+
         AgentBay session IDs typically start with 'session-' prefix.
-        
+
         Args:
             session_id: Session ID to check
-            
+
         Returns:
             True if this appears to be an AgentBay session ID
         """
@@ -261,9 +269,8 @@ class SandboxService(ServiceWithLifecycleManager):
                     # AgentBay sessions are cleaned up automatically
                     # when the sandbox object is destroyed
                     continue
-                else:
-                    # Standard sandbox release
-                    self.manager_api.release(env_id)
+                # Standard sandbox release
+                self.manager_api.release(env_id)
 
         return True
 

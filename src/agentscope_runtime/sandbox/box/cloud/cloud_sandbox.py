@@ -2,8 +2,9 @@
 """
 CloudSandbox base class for cloud-based sandbox implementations.
 
-This module provides a base class for cloud sandbox implementations that don't
-rely on local container management but instead communicate directly with cloud APIs.
+This module provides a base class for cloud sandbox implementations that
+don't rely on local container management but instead communicate directly
+with cloud APIs.
 """
 import logging
 from typing import Any, Dict, Optional
@@ -18,11 +19,11 @@ logger = logging.getLogger(__name__)
 class CloudSandbox(Sandbox, ABC):
     """
     Base class for cloud-based sandbox implementations.
-    
+
     This class provides a unified interface for cloud sandbox services that
     don't depend on local container management. Instead, they communicate
     directly with cloud APIs to manage remote environments.
-    
+
     Key features:
     - No local container dependency
     - Direct cloud API communication
@@ -37,11 +38,11 @@ class CloudSandbox(Sandbox, ABC):
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.AGENTBAY,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize the cloud sandbox.
-        
+
         Args:
             sandbox_id: Optional sandbox ID for existing sessions
             timeout: Timeout for operations in seconds
@@ -50,85 +51,94 @@ class CloudSandbox(Sandbox, ABC):
             sandbox_type: Type of sandbox (default: AGENTBAY)
             **kwargs: Additional cloud-specific configuration
         """
+        # Initialize base attributes (similar to parent class but without
+        # SandboxManager)
+        # Note: We don't call super().__init__() because CloudSandbox uses a
+        # different architecture - it doesn't need SandboxManager, instead it
+        # communicates directly with cloud APIs through cloud_client.
+        self.base_url = base_url
+        self.embed_mode = False
+        self.manager_api = None
+
         # Store cloud-specific configuration
         self.cloud_config = kwargs
         self.bearer_token = bearer_token
-        
+
         # Initialize cloud client
         self.cloud_client = self._initialize_cloud_client()
-        
-        # For cloud sandboxes, we don't use the traditional manager API
-        # Instead, we manage sessions directly through cloud APIs
-        self.embed_mode = False
-        self.manager_api = None
-        
+
         # Initialize sandbox ID
         if sandbox_id is None:
             sandbox_id = self._create_cloud_session()
             if sandbox_id is None:
                 raise RuntimeError(
                     "Failed to create cloud session. "
-                    "Please check your cloud API credentials and configuration."
+                    "Please check your cloud API credentials and "
+                    "configuration.",
                 )
-        
+
         self._sandbox_id = sandbox_id
         self.sandbox_type = sandbox_type
         self.timeout = timeout
-        
+
         logger.info(f"Cloud sandbox initialized with ID: {self._sandbox_id}")
 
     @abstractmethod
     def _initialize_cloud_client(self):
         """
         Initialize the cloud client for API communication.
-        
+
         This method should be implemented by subclasses to create
         the appropriate cloud client (e.g., AgentBay client).
-        
+
         Returns:
             Cloud client instance
         """
-        pass
+        # Abstract method - must be implemented by subclasses
 
     @abstractmethod
     def _create_cloud_session(self) -> Optional[str]:
         """
         Create a new cloud session.
-        
+
         This method should be implemented by subclasses to create
         a new session using the cloud provider's API.
-        
+
         Returns:
             Session ID if successful, None otherwise
         """
-        pass
+        # Abstract method - must be implemented by subclasses
 
     @abstractmethod
     def _delete_cloud_session(self, session_id: str) -> bool:
         """
         Delete a cloud session.
-        
+
         Args:
             session_id: ID of the session to delete
-            
+
         Returns:
             True if successful, False otherwise
         """
-        pass
+        # Abstract method - must be implemented by subclasses
 
     @abstractmethod
-    def _call_cloud_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
+    def _call_cloud_tool(
+        self,
+        tool_name: str,
+        arguments: Dict[str, Any],
+    ) -> Any:
         """
         Call a tool in the cloud environment.
-        
+
         Args:
             tool_name: Name of the tool to call
             arguments: Arguments for the tool
-            
+
         Returns:
             Tool execution result
         """
-        pass
+        # Abstract method - must be implemented by subclasses
 
     def call_tool(
         self,
@@ -137,23 +147,23 @@ class CloudSandbox(Sandbox, ABC):
     ) -> Any:
         """
         Call a tool in the cloud sandbox.
-        
+
         Args:
             name: Name of the tool to call
             arguments: Arguments for the tool
-            
+
         Returns:
             Tool execution result
         """
         if arguments is None:
             arguments = {}
-        
+
         return self._call_cloud_tool(name, arguments)
 
     def get_info(self) -> Dict[str, Any]:
         """
         Get information about the cloud sandbox.
-        
+
         Returns:
             Dictionary containing sandbox information
         """
@@ -168,19 +178,19 @@ class CloudSandbox(Sandbox, ABC):
     def _get_cloud_provider_name(self) -> str:
         """
         Get the name of the cloud provider.
-        
+
         Returns:
             Name of the cloud provider (e.g., "AgentBay")
         """
-        pass
+        # Abstract method - must be implemented by subclasses
 
     def list_tools(self, tool_type: Optional[str] = None) -> Dict[str, Any]:
         """
         List available tools in the cloud sandbox.
-        
+
         Args:
             tool_type: Optional filter for tool type
-            
+
         Returns:
             Dictionary containing available tools
         """
@@ -198,11 +208,11 @@ class CloudSandbox(Sandbox, ABC):
     ) -> Dict[str, Any]:
         """
         Add MCP servers to the cloud sandbox.
-        
+
         Args:
             server_configs: Configuration for MCP servers
             overwrite: Whether to overwrite existing configurations
-            
+
         Returns:
             Result of the operation
         """
@@ -216,7 +226,7 @@ class CloudSandbox(Sandbox, ABC):
     def _cleanup(self):
         """
         Clean up cloud sandbox resources.
-        
+
         This method is called when the sandbox is being destroyed.
         It ensures that cloud resources are properly released.
         """
@@ -224,9 +234,14 @@ class CloudSandbox(Sandbox, ABC):
             if self._sandbox_id:
                 success = self._delete_cloud_session(self._sandbox_id)
                 if success:
-                    logger.info(f"Cloud session {self._sandbox_id} deleted successfully")
+                    logger.info(
+                        f"Cloud session {self._sandbox_id} deleted "
+                        f"successfully",
+                    )
                 else:
-                    logger.warning(f"Failed to delete cloud session {self._sandbox_id}")
+                    logger.warning(
+                        f"Failed to delete cloud session {self._sandbox_id}",
+                    )
         except Exception as e:
             logger.error(f"Error during cloud sandbox cleanup: {e}")
 
