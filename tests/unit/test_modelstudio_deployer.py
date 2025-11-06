@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=unused-variable
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 from agentscope_runtime.engine.deployers.modelstudio_deployer import (
