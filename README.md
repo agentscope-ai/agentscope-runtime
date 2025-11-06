@@ -466,7 +466,7 @@ limitations under the License.
 
 ## Contributors ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-15-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-16-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
@@ -496,6 +496,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ms-cs"><img src="https://avatars.githubusercontent.com/u/43086458?v=4?s=100" width="100px;" alt="zhiyong"/><br /><sub><b>zhiyong</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=ms-cs" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Ams-cs" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jooojo"><img src="https://avatars.githubusercontent.com/u/11719425?v=4?s=100" width="100px;" alt="jooojo"/><br /><sub><b>jooojo</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=jooojo" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Ajooojo" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
   <tfoot>
