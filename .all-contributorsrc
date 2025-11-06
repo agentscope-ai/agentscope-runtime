@@ -168,6 +168,16 @@
         "code",
         "bug"
       ]
+    },
+    {
+      "login": "ceshihao",
+      "name": "Zheng Dayu",
+      "avatar_url": "https://avatars.githubusercontent.com/u/7711875?v=4",
+      "profile": "http://ceshihao.github.io",
+      "contributions": [
+        "code",
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,
