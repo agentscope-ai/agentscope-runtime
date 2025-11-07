@@ -1,6 +1,6 @@
 [project]
 name = "agentscope-runtime"
-version = "0.2.0"
+version = "0.3.0b1"
 description = "A production-ready runtime framework for agent applications, providing secure sandboxed execution environments and scalable deployment solutions with multi-framework support."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -102,7 +102,7 @@ memory-ext = [
 
 deployment = [
     "alibabacloud-oss-v2",
-    "alibabacloud-bailian20231229>=2.5.0",
+    "alibabacloud-bailian20231229>=2.6.0",
     "build",
     "setuptools>=40.8.0",
     "wheel",

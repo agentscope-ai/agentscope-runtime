@@ -158,6 +158,35 @@
         "code",
         "bug"
       ]
+    },
+    {
+      "login": "jooojo",
+      "name": "jooojo",
+      "avatar_url": "https://avatars.githubusercontent.com/u/11719425?v=4",
+      "profile": "https://github.com/jooojo",
+      "contributions": [
+        "code",
+        "bug"
+      ]
+    },
+    {
+      "login": "ceshihao",
+      "name": "Zheng Dayu",
+      "avatar_url": "https://avatars.githubusercontent.com/u/7711875?v=4",
+      "profile": "http://ceshihao.github.io",
+      "contributions": [
+        "code",
+        "bug"
+      ]
+    },
+    {
+      "login": "taoquanyus",
+      "name": "quanyu",
+      "avatar_url": "https://avatars.githubusercontent.com/u/39740818?v=4",
+      "profile": "http://lokk.cn/about",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,

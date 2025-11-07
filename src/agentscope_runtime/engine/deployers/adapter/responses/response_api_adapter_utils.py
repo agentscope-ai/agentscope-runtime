@@ -71,6 +71,10 @@ from openai.types.responses.response_reasoning_item import (
     ResponseReasoningItem,
 )
 
+from openai.types.responses.response_reasoning_item import (
+    Content as ReasoningContent,
+)
+
 from agentscope_runtime.engine.schemas.agent_schemas import (
     AgentRequest,
     BaseResponse,
@@ -1399,7 +1403,7 @@ class ResponsesAdapter:
             id=message.id,
             summary=[],  # Empty summary
             content=(
-                [Content(type="reasoning_text", text=reasoning_text)]
+                [ReasoningContent(type="reasoning_text", text=reasoning_text)]
                 if reasoning_text
                 else None
             ),

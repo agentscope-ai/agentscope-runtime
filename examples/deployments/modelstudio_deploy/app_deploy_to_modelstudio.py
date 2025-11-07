@@ -164,7 +164,6 @@ async def deploy_from_project_directory():
         print("✅ Project deployment successful!")
         print(f"📍 Deployment ID: {result['deploy_id']}")
         print(f"📦 Wheel path: {result['wheel_path']}")
-        print(f"🌐 OSS file URL: {result['artifact_url']}")
         print(f"🏷️ Resource name: {result['resource_name']}")
         print(f"🏢 Workspace ID: {result['workspace_id']}")
 
@@ -204,7 +203,6 @@ async def deploy_from_existing_wheel():
         print("✅ Wheel deployment successful!")
         print(f"📍 Deployment ID: {result['deploy_id']}")
         print(f"📦 Wheel path: {result['wheel_path']}")
-        print(f"🌐 OSS file URL: {result['artifact_url']}")
         print(f"🏷️ Resource name: {result['resource_name']}")
         print(f"🏢 Workspace ID: {result['workspace_id']}")
 
