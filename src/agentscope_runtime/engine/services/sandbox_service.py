@@ -101,18 +101,15 @@ class SandboxService(ServiceWithLifecycleManager):
 
             box_type = SandboxType(env_type)
 
-            # Special handling for AgentBay cloud sandbox
-            if box_type == SandboxType.AGENTBAY:
-                sandbox = self._create_agentbay_sandbox(box_type)
-                if sandbox:
-                    sandboxes.append(sandbox)
-                continue
+            # 仅非 AgentBay 走 manager 池
+            if box_type != SandboxType.AGENTBAY:
+                box_id = self.manager_api.create_from_pool(
+                    sandbox_type=box_type.value,
+                    meta={"session_ctx_id": session_ctx_id},
+                )
+            else:
+                box_id = None  # AgentBay 由云端内部创建
 
-            # Standard sandbox creation for non-cloud sandboxes
-            box_id = self.manager_api.create_from_pool(
-                sandbox_type=box_type.value,
-                meta={"session_ctx_id": session_ctx_id},
-            )
             box_cls = SandboxRegistry.get_classes_by_type(box_type)
 
             box = box_cls(
@@ -149,41 +146,6 @@ class SandboxService(ServiceWithLifecycleManager):
 
             sandboxes.append(box)
         return sandboxes
-
-    def _create_agentbay_sandbox(
-        self,
-        box_type: SandboxType,
-    ):
-        """
-        Create an AgentBay cloud sandbox.
-
-        Args:
-            box_type: Sandbox type (should be AGENTBAY)
-
-        Returns:
-            AgentBay sandbox instance or None if creation fails
-        """
-        try:
-            from ...sandbox.box.agentbay.agentbay_sandbox import (
-                AgentbaySandbox,
-            )
-
-            # Create AgentBay sandbox directly (no need for manager API)
-            sandbox = AgentbaySandbox(
-                sandbox_id=None,  # Let AgentBay create a new session
-                base_url=self.base_url,
-                bearer_token=self.bearer_token,
-                sandbox_type=box_type,
-            )
-
-            return sandbox
-
-        except Exception as e:
-            import logging
-
-            logger = logging.getLogger(__name__)
-            logger.error(f"Failed to create AgentBay sandbox: {e}")
-            return None
 
     def _connect_existing_environment(self, env_ids: List[str]):
         boxes = []

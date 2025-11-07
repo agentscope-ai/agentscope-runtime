@@ -114,7 +114,7 @@ class AgentbaySandbox(CloudSandbox):
                 f"Failed to initialize AgentBay client: {e}",
             ) from e
 
-    def _create_cloud_session(self) -> Optional[str]:
+    def _create_cloud_sandbox(self) -> Optional[str]:
         """
         Create a new AgentBay session.
 
@@ -148,22 +148,22 @@ class AgentbaySandbox(CloudSandbox):
             logger.error(f"Error creating AgentBay session: {e}")
             return None
 
-    def _delete_cloud_session(self, session_id: str) -> bool:
+    def _delete_cloud_sandbox(self, sandbox_id: str) -> bool:
         """
         Delete an AgentBay session.
 
         Args:
-            session_id: ID of the session to delete
+            sandbox_id: ID of the session to delete
 
         Returns:
             True if successful, False otherwise
         """
         try:
             # Get session object first
-            get_result = self.cloud_client.get(session_id)
+            get_result = self.cloud_client.get(sandbox_id)
             if not get_result.success:
                 logger.warning(
-                    f"Session {session_id} not found or already deleted",
+                    f"Session {sandbox_id} not found or already deleted",
                 )
                 return True  # Consider it successful if already gone
 
@@ -172,7 +172,7 @@ class AgentbaySandbox(CloudSandbox):
 
             if delete_result.success:
                 logger.info(
-                    f"AgentBay session {session_id} deleted successfully",
+                    f"AgentBay session {sandbox_id} deleted successfully",
                 )
                 return True
             else:
@@ -183,7 +183,9 @@ class AgentbaySandbox(CloudSandbox):
                 return False
 
         except Exception as e:
-            logger.error(f"Error deleting AgentBay session {session_id}: {e}")
+            logger.error(
+                f"Error deleting AgentBay session {sandbox_id}: {e}",
+            )
             return False
 
     def _call_cloud_tool(
@@ -205,7 +207,7 @@ class AgentbaySandbox(CloudSandbox):
             # Get the session object
             get_result = self.cloud_client.get(self._sandbox_id)
             if not get_result.success:
-                raise RuntimeError(f"Session {self._sandbox_id} not found")
+                raise RuntimeError(f"Sandbox {self._sandbox_id} not found")
 
             session = get_result.session
 
@@ -443,6 +445,60 @@ class AgentbaySandbox(CloudSandbox):
     def _get_cloud_provider_name(self) -> str:
         """Get the name of the cloud provider."""
         return "AgentBay"
+
+    def list_tools(self, tool_type: Optional[str] = None) -> Dict[str, Any]:
+        """
+        List available tools in the AgentBay sandbox.
+
+        Args:
+            tool_type: Optional filter for tool type (e.g., "file", "browser")
+
+        Returns:
+            Dictionary containing available tools organized by type
+        """
+        # Define tool categories
+        file_tools = [
+            "read_file",
+            "write_file",
+            "list_directory",
+            "create_directory",
+            "move_file",
+            "delete_file",
+        ]
+        command_tools = ["run_shell_command", "run_ipython_cell"]
+        browser_tools = ["browser_navigate", "browser_click", "browser_input"]
+        system_tools = ["screenshot"]
+
+        # Organize tools by type
+        tools_by_type = {
+            "file": file_tools,
+            "command": command_tools,
+            "browser": browser_tools,
+            "system": system_tools,
+        }
+
+        # If tool_type is specified, return only that type
+        if tool_type:
+            tools = tools_by_type.get(tool_type, [])
+            return {
+                "tools": tools,
+                "tool_type": tool_type,
+                "sandbox_id": self._sandbox_id,
+                "total_count": len(tools),
+            }
+
+        # Return all tools organized by type
+        all_tools = []
+        for tool_list in tools_by_type.values():
+            all_tools.extend(tool_list)
+
+        return {
+            "tools": all_tools,
+            "tools_by_type": tools_by_type,
+            "tool_type": tool_type,
+            "sandbox_id": self._sandbox_id,
+            "total_count": len(all_tools),
+        }
 
     def get_session_info(self) -> Dict[str, Any]:
         """

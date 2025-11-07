@@ -69,10 +69,10 @@ class CloudSandbox(Sandbox, ABC):
 
         # Initialize sandbox ID
         if sandbox_id is None:
-            sandbox_id = self._create_cloud_session()
+            sandbox_id = self._create_cloud_sandbox()
             if sandbox_id is None:
                 raise RuntimeError(
-                    "Failed to create cloud session. "
+                    "Failed to create cloud sandbox. "
                     "Please check your cloud API credentials and "
                     "configuration.",
                 )
@@ -97,25 +97,25 @@ class CloudSandbox(Sandbox, ABC):
         # Abstract method - must be implemented by subclasses
 
     @abstractmethod
-    def _create_cloud_session(self) -> Optional[str]:
+    def _create_cloud_sandbox(self) -> Optional[str]:
         """
-        Create a new cloud session.
+        Create a new cloud sandbox.
 
         This method should be implemented by subclasses to create
-        a new session using the cloud provider's API.
+        a new sandbox using the cloud provider's API.
 
         Returns:
-            Session ID if successful, None otherwise
+            Sandbox ID if successful, None otherwise
         """
         # Abstract method - must be implemented by subclasses
 
     @abstractmethod
-    def _delete_cloud_session(self, session_id: str) -> bool:
+    def _delete_cloud_sandbox(self, sandbox_id: str) -> bool:
         """
-        Delete a cloud session.
+        Delete a cloud sandbox.
 
         Args:
-            session_id: ID of the session to delete
+            sandbox_id: ID of the sandbox to delete
 
         Returns:
             True if successful, False otherwise
@@ -232,7 +232,7 @@ class CloudSandbox(Sandbox, ABC):
         """
         try:
             if self._sandbox_id:
-                success = self._delete_cloud_session(self._sandbox_id)
+                success = self._delete_cloud_sandbox(self._sandbox_id)
                 if success:
                     logger.info(
                         f"Cloud session {self._sandbox_id} deleted "
