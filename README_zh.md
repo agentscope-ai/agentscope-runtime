@@ -465,7 +465,7 @@ limitations under the License.
 
 ## 贡献者 ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-18-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-19-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 
@@ -499,6 +499,7 @@ limitations under the License.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/jooojo"><img src="https://avatars.githubusercontent.com/u/11719425?v=4?s=100" width="100px;" alt="jooojo"/><br /><sub><b>jooojo</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=jooojo" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Ajooojo" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://ceshihao.github.io"><img src="https://avatars.githubusercontent.com/u/7711875?v=4?s=100" width="100px;" alt="Zheng Dayu"/><br /><sub><b>Zheng Dayu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=ceshihao" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Aceshihao" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://lokk.cn/about"><img src="https://avatars.githubusercontent.com/u/39740818?v=4?s=100" width="100px;" alt="quanyu"/><br /><sub><b>quanyu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=taoquanyus" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Littlegrace111"><img src="https://avatars.githubusercontent.com/u/3880455?v=4?s=100" width="100px;" alt="Grace Wu"/><br /><sub><b>Grace Wu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Littlegrace111" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Littlegrace111" title="Documentation">📖</a></td>
     </tr>
   </tbody>
   <tfoot>
