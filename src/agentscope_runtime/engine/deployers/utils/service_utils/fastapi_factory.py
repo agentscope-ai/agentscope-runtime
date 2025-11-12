@@ -5,6 +5,7 @@
 import asyncio
 import inspect
 import json
+import logging
 from contextlib import asynccontextmanager
 from typing import Optional, Callable, Type, Any, List, Dict
 
@@ -17,6 +18,8 @@ from .service_config import ServicesConfig, DEFAULT_SERVICES_CONFIG
 from .service_factory import ServiceFactory
 from ..deployment_modes import DeploymentMode
 from ...adapter.protocol_adapter import ProtocolAdapter
+
+logger = logging.getLogger(__name__)
 
 
 async def error_stream(e):
@@ -188,7 +191,9 @@ class FastAPIAppFactory:
                         await app.state.runner.__aexit__(None, None, None)
                         await app.state.runner.__aenter__()
                     except Exception as e:
-                        print(f"Warning: Error during runner setup: {e}")
+                        logger.error(
+                            f"Warning: Error during runner setup: {e}",
+                        )
 
         elif mode in [
             DeploymentMode.DETACHED_PROCESS,
@@ -263,9 +268,6 @@ class FastAPIAppFactory:
                         queues=queues,
                     )
                 except Exception as e:
-                    import logging
-
-                    logger = logging.getLogger(__name__)
                     logger.error(f"Failed to start Celery worker: {e}")
 
             worker_thread = threading.Thread(
@@ -299,7 +301,7 @@ class FastAPIAppFactory:
                     # Clean up runner
                     await runner.__aexit__(None, None, None)
                 except Exception as e:
-                    print(f"Warning: Error during runner cleanup: {e}")
+                    logger.error(f"Warning: Error during runner cleanup: {e}")
 
     @staticmethod
     async def _create_internal_runner(services_config: ServicesConfig):
