@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=too-many-branches, unused-argument, too-many-return-statements
-
+# pylint:disable=protected-access
 
 import asyncio
 import inspect
@@ -123,8 +123,6 @@ class FastAPIAppFactory:
         app.state.services_config = services_config
         app.state.stream_enabled = stream
         app.state.response_type = response_type
-        app.state.custom_func = func
-        app.state.external_runner = runner
         app.state.endpoint_path = endpoint_path
         app.state.protocol_adapters = protocol_adapters  # Store for later use
         app.state.custom_endpoints = (
@@ -168,7 +166,15 @@ class FastAPIAppFactory:
         if mode == DeploymentMode.DAEMON_THREAD:
             # Use external runner
             app.state.runner = external_runner
-            app.state.runner_managed_externally = True
+            if app.state.runner._context_manager.service_instances:
+                app.state.runner_managed_externally = True
+            else:
+                try:
+                    # set up runner
+                    await app.state.runner.__aenter__()
+                except Exception as e:
+                    print(f"Warning: Error during runner setup: {e}")
+                app.state.runner_managed_externally = False
 
         elif mode in [
             DeploymentMode.DETACHED_PROCESS,
