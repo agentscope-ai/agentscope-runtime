@@ -153,10 +153,16 @@ def agentscope_msg_to_message(
                 }
                 current_type = MessageType.PLUGIN_CALL
                 cb = current_mb.create_content_builder(content_type="data")
+
+                if isinstance(block.get("input"), (dict, list)):
+                    arguments = json.dumps(block.get("input"))
+                else:
+                    arguments = block.get("input")
+
                 call_data = FunctionCall(
                     call_id=block.get("id"),
                     name=block.get("name"),
-                    arguments=json.dumps(block.get("input")),
+                    arguments=arguments,
                 ).model_dump()
                 cb.set_data(call_data)
                 cb.complete()
@@ -179,11 +185,17 @@ def agentscope_msg_to_message(
                 }
                 current_type = MessageType.PLUGIN_CALL_OUTPUT
                 cb = current_mb.create_content_builder(content_type="data")
+
+                if isinstance(block.get("output"), (dict, list)):
+                    output = json.dumps(block.get("output"))
+                else:
+                    output = block.get("output")
+
                 output_data = FunctionCallOutput(
                     call_id=block.get("id"),
                     name=block.get("name"),
-                    output=json.dumps(block.get("output")),
-                ).model_dump()
+                    output=output,
+                ).model_dump(exclude_none=True)
                 cb.set_data(output_data)
                 cb.complete()
 
@@ -315,14 +327,12 @@ def agentscope_msg_to_message(
 
 def message_to_agentscope_msg(
     messages: Union[Message, List[Message]],
-    merge: bool = False,
 ) -> Union[Msg, List[Msg]]:
     """
     Convert AgentScope runtime Message(s) to AgentScope Msg(s).
 
     Args:
         messages: A single AgentScope runtime Message or list of Messages.
-        merge: If True and messages is a list, merge all contents into one Msg.
 
     Returns:
         A single Msg object or a list of Msg objects.
@@ -359,7 +369,7 @@ def message_to_agentscope_msg(
                 ToolUseBlock(
                     type="tool_use",
                     id=message.content[0].data["call_id"],
-                    name=message.content[0].data["name"],
+                    name=message.content[0].data.get("name"),
                     input=json.loads(message.content[0].data["arguments"]),
                 ),
             ]
@@ -379,18 +389,18 @@ def message_to_agentscope_msg(
 
             if isinstance(blk, list):
                 if not all(is_valid_block(item) for item in blk):
-                    blk = str(blk)
+                    blk = message.content[0].data["output"]
             elif isinstance(blk, dict):
                 if not is_valid_block(blk):
-                    blk = str(blk)
+                    blk = message.content[0].data["output"]
             else:
-                blk = str(blk)
+                blk = message.content[0].data["output"]
 
             result["content"] = [
                 ToolResultBlock(
                     type="tool_result",
                     id=message.content[0].data["call_id"],
-                    name=message.content[0].data["name"],
+                    name=message.content[0].data.get("name"),
                     output=blk,
                 ),
             ]
@@ -492,27 +502,6 @@ def message_to_agentscope_msg(
         return _convert_one(messages)
     elif isinstance(messages, list):
         converted_list = [_convert_one(m) for m in messages]
-        if merge:
-            merged_content = []
-            name = None
-            role = None
-            msg_id = None
-            metadata = None
-            for i, msg in enumerate(converted_list):
-                if i == 0:
-                    name = msg.name
-                    role = msg.role
-                    msg_id = msg.id
-                    metadata = msg.metadata
-                merged_content.extend(msg.content)
-            agentscope_msg = Msg(
-                name=name,
-                role=role,
-                metadata=metadata,
-                content=merged_content,
-            )
-            agentscope_msg.id = msg_id
-            return agentscope_msg
 
         # Group by original_id
         grouped = OrderedDict()

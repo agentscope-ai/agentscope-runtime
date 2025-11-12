@@ -95,7 +95,6 @@ class AgentScopeContextAdapter:
     async def adapt_new_message(self):
         return message_to_agentscope_msg(
             self.context.current_messages,
-            merge=True,
         )
 
     async def adapt_model(self):
