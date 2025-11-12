@@ -489,10 +489,9 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="environment_manager.html">Environment Manager</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="rag.html">10. RAG</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tracing.html">11. Tracing Method Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="demohouse.html">12. Demo House</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="contribute.html">13. How to Contribute</a><input aria-label="Toggle navigation of 13. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1"><a class="reference internal" href="tracing.html">10. Tracing Method Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="demohouse.html">11. Demo House</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="contribute.html">12. How to Contribute</a><input aria-label="Toggle navigation of 12. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="README.html">Contribute to Cookbook</a></li>
 </ul>
 </li>
@@ -529,10 +528,9 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../zh/environment_manager.html">环境管理器（Environment Manager）</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../zh/rag.html">10. RAG</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../zh/tracing.html">11. 执行轨迹追踪</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../zh/demohouse.html">12. Demo 展示厅</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/contribute.html">13. 如何贡献</a><input aria-label="Toggle navigation of 13. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1"><a class="reference internal" href="../zh/tracing.html">10. 执行轨迹追踪</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../zh/demohouse.html">11. Demo 展示厅</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/contribute.html">12. 如何贡献</a><input aria-label="Toggle navigation of 12. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../zh/README.html">参与贡献Cookbook</a></li>
 </ul>
 </li>
@@ -626,23 +624,6 @@ The memory service will store it so that the agent can use it in the next conver
 <li><p><code class="docutils literal notranslate"><span class="pre">list_memory</span></code>: list all memories</p></li>
 </ul>
 <p>Like <code class="docutils literal notranslate"><span class="pre">SessionHistoryService</span></code>, prefer using a concrete implementation such as <code class="docutils literal notranslate"><span class="pre">InMemoryMemoryService</span></code>. For details, see <a class="reference internal" href="#memory-service"><span class="std std-ref">here</span></a></p>
-</section>
-<section id="ragservice">
-<h3>RAGService<a class="headerlink" href="#ragservice" title="Link to this heading">¶</a></h3>
-<p>The <code class="docutils literal notranslate"><span class="pre">RAGService</span></code> is a basic class to provide retrieval augmented generation (RAG) capabilities.
-When asked by an end-user, the agent may need to retrieve relevant information from the knowledge base.
-The knowledge base can be a database or a collection of documents.
-The <code class="docutils literal notranslate"><span class="pre">RAGService</span></code> contains the following methods:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">retrieve</span></code>: retrieve relevant information from the knowledge base.</p></li>
-</ul>
-<p>The <code class="docutils literal notranslate"><span class="pre">LangChainRAGService</span></code> is a concrete implementation of <code class="docutils literal notranslate"><span class="pre">RAGService</span></code> that uses LangChain to retrieve relevant information.
-It can be initialized by:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">vectorstore</span></code> the vectorstore to be indexed. Specifically, it can be a <code class="docutils literal notranslate"><span class="pre">VectorStore</span></code> instance of LangChain.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">embedding</span></code> the embedding model to be used for indexing.</p></li>
-</ul>
-<p>Read more about RAGService <a class="reference internal" href="rag.html#rag-service"><span class="std std-ref">here</span></a></p>
 </section>
 </section>
 <section id="life-cycle-of-a-context-manager">
@@ -1361,7 +1342,7 @@ Other complicated search algorithms could be used to replace the simple method b
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-11-07</div>
+              Last updated on 2025-11-12</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -1401,7 +1382,6 @@ Other complicated search algorithms could be used to replace the simple method b
 <li><a class="reference internal" href="#services">Services</a><ul>
 <li><a class="reference internal" href="#sessionhistoryservice">SessionHistoryService</a></li>
 <li><a class="reference internal" href="#memoryservice">MemoryService</a></li>
-<li><a class="reference internal" href="#ragservice">RAGService</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#life-cycle-of-a-context-manager">Life-cycle of a context manager</a><ul>

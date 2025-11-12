@@ -488,10 +488,9 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/environment_manager.html">Environment Manager</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../en/rag.html">10. RAG</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../en/tracing.html">11. Tracing Method Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../en/demohouse.html">12. Demo House</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../en/contribute.html">13. How to Contribute</a><input aria-label="Toggle navigation of 13. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../en/tracing.html">10. Tracing Method Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../en/demohouse.html">11. Demo House</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../en/contribute.html">12. How to Contribute</a><input aria-label="Toggle navigation of 12. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/README.html">Contribute to Cookbook</a></li>
 </ul>
 </li>
@@ -528,10 +527,9 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/environment_manager.html">环境管理器（Environment Manager）</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../zh/rag.html">10. RAG</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../zh/tracing.html">11. 执行轨迹追踪</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../zh/demohouse.html">12. Demo 展示厅</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../zh/contribute.html">13. 如何贡献</a><input aria-label="Toggle navigation of 13. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../zh/tracing.html">10. 执行轨迹追踪</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../zh/demohouse.html">11. Demo 展示厅</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../zh/contribute.html">12. 如何贡献</a><input aria-label="Toggle navigation of 12. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/README.html">参与贡献Cookbook</a></li>
 </ul>
 </li>
@@ -576,29 +574,37 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <h1>Source code for agentscope_runtime.engine.services.context_manager</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ServiceManager</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.memory_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryService</span><span class="p">,</span> <span class="n">InMemoryMemoryService</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.rag_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">RAGService</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.memory_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryService</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.state_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateService</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.session_history_service</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">SessionHistoryService</span><span class="p">,</span>
     <span class="n">Session</span><span class="p">,</span>
     <span class="n">InMemorySessionHistoryService</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">Message</span><span class="p">,</span>
-    <span class="n">MessageType</span><span class="p">,</span>
-    <span class="n">Role</span><span class="p">,</span>
-    <span class="n">TextContent</span><span class="p">,</span>
-    <span class="n">ContentType</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">Message</span>
 
 
 <div class="viewcode-block" id="ContextComposer">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.services.context_manager.ContextComposer">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ContextComposer</span><span class="p">:</span>
+<div class="viewcode-block" id="ContextComposer.__init__">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.services.context_manager.ContextComposer.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;ContextComposer is deprecated and will be removed in version &quot;</span>
+            <span class="s2">&quot;v1.0.&quot;</span><span class="p">,</span>
+            <span class="ne">DeprecationWarning</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span></div>
+
+
 <div class="viewcode-block" id="ContextComposer.compose">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.services.context_manager.ContextComposer.compose">[docs]</a>
     <span class="nd">@staticmethod</span>
@@ -607,7 +613,6 @@ body.preview-active {
         <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>  <span class="c1"># session</span>
         <span class="n">memory_service</span><span class="p">:</span> <span class="n">MemoryService</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">session_history_service</span><span class="p">:</span> <span class="n">SessionHistoryService</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">rag_service</span><span class="p">:</span> <span class="n">RAGService</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="c1"># session</span>
         <span class="k">if</span> <span class="n">session_history_service</span><span class="p">:</span>
@@ -629,25 +634,7 @@ body.preview-active {
                 <span class="n">messages</span><span class="o">=</span><span class="n">request_input</span><span class="p">,</span>
                 <span class="n">session_id</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">session</span><span class="o">.</span><span class="n">messages</span> <span class="o">=</span> <span class="n">memories</span> <span class="o">+</span> <span class="n">session</span><span class="o">.</span><span class="n">messages</span>
-
-        <span class="c1"># rag</span>
-        <span class="k">if</span> <span class="n">rag_service</span><span class="p">:</span>
-            <span class="n">query</span> <span class="o">=</span> <span class="k">await</span> <span class="n">rag_service</span><span class="o">.</span><span class="n">get_query_text</span><span class="p">(</span><span class="n">request_input</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-            <span class="n">docs</span> <span class="o">=</span> <span class="k">await</span> <span class="n">rag_service</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-            <span class="n">cooked_doc</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">docs</span><span class="p">)</span>
-            <span class="n">message</span> <span class="o">=</span> <span class="n">Message</span><span class="p">(</span>
-                <span class="nb">type</span><span class="o">=</span><span class="n">MessageType</span><span class="o">.</span><span class="n">MESSAGE</span><span class="p">,</span>
-                <span class="n">role</span><span class="o">=</span><span class="n">Role</span><span class="o">.</span><span class="n">SYSTEM</span><span class="p">,</span>
-                <span class="n">content</span><span class="o">=</span><span class="p">[</span><span class="n">TextContent</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="n">ContentType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">cooked_doc</span><span class="p">)],</span>
-            <span class="p">)</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">messages</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="n">last_message</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">messages</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-                <span class="n">session</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">last_message</span><span class="p">)</span>
-                <span class="n">session</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
-                <span class="n">session</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">last_message</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">session</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
+            <span class="n">session</span><span class="o">.</span><span class="n">messages</span> <span class="o">=</span> <span class="n">memories</span> <span class="o">+</span> <span class="n">session</span><span class="o">.</span><span class="n">messages</span></div>
 </div>
 
 
@@ -666,12 +653,12 @@ body.preview-active {
         <span class="n">context_composer_cls</span><span class="o">=</span><span class="n">ContextComposer</span><span class="p">,</span>
         <span class="n">session_history_service</span><span class="p">:</span> <span class="n">SessionHistoryService</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">memory_service</span><span class="p">:</span> <span class="n">MemoryService</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">rag_service</span><span class="p">:</span> <span class="n">RAGService</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">state_service</span><span class="p">:</span> <span class="n">StateService</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_context_composer_cls</span> <span class="o">=</span> <span class="n">context_composer_cls</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_session_history_service</span> <span class="o">=</span> <span class="n">session_history_service</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_memory_service</span> <span class="o">=</span> <span class="n">memory_service</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_rag_service</span> <span class="o">=</span> <span class="n">rag_service</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_state_service</span> <span class="o">=</span> <span class="n">state_service</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span></div>
 
 
@@ -680,12 +667,15 @@ body.preview-active {
         <span class="bp">self</span><span class="o">.</span><span class="n">_session_history_service</span> <span class="o">=</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_session_history_service</span> <span class="ow">or</span> <span class="n">InMemorySessionHistoryService</span><span class="p">()</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_memory_service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_memory_service</span> <span class="ow">or</span> <span class="n">InMemoryMemoryService</span><span class="p">()</span>
 
+        <span class="c1"># Default services</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">register_service</span><span class="p">(</span><span class="s2">&quot;session&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_history_service</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">register_service</span><span class="p">(</span><span class="s2">&quot;memory&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_memory_service</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rag_service</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">register_service</span><span class="p">(</span><span class="s2">&quot;rag&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rag_service</span><span class="p">)</span>
+
+        <span class="c1"># Optional services</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_memory_service</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_service</span><span class="p">(</span><span class="s2">&quot;memory&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_memory_service</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_service</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_service</span><span class="p">(</span><span class="s2">&quot;state&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_service</span><span class="p">)</span>
 
 <div class="viewcode-block" id="ContextManager.compose_context">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.services.context_manager.ContextManager.compose_context">[docs]</a>
@@ -697,7 +687,6 @@ body.preview-active {
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context_composer_cls</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span>
             <span class="n">memory_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_memory_service</span><span class="p">,</span>
             <span class="n">session_history_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_session_history_service</span><span class="p">,</span>
-            <span class="n">rag_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_rag_service</span><span class="p">,</span>
             <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span>
             <span class="n">request_input</span><span class="o">=</span><span class="n">request_input</span><span class="p">,</span>
         <span class="p">)</span></div>
@@ -750,13 +739,11 @@ body.preview-active {
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_context_manager</span><span class="p">(</span>
     <span class="n">memory_service</span><span class="p">:</span> <span class="n">MemoryService</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">session_history_service</span><span class="p">:</span> <span class="n">SessionHistoryService</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">rag_service</span><span class="p">:</span> <span class="n">RAGService</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">context_composer_cls</span><span class="o">=</span><span class="n">ContextComposer</span><span class="p">,</span>
 <span class="p">):</span>
     <span class="n">manager</span> <span class="o">=</span> <span class="n">ContextManager</span><span class="p">(</span>
         <span class="n">memory_service</span><span class="o">=</span><span class="n">memory_service</span><span class="p">,</span>
         <span class="n">session_history_service</span><span class="o">=</span><span class="n">session_history_service</span><span class="p">,</span>
-        <span class="n">rag_service</span><span class="o">=</span><span class="n">rag_service</span><span class="p">,</span>
         <span class="n">context_composer_cls</span><span class="o">=</span><span class="n">context_composer_cls</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -780,7 +767,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-11-07</div>
+              Last updated on 2025-11-12</div>
           </div>
           <div class="right-details">
             <div class="icons">

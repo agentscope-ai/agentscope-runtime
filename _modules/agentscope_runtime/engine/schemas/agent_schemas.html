@@ -488,10 +488,9 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/environment_manager.html">Environment Manager</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../en/rag.html">10. RAG</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../en/tracing.html">11. Tracing Method Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../en/demohouse.html">12. Demo House</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../en/contribute.html">13. How to Contribute</a><input aria-label="Toggle navigation of 13. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../en/tracing.html">10. Tracing Method Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../en/demohouse.html">11. Demo House</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../en/contribute.html">12. How to Contribute</a><input aria-label="Toggle navigation of 12. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/README.html">Contribute to Cookbook</a></li>
 </ul>
 </li>
@@ -528,10 +527,9 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/environment_manager.html">环境管理器（Environment Manager）</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../zh/rag.html">10. RAG</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../zh/tracing.html">11. 执行轨迹追踪</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../zh/demohouse.html">12. Demo 展示厅</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../zh/contribute.html">13. 如何贡献</a><input aria-label="Toggle navigation of 13. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../zh/tracing.html">10. 执行轨迹追踪</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../zh/demohouse.html">11. Demo 展示厅</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../zh/contribute.html">12. 如何贡献</a><input aria-label="Toggle navigation of 12. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/README.html">参与贡献Cookbook</a></li>
 </ul>
 </li>
@@ -749,6 +747,9 @@ body.preview-active {
 
     <span class="n">call_id</span><span class="p">:</span> <span class="nb">str</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The ID of the tool call.&quot;&quot;&quot;</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The name of the tool call.&quot;&quot;&quot;</span>
 
     <span class="n">output</span><span class="p">:</span> <span class="nb">str</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The result of the function.&quot;&quot;&quot;</span></div>
@@ -1055,6 +1056,8 @@ body.preview-active {
 
     <span class="n">usage</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;response usage for output&quot;&quot;&quot;</span>
+
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="Message.from_openai_message">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.Message.from_openai_message">[docs]</a>
@@ -1595,7 +1598,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-11-07</div>
+              Last updated on 2025-11-12</div>
           </div>
           <div class="right-details">
             <div class="icons">

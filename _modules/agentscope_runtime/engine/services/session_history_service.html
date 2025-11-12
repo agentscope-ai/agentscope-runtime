@@ -488,10 +488,9 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/environment_manager.html">Environment Manager</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../en/rag.html">10. RAG</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../en/tracing.html">11. Tracing Method Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../en/demohouse.html">12. Demo House</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../en/contribute.html">13. How to Contribute</a><input aria-label="Toggle navigation of 13. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../en/tracing.html">10. Tracing Method Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../en/demohouse.html">11. Demo House</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../en/contribute.html">12. How to Contribute</a><input aria-label="Toggle navigation of 12. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/README.html">Contribute to Cookbook</a></li>
 </ul>
 </li>
@@ -528,10 +527,9 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/environment_manager.html">环境管理器（Environment Manager）</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../zh/rag.html">10. RAG</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../zh/tracing.html">11. 执行轨迹追踪</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../zh/demohouse.html">12. Demo 展示厅</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../zh/contribute.html">13. 如何贡献</a><input aria-label="Toggle navigation of 13. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../zh/tracing.html">10. 执行轨迹追踪</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../zh/demohouse.html">11. Demo 展示厅</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../zh/contribute.html">12. 如何贡献</a><input aria-label="Toggle navigation of 12. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/README.html">参与贡献Cookbook</a></li>
 </ul>
 </li>
@@ -628,12 +626,6 @@ body.preview-active {
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.services.session_history_service.SessionHistoryService.stop">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">pass</span></div>
-
-
-<div class="viewcode-block" id="SessionHistoryService.health">
-<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.services.session_history_service.SessionHistoryService.health">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">True</span></div>
 
 
 <div class="viewcode-block" id="SessionHistoryService.create_session">
@@ -733,7 +725,7 @@ body.preview-active {
 <span class="sd">    for development, testing, and scenarios where persistence is not required.</span>
 
 <span class="sd">    Attributes:</span>
-<span class="sd">        _sessions: A dictionary holding all session objects, keyed by user ID</span>
+<span class="sd">        _store: A dictionary holding all session objects, keyed by user ID</span>
 <span class="sd">            and then by session ID.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -741,7 +733,34 @@ body.preview-active {
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.services.session_history_service.InMemorySessionHistoryService.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the InMemorySessionHistoryService.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_sessions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Session</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Session</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_health</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="InMemorySessionHistoryService.start">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.services.session_history_service.InMemorySessionHistoryService.start">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the in-memory store.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_store</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_health</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="InMemorySessionHistoryService.stop">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.services.session_history_service.InMemorySessionHistoryService.stop">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear all in-memory data.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_store</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_health</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="InMemorySessionHistoryService.health">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.services.session_history_service.InMemorySessionHistoryService.health">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Service health check: always True.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_health</span></div>
 
 
 <div class="viewcode-block" id="InMemorySessionHistoryService.create_session">
@@ -760,13 +779,16 @@ body.preview-active {
 <span class="sd">        Returns:</span>
 <span class="sd">            A deep copy of the newly created Session object.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Service not started&quot;</span><span class="p">)</span>
+
         <span class="n">session_id</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">session_id</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">session_id</span> <span class="ow">and</span> <span class="n">session_id</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
             <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
         <span class="p">)</span>
         <span class="n">session</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_sessions</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="p">{})[</span><span class="n">session_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">session</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="p">{})[</span><span class="n">session_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">session</span>
         <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">session</span><span class="p">)</span></div>
 
 
@@ -786,11 +808,13 @@ body.preview-active {
 <span class="sd">        Returns:</span>
 <span class="sd">            A deep copy of the Session object if found, otherwise None.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Service not started&quot;</span><span class="p">)</span>
 
-        <span class="n">session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sessions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">session_id</span><span class="p">)</span>
+        <span class="n">session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">session_id</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">session</span><span class="p">:</span>
             <span class="n">session</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_sessions</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="p">{})[</span><span class="n">session_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">session</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="p">{})[</span><span class="n">session_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">session</span>
         <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">session</span><span class="p">)</span> <span class="k">if</span> <span class="n">session</span> <span class="k">else</span> <span class="kc">None</span></div>
 
 
@@ -805,8 +829,11 @@ body.preview-active {
 <span class="sd">            user_id: The identifier for the user.</span>
 <span class="sd">            session_id: The identifier for the session to delete.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">user_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sessions</span> <span class="ow">and</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sessions</span><span class="p">[</span><span class="n">user_id</span><span class="p">]:</span>
-            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sessions</span><span class="p">[</span><span class="n">user_id</span><span class="p">][</span><span class="n">session_id</span><span class="p">]</span></div>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Service not started&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">user_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span> <span class="ow">and</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="p">[</span><span class="n">user_id</span><span class="p">]:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="p">[</span><span class="n">user_id</span><span class="p">][</span><span class="n">session_id</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="InMemorySessionHistoryService.list_sessions">
@@ -823,7 +850,10 @@ body.preview-active {
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of Session objects belonging to the user, without history.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">user_sessions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sessions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Service not started&quot;</span><span class="p">)</span>
+
+        <span class="n">user_sessions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="p">{})</span>
         <span class="c1"># Return sessions without their potentially large history for</span>
         <span class="c1"># efficiency.</span>
         <span class="n">sessions_without_history</span> <span class="o">=</span> <span class="p">[]</span>
@@ -858,6 +888,9 @@ body.preview-active {
 <span class="sd">            message: The message or list of messages to append to the</span>
 <span class="sd">                session&#39;s history.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Service not started&quot;</span><span class="p">)</span>
+
         <span class="c1"># Normalize to list</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
             <span class="n">message</span> <span class="o">=</span> <span class="p">[</span><span class="n">message</span><span class="p">]</span>
@@ -871,7 +904,7 @@ body.preview-active {
         <span class="n">session</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">norm_message</span><span class="p">)</span>
 
         <span class="c1"># update the in memory copy</span>
-        <span class="n">storage_session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sessions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="n">storage_session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
             <span class="n">session</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">storage_session</span><span class="p">:</span>
@@ -900,7 +933,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-11-07</div>
+              Last updated on 2025-11-12</div>
           </div>
           <div class="right-details">
             <div class="icons">

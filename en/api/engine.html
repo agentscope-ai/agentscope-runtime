@@ -489,10 +489,9 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../environment_manager.html">Environment Manager</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../rag.html">10. RAG</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tracing.html">11. Tracing Method Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../demohouse.html">12. Demo House</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../contribute.html">13. How to Contribute</a><input aria-label="Toggle navigation of 13. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1"><a class="reference internal" href="../tracing.html">10. Tracing Method Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../demohouse.html">11. Demo House</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../contribute.html">12. How to Contribute</a><input aria-label="Toggle navigation of 12. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../README.html">Contribute to Cookbook</a></li>
 </ul>
 </li>
@@ -529,10 +528,9 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../../zh/environment_manager.html">环境管理器（Environment Manager）</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../zh/rag.html">10. RAG</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../zh/tracing.html">11. 执行轨迹追踪</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../zh/demohouse.html">12. Demo 展示厅</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../zh/contribute.html">13. 如何贡献</a><input aria-label="Toggle navigation of 13. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1"><a class="reference internal" href="../../zh/tracing.html">10. 执行轨迹追踪</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../zh/demohouse.html">11. Demo 展示厅</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../zh/contribute.html">12. 如何贡献</a><input aria-label="Toggle navigation of 12. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../zh/README.html">参与贡献Cookbook</a></li>
 </ul>
 </li>
@@ -1055,7 +1053,12 @@ manager.session.</p>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">async</span><span class="w"> </span><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">compose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory_service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_history_service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rag_service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/context_manager.html#ContextComposer.compose"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/context_manager.html#ContextComposer.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">async</span><span class="w"> </span><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">compose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory_service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_history_service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/context_manager.html#ContextComposer.compose"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1063,7 +1066,6 @@ manager.session.</p>
 <li><p><strong>session</strong> (<em>Session</em>)</p></li>
 <li><p><strong>memory_service</strong> (<em>MemoryService</em><em> | </em><em>None</em>)</p></li>
 <li><p><strong>session_history_service</strong> (<em>SessionHistoryService</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>rag_service</strong> (<em>RAGService</em><em> | </em><em>None</em>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -1073,7 +1075,7 @@ manager.session.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.services.context_manager.</span></span><span class="sig-name descname"><span class="pre">ContextManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context_composer_cls=&lt;class</span> <span class="pre">'agentscope_runtime.engine.services.context_manager.ContextComposer'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_history_service=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory_service=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rag_service=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/context_manager.html#ContextManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.services.context_manager.</span></span><span class="sig-name descname"><span class="pre">ContextManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context_composer_cls=&lt;class</span> <span class="pre">'agentscope_runtime.engine.services.context_manager.ContextComposer'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_history_service=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory_service=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_service=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/context_manager.html#ContextManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ServiceManager</span></code></p>
 <p>The contextManager class</p>
 <dl class="field-list simple">
@@ -1081,19 +1083,19 @@ manager.session.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>session_history_service</strong> (<em>SessionHistoryService</em>)</p></li>
 <li><p><strong>memory_service</strong> (<em>MemoryService</em>)</p></li>
-<li><p><strong>rag_service</strong> (<em>RAGService</em>)</p></li>
+<li><p><strong>state_service</strong> (<em>StateService</em>)</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context_composer_cls=&lt;class</span> <span class="pre">'agentscope_runtime.engine.services.context_manager.ContextComposer'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_history_service=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory_service=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rag_service=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/context_manager.html#ContextManager.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context_composer_cls=&lt;class</span> <span class="pre">'agentscope_runtime.engine.services.context_manager.ContextComposer'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_history_service=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory_service=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_service=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/context_manager.html#ContextManager.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>session_history_service</strong> (<em>SessionHistoryService</em><em> | </em><em>None</em>)</p></li>
 <li><p><strong>memory_service</strong> (<em>MemoryService</em><em> | </em><em>None</em>)</p></li>
-<li><p><strong>rag_service</strong> (<em>RAGService</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>state_service</strong> (<em>StateService</em><em> | </em><em>None</em>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -1142,13 +1144,12 @@ manager.session.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.services.context_manager.</span></span><span class="sig-name descname"><span class="pre">create_context_manager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">memory_service=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_history_service=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rag_service=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_composer_cls=&lt;class</span> <span class="pre">'agentscope_runtime.engine.services.context_manager.ContextComposer'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/context_manager.html#create_context_manager"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.services.context_manager.</span></span><span class="sig-name descname"><span class="pre">create_context_manager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">memory_service=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_history_service=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context_composer_cls=&lt;class</span> <span class="pre">'agentscope_runtime.engine.services.context_manager.ContextComposer'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/context_manager.html#create_context_manager"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>memory_service</strong> (<em>MemoryService</em>)</p></li>
 <li><p><strong>session_history_service</strong> (<em>SessionHistoryService</em>)</p></li>
-<li><p><strong>rag_service</strong> (<em>RAGService</em>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -1305,10 +1306,23 @@ or all the memory items for a given user.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.services.memory_service.</span></span><span class="sig-name descname"><span class="pre">InMemoryMemoryService</span></span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/memory_service.html#InMemoryMemoryService"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">MemoryService</span></code></p>
 <p>An in-memory implementation of the memory service.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/memory_service.html#InMemoryMemoryService.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Initializes the InMemorySessionHistoryService.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py">
 <em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/memory_service.html#InMemoryMemoryService.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><p>Starts the service.</p>
+<dd><p>Initialize the in-memory store.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>None</p>
@@ -1546,20 +1560,6 @@ connections.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">health</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/session_history_service.html#SessionHistoryService.health"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><p>Checks the health of the service.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>True if the service is healthy, False otherwise.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">user_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/session_history_service.html#SessionHistoryService.create_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Creates a new session for a given user.</p>
 <dl class="field-list simple">
@@ -1658,7 +1658,7 @@ for development, testing, and scenarios where persistence is not required.</p>
 </dl>
 <dl class="py attribute">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">_sessions</span></span></dt>
+<span class="sig-name descname"><span class="pre">_store</span></span></dt>
 <dd><p>A dictionary holding all session objects, keyed by user ID
 and then by session ID.</p>
 </dd></dl>
@@ -1670,6 +1670,39 @@ and then by session ID.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/session_history_service.html#InMemorySessionHistoryService.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Initialize the in-memory store.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/session_history_service.html#InMemorySessionHistoryService.stop"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Clear all in-memory data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">health</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/session_history_service.html#InMemorySessionHistoryService.health"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Service health check: always True.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2133,13 +2166,14 @@ the arguments in your code before calling your function.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">FunctionCallOutput</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#FunctionCallOutput"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">FunctionCallOutput</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">call_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#FunctionCallOutput"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
 <p>Model class for assistant prompt message tool call function.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>call_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
 <li><p><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
 </ul>
 </dd>
@@ -2148,6 +2182,12 @@ the arguments in your code before calling your function.</p>
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">call_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em></dt>
 <dd><p>The ID of the tool call.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em></dt>
+<dd><p>The name of the tool call.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -2718,7 +2758,7 @@ the arguments in your code before calling your function.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">Message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object='message'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status='created'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type='message'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">content=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">code=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#Message"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">Message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object='message'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status='created'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type='message'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">content=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">code=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#Message"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -2734,6 +2774,7 @@ the arguments in your code before calling your function.</p>
 <li><p><strong>code</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
 <li><p><strong>message</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
 <li><p><strong>usage</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><em>Dict</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>metadata</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><em>Dict</em></a><em> | </em><em>None</em>)</p></li>
 </ul>
 </dd>
 </dl>
@@ -2797,6 +2838,11 @@ the arguments in your code before calling your function.</p>
 <span class="sig-name descname"><span class="pre">usage</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em></dt>
 <dd><p>response usage for output</p>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">metadata</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py">
@@ -3044,7 +3090,7 @@ parameters should return the same result.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">BaseResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object='response'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status='created'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at=1762497554</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">completed_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#BaseResponse"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">BaseResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object='response'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status='created'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at=1762915815</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">completed_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#BaseResponse"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -3128,7 +3174,7 @@ parameters should return the same result.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">AgentResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object='response'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status='created'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at=1762497554</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">completed_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#AgentResponse"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">AgentResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object='response'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status='created'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at=1762915815</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">completed_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#AgentResponse"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseResponse</span></code></p>
 <p>agent response</p>
 <dl class="field-list simple">
@@ -3414,7 +3460,7 @@ including a live request queue for real-time interaction.</p>
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-11-07</div>
+              Last updated on 2025-11-12</div>
           </div>
           <div class="right-details">
             <div class="icons">
