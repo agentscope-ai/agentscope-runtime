@@ -122,6 +122,7 @@ class FastAPIAppFactory:
         app.state.deployment_mode = mode
         app.state.services_config = services_config
         app.state.stream_enabled = stream
+        app.state.custom_func = func
         app.state.response_type = response_type
         app.state.endpoint_path = endpoint_path
         app.state.protocol_adapters = protocol_adapters  # Store for later use
@@ -166,15 +167,23 @@ class FastAPIAppFactory:
         if mode == DeploymentMode.DAEMON_THREAD:
             # Use external runner
             app.state.runner = external_runner
-            if app.state.runner._context_manager.service_instances:
-                app.state.runner_managed_externally = True
-            else:
+            app.state.runner_managed_externally = True
+            app_service_instances = (
+                app.state.runner._context_manager.service_instances
+            )
+            for instance in app_service_instances.values():
+                # If any instance was not ready, reset runner.
+                if not await instance.health():
+                    app.state.runner_managed_externally = False
+                    break
+
+            if not app.state.runner_managed_externally:
                 try:
-                    # set up runner
+                    # aexit any possible running instances before set up runner
+                    await app.state.runner.__aexit__(None, None, None)
                     await app.state.runner.__aenter__()
                 except Exception as e:
                     print(f"Warning: Error during runner setup: {e}")
-                app.state.runner_managed_externally = False
 
         elif mode in [
             DeploymentMode.DETACHED_PROCESS,
