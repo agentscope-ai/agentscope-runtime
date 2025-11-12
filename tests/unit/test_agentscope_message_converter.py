@@ -18,17 +18,12 @@ from agentscope_runtime.adapters.agentscope.message import (
     agentscope_msg_to_message,
     message_to_agentscope_msg,
 )
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 
 
 def normalize(obj):
     """
     Recursively converts an object into a standard comparable structure.
-
-    - If the object has a `model_dump()` method (Pydantic v2 models),
-      it uses that method for conversion.
-    - Lists and tuples are normalized element-wise.
-    - Dictionaries are normalized value-wise.
-    - All other types are returned as-is.
     """
     if hasattr(obj, "model_dump"):  # Handles Pydantic v2 objects
         return obj.model_dump()
@@ -40,25 +35,17 @@ def normalize(obj):
         return obj
 
 
-def _check_round_trip(msgs, merge: bool):
+def _check_round_trip(msgs):
     """
     Performs a round-trip conversion check:
     Agentscope `Msg` -> Runtime Message -> Agentscope `Msg`.
-
-    This version checks:
-      1. Top-level fields: name, role, invocation_id
-      2. All content blocks (deep equality)
-      3. Supports both merge=True and merge=False cases
     """
-    # Step 1: Convert Agentscope Msg -> Runtime Message
     runtime_messages = agentscope_msg_to_message(msgs)
     assert isinstance(runtime_messages, list)
     assert len(runtime_messages) >= 1
 
-    # Step 2: Convert Runtime Message -> Agentscope Msg
-    converted_msgs = message_to_agentscope_msg(runtime_messages, merge=merge)
+    converted_msgs = message_to_agentscope_msg(runtime_messages)
 
-    # Step 3: Prepare original messages list for comparison
     if isinstance(msgs, Msg):
         original_msgs = [msgs]
     elif isinstance(msgs, list):
@@ -66,53 +53,26 @@ def _check_round_trip(msgs, merge: bool):
     else:
         raise TypeError(f"Unsupported msgs type: {type(msgs)}")
 
-    # Step 4: Compare depending on merge flag
-    if merge:
-        # merge=True returns a single Msg
-        assert isinstance(converted_msgs, Msg)
+    assert isinstance(converted_msgs, list)
+    assert len(converted_msgs) == len(original_msgs)
 
-        # Compare top-level fields with the first original Msg
-        assert converted_msgs.name == original_msgs[0].name
-        assert converted_msgs.role == original_msgs[0].role
-        assert converted_msgs.invocation_id == original_msgs[0].invocation_id
-        assert converted_msgs.metadata == original_msgs[0].metadata
+    for orig, conv in zip(original_msgs, converted_msgs):
+        assert conv.name == orig.name
+        assert conv.role == orig.role
+        assert conv.invocation_id == orig.invocation_id
+        assert conv.metadata == orig.metadata
 
-        # Compare all content blocks (flatten original content)
-        original_blocks = normalize(
-            [blk for m in original_msgs for blk in m.content],
-        )
-        converted_blocks = normalize(converted_msgs.content)
-        assert json.dumps(original_blocks, sort_keys=True) == json.dumps(
-            converted_blocks,
+        orig_blocks = normalize(orig.content)
+        conv_blocks = normalize(conv.content)
+        assert json.dumps(orig_blocks, sort_keys=True) == json.dumps(
+            conv_blocks,
             sort_keys=True,
         )
-
-    else:
-        # merge=False returns a list[Msg]
-        assert isinstance(converted_msgs, list)
-        assert len(converted_msgs) == len(original_msgs)
-
-        for orig, conv in zip(original_msgs, converted_msgs):
-            # Compare top-level fields for each Msg
-            assert conv.name == orig.name
-            assert conv.role == orig.role
-            assert conv.invocation_id == orig.invocation_id
-            assert conv.metadata == orig.metadata
-
-            # Compare content blocks for each Msg
-            orig_blocks = normalize(orig.content)
-            conv_blocks = normalize(conv.content)
-            assert json.dumps(orig_blocks, sort_keys=True) == json.dumps(
-                conv_blocks,
-                sort_keys=True,
-            )
 
 
 @pytest.mark.parametrize(
     "msgs",
     [
-        # Single Msg containing text, images, audio, thinking, tool usage,
-        # and tool results
         Msg(
             name="assistant",
             role="assistant",
@@ -170,7 +130,6 @@ def _check_round_trip(msgs, merge: bool):
                 ),
             ],
         ),
-        # Multiple Msgs example
         [
             Msg(
                 name="assistant",
@@ -202,11 +161,127 @@ def _check_round_trip(msgs, merge: bool):
         ],
     ],
 )
-@pytest.mark.parametrize("merge", [False, True])
-def test_round_trip_messages(msgs, merge):
+def test_round_trip_messages(msgs):
+    _check_round_trip(msgs)
+
+
+def _check_round_trip_runtime_messages(runtime_messages):
     """
-    Tests that both single and multiple `Msg` objects can be
-    converted to runtime messages and back, with `merge` set to
-    True and False, while preserving all content blocks.
+    Performs a round-trip conversion check:
+    Runtime Message -> Agentscope `Msg` -> Runtime Message.
     """
-    _check_round_trip(msgs, merge)
+
+    def strip_irrelevant_fields(obj):
+        """
+        Recursively remove fields we want to ignore in the comparison.
+        """
+        ignore_keys = {
+            "id",
+            "metadata",
+            "role",
+            "type",  # function_call ↔ plugin_call
+            "status",  # created ↔ completed
+            "index",  # 0 ↔ null
+            "msg_id",  # uuid ↔ null
+            "sequence_number",  # number ↔ null
+        }
+        if isinstance(obj, dict):
+            return {
+                k: strip_irrelevant_fields(v)
+                for k, v in obj.items()
+                if k not in ignore_keys
+            }
+        elif isinstance(obj, list):
+            return [strip_irrelevant_fields(i) for i in obj]
+        else:
+            return obj
+
+    msgs = message_to_agentscope_msg(runtime_messages)
+    assert isinstance(msgs, list)
+    assert len(msgs) >= 1
+
+    converted_runtime_messages = agentscope_msg_to_message(msgs)
+    assert isinstance(converted_runtime_messages, list)
+    assert len(converted_runtime_messages) == len(runtime_messages)
+
+    orig_norm = strip_irrelevant_fields(normalize(runtime_messages))
+    conv_norm = strip_irrelevant_fields(normalize(converted_runtime_messages))
+
+    assert json.dumps(orig_norm, sort_keys=True) == json.dumps(
+        conv_norm,
+        sort_keys=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "request_data",
+    [
+        {
+            "input": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "What's the weather in Hangzhou?",
+                        },
+                    ],
+                },
+                {
+                    "type": "function_call",
+                    "content": [
+                        {
+                            "type": "data",
+                            "data": {
+                                "call_id": "call_eb113ba709d54ab6a4dcbf",
+                                "name": "get_current_weather",
+                                "arguments": json.dumps(
+                                    {"location": "Hangzhou"},
+                                ),
+                            },
+                        },
+                    ],
+                },
+                {
+                    "type": "function_call_output",
+                    "content": [
+                        {
+                            "type": "data",
+                            "data": {
+                                "call_id": "call_eb113ba709d54ab6a4dcbf",
+                                "output": json.dumps(
+                                    {"temperature": 25, "unit": "Celsius"},
+                                ),
+                            },
+                        },
+                    ],
+                },
+            ],
+            "stream": True,
+            "session_id": "123",
+            "tools": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "get_current_weather",
+                        "description": "Get the current weather in a given "
+                        "location",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "location": {
+                                    "type": "string",
+                                    "description": "The city and state, "
+                                    "e.g. San Francisco, CA",
+                                },
+                            },
+                        },
+                    },
+                },
+            ],
+        },
+    ],
+)
+def test_round_trip_agent_request(request_data):
+    request = AgentRequest.model_validate(request_data)
+    _check_round_trip_runtime_messages(request.input)
