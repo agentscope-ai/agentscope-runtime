@@ -53,5 +53,11 @@ class ContainerModel(BaseModel):
 
     meta: Optional[Dict] = Field(default_factory=dict)
 
+    timeout: Optional[int] = Field(
+        None,
+        description="Timeout in seconds for container operations",
+        ge=0,
+    )
+
     class Config:
         extra = "allow"

@@ -51,7 +51,7 @@ class TablestoreMemoryService(MemoryService):
         self,
         tablestore_client: AsyncTablestoreClient,
         search_strategy: SearchStrategy = SearchStrategy.FULL_TEXT,
-        embedding_model: Optional[Embeddings] = DashScopeEmbeddings(),
+        embedding_model: Optional[Embeddings] = None,
         vector_dimension: int = 1536,
         table_name: Optional[str] = "agentscope_runtime_memory",
         search_index_schema: Optional[List[tablestore.FieldSchema]] = (
@@ -63,6 +63,9 @@ class TablestoreMemoryService(MemoryService):
         vector_metric_type: VectorMetricType = VectorMetricType.VM_COSINE,
         **kwargs: Any,
     ):
+        if embedding_model is None:
+            embedding_model = DashScopeEmbeddings()
+
         self._search_strategy = search_strategy
         self._embedding_model = (
             embedding_model  # the parameter is None, don't store vector.

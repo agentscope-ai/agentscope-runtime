@@ -1,0 +1,90 @@
+name: Unit Tests for Training Sandbox
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - 'main'
+
+jobs:
+  test:
+    if: ${{ !(github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'docs:')) }}
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+        python-version: [ '3.10' ]
+
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cleanup disk space before pulling images
+        run: |
+          echo "Before cleanup:"
+          df -h
+
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          docker system prune -af || true
+          docker volume prune -f || true
+
+          pip cache purge || true
+
+          rm -rf /tmp/* || true
+
+          echo "After cleanup:"
+          df -h
+
+      - name: Pull Docker images
+        run: |
+          DOCKER_IMAGES=(
+            "agentscope/runtime-sandbox-bfcl:latest"
+            "agentscope/runtime-sandbox-appworld:latest"
+          )
+
+          for img in "${DOCKER_IMAGES[@]}"; do
+            echo "Pulling image: $img"
+            docker pull "$img"
+          done
+          echo "All Docker images pulled successfully."
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Update setuptools
+        run: |
+          pip install --upgrade pip
+          pip install setuptools==78.1.1 wheel==0.45.1
+
+      - name: Set PYTHONPATH
+        run: |
+          echo "PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/src" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          export PIP_DEFAULT_TIMEOUT=300
+          pip install -q -e ".[dev]"
+
+      - name: Run tests with coverage
+        run: |
+          coverage run -m pytest tests/sandbox/test_sandbox_appworld.py tests/sandbox/test_sandbox_bfcl.py
+
+      - name: Generate coverage report
+        run: |
+          coverage report -m

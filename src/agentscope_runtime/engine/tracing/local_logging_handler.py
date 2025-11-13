@@ -9,7 +9,8 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel
 
-from .base import TracerHandler, TraceType
+from . import TracingUtil
+from .base import TracerHandler
 
 DEFAULT_LOG_NAME = "agentscope-runtime"
 
@@ -64,7 +65,11 @@ class JsonFormatter(logging.Formatter):
             "code": getattr(record, "code", None),
             "message": record.getMessage(),
             "task_id": getattr(record, "task_id", None),
-            "request_id": getattr(record, "request_id", None),
+            "request_id": getattr(
+                record,
+                "request_id",
+                TracingUtil.get_request_id(),
+            ),
             "context": getattr(record, "context", None),
             "interval": getattr(record, "interval", None),
             "ds_service_id": DS_SVC_ID,
@@ -88,7 +93,6 @@ class LocalLogHandler(TracerHandler):
         max_bytes: int = 1024 * 1024 * 1024,
         backup_count: int = 7,
         enable_console: bool = False,
-        propagate: bool = False,
         **kwargs: Any,
     ) -> None:
         """Initialize the llm chat log handler.
@@ -103,17 +107,12 @@ class LocalLogHandler(TracerHandler):
             backup_count (int): Number of log files to keep. Defaults to 7.
             enable_console (bool): Whether to enable console logging.
                             Defaults to False.
-            propagate (bool): Whether to propagate log messages to parent
-            loggers.
-                            Defaults to False.
-            **kwargs (Any): Additional keyword arguments.
+            **kwargs (Any): Additional keyword arguments (unused but kept for
+                            compatibility).
         """
+        # Store kwargs for potential future use
+        self._extra_kwargs = kwargs
         self.logger = logging.getLogger(DEFAULT_LOG_NAME)
-        # Set propagate attribute to control log message propagation
-        # Note: Python logging propagate defaults to True, we set it to
-        # False by default
-        self.logger.propagate = propagate
-
         if enable_console:
             handler = logging.StreamHandler()
             handler.setFormatter(JsonFormatter())
@@ -127,7 +126,6 @@ class LocalLogHandler(TracerHandler):
         )
 
         self.logger.setLevel(log_level)
-        self.kwargs = kwargs
 
     def _set_file_handle(
         self,
@@ -188,6 +186,9 @@ class LocalLogHandler(TracerHandler):
             original (Dict[str, Any]): The original dictionary to update.
             update (Dict[str, Any]): The dictionary containing updates.
         """
+        if not isinstance(original, dict):
+            return
+
         for key, value in update.items():
             if (
                 isinstance(value, dict)
@@ -200,19 +201,19 @@ class LocalLogHandler(TracerHandler):
 
     def on_start(
         self,
-        event_type: TraceType,
+        event_name: str,
         payload: Dict[str, Any],
         **kwargs: Any,
     ) -> None:
         """Handle the start of a trace event.
 
         Args:
-            event_type (TraceType): The type of event being traced.
+            event_name (str): The name of event being traced.
             payload (Dict[str, Any]): The payload data for the event.
             **kwargs (Any): Additional keyword arguments.
         """
-        step = f"{event_type}_start"
-        request_id = payload.get("request_id", "")
+        step = f"{event_name}_start"
+        request_id = TracingUtil.get_request_id()
         context = payload.get("context", payload)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         interval = {"type": step, "cost": 0}
@@ -236,27 +237,32 @@ class LocalLogHandler(TracerHandler):
 
     def on_end(
         self,
-        event_type: TraceType,
+        event_name: str,
         start_payload: Dict[str, Any],
-        end_payload: Dict[str, Any],
+        end_payload: Any,
         start_time: float,
         **kwargs: Any,
     ) -> None:
         """Handle the end of a trace event.
 
         Args:
-            event_type (TraceType): The type of event being traced.
+            event_name (str): The name of event being traced.
             start_payload (Dict[str, Any]): The payload data from event start.
-            end_payload (Dict[str, Any]): The payload data from event end.
+            end_payload (Any): The payload data from event end.
             start_time (float): The timestamp when the event started.
             **kwargs (Any): Additional keyword arguments.
         """
 
-        LocalLogHandler._deep_update(end_payload, start_payload)
+        request_id = TracingUtil.get_request_id()
 
-        step = f"{event_type}_end"
-        request_id = end_payload.get("request_id", "")
-        context = end_payload.get("context", end_payload)
+        if isinstance(end_payload, dict):
+            context = end_payload
+        else:
+            context = {}
+            if end_payload is not None:
+                context["output"] = end_payload
+
+        step = f"{event_name}_end"
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         duration = time.time() - start_time
         interval = {"type": step, "cost": f"{duration:.3f}"}
@@ -287,14 +293,14 @@ class LocalLogHandler(TracerHandler):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         if "step_suffix" in kwargs:
             step_suffix = kwargs["step_suffix"]
-            event_type = kwargs["event_type"]
+            event_name = kwargs["event_name"]
             payload = kwargs["payload"]
             start_time = kwargs["start_time"]
             start_payload = kwargs["start_payload"]
 
             LocalLogHandler._deep_update(payload, start_payload)
 
-            step = f"{event_type}_{step_suffix}"
+            step = f"{event_name}_{step_suffix}"
             duration = time.time() - start_time
             interval = {"type": step, "cost": f"{duration:.3f}"}
         else:
@@ -302,12 +308,20 @@ class LocalLogHandler(TracerHandler):
             interval = {"type": step, "cost": "0"}
             payload = {}
 
+        request_id = TracingUtil.get_request_id()
+
+        if isinstance(payload, dict):
+            context = payload
+        else:
+            context = {"payload": str(payload)}
+
         runtime_context = LogContext(
             time=timestamp,
             step=step,
             interval=interval,
-            context=payload,
+            context=context,
             message=message,
+            request_id=request_id,
         )
         self.logger.info(
             runtime_context.message,
@@ -316,7 +330,7 @@ class LocalLogHandler(TracerHandler):
 
     def on_error(
         self,
-        event_type: TraceType,
+        event_name: str,
         start_payload: Dict[str, Any],
         error: Exception,
         start_time: float,
@@ -326,14 +340,14 @@ class LocalLogHandler(TracerHandler):
         """Handle an error during tracing.
 
         Args:
-            event_type (TraceType): The type of event being traced.
+            event_name (str): The name of event being traced.
             start_payload (Dict[str, Any]): The payload data from event start.
             error (Exception): The exception that occurred.
             start_time (float): The timestamp when the event started.
             traceback_info (str): The traceback information.
             **kwargs (Any): Additional keyword arguments.
         """
-        step = f"{event_type}_error"
+        step = f"{event_name}_error"
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         duration = time.time() - start_time
         interval = {"type": step, "cost": f"{duration:.3f}"}

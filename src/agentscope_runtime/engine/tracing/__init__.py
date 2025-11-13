@@ -3,6 +3,14 @@ from typing import Any, List, Union
 
 from .base import BaseLogHandler, Tracer, TracerHandler
 from .tracing_metric import TraceType
+from .tracing_util import TracingUtil
+from .wrapper import trace
+
+__all__ = [
+    "trace",
+    "TraceType",
+    "TracingUtil",
+]
 
 
 def create_handler(
@@ -15,9 +23,7 @@ def create_handler(
     if "default" in eval_mode:
         handlers.append(BaseLogHandler())
     elif "local_logging" in eval_mode:
-        from .local_logging_handler import (
-            LocalLogHandler,
-        )
+        from .local_logging_handler import LocalLogHandler
 
         handlers.append(LocalLogHandler(**eval_params))
     return handlers

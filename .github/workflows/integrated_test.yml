@@ -1,0 +1,75 @@
+name: Integrated Tests
+
+on:
+  push:
+    branches:
+      - 'main'
+
+
+jobs:
+  test:
+    if: ${{ !(github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'docs:')) }}
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+        python-version: [ '3.10' ]
+
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Pull Docker images
+        run: |
+          DOCKER_IMAGES=(
+            "agentscope/runtime-sandbox-base:latest"
+            "agentscope/runtime-sandbox-gui:latest"
+            "agentscope/runtime-sandbox-browser:latest"
+            "agentscope/runtime-sandbox-filesystem:latest"
+          )
+
+          for img in "${DOCKER_IMAGES[@]}"; do
+            echo "Pulling image: $img"
+            docker pull "$img"
+          done
+          echo "All Docker images pulled successfully."
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Update setuptools
+        run: |
+          pip install --upgrade pip
+          pip install setuptools==78.1.1 wheel==0.45.1
+
+      - name: Set PYTHONPATH
+        run: |
+          echo "PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/src" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          export PIP_DEFAULT_TIMEOUT=300
+          pip install -q -e ".[dev,langgraph,agno,autogen,langchain_rag,llamaindex_rag,aliyun_tablestore_ext,memory_ext]"
+
+      - name: Run integrated tests with coverage
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+        run: |
+          coverage run -m pytest tests/integrated
+
+      - name: Generate coverage report
+        run: |
+          coverage report -m

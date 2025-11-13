@@ -55,16 +55,6 @@ kernelspec:
 
 与 `SessionHistoryService`一样，优先使用具体实现，如`InMemoryMemoryService`。详细信息请参见{ref}`这里 <memory-service-zh>`
 
-### RAGService
-`RAGService` 是一个基本的类，用于提供检索增强生成（RAG）功能。当最终用户提出请求时，代理可能需要从知识库中检索相关信息。知识库可以是数据库或文档集合。`RAGService` 包含以下方法：
-- `retrieve`：从知识库中检索相关信息。
-
-`LangChainRAGService` 是 `RAGService` 的具体实现，它使用 LangChain 来检索相关信息。可以通过以下方式初始化：
-- `vectorstore`：要索引的向量存储。具体来说，它可以是 LangChain 的 `VectorStore` 实例。
-- `embedding`：用于索引的嵌入模型。
-
-阅读 {ref}`RAGService <rag-service-zh>` 获取更多信息。
-
 ## 上下文管理器的生命周期
 
 上下文管理器可以通过两种方式初始化：
@@ -342,6 +332,7 @@ await main()
 from agentscope_runtime.engine.schemas.agent_schemas import Message, TextContent, MessageType, Role
 
 # 创建会话
+user_id = "u_append"
 session = await session_history_service.create_session(user_id)
 
 # 使用内置Message格式添加单个消息

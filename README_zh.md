@@ -2,6 +2,7 @@
 
 # AgentScope Runtime
 
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/agentscope-ai/agentscope-runtime)
 [![PyPI](https://img.shields.io/pypi/v/agentscope-runtime?label=PyPI&color=brightgreen&logo=python)](https://pypi.org/project/agentscope-runtime/)
 [![Downloads](https://static.pepy.tech/badge/agentscope-runtime)](https://pepy.tech/project/agentscope-runtime)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg?logo=python&label=Python)](https://python.org)
@@ -31,6 +32,7 @@
 
 ## 🆕 新闻
 
+* **[2025-10]** 我们发布了 `v0.2.0` ——新增了 **`AgentApp` API 服务器支持**，支持通过同步、异步和流式接口轻松使用智能体应用和自定义API入口。更多详情请查看我们的[cookbook](https://runtime.agentscope.io/zh/agent_app.html)。
 * **[2025-10]** 添加了 **GUI Sandbox**，支持虚拟桌面环境、鼠标、键盘以及屏幕操作。引入了 **`desktop_url`** 属性，适用于 GUI Sandbox、Browser Sandbox 和 Filesystem Sandbox —— 允许通过浏览器直接访问虚拟桌面。详情请参阅我们的 [cookbook](https://runtime.agentscope.io/zh/sandbox.html#id18)。
 
 ---
@@ -92,61 +94,64 @@ cd agentscope-runtime
 pip install -e .
 ```
 
-### 基本智能体使用示例
+### 基础 Agent App 示例
 
-此示例演示如何使用 AgentScope Runtime 创建简单的 LLM 智能体并从 Qwen 模型流式传输响应。
+本示例演示如何使用 agentscope 的 `ReActAgent` 和 `AgentApp` 创建一个 Agent API 服务器。
+服务器会处理你的输入，并 **以流式方式** 返回 Agent 生成的响应。
+
 
 ```python
-import asyncio
 import os
 
-from agentscope_runtime.engine import Runner
+from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agentscope_runtime.engine.services.context_manager import ContextManager
 
 from agentscope.agent import ReActAgent
-from agentscope.model import DashScopeChatModel
+from agentscope.model import OpenAIChatModel
 
 
-async def main():
-    # 设置语言模型和智能体
-    agent = AgentScopeAgent(
-        name="Friday",
-        model=DashScopeChatModel(
-            "qwen-turbo",
-            api_key=os.getenv("DASHSCOPE_API_KEY"),
-        ),
-        agent_config={
-            "sys_prompt": "You're a helpful assistant named Friday.",
-        },
-        agent_builder=ReActAgent,
-    )
+agent = AgentScopeAgent(
+    name="Friday",
+    model=OpenAIChatModel(
+        "gpt-4",
+        api_key=os.getenv("OPENAI_API_KEY"),
+    ),
+    agent_config={
+        "sys_prompt": "You're a helpful assistant named Friday.",
+    },
+    agent_builder=ReActAgent,  # 或者使用你自己的 agent builder
+)
+app = AgentApp(agent=agent, endpoint_path="/process")
 
-    async with ContextManager() as context_manager:
-        runner = Runner(agent=agent, context_manager=context_manager)
+app.run(host="0.0.0.0", port=8090)
+```
 
-        # 创建请求并流式传输响应
-        request = AgentRequest(
-            input=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "法国的首都是什么？",
-                        },
-                    ],
-                },
-            ],
-        )
+运行后，服务器会启动并监听：`http://localhost:8090/process`。你可以使用 `curl` 向 API 发送 JSON 输入：
 
-        async for message in runner.stream_query(request=request):
-            if hasattr(message, "text"):
-                print(f"流式答案: {message.text}")
+```bash
+curl -N \
+  -X POST "http://localhost:8090/process" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          { "type": "text", "text": "What is the capital of France?" }
+        ]
+      }
+    ]
+  }'
+```
 
+你将会看到以 **Server-Sent Events (SSE)** 格式流式输出的响应：
 
-asyncio.run(main())
+```bash
+data: {"sequence_number":0,"object":"response","status":"created", ... }
+data: {"sequence_number":1,"object":"response","status":"in_progress", ... }
+data: {"sequence_number":2,"object":"content","status":"in_progress","text":"The" }
+data: {"sequence_number":3,"object":"content","status":"in_progress","text":" capital of France is Paris." }
+data: {"sequence_number":4,"object":"message","status":"completed","text":"The capital of France is Paris." }
 ```
 
 ### 基本沙盒使用示例
@@ -286,7 +291,7 @@ agentscope-registry.ap-southeast-1.cr.aliyuncs.com/myteam/runtime-sandbox-base:p
 
 ---
 
-## 🔌 智能体框架集成
+## 🔌 其他智能体框架集成
 
 ### Agno集成
 
@@ -371,23 +376,41 @@ agent = LangGraphAgent(graph=compiled_graph)
 
 ## 🏗️ 部署
 
-智能体运行器使用了`deploy` 方法，该方法采用一个 `DeployManager` 实例并部署智能体。服务端口在创建 `LocalDeployManager` 时设置为参数 `port`。服务端点路径在部署智能体时设置为参数 `endpoint_path`。在此示例中，我们将端点路径设置为 `/process`。部署后，您可以通过 [http://localhost:8090/process](http://localhost:8090/process) 访问该服务。
+智能体运行器使用了`deploy` 方法，该方法采用一个 `DeployManager` 实例并部署智能体。
+服务端口在创建 `LocalDeployManager` 时设置为参数 `port`。
+服务端点路径在部署智能体时设置为参数 `endpoint_path`。
+
+与此同时，DeployManager将基于默认端点 /process 自动配置添加一些通用的智能体代理协议，例如 A2A 和 Response API。
+
+在此示例中，我们将端点路径设置为 `/process`。部署后，您可以通过 [http://localhost:8090/process](http://localhost:8090/process) 访问该服务，
+用户也可以基于OpenAI SDK的response api访问这个服务。
 
 ```python
 from agentscope_runtime.engine.deployers import LocalDeployManager
 
 # 创建部署管理器
-deploy_manager = LocalDeployManager(
-    host="localhost",
+deployer = LocalDeployManager(
+    host="0.0.0.0",
     port=8090,
 )
 
-# 将智能体部署为流式服务
-deploy_result = await runner.deploy(
-    deploy_manager=deploy_manager,
-    endpoint_path="/process",
-    stream=True,  # 启用流式响应
+# 部署应用
+deploy_result = await app.deploy(deployer=deployer)
+```
+
+部署后用户可以基于OpenAI SDK的代码调用服务。
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://0.0.0.0:8090/compatible-mode/v1")
+
+response = client.responses.create(
+  model="any_name",
+  input="杭州天气如何？"
 )
+
+print(response)
 ```
 
 ---
@@ -442,7 +465,7 @@ limitations under the License.
 
 ## 贡献者 ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-14-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-19-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 
@@ -470,6 +493,13 @@ limitations under the License.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/jinghuan-Chen"><img src="https://avatars.githubusercontent.com/u/42742857?v=4?s=100" width="100px;" alt="jinghuan-Chen"/><br /><sub><b>jinghuan-Chen</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=jinghuan-Chen" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Sodawyx"><img src="https://avatars.githubusercontent.com/u/34974468?v=4?s=100" width="100px;" alt="Yuxuan Wu"/><br /><sub><b>Yuxuan Wu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Sodawyx" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Sodawyx" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/TianYu92"><img src="https://avatars.githubusercontent.com/u/12960468?v=4?s=100" width="100px;" alt="Fear1es5"/><br /><sub><b>Fear1es5</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3ATianYu92" title="Bug reports">🐛</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ms-cs"><img src="https://avatars.githubusercontent.com/u/43086458?v=4?s=100" width="100px;" alt="zhiyong"/><br /><sub><b>zhiyong</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=ms-cs" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Ams-cs" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jooojo"><img src="https://avatars.githubusercontent.com/u/11719425?v=4?s=100" width="100px;" alt="jooojo"/><br /><sub><b>jooojo</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=jooojo" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Ajooojo" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://ceshihao.github.io"><img src="https://avatars.githubusercontent.com/u/7711875?v=4?s=100" width="100px;" alt="Zheng Dayu"/><br /><sub><b>Zheng Dayu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=ceshihao" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Aceshihao" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://lokk.cn/about"><img src="https://avatars.githubusercontent.com/u/39740818?v=4?s=100" width="100px;" alt="quanyu"/><br /><sub><b>quanyu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=taoquanyus" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Littlegrace111"><img src="https://avatars.githubusercontent.com/u/3880455?v=4?s=100" width="100px;" alt="Grace Wu"/><br /><sub><b>Grace Wu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Littlegrace111" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Littlegrace111" title="Documentation">📖</a></td>
     </tr>
   </tbody>
   <tfoot>

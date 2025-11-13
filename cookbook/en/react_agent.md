@@ -58,20 +58,10 @@ Start by importing all necessary modules:
 
 ```{code-cell}
 import os
-from contextlib import asynccontextmanager
-from agentscope_runtime.engine.runner import Runner
+
+from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-from agentscope_runtime.engine.services.context_manager import (
-    ContextManager,
-)
-from agentscope_runtime.engine.services.environment_manager import (
-    EnvironmentManager,
-)
-from agentscope_runtime.engine.schemas.agent_schemas import (
-    MessageType,
-    RunStatus,
-    AgentRequest,
-)
+from agentscope_runtime.engine.deployers import LocalDeployManager
 ```
 
 ### Step 2: Configure Browser Tools
@@ -149,108 +139,50 @@ agent = AgentScopeAgent(
 print("✅ Agent initialized successfully")
 ```
 
-### Step 5: Create the Runner
+### Step 5: Create and Launch Agent App
 
-Establish the runtime by creating a runner that orchestrates the agent and essential services for session management, memory, and environment control:
-
-```{code-cell}
-@asynccontextmanager
-async def create_runner():
-    async with Runner(
-        agent=llm_agent,
-        context_manager=ContextManager(),
-        environment_manager=EnvironmentManager(),
-    ) as runner:
-        print("✅ Runner created successfully")
-        yield runner
-```
-
-### Step 6: Define Local Interaction Function
-
-Implement a local interaction function to test your agent's capabilities with direct query processing and streaming responses:
+Create an agent API server using agent and `AgentApp`:
 
 ```{code-cell}
-async def interact(runner):
-    # Create a request
-    request = AgentRequest(
-        input=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "What is in example.com?",
-                    },
-                ],
-            },
-        ],
-    )
+app = AgentApp(agent=agent, endpoint_path="/process")
 
-    # Stream interaction with the agent
-    print("🤖 Agent is processing your request...")
-    async for message in runner.stream_query(
-        request=request,
-    ):
-        # Check if this is a completed message
-        if (
-            message.object == "message"
-            and MessageType.MESSAGE == message.type
-            and RunStatus.Completed == message.status
-        ):
-            all_result = message.content[0].text
-
-    print("📝 Agent output:", all_result)
+app.run(host="0.0.0.0", port=8090)
 ```
 
-### Step 7: Run Interaction
+The server will start and listen on: `http://localhost:8090/process`.
 
-Execute the interaction flow to test your agent's functionality in a local development environment:
+### Step 6: Send Request to Agent
+
+You can send JSON input to the API using `curl`:
+
+```bash
+curl -N \
+  -X POST "http://localhost:8090/process" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          { "type": "text", "text": "What is in example?" }
+        ]
+      }
+    ]
+  }'
+```
+
+You’ll see output streamed in **Server-Sent Events (SSE)** format.
+
+### Step 7: Deploy the Agent with Deployer
+
+The AgentScope Runtime provides a powerful deployment system that allows you to deploy your agent to remote or local container. And we use `LocalDeployManager` as example:
 
 ```{code-cell}
-async def interact_run():
-    async with create_runner() as runner:
-        await interact(runner)
-
-await interact_run()
+async def main():
+    await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```
 
-### Step 8: Deploy the Agent Locally
-
-Transform your agent into a production-ready service using the local deployment manager for HTTP API access:
-
-```{code-cell}
-from agentscope_runtime.engine.deployers import LocalDeployManager
-
-async def deploy(runner):
-    # Create deployment manager
-    deploy_manager = LocalDeployManager(
-        host="localhost",
-        port=8090,
-    )
-
-    # Deploy the agent as a streaming service
-    deploy_result = await runner.deploy(
-        deploy_manager=deploy_manager,
-        endpoint_path="/process",
-        stream=True,  # Enable streaming responses
-    )
-
-    print(f"Agent deployed at: {deploy_result}")
-    print(f"Service URL: {deploy_manager.service_url}")
-    print(f"Health check: {deploy_manager.service_url}/health")
-```
-
-### Step 9: Run Deployment
-
-Execute the complete deployment process to make your agent available as a web service:
-
-```{code-cell}
-async def deploy_run():
-    async with create_runner() as runner:
-        await deploy(runner)
-
-await deploy_run()
-```
+This will run your agent API Server on the specified port, making it accessible for external requests. In addition to basic HTTP API access, you can interact with the agent through different protocols, such as A2A, Response API, Agent API, and others. Please refer {doc}`protocol` for details.
 
 ### Summary
 

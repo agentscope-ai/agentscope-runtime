@@ -36,7 +36,7 @@ async def test_service_lifecycle(memory_service: InMemoryMemoryService):
     assert await memory_service.health() is True
     assert memory_service._store == {}
     await memory_service.stop()
-    assert memory_service._store == {}
+    assert memory_service._store is None
 
 
 @pytest.mark.asyncio

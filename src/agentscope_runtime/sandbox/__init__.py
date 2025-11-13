@@ -5,6 +5,8 @@ from .box.browser.browser_sandbox import BrowserSandbox
 from .box.filesystem.filesystem_sandbox import FilesystemSandbox
 from .box.gui.gui_sandbox import GuiSandbox
 from .box.training_box.training_box import TrainingSandbox
+from .box.cloud.cloud_sandbox import CloudSandbox
+from .box.agentbay.agentbay_sandbox import AgentbaySandbox
 
 
 __all__ = [
@@ -13,4 +15,6 @@ __all__ = [
     "FilesystemSandbox",
     "GuiSandbox",
     "TrainingSandbox",
+    "CloudSandbox",
+    "AgentbaySandbox",
 ]

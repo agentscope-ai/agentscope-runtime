@@ -7,6 +7,7 @@ from ..utils import build_image_uri
 from ..registry import SandboxRegistry
 from ..enums import SandboxType
 from ..box.sandbox import Sandbox
+from ..constant import TIMEOUT
 
 SANDBOX_TYPE = "custom_sandbox"
 
@@ -15,7 +16,7 @@ SANDBOX_TYPE = "custom_sandbox"
     build_image_uri(f"runtime-sandbox-{SANDBOX_TYPE}"),
     sandbox_type=SANDBOX_TYPE,
     security_level="medium",
-    timeout=60,
+    timeout=TIMEOUT,
     description="my sandbox",
     environment={
         "TAVILY_API_KEY": os.getenv("TAVILY_API_KEY", ""),

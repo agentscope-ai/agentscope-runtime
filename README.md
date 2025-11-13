@@ -2,6 +2,7 @@
 
 # AgentScope Runtime
 
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/agentscope-ai/agentscope-runtime)
 [![PyPI](https://img.shields.io/pypi/v/agentscope-runtime?label=PyPI&color=brightgreen&logo=python)](https://pypi.org/project/agentscope-runtime/)
 [![Downloads](https://static.pepy.tech/badge/agentscope-runtime)](https://pepy.tech/project/agentscope-runtime)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg?logo=python&label=Python)](https://python.org)
@@ -31,6 +32,7 @@
 
 ## 🆕 NEWS
 
+* **[2025-10]** We released `v0.2.0` — introducing **`AgentApp` API server support**, enabling easy use of agent applications and custom API endpoints through synchronous, asynchronous, and streaming interfaces. Check our [cookbook](https://runtime.agentscope.io/en/agent_app.html) for more details.
 * **[2025-10]**  **GUI Sandbox** is added with support for virtual desktop environments, mouse, keyboard, and screen operations.  Introduced the **`desktop_url`** property for GUI Sandbox, Browser Sandbox, and Filesystem Sandbox — allowing direct access to the virtual desktop via your browser.  Check our [cookbook](https://runtime.agentscope.io/en/sandbox.html#sandbox-usage) for more details.
 
 ---
@@ -95,61 +97,63 @@ cd agentscope-runtime
 pip install -e .
 ```
 
-### Basic Agent Usage Example
+### Basic Agent App Example
 
-This example demonstrates how to create an agentscope agent using AgentScope Runtime and
-stream responses from the Qwen model.
+This example demonstrates how to create an agent API server using agentscope `ReActAgent` and `AgentApp`. The server will process your input and return streaming agent-generated responses.
 
 
 ```python
-import asyncio
 import os
 
-from agentscope_runtime.engine import Runner
+from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agentscope_runtime.engine.services.context_manager import ContextManager
 
 from agentscope.agent import ReActAgent
 from agentscope.model import OpenAIChatModel
 
-async def main():
-    # Set up the language model and agent
-    agent = AgentScopeAgent(
-        name="Friday",
-        model=OpenAIChatModel(
-            "gpt-4",
-            api_key=os.getenv("OPENAI_API_KEY"),
-        ),
-        agent_config={
-            "sys_prompt": "You're a helpful assistant named Friday.",
-        },
-        agent_builder=ReActAgent,
-    )
-    async with ContextManager() as context_manager:
-        runner = Runner(agent=agent, context_manager=context_manager)
 
-        # Create a request and stream the response
-        request = AgentRequest(
-            input=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "What is the capital of France?",
-                        },
-                    ],
-                },
-            ],
-        )
+agent = AgentScopeAgent(
+    name="Friday",
+    model=OpenAIChatModel(
+        "gpt-4",
+        api_key=os.getenv("OPENAI_API_KEY"),
+    ),
+    agent_config={
+        "sys_prompt": "You're a helpful assistant named Friday.",
+    },
+    agent_builder=ReActAgent,  # Or use your own agent builder
+)
+app = AgentApp(agent=agent, endpoint_path="/process")
 
-        async for message in runner.stream_query(request=request):
-            if hasattr(message, "text"):
-                print(f"Streamed Answer: {message.text}")
+app.run(host="0.0.0.0", port=8090)
+```
 
+The server will start and listen on: `http://localhost:8090/process`. You can send JSON input to the API using `curl`:
 
-asyncio.run(main())
+```bash
+curl -N \
+  -X POST "http://localhost:8090/process" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          { "type": "text", "text": "What is the capital of France?" }
+        ]
+      }
+    ]
+  }'
+```
+
+You’ll see output streamed in **Server-Sent Events (SSE)** format:
+
+```bash
+data: {"sequence_number":0,"object":"response","status":"created", ... }
+data: {"sequence_number":1,"object":"response","status":"in_progress", ... }
+data: {"sequence_number":2,"object":"content","status":"in_progress","text":"The" }
+data: {"sequence_number":3,"object":"content","status":"in_progress","text":" capital of France is Paris." }
+data: {"sequence_number":4,"object":"message","status":"completed","text":"The capital of France is Paris." }
 ```
 
 ### Basic Sandbox Usage Example
@@ -289,7 +293,7 @@ agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-ba
 
 ---
 
-## 🔌 Agent Framework Integration
+## 🔌 Other Agent Framework Integration
 
 ### Agno Integration
 
@@ -374,24 +378,44 @@ agent = LangGraphAgent(graph=compiled_graph)
 
 ## 🏗️ Deployment
 
-The agent runner exposes a `deploy` method that takes a `DeployManager` instance and deploys the agent. The service port is set as the parameter `port` when creating the `LocalDeployManager`. The service endpoint path is set as the parameter `endpoint_path` when deploying the agent. In this example, we set the endpoint path to `/process`. After deployment, you can access the service at `http://localhost:8090/process`.
+The app exposes a `deploy` method that takes a `DeployManager` instance and deploys the agent.
+The service port is set as the parameter `port` when creating the `LocalDeployManager`.
+The service endpoint path is set as the parameter `endpoint_path` when deploying the agent.
+
+The deployer will automatically add common agent protocols, such as **A2A**, **Response API** based on the default endpoint `/process`.
+
+In this example, we set the endpoint path to `/process`,
+after deployment, users can access the service at `http://localhost:8090/process`, and can also access the service from OpenAI SDK by Response API.
 
 ```python
 from agentscope_runtime.engine.deployers import LocalDeployManager
 
 # Create deployment manager
-deploy_manager = LocalDeployManager(
-    host="localhost",
+deployer = LocalDeployManager(
+    host="0.0.0.0",
     port=8090,
 )
 
-# Deploy the agent as a streaming service
-deploy_result = await runner.deploy(
-    deploy_manager=deploy_manager,
-    endpoint_path="/process",
-    stream=True,  # Enable streaming responses
-)
+# Deploy the app as a streaming service
+deploy_result = await app.deploy(deployer=deployer)
+
 ```
+
+Then user could query the deployment by OpenAI SDK.
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://0.0.0.0:8090/compatible-mode/v1")
+
+response = client.responses.create(
+  model="any_name",
+  input="What is the weather in Beijing?"
+)
+
+print(response)
+```
+
 
 ---
 
@@ -442,7 +466,7 @@ limitations under the License.
 
 ## Contributors ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-14-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-19-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
@@ -469,6 +493,13 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/jinghuan-Chen"><img src="https://avatars.githubusercontent.com/u/42742857?v=4?s=100" width="100px;" alt="jinghuan-Chen"/><br /><sub><b>jinghuan-Chen</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=jinghuan-Chen" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Sodawyx"><img src="https://avatars.githubusercontent.com/u/34974468?v=4?s=100" width="100px;" alt="Yuxuan Wu"/><br /><sub><b>Yuxuan Wu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Sodawyx" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Sodawyx" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/TianYu92"><img src="https://avatars.githubusercontent.com/u/12960468?v=4?s=100" width="100px;" alt="Fear1es5"/><br /><sub><b>Fear1es5</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3ATianYu92" title="Bug reports">🐛</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ms-cs"><img src="https://avatars.githubusercontent.com/u/43086458?v=4?s=100" width="100px;" alt="zhiyong"/><br /><sub><b>zhiyong</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=ms-cs" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Ams-cs" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jooojo"><img src="https://avatars.githubusercontent.com/u/11719425?v=4?s=100" width="100px;" alt="jooojo"/><br /><sub><b>jooojo</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=jooojo" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Ajooojo" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://ceshihao.github.io"><img src="https://avatars.githubusercontent.com/u/7711875?v=4?s=100" width="100px;" alt="Zheng Dayu"/><br /><sub><b>Zheng Dayu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=ceshihao" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Aceshihao" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://lokk.cn/about"><img src="https://avatars.githubusercontent.com/u/39740818?v=4?s=100" width="100px;" alt="quanyu"/><br /><sub><b>quanyu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=taoquanyus" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Littlegrace111"><img src="https://avatars.githubusercontent.com/u/3880455?v=4?s=100" width="100px;" alt="Grace Wu"/><br /><sub><b>Grace Wu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Littlegrace111" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Littlegrace111" title="Documentation">📖</a></td>
     </tr>
   </tbody>
   <tfoot>

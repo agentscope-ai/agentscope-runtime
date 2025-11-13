@@ -155,66 +155,70 @@ async def test_local_deployer_context():
         session_history_service=session_history_service,
     )
 
-    runner = Runner(
+    async with Runner(
         agent=agent,
         context_manager=context_manager,
-    )
-    deploy_manager = LocalDeployManager(host=server_host, port=server_port)
+    ) as runner:
+        deploy_manager = LocalDeployManager(host=server_host, port=server_port)
 
-    try:
-        # Deploy the service
-        deployment_info = await runner.deploy(
-            deploy_manager,
-            endpoint_path=f"/{server_endpoint}",
-        )
+        try:
+            # Deploy the service
+            deployment_info = await runner.deploy(
+                deploy_manager,
+                endpoint_path=f"/{server_endpoint}",
+            )
 
-        print("✅ Service deployed successfully!")
-        print(f"   URL: {deployment_info['url']}")
-        print(f"   Endpoint: {deployment_info['url']}/{server_endpoint}")
+            print("✅ Service deployed successfully!")
+            print(f"   URL: {deployment_info['url']}")
+            print(f"   Endpoint: {deployment_info['url']}/{server_endpoint}")
 
-        # Wait a bit for service to be fully ready
-        await asyncio.sleep(2)
+            # Wait a bit for service to be fully ready
+            await asyncio.sleep(2)
 
-        def call(query):
-            data_arg = {
-                "input": [
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": query,
-                            },
-                        ],
-                    },
-                ],
-            }
-            content_ls = []
-            print(f"Making request to {url} with data: {data_arg}")
-            for content in sse_client(url, data=data_arg):
-                print(f"Received content: {content}")
-                content_ls.append(content)
-            final_content = "".join(content_ls)
-            print(f"Final content: {final_content}")
-            return final_content
+            def call(query):
+                data_arg = {
+                    "input": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": query,
+                                },
+                            ],
+                        },
+                    ],
+                }
+                content_ls = []
+                print(f"Making request to {url} with data: {data_arg}")
+                for content in sse_client(url, data=data_arg):
+                    print(f"Received content: {content}")
+                    content_ls.append(content)
+                final_content = "".join(content_ls)
+                print(f"Final content: {final_content}")
+                return final_content
 
-        # Simplified test - just check if the service responds
-        test_query = "Hello, can you respond?"
-        response = call(test_query)
+            # Simplified test - just check if the service responds
+            test_query = "Hello, can you respond?"
+            response = call(test_query)
 
-        # If we get any response, the service is working
-        print(f"Service response: '{response}'")
+            # If we get any response, the service is working
+            print(f"Service response: '{response}'")
 
-        # For now, just check that the service is reachable and processes
-        # requests
-        # The actual content test can be refined based on the LLM configuration
-        # Since the logs show the service processed the request successfully,
-        # we can consider the integration test passed if no exceptions occurred
-        assert True  # Basic test of service deployment and request processing
-        # works
+            # For now, just check that the service is reachable and processes
+            # requests
+            # The actual content test can be refined based on the LLM
+            # configuration
+            # Since the logs show the service processed the request
+            # successfully, we can consider the integration test passed if
+            # no exceptions occurred
+            assert (
+                True  # Basic test of service deployment and request processing
+            )
+            # works
 
-    finally:
-        # Always clean up the service
-        if deploy_manager.is_running:
-            await deploy_manager.stop()
-        print("✅ Service stopped.")
+        finally:
+            # Always clean up the service
+            if deploy_manager.is_running:
+                await deploy_manager.stop()
+            print("✅ Service stopped.")

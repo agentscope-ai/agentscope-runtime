@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import Optional, Type
+from typing import Optional, Type, Callable
 
 from autogen_core.models import ChatCompletionClient
 from autogen_core.tools import FunctionTool
@@ -111,6 +111,7 @@ class AutogenAgent(Agent):
         tools=None,
         agent_config=None,
         agent_builder: Optional[Type[AssistantAgent]] = AssistantAgent,
+        custom_build_fn: Optional[Callable] = None,
     ):
         super().__init__(name=name, agent_config=agent_config)
 
@@ -136,6 +137,7 @@ class AutogenAgent(Agent):
             "tools": tools,
             "agent_config": self.agent_config,
             "agent_builder": agent_builder,
+            "custom_build_fn": custom_build_fn,
         }
         self.tools = tools
 
@@ -156,13 +158,20 @@ class AutogenAgent(Agent):
 
         return _agent
 
-    async def run(self, context):
+    async def run_async(
+        self,
+        context,
+        **kwargs,
+    ):
         ag_context = AutogenContextAdapter(context=context, attr=self._attr)
         await ag_context.initialize()
 
         # We should always build a new agent since the state is manage outside
         # the agent
-        _agent = self.build(ag_context)
+        if self._attr.get("custom_build_fn"):
+            _agent = self._attr["custom_build_fn"](ag_context, **kwargs)
+        else:
+            _agent = self.build(ag_context)
 
         resp = _agent.run_stream(
             task=ag_context.memory + [ag_context.new_message],
@@ -240,11 +249,3 @@ class AutogenAgent(Agent):
         if is_text_delta:
             yield text_message.content_completed(text_delta_content.index)
             yield text_message.completed()
-
-    async def run_async(
-        self,
-        context,
-        **kwargs,
-    ):
-        async for event in self.run(context):
-            yield event

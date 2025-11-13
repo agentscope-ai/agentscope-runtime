@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=protected-access
 import time
 import traceback
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from typing import Any, Dict, List
 
-from .tracing_metric import TraceType
+from opentelemetry.propagate import inject, extract
+from opentelemetry.context.context import Context
 
 
 # Handler Interface
@@ -16,22 +16,23 @@ class TracerHandler(ABC):
     @abstractmethod
     def on_start(
         self,
-        event_type: TraceType,
+        event_name: str,
         payload: Dict[str, Any],
         **kwargs: Any,
     ) -> None:
         """Handle the start of a trace event.
 
         Args:
-            event_type (TraceType): The type of event being traced.
+            event_name (str): The name of event being traced.
             payload (Dict[str, Any]): The payload data for the event.
             **kwargs (Any): Additional keyword arguments.
         """
+        raise NotImplementedError("Subclasses must implement on_start method")
 
     @abstractmethod
     def on_end(
         self,
-        event_type: TraceType,
+        event_name: str,
         start_payload: Dict[str, Any],
         end_payload: Dict[str, Any],
         start_time: float,
@@ -40,12 +41,13 @@ class TracerHandler(ABC):
         """Handle the end of a trace event.
 
         Args:
-            event_type (TraceType): The type of event being traced.
+            event_name (str): The name of event being traced.
             start_payload (Dict[str, Any]): The payload data from event start.
             end_payload (Dict[str, Any]): The payload data from event end.
             start_time (float): The timestamp when the event started.
             **kwargs (Any): Additional keyword arguments.
         """
+        raise NotImplementedError("Subclasses must implement on_end method")
 
     @abstractmethod
     def on_log(self, message: str, **kwargs: Any) -> None:
@@ -55,11 +57,12 @@ class TracerHandler(ABC):
             message (str): The log message.
             **kwargs (Any): Additional keyword arguments.
         """
+        raise NotImplementedError("Subclasses must implement on_log method")
 
     @abstractmethod
     def on_error(
         self,
-        event_type: TraceType,
+        event_name: str,
         start_payload: Dict[str, Any],
         error: Exception,
         start_time: float,
@@ -69,15 +72,17 @@ class TracerHandler(ABC):
         """Handle an error during tracing.
 
         Args:
-            event_type (TraceType): The type of event being traced.
+            event_name (str): The type of event being traced.
             start_payload (Dict[str, Any]): The payload data from event start.
             error (Exception): The exception that occurred.
             start_time (float): The timestamp when the event started.
             traceback_info (str): The traceback information.
             **kwargs (Any): Additional keyword arguments.
         """
+        raise NotImplementedError("Subclasses must implement on_error method")
 
 
+# 新增基础的LogHandler类
 class BaseLogHandler(TracerHandler):
     """Basic log handler implementation using Python's logging module."""
 
@@ -87,22 +92,22 @@ class BaseLogHandler(TracerHandler):
 
     def on_start(
         self,
-        event_type: TraceType,
+        event_name: str,
         payload: Dict[str, Any],
         **kwargs: Any,
     ) -> None:
         """Log the start of a trace event.
 
         Args:
-            event_type (TraceType): The type of event being traced.
+            event_name (str): The name of event being traced.
             payload (Dict[str, Any]): The payload data for the event.
             **kwargs (Any): Additional keyword arguments.
         """
-        self.logger.info(f"Event {event_type} started with payload: {payload}")
+        self.logger.info(f"Event {event_name} started with payload: {payload}")
 
     def on_end(
         self,
-        event_type: TraceType,
+        event_name: str,
         start_payload: Dict[str, Any],
         end_payload: Dict[str, Any],
         start_time: float,
@@ -111,14 +116,14 @@ class BaseLogHandler(TracerHandler):
         """Log the end of a trace event.
 
         Args:
-            event_type (TraceType): The type of event being traced.
+            event_name (str): The name of event being traced.
             start_payload (Dict[str, Any]): The payload data from event start.
             end_payload (Dict[str, Any]): The payload data from event end.
             start_time (float): The timestamp when the event started.
             **kwargs (Any): Additional keyword arguments.
         """
         self.logger.info(
-            f"Event {event_type} ended with start payload: {start_payload}, "
+            f"Event {event_name} ended with start payload: {start_payload}, "
             f"end payload: {end_payload}, duration: "
             f"{time.time() - start_time} seconds, kwargs: {kwargs}",
         )
@@ -130,12 +135,11 @@ class BaseLogHandler(TracerHandler):
             message (str): The log message.
             **kwargs (Any): Additional keyword arguments.
         """
-        if message:
-            self.logger.info(f"Log: {message}")
+        self.logger.info(f"Log: {message}")
 
     def on_error(
         self,
-        event_type: TraceType,
+        event_name: str,
         start_payload: Dict[str, Any],
         error: Exception,
         start_time: float,
@@ -145,7 +149,7 @@ class BaseLogHandler(TracerHandler):
         """Log an error during tracing.
 
         Args:
-            event_type (TraceType): The type of event being traced.
+            event_name (str): The name of event being traced.
             start_payload (Dict[str, Any]): The payload data from event start.
             error (Exception): The exception that occurred.
             start_time (float): The timestamp when the event started.
@@ -153,7 +157,7 @@ class BaseLogHandler(TracerHandler):
             **kwargs (Any): Additional keyword arguments.
         """
         self.logger.error(
-            f"Error in event {event_type} with payload: {start_payload}, "
+            f"Error in event {event_name} with payload: {start_payload}, "
             f"error: {error}, "
             f"traceback: {traceback_info}, duration: "
             f"{time.time() - start_time} seconds, kwargs: {kwargs}",
@@ -184,14 +188,16 @@ class Tracer:
     @contextmanager
     def event(
         self,
-        event_type: TraceType,
+        span: Any,
+        event_name: str,
         payload: Dict[str, Any],
         **kwargs: Any,
     ) -> Any:
         """Create a context manager for tracing an event.
 
         Args:
-            event_type (TraceType): The type of event being traced.
+            span(Any): span of event
+            event_name (str): The name of event being traced.
             payload (Dict[str, Any]): The payload data for the event.
             **kwargs (Any): Additional keyword arguments.
 
@@ -201,28 +207,35 @@ class Tracer:
         start_time = time.time()
 
         for handle in self.handlers:
-            handle.on_start(event_type, payload, **kwargs)
+            handle.on_start(
+                event_name,
+                payload,
+                **kwargs,
+            )
 
         event_context = EventContext(
+            span,
             self.handlers,
-            event_type,
+            event_name,
             start_time,
             payload,
         )
+
         try:
             yield event_context
         except Exception as e:
             traceback_info = traceback.format_exc()
             for handle in self.handlers:
                 handle.on_error(
-                    event_type,
+                    event_name,
                     payload,
                     e,
                     start_time,
                     traceback_info=traceback_info,
                 )
             raise
-        event_context._end(payload)
+
+        event_context.finalize(payload)
 
     def log(self, message: str, **kwargs: Any) -> None:
         """Log a message using all registered handlers.
@@ -240,8 +253,9 @@ class EventContext:
 
     def __init__(
         self,
+        span: Any,
         handlers: List[TracerHandler],
-        event_type: TraceType,
+        event_name: str,
         start_time: float,
         start_payload: Dict[str, Any],
     ) -> None:
@@ -250,12 +264,13 @@ class EventContext:
         Args:
             handlers (List[TracerHandler]): List of handlers to process
             trace  events.
-            event_type (TraceType): The type of event being traced.
+            event_name (str): The name of event being traced.
             start_time (float): The timestamp when the event started.
             start_payload (Dict[str, Any]): The payload data from event start.
         """
+        self.span = span
         self.handlers = handlers
-        self.event_type = event_type
+        self.event_name = event_name
         self.start_time = start_time
         self.start_payload = start_payload
         self.end_payload = {}
@@ -278,11 +293,20 @@ class EventContext:
             message (str): The log message.
             **kwargs (Any): Additional keyword arguments.
         """
-        kwargs["event_type"] = self.event_type
+        kwargs["event_name"] = self.event_name
         kwargs["start_time"] = self.start_time
         kwargs["start_payload"] = self.start_payload
         for handle in self.handlers:
             handle.on_log(message, **kwargs)
+
+    def finalize(self, start_payload: Dict[str, Any] = None) -> None:
+        """Public method to finalize the event.
+
+        Args:
+            start_payload (Dict[str, Any], optional): The payload data from
+            event start.
+        """
+        self._end(start_payload)
 
     def _end(self, start_payload: Dict[str, Any] = None) -> None:
         """Finalize the event by calling on_end for all handlers.
@@ -293,17 +317,25 @@ class EventContext:
         """
         for handle in self.handlers:
             handle.on_end(
-                self.event_type,
+                self.event_name,
                 start_payload,
                 self.end_payload,
                 self.start_time,
                 **self.kwargs,
             )
 
-    def set_trace_header(self, trace_header: Dict[str, Any]) -> None:
-        """Set trace header for compatible handlers.
+    def set_attribute(self, key: str, value: Any) -> None:
+        """Set attribute for the current span.
 
         Args:
-            trace_header (Dict[str, Any]): The trace header information.
+            key (str): key of attribute
+            value(str): value of attribute
         """
-        # TODO: Implement this
+
+        self.span.set_attribute(key, value)
+
+    def get_trace_context(self) -> Context:
+        carrier = {}
+        inject(carrier)
+        context = extract(carrier)
+        return context

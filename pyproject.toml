@@ -1,6 +1,6 @@
 [project]
 name = "agentscope-runtime"
-version = "0.1.6"
+version = "0.3.0b1"
 description = "A production-ready runtime framework for agent applications, providing secure sandboxed execution environments and scalable deployment solutions with multi-framework support."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -19,10 +19,17 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "kubernetes>=33.1.0",
     "shortuuid>=1.0.13",
+    "celery[redis]>=5.3.1",
+    "a2a-sdk>=0.3.0",
+    "wuying-agentbay-sdk>=0.5.0",
 ]
 
 [tool.setuptools]
 packages = { find = { where = ["src"] } }
+include-package-data = true
+
+[tool.setuptools.package-data]
+"agentscope_runtime.engine.deployers.utils.service_utils" = ["*.j2"]
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]
@@ -32,17 +39,19 @@ build-backend = "setuptools.build_meta"
 runtime-sandbox-mcp = "agentscope_runtime.sandbox.mcp_server:main"
 runtime-sandbox-server = "agentscope_runtime.sandbox.manager.server.app:main"
 runtime-sandbox-builder = "agentscope_runtime.sandbox.build:main"
+runtime-fc-deploy = "agentscope_runtime.engine.deployers.cli_fc_deploy:main"
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3.5",
     "pytest-asyncio>=0.23.0",
     "pre-commit>=4.2.0",
-    "jupyter-book>=1.0.4.post1",
+    "jupyter-book>=1.0.4.post1,<2.0.0",
     "furo>=2025.7.19",
     "pytest-cov>=6.2.1",
     "fakeredis>=2.31.0",
     "sphinx-autoapi>=3.6.0",
+    "pytest-mock>=3.15.1",
 ]
 
 langgraph = [
@@ -50,10 +59,7 @@ langgraph = [
 ]
 
 agno = [
-    "agno>=1.7.5,<2.0.0",
-]
-a2a = [
-    "a2a-sdk>=0.3.0",
+    "agno>=2.0.0",
 ]
 autogen = [
     "autogen-agentchat>=0.7.4",
@@ -62,24 +68,6 @@ autogen = [
 agentrun = [
     "alibabacloud-agentrun20250910>=1.0.0",
     "alibabacloud_tea_openapi>=0.4.0"
-]
-
-langchain_rag=[
-    "langchain>=0.3.25",
-    "pymilvus[milvus-lite]>=2.6.0",
-    "langchain-community>=0.3.27",
-    "langchain-milvus>=0.2.1",
-    "bs4>=0.0.2",
-]
-
-llamaindex_rag=[
-    "llama-index>=0.13.4",
-    "pymilvus[milvus-lite]>=2.6.0",
-    "llama-index-vector-stores-milvus>=0.9.1",
-    "llama-index-readers-web>=0.5.1",
-    "llama-index-embeddings-langchain>=0.4.0",
-    "llama-index-embeddings-dashscope>=0.4.0",
-    "bs4>=0.0.2",
 ]
 
 aliyun_tablestore_ext=[
@@ -91,4 +79,20 @@ aliyun_tablestore_ext=[
 memory-ext = [
     "reme-ai==0.1.9 ; python_full_version >= '3.12'",
     "mem0ai>=0.1.117"
+]
+
+
+deployment = [
+    "alibabacloud-oss-v2",
+    "alibabacloud-bailian20231229>=2.6.0",
+    "build",
+    "setuptools>=40.8.0",
+    "wheel",
+    "steel-sdk>=0.1.0",
+    "alibabacloud-credentials",
+    "jinja2",
+    "psutil",
+    "shortuuid>=1.0.13",
+    "PyYAML",
+    "oss2>=2.19.1"
 ]

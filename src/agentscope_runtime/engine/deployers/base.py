@@ -9,6 +9,7 @@ from typing import Dict
 class DeployManager(ABC):
     def __init__(self):
         self.deploy_id = str(uuid.uuid4())
+        self._app = None
 
     @abstractmethod
     async def deploy(self, *args, **kwargs) -> Dict[str, str]:
