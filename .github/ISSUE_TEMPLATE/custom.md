@@ -19,6 +19,7 @@ assignees: ''
 ## Component (if applicable)
 - [ ] Engine
 - [ ] Sandbox
+- [ ] Common
 - [ ] Documentation
 - [ ] Installation/Setup
 - [ ] Not sure

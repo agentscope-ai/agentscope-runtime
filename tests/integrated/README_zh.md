@@ -1,6 +1,6 @@
 ### 开发
 #### 1. 下载模板
-下载链接：https://bailian-cn-beijing.oss-cn-beijing.aliyuncs.com/project/agentscope-bricks-starter.zip
+下载链接：https://bailian-cn-beijing.oss-cn-beijing.aliyuncs.com/project/agentscope-runtime-starter.zip
 
 #### 2. 开发你自己的高代码应用，并完成本地测试
 测试时需确保健康检查【localhost:8080/health】接口状态正常

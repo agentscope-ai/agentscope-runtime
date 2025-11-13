@@ -26,7 +26,10 @@ class TracingUtil:
         """Set request id"""
         _user_request_id.set(value)
         if value:
-            ctx = baggage.set_baggage("agentscope-bricks_request_id", value)
+            ctx = baggage.set_baggage(
+                "agentscope-runtime_request_id",
+                value,
+            )
             attach(ctx)
 
             TracingUtil.clear_common_attributes()
@@ -48,7 +51,9 @@ class TracingUtil:
             return request_id
 
         # Fallback to baggage for cross-thread scenarios
-        request_id = baggage.get_baggage("agentscope-bricks_request_id")
+        request_id = baggage.get_baggage(
+            "agentscope-runtime_request_id",
+        )
         if request_id:
             return request_id
 

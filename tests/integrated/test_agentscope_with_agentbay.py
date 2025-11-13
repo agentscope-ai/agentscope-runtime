@@ -84,7 +84,7 @@ async def test_agentscope_agent_with_agentbay_sandbox(env):  # noqa: ARG001
             res = box.call_tool("read_file", {"path": path})
             if res.get("success"):
                 return ToolResponse(
-                    content=f"Read {path}:\n{res.get('content','')}",
+                    content=f"Read {path}:\n{res.get('content', '')}",
                 )
             return ToolResponse(
                 content=f"Failed: {res.get('error', 'Unknown')}",

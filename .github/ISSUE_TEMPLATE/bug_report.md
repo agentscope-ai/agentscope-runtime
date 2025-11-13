@@ -14,6 +14,7 @@ assignees: ''
 ## Affected Component
 - [ ] Engine
 - [ ] Sandbox
+- [ ] Common
 - [ ] Documentation
 - [ ] Other:___________
 
