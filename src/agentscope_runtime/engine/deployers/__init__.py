@@ -7,10 +7,14 @@ from .kubernetes_deployer import (
 from .modelstudio_deployer import (
     ModelstudioDeployManager,
 )
+from .agentrun_deployer import (
+    AgentRunDeployManager,
+)
 
 __all__ = [
     "DeployManager",
     "LocalDeployManager",
     "KubernetesDeployManager",
     "ModelstudioDeployManager",
+    "AgentRunDeployManager",
 ]
