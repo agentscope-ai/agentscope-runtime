@@ -96,6 +96,7 @@ class SandboxHttpClient:
         headers = {
             "Content-Type": "application/json",
             "x-agentrun-session-id": "s" + self.session_id,
+            "x-agentscope-runtime-session-id": "s" + self.session_id,
         }
         if self.secret:
             headers["Authorization"] = f"Bearer {self.secret}"

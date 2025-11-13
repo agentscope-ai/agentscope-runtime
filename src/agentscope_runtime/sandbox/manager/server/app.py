@@ -93,6 +93,18 @@ def get_config() -> SandboxManagerEnvConfig:
             agent_run_prefix=settings.AGENT_RUN_PREFIX,
             agentrun_log_project=settings.AGENT_RUN_LOG_PROJECT,
             agentrun_log_store=settings.AGENT_RUN_LOG_STORE,
+            fc_access_key_id=settings.FC_ACCESS_KEY_ID,
+            fc_access_key_secret=settings.FC_ACCESS_KEY_SECRET,
+            fc_account_id=settings.FC_ACCOUNT_ID,
+            fc_region_id=settings.FC_REGION_ID,
+            fc_cpu=settings.FC_CPU,
+            fc_memory=settings.FC_MEMORY,
+            fc_vpc_id=settings.FC_VPC_ID,
+            fc_vswitch_ids=settings.FC_VSWITCH_IDS,
+            fc_security_group_id=settings.FC_SECURITY_GROUP_ID,
+            fc_prefix=settings.FC_PREFIX,
+            fc_log_project=settings.FC_LOG_PROJECT,
+            fc_log_store=settings.FC_LOG_STORE,
         )
     return _config
 
