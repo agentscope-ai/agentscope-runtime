@@ -394,11 +394,15 @@ class AgentScopeAgent(Agent):
                             index = None
 
                         elif element.get("type") == "tool_result":
-                            json_str = json.dumps(element.get("output"))
+                            json_str = json.dumps(
+                                element.get("output"),
+                                ensure_ascii=False,
+                            )
                             data_delta_content = DataContent(
                                 index=index,
                                 data=FunctionCallOutput(
                                     call_id=element.get("id"),
+                                    name=element.get("name"),
                                     output=json_str,
                                 ).model_dump(),
                             )
