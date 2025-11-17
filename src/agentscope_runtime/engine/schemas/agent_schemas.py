@@ -704,6 +704,12 @@ class AgentRequest(BaseRequest):
     tool call list
     """
 
+    metadata: Optional[Dict[str, Any]] = None
+    """
+    request-level metadata for file uploads, attachments, etc.
+    will be passed to AgentScope Msg.metadata
+    """
+
     session_id: Optional[str] = None
     """conversation id for dialog"""
 
