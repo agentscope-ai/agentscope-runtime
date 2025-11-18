@@ -159,8 +159,6 @@ export EDS_OSS_BUCKET_NAME=''
 export EDS_OSS_ENDPOINT=''
 export EDS_OSS_PATH=''
 
-# AI服务相关环境变量
-export DASHSCOPE_API_KEY=''
 
 # docker 运行环境 $home 替换为用户主目录,直接使用云沙箱的方式下无需配置，
 export DOCKER_HOST='unix:///$home/.colima/default/docker.sock'
