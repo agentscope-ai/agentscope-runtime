@@ -114,3 +114,16 @@ deployment = [
     "PyYAML",
     "oss2>=2.19.1"
 ]
+
+sandbox = [
+    "jinja2",
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.23.0",
+    "wuying-agentbay-sdk>=0.5.0",
+    "alibabacloud_ecd20200930",
+    "alibabacloud_eds_aic20230930",
+    "alibabacloud_appstream_center20210218",
+    "aiohttp",
+    "e2b-desktop>=2.0.0",
+    "psutil"
+]
