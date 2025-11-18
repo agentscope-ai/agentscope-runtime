@@ -32,7 +32,7 @@ class RedisMapping(Mapping):
     def scan(self, prefix: str = ""):
         search_pattern = f"{self._get_full_key(prefix)}*"
         cursor = 0
-        while cursor != 0:
+        while True:
             cursor, keys = self.client.scan(
                 cursor=cursor,
                 match=search_pattern,
@@ -40,3 +40,6 @@ class RedisMapping(Mapping):
             for key in keys:
                 decoded_key = key.decode("utf-8")
                 yield self._strip_prefix(decoded_key)
+
+            if cursor == 0:
+                break

@@ -20,7 +20,6 @@ parts:
     sections:
       - file: en/context_manager.md
       - file: en/environment_manager.md
-  - file: en/rag.md
   - file: en/tracing.md
   - file: en/demohouse.md
   - file: en/contribute.md
@@ -61,7 +60,6 @@ parts:
     sections:
       - file: zh/context_manager.md
       - file: zh/environment_manager.md
-  - file: zh/rag.md
   - file: zh/tracing.md
   - file: zh/demohouse.md
   - file: zh/contribute.md

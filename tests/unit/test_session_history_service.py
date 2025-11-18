@@ -27,6 +27,8 @@ async def test_create_session(
     user_id: str,
 ) -> None:
     """Tests the creation of a new session and ensures it's a deep copy."""
+    await session_history_service.start()
+
     session = await session_history_service.create_session(user_id)
     assert session is not None
     assert session.user_id == user_id
@@ -46,6 +48,8 @@ async def test_create_session(
         stored_session.messages == []
     ), "Modification to returned session should not affect stored session."
 
+    await session_history_service.stop()
+
 
 @pytest.mark.asyncio
 async def test_create_session_with_id(
@@ -54,6 +58,8 @@ async def test_create_session_with_id(
 ) -> None:
     """Tests creating a session with a specific ID."""
     custom_id = "my_custom_session_id"
+    await session_history_service.start()
+
     session = await session_history_service.create_session(
         user_id,
         session_id=custom_id,
@@ -70,6 +76,8 @@ async def test_create_session_with_id(
     assert stored_session is not None
     assert stored_session.id == custom_id
 
+    await session_history_service.stop()
+
 
 @pytest.mark.asyncio
 async def test_get_session(
@@ -77,6 +85,8 @@ async def test_get_session(
     user_id: str,
 ) -> None:
     """Tests retrieving a session and ensures it's a deep copy."""
+    await session_history_service.start()
+
     created_session = await session_history_service.create_session(user_id)
     retrieved_session = await session_history_service.get_session(
         user_id,
@@ -116,6 +126,8 @@ async def test_get_session(
     assert other_user_session.user_id == "other_user"
     assert other_user_session.messages == []
 
+    await session_history_service.stop()
+
 
 @pytest.mark.asyncio
 async def test_delete_session(
@@ -123,6 +135,8 @@ async def test_delete_session(
     user_id: str,
 ) -> None:
     """Tests deleting a session."""
+    await session_history_service.start()
+
     session = await session_history_service.create_session(user_id)
 
     # Ensure session exists before deletion
@@ -148,6 +162,8 @@ async def test_delete_session(
     # Test deleting a non-existent session (should not raise error)
     await session_history_service.delete_session(user_id, "non_existent_id")
 
+    await session_history_service.stop()
+
 
 @pytest.mark.asyncio
 async def test_list_sessions(
@@ -156,6 +172,8 @@ async def test_list_sessions(
 ) -> None:
     """Tests listing sessions for a user."""
     # Initially, no sessions
+    await session_history_service.start()
+
     sessions = await session_history_service.list_sessions(user_id)
     assert sessions == []
 
@@ -185,6 +203,8 @@ async def test_list_sessions(
     )
     assert other_user_sessions == []
 
+    await session_history_service.stop()
+
 
 @pytest.mark.asyncio
 async def test_append_message(
@@ -192,6 +212,8 @@ async def test_append_message(
     user_id: str,
 ) -> None:
     """Tests appending a message to a session."""
+    await session_history_service.start()
+
     session = await session_history_service.create_session(user_id)
     message1 = {"role": "user", "content": [TextContent(text="Hello World!")]}
 
@@ -266,3 +288,5 @@ async def test_append_message(
     assert (
         retrieved_session.messages == []
     )  # Empty as it's a newly created session
+
+    await session_history_service.stop()

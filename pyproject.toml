@@ -66,26 +66,8 @@ autogen = [
     "autogen-ext[openai]>=0.7.4",
 ]
 agentrun = [
-    "alibabacloud-agentrun20250910>=1.0.0",
+    "alibabacloud-agentrun20250910>=2.0.1",
     "alibabacloud_tea_openapi>=0.4.0"
-]
-
-langchain_rag=[
-    "langchain>=0.3.25",
-    "pymilvus[milvus-lite]>=2.6.0",
-    "langchain-community>=0.3.27",
-    "langchain-milvus>=0.2.1",
-    "bs4>=0.0.2",
-]
-
-llamaindex_rag=[
-    "llama-index>=0.13.4",
-    "pymilvus[milvus-lite]>=2.6.0",
-    "llama-index-vector-stores-milvus>=0.9.1",
-    "llama-index-readers-web>=0.5.1",
-    "llama-index-embeddings-langchain>=0.4.0",
-    "llama-index-embeddings-dashscope>=0.4.0",
-    "bs4>=0.0.2",
 ]
 
 aliyun_tablestore_ext=[
@@ -101,6 +83,7 @@ memory-ext = [
 
 
 deployment = [
+    "alibabacloud-agentrun20250910>=2.0.1",
     "alibabacloud-oss-v2",
     "alibabacloud-bailian20231229>=2.6.0",
     "build",

@@ -26,7 +26,7 @@ This cookbook will guide you through building robust agent applications using **
 
 **⚙️ Agent Deployment Runtime (Engine)**
 
-Infrastructure for deploying, managing, and running agent applications with context management (session context, long memory, RAG), and environment control.
+Infrastructure for deploying, managing, and running agent applications with context management (session context, long memory), and environment control.
 
 **🛠️ Tool Execution Runtime (Sandbox)**
 

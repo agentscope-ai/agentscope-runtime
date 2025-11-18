@@ -13,7 +13,7 @@ class ServiceType(str, Enum):
     MEMORY = "memory"
     SESSION_HISTORY = "session_history"
     SANDBOX = "sandbox"
-    RAG = "rag"
+    STATE = "state"
 
 
 class ServiceProvider(str, Enum):
@@ -39,7 +39,7 @@ class ServicesConfig(BaseModel):
         provider=ServiceProvider.IN_MEMORY,
     )
     sandbox: Optional[ServiceConfig] = None
-    rag: Optional[ServiceConfig] = None
+    state: Optional[ServiceConfig] = None
 
 
 # Default configuration

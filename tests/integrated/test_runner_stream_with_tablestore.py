@@ -19,9 +19,6 @@ from agentscope_runtime.engine.services.context_manager import ContextManager
 from agentscope_runtime.engine.services.tablestore_memory_service import (
     TablestoreMemoryService,
 )
-from agentscope_runtime.engine.services.tablestore_rag_service import (
-    TablestoreRAGService,
-)
 # fmt: off
 from agentscope_runtime.engine.services.tablestore_session_history_service import ( # noqa E501
     TablestoreSessionHistoryService,
@@ -96,21 +93,10 @@ async def tablestore_session_history_service(tablestore_client):
     return tablestore_session_history_service
 
 
-@pytest_asyncio.fixture
-async def tablestore_rag_service(tablestore_client):
-    tablestore_rag_service = TablestoreRAGService(
-        tablestore_client=tablestore_client,
-    )
-
-    await tablestore_rag_service.start()
-    return tablestore_rag_service
-
-
 @pytest.mark.asyncio
 async def test_runner(
     tablestore_session_history_service,
     tablestore_memory_service,
-    tablestore_rag_service,
 ):
     from dotenv import load_dotenv
 
@@ -138,7 +124,6 @@ async def test_runner(
     context_manager = ContextManager(
         session_history_service=tablestore_session_history_service,
         memory_service=tablestore_memory_service,
-        rag_service=tablestore_rag_service,
     )
     async with context_manager:
         runner = Runner(

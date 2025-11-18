@@ -29,6 +29,7 @@ def run_app():
             "qwen-turbo",
             api_key=os.getenv("DASHSCOPE_API_KEY"),
             enable_thinking=True,
+            stream=True,
         ),
         agent_config={
             "sys_prompt": "You're a helpful assistant named Friday.",
@@ -149,7 +150,7 @@ async def test_multi_turn_stream_async(start_app):
     Ensures that the agent remembers the user's name from a previous turn.
     """
     session_id = "123456"
-    user_id = "test_user"
+
     url = f"http://localhost:{PORT}/process"
 
     async with aiohttp.ClientSession() as session:
@@ -160,8 +161,7 @@ async def test_multi_turn_stream_async(start_app):
                     "content": [{"type": "text", "text": "My name is Alice."}],
                 },
             ],
-            "session": session_id,
-            "user_id": user_id,
+            "session_id": session_id,
         }
         async with session.post(url, json=payload1) as resp:
             assert resp.status == 200
@@ -185,7 +185,7 @@ async def test_multi_turn_stream_async(start_app):
                 "content": [{"type": "text", "text": "What is my name?"}],
             },
         ],
-        "session": session_id,
+        "session_id": session_id,
     }
 
     async with aiohttp.ClientSession() as session:

@@ -44,7 +44,7 @@ class TestFastAPIAppFactory:
             stream=False,
         )
 
-        assert app.state.external_runner == mock_runner
+        assert app.state.runner == mock_runner
         assert app.state.endpoint_path == "/api/process"
         assert app.state.response_type == "json"
         assert app.state.stream_enabled is False

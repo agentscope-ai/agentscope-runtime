@@ -144,6 +144,9 @@ class FunctionCallOutput(BaseModel):
     call_id: str
     """The ID of the tool call."""
 
+    name: Optional[str] = None
+    """The name of the tool call."""
+
     output: str
     """The result of the function."""
 
@@ -392,6 +395,8 @@ class Message(Event):
 
     usage: Optional[Dict] = None
     """response usage for output"""
+
+    metadata: Optional[Dict] = None
 
     @staticmethod
     def from_openai_message(message: Union[BaseModel, dict]) -> "Message":

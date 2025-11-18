@@ -16,6 +16,9 @@ from agentscope_runtime.engine.services.context_manager import ContextManager
 from agentscope_runtime.engine.services.session_history_service import (
     InMemorySessionHistoryService,
 )
+from agentscope_runtime.engine.services.state_service import (
+    InMemoryStateService,
+)
 
 
 @pytest.mark.asyncio
@@ -36,16 +39,12 @@ async def test_runner():
         agent_builder=ReActAgent,
     )
 
-    session_history_service = InMemorySessionHistoryService()
     USER_ID = "user_1"
     SESSION_ID = "session_001"  # Using a fixed ID for simplicity
-    await session_history_service.create_session(
-        user_id=USER_ID,
-        session_id=SESSION_ID,
-    )
 
     context_manager = ContextManager(
-        session_history_service=session_history_service,
+        session_history_service=InMemorySessionHistoryService(),
+        state_service=InMemoryStateService(),
     )
     async with context_manager:
         runner = Runner(

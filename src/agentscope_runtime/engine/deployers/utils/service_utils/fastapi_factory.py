@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=too-many-branches, unused-argument, too-many-return-statements
-
+# pylint:disable=protected-access
 
 import asyncio
 import inspect
 import json
+import logging
 from contextlib import asynccontextmanager
 from typing import Optional, Callable, Type, Any, List, Dict
 
@@ -17,6 +18,8 @@ from .service_config import ServicesConfig, DEFAULT_SERVICES_CONFIG
 from .service_factory import ServiceFactory
 from ..deployment_modes import DeploymentMode
 from ...adapter.protocol_adapter import ProtocolAdapter
+
+logger = logging.getLogger(__name__)
 
 
 async def error_stream(e):
@@ -122,9 +125,9 @@ class FastAPIAppFactory:
         app.state.deployment_mode = mode
         app.state.services_config = services_config
         app.state.stream_enabled = stream
-        app.state.response_type = response_type
         app.state.custom_func = func
-        app.state.external_runner = runner
+        app.state.runner = runner
+        app.state.response_type = response_type
         app.state.endpoint_path = endpoint_path
         app.state.protocol_adapters = protocol_adapters  # Store for later use
         app.state.custom_endpoints = (
@@ -169,6 +172,28 @@ class FastAPIAppFactory:
             # Use external runner
             app.state.runner = external_runner
             app.state.runner_managed_externally = True
+
+            # in case no runner
+            if app.state.runner:
+                app_service_instances = (
+                    app.state.runner._context_manager.service_instances
+                )
+                for instance in app_service_instances.values():
+                    # If any instance was not ready, reset runner.
+                    if not await instance.health():
+                        app.state.runner_managed_externally = False
+                        break
+
+                if not app.state.runner_managed_externally:
+                    try:
+                        # aexit any possible running instances before set up
+                        # runner
+                        await app.state.runner.__aexit__(None, None, None)
+                        await app.state.runner.__aenter__()
+                    except Exception as e:
+                        logger.error(
+                            f"Warning: Error during runner setup: {e}",
+                        )
 
         elif mode in [
             DeploymentMode.DETACHED_PROCESS,
@@ -243,9 +268,6 @@ class FastAPIAppFactory:
                         queues=queues,
                     )
                 except Exception as e:
-                    import logging
-
-                    logger = logging.getLogger(__name__)
                     logger.error(f"Failed to start Celery worker: {e}")
 
             worker_thread = threading.Thread(
@@ -279,7 +301,7 @@ class FastAPIAppFactory:
                     # Clean up runner
                     await runner.__aexit__(None, None, None)
                 except Exception as e:
-                    print(f"Warning: Error during runner cleanup: {e}")
+                    logger.error(f"Warning: Error during runner cleanup: {e}")
 
     @staticmethod
     async def _create_internal_runner(services_config: ServicesConfig):

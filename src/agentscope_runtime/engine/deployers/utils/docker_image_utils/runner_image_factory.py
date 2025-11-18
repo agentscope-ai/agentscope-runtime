@@ -8,7 +8,7 @@ from typing import Optional, List, Dict, Union
 
 from pydantic import BaseModel, Field
 
-from agentscope_runtime.engine.runner import Runner
+from .....engine.runner import Runner
 
 # from .package_project import PackageConfig, package_project, create_tar_gz
 from ..package_project_utils import (

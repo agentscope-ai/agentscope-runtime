@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=too-many-nested-blocks, too-many-branches, too-many-statements
+import inspect
 import json
-from typing import Optional, Type
+from typing import Optional, Type, Callable
 
 from agno.agent import Agent as AgAgent
 from agno.models.base import Model
@@ -106,6 +107,7 @@ class AgnoAgent(Agent):
         tools=None,
         agent_config=None,
         agent_builder: Optional[Type[AgAgent]] = AgAgent,
+        custom_build_fn: Optional[Callable] = None,
     ):
         super().__init__(name=name, agent_config=agent_config)
 
@@ -131,6 +133,7 @@ class AgnoAgent(Agent):
             "tools": tools,
             "agent_config": self.agent_config,
             "agent_builder": agent_builder,
+            "custom_build_fn": custom_build_fn,
         }
         self.tools = tools
 
@@ -161,7 +164,15 @@ class AgnoAgent(Agent):
 
         # We should always build a new agent since the state is manage outside
         # the agent
-        _agent = self.build(ag_context)
+        if self._attr.get("custom_build_fn"):
+            build_fn = self._attr["custom_build_fn"]
+
+            if inspect.iscoroutinefunction(build_fn):
+                _agent = await build_fn(ag_context, **kwargs)
+            else:
+                _agent = build_fn(ag_context, **kwargs)
+        else:
+            _agent = self.build(ag_context)
 
         text_message = Message(
             type=MessageType.MESSAGE,

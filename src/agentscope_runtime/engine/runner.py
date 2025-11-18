@@ -169,6 +169,8 @@ class Runner:
 
         session_id = request.session_id or str(uuid.uuid4())
         request_input = request.input
+
+        # TODO: `compose_session` will be removed in v1.0
         session = await self._context_manager.compose_session(
             user_id=user_id,
             session_id=session_id,
@@ -207,12 +209,16 @@ class Runner:
                 context.request.tools.extend(schemas)
 
         # update message in session
-        await context.context_manager.compose_context(
-            session=context.session,
-            request_input=request_input,
-        )
+        # TODO: remove this after refactoring all agents
+        from .agents.agentscope_agent import AgentScopeAgent
 
-        async for event in context.agent.run_async(context):
+        if not isinstance(self._agent, AgentScopeAgent):
+            await context.context_manager.compose_context(
+                session=context.session,
+                request_input=request_input,
+            )
+
+        async for event in self._agent.run_async(context):
             if (
                 event.status == RunStatus.Completed
                 and event.object == "message"
@@ -220,10 +226,12 @@ class Runner:
                 response.add_new_message(event)
             yield seq_gen.yield_with_sequence(event)
 
-        await context.context_manager.append(
-            session=context.session,
-            event_output=response.output,
-        )
+        # TODO: remove this after refactoring all agents
+        if not isinstance(self._agent, AgentScopeAgent):
+            await context.context_manager.append(
+                session=context.session,
+                event_output=response.output,
+            )
         yield seq_gen.yield_with_sequence(response.completed())
 
     #  TODO: will be added before 2025/11/30
@@ -239,7 +247,6 @@ class Runner:
     #     """
     #     return self._agent.query(message, session_id)
 
-    # TODO: should be sync method?
     async def stop(
         self,
         deploy_id: str,

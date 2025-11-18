@@ -99,20 +99,29 @@ class InMemoryMemoryService(MemoryService):
     An in-memory implementation of the memory service.
     """
 
-    _store: Dict[str, Dict[str, list]] = {}
     _DEFAULT_SESSION_ID = "default"
 
+    def __init__(self) -> None:
+        """Initializes the InMemorySessionHistoryService."""
+        self._store: Optional[Dict[str, Dict[str, list]]] = None
+        self._health = False
+
     async def start(self) -> None:
-        """Starts the service."""
-        self._store = {}
+        """Initialize the in-memory store."""
+        if self._store is None:
+            self._store = {}
+        self._health = True
 
     async def stop(self) -> None:
         """Stops the service."""
-        self._store = {}
+        if self._store is not None:
+            self._store.clear()
+        self._store = None
+        self._health = False
 
     async def health(self) -> bool:
         """Checks the health of the service."""
-        return True
+        return self._health
 
     async def add_memory(
         self,
@@ -129,6 +138,9 @@ class InMemoryMemoryService(MemoryService):
             session_id: An optional session identifier. If not provided,
             a default session is used.
         """
+        if self._store is None:
+            raise RuntimeError("Service not started")
+
         if user_id not in self._store:
             self._store[user_id] = {}
 
@@ -160,6 +172,9 @@ class InMemoryMemoryService(MemoryService):
         Returns:
             A list of matching messages from the store.
         """
+        if self._store is None:
+            raise RuntimeError("Service not started")
+
         if user_id not in self._store:
             return []
 
@@ -231,6 +246,9 @@ class InMemoryMemoryService(MemoryService):
         Returns:
             A paginated list of messages.
         """
+        if self._store is None:
+            raise RuntimeError("Service not started")
+
         if user_id not in self._store:
             return []
 
@@ -260,6 +278,9 @@ class InMemoryMemoryService(MemoryService):
             session_id: If provided, only deletes the messages for that
                 session. Otherwise, deletes all messages for the user.
         """
+        if self._store is None:
+            raise RuntimeError("Service not started")
+
         if user_id not in self._store:
             return
 

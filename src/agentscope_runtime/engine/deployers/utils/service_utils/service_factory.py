@@ -25,41 +25,34 @@ class ServiceFactory:
 
         try:
             # Import service implementations
-            from agentscope_runtime.engine.services.memory_service import (
+            from ....services.memory_service import (
                 InMemoryMemoryService,
             )
-            from agentscope_runtime.engine.services.session_history_service import (  # noqa E501
-                InMemorySessionHistoryService,
+            from ....services.redis_memory_service import (
+                RedisMemoryService,
             )
 
             # Register memory services
             cls._service_registry[ServiceType.MEMORY] = {
                 ServiceProvider.IN_MEMORY: InMemoryMemoryService,
+                ServiceProvider.REDIS: RedisMemoryService,
             }
+
+            from ....services.session_history_service import (
+                InMemorySessionHistoryService,
+            )
+            from ....services.redis_session_history_service import (
+                RedisSessionHistoryService,
+            )
 
             # Register session history services
             cls._service_registry[ServiceType.SESSION_HISTORY] = {
                 ServiceProvider.IN_MEMORY: InMemorySessionHistoryService,
+                ServiceProvider.REDIS: RedisSessionHistoryService,
             }
 
-            # Try to register Redis services if available
-
-            from agentscope_runtime.engine.services.redis_memory_service import (  # noqa E501
-                RedisMemoryService,
-            )
-            from agentscope_runtime.engine.services.redis_session_history_service import (  # noqa E501
-                RedisSessionHistoryService,
-            )
-
-            cls._service_registry[ServiceType.MEMORY][
-                ServiceProvider.REDIS
-            ] = RedisMemoryService
-            cls._service_registry[ServiceType.SESSION_HISTORY][
-                ServiceProvider.REDIS
-            ] = RedisSessionHistoryService
-
             # Try to register other services if available
-            from agentscope_runtime.engine.services.sandbox_service import (
+            from ....services.sandbox_service import (
                 SandboxService,
             )
 
@@ -68,13 +61,17 @@ class ServiceFactory:
                 ServiceProvider.IN_MEMORY: SandboxService,
             }
 
-            from agentscope_runtime.engine.services.rag_service import (
-                RAGService,
+            from ....services.state_service import (
+                InMemoryStateService,
+            )
+            from ....services.redis_state_service import (
+                RedisStateService,
             )
 
             # Assuming default implementation
-            cls._service_registry[ServiceType.RAG] = {
-                ServiceProvider.IN_MEMORY: RAGService,
+            cls._service_registry[ServiceType.STATE] = {
+                ServiceProvider.IN_MEMORY: InMemoryStateService,
+                ServiceProvider.REDIS: RedisStateService,
             }
 
         except ImportError as e:
@@ -190,11 +187,11 @@ class ServiceFactory:
                 # Log warning but don't fail
                 print(f"Warning: Failed to create sandbox service: {e}")
 
-        if config.rag:
+        if config.state:
             try:
-                services["rag"] = cls.create_service(
-                    ServiceType.RAG,
-                    config.rag,
+                services["state"] = cls.create_service(
+                    ServiceType.STATE,
+                    config.state,
                 )
             except Exception as e:
                 # Log warning but don't fail

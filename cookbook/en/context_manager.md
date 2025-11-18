@@ -59,21 +59,6 @@ The `MemoryService` contains the following methods:
 
 Like `SessionHistoryService`, prefer using a concrete implementation such as `InMemoryMemoryService`. For details, see {ref}`here <memory-service>`
 
-### RAGService
-
-The `RAGService` is a basic class to provide retrieval augmented generation (RAG) capabilities.
-When asked by an end-user, the agent may need to retrieve relevant information from the knowledge base.
-The knowledge base can be a database or a collection of documents.
-The `RAGService` contains the following methods:
-- `retrieve`: retrieve relevant information from the knowledge base.
-
-The `LangChainRAGService` is a concrete implementation of `RAGService` that uses LangChain to retrieve relevant information.
-It can be initialized by:
-- `vectorstore` the vectorstore to be indexed. Specifically, it can be a `VectorStore` instance of LangChain.
-- `embedding` the embedding model to be used for indexing.
-
-Read more about RAGService {ref}`here <rag-service>`
-
 ## Life-cycle of a context manager
 The context manager can be initialized by two ways:
 

@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=too-many-nested-blocks, too-many-branches, too-many-statements
 # pylint:disable=line-too-long, protected-access
+import inspect
 import copy
 import logging
 import json
 import traceback
 from functools import partial
-from typing import Optional, Type, List
-from urllib.parse import urlparse
+from typing import Optional, Type, List, Callable
 
 from agentscope import setup_logger
 from agentscope.agent import AgentBase, ReActAgent
@@ -18,19 +18,6 @@ from agentscope.formatter import (
     AnthropicChatFormatter,
     OllamaChatFormatter,
     GeminiChatFormatter,
-)
-from agentscope.memory import InMemoryMemory
-from agentscope.message import (
-    Msg,
-    ToolUseBlock,
-    ToolResultBlock,
-    TextBlock,
-    ThinkingBlock,
-    ImageBlock,
-    AudioBlock,
-    # VideoBlock,  # TODO: support
-    URLSource,
-    Base64Source,
 )
 from agentscope.model import (
     ChatModelBase,
@@ -60,6 +47,9 @@ from ..schemas.agent_schemas import (
     RunStatus,
 )
 from ..schemas.context import Context
+from ...adapters.agentscope.message import message_to_agentscope_msg
+from ...adapters.agentscope.memory import AgentScopeSessionHistoryMemory
+from ...adapters.agentscope.long_term_memory import AgentScopeLongTermMemory
 
 # Disable logging from agentscope
 setup_logger(level="CRITICAL")
@@ -80,119 +70,33 @@ class AgentScopeContextAdapter:
     async def initialize(self):
         self.model, self.formatter = await self.adapt_model()
         self.memory = await self.adapt_memory()
+        self.long_term_memory = await self.adapt_long_term_memory()
         self.new_message = await self.adapt_new_message()
         self.toolkit = await self.adapt_tools()
 
     async def adapt_memory(self):
-        memory = self.attr["agent_config"].get("memory", InMemoryMemory())
-        messages = []
-
-        # Build context
-        for msg in self.context.session.messages[:-1]:  # Exclude the last one
-            messages.append(AgentScopeContextAdapter.converter(msg))
-
-        state_dict = {"content": [_.to_dict() for _ in messages]}
-        memory.load_state_dict(state_dict)
+        memory = AgentScopeSessionHistoryMemory(
+            service=self.context.context_manager._session_history_service,
+            user_id=self.context.session.user_id,
+            session_id=self.context.session.id,
+        )
 
         return memory
 
-    @staticmethod
-    def converter(message: Message) -> Msg:
-        if message.role not in ["user", "system", "assistant"]:
-            role_label = "user"
-        else:
-            role_label = message.role
-
-        result = {
-            "name": message.role,  # TODO: protocol support
-            "role": role_label,
-            "invocation_id": message.id,
-        }
-
-        if message.type in (
-            MessageType.PLUGIN_CALL,
-            MessageType.FUNCTION_CALL,
-        ):
-            # convert PLUGIN_CALL, FUNCTION_CALL to ToolUseBlock
-            result["content"] = [
-                ToolUseBlock(
-                    type="tool_use",
-                    id=message.content[0].data["call_id"],
-                    name=message.content[0].data["name"],
-                    input=json.loads(message.content[0].data["arguments"]),
-                ),
-            ]
-        elif message.type in (
-            MessageType.PLUGIN_CALL_OUTPUT,
-            MessageType.FUNCTION_CALL_OUTPUT,
-        ):
-            # convert PLUGIN_CALL_OUTPUT, FUNCTION_CALL_OUTPUT to
-            # ToolResultBlock
-            result["content"] = [
-                ToolResultBlock(
-                    type="tool_result",
-                    id=message.content[0].data["call_id"],
-                    name=message.role,  # TODO: match id of ToolUseBlock
-                    output=json.loads(message.content[0].data["output"]),
-                ),
-            ]
-        elif message.type in (MessageType.REASONING,):
-            result["content"] = [
-                ThinkingBlock(
-                    type="thinking",
-                    thinking=message.content[0].text,
-                ),
-            ]
-        else:
-            type_mapping = {
-                "text": (TextBlock, "text", None),
-                "image": (ImageBlock, "image_url", True),
-                "audio": (AudioBlock, "data", None),
-                # "video": (VideoBlock, "video_url", True),  # TODO: support
-            }
-
-            msg_content = []
-            for cnt in message.content:
-                cnt_type = cnt.type or "text"
-
-                if cnt_type not in type_mapping:
-                    raise ValueError(f"Unsupported message type: {cnt_type}")
-
-                block_cls, attr_name, is_url = type_mapping[cnt_type]
-                value = getattr(cnt, attr_name)
-                if cnt_type == "audio":
-                    result = urlparse(value)
-                    is_url = all([result.scheme, result.netloc])
-                if is_url:
-                    url_source = URLSource(type="url", url=value)
-                    msg_content.append(
-                        block_cls(type=cnt_type, source=url_source),
-                    )
-                else:
-                    if cnt_type == "audio":
-                        audio_format = getattr(cnt, "format")
-                        base64_source = Base64Source(
-                            type="base64",
-                            media_type=audio_format,
-                            data=value,
-                        )
-                        msg_content.append(
-                            block_cls(
-                                type=cnt_type,
-                                source=base64_source,
-                            ),
-                        )
-                    else:
-                        msg_content.append(
-                            block_cls(type=cnt_type, text=value),
-                        )
-
-            result["content"] = msg_content
-        return Msg(**result)
+    async def adapt_long_term_memory(self):
+        if self.context.context_manager._memory_service:
+            long_term_memory = AgentScopeLongTermMemory(
+                service=self.context.context_manager._memory_service,
+                user_id=self.context.session.user_id,
+                session_id=self.context.session.id,
+            )
+            return long_term_memory
+        return None
 
     async def adapt_new_message(self):
-        last_message = self.context.session.messages[-1]
-        return AgentScopeContextAdapter.converter(last_message)
+        return message_to_agentscope_msg(
+            self.context.current_messages,
+        )
 
     async def adapt_model(self):
         model = self.attr["model"]
@@ -282,6 +186,7 @@ class AgentScopeAgent(Agent):
         tools=None,
         agent_config=None,
         agent_builder: Optional[Type[AgentBase]] = ReActAgent,
+        custom_build_fn: Optional[Callable] = None,
     ):
         super().__init__(name=name, agent_config=agent_config)
         assert isinstance(
@@ -306,6 +211,7 @@ class AgentScopeAgent(Agent):
             "tools": tools,
             "agent_config": self.agent_config,
             "agent_builder": agent_builder,
+            "custom_build_fn": custom_build_fn,
         }
         self.tools = tools
 
@@ -322,13 +228,13 @@ class AgentScopeAgent(Agent):
                     as_context.formatter,
                 ),
                 "memory": as_context.memory,
+                "long_term_memory": as_context.long_term_memory,
                 "toolkit": as_context.toolkit,
             },
         }
 
         builder_cls = self._attr["agent_builder"]
         _agent = build_agent(builder_cls, params)
-        _agent.set_console_output_enabled(False)
 
         return _agent
 
@@ -344,7 +250,29 @@ class AgentScopeAgent(Agent):
 
         # We should always build a new agent since the state is manage outside
         # the agent
-        _agent = self.build(as_context)
+        if self._attr.get("custom_build_fn"):
+            build_fn = self._attr["custom_build_fn"]
+
+            if inspect.iscoroutinefunction(build_fn):
+                _agent = await build_fn(as_context, **kwargs)
+            else:
+                _agent = build_fn(as_context, **kwargs)
+        else:
+            _agent = self.build(as_context)
+
+        # Restore state from state service
+        state_service = context.context_manager._state_service
+
+        if hasattr(_agent, "load_state_dict") and state_service:
+            state = await state_service.export_state(
+                user_id=context.session.user_id,
+                session_id=context.session.id,
+            )
+            if state:
+                _agent.load_state_dict(state)
+
+        if hasattr(_agent, "set_console_output_enabled"):
+            _agent.set_console_output_enabled(False)
 
         # Yield new Msg instances as they are logged
         last_content = ""
@@ -381,7 +309,6 @@ class AgentScopeAgent(Agent):
             if not msg.content:
                 continue
 
-            # TODO: make this as a message converter
             content = msg.content
             if isinstance(content, str):
                 last_content = content
@@ -473,11 +400,15 @@ class AgentScopeAgent(Agent):
                             index = None
 
                         elif element.get("type") == "tool_result":
-                            json_str = json.dumps(element.get("output"))
+                            json_str = json.dumps(
+                                element.get("output"),
+                                ensure_ascii=False,
+                            )
                             data_delta_content = DataContent(
                                 index=index,
                                 data=FunctionCallOutput(
                                     call_id=element.get("id"),
+                                    name=element.get("name"),
                                     output=json_str,
                                 ).model_dump(),
                             )
@@ -565,3 +496,12 @@ class AgentScopeAgent(Agent):
             )
             yield text_delta_content
             yield message.completed()
+
+        if state_service:
+            state = _agent.state_dict()
+
+            await state_service.save_state(
+                user_id=context.session.user_id,
+                session_id=context.session.id,
+                state=state,
+            )
