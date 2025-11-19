@@ -314,7 +314,8 @@ class E2bSandBox(CloudSandbox):
             y = arguments.get("y", 0)
             count = arguments.get("count", 1)
             query = arguments.get("query", "")
-
+            if isinstance(count, str):
+                count = int(count)
             if query:
                 # Visual query-based clicking
                 img_bytes = self.device.screenshot()
