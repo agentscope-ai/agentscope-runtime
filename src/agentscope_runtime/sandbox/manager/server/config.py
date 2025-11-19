@@ -28,6 +28,7 @@ class Settings(BaseSettings):
         "cloud",
         "k8s",
         "agentrun",
+        "fc",
     ] = "docker"
     DEFAULT_MOUNT_DIR: str = "sessions_mount_dir"
     # Read-only mounts (host_path -> container_path)
@@ -76,6 +77,24 @@ class Settings(BaseSettings):
 
     AGENT_RUN_LOG_PROJECT: Optional[str] = None
     AGENT_RUN_LOG_STORE: Optional[str] = None
+
+    # FC settings
+    FC_ACCOUNT_ID: Optional[str] = None
+    FC_ACCESS_KEY_ID: Optional[str] = None
+    FC_ACCESS_KEY_SECRET: Optional[str] = None
+    FC_REGION_ID: str = "cn-hangzhou"
+
+    FC_CPU: float = 2.0
+    FC_MEMORY: int = 2048
+
+    FC_VPC_ID: Optional[str] = None
+    FC_VSWITCH_IDS: Optional[list[str]] = None
+    FC_SECURITY_GROUP_ID: Optional[str] = None
+
+    FC_PREFIX: str = "agentscope-sandbox"
+
+    FC_LOG_PROJECT: Optional[str] = None
+    FC_LOG_STORE: Optional[str] = None
 
     model_config = ConfigDict(
         case_sensitive=True,
