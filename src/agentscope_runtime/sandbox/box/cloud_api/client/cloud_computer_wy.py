@@ -953,7 +953,12 @@ class EcdInstanceManager:
             f"{full_python_command}"
         )
 
-        return self.run_command_power_shell(command, slot_time, timeout)
+        return self.ecd_client.run_command_with_wait(
+            self.desktop_id,
+            command,
+            slot_time,
+            timeout,
+        )
 
     async def run_code_async(
         self,
@@ -970,7 +975,8 @@ class EcdInstanceManager:
             f"{full_python_command}"
         )
 
-        return await self.run_command_power_shell_async(
+        return await self.ecd_client.run_command_with_wait_async(
+            self.desktop_id,
             command,
             slot_time,
             timeout,
