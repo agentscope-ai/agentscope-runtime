@@ -70,3 +70,11 @@ class SandboxType(DynamicEnum):
     BFCL = "bfcl"
     WEBSHOP = "webshop"
     AGENTBAY = "agentbay"
+    CLOUD_COMPUTER = "cloud_computer"
+    CLOUD_PHONE = "cloud_phone"
+    E2B = "e2b_desktop"
+
+
+class OperationStatus(DynamicEnum):
+    DEVICE_UN_SUPPORTED_OPERATION = "Device did not supported this operation !"
+    DEVICE_UN_SUPPORTED = "Did not supported this device !"

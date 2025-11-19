@@ -102,7 +102,12 @@ class SandboxService(ServiceWithLifecycleManager):
             box_type = SandboxType(env_type)
 
             # 仅非 AgentBay 走 manager 池
-            if box_type != SandboxType.AGENTBAY:
+            if box_type not in (
+                SandboxType.AGENTBAY,
+                SandboxType.CLOUD_PHONE,
+                SandboxType.CLOUD_COMPUTER,
+                SandboxType.E2B,
+            ):
                 box_id = self.manager_api.create_from_pool(
                     sandbox_type=box_type.value,
                     meta={"session_ctx_id": session_ctx_id},
