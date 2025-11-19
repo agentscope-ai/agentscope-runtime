@@ -889,9 +889,8 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </table>
 </div>
 </section>
-</section>
 <section id="optional-agentrun-settings">
-<h3>(Optional) AgentRun Settings<a class="headerlink" href="#optional-agentrun-settings" title="Link to this heading">¶</a></h3>
+<h4>(Optional) AgentRun Settings<a class="headerlink" href="#optional-agentrun-settings" title="Link to this heading">¶</a></h4>
 <p><a class="reference external" href="https://functionai.console.aliyun.com/cn-hangzhou/agent/">AgentRun</a> is a serverless intelligent Agent development framework launched by Alibaba Cloud. It provides a complete set of tools to help developers quickly build, deploy, and manage AI Agent applications. You can deploy the sandbox servers on AgentRun.</p>
 <p>To configure settings specific to <a class="reference external" href="https://functionai.console.aliyun.com/cn-hangzhou/agent/">AgentRun</a> in your sandbox server, ensure you set <code class="docutils literal notranslate"><span class="pre">CONTAINER_DEPLOYMENT=agentrun</span></code>. Consider adjusting the following parameters:</p>
 <div class="table-wrapper colwidths-auto docutils container">
@@ -932,7 +931,7 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_MEMORY</span></code></p></td>
 <td><p>Memory Specification</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">2048</span></code></p></td>
-<td><p>Memory specification(MB)</p></td>
+<td><p>Memory specification (MB)</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_VPC_ID</span></code></p></td>
 <td><p>VPC ID</p></td>
@@ -967,6 +966,85 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </tbody>
 </table>
 </div>
+</section>
+<section id="optional-function-compute-fc-settings">
+<h4>(Optional) Function Compute (FC) Settings<a class="headerlink" href="#optional-function-compute-fc-settings" title="Link to this heading">¶</a></h4>
+<p><a class="reference external" href="https://fcnext.console.aliyun.com/">Function Compute</a> (FC) is a serverless computing service that allows you to run your code without managing infrastructure. You can deploy sandbox servers on FC.</p>
+<p>To configure settings specific to <a class="reference external" href="https://fcnext.console.aliyun.com/">FC</a> in your sandbox server, ensure you set <code class="docutils literal notranslate"><span class="pre">CONTAINER_DEPLOYMENT=fc</span></code>. Consider adjusting the following parameters:</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_ACCOUNT_ID</span></code></p></td>
+<td><p>Alibaba Cloud Account ID</p></td>
+<td><p>Empty</p></td>
+<td><p>Alibaba Cloud main account ID. Log in to the <a class="reference external" href="https://ram.console.aliyun.com/profile/access-keys">RAM console</a> to get the Alibaba Cloud account ID and AK/SK</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_ACCESS_KEY_ID</span></code></p></td>
+<td><p>Access Key ID</p></td>
+<td><p>Empty</p></td>
+<td><p>Alibaba Cloud AccessKey ID, requires <code class="docutils literal notranslate"><span class="pre">AliyunFCFullAccess</span></code> permission</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_ACCESS_KEY_SECRET</span></code></p></td>
+<td><p>Access Key Secret</p></td>
+<td><p>Empty</p></td>
+<td><p>Alibaba Cloud AccessKey Secret</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_REGION_ID</span></code></p></td>
+<td><p>Deployment Region ID</p></td>
+<td><p>Empty</p></td>
+<td><p>FC deployment region ID</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_CPU</span></code></p></td>
+<td><p>CPU Specification</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2.0</span></code></p></td>
+<td><p>vCPU specification</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_MEMORY</span></code></p></td>
+<td><p>Memory Specification</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2048</span></code></p></td>
+<td><p>Memory specification (MB)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_VPC_ID</span></code></p></td>
+<td><p>VPC ID</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>VPC network ID (optional)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_VSWITCH_IDS</span></code></p></td>
+<td><p>Switch ID List</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>VSwitch ID list (optional)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_SECURITY_GROUP_ID</span></code></p></td>
+<td><p>Security Group ID</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>Security group ID (optional)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_PREFIX</span></code></p></td>
+<td><p>Resource Name Prefix</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">agentscope-sandbox</span></code></p></td>
+<td><p>Prefix for created resource names</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_LOG_PROJECT</span></code></p></td>
+<td><p>SLS Log Project</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>SLS log project name (optional)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_LOG_STORE</span></code></p></td>
+<td><p>SLS Log Store</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>SLS log store name (optional)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 </section>
 <section id="loading-custom-sandbox">
 <h3>Loading Custom Sandbox<a class="headerlink" href="#loading-custom-sandbox" title="Link to this heading">¶</a></h3>
@@ -1320,7 +1398,7 @@ You can modify any of them as needed to change the image source or version.</p>
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-11-17</div>
+              Last updated on 2025-11-19</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -1365,9 +1443,10 @@ You can modify any of them as needed to change the image source or version.</p>
 <li><a class="reference internal" href="#optional-redis-settings">(Optional) Redis Settings</a></li>
 <li><a class="reference internal" href="#optional-oss-settings">(Optional) OSS Settings</a></li>
 <li><a class="reference internal" href="#optional-k8s-settings">(Optional) K8S Settings</a></li>
+<li><a class="reference internal" href="#optional-agentrun-settings">(Optional) AgentRun Settings</a></li>
+<li><a class="reference internal" href="#optional-function-compute-fc-settings">(Optional) Function Compute (FC) Settings</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#optional-agentrun-settings">(Optional) AgentRun Settings</a></li>
 <li><a class="reference internal" href="#loading-custom-sandbox">Loading Custom Sandbox</a><ul>
 <li><a class="reference internal" href="#writing-a-custom-sandbox-extension-e-g-custom-sandbox-py">Writing a custom sandbox extension (e.g. <code class="docutils literal notranslate"><span class="pre">custom_sandbox.py</span></code>)</a></li>
 <li><a class="reference internal" href="#loading-the-extension-at-startup">Loading the extension at startup</a></li>
