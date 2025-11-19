@@ -8,9 +8,17 @@ from .modelstudio_deployer import (
     ModelstudioDeployManager,
 )
 
+try:
+    from .agentrun_deployer import (
+        AgentRunDeployManager,
+    )
+except ImportError:
+    AgentRunDeployManager = None  # type: ignore
+
 __all__ = [
     "DeployManager",
     "LocalDeployManager",
     "KubernetesDeployManager",
     "ModelstudioDeployManager",
+    "AgentRunDeployManager",
 ]
