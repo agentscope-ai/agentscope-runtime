@@ -20,6 +20,13 @@ parts:
     sections:
       - file: en/context_manager.md
       - file: en/environment_manager.md
+  - file: en/skills.md
+    sections:
+      - file: en/skills/modelstudio_search.md
+      - file: en/skills/modelstudio_rag.md
+      - file: en/skills/modelstudio_generations.md
+      - file: en/skills/alipay.md
+      - file: en/skills/realtime_clients.md
   - file: en/tracing.md
   - file: en/demohouse.md
   - file: en/contribute.md
@@ -60,6 +67,13 @@ parts:
     sections:
       - file: zh/context_manager.md
       - file: zh/environment_manager.md
+  - file: zh/skills.md
+    sections:
+      - file: zh/skills/modelstudio_search.md
+      - file: zh/skills/modelstudio_rag.md
+      - file: zh/skills/modelstudio_generations.md
+      - file: zh/skills/alipay.md
+      - file: zh/skills/realtime_clients.md
   - file: zh/tracing.md
   - file: zh/demohouse.md
   - file: zh/contribute.md

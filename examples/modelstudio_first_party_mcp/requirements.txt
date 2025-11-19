@@ -1,0 +1,5 @@
+agentscope-runtime==0.2.1
+mcp
+uvicorn[standard]>=0.30.0
+gunicorn>=20.0.0
+starlette>=0.37.0

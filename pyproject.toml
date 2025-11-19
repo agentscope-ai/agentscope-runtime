@@ -101,3 +101,9 @@ deployment = [
     "PyYAML",
     "oss2>=2.19.1"
 ]
+
+skill = [
+    "dashscope>=1.25.0",
+    "alipay-sdk-python",
+    "cryptography",
+]

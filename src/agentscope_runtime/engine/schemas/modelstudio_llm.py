@@ -220,7 +220,8 @@ class RagOptions(BaseModel):
     """Whether to enable hybrid generations."""
 
     @field_validator("prompt_strategy")
-    def prompt_strategy_check(self, value: str) -> str:
+    @classmethod
+    def prompt_strategy_check(cls, value: str) -> str:
         if value:
             value = value.lower()
             if value in ["topk", "top_k"]:
@@ -228,7 +229,8 @@ class RagOptions(BaseModel):
         return value
 
     @field_validator("maximum_allowed_chunk_num")
-    def maximum_allowed_chunk_num_check(self, value: int) -> int:
+    @classmethod
+    def maximum_allowed_chunk_num_check(cls, value: int) -> int:
         if value < int(PARAM_MAXIMUM_ALLOWED_CHUNK_NUM_MIN) or value > int(
             PARAM_MAXIMUM_ALLOWED_CHUNK_NUM_MAX,
         ):

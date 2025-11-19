@@ -15,6 +15,7 @@
 ## Component(s) Affected
 - [ ] Engine
 - [ ] Sandbox
+- [ ] Common
 - [ ] Documentation
 - [ ] Tests
 - [ ] CI/CD
