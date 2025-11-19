@@ -160,15 +160,19 @@ print("✅ 智能体和端点配置成功")
 # daemon_deploy.py
 import asyncio
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
-from agent_app import app  # 导入已配置的 app
+from agentscope_runtime.engine.app import agent_app  # 导入已配置的 app
 
 # 以守护进程模式部署
 async def main():
+    app = agent_app.AgentApp()
     await app.deploy(LocalDeployManager())
 
 if __name__ == "__main__":
-    asyncio.run(main())
-    input("按 Enter 键停止服务器...")
+    try:
+        loop = asyncio.get_running_loop()
+        await main()
+    except RuntimeError:
+        asyncio.run(main())
 ```
 
 **关键点**：
@@ -234,13 +238,36 @@ print(response)
 ```{code-cell}
 # detached_deploy.py
 import asyncio
+import os
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
+from agentscope.tool import Toolkit, view_text_file
+from agentscope.formatter import DashScopeChatFormatter
+from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
 from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
-from agent_app import app  # 导入已配置的 app
 
 async def main():
     """以独立进程模式部署应用"""
     print("🚀 以独立进程模式部署 AgentApp...")
+
+    toolkit = Toolkit()
+    toolkit.register_tool_function(view_text_file)
+
+    formatter = DashScopeChatFormatter()
+
+    agent = ReActAgent(
+        name="Friday",
+        sys_prompt="You're a helpful assistant named Friday.",
+        model=DashScopeChatModel(
+            "qwen-max",
+            api_key=os.getenv("OPENAI_API_KEY"),
+        ),
+        formatter=formatter,  # 使用 DashScopeChatFormatter
+        toolkit=toolkit,
+    )
+
+    app = AgentApp(agent=agent)
 
     # 以独立模式部署
     deployment_info = await app.deploy(
@@ -260,7 +287,7 @@ curl -X POST {deployment_info['url']}/admin/shutdown  # 停止服务
     return deployment_info
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    await main()
 ```
 
 **关键点**：
@@ -336,10 +363,12 @@ from agentscope_runtime.engine.deployers.kubernetes_deployer import (
     RegistryConfig,
     K8sConfig,
 )
-from agent_app import app  # 导入已配置的 app
+from agentscope_runtime.engine.app import agent_app  # 导入已配置的 app
 
 async def deploy_to_k8s():
     """将 AgentApp 部署到 Kubernetes"""
+
+    app = agent_app.AgentApp()
 
     # 配置镜像仓库和 K8s 连接
     deployer = KubernetesDeployManager(
@@ -429,11 +458,12 @@ from agentscope_runtime.engine.deployers.modelstudio_deployer import (
     OSSConfig,
     ModelstudioConfig,
 )
-from agent_app import app  # 导入已配置的 app
+from agentscope_runtime.engine.app import agent_app  # 导入已配置的 app
 
 async def deploy_to_modelstudio():
     """将 AgentApp 部署到阿里云 ModelStudio"""
 
+    app = agent_app.AgentApp()
     # 配置 OSS 和 ModelStudio
     deployer = ModelstudioDeployManager(
         oss_config=OSSConfig(

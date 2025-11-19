@@ -30,6 +30,7 @@ class TraceType(str):
     GUARDRAIL = "GUARDRAIL"
     REWRITER = "REWRITER"
     OTHER = "OTHER"
+    IMAGE_GENERATION = "IMAGE_GENERATION"
 
     def __init__(self, value: str):
         """Initialize a TraceType with a string value.

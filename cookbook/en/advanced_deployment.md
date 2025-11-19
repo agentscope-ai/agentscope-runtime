@@ -166,15 +166,19 @@ Using the agent and endpoints defined in the {ref}`Common Agent Setup<common-age
 # daemon_deploy.py
 import asyncio
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
-from agent_app import app  # Import the configured app
+from agentscope_runtime.engine.app import agent_app  # Import the configured app
 
 # Deploy in daemon mode
 async def main():
+    app = agent_app.AgentApp()
     await app.deploy(LocalDeployManager())
 
 if __name__ == "__main__":
-    asyncio.run(main())
-    input("Press Enter to stop the server...")
+    try:
+        loop = asyncio.get_running_loop()
+        await main()
+    except RuntimeError:
+        asyncio.run(main())
 ```
 
 **Key Points**:
@@ -240,14 +244,35 @@ Using the agent and endpoints defined in the {ref}`Common Agent Setup<common-age
 ```{code-cell}
 # detached_deploy.py
 import asyncio
+import os
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
+from agentscope.tool import Toolkit, view_text_file
+from agentscope.formatter import DashScopeChatFormatter
+from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
 from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
-from agent_app import app  # Import the configured app
 
 async def main():
     """Deploy app in detached process mode"""
     print("🚀 Deploying AgentApp in detached process mode...")
 
+    toolkit = Toolkit()
+    toolkit.register_tool_function(view_text_file)
+
+    formatter = DashScopeChatFormatter()
+
+    agent = ReActAgent(
+        name="Friday",
+        sys_prompt="You're a helpful assistant named Friday.",
+        model=DashScopeChatModel(
+            "qwen-max",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+        ),
+        formatter=formatter,  # use DashScopeChatFormatter
+        toolkit=toolkit,
+    )
+    app = AgentApp(agent=agent)
     # Deploy in detached mode
     deployment_info = await app.deploy(
         LocalDeployManager(host="127.0.0.1", port=8080),
@@ -265,8 +290,7 @@ curl -X POST {deployment_info['url']}/admin/shutdown  # To stop
 """)
     return deployment_info
 
-if __name__ == "__main__":
-    asyncio.run(main())
+await main()
 ```
 
 **Key Points**:
@@ -342,11 +366,12 @@ from agentscope_runtime.engine.deployers.kubernetes_deployer import (
     RegistryConfig,
     K8sConfig,
 )
-from agent_app import app  # Import the configured app
+from agentscope_runtime.engine.app import agent_app  # Import the configured app
 
 async def deploy_to_k8s():
     """Deploy AgentApp to Kubernetes"""
 
+    app = agent_app.AgentApp()
     # Configure registry and K8s connection
     deployer = KubernetesDeployManager(
         kube_config=K8sConfig(
@@ -435,11 +460,12 @@ from agentscope_runtime.engine.deployers.modelstudio_deployer import (
     OSSConfig,
     ModelstudioConfig,
 )
-from agent_app import app  # Import the configured app
+from agentscope_runtime.engine.app import agent_app  # Import the configured app
 
 async def deploy_to_modelstudio():
     """Deploy AgentApp to Alibaba Cloud ModelStudio"""
 
+    app = agent_app.AgentApp()
     # Configure OSS and ModelStudio
     deployer = ModelstudioDeployManager(
         oss_config=OSSConfig(

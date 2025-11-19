@@ -78,6 +78,7 @@ class RunStatus:
 **Function Parameters**:
 
 ```{code-cell}
+from pydantic import BaseModel
 class FunctionParameters(BaseModel):
     type: str  # Must be "object"
     properties: Dict[str, Any]
@@ -87,6 +88,7 @@ class FunctionParameters(BaseModel):
 **Function Tool**:
 
 ```{code-cell}
+from pydantic import BaseModel
 class FunctionTool(BaseModel):
     name: str
     description: str
@@ -96,6 +98,7 @@ class FunctionTool(BaseModel):
 **Tool**:
 
 ```{code-cell}
+from pydantic import BaseModel
 class Tool(BaseModel):
     type: Optional[str] = None  # Currently only "function"
     function: Optional[FunctionTool] = None
@@ -103,6 +106,7 @@ class Tool(BaseModel):
 
 **Function Call**:
 ```{code-cell}
+from pydantic import BaseModel
 class FunctionCall(BaseModel):
     """
     Model class for assistant prompt message tool call function.
@@ -126,6 +130,7 @@ class FunctionCall(BaseModel):
 
 **Function Call Output**:
 ```{code-cell}
+from pydantic import BaseModel
 class FunctionCallOutput(BaseModel):
     """
     Model class for assistant prompt message tool call function.
@@ -266,6 +271,7 @@ class Message(Event):
 **Base Request**:
 
 ```{code-cell}
+from pydantic import BaseModel
 class BaseRequest(BaseModel):
     input: List[Message]
     stream: bool = True
@@ -315,6 +321,7 @@ class AgentResponse(BaseResponse):
 ### 7. Error Model
 
 ```{code-cell}
+from pydantic import BaseModel
 class Error(BaseModel):
     code: str
     message: str
