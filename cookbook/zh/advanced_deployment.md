@@ -266,13 +266,13 @@ async def main():
         formatter=formatter,  # 使用 DashScopeChatFormatter
         toolkit=toolkit,
     )
-
+    agent.description = "A helpful AI assistant named Friday"
     app = AgentApp(agent=agent)
 
     # 以独立模式部署
     deployment_info = await app.deploy(
         LocalDeployManager(host="127.0.0.1", port=8080),
-        mode=DeploymentMode.DETACHED_PROCESS,
+        mode=DeploymentMode.DAEMON_THREAD,
     )
 
     print(f"✅ 部署成功：{deployment_info['url']}")
@@ -300,7 +300,16 @@ if __name__ == "__main__":
 对于生产环境，您可以配置外部服务：
 
 ```{code-cell}
+import os
+
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+from agentscope_runtime.engine.deployers import ModelstudioDeployManager
+from agentscope_runtime.engine.deployers.adapter.a2a import A2AFastAPIDefaultAdapter
+from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
 from agentscope_runtime.engine.deployers.utils.service_utils import ServicesConfig
+from agentscope_runtime.engine import Runner
 
 # 生产服务配置
 production_services = ServicesConfig(
@@ -313,9 +322,24 @@ production_services = ServicesConfig(
         "db": 0,
     }
 )
+deploy_manager = ModelstudioDeployManager()
+agent = AgentScopeAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+        ),
+        agent_config={
+            "sys_prompt": "You're a helpful assistant named Friday.",
+        },
+        agent_builder=ReActAgent,
+    )
+
+a2a_protocol = A2AFastAPIDefaultAdapter(agent=agent)
+runner = Runner(agent=agent)
 
 # 使用生产服务进行部署
-deployment_info = await runner.deploy(
+deployment_info = runner.deploy(
     deploy_manager=deploy_manager,
     endpoint_path="/process",
     stream=True,
