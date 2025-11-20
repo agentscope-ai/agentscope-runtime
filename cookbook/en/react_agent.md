@@ -144,6 +144,28 @@ print("✅ Agent initialized successfully")
 Create an agent API server using agent and `AgentApp`:
 
 ```{code-cell}
+import os
+
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
+from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+from agentscope.tool import Toolkit
+toolkit = Toolkit()
+
+agent = AgentScopeAgent(
+    name="Friday",
+    model=DashScopeChatModel(
+        "qwen-max",
+        api_key=os.getenv("DASHSCOPE_API_KEY"),
+    ),
+    agent_config={
+        "sys_prompt": "You're a helpful assistant named Friday.",
+        "toolkit": toolkit,
+    },
+    agent_builder=ReActAgent,
+)
+
 app = AgentApp(agent=agent, endpoint_path="/process")
 
 app.run(host="0.0.0.0", port=8090)

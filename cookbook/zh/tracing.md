@@ -40,10 +40,11 @@ print("LLM:", TraceType.LLM)
 print("TOOL:", TraceType.TOOL)
 print("AGENT_STEP:", TraceType.AGENT_STEP)
 print("SEARCH:", TraceType.SEARCH)
-print("IMAGE_GENERATION:", TraceType.IMAGE_GENERATION)
+print("IMAGE_OTHER:", TraceType.OTHER)
 print("RAG:", TraceType.RAG)
 print("INTENTION:", TraceType.INTENTION)
-print("PLUGIN_CENTER:", TraceType.PLUGIN_CENTER)
+print("PLUGIN_CHAIN:", TraceType.CHAIN)
+
 ```
 
 ## 使用模式1：基于装饰器的追踪
@@ -87,6 +88,8 @@ tracer = Tracer(handlers=[LocalLogHandler(enable_console=True)])
 
 # 使用上下文管理器进行追踪
 with tracer.event(
+    span="my_span",
+    event_name="my_event",
     event_type=TraceType.LLM,
     payload={"key": "value"},
 ) as event:
@@ -120,18 +123,20 @@ from agentscope_runtime.engine.tracing.local_logging_handler import LocalLogHand
 # 创建带有多个处理程序的追踪器
 tracer = Tracer(handlers=[
     BaseLogHandler(),
-    LocalLoggingHandler(enable_console=True)
+    LocalLogHandler(enable_console=True)
 ])
 
 with tracer.event(
+    span="my_span",
+    event_name="my_event",
     event_type=TraceType.SEARCH,
     payload={"query": "test query", "source": "database"},
 ) as event:
-    tracer.log("Search started")
+    tracer.log(message="Search started")
     # 模拟搜索操作
     search_results = ["result1", "result2", "result3"]
     #对于需要额外记录信息的情况
-    event.on_log(payload={"results": search_results, "count": len(search_results)})
+    event.on_log(message="", payload={"results": search_results, "count": len(search_results)})
 ```
 
 ## 错误处理
@@ -142,11 +147,13 @@ with tracer.event(
 from agentscope_runtime.engine.tracing import Tracer, TraceType
 from agentscope_runtime.engine.tracing.local_logging_handler import LocalLogHandler
 
-tracer = Tracer(handlers=[LocalLoggingHandler(enable_console=True)])
+tracer = Tracer(handlers=[LocalLogHandler(enable_console=True)])
 
 def function_with_error():
     """引发异常以演示错误处理的函数。"""
     with tracer.event(
+        span="my_span",
+        event_name="my_event",
         event_type=TraceType.TOOL,
         payload={"tool_name": "error_prone_tool"},
     ) as event:

@@ -144,7 +144,27 @@ print("✅ 智能体初始化成功")
 用agent和 `AgentApp` 创建一个 Agent API 服务器：
 
 ```{code-cell}
+import os
+
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
+from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+from agentscope.tool import Toolkit
+toolkit = Toolkit()
+
+agent = AgentScopeAgent(
+    name="Friday",
+    model=DashScopeChatModel(
+        "qwen-max",
+        api_key=os.getenv("DASHSCOPE_API_KEY"),
+    ),
+    agent_config={
+        "sys_prompt": "You're a helpful assistant named Friday.",
+        "toolkit": toolkit,
+    },
+    agent_builder=ReActAgent,
+)
 
 app = AgentApp(agent=agent, endpoint_path="/process")
 
