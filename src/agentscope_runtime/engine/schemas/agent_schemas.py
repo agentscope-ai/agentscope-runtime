@@ -200,17 +200,21 @@ class McpListTools(BaseModel):
 
 
 class McpApprovalRequest(BaseModel):
+    """
+    mcp approval request
+    """
+
     id: str
     """The unique ID of the approval request."""
 
     arguments: str
-    """A JSON string of arguments for the tool."""
+    """A json string of arguments for the tool."""
 
     name: str
     """The name of the tool to run."""
 
     server_label: str
-    """The label of the MCP server making the request."""
+    """The label of the mcp server making the request."""
 
 
 class Error(BaseModel):
