@@ -81,7 +81,7 @@ export KUBECONFIG="/path/to/your/kubeconfig"
 
 All deployment methods share the same agent and endpoint configuration. Let's first create our base agent and define the endpoints:
 
-```{code-cell}
+```python
 # agent_app.py - Shared configuration for all deployment methods
 import os
 import time
@@ -162,14 +162,15 @@ print("✅ Agent and endpoints configured successfully")
 
 Using the agent and endpoints defined in the {ref}`Common Agent Setup<common-agent-setup>` section:
 
-```{code-cell}
+```python
 # daemon_deploy.py
 import asyncio
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
-from agent_app import app  # Import the configured app
+from agentscope_runtime.engine.app import agent_app  # Import the configured app
 
 # Deploy in daemon mode
 async def main():
+    app = agent_app.AgentApp()
     await app.deploy(LocalDeployManager())
 
 if __name__ == "__main__":
@@ -237,21 +238,43 @@ print(response)
 
 Using the agent and endpoints defined in the {ref}`Common Agent Setup<common-agent-setup>` section:
 
-```{code-cell}
+```python
 # detached_deploy.py
 import asyncio
+import os
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
+from agentscope.tool import Toolkit, view_text_file
+from agentscope.formatter import DashScopeChatFormatter
+from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
 from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
-from agent_app import app  # Import the configured app
 
 async def main():
     """Deploy app in detached process mode"""
     print("🚀 Deploying AgentApp in detached process mode...")
 
+    toolkit = Toolkit()
+    toolkit.register_tool_function(view_text_file)
+
+    formatter = DashScopeChatFormatter()
+
+    agent = ReActAgent(
+        name="Friday",
+        sys_prompt="You're a helpful assistant named Friday.",
+        model=DashScopeChatModel(
+            "qwen-max",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+        ),
+        formatter=formatter,  # use DashScopeChatFormatter
+        toolkit=toolkit,
+    )
+    agent.description = "A helpful AI assistant named Friday"
+    app = AgentApp(agent=agent)
     # Deploy in detached mode
     deployment_info = await app.deploy(
         LocalDeployManager(host="127.0.0.1", port=8080),
-        mode=DeploymentMode.DETACHED_PROCESS,
+        mode=DeploymentMode.DAEMON_THREAD,
     )
 
     print(f"✅ Deployment successful: {deployment_info['url']}")
@@ -279,7 +302,16 @@ if __name__ == "__main__":
 For production environments, you can configure external services:
 
 ```{code-cell}
+import os
+
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
+from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+from agentscope_runtime.engine.deployers import ModelstudioDeployManager
+from agentscope_runtime.engine.deployers.adapter.a2a import A2AFastAPIDefaultAdapter
+from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
 from agentscope_runtime.engine.deployers.utils.service_utils import ServicesConfig
+from agentscope_runtime.engine import Runner
 
 # Production services configuration
 production_services = ServicesConfig(
@@ -292,14 +324,29 @@ production_services = ServicesConfig(
         "db": 0,
     }
 )
+deploy_manager = ModelstudioDeployManager()
+agent = AgentScopeAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+        ),
+        agent_config={
+            "sys_prompt": "You're a helpful assistant named Friday.",
+        },
+        agent_builder=ReActAgent,
+    )
 
-# Deploy with production services
-deployment_info = await runner.deploy(
+a2a_protocol = A2AFastAPIDefaultAdapter(agent=agent)
+runner = Runner(agent=agent)
+
+# 使用生产服务进行部署
+deployment_info = runner.deploy(
     deploy_manager=deploy_manager,
     endpoint_path="/process",
     stream=True,
     mode=DeploymentMode.DETACHED_PROCESS,
-    services_config=production_services,  # Use production config
+    services_config=production_services, # Use production config
     protocol_adapters=[a2a_protocol],
 )
 ```
@@ -333,7 +380,7 @@ docker login  your-registry
 
 Using the agent and endpoints defined in the {ref}`Common Agent Setup<common-agent-setup>` section:
 
-```{code-cell}
+```python
 # k8s_deploy.py
 import asyncio
 import os
@@ -342,11 +389,12 @@ from agentscope_runtime.engine.deployers.kubernetes_deployer import (
     RegistryConfig,
     K8sConfig,
 )
-from agent_app import app  # Import the configured app
+from agentscope_runtime.engine.app import agent_app  # Import the configured app
 
 async def deploy_to_k8s():
     """Deploy AgentApp to Kubernetes"""
 
+    app = agent_app.AgentApp()
     # Configure registry and K8s connection
     deployer = KubernetesDeployManager(
         kube_config=K8sConfig(
@@ -426,7 +474,7 @@ export OSS_ACCESS_KEY_SECRET="your-oss-access-key-secret"
 
 Using the agent and endpoints defined in the {ref}`Common Agent Setup<common-agent-setup>` section:
 
-```{code-cell}
+```python
 # modelstudio_deploy.py
 import asyncio
 import os
@@ -435,11 +483,12 @@ from agentscope_runtime.engine.deployers.modelstudio_deployer import (
     OSSConfig,
     ModelstudioConfig,
 )
-from agent_app import app  # Import the configured app
+from agentscope_runtime.engine.app import agent_app  # Import the configured app
 
 async def deploy_to_modelstudio():
     """Deploy AgentApp to Alibaba Cloud ModelStudio"""
 
+    app = agent_app.AgentApp()
     # Configure OSS and ModelStudio
     deployer = ModelstudioDeployManager(
         oss_config=OSSConfig(

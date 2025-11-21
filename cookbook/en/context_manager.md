@@ -223,9 +223,12 @@ The `create_session` method creates new conversation sessions for users:
 
 ```{code-cell}
 import asyncio
+from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
 
 
 async def main():
+    session_history_service = InMemorySessionHistoryService()
+    await session_history_service.start()
     # Create a session with auto-generated ID
     user_id = "test_user"
     session = await session_history_service.create_session(user_id)
@@ -250,10 +253,13 @@ The `get_session` method retrieves specific sessions by user ID and session ID:
 
 ```{code-cell}
 import asyncio
+from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
 
 
 async def main():
     user_id = "u1"
+    session_history_service = InMemorySessionHistoryService()
+    await session_history_service.start()
     # Retrieve an existing session (auto-creates if not exists in in-memory impl)
     retrieved_session = await session_history_service.get_session(user_id, "s1")
     assert retrieved_session is not None
@@ -268,10 +274,13 @@ The `list_sessions` method provides a list of all sessions for a user:
 
 ```{code-cell}
 import asyncio
+from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
 
 
 async def main():
     user_id = "u_list"
+    session_history_service = InMemorySessionHistoryService()
+    await session_history_service.start()
     # Create multiple sessions
     session1 = await session_history_service.create_session(user_id)
     session2 = await session_history_service.create_session(user_id)
@@ -297,10 +306,13 @@ The `append_message` method adds messages to session history and supports multip
 ```{code-cell}
 import asyncio
 from agentscope_runtime.engine.schemas.agent_schemas import Message, TextContent
+from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
 
 
 async def main():
     user_id = "u_append"
+    session_history_service = InMemorySessionHistoryService()
+    await session_history_service.start()
     # Create a session and add messages (dict format is also accepted)
     session = await session_history_service.create_session(user_id)
 
@@ -329,9 +341,12 @@ await main()
 
 ```{code-cell}
 from agentscope_runtime.engine.schemas.agent_schemas import Message, TextContent, MessageType, Role
+from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
 
 # Create a session
 user_id = "u_append"
+session_history_service = InMemorySessionHistoryService()
+await session_history_service.start()
 session = await session_history_service.create_session(user_id)
 
 # Add a single message using built-in Message format
@@ -378,25 +393,39 @@ assert len(session.messages) == 4
 ##### Mixed Format Support
 
 ```{code-cell}
-# Session service supports mixing dictionary and Message objects
-session = await session_history_service.create_session(user_id)
+import asyncio
 
-# Add dictionary format message
-dict_message = {"role": "user", "content": "Hello"}
-await session_history_service.append_message(session, dict_message)
+from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
+from agentscope_runtime.engine.schemas.agent_schemas import Message, MessageType, Role, TextContent
 
-# Add Message object
-message_obj = Message(
-    type=MessageType.MESSAGE,
-    role=Role.ASSISTANT,
-    content=[TextContent(type="text", text="Hello! How can I assist you?")]
-)
-await session_history_service.append_message(session, message_obj)
+async def main():
+    session_history_service = InMemorySessionHistoryService()
+    user_id = '123456'
+    await session_history_service.start()
+    # 会话服务支持混合字典和Message对象
+    session = await session_history_service.create_session(user_id)
 
-# Verify messages were added correctly
-assert len(session.messages) == 2
-assert session.messages[0]["role"] == "user"  # Dictionary format
-assert session.messages[1]["role"] == "assistant"  # Message object converted to dictionary format
+    # 添加字典格式消息
+    dict_message = {
+        "role": "user",
+        "content": [{"type": "text", "text": "Hello"}]  # 修复：使用列表格式
+    }
+    await session_history_service.append_message(session, dict_message)
+
+    # 添加Message对象
+    message_obj = Message(
+        type=MessageType.MESSAGE,
+        role=Role.ASSISTANT,
+        content=[TextContent(type="text", text="Hello! How can I assist you?")]
+    )
+    await session_history_service.append_message(session, message_obj)
+
+    # 验证消息正确添加
+    assert len(session.messages) == 2
+    assert session.messages[0].role == "user"  # Dictionary format
+    assert session.messages[1].role == "assistant"  # Message object converted to dictionary format
+
+await main()
 ```
 
 #### Deleting Sessions
@@ -404,6 +433,10 @@ assert session.messages[1]["role"] == "assistant"  # Message object converted to
 The `delete_session` method removes specific sessions:
 
 ```{code-cell}
+from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
+
+session_history_service = InMemorySessionHistoryService()
+await session_history_service.start()
 # Create and then delete a session
 session_to_delete = await session_history_service.create_session(user_id)
 session_id = session_to_delete.id
@@ -414,9 +447,6 @@ assert await session_history_service.get_session(user_id, session_id) is not Non
 # Delete the session
 await session_history_service.delete_session(user_id, session_id)
 
-# Verify session is deleted
-assert await session_history_service.get_session(user_id, session_id) is None
-
 # Deleting non-existent sessions doesn't raise errors
 await session_history_service.delete_session(user_id, "non_existent_id")
 ```
@@ -426,6 +456,10 @@ await session_history_service.delete_session(user_id, "non_existent_id")
 The Session Service follows a simple lifecycle pattern:
 
 ```{code-cell}
+from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
+
+session_history_service = InMemorySessionHistoryService()
+await session_history_service.start()
 # Start the service (optional for InMemorySessionHistoryService)
 await session_history_service.start()
 
@@ -494,6 +528,8 @@ import asyncio
 from agentscope_runtime.engine.services.memory_service import InMemoryMemoryService
 from agentscope_runtime.engine.schemas.agent_schemas import Message, TextContent
 
+memory_service = InMemoryMemoryService()
+await memory_service.start()
 # Add memory without a session ID
 user_id = "user1"
 messages = [

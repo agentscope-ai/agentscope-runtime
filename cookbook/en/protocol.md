@@ -78,6 +78,8 @@ class RunStatus:
 **Function Parameters**:
 
 ```{code-cell}
+from typing import Dict, Any, Optional, List, Union
+from pydantic import BaseModel
 class FunctionParameters(BaseModel):
     type: str  # Must be "object"
     properties: Dict[str, Any]
@@ -87,6 +89,9 @@ class FunctionParameters(BaseModel):
 **Function Tool**:
 
 ```{code-cell}
+from typing import Dict, Any, Optional, List, Union
+
+from pydantic import BaseModel
 class FunctionTool(BaseModel):
     name: str
     description: str
@@ -96,6 +101,8 @@ class FunctionTool(BaseModel):
 **Tool**:
 
 ```{code-cell}
+from typing import Dict, Any, Optional, List, Union
+from pydantic import BaseModel
 class Tool(BaseModel):
     type: Optional[str] = None  # Currently only "function"
     function: Optional[FunctionTool] = None
@@ -103,6 +110,8 @@ class Tool(BaseModel):
 
 **Function Call**:
 ```{code-cell}
+from typing import Dict, Any, Optional, List, Union
+from pydantic import BaseModel
 class FunctionCall(BaseModel):
     """
     Model class for assistant prompt message tool call function.
@@ -126,6 +135,8 @@ class FunctionCall(BaseModel):
 
 **Function Call Output**:
 ```{code-cell}
+from typing import Dict, Any, Optional, List, Union
+from pydantic import BaseModel
 class FunctionCallOutput(BaseModel):
     """
     Model class for assistant prompt message tool call function.
@@ -143,6 +154,8 @@ class FunctionCallOutput(BaseModel):
 **Base Content Model**:
 
 ```{code-cell}
+from typing import Dict, Any, Optional, List, Union
+from prompt_toolkit.utils import Event
 class Content(Event):
     type: str
     """The type of the content part."""
@@ -163,6 +176,8 @@ class Content(Event):
 **Specialized Content Types**:
 
 ```{code-cell}
+from typing import Dict, Any, Optional, List, Union
+from agentscope_runtime.engine.schemas.agent_schemas import ContentType
 class ImageContent(Content):
     type: str = ContentType.IMAGE
     """The type of the content part."""
@@ -226,6 +241,12 @@ class RefusalContent(Content):
 ### 4. Message Model
 
 ```{code-cell}
+from typing import Optional, Union, List
+from uuid import uuid4
+
+from agentscope_runtime.engine.schemas.agent_schemas import RunStatus, TextContent, ImageContent, DataContent
+from prompt_toolkit.utils import Event
+from pydantic import Field
 class Message(Event):
     id: str = Field(default_factory=lambda: "msg_" + str(uuid4()))
     """message unique id"""
@@ -266,6 +287,7 @@ class Message(Event):
 **Base Request**:
 
 ```{code-cell}
+from pydantic import BaseModel
 class BaseRequest(BaseModel):
     input: List[Message]
     stream: bool = True
@@ -274,6 +296,8 @@ class BaseRequest(BaseModel):
 **Agent Request**:
 
 ```{code-cell}
+from typing import Dict, Any, Optional, List, Union
+from pydantic import Field
 class AgentRequest(BaseRequest):
     model: Optional[str] = None
     top_p: Optional[float] = None
@@ -294,6 +318,7 @@ class AgentRequest(BaseRequest):
 **Base Response**:
 
 ```{code-cell}
+from pydantic import Field
 class BaseResponse(Event):
     sequence_number: str = None
     id: str = Field(default_factory=lambda: "response_" + str(uuid4()))
@@ -315,6 +340,7 @@ class AgentResponse(BaseResponse):
 ### 7. Error Model
 
 ```{code-cell}
+from pydantic import BaseModel
 class Error(BaseModel):
     code: str
     message: str

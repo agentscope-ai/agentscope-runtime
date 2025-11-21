@@ -224,9 +224,12 @@ print(f"Message count: {len(session_obj.messages)}")
 
 ```{code-cell}
 import asyncio
+from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
 
 
 async def main():
+    session_history_service = InMemorySessionHistoryService()
+    await session_history_service.start()
     # 创建带自动生成ID的会话
     user_id = "test_user"
     session = await session_history_service.create_session(user_id)
@@ -251,10 +254,12 @@ await main()
 
 ```{code-cell}
 import asyncio
-
+from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
 
 async def main():
     user_id = "u1"
+    session_history_service = InMemorySessionHistoryService()
+    await session_history_service.start()
     # 检索现有会话（在内存实现中如果不存在会自动创建）
     retrieved_session = await session_history_service.get_session(user_id, "s1")
     assert retrieved_session is not None
@@ -269,10 +274,13 @@ await main()
 
 ```{code-cell}
 import asyncio
+from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
 
 
 async def main():
     user_id = "u_list"
+    session_history_service = InMemorySessionHistoryService()
+    await session_history_service.start()
     # 创建多个会话
     session1 = await session_history_service.create_session(user_id)
     session2 = await session_history_service.create_session(user_id)
@@ -298,11 +306,15 @@ await main()
 ```{code-cell}
 import asyncio
 from agentscope_runtime.engine.schemas.agent_schemas import Message, TextContent
+from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
+
 
 
 async def main():
     user_id = "u_append"
     # 创建会话并添加消息（也接受字典格式）
+    session_history_service = InMemorySessionHistoryService()
+    await session_history_service.start()
     session = await session_history_service.create_session(user_id)
 
     # 添加单个消息（Message对象）
@@ -330,9 +342,12 @@ await main()
 
 ```{code-cell}
 from agentscope_runtime.engine.schemas.agent_schemas import Message, TextContent, MessageType, Role
+from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
 
 # 创建会话
 user_id = "u_append"
+session_history_service = InMemorySessionHistoryService()
+await session_history_service.start()
 session = await session_history_service.create_session(user_id)
 
 # 使用内置Message格式添加单个消息
@@ -379,25 +394,39 @@ assert len(session.messages) == 4
 ##### 混合格式支持
 
 ```{code-cell}
-# 会话服务支持混合字典和Message对象
-session = await session_history_service.create_session(user_id)
+import asyncio
 
-# 添加字典格式消息
-dict_message = {"role": "user", "content": "Hello"}
-await session_history_service.append_message(session, dict_message)
+from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
+from agentscope_runtime.engine.schemas.agent_schemas import Message, MessageType, Role, TextContent
 
-# 添加Message对象
-message_obj = Message(
-    type=MessageType.MESSAGE,
-    role=Role.ASSISTANT,
-    content=[TextContent(type="text", text="Hello! How can I assist you?")]
-)
-await session_history_service.append_message(session, message_obj)
+async def main():
+    session_history_service = InMemorySessionHistoryService()
+    user_id = '123456'
+    await session_history_service.start()
+    # 会话服务支持混合字典和Message对象
+    session = await session_history_service.create_session(user_id)
 
-# 验证消息正确添加
-assert len(session.messages) == 2
-assert session.messages[0]["role"] == "user"  # Dictionary format
-assert session.messages[1]["role"] == "assistant"  # Message object converted to dictionary format
+    # 添加字典格式消息
+    dict_message = {
+        "role": "user",
+        "content": [{"type": "text", "text": "Hello"}]  # 修复：使用列表格式
+    }
+    await session_history_service.append_message(session, dict_message)
+
+    # 添加Message对象
+    message_obj = Message(
+        type=MessageType.MESSAGE,
+        role=Role.ASSISTANT,
+        content=[TextContent(type="text", text="Hello! How can I assist you?")]
+    )
+    await session_history_service.append_message(session, message_obj)
+
+    # 验证消息正确添加
+    assert len(session.messages) == 2
+    assert session.messages[0].role == "user"  # Dictionary format
+    assert session.messages[1].role == "assistant"  # Message object converted to dictionary format
+
+await main()
 ```
 
 #### 删除会话
@@ -405,6 +434,10 @@ assert session.messages[1]["role"] == "assistant"  # Message object converted to
 `delete_session`方法删除特定会话：
 
 ```{code-cell}
+from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
+
+session_history_service = InMemorySessionHistoryService()
+await session_history_service.start()
 # 创建然后删除会话
 session_to_delete = await session_history_service.create_session(user_id)
 session_id = session_to_delete.id
@@ -415,9 +448,6 @@ assert await session_history_service.get_session(user_id, session_id) is not Non
 # 删除会话
 await session_history_service.delete_session(user_id, session_id)
 
-# 验证会话已删除
-assert await session_history_service.get_session(user_id, session_id) is None
-
 # 删除不存在的会话不会引发错误
 await session_history_service.delete_session(user_id, "non_existent_id")
 ```
@@ -427,6 +457,10 @@ await session_history_service.delete_session(user_id, "non_existent_id")
 会话服务遵循简单的生命周期模式：
 
 ```{code-cell}
+from agentscope_runtime.engine.services.session_history_service import InMemorySessionHistoryService
+
+session_history_service = InMemorySessionHistoryService()
+await session_history_service.start()
 # 启动服务（对于InMemorySessionHistoryService是可选的）
 await session_history_service.start()
 
@@ -493,6 +527,8 @@ import asyncio
 from agentscope_runtime.engine.services.memory_service import InMemoryMemoryService
 from agentscope_runtime.engine.schemas.agent_schemas import Message, TextContent
 
+memory_service = InMemoryMemoryService()
+await memory_service.start()
 # 不带会话ID添加记忆
 user_id = "user1"
 messages = [

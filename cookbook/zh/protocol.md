@@ -87,6 +87,10 @@ class RunStatus:
 **函数参数**：
 
 ```{code-cell}
+from typing import Dict, Any, Optional, List
+
+from pydantic import BaseModel
+
 class FunctionParameters(BaseModel):
     type: str  # 必须为 "object"
     properties: Dict[str, Any]
@@ -96,6 +100,10 @@ class FunctionParameters(BaseModel):
 **函数工具**：
 
 ```{code-cell}
+from typing import Dict, Any, Optional, List, Union
+
+from pydantic import BaseModel
+
 class FunctionTool(BaseModel):
     name: str
     description: str
@@ -105,6 +113,10 @@ class FunctionTool(BaseModel):
 **工具**：
 
 ```{code-cell}
+from typing import Dict, Any, Optional, List, Union
+
+from pydantic import BaseModel
+
 class Tool(BaseModel):
     type: Optional[str] = None  # 目前仅支持 "function"
     function: Optional[FunctionTool] = None
@@ -112,6 +124,10 @@ class Tool(BaseModel):
 
 **函数调用**：
 ```{code-cell}
+from typing import Dict, Any, Optional, List, Union
+
+from pydantic import BaseModel
+
 class FunctionCall(BaseModel):
     """
     助手提示消息工具调用函数的模型类
@@ -133,6 +149,10 @@ class FunctionCall(BaseModel):
 
 **函数调用输出**：
 ```{code-cell}
+from typing import Dict, Any, Optional, List, Union
+
+from pydantic import BaseModel
+
 class FunctionCallOutput(BaseModel):
     """
     助手提示消息工具调用函数的模型类
@@ -150,6 +170,9 @@ class FunctionCallOutput(BaseModel):
 **基础内容模型**：
 
 ```{code-cell}
+from typing import Dict, Any, Optional, List, Union
+from prompt_toolkit.utils import Event
+
 class Content(Event):
     type: str
     """内容部分的类型"""
@@ -170,6 +193,8 @@ class Content(Event):
 **专用内容类型**：
 
 ```{code-cell}
+from typing import Dict, Any, Optional, List, Union
+from agentscope_runtime.engine.schemas.agent_schemas import ContentType
 class ImageContent(Content):
     type: str = ContentType.IMAGE
     """内容部分的类型"""
@@ -233,6 +258,12 @@ class RefusalContent(Content):
 ### 4. 消息模型
 
 ```{code-cell}
+from typing import Optional, Union, List
+from uuid import uuid4
+
+from agentscope_runtime.engine.schemas.agent_schemas import RunStatus, TextContent, ImageContent, DataContent
+from prompt_toolkit.utils import Event
+from pydantic import Field
 class Message(Event):
     id: str = Field(default_factory=lambda: "msg_" + str(uuid4()))
     """消息唯一ID"""
@@ -300,6 +331,7 @@ class AgentRequest(BaseRequest):
 **基础响应**：
 
 ```{code-cell}
+from prompt_toolkit.utils import Event
 class BaseResponse(Event):
     sequence_number: str = None
     id: str = Field(default_factory=lambda: "response_" + str(uuid4()))

@@ -144,7 +144,27 @@ print("✅ 智能体初始化成功")
 用agent和 `AgentApp` 创建一个 Agent API 服务器：
 
 ```{code-cell}
+import os
+
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
+from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+from agentscope.tool import Toolkit
+toolkit = Toolkit()
+
+agent = AgentScopeAgent(
+    name="Friday",
+    model=DashScopeChatModel(
+        "qwen-max",
+        api_key=os.getenv("DASHSCOPE_API_KEY"),
+    ),
+    agent_config={
+        "sys_prompt": "You're a helpful assistant named Friday.",
+        "toolkit": toolkit,
+    },
+    agent_builder=ReActAgent,
+)
 
 app = AgentApp(agent=agent, endpoint_path="/process")
 
@@ -153,7 +173,34 @@ app.run(host="0.0.0.0", port=8090)
 
 运行后，服务器会启动并监听：`http://localhost:8090/process`
 
-### 步骤6：发送一个请求
+### Step 6: 环境管理器（Environment Manager）
+
+`EnvironmentManager` 装配 `SandboxService` 并暴露环境操作：`connect_sandbox`、`release_sandbox`。
+
+```{code-cell}
+from agentscope_runtime.engine.services.environment_manager import (
+    EnvironmentManager,
+    create_environment_manager,
+)
+
+async def setup_basic_environment():
+    env_manager = create_environment_manager()
+    env_manager.configure(
+        enable_logging=True,
+        log_level="INFO",
+        max_concurrent_agents=10,
+    )
+
+    return env_manager
+
+# 应用启动时初始化环境
+env_manager = setup_basic_environment()
+
+```
+
+更多细节见 {doc}`environment_manager`。
+
+### 步骤7：发送一个请求
 
 你可以使用 `curl` 向 API 发送 JSON 输入：
 
@@ -175,7 +222,7 @@ curl -N \
 
 你将会看到以 **Server-Sent Events (SSE)** 格式流式输出的响应。
 
-### 步骤7: 使用 Deployer 部署代理
+### 步骤8: 使用 Deployer 部署代理
 
 AgentScope Runtime 提供了一个功能强大的部署系统，可以将你的智能体部署到远程或本地容器中。这里我们以 `LocalDeployManager` 为例：
 
