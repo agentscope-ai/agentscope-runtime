@@ -81,7 +81,7 @@ export KUBECONFIG="/path/to/your/kubeconfig"
 
 All deployment methods share the same agent and endpoint configuration. Let's first create our base agent and define the endpoints:
 
-```{code-cell}
+```python
 # agent_app.py - Shared configuration for all deployment methods
 import os
 import time
@@ -162,7 +162,7 @@ print("✅ Agent and endpoints configured successfully")
 
 Using the agent and endpoints defined in the {ref}`Common Agent Setup<common-agent-setup>` section:
 
-```{code-cell}
+```python
 # daemon_deploy.py
 import asyncio
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
@@ -174,11 +174,8 @@ async def main():
     await app.deploy(LocalDeployManager())
 
 if __name__ == "__main__":
-    try:
-        loop = asyncio.get_running_loop()
-        await main()
-    except RuntimeError:
-        asyncio.run(main())
+    asyncio.run(main())
+    input("Press Enter to stop the server...")
 ```
 
 **Key Points**:
@@ -241,7 +238,7 @@ print(response)
 
 Using the agent and endpoints defined in the {ref}`Common Agent Setup<common-agent-setup>` section:
 
-```{code-cell}
+```python
 # detached_deploy.py
 import asyncio
 import os
@@ -291,7 +288,8 @@ curl -X POST {deployment_info['url']}/admin/shutdown  # To stop
 """)
     return deployment_info
 
-await main()
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 **Key Points**:
@@ -315,9 +313,9 @@ from agentscope_runtime.engine.deployers.utils.deployment_modes import Deploymen
 from agentscope_runtime.engine.deployers.utils.service_utils import ServicesConfig
 from agentscope_runtime.engine import Runner
 
-# Deploy with production services
+# Production services configuration
 production_services = ServicesConfig(
-    # 使用Redis实现持久化
+    # Use Redis for persistence
     memory_provider="redis",
     session_history_provider="redis",
     redis_config={
@@ -382,7 +380,7 @@ docker login  your-registry
 
 Using the agent and endpoints defined in the {ref}`Common Agent Setup<common-agent-setup>` section:
 
-```{code-cell}
+```python
 # k8s_deploy.py
 import asyncio
 import os
@@ -476,7 +474,7 @@ export OSS_ACCESS_KEY_SECRET="your-oss-access-key-secret"
 
 Using the agent and endpoints defined in the {ref}`Common Agent Setup<common-agent-setup>` section:
 
-```{code-cell}
+```python
 # modelstudio_deploy.py
 import asyncio
 import os

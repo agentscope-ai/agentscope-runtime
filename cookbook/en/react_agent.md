@@ -143,7 +143,7 @@ print("✅ Agent initialized successfully")
 
 Create an agent API server using agent and `AgentApp`:
 
-```{code-cell}
+```python
 import os
 
 from agentscope.agent import ReActAgent

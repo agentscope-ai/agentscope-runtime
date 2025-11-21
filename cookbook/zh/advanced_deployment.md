@@ -75,7 +75,7 @@ export KUBECONFIG="/path/to/your/kubeconfig"
 
 所有部署方法共享相同的智能体和端点配置。让我们首先创建基础智能体并定义端点：
 
-```{code-cell}
+```python
 # agent_app.py - 所有部署方法的共享配置
 import os
 import time
@@ -156,7 +156,7 @@ print("✅ 智能体和端点配置成功")
 
 使用 {ref}`通用智能体配置<zh-common-agent-setup>` 部分定义的智能体和端点：
 
-```{code-cell}
+```python
 # daemon_deploy.py
 import asyncio
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
@@ -168,11 +168,8 @@ async def main():
     await app.deploy(LocalDeployManager())
 
 if __name__ == "__main__":
-    try:
-        loop = asyncio.get_running_loop()
-        await main()
-    except RuntimeError:
-        asyncio.run(main())
+    asyncio.run(main())
+    input("按 Enter 键停止服务器...")
 ```
 
 **关键点**：
@@ -235,7 +232,7 @@ print(response)
 
 使用 {ref}`通用智能体配置<zh-common-agent-setup>` 部分定义的智能体和端点：
 
-```{code-cell}
+```python
 # detached_deploy.py
 import asyncio
 import os
@@ -378,7 +375,7 @@ docker login your-registry
 
 使用 {ref}`通用智能体配置<zh-common-agent-setup>` 部分定义的智能体和端点：
 
-```{code-cell}
+```python
 # k8s_deploy.py
 import asyncio
 import os
@@ -473,7 +470,7 @@ export OSS_ACCESS_KEY_SECRET="your-oss-access-key-secret"
 
 使用 {ref}`通用智能体配置<zh-common-agent-setup>` 部分定义的智能体和端点：
 
-```{code-cell}
+```python
 # modelstudio_deploy.py
 import asyncio
 import os
