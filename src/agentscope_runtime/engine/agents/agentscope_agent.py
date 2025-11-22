@@ -93,9 +93,31 @@ class AgentScopeContextAdapter:
         return None
 
     async def adapt_new_message(self):
-        return message_to_agentscope_msg(
+        # Convert Runtime messages to AgentScope Msg objects
+        agentscope_msgs = message_to_agentscope_msg(
             self.context.current_messages,
         )
+
+        # 🔧 Inject request.metadata into Msg.metadata
+        # This allows agents to access metadata like session_id, attachments, etc.
+        if hasattr(self.context.request, 'metadata') and self.context.request.metadata:
+            if isinstance(agentscope_msgs, list):
+                # If multiple messages, inject metadata into the last one (user's message)
+                if agentscope_msgs:
+                    last_msg = agentscope_msgs[-1]
+                    if last_msg.metadata is None:
+                        last_msg.metadata = {}
+                    # Merge request metadata into msg metadata
+                    if isinstance(last_msg.metadata, dict):
+                        last_msg.metadata.update(self.context.request.metadata)
+            else:
+                # Single message
+                if agentscope_msgs.metadata is None:
+                    agentscope_msgs.metadata = {}
+                if isinstance(agentscope_msgs.metadata, dict):
+                    agentscope_msgs.metadata.update(self.context.request.metadata)
+
+        return agentscope_msgs
 
     async def adapt_model(self):
         model = self.attr["model"]
