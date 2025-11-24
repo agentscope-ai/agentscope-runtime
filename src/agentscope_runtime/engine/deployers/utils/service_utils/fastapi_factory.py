@@ -113,6 +113,7 @@ class FastAPIAppFactory:
         broker_url: Optional[str] = None,
         backend_url: Optional[str] = None,
         enable_embedded_worker: bool = False,
+        app_kwargs: Optional[Dict] = None,
         **kwargs: Any,
     ) -> FastAPI:
         """Create a FastAPI application with unified architecture.
@@ -133,6 +134,7 @@ class FastAPIAppFactory:
             broker_url: Celery broker URL
             backend_url: Celery backend URL
             enable_embedded_worker: Whether to run embedded Celery worker
+            app_kwargs: Additional keyword arguments for the FastAPI app
             **kwargs: Additional keyword arguments
 
         Returns:
@@ -180,7 +182,7 @@ class FastAPIAppFactory:
                 )
 
         # Create FastAPI app
-        app = _WrappedFastAPI(lifespan=lifespan)
+        app = _WrappedFastAPI(lifespan=lifespan, **(app_kwargs or {}))
 
         # Store configuration in app state
         app.state.deployment_mode = mode
