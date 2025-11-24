@@ -340,7 +340,6 @@ agent = AgentScopeAgent(
 a2a_protocol = A2AFastAPIDefaultAdapter(agent=agent)
 runner = Runner(agent=agent)
 
-# 使用生产服务进行部署
 deployment_info = runner.deploy(
     deploy_manager=deploy_manager,
     endpoint_path="/process",

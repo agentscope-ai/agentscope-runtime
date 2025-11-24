@@ -119,7 +119,7 @@ from agentscope_runtime.engine.tracing import Tracer, TraceType
 from agentscope_runtime.engine.tracing.base import BaseLogHandler
 from agentscope_runtime.engine.tracing.local_logging_handler import LocalLogHandler
 
-# 创建带有多个处理程序的追踪器
+# Create tracer with multiple handlers
 tracer = Tracer(handlers=[
     BaseLogHandler(),
     LocalLogHandler(enable_console=True)
@@ -132,9 +132,8 @@ with tracer.event(
     payload={"query": "test query", "source": "database"},
 ) as event:
     tracer.log(message="Search started")
-    # 模拟搜索操作
+    # imulate search operation
     search_results = ["result1", "result2", "result3"]
-    #对于需要额外记录信息的情况
     event.on_log(message="", payload={"results": search_results, "count": len(search_results)})
 ```
 

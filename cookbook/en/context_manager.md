@@ -402,17 +402,17 @@ async def main():
     session_history_service = InMemorySessionHistoryService()
     user_id = '123456'
     await session_history_service.start()
-    # 会话服务支持混合字典和Message对象
+    # Session service supports mixing dictionary and Message objects
     session = await session_history_service.create_session(user_id)
 
-    # 添加字典格式消息
+    # Add dictionary format message
     dict_message = {
         "role": "user",
-        "content": [{"type": "text", "text": "Hello"}]  # 修复：使用列表格式
+        "content": [{"type": "text", "text": "Hello"}]
     }
     await session_history_service.append_message(session, dict_message)
 
-    # 添加Message对象
+    # Add Message object
     message_obj = Message(
         type=MessageType.MESSAGE,
         role=Role.ASSISTANT,
@@ -420,7 +420,6 @@ async def main():
     )
     await session_history_service.append_message(session, message_obj)
 
-    # 验证消息正确添加
     assert len(session.messages) == 2
     assert session.messages[0].role == "user"  # Dictionary format
     assert session.messages[1].role == "assistant"  # Message object converted to dictionary format
