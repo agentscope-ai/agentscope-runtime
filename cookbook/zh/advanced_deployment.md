@@ -284,7 +284,7 @@ curl -X POST {deployment_info['url']}/admin/shutdown  # 停止服务
     return deployment_info
 
 if __name__ == "__main__":
-    await main()
+    asyncio.run(main())
 ```
 
 **关键点**：
