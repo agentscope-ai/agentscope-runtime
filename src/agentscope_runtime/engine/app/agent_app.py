@@ -94,7 +94,7 @@ class AgentApp(BaseApp):
                 else:
                     self.after_finish(app, **getattr(self, "kwargs", {}))
 
-        kwargs = {
+        self._app_kwargs = {
             "title": "Agent Service",
             "version": __version__,
             "description": "Production-ready Agent Service API",
@@ -105,7 +105,6 @@ class AgentApp(BaseApp):
         super().__init__(
             broker_url=broker_url,
             backend_url=backend_url,
-            **kwargs,
         )
 
         # Store custom endpoints and tasks for deployment

@@ -10,6 +10,12 @@ import tempfile
 import pytest
 from fastapi import FastAPI
 
+from agentscope_runtime.engine.deployers.adapter.a2a import (
+    A2AFastAPIDefaultAdapter,
+)
+from agentscope_runtime.engine.deployers.adapter.responses import (
+    ResponseAPIDefaultAdapter,
+)
 from agentscope_runtime.engine.deployers.utils.deployment_modes import (
     DeploymentMode,
 )
@@ -60,6 +66,23 @@ class TestFastAPIAppFactory:
         protocol_adapters = [mocker.Mock(), mocker.Mock()]
         app = FastAPIAppFactory.create_app(protocol_adapters=protocol_adapters)
         assert app.state.protocol_adapters == protocol_adapters
+
+    def test_openapi_includes_a2a_components(self):
+        """Ensure OpenAPI schema includes A2A components when configured."""
+        adapter = A2AFastAPIDefaultAdapter(
+            agent_name="test-agent",
+            agent_description="Test agent description",
+        )
+        app = FastAPIAppFactory.create_app(protocol_adapters=[adapter])
+        schemas = app.openapi().get("components", {}).get("schemas", {})
+        assert "A2ARequest" in schemas
+
+    def test_openapi_includes_response_api_components(self):
+        """Ensure OpenAPI schema includes Response API components."""
+        adapter = ResponseAPIDefaultAdapter()
+        app = FastAPIAppFactory.create_app(protocol_adapters=[adapter])
+        schemas = app.openapi().get("components", {}).get("schemas", {})
+        assert "ResponseAPI" in schemas
 
     def test_create_app_deployment_modes(self):
         """Test FastAPI app creation with different deployment modes."""

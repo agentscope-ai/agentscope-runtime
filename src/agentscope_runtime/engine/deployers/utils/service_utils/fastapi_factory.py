@@ -9,16 +9,78 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Optional, Callable, Type, Any, List, Dict
 
+from a2a.types import A2ARequest
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
 
+from agentscope_runtime.engine.schemas.response_api import ResponseAPI
+
 from .service_config import ServicesConfig, DEFAULT_SERVICES_CONFIG
 from ..deployment_modes import DeploymentMode
 from ...adapter.protocol_adapter import ProtocolAdapter
+from ...adapter.a2a.a2a_protocol_adapter import A2AFastAPIDefaultAdapter
+from ...adapter.responses.response_api_protocol_adapter import (
+    ResponseAPIDefaultAdapter,
+)
 
 logger = logging.getLogger(__name__)
+
+
+class _WrappedFastAPI(FastAPI):
+    """FastAPI subclass that can dynamically augment OpenAPI schemas."""
+
+    _REF_TEMPLATE = "#/components/schemas/{model}"
+
+    def openapi(self) -> dict[str, Any]:
+        """Generate OpenAPI schema with protocol-specific components."""
+        openapi_schema = super().openapi()
+        protocol_adapters = (
+            getattr(self.state, "protocol_adapters", None) or []
+        )
+
+        if protocol_adapters:
+            if any(
+                isinstance(adapter, A2AFastAPIDefaultAdapter)
+                for adapter in protocol_adapters
+            ):
+                self._inject_schema(
+                    openapi_schema,
+                    "A2ARequest",
+                    A2ARequest.model_json_schema(
+                        ref_template=self._REF_TEMPLATE,
+                    ),
+                )
+            if any(
+                isinstance(adapter, ResponseAPIDefaultAdapter)
+                for adapter in protocol_adapters
+            ):
+                self._inject_schema(
+                    openapi_schema,
+                    "ResponseAPI",
+                    ResponseAPI.model_json_schema(
+                        ref_template=self._REF_TEMPLATE,
+                    ),
+                )
+
+        return openapi_schema
+
+    @staticmethod
+    def _inject_schema(
+        openapi_schema: dict[str, Any],
+        schema_name: str,
+        schema_definition: dict[str, Any],
+    ) -> None:
+        """Insert schema definition (and nested defs) into OpenAPI."""
+        components = openapi_schema.setdefault("components", {})
+        component_schemas = components.setdefault("schemas", {})
+
+        defs = schema_definition.pop("$defs", {})
+        for def_name, def_schema in defs.items():
+            component_schemas.setdefault(def_name, def_schema)
+
+        component_schemas[schema_name] = schema_definition
 
 
 async def error_stream(e):
@@ -118,7 +180,7 @@ class FastAPIAppFactory:
                 )
 
         # Create FastAPI app
-        app = FastAPI(lifespan=lifespan)
+        app = _WrappedFastAPI(lifespan=lifespan)
 
         # Store configuration in app state
         app.state.deployment_mode = mode
@@ -375,9 +437,9 @@ class FastAPIAppFactory:
                 "mode": mode.value,
                 "endpoints": {
                     "process": endpoint_path,
-                    "stream": f"{endpoint_path}/stream"
-                    if stream_enabled
-                    else None,
+                    "stream": (
+                        f"{endpoint_path}/stream" if stream_enabled else None
+                    ),
                     "health": "/health",
                 },
             }
@@ -785,6 +847,8 @@ class FastAPIAppFactory:
         """Register a single custom endpoint with proper async/sync
         handling."""
 
+        tags = ["custom"]
+
         for method in methods:
             # Check if this is a task endpoint
             if endpoint_config and endpoint_config.get("task_type"):
@@ -794,7 +858,12 @@ class FastAPIAppFactory:
                     handler,
                     endpoint_config.get("queue", "default"),
                 )
-                app.add_api_route(path, task_handler, methods=[method])
+                app.add_api_route(
+                    path,
+                    task_handler,
+                    methods=[method],
+                    tags=tags,
+                )
 
                 # Add task status endpoint - align with BaseApp pattern
                 status_path = f"{path}/{{task_id}}"
@@ -805,6 +874,7 @@ class FastAPIAppFactory:
                     status_path,
                     status_handler,
                     methods=["GET"],
+                    tags=tags,
                 )
 
             else:
@@ -825,6 +895,7 @@ class FastAPIAppFactory:
                         path,
                         wrapped_handler,
                         methods=[method],
+                        tags=tags,
                     )
                 elif inspect.isgeneratorfunction(handler):
                     # Sync generator -> Streaming response with parameter
@@ -839,13 +910,19 @@ class FastAPIAppFactory:
                         path,
                         wrapped_handler,
                         methods=[method],
+                        tags=tags,
                     )
                 else:
                     # Sync function -> Async wrapper with parameter parsing
                     wrapped_handler = (
                         FastAPIAppFactory._create_parameter_wrapper(handler)
                     )
-                    app.add_api_route(path, wrapped_handler, methods=[method])
+                    app.add_api_route(
+                        path,
+                        wrapped_handler,
+                        methods=[method],
+                        tags=tags,
+                    )
 
     @staticmethod
     def _create_task_handler(app: FastAPI, task_func: Callable, queue: str):
