@@ -11,34 +11,21 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from .app_runner_utils import ensure_runner_from_app
-from .package import package, ProjectInfo
+from .package import package, ProjectInfo, DEFAULT_ENTRYPOINT_FILE
 from ..adapter.protocol_adapter import ProtocolAdapter
 from .package import DEPLOYMENT_ZIP
 
 PROJECT_SUBDIR = ".agentscope_runtime"
 CONFIG_FILENAME = "deploy_config.json"
 META_FILENAME = "bundle_meta.json"
-TEMPLATE_PATH = (
-    Path(__file__).resolve().parent / "templates" / "detached_main.py.j2"
-)
 
 
 def build_detached_app(
     *,
     app=None,
     runner=None,
-    endpoint_path: str = "/process",
     requirements: Optional[Union[str, List[str]]] = None,
     extra_packages: Optional[List[str]] = None,
-    protocol_adapters: Optional[list[ProtocolAdapter]] = None,
-    custom_endpoints: Optional[List[Dict]] = None,
-    broker_url: Optional[str] = None,
-    backend_url: Optional[str] = None,
-    enable_embedded_worker: bool = False,
-    request_model: Optional[Type] = None,
-    response_type: str = "sse",
-    stream: bool = True,
-    force_rebuild_deps: bool = False,
     output_dir: Optional[str] = None,
     dockerfile_path: Optional[str] = None,
 ) -> Tuple[str, ProjectInfo]:
@@ -68,7 +55,6 @@ def build_detached_app(
         app=app,
         runner=None if app is not None else runner,
         output_dir=str(build_root),
-        force_rebuild_deps=force_rebuild_deps,
         extra_packages=extra_packages,
     )
 
@@ -94,40 +80,7 @@ def build_detached_app(
     if not project_info.entrypoint_file:
         raise RuntimeError("Unable to determine entrypoint file for project")
 
-    needs_launcher = app is None
-    if needs_launcher:
-        config = {
-            "entrypoint_file": project_info.entrypoint_file,
-            "entrypoint_handler": project_info.entrypoint_handler or "runner",
-            "endpoint_path": endpoint_path,
-            "response_type": response_type,
-            "stream": stream,
-            "request_model": _serialize_request_model(request_model),
-            "protocol_adapters": _serialize_protocol_adapters(
-                protocol_adapters,
-            ),
-            "custom_endpoints": _serialize_custom_endpoints(custom_endpoints),
-            "broker_url": broker_url,
-            "backend_url": backend_url,
-            "enable_embedded_worker": enable_embedded_worker,
-        }
-
-        config_path = project_root / CONFIG_FILENAME
-        config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
-
-        main_path = project_root / "main.py"
-        main_path.write_text(
-            _render_launcher_template(
-                project_subdir=PROJECT_SUBDIR,
-                config_filename=CONFIG_FILENAME,
-            ),
-            encoding="utf-8",
-        )
-        entry_script = "main.py"
-    else:
-        entry_script = (
-            Path(PROJECT_SUBDIR) / Path(project_info.entrypoint_file)
-        ).as_posix()
+    entry_script = project_info.entrypoint_file
 
     if dockerfile_path:
         dest = project_root / "Dockerfile"
@@ -228,17 +181,6 @@ def _serialize_custom_endpoints(
     return serialized
 
 
-def _render_launcher_template(
-    project_subdir: str,
-    config_filename: str,
-) -> str:
-    template = TEMPLATE_PATH.read_text(encoding="utf-8")
-    return template.replace("__PROJECT_SUBDIR__", project_subdir).replace(
-        "__CONFIG_FILENAME__",
-        config_filename,
-    )
-
-
 def _write_bundle_meta(bundle_dir: Path, entry_script: str) -> None:
     meta_path = bundle_dir / META_FILENAME
     meta = {"entry_script": entry_script}
@@ -255,4 +197,4 @@ def get_bundle_entry_script(bundle_dir: Union[str, Path]) -> str:
                 return script
         except json.JSONDecodeError:
             pass
-    return "main.py"
+    return DEFAULT_ENTRYPOINT_FILE

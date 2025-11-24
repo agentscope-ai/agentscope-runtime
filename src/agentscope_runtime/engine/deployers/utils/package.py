@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Tuple, Union
 
 from pydantic import BaseModel
+from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
 try:
     import tomllib  # Python 3.11+
@@ -35,20 +36,57 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 DEPLOYMENT_ZIP = "deployment.zip"
+TEMPLATES_DIR = Path(__file__).parent / "templates"
+DEFAULT_ENTRYPOINT_FILE = "runtime_main.py"
+
+
+def _get_template_env() -> Environment:
+    """
+    Get Jinja2 environment for template rendering.
+
+    Returns:
+        Jinja2 Environment configured with the templates directory
+    """
+    return Environment(
+        loader=FileSystemLoader(str(TEMPLATES_DIR)),
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
+
 
 # ===== Data Models =====
+
+
+class RuntimeParameter(BaseModel):
+    """Configuration for a runtime parameter."""
+
+    name: str  # Parameter name (e.g., "log_level")
+    type: str  # Parameter type: "str", "int", "bool", "float"
+    default: Union[str, int, bool, float, None]  # Default value
+    help: Optional[str] = None  # Help text for CLI argument
+    cli_name: Optional[str] = None  # CLI argument name (defaults to --{name})
+
+
+class EntrypointInfo(BaseModel):
+    """Information about the generated entrypoint."""
+
+    module_name: str  # Module to import from (e.g., "app_deploy")
+    object_name: str  # Object name to import (e.g., "agent_app")
+    object_type: str  # "app" or "runner"
+    default_host: str = "0.0.0.0"  # Default host for the service
+    default_port: int = 8090  # Default port for the service
+    extra_parameters: List[
+        RuntimeParameter
+    ] = []  # Additional runtime parameters
 
 
 class ProjectInfo(BaseModel):
     """Information about a project to be packaged."""
 
     project_dir: str  # Absolute path to project root directory
-    entrypoint_file: Optional[
-        str
-    ] = None  # Relative path to entrypoint file (if applicable)
-    entrypoint_handler: Optional[
-        str
-    ] = None  # Handler name (e.g., "app" or "runner")
+    entrypoint_file: str  # Relative path to entrypoint file (if applicable)
+    entrypoint_handler: str  # Handler name (actual object name, e.g., "agent_app")
+    handler_type: Optional[str] = None  # Handler type ("app" or "runner")
     is_directory_entrypoint: bool = False  # True if packaging entire directory
 
 
@@ -72,14 +110,14 @@ def project_dir_extractor(
     Extract project directory information from app or runner object.
 
     This function inspects the call stack to find where the app or runner
-    was defined and extracts the project root directory.
+    was defined and extracts the project root directory and object name.
 
     Args:
         app: AgentApp instance (optional)
         runner: Runner instance (optional)
 
     Returns:
-        ProjectInfo with project directory and entrypoint information
+        ProjectInfo with project directory, entrypoint file, and handler name
 
     Raises:
         ValueError: If neither app nor runner is provided or project dir cannot be determined
@@ -95,6 +133,7 @@ def project_dir_extractor(
     caller_frame = frame.f_back if frame else None
 
     project_file = None
+    object_name = None  # Store the actual object name
 
     # Try to find the file where the object was created
     while caller_frame:
@@ -116,10 +155,11 @@ def project_dir_extractor(
 
             # Look for the object (by identity) in locals and globals
             for var_name, var_value in list(frame_locals.items()) + list(
-                frame_globals.items()
+                frame_globals.items(),
             ):
                 if var_value is target_obj:
                     project_file = frame_filename
+                    object_name = var_name  # Capture the actual object name!
                     break
 
             if project_file:
@@ -142,11 +182,15 @@ def project_dir_extractor(
     logger.info(
         f"Extracted project dir from {target_type}: {project_dir}",
     )
+    logger.info(
+        f"Detected {target_type} object name: {object_name}",
+    )
 
     return ProjectInfo(
         project_dir=project_dir,
         entrypoint_file=entrypoint_file,
-        entrypoint_handler=target_type,  # "app" or "runner"
+        entrypoint_handler=object_name,  # Actual object name (e.g., "agent_app")
+        handler_type=target_type,  # Type: "app" or "runner"
         is_directory_entrypoint=False,
     )
 
@@ -186,7 +230,8 @@ def parse_entrypoint(spec: str) -> ProjectInfo:
         return ProjectInfo(
             project_dir=project_dir,
             entrypoint_file=entrypoint_file,
-            entrypoint_handler="app",  # Default handler
+            entrypoint_handler="app",  # Default handler name
+            handler_type="app",  # Default type
             is_directory_entrypoint=True,
         )
 
@@ -208,7 +253,8 @@ def parse_entrypoint(spec: str) -> ProjectInfo:
     return ProjectInfo(
         project_dir=project_dir,
         entrypoint_file=entrypoint_file,
-        entrypoint_handler=handler,
+        entrypoint_handler=handler,  # Handler name
+        handler_type="app",  # Assume app type for entrypoint-style
         is_directory_entrypoint=False,
     )
 
@@ -328,9 +374,116 @@ def _calculate_dependency_hash(
     return hasher.hexdigest()
 
 
+# ===== Main Template Generation =====
+def _generate_app_main_template(entrypoint_info: EntrypointInfo) -> str:
+    """
+    Generate main.py template for AgentApp using Jinja2.
+
+    Args:
+        entrypoint_info: Information about the entrypoint
+
+    Returns:
+        String content for main.py
+
+    Raises:
+        RuntimeError: If template file not found
+    """
+    try:
+        env = _get_template_env()
+        template = env.get_template("app_main.py.j2")
+
+        # Convert RuntimeParameter objects to dicts for Jinja2
+        extra_params_dicts = [
+            param.model_dump() for param in entrypoint_info.extra_parameters
+        ]
+
+        return template.render(
+            module_name=entrypoint_info.module_name,
+            object_name=entrypoint_info.object_name,
+            default_host=entrypoint_info.default_host,
+            default_port=entrypoint_info.default_port,
+            extra_parameters=extra_params_dicts,
+        )
+    except TemplateNotFound:
+        raise RuntimeError(
+            f"Template 'app_main.py.j2' not found in {TEMPLATES_DIR}",
+        )
+
+
+def _generate_runner_main_template(entrypoint_info: EntrypointInfo) -> str:
+    """
+    Generate main.py template for Runner using Jinja2.
+
+    The template wraps the Runner in an AgentApp so it can be deployed as a service.
+
+    Args:
+        entrypoint_info: Information about the entrypoint
+
+    Returns:
+        String content for main.py
+
+    Raises:
+        RuntimeError: If template file not found
+    """
+    try:
+        env = _get_template_env()
+        template = env.get_template("runner_main.py.j2")
+
+        # Use app_name from entrypoint_info or default to object_name
+        app_name = (
+            entrypoint_info.app_name or f"{entrypoint_info.object_name}_app"
+        )
+        app_description = (
+            entrypoint_info.app_description
+            or f"Service for {entrypoint_info.object_name}"
+        )
+
+        # Convert RuntimeParameter objects to dicts for Jinja2
+        extra_params_dicts = [
+            param.model_dump() for param in entrypoint_info.extra_parameters
+        ]
+
+        return template.render(
+            module_name=entrypoint_info.module_name,
+            object_name=entrypoint_info.object_name,
+            app_name=app_name,
+            app_description=app_description,
+            default_host=entrypoint_info.default_host,
+            default_port=entrypoint_info.default_port,
+            extra_parameters=extra_params_dicts,
+        )
+    except TemplateNotFound:
+        raise RuntimeError(
+            f"Template 'runner_main.py.j2' not found in {TEMPLATES_DIR}",
+        )
+
+
+def generate_main_template(entrypoint_info: EntrypointInfo) -> str:
+    """
+    Generate main.py template based on object type using Jinja2 templates.
+
+    Args:
+        entrypoint_info: Information about the entrypoint
+
+    Returns:
+        String content for main.py
+
+    Raises:
+        ValueError: If object_type is not supported
+        RuntimeError: If template rendering fails
+    """
+    if entrypoint_info.object_type == "app":
+        return _generate_app_main_template(entrypoint_info)
+    elif entrypoint_info.object_type == "runner":
+        return _generate_runner_main_template(entrypoint_info)
+    else:
+        raise ValueError(
+            f"Unsupported object type: {entrypoint_info.object_type}. "
+            f"Expected 'app' or 'runner'",
+        )
+
+
 # ===== Package Caching =====
-
-
 class PackageCache:
     """Cache manager for dependency packages."""
 
@@ -553,6 +706,9 @@ def package(
     runner=None,
     entrypoint: Optional[str] = None,
     output_dir: Optional[str] = None,
+    default_host: str = "0.0.0.0",
+    default_port: int = 8090,
+    extra_parameters: Optional[List[RuntimeParameter]] = None,
     **kwargs,
 ) -> Tuple[str, ProjectInfo]:
     """
@@ -562,11 +718,20 @@ def package(
     1. Object-style: package(app=my_app) or package(runner=my_runner)
     2. Entrypoint-style: package(entrypoint="app.py") or package(entrypoint="project_dir/")
 
+    For object-style deployment, this function will:
+    1. Extract the project directory containing the app/runner
+    2. Generate a new main.py that imports and runs the app/runner
+    3. Package the project with the generated main.py as entrypoint
+
     Args:
         app: AgentApp instance (for object-style deployment)
         runner: Runner instance (for object-style deployment)
         entrypoint: Entrypoint specification (for CLI-style deployment)
         output_dir: Output directory (creates temp dir if None)
+        default_host: Default host for the service (default: "0.0.0.0")
+        default_port: Default port for the service (default: 8090)
+        extra_parameters: Additional runtime parameters to expose via CLI
+        **kwargs: Additional keyword arguments (ignored)
 
     Returns:
         Tuple of (package_path, project_info)
@@ -576,12 +741,32 @@ def package(
     Raises:
         ValueError: If neither app/runner nor entrypoint is provided
         RuntimeError: If packaging fails
+
+    Example:
+        >>> # Package with extra parameters
+        >>> extra_params = [
+        ...     RuntimeParameter(
+        ...         name="log_level",
+        ...         type="str",
+        ...         default="info",
+        ...         help="Logging level"
+        ...     ),
+        ...     RuntimeParameter(
+        ...         name="workers",
+        ...         type="int",
+        ...         default=4,
+        ...         help="Number of worker threads"
+        ...     ),
+        ... ]
+        >>> package(app=my_app, extra_parameters=extra_params)
     """
-    # Determine project info
+    # Determine project info and target object
+    target_obj = None
     if entrypoint:
         project_info = parse_entrypoint(entrypoint)
     elif app or runner:
         project_info = project_dir_extractor(app=app, runner=runner)
+        target_obj = app if app is not None else runner
     else:
         raise ValueError(
             "Either app/runner or entrypoint must be provided",
@@ -597,12 +782,70 @@ def package(
 
     output_path = Path(output_dir)
 
+    # For object-style deployment, generate main.py template
+    generated_main = False
+    if target_obj is not None:
+        entrypoint_info = EntrypointInfo(
+            module_name=project_info.entrypoint_file.split(".")[0],
+            object_type=project_info.handler_type,
+            object_name=project_info.entrypoint_handler,
+            default_host=default_host,
+            default_port=default_port,
+            extra_parameters=extra_parameters or [],
+        )
+
+        # Generate main.py content
+        main_content = generate_main_template(entrypoint_info)
+
+        # Create temporary directory for modified source
+        temp_source_dir = output_path / "temp_source"
+        temp_source_dir.mkdir(exist_ok=True)
+
+        # Copy original project to temp directory
+        shutil.copytree(
+            project_info.project_dir,
+            temp_source_dir,
+            dirs_exist_ok=True,
+            ignore=shutil.ignore_patterns(*_get_default_ignore_patterns()),
+        )
+
+        # Write generated main.py to temp directory
+        main_py_path = temp_source_dir / DEFAULT_ENTRYPOINT_FILE
+        with open(main_py_path, "w", encoding="utf-8") as f:
+            f.write(main_content)
+
+        # Update project_info to use generated main.py
+        project_info.entrypoint_file = DEFAULT_ENTRYPOINT_FILE
+        project_info.entrypoint_handler = (
+            entrypoint_info.object_name
+        )  # Use object name
+        project_info.handler_type = entrypoint_info.object_type  # Use type
+        project_info.project_dir = str(temp_source_dir)
+
+        generated_main = True
+        logger.info(
+            f"Generated main.py template for {entrypoint_info.object_type}: {entrypoint_info.object_name}",
+        )
+        logger.info(
+            f"Service will start on {default_host}:{default_port} by default",
+        )
+        if extra_parameters:
+            logger.info(
+                f"Added {len(extra_parameters)} extra runtime parameters",
+            )
+
     # Package code
     deployment_zip = output_path / DEPLOYMENT_ZIP
     package_code(
         Path(project_info.project_dir),
         deployment_zip,
     )
+
+    # Clean up temporary directory if created
+    if generated_main:
+        temp_source_dir = Path(project_info.project_dir)
+        if temp_source_dir.exists() and temp_source_dir.parent == output_path:
+            shutil.rmtree(temp_source_dir)
 
     # Report size
     size_mb = deployment_zip.stat().st_size / (1024 * 1024)

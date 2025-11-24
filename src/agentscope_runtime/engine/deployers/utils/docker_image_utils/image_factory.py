@@ -15,8 +15,7 @@ from .docker_image_builder import (
 )
 from .dockerfile_generator import DockerfileGenerator, DockerfileConfig
 from ..detached_app import build_detached_app
-from ..package import project_dir_extractor
-from .... import AgentApp
+from ..package import project_dir_extractor, DEFAULT_ENTRYPOINT_FILE
 from .....engine.runner import Runner
 
 logger = logging.getLogger(__name__)
@@ -111,7 +110,7 @@ class ImageFactory:
 
     def _build_image(
         self,
-        app: AgentApp,
+        app,
         runner: Runner,
         config: ImageConfig,
     ) -> str:
@@ -161,11 +160,8 @@ class ImageFactory:
             project_dir, _ = build_detached_app(
                 app=app,
                 runner=runner,
-                endpoint_path=config.endpoint_path,
                 requirements=config.requirements,
                 extra_packages=config.extra_packages,
-                protocol_adapters=config.protocol_adapters,
-                custom_endpoints=config.custom_endpoints,
                 output_dir=config.build_context_dir,
                 dockerfile_path=dockerfile_path,
             )

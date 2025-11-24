@@ -376,8 +376,6 @@ class FastAPIAppFactory:
         # Mode-specific endpoints
         if mode == DeploymentMode.DETACHED_PROCESS:
             FastAPIAppFactory._add_process_control_endpoints(app)
-        elif mode == DeploymentMode.STANDALONE:
-            FastAPIAppFactory._add_configuration_endpoints(app)
 
     @staticmethod
     def _add_process_control_endpoints(app: FastAPI):
@@ -412,37 +410,6 @@ class FastAPIAppFactory:
                 "cpu_percent": process.cpu_percent(),
                 "uptime": process.create_time(),
             }
-
-    @staticmethod
-    def _add_configuration_endpoints(app: FastAPI):
-        """Add configuration endpoints for standalone mode."""
-
-        @app.get("/config")
-        async def get_configuration():
-            """Get current service configuration."""
-            return {
-                "deployment_mode": app.state.deployment_mode.value,
-                "stream_enabled": app.state.stream_enabled,
-            }
-
-        @app.get("/config/services")
-        async def get_services_status():
-            """Get services status."""
-            status = {}
-            if hasattr(app.state, "runner") and app.state.runner:
-                runner = app.state.runner
-                if hasattr(runner, "context_manager"):
-                    cm = runner.context_manager
-                    status["memory_service"] = (
-                        "connected" if cm.memory_service else "disconnected"
-                    )
-                    status["session_history_service"] = (
-                        "connected"
-                        if cm.session_history_service
-                        else "disconnected"
-                    )
-
-            return {"services": status}
 
     @staticmethod
     async def _handle_request(

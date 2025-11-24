@@ -21,7 +21,6 @@ from .utils.service_utils import (
     FastAPIAppFactory,
     ProcessManager,
 )
-from ..app.agent_app import AgentApp
 
 
 class LocalDeployManager(DeployManager):
@@ -313,27 +312,11 @@ class LocalDeployManager(DeployManager):
         enable_embedded_worker: bool = False,
         **kwargs,
     ) -> str:
-        """Create detached project using the shared bundle builder."""
-        force_rebuild = kwargs.pop("force_rebuild_deps", False)
-        response_type = kwargs.get("response_type", "sse")
-        stream_enabled = bool(kwargs.get("stream", True))
-        request_model = kwargs.get("request_model")
-
         project_dir, _ = build_detached_app(
             app=app,
             runner=runner,
-            endpoint_path=endpoint_path,
             requirements=requirements,
             extra_packages=extra_packages,
-            protocol_adapters=protocol_adapters,
-            custom_endpoints=custom_endpoints,
-            broker_url=broker_url,
-            backend_url=backend_url,
-            enable_embedded_worker=enable_embedded_worker,
-            request_model=request_model,
-            response_type=response_type,
-            stream=stream_enabled,
-            force_rebuild_deps=force_rebuild,
         )
 
         return project_dir

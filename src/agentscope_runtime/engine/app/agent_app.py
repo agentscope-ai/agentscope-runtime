@@ -186,7 +186,7 @@ class AgentApp(BaseApp):
             logger.info(
                 "[AgentApp] Starting AgentApp with FastAPIAppFactory...",
             )
-
+            mode = kwargs.pop("mode", DeploymentMode.DAEMON_THREAD)
             # Create FastAPI application using the factory
             fastapi_app = FastAPIAppFactory.create_app(
                 runner=self._runner,
@@ -196,7 +196,7 @@ class AgentApp(BaseApp):
                 stream=self.stream,
                 before_start=self.before_start,
                 after_finish=self.after_finish,
-                mode=DeploymentMode.DAEMON_THREAD,
+                mode=mode,
                 protocol_adapters=self.protocol_adapters,
                 custom_endpoints=self.custom_endpoints,
                 broker_url=self.broker_url,
