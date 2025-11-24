@@ -106,7 +106,7 @@ sandbox_service = SandboxService(bearer_token="your_api_key")
 sandboxes = sandbox_service.connect(
     session_id="session1",
     user_id="user1",
-    env_types=[SandboxType.AGENTBAY.value]
+    types=[SandboxType.AGENTBAY.value]
 )
 ```
 

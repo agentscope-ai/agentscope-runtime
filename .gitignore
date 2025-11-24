@@ -1,8 +1,6 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-frontend/node_modules
-**/package-lock.json
 /.pnp
 .pnp.js
 node_modules/

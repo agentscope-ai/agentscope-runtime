@@ -13,9 +13,11 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
     Role,
     TextContent,
 )
-from agentscope_runtime.engine.services.tablestore_memory_service import (
-    SearchStrategy,
+from agentscope_runtime.engine.services.memory import (
     TablestoreMemoryService,
+)
+from agentscope_runtime.engine.services.memory.tablestore_memory_service import (  # noqa: E501
+    SearchStrategy,
 )
 from agentscope_runtime.engine.services.utils.tablestore_service_utils import (
     create_tablestore_client,

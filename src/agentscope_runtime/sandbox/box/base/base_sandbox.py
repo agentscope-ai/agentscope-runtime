@@ -33,7 +33,19 @@ class BaseSandbox(Sandbox):
         )
 
     def run_ipython_cell(self, code: str):
+        """
+        Run an IPython cell.
+
+        Args:
+            code (str): IPython code to execute.
+        """
         return self.call_tool("run_ipython_cell", {"code": code})
 
     def run_shell_command(self, command: str):
+        """
+        Run a shell command.
+
+        Args:
+            command (str): Shell command to execute.
+        """
         return self.call_tool("run_shell_command", {"command": command})

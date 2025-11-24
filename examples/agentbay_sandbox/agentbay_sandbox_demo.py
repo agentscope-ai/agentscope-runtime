@@ -15,10 +15,7 @@ from agentscope_runtime.sandbox.enums import SandboxType
 from agentscope_runtime.sandbox.box.agentbay.agentbay_sandbox import (
     AgentbaySandbox,
 )
-from agentscope_runtime.engine.services.sandbox_service import SandboxService
-from agentscope_runtime.engine.services.environment_manager import (
-    create_environment_manager,
-)
+from agentscope_runtime.engine.services.sandbox import SandboxService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -139,17 +136,14 @@ async def test_agentbay_sandbox_service():
             return False
 
         # Initialize sandbox service
-        sandbox_service = SandboxService(bearer_token=api_key)
 
         # Create environment manager context
-        async with create_environment_manager(
-            sandbox_service=sandbox_service,
-        ) as env_manager:
+        async with SandboxService(bearer_token=api_key) as service:
             # Connect AgentBay sandbox
-            sandboxes = env_manager.connect_sandbox(
+            sandboxes = service.connect(
                 session_id="demo_service_session",
                 user_id="demo_user",
-                env_types=[SandboxType.AGENTBAY.value],
+                sandbox_types=[SandboxType.AGENTBAY],
             )
 
             if not sandboxes:

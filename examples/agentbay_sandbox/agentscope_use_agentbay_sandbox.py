@@ -17,10 +17,7 @@ from agentscope.formatter import DashScopeChatFormatter
 from agentscope.tool import Toolkit, ToolResponse
 from agentscope.message import Msg
 from agentscope_runtime.sandbox.enums import SandboxType
-from agentscope_runtime.engine.services.sandbox_service import SandboxService
-from agentscope_runtime.engine.services.environment_manager import (
-    create_environment_manager,
-)
+from agentscope_runtime.engine.services.sandbox import SandboxService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -68,7 +65,6 @@ class SimpleAgentBayDemo:
         self.dashscope_api_key = dashscope_api_key
         self.agentbay_api_key = agentbay_api_key
         self.sandbox_service = None
-        self.environment_manager = None
         self.sandbox = None
         self.agent = None
 
@@ -83,17 +79,13 @@ class SimpleAgentBayDemo:
             self.sandbox_service = SandboxService(
                 bearer_token=self.agentbay_api_key,
             )
-
-            # Create environment manager
-            self.environment_manager = await create_environment_manager(
-                sandbox_service=self.sandbox_service,
-            ).__aenter__()
+            await self.sandbox_service.start()
 
             # Connect to AgentBay sandbox
-            sandboxes = self.environment_manager.connect_sandbox(
+            sandboxes = self.sandbox_service.connect(
                 session_id="demo_session",
                 user_id="demo_user",
-                env_types=[SandboxType.AGENTBAY.value],
+                sandbox_types=[SandboxType.AGENTBAY],
             )
 
             if not sandboxes:
@@ -346,13 +338,13 @@ class SimpleAgentBayDemo:
     async def cleanup(self):
         """Cleanup resources."""
         try:
-            if self.environment_manager:
+            if self.sandbox_service:
                 logger.info("Cleaning up environment...")
-                self.environment_manager.release_sandbox(
+                self.sandbox_service.release(
                     "demo_session",
                     "demo_user",
                 )
-                await self.environment_manager.__aexit__(None, None, None)
+                await self.sandbox_service.stop()
                 logger.info("Environment cleaned up successfully")
         except Exception as e:
             logger.error(f"Error during cleanup: {e}")

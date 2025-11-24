@@ -17,8 +17,8 @@ from tablestore_for_agent_memory.base.base_memory_store import (
     Session as TablestoreSession,
 )
 
-from ...schemas.agent_schemas import ContentType, MessageType
-from ..session_history_service import Message, Session
+from ...schemas.agent_schemas import ContentType, MessageType, Message
+from ...schemas.session import Session
 
 
 def create_tablestore_client(

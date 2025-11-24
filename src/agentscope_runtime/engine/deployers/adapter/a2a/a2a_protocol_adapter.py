@@ -8,13 +8,13 @@ from a2a.types import AgentCard, AgentCapabilities, AgentSkill
 
 from .a2a_agent_adapter import A2AExecutor
 from ..protocol_adapter import ProtocolAdapter
-from ....agents import Agent
 
 
 class A2AFastAPIDefaultAdapter(ProtocolAdapter):
-    def __init__(self, agent, **kwargs):
+    def __init__(self, agent_name, agent_description, **kwargs):
         super().__init__(**kwargs)
-        self._agent = agent
+        self._agent_name = agent_name
+        self._agent_description = agent_description
 
     def add_endpoint(self, app, func: Callable, **kwargs):
         request_handler = DefaultRequestHandler(
@@ -22,7 +22,10 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             task_store=InMemoryTaskStore(),
         )
 
-        agent_card = self.get_agent_card(self._agent)
+        agent_card = self.get_agent_card(
+            agent_name=self._agent_name,
+            agent_description=self._agent_description,
+        )
 
         server = A2AFastAPIApplication(
             agent_card=agent_card,
@@ -31,7 +34,11 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
 
         server.add_routes_to_app(app)
 
-    def get_agent_card(self, agent: Agent) -> AgentCard:
+    def get_agent_card(
+        self,
+        agent_name: str,
+        agent_description: str,
+    ) -> AgentCard:
         capabilities = AgentCapabilities(
             streaming=False,
             push_notifications=False,
@@ -51,8 +58,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         return AgentCard(
             capabilities=capabilities,
             skills=[skill],
-            name=agent.name,
-            description=agent.description,
+            name=agent_name,
+            description=agent_description,
             default_input_modes=["text"],
             default_output_modes=["text"],
             url="http://127.0.0.1:8090/",

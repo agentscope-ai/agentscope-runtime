@@ -15,7 +15,6 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
 
 from .service_config import ServicesConfig, DEFAULT_SERVICES_CONFIG
-from .service_factory import ServiceFactory
 from ..deployment_modes import DeploymentMode
 from ...adapter.protocol_adapter import ProtocolAdapter
 
@@ -167,43 +166,15 @@ class FastAPIAppFactory:
         **kwargs,
     ):
         """Handle application startup."""
-        # Mode-specific initialization
-        if mode == DeploymentMode.DAEMON_THREAD:
-            # Use external runner
-            app.state.runner = external_runner
-            app.state.runner_managed_externally = True
-
-            # in case no runner
-            if app.state.runner:
-                app_service_instances = (
-                    app.state.runner._context_manager.service_instances
-                )
-                for instance in app_service_instances.values():
-                    # If any instance was not ready, reset runner.
-                    if not await instance.health():
-                        app.state.runner_managed_externally = False
-                        break
-
-                if not app.state.runner_managed_externally:
-                    try:
-                        # aexit any possible running instances before set up
-                        # runner
-                        await app.state.runner.__aexit__(None, None, None)
-                        await app.state.runner.__aenter__()
-                    except Exception as e:
-                        logger.error(
-                            f"Warning: Error during runner setup: {e}",
-                        )
-
-        elif mode in [
-            DeploymentMode.DETACHED_PROCESS,
-            DeploymentMode.STANDALONE,
-        ]:
-            # Create internal runner
-            app.state.runner = await FastAPIAppFactory._create_internal_runner(
-                services_config,
+        try:
+            # aexit any possible running instances before set up
+            # runner
+            await app.state.runner.__aexit__(None, None, None)
+            await app.state.runner.__aenter__()
+        except Exception as e:
+            logger.error(
+                f"Warning: Error during runner setup: {e}",
             )
-            app.state.runner_managed_externally = False
 
         # Call custom startup callback
         if before_start:
@@ -291,39 +262,23 @@ class FastAPIAppFactory:
                 after_finish(app, **kwargs)
 
         # Cleanup internal runner
-        if (
-            hasattr(app.state, "runner")
-            and not app.state.runner_managed_externally
-        ):
-            runner = app.state.runner
-            if runner:
-                try:
-                    # Clean up runner
-                    await runner.__aexit__(None, None, None)
-                except Exception as e:
-                    logger.error(f"Warning: Error during runner cleanup: {e}")
+        runner = app.state.runner
+        if runner:
+            try:
+                # Clean up runner
+                await runner.__aexit__(None, None, None)
+            except Exception as e:
+                logger.error(f"Warning: Error during runner cleanup: {e}")
 
     @staticmethod
     async def _create_internal_runner(services_config: ServicesConfig):
         """Create internal runner with configured services."""
         from agentscope_runtime.engine import Runner
-        from agentscope_runtime.engine.services.context_manager import (
-            ContextManager,
-        )
-
-        # Create services
-        services = ServiceFactory.create_services_from_config(services_config)
-
-        # Create context manager
-        context_manager = ContextManager(
-            session_history_service=services["session_history"],
-            memory_service=services["memory"],
-        )
 
         # Create runner (agent will be set later)
         runner = Runner(
-            agent=None,  # Will be set by the specific deployment
-            context_manager=context_manager,
+            # agent=None,  # Will be set by the specific deployment
+            # context_manager=context_manager,
         )
 
         # Initialize runner

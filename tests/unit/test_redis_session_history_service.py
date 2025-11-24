@@ -4,10 +4,10 @@ import pytest
 import pytest_asyncio
 import fakeredis.aioredis
 from agentscope_runtime.engine.schemas.agent_schemas import TextContent
-from agentscope_runtime.engine.services.session_history_service import (
+from agentscope_runtime.engine.schemas.session import (
     Session,
 )
-from agentscope_runtime.engine.services.redis_session_history_service import (
+from agentscope_runtime.engine.services.session_history import (
     RedisSessionHistoryService,
 )
 

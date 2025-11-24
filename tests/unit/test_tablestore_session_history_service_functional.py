@@ -11,10 +11,10 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
     MessageType,
     TextContent,
 )
-from agentscope_runtime.engine.services.session_history_service import Session
+from agentscope_runtime.engine.schemas.session import Session
 
 # fmt: off
-from agentscope_runtime.engine.services.tablestore_session_history_service \
+from agentscope_runtime.engine.services.session_history \
     import (
         TablestoreSessionHistoryService,
     )

@@ -3,9 +3,9 @@
 import pytest
 
 from agentscope_runtime.engine.schemas.agent_schemas import TextContent
-from agentscope_runtime.engine.services.session_history_service import (
+from agentscope_runtime.engine.schemas.session import Session
+from agentscope_runtime.engine.services.session_history import (
     InMemorySessionHistoryService,
-    Session,
 )
 
 
