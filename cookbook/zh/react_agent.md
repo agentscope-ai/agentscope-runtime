@@ -194,7 +194,12 @@ async def setup_basic_environment():
     return env_manager
 
 # 应用启动时初始化环境
-env_manager = setup_basic_environment()
+async def main():
+    env_manager = await setup_basic_environment()
+    return env_manager
+
+if __name__ == "__main__":
+    env_manager = asyncio.run(main())
 
 ```
 
