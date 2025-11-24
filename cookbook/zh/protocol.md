@@ -303,6 +303,10 @@ class Message(Event):
 **基础请求**：
 
 ```{code-cell}
+from typing import List
+from pydantic import BaseModel, ConfigDict
+from agentscope_runtime.engine.schemas.agent_schemas import Message
+
 class BaseRequest(BaseModel):
     input: List[Message]
     stream: bool = True

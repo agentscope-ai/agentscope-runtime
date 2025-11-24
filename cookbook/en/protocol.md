@@ -287,7 +287,9 @@ class Message(Event):
 **Base Request**:
 
 ```{code-cell}
-from pydantic import BaseModel
+from typing import List
+from pydantic import BaseModel, ConfigDict
+from agentscope_runtime.engine.schemas.agent_schemas import Message
 class BaseRequest(BaseModel):
     input: List[Message]
     stream: bool = True
@@ -297,7 +299,7 @@ class BaseRequest(BaseModel):
 
 ```{code-cell}
 from typing import Dict, Any, Optional, List, Union
-from pydantic import Field
+
 class AgentRequest(BaseRequest):
     model: Optional[str] = None
     top_p: Optional[float] = None
@@ -318,7 +320,7 @@ class AgentRequest(BaseRequest):
 **Base Response**:
 
 ```{code-cell}
-from pydantic import Field
+
 class BaseResponse(Event):
     sequence_number: str = None
     id: str = Field(default_factory=lambda: "response_" + str(uuid4()))
