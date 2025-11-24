@@ -19,8 +19,6 @@ import uvicorn
 from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
 from agentscope_runtime.engine.deployers.utils.service_utils import (
     FastAPIAppFactory,
-    ServicesConfig,
-    ServiceConfig,
 )
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from typing import Callable, Optional, Dict, List, Any, Union
@@ -39,45 +37,6 @@ from agent_file import {{endpoint.function_name}}
 {% endfor %}
 {% endif %}
 
-
-
-def load_services_config() -> ServicesConfig:
-    """Load services configuration from environment variables or config file."""
-    config_file = os.getenv('AGENTSCOPE_SERVICES_CONFIG')
-
-    if config_file and os.path.exists(config_file):
-        # Load from JSON config file
-        import json
-        with open(config_file, 'r', encoding='utf-8') as f:
-            config_data = json.load(f)
-            return ServicesConfig.model_validate(config_data)
-    else:
-        # Load from environment variables
-        memory_provider = os.getenv('MEMORY_PROVIDER', 'in_memory')
-        session_provider = os.getenv('SESSION_HISTORY_PROVIDER', 'in_memory')
-
-        memory_config = {}
-        session_config = {}
-
-        # Add Redis configuration if using Redis
-        if memory_provider == 'redis':
-            memory_config = {
-                'host': os.getenv('REDIS_HOST', 'localhost'),
-                'port': int(os.getenv('REDIS_PORT', 6379)),
-                'db': int(os.getenv('REDIS_MEMORY_DB', 0))
-            }
-
-        if session_provider == 'redis':
-            session_config = {
-                'host': os.getenv('REDIS_HOST', 'localhost'),
-                'port': int(os.getenv('REDIS_PORT', 6379)),
-                'db': int(os.getenv('REDIS_SESSION_DB', 1))
-            }
-
-        return ServicesConfig(
-            memory=ServiceConfig(provider=memory_provider, config=memory_config),
-            session_history=ServiceConfig(provider=session_provider, config=session_config)
-        )
 
 
 def load_celery_config():
@@ -162,9 +121,6 @@ async def after_finish(app, **kwargs):
     pass
 
 
-# Load services configuration
-services_config = load_services_config()
-
 # Load Celery configuration
 celery_config = load_celery_config()
 
@@ -181,7 +137,6 @@ else:
 app = FastAPIAppFactory.create_app(
     endpoint_path="{{endpoint_path}}",
     mode=deployment_mode,
-    services_config=services_config,
     before_start=before_start,
     after_finish=after_finish,
     stream=True,

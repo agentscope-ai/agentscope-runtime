@@ -207,6 +207,37 @@ class TestKubernetesDeployManager:
         "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
     )
     @pytest.mark.asyncio
+    async def test_deploy_with_app_only(self, mock_k8s_client, mocker):
+        """Test deployment succeeds when only an app is provided."""
+        mock_app = mocker.Mock()
+        mock_app._runner = mocker.Mock()
+        mock_app.endpoint_path = "/custom"
+        mock_app.stream = False
+
+        mock_client_instance = mocker.Mock()
+        mock_client_instance.create_deployment.return_value = (
+            "service-id",
+            [8090],
+            "10.0.0.1",
+        )
+        mock_k8s_client.return_value = mock_client_instance
+
+        deployer = KubernetesDeployManager()
+
+        with patch.object(
+            deployer.image_factory,
+            "build_runner_image",
+            return_value="app-image:latest",
+        ) as mock_build:
+            result = await deployer.deploy(app=mock_app, replicas=1)
+
+        assert "url" in result
+        mock_build.assert_called_once()
+
+    @patch(
+        "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
+    )
+    @pytest.mark.asyncio
     async def test_deploy_with_protocol_adapters(
         self,
         mock_k8s_client,

@@ -227,13 +227,14 @@ class AgentApp(BaseApp):
         self._build_runner()
 
         deploy_kwargs = {
-            **kwargs,
+            "app": self,
             "custom_endpoints": self.custom_endpoints,
             "runner": self._runner,
             "endpoint_path": self.endpoint_path,
             "stream": self.stream,
             "protocol_adapters": self.protocol_adapters,
         }
+        deploy_kwargs.update(kwargs)
         return await deployer.deploy(**deploy_kwargs)
 
     def endpoint(self, path: str, methods: Optional[List[str]] = None):

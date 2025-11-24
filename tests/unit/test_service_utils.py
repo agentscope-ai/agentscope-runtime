@@ -17,7 +17,6 @@ from agentscope_runtime.engine.deployers.utils.service_utils import (
     FastAPIAppFactory,
     FastAPITemplateManager,
     ProcessManager,
-    ServicesConfig,
 )
 
 
@@ -48,12 +47,6 @@ class TestFastAPIAppFactory:
         assert app.state.endpoint_path == "/api/process"
         assert app.state.response_type == "json"
         assert app.state.stream_enabled is False
-
-    def test_create_app_with_services_config(self):
-        """Test FastAPI app creation with services config."""
-        services_config = ServicesConfig()
-        app = FastAPIAppFactory.create_app(services_config=services_config)
-        assert app.state.services_config == services_config
 
     def test_create_app_with_protocol_adapters(self, mocker):
         """Test FastAPI app creation with protocol adapters."""

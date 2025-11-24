@@ -1,0 +1,204 @@
+# -*- coding: utf-8 -*-
+import argparse
+import importlib
+import importlib.util
+import json
+import sys
+from pathlib import Path
+
+import uvicorn
+
+from agentscope_runtime.engine.app.agent_app import AgentApp
+from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
+from agentscope_runtime.engine.deployers.utils.service_utils import (
+    FastAPIAppFactory,
+)
+
+BASE_DIR = Path(__file__).parent
+PROJECT_ROOT = (BASE_DIR / "__PROJECT_SUBDIR__").resolve()
+CONFIG_PATH = BASE_DIR / "__CONFIG_FILENAME__"
+
+
+def load_config():
+    with CONFIG_PATH.open("r", encoding="utf-8") as config_file:
+        return json.load(config_file)
+
+
+def add_project_to_sys_path():
+    project_path = str(PROJECT_ROOT)
+    if project_path not in sys.path:
+        sys.path.insert(0, project_path)
+
+
+def load_module(entrypoint_file: str):
+    module_path = PROJECT_ROOT / entrypoint_file
+    if not module_path.exists():
+        raise RuntimeError(f"Entrypoint file not found: {module_path}")
+
+    spec = importlib.util.spec_from_file_location(
+        "agentscope_detached_entrypoint",
+        module_path,
+    )
+    module = importlib.util.module_from_spec(spec)
+    if spec.loader is None:
+        raise RuntimeError("Unable to load entrypoint module")
+    spec.loader.exec_module(module)
+    return module
+
+
+def resolve_request_model(spec):
+    if not spec:
+        return None
+    module = importlib.import_module(spec["module"])
+    return getattr(module, spec["class"], None)
+
+
+def build_protocol_adapters(runner, specs):
+    adapters = []
+    agent = getattr(runner, "_agent", None)
+    for adapter_spec in specs or []:
+        module = importlib.import_module(adapter_spec["module"])
+        adapter_cls = getattr(module, adapter_spec["class"])
+        try:
+            adapter = adapter_cls(agent=agent)
+        except TypeError:
+            adapter = adapter_cls()
+        adapters.append(adapter)
+    return adapters
+
+
+def build_custom_endpoints(specs):
+    endpoints = []
+    for endpoint in specs or []:
+        handler = None
+        module_name = endpoint.get("module")
+        func_name = endpoint.get("function_name")
+        if module_name and func_name:
+            module = importlib.import_module(module_name)
+            handler = getattr(module, func_name, None)
+        endpoints.append(
+            {
+                "path": endpoint.get("path"),
+                "methods": endpoint.get("methods"),
+                "handler": handler,
+            },
+        )
+    return endpoints
+
+
+def resolve_runtime_context(config):
+    add_project_to_sys_path()
+    module = load_module(config["entrypoint_file"])
+    handler_name = config.get("entrypoint_handler") or "app"
+    target = getattr(module, handler_name, None)
+    if target is None:
+        raise RuntimeError(
+            f"Entrypoint handler '{handler_name}' not found in module",
+        )
+
+    runtime_config = dict(config)
+    if isinstance(target, AgentApp):
+        target._build_runner()
+        runner = target._runner
+        runtime_config["endpoint_path"] = getattr(
+            target,
+            "endpoint_path",
+            runtime_config.get("endpoint_path", "/process"),
+        )
+        runtime_config["response_type"] = getattr(
+            target,
+            "response_type",
+            runtime_config.get("response_type", "sse"),
+        )
+        runtime_config["stream"] = getattr(
+            target,
+            "stream",
+            runtime_config.get("stream", True),
+        )
+        runtime_config["protocol_adapters"] = getattr(
+            target,
+            "protocol_adapters",
+            None,
+        )
+        runtime_config["custom_endpoints"] = getattr(
+            target,
+            "custom_endpoints",
+            None,
+        )
+        runtime_config["broker_url"] = getattr(
+            target,
+            "broker_url",
+            runtime_config.get("broker_url"),
+        )
+        runtime_config["backend_url"] = getattr(
+            target,
+            "backend_url",
+            runtime_config.get("backend_url"),
+        )
+        runtime_config["enable_embedded_worker"] = getattr(
+            target,
+            "enable_embedded_worker",
+            runtime_config.get("enable_embedded_worker", False),
+        )
+    else:
+        runner = target
+        runtime_config["protocol_adapters"] = build_protocol_adapters(
+            runner,
+            runtime_config.get("protocol_adapters"),
+        )
+        runtime_config["custom_endpoints"] = build_custom_endpoints(
+            runtime_config.get("custom_endpoints"),
+        )
+
+    return runner, runtime_config
+
+
+def build_fastapi_app(config):
+    runner, runtime_config = resolve_runtime_context(config)
+
+    request_model = resolve_request_model(runtime_config.get("request_model"))
+
+    return FastAPIAppFactory.create_app(
+        runner=runner,
+        endpoint_path=runtime_config.get("endpoint_path", "/process"),
+        request_model=request_model,
+        response_type=runtime_config.get("response_type", "sse"),
+        stream=runtime_config.get("stream", True),
+        mode=DeploymentMode.DETACHED_PROCESS,
+        protocol_adapters=runtime_config.get("protocol_adapters"),
+        custom_endpoints=runtime_config.get("custom_endpoints"),
+        broker_url=runtime_config.get("broker_url"),
+        backend_url=runtime_config.get("backend_url"),
+        enable_embedded_worker=runtime_config.get(
+            "enable_embedded_worker",
+            False,
+        ),
+    )
+
+
+def main():
+    config = load_config()
+    app = build_fastapi_app(config)
+
+    parser = argparse.ArgumentParser(
+        description="AgentScope Runtime Detached Service",
+    )
+    parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        help="Port to bind to",
+    )
+
+    args = parser.parse_args()
+    uvicorn.run(
+        app,
+        host=args.host,
+        port=args.port,
+        log_level="info",
+    )
+
+
+if __name__ == "__main__":
+    main()

@@ -3,6 +3,23 @@
 # pylint:disable=too-many-return-statements, unused-variable
 # pylint:disable=cell-var-from-loop, too-many-branches, too-many-statements
 
+"""
+DEPRECATED: This module is deprecated and will be removed in a future version.
+
+The agent-based packaging approach in this module has been superseded by the
+new project-based packaging system in `package.py`, which better supports
+AgentApp and Runner deployment patterns.
+
+For new code, please use:
+    from agentscope_runtime.engine.deployers.utils.package import package
+
+Migration guide:
+    Old: package_project(agent, config)
+    New: package(app=app) or package(runner=runner) or package(entrypoint="app.py")
+
+See examples/packaging_example.py for usage examples.
+"""
+
 import ast
 import hashlib
 import inspect
@@ -11,6 +28,7 @@ import re
 import shutil
 import tarfile
 import tempfile
+import warnings
 from pathlib import Path
 from typing import List, Optional, Any, Tuple, Dict
 
@@ -25,7 +43,6 @@ except ImportError:
         tomllib = None
 
 from .service_utils.fastapi_templates import FastAPITemplateManager
-from .service_utils.service_config import ServicesConfig
 
 # Default template will be loaded from template file
 
@@ -236,9 +253,6 @@ class PackageConfig(BaseModel):
     output_dir: Optional[str] = None
     endpoint_path: Optional[str] = "/process"
     deployment_mode: Optional[str] = "standalone"  # New: deployment mode
-    services_config: Optional[
-        ServicesConfig
-    ] = None  # New: services configuration
     protocol_adapters: Optional[List[Any]] = None  # New: protocol adapters
     custom_endpoints: Optional[
         List[Dict]
@@ -728,6 +742,10 @@ def package_project(
     """
     Package a project with agent and dependencies into a temporary directory.
 
+    .. deprecated::
+        This function is deprecated and will be removed in a future version.
+        Use :func:`agentscope_runtime.engine.deployers.utils.package.package` instead.
+
     Args:
         agent: The agent object to be packaged
         config: The configuration of the package
@@ -741,6 +759,14 @@ def package_project(
             - bool: True if the directory was updated,
                 False if no update was needed
     """
+    # Issue deprecation warning
+    warnings.warn(
+        "package_project() is deprecated and will be removed in a future version. "
+        "Use package(app=app) or package(runner=runner) instead. "
+        "See examples/packaging_example.py for migration examples.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     # Create temporary directory
     original_temp_dir = temp_dir = None
     if config.output_dir is None:
@@ -1039,14 +1065,6 @@ def package_project(
             )
             for req in all_requirements:
                 f.write(f"{req}\n")
-
-        # Generate services configuration file if specified
-        if config.services_config:
-            config_path = os.path.join(temp_dir, "services_config.json")
-            import json
-
-            with open(config_path, "w", encoding="utf-8") as f:
-                json.dump(config.services_config.model_dump(), f, indent=2)
 
         # If we need to determine if update is needed (existing directory case)
         if needs_update is None and original_temp_dir is not None:

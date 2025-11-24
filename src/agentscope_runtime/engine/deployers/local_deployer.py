@@ -13,13 +13,15 @@ import uvicorn
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .utils.deployment_modes import DeploymentMode
-from .utils.package_project_utils import package_project, PackageConfig
+from .utils.detached_app import (
+    build_detached_app,
+    get_bundle_entry_script,
+)
 from .utils.service_utils import (
     FastAPIAppFactory,
-    FastAPITemplateManager,
     ProcessManager,
-    ServicesConfig,
 )
+from ..app.agent_app import AgentApp
 
 
 class LocalDeployManager(DeployManager):
@@ -63,13 +65,10 @@ class LocalDeployManager(DeployManager):
             shutdown_timeout=shutdown_timeout,
         )
 
-        # Template manager
-        self.template_manager = FastAPITemplateManager()
-
     async def deploy(
         self,
         app=None,
-        runner: Optional[Any] = None,
+        runner=None,
         endpoint_path: str = "/process",
         request_model: Optional[Type] = None,
         response_type: str = "sse",
@@ -77,7 +76,6 @@ class LocalDeployManager(DeployManager):
         before_start: Optional[Callable] = None,
         after_finish: Optional[Callable] = None,
         mode: DeploymentMode = DeploymentMode.DAEMON_THREAD,
-        services_config: Optional[ServicesConfig] = None,
         custom_endpoints: Optional[List[Dict]] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         broker_url: Optional[str] = None,
@@ -88,6 +86,7 @@ class LocalDeployManager(DeployManager):
         """Deploy using unified FastAPI architecture.
 
         Args:
+            app: Agent app to be deployed
             runner: Runner instance (for DAEMON_THREAD mode)
             endpoint_path: API endpoint path
             request_model: Pydantic model for request validation
@@ -96,7 +95,6 @@ class LocalDeployManager(DeployManager):
             before_start: Callback function called before server starts
             after_finish: Callback function called after server finishes
             mode: Deployment mode
-            services_config: Services configuration
             custom_endpoints: Custom endpoints from agent app
             protocol_adapters: Protocol adapters
             broker_url: Celery broker URL for background task processing
@@ -137,7 +135,6 @@ class LocalDeployManager(DeployManager):
                     stream=stream,
                     before_start=before_start,
                     after_finish=after_finish,
-                    services_config=services_config,
                     custom_endpoints=custom_endpoints,
                     protocol_adapters=protocol_adapters,
                     broker_url=broker_url,
@@ -154,7 +151,6 @@ class LocalDeployManager(DeployManager):
                     stream=stream,
                     before_start=before_start,
                     after_finish=after_finish,
-                    services_config=services_config,
                     custom_endpoints=custom_endpoints,
                     protocol_adapters=protocol_adapters,
                     **kwargs,
@@ -227,7 +223,6 @@ class LocalDeployManager(DeployManager):
     async def _deploy_detached_process(
         self,
         runner: Optional[Any] = None,
-        services_config: Optional[ServicesConfig] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         **kwargs,
     ) -> Dict[str, str]:
@@ -236,27 +231,29 @@ class LocalDeployManager(DeployManager):
             "Deploying FastAPI service in detached process mode...",
         )
 
-        # Extract agent from runner
-        if not runner or not runner._agent:
+        if runner is None and self._app is None:
             raise ValueError(
-                "Detached process mode requires a runner with an agent",
+                "Detached process mode requires an app or runner",
             )
 
-        agent = runner._agent
         if "agent" in kwargs:
             kwargs.pop("agent")
+        if "app" in kwargs:
+            kwargs.pop("app")
 
         # Create package project for detached deployment
         project_dir = await self.create_detached_project(
-            agent=agent,
-            services_config=services_config,
+            app=self._app,
+            runner=runner,
             protocol_adapters=protocol_adapters,
             **kwargs,
         )
 
         try:
+            entry_script = get_bundle_entry_script(project_dir)
+            script_path = os.path.join(project_dir, entry_script)
+
             # Start detached process using the packaged project
-            script_path = os.path.join(project_dir, "main.py")
             pid = await self.process_manager.start_detached_process(
                 script_path=script_path,
                 host=self.host,
@@ -304,68 +301,39 @@ class LocalDeployManager(DeployManager):
 
     @staticmethod
     async def create_detached_project(
-        agent: Any,
+        app=None,
+        runner: Optional[Any] = None,
         endpoint_path: str = "/process",
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
-        services_config: Optional[ServicesConfig] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
-        custom_endpoints: Optional[
-            List[Dict]
-        ] = None,  # New parameter for custom endpoints
-        # Celery parameters
+        custom_endpoints: Optional[List[Dict]] = None,
         broker_url: Optional[str] = None,
         backend_url: Optional[str] = None,
         enable_embedded_worker: bool = False,
-        **kwargs,  # pylint: disable=unused-argument
+        **kwargs,
     ) -> str:
-        """Create detached project using package_project method."""
-        if requirements is None:
-            requirements = []
+        """Create detached project using the shared bundle builder."""
+        force_rebuild = kwargs.pop("force_rebuild_deps", False)
+        response_type = kwargs.get("response_type", "sse")
+        stream_enabled = bool(kwargs.get("stream", True))
+        request_model = kwargs.get("request_model")
 
-        if isinstance(requirements, str):
-            requirements = [requirements]
-
-        # Create package configuration for detached deployment
-        package_config = PackageConfig(
+        project_dir, _ = build_detached_app(
+            app=app,
+            runner=runner,
             endpoint_path=endpoint_path,
-            deployment_mode="detached_process",
+            requirements=requirements,
             extra_packages=extra_packages,
             protocol_adapters=protocol_adapters,
-            services_config=services_config,
-            custom_endpoints=custom_endpoints,  # Add custom endpoints
-            # Celery configuration
+            custom_endpoints=custom_endpoints,
             broker_url=broker_url,
             backend_url=backend_url,
             enable_embedded_worker=enable_embedded_worker,
-            requirements=requirements
-            + (
-                ["redis"]
-                if services_config
-                and any(
-                    getattr(config, "provider", None) == "redis"
-                    for config in [
-                        services_config.memory,
-                        services_config.session_history,
-                    ]
-                    if config
-                )
-                else []
-            )
-            + (
-                [
-                    "celery",
-                    "redis",
-                ]  # Add Celery and Redis if Celery is configured
-                if broker_url or backend_url
-                else []
-            ),
-        )
-
-        # Use package_project to create the detached project
-        project_dir, _ = package_project(
-            agent=agent,
-            config=package_config,
+            request_model=request_model,
+            response_type=response_type,
+            stream=stream_enabled,
+            force_rebuild_deps=force_rebuild,
         )
 
         return project_dir

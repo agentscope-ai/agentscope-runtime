@@ -17,15 +17,14 @@ from pydantic import BaseModel, Field
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .local_deployer import LocalDeployManager
-from .utils.service_utils import (
-    ServicesConfig,
-)
+from .utils.detached_app import get_bundle_entry_script
 from .utils.wheel_packager import (
     generate_wrapper_project,
     build_wheel,
     default_deploy_name,
 )
 from ..runner import Runner
+from ..app.agent_app import AgentApp
 
 logger = logging.getLogger(__name__)
 
@@ -705,9 +704,9 @@ class ModelstudioDeployManager(DeployManager):
 
     async def deploy(
         self,
+        app: Optional[AgentApp] = None,
         runner: Optional[Runner] = None,
         endpoint_path: str = "/process",
-        services_config: Optional[Union[ServicesConfig, dict]] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
@@ -740,30 +739,25 @@ class ModelstudioDeployManager(DeployManager):
                     "or external_whl_path must be provided.",
                 )
 
-        # convert services_config to Model body
-        if services_config and isinstance(services_config, dict):
-            services_config = ServicesConfig(**services_config)
-
         try:
             if runner:
-                agent = runner._agent
                 if "agent" in kwargs:
                     kwargs.pop("agent")
 
                 # Create package project for detached deployment
                 project_dir = await LocalDeployManager.create_detached_project(
-                    agent=agent,
+                    runner=runner,
                     endpoint_path=endpoint_path,
-                    services_config=services_config,  # type: ignore[arg-type]
                     protocol_adapters=protocol_adapters,
-                    custom_endpoints=custom_endpoints,  # Pass custom endpoints
+                    custom_endpoints=custom_endpoints,
                     requirements=requirements,
                     extra_packages=extra_packages,
                     **kwargs,
                 )
                 if project_dir:
                     self._generate_env_file(project_dir, environment)
-                cmd = "python main.py"
+                entry_script = get_bundle_entry_script(project_dir)
+                cmd = f"python {entry_script}"
                 deploy_name = deploy_name or default_deploy_name()
 
             if agent_id:

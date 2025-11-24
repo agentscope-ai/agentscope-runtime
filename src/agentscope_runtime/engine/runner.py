@@ -15,9 +15,6 @@ from typing import (
     AsyncIterator,
 )
 
-from agentscope_runtime.engine.deployers.utils.service_utils import (
-    ServicesConfig,
-)
 from .deployers import (
     DeployManager,
     LocalDeployManager,
@@ -126,7 +123,6 @@ class Runner:
         base_image: str = "python:3.9-slim",
         environment: Optional[Dict[str, str]] = None,
         runtime_config: Optional[Dict] = None,
-        services_config: Optional[Union[ServicesConfig, dict]] = None,
         **kwargs,
     ):
         """
@@ -142,7 +138,6 @@ class Runner:
             base_image: Docker base image (for containerized deployment)
             environment: Environment variables dict
             runtime_config: Runtime configuration dict
-            services_config: Services configuration dict
             **kwargs: Additional arguments passed to deployment manager
         Returns:
             URL of the deployed service
@@ -160,7 +155,6 @@ class Runner:
             base_image=base_image,
             environment=environment,
             runtime_config=runtime_config,
-            services_config=services_config,
             **kwargs,
         )
 

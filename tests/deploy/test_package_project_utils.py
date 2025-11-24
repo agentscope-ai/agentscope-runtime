@@ -30,7 +30,7 @@ class TestPackageConfig:
         assert config.output_dir is None
         assert config.endpoint_path == "/process"
         assert config.deployment_mode == "standalone"
-        assert config.services_config is None
+
         assert config.protocol_adapters is None
 
     def test_package_config_creation(self):
@@ -41,7 +41,6 @@ class TestPackageConfig:
             output_dir="/tmp/test",
             endpoint_path="/api/process",
             deployment_mode="detached_process",
-            services_config={"memory": {"provider": "redis"}},
             protocol_adapters=[{"type": "http"}],
         )
         assert config.requirements == ["fastapi", "uvicorn"]
@@ -49,7 +48,6 @@ class TestPackageConfig:
         assert config.output_dir == "/tmp/test"
         assert config.endpoint_path == "/api/process"
         assert config.deployment_mode == "detached_process"
-        assert config.services_config is not None
         assert config.protocol_adapters is not None
 
     def test_package_config_validation(self):
@@ -65,10 +63,8 @@ class TestPackageConfig:
         # Test with None values
         config = PackageConfig(
             requirements=None,
-            services_config=None,
         )
         assert config.requirements is None
-        assert config.services_config is None
 
 
 class TestPackageProject:
@@ -183,46 +179,6 @@ class TestPackageProject:
             assert os.path.exists(
                 os.path.join(others_target, "other_project.py"),
             )
-
-        except Exception as e:
-            if "TemplateNotFound" in str(e):
-                pytest.skip(
-                    "Template file not found - development environment issue",
-                )
-            else:
-                raise
-
-    def test_package_project_with_services_config(self):
-        """Test package_project with services configuration."""
-        from tests.unit.assets.agent_for_test import agent
-
-        config = PackageConfig(
-            requirements=["fastapi"],
-            services_config={
-                "memory": {"provider": "redis", "host": "localhost"},
-            },
-            output_dir=self.temp_dir,
-        )
-
-        try:
-            project_dir, updated = package_project(agent, config)
-
-            # Check that services config file was created
-            config_file = os.path.join(project_dir, "services_config.json")
-            assert os.path.exists(config_file)
-            assert updated is True
-
-            with open(config_file, "r", encoding="utf-8") as f:
-                config_data = json.load(f)
-                assert "memory" in config_data
-                assert config_data["memory"]["provider"] == "redis"
-
-            # Check that redis was added to requirements
-            req_file = os.path.join(project_dir, "requirements.txt")
-            if os.path.exists(req_file):
-                with open(req_file, "r", encoding="utf-8") as f:
-                    content = f.read()
-                    assert "redis" in content
 
         except Exception as e:
             if "TemplateNotFound" in str(e):

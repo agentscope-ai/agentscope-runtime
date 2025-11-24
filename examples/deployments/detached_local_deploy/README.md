@@ -146,9 +146,6 @@ export MEMORY_PROVIDER=redis
 export SESSION_HISTORY_PROVIDER=redis
 export REDIS_HOST=localhost
 export REDIS_PORT=6379
-
-# Use configuration file
-export AGENTSCOPE_SERVICES_CONFIG=/path/to/services_config.json
 ```
 
 ### Service Configuration File Example

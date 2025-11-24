@@ -14,7 +14,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
 
-from .service_config import ServicesConfig, DEFAULT_SERVICES_CONFIG
 from ..deployment_modes import DeploymentMode
 from ...adapter.protocol_adapter import ProtocolAdapter
 
@@ -42,7 +41,6 @@ class FastAPIAppFactory:
         before_start: Optional[Callable] = None,
         after_finish: Optional[Callable] = None,
         mode: DeploymentMode = DeploymentMode.DAEMON_THREAD,
-        services_config: Optional[ServicesConfig] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         custom_endpoints: Optional[
             List[Dict]
@@ -65,7 +63,6 @@ class FastAPIAppFactory:
             before_start: Callback function called before server starts
             after_finish: Callback function called after server finishes
             mode: Deployment mode
-            services_config: Services configuration
             protocol_adapters: Protocol adapters
             custom_endpoints: List of custom endpoint configurations
             broker_url: Celery broker URL
@@ -76,9 +73,6 @@ class FastAPIAppFactory:
         Returns:
             FastAPI application instance
         """
-        # Use default services config if not provided
-        if services_config is None:
-            services_config = DEFAULT_SERVICES_CONFIG
 
         # Initialize Celery mixin if broker and backend URLs are provided
         celery_mixin = None
@@ -103,7 +97,6 @@ class FastAPIAppFactory:
                 await FastAPIAppFactory._handle_startup(
                     app,
                     mode,
-                    services_config,
                     runner,
                     before_start,
                     **kwargs,
@@ -122,7 +115,6 @@ class FastAPIAppFactory:
 
         # Store configuration in app state
         app.state.deployment_mode = mode
-        app.state.services_config = services_config
         app.state.stream_enabled = stream
         app.state.custom_func = func
         app.state.runner = runner
@@ -160,7 +152,6 @@ class FastAPIAppFactory:
     async def _handle_startup(
         app: FastAPI,
         mode: DeploymentMode,
-        services_config: ServicesConfig,
         external_runner: Optional[Any],
         before_start: Optional[Callable],
         **kwargs,
@@ -271,7 +262,7 @@ class FastAPIAppFactory:
                 logger.error(f"Warning: Error during runner cleanup: {e}")
 
     @staticmethod
-    async def _create_internal_runner(services_config: ServicesConfig):
+    async def _create_internal_runner():
         """Create internal runner with configured services."""
         from agentscope_runtime.engine import Runner
 
@@ -430,7 +421,6 @@ class FastAPIAppFactory:
         async def get_configuration():
             """Get current service configuration."""
             return {
-                "services_config": app.state.services_config.model_dump(),
                 "deployment_mode": app.state.deployment_mode.value,
                 "stream_enabled": app.state.stream_enabled,
             }

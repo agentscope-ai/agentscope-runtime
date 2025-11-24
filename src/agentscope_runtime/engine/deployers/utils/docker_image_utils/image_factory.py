@@ -8,28 +8,21 @@ from typing import Optional, List, Dict, Union
 
 from pydantic import BaseModel, Field
 
-from .....engine.runner import Runner
-
-# from .package_project import PackageConfig, package_project, create_tar_gz
-from ..package_project_utils import (
-    PackageConfig,
-    package_project,
-)
-from ..service_utils import (
-    ServicesConfig,
-)
-from .dockerfile_generator import DockerfileGenerator, DockerfileConfig
 from .docker_image_builder import (
     DockerImageBuilder,
     BuildConfig,
     RegistryConfig,
 )
-
+from .dockerfile_generator import DockerfileGenerator, DockerfileConfig
+from ..detached_app import build_detached_app
+from ..package import project_dir_extractor
+from .... import AgentApp
+from .....engine.runner import Runner
 
 logger = logging.getLogger(__name__)
 
 
-class RunnerImageConfig(BaseModel):
+class ImageConfig(BaseModel):
     """Complete configuration for building a Runner image"""
 
     # Package configuration
@@ -38,7 +31,6 @@ class RunnerImageConfig(BaseModel):
     build_context_dir: str = "/tmp/k8s_build"
     endpoint_path: str = "/process"
     protocol_adapters: Optional[List] = None  # New: protocol adapters
-    services_config: Optional[ServicesConfig] = None
     custom_endpoints: Optional[
         List[Dict]
     ] = None  # New: custom endpoints configuration
@@ -64,7 +56,7 @@ class RunnerImageConfig(BaseModel):
     push_to_registry: bool = False
 
 
-class RunnerImageFactory:
+class ImageFactory:
     """
     Factory class for building Runner Docker images.
     Coordinates ProjectPackager, DockerfileGenerator, and DockerImageBuilder.
@@ -79,15 +71,13 @@ class RunnerImageFactory:
 
     @staticmethod
     def _generate_image_name(
-        runner: Runner,
-        config: RunnerImageConfig,
+        config: ImageConfig,
     ) -> str:
         """Generate a unique image tag based on runner content and config"""
         # Create hash based on runner and configuration
         if config.image_name:
             return config.image_name
         hash_content = (
-            f"{str(runner._agent.name)}"
             f"{str(config.requirements)}"
             f"{str(config.extra_files)}"
             f"{config.base_image}"
@@ -95,19 +85,7 @@ class RunnerImageFactory:
         )
         content_hash = hashlib.md5(hash_content.encode()).hexdigest()[:8]
 
-        return f"agent-{content_hash}"
-
-    @staticmethod
-    def _validate_runner(runner: Runner):
-        """Validate runner object"""
-        if not hasattr(runner, "_agent") or runner._agent is None:
-            raise ValueError("Runner must have a valid agent")
-
-        # Log warnings for missing components
-        if not hasattr(runner, "_environment_manager"):
-            logger.warning("Runner missing _environment_manager")
-        if not hasattr(runner, "_context_manager"):
-            logger.warning("Runner missing _context_manager")
+        return f"agentscope-runtime-{content_hash}"
 
     @staticmethod
     def _validate_requirements(
@@ -131,10 +109,11 @@ class RunnerImageFactory:
                 f"Invalid requirements type: {type(requirements)}",
             )
 
-    def _build_runner_image(
+    def _build_image(
         self,
+        app: AgentApp,
         runner: Runner,
-        config: RunnerImageConfig,
+        config: ImageConfig,
     ) -> str:
         """
         Build a complete Docker image for the Runner.
@@ -157,10 +136,10 @@ class RunnerImageFactory:
             RuntimeError: If any step of the build process fails
         """
         try:
-            # Validation
-            self._validate_runner(runner)
-
             logger.info(f"Building Runner image: {config.image_tag}")
+
+            # get project info
+            project_info = project_dir_extractor(app=app, runner=runner)
 
             # Generate Dockerfile
             logger.info("Generating Dockerfile...")
@@ -168,7 +147,7 @@ class RunnerImageFactory:
                 base_image=config.base_image,
                 port=config.port,
                 env_vars=config.env_vars,
-                startup_command=config.startup_command,
+                startup_command="python" + project_info.entrypoint_file,
             )
 
             dockerfile_path = self.dockerfile_generator.create_dockerfile(
@@ -176,23 +155,21 @@ class RunnerImageFactory:
             )
             logger.info(f"Dockerfile created: {dockerfile_path}")
 
-            # Package the project
+            # Package the project using detached bundle logic
             logger.info("Packaging Runner project...")
-            project_dir, is_updated = package_project(
-                agent=runner._agent,
-                config=PackageConfig(
-                    requirements=config.requirements,
-                    extra_packages=config.extra_packages,
-                    output_dir=config.build_context_dir,
-                    endpoint_path=config.endpoint_path,
-                    protocol_adapters=config.protocol_adapters,
-                    services_config=config.services_config,
-                    custom_endpoints=config.custom_endpoints,
-                ),
+
+            project_dir, _ = build_detached_app(
+                app=app,
+                runner=runner,
+                endpoint_path=config.endpoint_path,
+                requirements=config.requirements,
+                extra_packages=config.extra_packages,
+                protocol_adapters=config.protocol_adapters,
+                custom_endpoints=config.custom_endpoints,
+                output_dir=config.build_context_dir,
                 dockerfile_path=dockerfile_path,
-                # caller_depth is no longer needed due to automatic
-                # stack search
             )
+            is_updated = True
             logger.info(f"Project packaged: {project_dir}")
 
             # Build Docker image
@@ -209,7 +186,7 @@ class RunnerImageFactory:
                 # Build and push to registry
                 full_image_name = self.image_builder.build_and_push(
                     build_context=project_dir,
-                    image_name=self._generate_image_name(runner, config),
+                    image_name=self._generate_image_name(config),
                     image_tag=config.image_tag,
                     build_config=build_config,
                     registry_config=config.registry_config,
@@ -220,7 +197,7 @@ class RunnerImageFactory:
                 # Just build locally
                 full_image_name = self.image_builder.build_image(
                     build_context=project_dir,
-                    image_name=self._generate_image_name(runner, config),
+                    image_name=self._generate_image_name(config),
                     image_tag=config.image_tag,
                     config=build_config,
                     source_updated=is_updated,
@@ -237,9 +214,10 @@ class RunnerImageFactory:
             # Cleanup temporary resources
             self.cleanup()
 
-    def build_runner_image(
+    def build_image(
         self,
-        runner: Runner,
+        app=None,
+        runner: Optional[Runner] = None,
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
         base_image: str = "python:3.10-slim-bookworm",
@@ -247,7 +225,6 @@ class RunnerImageFactory:
         image_tag: Optional[str] = None,
         registry_config: Optional[RegistryConfig] = None,
         push_to_registry: bool = False,
-        services_config: Optional[ServicesConfig] = None,
         protocol_adapters: Optional[List] = None,  # New: protocol adapters
         custom_endpoints: Optional[
             List[Dict]
@@ -258,6 +235,7 @@ class RunnerImageFactory:
         Simplified interface for building Runner images.
 
         Args:
+            app: agent app object
             runner: Runner object
             requirements: Python requirements
             extra_packages: Additional files to include
@@ -266,7 +244,6 @@ class RunnerImageFactory:
             image_tag: Optional image tag
             registry_config: Optional registry config
             push_to_registry: Whether to push to registry
-            services_config: Optional services config
             protocol_adapters: Protocol adapters
             custom_endpoints: Custom endpoints from agent app
             **kwargs: Additional configuration options
@@ -274,7 +251,23 @@ class RunnerImageFactory:
         Returns:
             str: Built image name
         """
-        config = RunnerImageConfig(
+        if app is not None:
+            custom_endpoints = custom_endpoints or getattr(
+                app,
+                "custom_endpoints",
+                None,
+            )
+            protocol_adapters = protocol_adapters or getattr(
+                app,
+                "protocol_adapters",
+                None,
+            )
+            kwargs.setdefault(
+                "endpoint_path",
+                getattr(app, "endpoint_path", "/process"),
+            )
+
+        config = ImageConfig(
             requirements=self._validate_requirements(requirements),
             extra_packages=extra_packages or [],
             base_image=base_image,
@@ -283,12 +276,11 @@ class RunnerImageFactory:
             registry_config=registry_config,
             push_to_registry=push_to_registry,
             protocol_adapters=protocol_adapters,
-            services_config=services_config,
             custom_endpoints=custom_endpoints,
             **kwargs,
         )
 
-        return self._build_runner_image(runner, config)
+        return self._build_image(app, runner, config)
 
     def cleanup(self):
         """Clean up all temporary resources"""

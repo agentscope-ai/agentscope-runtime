@@ -22,7 +22,7 @@ from agentscope_runtime.engine.deployers.utils.docker_image_utils import (
     DockerfileGenerator,
 )
 from agentscope_runtime.engine.deployers.utils.docker_image_utils import (
-    RunnerImageFactory,
+    ImageFactory,
 )
 
 # Add the src directory to path to use local development version
@@ -211,7 +211,7 @@ class TestDockerImageBuilder:
         assert mock_subprocess.call_count >= 1
 
 
-class TestRunnerImageFactory:
+class TestImageFactory:
     """Test cases for RunnerImageFactory class."""
 
     @pytest.fixture(autouse=True)
@@ -222,23 +222,22 @@ class TestRunnerImageFactory:
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
-    def test_runner_image_factory_creation(self):
+    def test_image_factory_creation(self):
         """Test RunnerImageFactory creation."""
-        factory = RunnerImageFactory()
-        assert isinstance(factory, RunnerImageFactory)
+        factory = ImageFactory()
+        assert isinstance(factory, ImageFactory)
 
-    def test_build_runner_image_mock(self, mocker):
-        mock_package_project = mocker.patch(
+    def test_build_image_mock(self, mocker):
+        mock_bundle = mocker.patch(
             "agentscope_runtime.engine.deployers.utils.docker_image_utils."
-            "runner_image_factory.package_project",
+            "runner_image_factory.build_detached_bundle",
+            return_value=(self.temp_dir, mocker.Mock()),
         )
         mock_builder_class = mocker.patch(
             "agentscope_runtime.engine.deployers.utils.docker_image_utils."
             "runner_image_factory.DockerImageBuilder",
         )
         """Test build_runner_image method with mocks."""
-        # Setup mocks
-        mock_package_project.return_value = (self.temp_dir, True)
 
         mock_builder_instance = mocker.Mock()
         mock_builder_instance.build_image.return_value = "test-runner:latest"
@@ -248,8 +247,8 @@ class TestRunnerImageFactory:
         mock_runner = mocker.Mock()
         mock_runner._agent = mocker.Mock()
 
-        factory = RunnerImageFactory()
-        result = factory.build_runner_image(
+        image_factory = ImageFactory()
+        result = image_factory.build_image(
             runner=mock_runner,
             requirements=["fastapi"],
             build_context_dir=self.temp_dir,
@@ -259,5 +258,34 @@ class TestRunnerImageFactory:
         )
 
         assert result == "test-runner:latest"
-        mock_package_project.assert_called_once()
+        mock_bundle.assert_called_once()
         mock_builder_instance.build_image.assert_called_once()
+
+    def test_build_image_from_app(self, mocker):
+        """Ensure build_runner_image can resolve runner from app."""
+        mock_app = mocker.Mock()
+        mock_runner = mocker.Mock()
+        mock_app._runner = mock_runner
+        mock_app.custom_endpoints = []
+        mock_app.protocol_adapters = []
+        mock_app.endpoint_path = "/custom"
+
+        image_factory = ImageFactory()
+        mock_build = mocker.patch.object(
+            image_factory,
+            "_build_runner_image",
+            return_value="app-image:latest",
+        )
+
+        result = image_factory.build_image(
+            app=mock_app,
+            requirements=["fastapi"],
+            build_context_dir=self.temp_dir,
+            registry_config=RegistryConfig(),
+            image_name="app-image",
+            image_tag="latest",
+        )
+
+        assert result == "app-image:latest"
+        mock_build.assert_called_once()
+        assert mock_build.call_args[0][0] is mock_runner
