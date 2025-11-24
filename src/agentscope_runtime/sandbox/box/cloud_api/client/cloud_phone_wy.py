@@ -1006,26 +1006,6 @@ class EdsInstanceManager:
         result = self.eds_client.describe_tasks([task_id])
         return result
 
-    # async def in_upload_file_and_sign_async(
-    #     self,
-    #     filepath: str,
-    #     file_name: str,
-    # ) -> str:
-    #     return await self.oss_client.oss_upload_file_and_sign_async(
-    #         filepath,
-    #         file_name,
-    #     )
-    #
-    # def in_upload_file_and_sign(
-    #     self,
-    #     filepath: str,
-    #     file_name: str,
-    # ) -> str:
-    #     return self.oss_client.oss_upload_file_and_sign(
-    #         filepath,
-    #         file_name,
-    #     )
-
     async def get_screenshot_async(self) -> str:
         local_file_name = f"{uuid.uuid4().hex}__screenshot.png"
         mobile_screen_file_path = f"/sdcard/{local_file_name}"
