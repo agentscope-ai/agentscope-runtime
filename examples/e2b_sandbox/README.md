@@ -76,8 +76,7 @@ pip install ".[sandbox]"
 
 ### 2. 直接使用 E2B 桌面沙箱
 
-```
-python
+```python
 from agentscope_runtime.sandbox.box.e2b.e2b_sandbox import E2bSandBox
 
 sandbox = E2bSandBox()
@@ -95,16 +94,15 @@ print(f"screenshot result: {result_screenshot}")
 ```
 ### 3. 通过 SandboxService 使用
 
-```
-python
+```python
 from agentscope_runtime.sandbox.enums import SandboxType
-from agentscope_runtime.engine.services.sandbox_service import SandboxService
+from agentscope_runtime.engine.services.sandbox import SandboxService
 
 sandbox_service = SandboxService()
 sandboxes = sandbox_service.connect(
     session_id="session1",
     user_id="user1",
-    env_types=[SandboxType.E2B.value]
+    sandbox_types=[SandboxType.E2B]
 )
 ```
 ## 配置参数

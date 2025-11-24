@@ -108,5 +108,6 @@ sandbox = [
     "alibabacloud_appstream_center20210218",
     "aiohttp",
     "e2b-desktop>=2.0.0",
-    "psutil"
+    "psutil",
+    "pytest-asyncio"
 ]

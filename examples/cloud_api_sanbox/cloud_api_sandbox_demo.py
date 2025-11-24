@@ -3,7 +3,7 @@ import os
 import asyncio
 import logging
 from pathlib import Path
-
+import pytest
 from dotenv import load_dotenv
 from agentscope_runtime.sandbox.enums import SandboxType
 from agentscope_runtime.sandbox.box.cloud_api.cloud_computer_sandbox import (
@@ -12,10 +12,7 @@ from agentscope_runtime.sandbox.box.cloud_api.cloud_computer_sandbox import (
 from agentscope_runtime.sandbox.box.cloud_api.cloud_phone_sandbox import (
     CloudPhoneSandbox,
 )
-from agentscope_runtime.engine.services.sandbox_service import SandboxService
-from agentscope_runtime.engine.services.environment_manager import (
-    create_environment_manager,
-)
+from agentscope_runtime.engine.services.sandbox import SandboxService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -333,6 +330,7 @@ def test_cloud_phone_api_sandbox_direct():
         return False
 
 
+@pytest.mark.anyio
 async def test_cloud_pc_api_sandbox_service():
     """
     Test Cloud PC Api sandbox via SandboxService and EnvironmentManager.
@@ -340,17 +338,12 @@ async def test_cloud_pc_api_sandbox_service():
     try:
         load_env_variables()
 
-        # Initialize sandbox service
-        sandbox_service = SandboxService()
-
         # Create environment manager context
-        async with create_environment_manager(
-            sandbox_service=sandbox_service,
-        ) as env_manager:
-            sandboxes = env_manager.connect_sandbox(
+        async with SandboxService() as service:
+            sandboxes = service.connect(
                 session_id="demo_service_session",
                 user_id="demo_user",
-                env_types=[SandboxType.CLOUD_COMPUTER.value],
+                sandbox_types=[SandboxType.CLOUD_COMPUTER],
             )
 
             if not sandboxes:
@@ -394,6 +387,7 @@ async def test_cloud_pc_api_sandbox_service():
         return False
 
 
+@pytest.mark.anyio
 async def test_cloud_phone_api_sandbox_service():
     """
     Test Cloud Api sandbox via SandboxService and EnvironmentManager.
@@ -403,17 +397,12 @@ async def test_cloud_phone_api_sandbox_service():
     try:
         load_env_variables()
 
-        # Initialize sandbox service
-        sandbox_service = SandboxService()
-
         # Create environment manager context
-        async with create_environment_manager(
-            sandbox_service=sandbox_service,
-        ) as env_manager:
-            sandboxes = env_manager.connect_sandbox(
+        async with SandboxService() as service:
+            sandboxes = service.connect(
                 session_id="demo_service_session",
                 user_id="demo_user",
-                env_types=[SandboxType.CLOUD_PHONE.value],
+                sandbox_types=[SandboxType.CLOUD_PHONE],
             )
 
             if not sandboxes:

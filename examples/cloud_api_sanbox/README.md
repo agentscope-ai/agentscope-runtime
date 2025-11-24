@@ -316,13 +316,13 @@ print(f"screenshot result: {result_screenshot}")
 
 ```python
 from agentscope_runtime.sandbox.enums import SandboxType
-from agentscope_runtime.engine.services.sandbox_service import SandboxService
+from agentscope_runtime.engine.services.sandbox import SandboxService
 
 sandbox_service = SandboxService()
 sandboxes = sandbox_service.connect(
     session_id="session1",
     user_id="user1",
-    env_types=[SandboxType.CLOUD_COMPUTER.value, SandboxType.CLOUD_PHONE.value]
+    sandbox_types=[SandboxType.CLOUD_COMPUTER, SandboxType.CLOUD_PHONE]
 )
 ```
 
