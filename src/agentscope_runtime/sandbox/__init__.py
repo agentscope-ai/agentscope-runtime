@@ -7,6 +7,7 @@ from .box.gui.gui_sandbox import GuiSandbox
 from .box.training_box.training_box import TrainingSandbox
 from .box.cloud.cloud_sandbox import CloudSandbox
 from .box.agentbay.agentbay_sandbox import AgentbaySandbox
+from .box.mobile.mobile_sandbox import MobileSandbox
 
 
 __all__ = [
@@ -17,4 +18,5 @@ __all__ = [
     "TrainingSandbox",
     "CloudSandbox",
     "AgentbaySandbox",
+    "MobileSandbox",
 ]
