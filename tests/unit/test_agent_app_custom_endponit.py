@@ -70,6 +70,18 @@ def run_app():
         for i in range(5):
             yield f"sync chunk {i}\n"
 
+    @app.endpoint("/stream_async_error")
+    async def stream_async_error_handler():
+        for i in range(2):
+            yield f"async chunk {i}\n"
+        raise ValueError("Async streaming failure")
+
+    @app.endpoint("/stream_sync_error")
+    def stream_sync_error_handler():
+        for i in range(2):
+            yield f"sync chunk {i}\n"
+        raise ValueError("Sync streaming failure")
+
     @app.endpoint(path="/stream_with_query_params")
     def stream_with_query_params_handler(first: int, second: str):
         assert first == 1
@@ -176,6 +188,50 @@ async def test_stream_sync_endpoint(start_app):
     assert [chunk.rstrip("\n") for chunk in text_chunks] == [
         f"sync chunk {i}" for i in range(5)
     ]
+
+
+@pytest.mark.asyncio
+async def test_stream_async_error_endpoint(start_app):
+    """
+    Test /stream_async_error yields SSE error payload when handler fails.
+    """
+    url = f"http://localhost:{PORT}/stream_async_error"
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url) as resp:
+            assert resp.status == 200
+            assert resp.content_type == "text/event-stream"
+            payloads = await _collect_sse_payloads(resp)
+
+    assert [chunk.rstrip("\n") for chunk in payloads[:-1]] == [
+        f"async chunk {i}" for i in range(2)
+    ]
+    assert payloads[-1] == {
+        "error": "Async streaming failure",
+        "error_type": "ValueError",
+        "message": "Error in streaming generator",
+    }
+
+
+@pytest.mark.asyncio
+async def test_stream_sync_error_endpoint(start_app):
+    """
+    Test /stream_sync_error yields SSE error payload when handler fails.
+    """
+    url = f"http://localhost:{PORT}/stream_sync_error"
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url) as resp:
+            assert resp.status == 200
+            assert resp.content_type == "text/event-stream"
+            payloads = await _collect_sse_payloads(resp)
+
+    assert [chunk.rstrip("\n") for chunk in payloads[:-1]] == [
+        f"sync chunk {i}" for i in range(2)
+    ]
+    assert payloads[-1] == {
+        "error": "Sync streaming failure",
+        "error_type": "ValueError",
+        "message": "Error in streaming generator",
+    }
 
 
 @pytest.mark.asyncio

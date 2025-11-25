@@ -13,7 +13,6 @@ from typing import Optional, Callable, Type, Any, List, Dict
 
 from a2a.types import A2ARequest
 from fastapi import FastAPI, Request
-from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
@@ -741,54 +740,35 @@ class FastAPIAppFactory:
             return handler
 
     @staticmethod
-    def _serialize_stream_item(item: Any) -> Any:
+    def _to_sse_event(item: Any) -> str:
         """Normalize streaming items into JSON-serializable structures."""
-        if isinstance(item, BaseModel):
-            return item.model_dump()
 
-        if is_dataclass(item) and not isinstance(item, type):
-            try:
-                return asdict(item)
-            except TypeError:
-                # Should not happen for dataclass instances, but fall through
-                pass
+        def _serialize(value: Any, depth: int = 0):
+            if depth > 20:
+                return f"<too-deep-level-{depth}-{str(value)}>"
 
-        for attr in ("to_map", "to_dict"):
-            method = getattr(item, attr, None)
-            if callable(method):
-                try:
+            if isinstance(value, (list, tuple, set)):
+                return [_serialize(i, depth=depth + 1) for i in value]
+            elif isinstance(value, dict):
+                return {
+                    k: _serialize(v, depth=depth + 1) for k, v in value.items()
+                }
+            elif isinstance(value, (str, int, float, bool, type(None))):
+                return value
+            elif isinstance(value, BaseModel):
+                return value.model_dump()
+            elif is_dataclass(value):
+                return asdict(value)
+
+            for attr in ("to_map", "to_dict"):
+                method = getattr(value, attr, None)
+                if callable(method):
                     return method()
-                except Exception:
-                    logger.debug("Failed to call %s on %s", attr, type(item))
+            return str(value)
 
-        if isinstance(item, bytes):
-            return item.decode("utf-8", errors="ignore")
+        serialized = _serialize(item, depth=0)
 
-        if isinstance(item, bytearray):
-            return bytes(item).decode("utf-8", errors="ignore")
-
-        if isinstance(item, set):
-            return list(item)
-
-        if (
-            isinstance(item, (dict, list, tuple, str, int, float, bool))
-            or item is None
-        ):
-            return item
-
-        if hasattr(item, "__dict__"):
-            return item.__dict__
-
-        return str(item)
-
-    @staticmethod
-    def _format_sse_event(data: Any) -> str:
-        """Format serialized data as an SSE event string."""
-        try:
-            payload = json.dumps(jsonable_encoder(data))
-        except TypeError:
-            payload = json.dumps(jsonable_encoder(str(data)))
-        return f"data: {payload}\n\n"
+        return f"data: {json.dumps(serialized, ensure_ascii=False)}\n\n"
 
     @staticmethod
     def _create_streaming_parameter_wrapper(
@@ -804,11 +784,22 @@ class FastAPIAppFactory:
             @functools.wraps(handler)
             async def wrapped_handler(*args, **kwargs):
                 async def generate():
-                    async for chunk in handler(*args, **kwargs):
-                        serialized = FastAPIAppFactory._serialize_stream_item(
-                            chunk,
+                    try:
+                        async for chunk in handler(*args, **kwargs):
+                            yield FastAPIAppFactory._to_sse_event(
+                                chunk,
+                            )
+                    except Exception as e:
+                        logger.error(
+                            f"Error in streaming handler: {e}",
+                            exc_info=True,
                         )
-                        yield FastAPIAppFactory._format_sse_event(serialized)
+                        err_event = {
+                            "error": str(e),
+                            "error_type": e.__class__.__name__,
+                            "message": "Error in streaming generator",
+                        }
+                        yield FastAPIAppFactory._to_sse_event(err_event)
 
                 return StreamingResponse(
                     generate(),
@@ -823,11 +814,20 @@ class FastAPIAppFactory:
             @functools.wraps(handler)
             def wrapped_handler(*args, **kwargs):
                 def generate():
-                    for chunk in handler(*args, **kwargs):
-                        serialized = FastAPIAppFactory._serialize_stream_item(
-                            chunk,
+                    try:
+                        for chunk in handler(*args, **kwargs):
+                            yield FastAPIAppFactory._to_sse_event(chunk)
+                    except Exception as e:
+                        logger.error(
+                            f"Error in streaming handler: {e}",
+                            exc_info=True,
                         )
-                        yield FastAPIAppFactory._format_sse_event(serialized)
+                        err_event = {
+                            "error": str(e),
+                            "error_type": e.__class__.__name__,
+                            "message": "Error in streaming generator",
+                        }
+                        yield FastAPIAppFactory._to_sse_event(err_event)
 
                 return StreamingResponse(
                     generate(),
