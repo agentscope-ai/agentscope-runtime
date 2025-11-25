@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=redefined-outer-name, unused-argument
+import json
 import multiprocessing
 import time
 from typing import List
@@ -12,6 +13,34 @@ import pytest
 from agentscope_runtime.engine import AgentApp
 
 PORT = 8090
+
+
+async def _collect_sse_payloads(resp: aiohttp.ClientResponse):
+    """Collect streaming Server-Sent Events payloads and decode JSON."""
+    buffer = ""
+    payloads: List[str] = []
+
+    async for chunk, _ in resp.content.iter_chunks():
+        if not chunk:
+            continue
+        buffer += chunk.decode("utf-8")
+
+        while "\n\n" in buffer:
+            event, buffer = buffer.split("\n\n", 1)
+            data_lines: List[str] = []
+            for line in event.splitlines():
+                if not line.startswith("data:"):
+                    continue
+                value = line[5:]
+                if value.startswith(" "):
+                    value = value[1:]
+                data_lines.append(value)
+
+            if data_lines:
+                data_str = "\n".join(data_lines)
+                payloads.append(json.loads(data_str))
+
+    return payloads
 
 
 class Messages(BaseModel):
@@ -123,12 +152,13 @@ async def test_stream_async_endpoint(start_app):
     async with aiohttp.ClientSession() as session:
         async with session.post(url) as resp:
             assert resp.status == 200
-            text_chunks = []
-            async for chunk, _ in resp.content.iter_chunks():
-                if chunk:
-                    text_chunks.append(chunk.decode("utf-8").strip())
+            assert resp.content_type == "text/event-stream"
 
-    assert text_chunks == [f"async chunk {i}" for i in range(5)]
+            text_chunks = await _collect_sse_payloads(resp)
+
+    assert [chunk.rstrip("\n") for chunk in text_chunks] == [
+        f"async chunk {i}" for i in range(5)
+    ]
 
 
 @pytest.mark.asyncio
@@ -140,12 +170,12 @@ async def test_stream_sync_endpoint(start_app):
     async with aiohttp.ClientSession() as session:
         async with session.post(url) as resp:
             assert resp.status == 200
-            text_chunks = []
-            async for chunk, _ in resp.content.iter_chunks():
-                if chunk:
-                    text_chunks.append(chunk.decode("utf-8").strip())
+            assert resp.content_type == "text/event-stream"
+            text_chunks = await _collect_sse_payloads(resp)
 
-    assert text_chunks == [f"sync chunk {i}" for i in range(5)]
+    assert [chunk.rstrip("\n") for chunk in text_chunks] == [
+        f"sync chunk {i}" for i in range(5)
+    ]
 
 
 @pytest.mark.asyncio
@@ -153,14 +183,18 @@ async def test_stream_with_query_params_endpoint(start_app):
     """
     Test /stream_with_query_params streaming chunks with query params.
     """
-    url = f"http://localhost:{PORT}/stream_with_query_params?foo=1&bar=test"
+    url = (
+        f"http://localhost:{PORT}/stream_with_query_params?first=1&second=test"
+    )
     async with aiohttp.ClientSession() as session:
         async with session.post(url) as resp:
             assert resp.status == 200
-            text_chunks = []
-            async for chunk, _ in resp.content.iter_chunks():
-                if chunk:
-                    text_chunks.append(chunk.decode("utf-8").strip())
+            assert resp.content_type == "text/event-stream"
+            text_chunks = await _collect_sse_payloads(resp)
+
+    assert [chunk.rstrip("\n") for chunk in text_chunks] == [
+        f"sync chunk {i}, foo: 1, bar: test" for i in range(5)
+    ]
 
 
 @pytest.mark.asyncio
@@ -172,10 +206,12 @@ async def test_stream_with_request_endpoint(start_app):
     async with aiohttp.ClientSession() as session:
         async with session.post(url) as resp:
             assert resp.status == 200
-            text_chunks = []
-            async for chunk, _ in resp.content.iter_chunks():
-                if chunk:
-                    text_chunks.append(chunk.decode("utf-8").strip())
+            assert resp.content_type == "text/event-stream"
+            text_chunks = await _collect_sse_payloads(resp)
+
+    assert [chunk.rstrip("\n") for chunk in text_chunks] == [
+        f"async chunk {i}, foo: 1, bar: test" for i in range(5)
+    ]
 
 
 @pytest.mark.asyncio
@@ -191,7 +227,9 @@ async def test_stream_with_messages_endpoint(start_app):
         ]
         async with session.post(url, json=messages) as resp:
             assert resp.status == 200
-            text_chunks = []
-            async for chunk, _ in resp.content.iter_chunks():
-                if chunk:
-                    text_chunks.append(chunk.decode("utf-8").strip())
+            assert resp.content_type == "text/event-stream"
+            text_chunks = await _collect_sse_payloads(resp)
+
+    assert [chunk.rstrip("\n") for chunk in text_chunks] == [
+        f"async chunk user, message: Hello, world! {i}" for i in range(5)
+    ]

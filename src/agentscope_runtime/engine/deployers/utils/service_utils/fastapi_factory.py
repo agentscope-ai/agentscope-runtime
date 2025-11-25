@@ -7,10 +7,12 @@ import inspect
 import json
 import logging
 from contextlib import asynccontextmanager
+from dataclasses import asdict, is_dataclass
 from typing import Optional, Callable, Type, Any, List, Dict
 
 from a2a.types import A2ARequest
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
@@ -706,6 +708,56 @@ class FastAPIAppFactory:
             return handler
 
     @staticmethod
+    def _serialize_stream_item(item: Any) -> Any:
+        """Normalize streaming items into JSON-serializable structures."""
+        if isinstance(item, BaseModel):
+            return item.model_dump()
+
+        if is_dataclass(item) and not isinstance(item, type):
+            try:
+                return asdict(item)
+            except TypeError:
+                # Should not happen for dataclass instances, but fall through
+                pass
+
+        for attr in ("to_map", "to_dict"):
+            method = getattr(item, attr, None)
+            if callable(method):
+                try:
+                    return method()
+                except Exception:
+                    logger.debug("Failed to call %s on %s", attr, type(item))
+
+        if isinstance(item, bytes):
+            return item.decode("utf-8", errors="ignore")
+
+        if isinstance(item, bytearray):
+            return bytes(item).decode("utf-8", errors="ignore")
+
+        if isinstance(item, set):
+            return list(item)
+
+        if (
+            isinstance(item, (dict, list, tuple, str, int, float, bool))
+            or item is None
+        ):
+            return item
+
+        if hasattr(item, "__dict__"):
+            return item.__dict__
+
+        return str(item)
+
+    @staticmethod
+    def _format_sse_event(data: Any) -> str:
+        """Format serialized data as an SSE event string."""
+        try:
+            payload = json.dumps(jsonable_encoder(data))
+        except TypeError:
+            payload = json.dumps(jsonable_encoder(str(data)))
+        return f"data: {payload}\n\n"
+
+    @staticmethod
     def _create_streaming_parameter_wrapper(
         handler: Callable,
         is_async_gen: bool = False,
@@ -719,11 +771,14 @@ class FastAPIAppFactory:
             async def wrapped_handler(*args, **kwargs):
                 async def generate():
                     async for chunk in handler(*args, **kwargs):
-                        yield str(chunk)
+                        serialized = FastAPIAppFactory._serialize_stream_item(
+                            chunk,
+                        )
+                        yield FastAPIAppFactory._format_sse_event(serialized)
 
                 return StreamingResponse(
                     generate(),
-                    media_type="text/plain",
+                    media_type="text/event-stream",
                 )
 
             wrapped_handler.__signature__ = inspect.signature(handler)
@@ -734,11 +789,14 @@ class FastAPIAppFactory:
             def wrapped_handler(*args, **kwargs):
                 def generate():
                     for chunk in handler(*args, **kwargs):
-                        yield str(chunk)
+                        serialized = FastAPIAppFactory._serialize_stream_item(
+                            chunk,
+                        )
+                        yield FastAPIAppFactory._format_sse_event(serialized)
 
                 return StreamingResponse(
                     generate(),
-                    media_type="text/plain",
+                    media_type="text/event-stream",
                 )
 
             wrapped_handler.__signature__ = inspect.signature(handler)
