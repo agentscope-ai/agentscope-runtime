@@ -2,13 +2,21 @@
 # pylint:disable=redefined-outer-name, unused-argument
 import multiprocessing
 import time
+from typing import List
 
 import aiohttp
+from fastapi import Request
+from pydantic import BaseModel
 import pytest
 
 from agentscope_runtime.engine import AgentApp
 
 PORT = 8090
+
+
+class Messages(BaseModel):
+    role: str
+    content: str
 
 
 def run_app():
@@ -32,6 +40,30 @@ def run_app():
     def stream_sync_handler():
         for i in range(5):
             yield f"sync chunk {i}\n"
+
+    @app.endpoint(path="/stream_with_query_params")
+    def stream_with_query_params_handler(first: int, second: str):
+        assert first == 1
+        assert second == "test"
+        for i in range(5):
+            yield f"sync chunk {i}, foo: {first}, bar: {second}\n"
+
+    @app.endpoint(path="/stream_with_request")
+    async def stream_with_query_params_async_handler(request: Request):
+        query_params = request.query_params
+        param_first = query_params.get("foo")
+        param_second = query_params.get("bar")
+        assert int(param_first) == 1
+        assert param_second == "test"
+        for i in range(5):
+            yield f"async chunk {i}, foo: {param_first}, bar: {param_second}\n"
+
+    @app.endpoint(path="/stream_with_messages")
+    async def stream_with_messages_handler(messages: List[Messages]):
+        for i, message in enumerate(messages):
+            assert message.role == "user"
+            assert message.content == f"Hello, world! {i}"
+            yield f"async chunk {message.role}, message: {message.content}\n"
 
     app.run(host="127.0.0.1", port=PORT)
 
@@ -114,3 +146,52 @@ async def test_stream_sync_endpoint(start_app):
                     text_chunks.append(chunk.decode("utf-8").strip())
 
     assert text_chunks == [f"sync chunk {i}" for i in range(5)]
+
+
+@pytest.mark.asyncio
+async def test_stream_with_query_params_endpoint(start_app):
+    """
+    Test /stream_with_query_params streaming chunks with query params.
+    """
+    url = f"http://localhost:{PORT}/stream_with_query_params?foo=1&bar=test"
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url) as resp:
+            assert resp.status == 200
+            text_chunks = []
+            async for chunk, _ in resp.content.iter_chunks():
+                if chunk:
+                    text_chunks.append(chunk.decode("utf-8").strip())
+
+
+@pytest.mark.asyncio
+async def test_stream_with_request_endpoint(start_app):
+    """
+    Test /stream_with_request streaming chunks with request.
+    """
+    url = f"http://localhost:{PORT}/stream_with_request?foo=1&bar=test"
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url) as resp:
+            assert resp.status == 200
+            text_chunks = []
+            async for chunk, _ in resp.content.iter_chunks():
+                if chunk:
+                    text_chunks.append(chunk.decode("utf-8").strip())
+
+
+@pytest.mark.asyncio
+async def test_stream_with_messages_endpoint(start_app):
+    """
+    Test /stream_with_messages streaming chunks with messages.
+    """
+    url = f"http://localhost:{PORT}/stream_with_messages"
+    async with aiohttp.ClientSession() as session:
+        messages = [
+            Messages(role="user", content=f"Hello, world! {i}").model_dump()
+            for i in range(5)
+        ]
+        async with session.post(url, json=messages) as resp:
+            assert resp.status == 200
+            text_chunks = []
+            async for chunk, _ in resp.content.iter_chunks():
+                if chunk:
+                    text_chunks.append(chunk.decode("utf-8").strip())
