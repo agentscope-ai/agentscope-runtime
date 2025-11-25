@@ -428,7 +428,7 @@ class FastAPIAppFactory:
                         },
                     },
                     "required": True,
-                    "description": "Agent API Request Format "
+                    "description": "Agent API Request Format."
                     "See https://runtime.agentscope.io/en/protocol.html for "
                     "more details.",
                 },
@@ -773,7 +773,6 @@ class FastAPIAppFactory:
     @staticmethod
     def _create_streaming_parameter_wrapper(
         handler: Callable,
-        is_async_gen: bool = False,
     ):
         """Create a wrapper for streaming handlers that handles parameter
         parsing."""
@@ -907,7 +906,6 @@ class FastAPIAppFactory:
                     wrapped_handler = (
                         FastAPIAppFactory._create_streaming_parameter_wrapper(
                             handler,
-                            is_async_gen=True,
                         )
                     )
                     app.add_api_route(

@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 class BaseApp(CeleryMixin):
     """
-    BaseApp extends FastAPI and integrates with Celery
-    for asynchronous background task execution.
+    BaseApp integrates Celery for asynchronous background task execution,
+    and provides FastAPI-like routing for task endpoints.
     """
 
     def __init__(
