@@ -536,7 +536,7 @@ class CloudPhoneSandbox(CloudSandbox):
                         f"PHONE {instance_id} status: "
                         f"{current_status}, waiting...",
                     )
-                    if current_status in ("stopped", "unknown"):
+                    if current_status == "stopped":
                         # 开机
                         print(
                             f"Equipment restart for instance_id {instance_id}",
@@ -554,6 +554,17 @@ class CloudPhoneSandbox(CloudSandbox):
                                 503,
                                 "Failed to start computer resource",
                             )
+                    else:
+                        # 没查到设备状态，等待一会，重新查询
+                        print(
+                            f"Equipment for instance_id {instance_id} unknown,"
+                            " and wait",
+                        )
+                        logger.info(
+                            f"Equipment for instance_id {instance_id} unknown,"
+                            " and wait",
+                        )
+                        time.sleep(2)
 
                 # 检查是否超时
                 if time.time() - start_time > max_wait_time:

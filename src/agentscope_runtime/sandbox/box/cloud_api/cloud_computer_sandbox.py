@@ -91,7 +91,6 @@ class CloudComputerSandbox(CloudSandbox):
                 try:
                     ready_status = self._wait_for_pc_ready(
                         self.desktop_id,
-                        stability_check_duration=2,
                     )
                     if not ready_status:
                         logger.warning(
@@ -181,11 +180,59 @@ class CloudComputerSandbox(CloudSandbox):
     def _get_cloud_provider_name(self) -> str:  # type: ignore[override]
         return "Alibaba Cloud Wuying"
 
+    def _handle_desktop_status(
+        self,
+        desktop_id: str,
+        current_status: str,
+    ) -> None:
+        """处理桌面不同状态的逻辑"""
+        if current_status == "stopped":
+            self._start_desktop(desktop_id)
+        elif current_status == "hibernated":
+            self._wakeup_desktop(desktop_id)
+        else:
+            # 没查到设备状态，等待一会，重新查询
+            print(
+                f"Equipment for desktop_id {desktop_id} {current_status},"
+                " and wait",
+            )
+            logger.info(
+                f"Equipment for desktop_id {desktop_id} {current_status},"
+                " and wait",
+            )
+            time.sleep(2)
+
+    def _start_desktop(self, desktop_id: str) -> None:
+        """启动桌面"""
+        print(f"Equipment restart for desktop_id {desktop_id}")
+        logger.info(f"Equipment restart for desktop_id {desktop_id}")
+        e_client = self.instance_manager.ecd_client
+        method = e_client.start_desktops
+        status = method([desktop_id])
+        if status != 200:
+            raise HTTPException(
+                503,
+                "Failed to start computer resource",
+            )
+
+    def _wakeup_desktop(self, desktop_id: str) -> None:
+        """唤醒桌面"""
+        print(f"Equipment wakeup for desktop_id {desktop_id}")
+        logger.info(f"Equipment wakeup for desktop_id {desktop_id}")
+        e_client = self.instance_manager.ecd_client
+        method = e_client.wakeup_desktops
+        status = method([desktop_id])
+        if status != 200:
+            raise HTTPException(
+                503,
+                "Failed to start computer resource",
+            )
+
     def _wait_for_pc_ready(
         self,
         desktop_id: str,
         max_wait_time: int = 300,
-        stability_check_duration: int = 10,
+        stability_check_duration: int = 3,
     ):
         """异步等待PC设备就绪，增加稳定性检查"""
         start_time = time.time()
@@ -193,7 +240,6 @@ class CloudComputerSandbox(CloudSandbox):
         ready_status = False
         while True:
             try:
-                # 将同步的状态检查操作放到线程池中执行
                 pc_info = self.instance_manager.ecd_client.search_desktop_info(
                     [desktop_id],
                 )
@@ -226,57 +272,29 @@ class CloudComputerSandbox(CloudSandbox):
                     # 状态不是运行中，重置稳定性检查
                     if stable_start_time is not None:
                         print(
-                            f"PC {desktop_id} status changed, "
-                            "resetting stability check",
+                            f"PC {desktop_id} status changed, resetting"
+                            f" stability check",
                         )
                         stable_start_time = None
+
                     current_status = (
                         pc_info[0].desktop_status.lower()
                         if pc_info
                         else "unknown"
                     )
                     print(
-                        f"PC {desktop_id} status: "
-                        f"{current_status}, waiting...",
+                        f"PC {desktop_id} status: {current_status}, "
+                        "waiting...",
                     )
-                    if current_status in ("stopped", "unknown"):
-                        # 开机
-                        print(f"Equipment restart for desktop_id {desktop_id}")
-                        logger.info(
-                            f"Equipment restart for desktop_id {desktop_id}",
-                        )
-                        e_client = self.instance_manager.ecd_client
-                        method = e_client.start_desktops
-                        status = method(
-                            [desktop_id],
-                        )
-                        if status != 200:
-                            raise HTTPException(
-                                503,
-                                "Failed to start computer resource",
-                            )
-                    elif current_status == "hibernated":
-                        # 唤醒
-                        print(f"Equipment wakeup for desktop_id {desktop_id}")
-                        logger.info(
-                            f"Equipment wakeup for desktop_id {desktop_id}",
-                        )
-                        e_client = self.instance_manager.ecd_client
-                        method = e_client.wakeup_desktops
-                        status = method(
-                            [desktop_id],
-                        )
-                        if status != 200:
-                            raise HTTPException(
-                                503,
-                                "Failed to start computer resource",
-                            )
+
+                    # 处理不同的桌面状态
+                    self._handle_desktop_status(desktop_id, current_status)
 
                 # 检查是否超时
                 if time.time() - start_time > max_wait_time:
                     raise TimeoutError(
-                        f"PC {desktop_id} failed to become ready"
-                        f" within {max_wait_time} seconds",
+                        f"PC {desktop_id} failed to become ready within"
+                        f" {max_wait_time} seconds",
                     )
 
             except Exception as e:
@@ -284,8 +302,7 @@ class CloudComputerSandbox(CloudSandbox):
                 # 出现异常时重置稳定性检查
                 stable_start_time = None
 
-            time.sleep(3)  # 减少检查间隔，更精确的监控
-
+            time.sleep(3)
         return ready_status
 
     # ------------------------------------------------------------------
@@ -304,7 +321,8 @@ class CloudComputerSandbox(CloudSandbox):
 
         slot_time = arguments.get("slot_time")
         timeout = arguments.get("timeout", self.command_timeout)
-        status, output = self.instance_manager.run_command_power_shell(
+        _sin = self.instance_manager
+        status, output = _sin.run_command_power_shell(
             command,
             slot_time,
             timeout,
