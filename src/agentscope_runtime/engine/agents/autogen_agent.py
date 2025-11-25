@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import inspect
 from typing import Optional, Type, Callable
 
 from autogen_core.models import ChatCompletionClient
@@ -169,7 +170,12 @@ class AutogenAgent(Agent):
         # We should always build a new agent since the state is manage outside
         # the agent
         if self._attr.get("custom_build_fn"):
-            _agent = self._attr["custom_build_fn"](ag_context, **kwargs)
+            build_fn = self._attr["custom_build_fn"]
+
+            if inspect.iscoroutinefunction(build_fn):
+                _agent = await build_fn(ag_context, **kwargs)
+            else:
+                _agent = build_fn(ag_context, **kwargs)
         else:
             _agent = self.build(ag_context)
 

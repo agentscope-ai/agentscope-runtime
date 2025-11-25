@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=no-self-argument
+# pylint: disable=no-self-argument, too-many-branches
 import os
 from typing import Optional, Literal, Tuple, Dict
 from pydantic import BaseModel, Field, model_validator
@@ -32,10 +32,11 @@ class SandboxManagerEnvConfig(BaseModel):
         "cloud",
         "k8s",
         "agentrun",
+        "fc",
     ] = Field(
         ...,
         description="Container deployment backend: 'docker', 'cloud', 'k8s'"
-        "or 'agentrun'.",
+        " 'agentrun' or 'fc'.",
     )
 
     default_mount_dir: Optional[str] = Field(
@@ -180,6 +181,62 @@ class SandboxManagerEnvConfig(BaseModel):
         description="Log store for AgentRun.",
     )
 
+    # FC settings
+    fc_access_key_id: Optional[str] = Field(
+        None,
+        description="Access key ID for FC. Required if "
+        "container_deployment is 'fc'.",
+    )
+    fc_access_key_secret: Optional[str] = Field(
+        None,
+        description="Access key secret for FC. "
+        "Required if container_deployment is 'fc'.",
+    )
+    fc_account_id: Optional[str] = Field(
+        None,
+        description="Account ID for FC. Required if "
+        "container_deployment is 'fc'.",
+    )
+    fc_region_id: str = Field(
+        "cn-hangzhou",
+        description="Region ID for FC.",
+    )
+    fc_cpu: float = Field(
+        2.0,
+        description="CPU allocation for FC containers.",
+    )
+    fc_memory: int = Field(
+        2048,
+        description="Memory allocation for FC containers in MB.",
+    )
+    fc_vpc_id: Optional[str] = Field(
+        None,
+        description="VPC ID for FC. Required if container_deployment "
+        "is 'FC'.",
+    )
+    fc_vswitch_ids: Optional[list[str]] = Field(
+        None,
+        description="VSwitch IDs for FC. Required if "
+        "container_deployment is 'FC'.",
+    )
+    fc_security_group_id: Optional[str] = Field(
+        None,
+        description="Security group ID for FC. "
+        "Required if container_deployment is 'FC'.",
+    )
+    fc_prefix: str = Field(
+        "agentscope-sandbox_",
+        description="Prefix for FC resources.",
+    )
+    fc_log_project: Optional[str] = Field(
+        None,
+        description="Log project for FC.",
+    )
+    fc_log_store: Optional[str] = Field(
+        None,
+        description="Log store for FC.",
+    )
+
     @model_validator(mode="after")
     def check_settings(self):
         if self.default_mount_dir:
@@ -247,6 +304,26 @@ class SandboxManagerEnvConfig(BaseModel):
                     raise ValueError(
                         f"{field_name} must be set when "
                         f"container_deployment is 'agentrun'",
+                    )
+
+        if self.container_deployment == "fc":
+            required_fc_fields = [
+                self.fc_access_key_id,
+                self.fc_access_key_secret,
+                self.fc_account_id,
+            ]
+            for field_name, field_value in zip(
+                [
+                    "fc_access_key_id",
+                    "fc_access_key_secret",
+                    "fc_account_id",
+                ],
+                required_fc_fields,
+            ):
+                if not field_value:
+                    raise ValueError(
+                        f"{field_name} must be set when "
+                        f"container_deployment is 'fc'",
                     )
 
         return self

@@ -69,6 +69,10 @@ agentrun = [
     "alibabacloud-agentrun20250910>=2.0.1",
     "alibabacloud_tea_openapi>=0.4.0"
 ]
+fc = [
+    "alibabacloud-fc20230330>=4.4.0",
+    "alibabacloud_tea_openapi>=0.4.0"
+]
 
 aliyun_tablestore_ext=[
     "tablestore-for-agent-memory>=1.1.0",

@@ -7,9 +7,13 @@ from .kubernetes_deployer import (
 from .modelstudio_deployer import (
     ModelstudioDeployManager,
 )
-from .agentrun_deployer import (
-    AgentRunDeployManager,
-)
+
+try:
+    from .agentrun_deployer import (
+        AgentRunDeployManager,
+    )
+except ImportError:
+    AgentRunDeployManager = None  # type: ignore
 
 __all__ = [
     "DeployManager",
