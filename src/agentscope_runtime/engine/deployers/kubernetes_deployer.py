@@ -177,6 +177,9 @@ class KubernetesDeployManager(DeployManager):
 
             resource_name = f"agent-{deploy_id[:8]}"
 
+
+            logger.info(f"Building kubernetes deployment for {deploy_id}")
+
             # Create Deployment
             _id, ports, ip = self.k8s_client.create_deployment(
                 image=built_image_name,

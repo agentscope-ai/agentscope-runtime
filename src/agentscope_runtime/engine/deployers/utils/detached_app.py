@@ -107,7 +107,14 @@ def build_detached_app(
 
     if dockerfile_path:
         dest = project_root / "Dockerfile"
-        shutil.copyfile(dockerfile_path, dest)
+        with open(dockerfile_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        new_content = content.replace(DEFAULT_ENTRYPOINT_FILE,
+                                      project_info.entrypoint_file)
+        with open(dest, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+        os.remove(dockerfile_path)
 
     _write_bundle_meta(project_root, entry_script)
 

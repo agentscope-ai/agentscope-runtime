@@ -4,6 +4,7 @@
 import hashlib
 import logging
 import os
+import json
 from typing import Optional, List, Dict, Union
 
 from pydantic import BaseModel, Field
@@ -39,6 +40,12 @@ class ImageConfig(BaseModel):
     port: int = 8000
     env_vars: Dict[str, str] = Field(default_factory=lambda: {})
     startup_command: Optional[str] = None
+
+    # Runtime configuration
+    host: str = "0.0.0.0"  # Container-friendly default
+    embed_task_processor: bool = False
+    extra_startup_args: Dict[str, Union[str, int, bool]] = Field(
+        default_factory=dict)
 
     # Build configuration
     no_cache: bool = False
@@ -108,6 +115,55 @@ class ImageFactory:
                 f"Invalid requirements type: {type(requirements)}",
             )
 
+    @staticmethod
+    def _generate_startup_command(
+        entrypoint_file: str,
+        config: ImageConfig,
+    ) -> str:
+        """
+        Generate a comprehensive startup command for the containerized application.
+
+        This method creates a startup command that includes all necessary parameters
+        for running the AgentScope application in a container environment, similar
+        to what's used in the app_main.py.j2 template.
+
+        Args:
+            entrypoint_file: Project  entrypoint details
+            config: ImageConfig with runtime settings
+
+        Returns:
+            str: Complete startup command with all parameters
+        """
+        # If a custom startup command is provided, use it directly
+        if config.startup_command:
+            return config.startup_command
+
+        # Start with basic python command
+        cmd_parts = ["python", entrypoint_file]
+
+        # Add host configuration
+        cmd_parts.extend(["--host", config.host])
+
+        # Add port configuration
+        cmd_parts.extend(["--port", str(config.port)])
+
+        # Add embed-task-processor flag if enabled
+        if config.embed_task_processor:
+            cmd_parts.append("--embed-task-processor")
+
+        # Add any extra startup arguments
+        for arg_name, arg_value in config.extra_startup_args.items():
+            # Convert underscore to dash for CLI compatibility
+            cli_arg = f"--{arg_name.replace('_', '-')}"
+
+            if isinstance(arg_value, bool):
+                if arg_value:  # Only add flag if True
+                    cmd_parts.append(cli_arg)
+            else:
+                cmd_parts.extend([cli_arg, str(arg_value)])
+
+        return json.dumps(cmd_parts)
+
     def _build_image(
         self,
         app,
@@ -137,16 +193,20 @@ class ImageFactory:
         try:
             logger.info(f"Building Runner image: {config.image_tag}")
 
-            # get project info
-            project_info = project_dir_extractor(app=app, runner=runner)
-
             # Generate Dockerfile
             logger.info("Generating Dockerfile...")
+
+            # Generate comprehensive startup command
+            startup_command = self._generate_startup_command(
+                entrypoint_file=DEFAULT_ENTRYPOINT_FILE,
+                config=config,
+            )
+
             dockerfile_config = DockerfileConfig(
                 base_image=config.base_image,
                 port=config.port,
                 env_vars=config.env_vars,
-                startup_command="python " + project_info.entrypoint_file,
+                startup_command=startup_command,
             )
 
             dockerfile_path = self.dockerfile_generator.create_dockerfile(
@@ -225,6 +285,10 @@ class ImageFactory:
         custom_endpoints: Optional[
             List[Dict]
         ] = None,  # New parameter for custom endpoints
+        # New runtime configuration parameters
+        host: str = "0.0.0.0",
+        embed_task_processor: bool = True,
+        extra_startup_args: Optional[Dict[str, Union[str, int, bool]]] = None,
         **kwargs,
     ) -> str:
         """
@@ -242,6 +306,9 @@ class ImageFactory:
             push_to_registry: Whether to push to registry
             protocol_adapters: Protocol adapters
             custom_endpoints: Custom endpoints from agent app
+            host: Host to bind to (default: 0.0.0.0 for containers)
+            embed_task_processor: Whether to embed task processor
+            extra_startup_args: Additional startup arguments
             **kwargs: Additional configuration options
 
         Returns:
@@ -273,6 +340,9 @@ class ImageFactory:
             push_to_registry=push_to_registry,
             protocol_adapters=protocol_adapters,
             custom_endpoints=custom_endpoints,
+            host=host,
+            embed_task_processor=embed_task_processor,
+            extra_startup_args=extra_startup_args or {},
             **kwargs,
         )
 

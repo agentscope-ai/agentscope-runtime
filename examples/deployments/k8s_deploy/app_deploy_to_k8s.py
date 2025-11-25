@@ -178,7 +178,7 @@ async def deploy_app_to_k8s():
         # Basic configuration
         "port": str(port),
         "replicas": 1,  # Deploy 1 replica
-        "image_tag": "linux-amd64",
+        "image_tag": "linux-amd64-1",
         "image_name": "agent_app",
         # Dependencies configuration
         "requirements": [
