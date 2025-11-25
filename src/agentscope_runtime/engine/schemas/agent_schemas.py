@@ -636,7 +636,42 @@ class BaseRequest(BaseModel):
 class AgentRequest(BaseRequest):
     """agent request"""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(
+        extra="allow",
+        json_schema_extra={
+            "example": {
+                "input": [
+                    {
+                        "role": "user",
+                        "type": "message",
+                        "content": [{"type": "text", "text": "hello"}],
+                    },
+                    {
+                        "type": "message",
+                        "role": "assistant",
+                        "content": [
+                            {
+                                "object": "content",
+                                "type": "text",
+                                "text": "Hello! How can I assist you today?",
+                            },
+                        ],
+                    },
+                    {
+                        "role": "user",
+                        "type": "message",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "What is the capital of France?",
+                            },
+                        ],
+                    },
+                ],
+                "session_id": "1764056632961",
+            },
+        },
+    )
 
     model: Optional[str] = None
     """

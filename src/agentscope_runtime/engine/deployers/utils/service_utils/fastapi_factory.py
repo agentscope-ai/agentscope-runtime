@@ -3,6 +3,7 @@
 # pylint:disable=protected-access
 
 import asyncio
+import functools
 import inspect
 import json
 import logging
@@ -18,7 +19,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
 
 from agentscope_runtime.engine.schemas.response_api import ResponseAPI
-
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from .service_config import ServicesConfig, DEFAULT_SERVICES_CONFIG
 from ..deployment_modes import DeploymentMode
 from ...adapter.protocol_adapter import ProtocolAdapter
@@ -65,6 +66,14 @@ class _WrappedFastAPI(FastAPI):
                         ref_template=self._REF_TEMPLATE,
                     ),
                 )
+
+        self._inject_schema(
+            openapi_schema,
+            "AgentRequest",
+            AgentRequest.model_json_schema(
+                ref_template=self._REF_TEMPLATE,
+            ),
+        )
 
         return openapi_schema
 
@@ -407,14 +416,36 @@ class FastAPIAppFactory:
 
             return status
 
-        # Main processing endpoint
-        # if stream_enabled:
-        # Streaming endpoint
-        @app.post(endpoint_path)
-        async def stream_endpoint(request: dict):
-            """Streaming endpoint."""
+        # Agent API endpoint
+        @app.post(
+            endpoint_path,
+            openapi_extra={
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AgentRequest",
+                            },
+                        },
+                    },
+                    "required": True,
+                    "description": "Agent API Request Format "
+                    "See https://runtime.agentscope.io/en/protocol.html for "
+                    "more details.",
+                },
+            },
+            tags=["agent-api"],
+        )
+        async def agent_api(request: dict):
+            """
+            Agent API endpoint, see
+            <https://runtime.agentscope.io/en/protocol.html> for more details.
+            """
             return StreamingResponse(
-                FastAPIAppFactory._create_stream_generator(app, request),
+                FastAPIAppFactory._create_stream_generator(
+                    app,
+                    request=request,
+                ),
                 media_type="text/event-stream",
                 headers={
                     "Cache-Control": "no-cache",
@@ -666,6 +697,7 @@ class FastAPIAppFactory:
                 # Create wrapper that parses JSON to Pydantic model
                 if inspect.iscoroutinefunction(handler):
 
+                    @functools.wraps(handler)
                     async def async_pydantic_wrapper(request: Request):
                         try:
                             body = await request.json()
@@ -683,6 +715,7 @@ class FastAPIAppFactory:
                     return async_pydantic_wrapper
                 else:
 
+                    @functools.wraps(handler)
                     async def sync_pydantic_wrapper(request: Request):
                         try:
                             body = await request.json()
@@ -768,6 +801,7 @@ class FastAPIAppFactory:
 
         if is_async_gen:
 
+            @functools.wraps(handler)
             async def wrapped_handler(*args, **kwargs):
                 async def generate():
                     async for chunk in handler(*args, **kwargs):
@@ -786,6 +820,7 @@ class FastAPIAppFactory:
 
         else:
 
+            @functools.wraps(handler)
             def wrapped_handler(*args, **kwargs):
                 def generate():
                     for chunk in handler(*args, **kwargs):
@@ -880,6 +915,7 @@ class FastAPIAppFactory:
                         wrapped_handler,
                         methods=[method],
                         tags=tags,
+                        response_model=None,
                     )
                 else:
                     # Sync function -> Async wrapper with parameter parsing
@@ -890,6 +926,7 @@ class FastAPIAppFactory:
                         path,
                         wrapped_handler,
                         methods=[method],
+                        response_model=None,
                         tags=tags,
                     )
 

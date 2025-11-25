@@ -185,6 +185,9 @@ class AgentApp(BaseApp):
 
     def get_fastapi_app(self, **kwargs):
         """Get the FastAPI application"""
+
+        self._build_runner()
+
         return FastAPIAppFactory.create_app(
             runner=self._runner,
             endpoint_path=self.endpoint_path,
