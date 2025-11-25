@@ -236,7 +236,7 @@ async def deploy_app_to_k8s():
         raise
 
 
-async def test_deployed_service(service_url: str):
+async def deployed_service_run(service_url: str):
     """Test the deployed service"""
     import aiohttp
 
@@ -289,7 +289,7 @@ async def main():
 
         # Test service
         print("\n🧪 Testing the deployed service...")
-        await test_deployed_service(service_url)
+        await deployed_service_run(service_url)
 
         # Keep running, you can test manually
         print(

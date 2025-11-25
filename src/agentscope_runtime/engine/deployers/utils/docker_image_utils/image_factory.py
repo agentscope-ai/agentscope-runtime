@@ -146,7 +146,7 @@ class ImageFactory:
                 base_image=config.base_image,
                 port=config.port,
                 env_vars=config.env_vars,
-                startup_command="python" + project_info.entrypoint_file,
+                startup_command="python " + project_info.entrypoint_file,
             )
 
             dockerfile_path = self.dockerfile_generator.create_dockerfile(

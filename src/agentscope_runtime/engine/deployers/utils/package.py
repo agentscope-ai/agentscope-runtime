@@ -90,15 +90,6 @@ class ProjectInfo(BaseModel):
     is_directory_entrypoint: bool = False  # True if packaging entire directory
 
 
-class DependencyInfo(BaseModel):
-    """Information about project dependencies."""
-
-    requirements_file: Optional[str] = None  # Path to requirements.txt
-    pyproject_file: Optional[str] = None  # Path to pyproject.toml
-    dependency_hash: Optional[str] = None  # Hash for cache validation
-    has_dependencies: bool = False  # Whether dependencies were found
-
-
 # ===== Project Directory Extraction =====
 
 
@@ -298,82 +289,6 @@ def _auto_detect_entrypoint(project_dir: str) -> str:
         f"Expected one of: {', '.join(candidates)}",
     )
 
-
-# ===== Dependency Detection =====
-
-
-def detect_dependencies(project_dir: Path) -> DependencyInfo:
-    """
-    Detect dependency files (requirements.txt or pyproject.toml) in project.
-
-    Args:
-        project_dir: Project directory path
-
-    Returns:
-        DependencyInfo with detected dependency information
-    """
-    project_dir = Path(project_dir).resolve()
-
-    requirements_file = None
-    pyproject_file = None
-
-    # Check for requirements.txt
-    req_path = project_dir / "requirements.txt"
-    if req_path.exists():
-        requirements_file = str(req_path)
-
-    # Check for pyproject.toml
-    pyproject_path = project_dir / "pyproject.toml"
-    if pyproject_path.exists():
-        pyproject_file = str(pyproject_path)
-
-    has_dependencies = (
-        requirements_file is not None or pyproject_file is not None
-    )
-
-    # Calculate hash for caching
-    dependency_hash = None
-    if has_dependencies:
-        dependency_hash = _calculate_dependency_hash(
-            requirements_file,
-            pyproject_file,
-        )
-
-    return DependencyInfo(
-        requirements_file=requirements_file,
-        pyproject_file=pyproject_file,
-        dependency_hash=dependency_hash,
-        has_dependencies=has_dependencies,
-    )
-
-
-def _calculate_dependency_hash(
-    requirements_file: Optional[str],
-    pyproject_file: Optional[str],
-) -> str:
-    """
-    Calculate combined hash of dependency files for cache validation.
-
-    Args:
-        requirements_file: Path to requirements.txt (if exists)
-        pyproject_file: Path to pyproject.toml (if exists)
-
-    Returns:
-        SHA256 hash string
-    """
-    hasher = hashlib.sha256()
-
-    if requirements_file and os.path.exists(requirements_file):
-        with open(requirements_file, "rb") as f:
-            hasher.update(f.read())
-
-    if pyproject_file and os.path.exists(pyproject_file):
-        with open(pyproject_file, "rb") as f:
-            hasher.update(f.read())
-
-    return hasher.hexdigest()
-
-
 # ===== Main Template Generation =====
 def _generate_app_main_template(entrypoint_info: EntrypointInfo) -> str:
     """
@@ -483,82 +398,6 @@ def generate_main_template(entrypoint_info: EntrypointInfo) -> str:
         )
 
 
-# ===== Package Caching =====
-class PackageCache:
-    """Cache manager for dependency packages."""
-
-    def __init__(self, cache_dir: Path):
-        """
-        Initialize package cache.
-
-        Args:
-            cache_dir: Directory for caching artifacts
-        """
-        self.cache_dir = Path(cache_dir)
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-
-    @property
-    def dependencies_zip(self) -> Path:
-        """Path to cached dependencies.zip."""
-        return self.cache_dir / "dependencies.zip"
-
-    @property
-    def dependencies_hash_file(self) -> Path:
-        """Path to hash file for dependencies."""
-        return self.cache_dir / "dependencies.hash"
-
-    def should_rebuild_dependencies(
-        self,
-        dependency_info: DependencyInfo,
-        force: bool = False,
-    ) -> bool:
-        """
-        Determine if dependencies need rebuilding.
-
-        Args:
-            dependency_info: Dependency information
-            force: Force rebuild flag
-
-        Returns:
-            True if dependencies should be rebuilt
-        """
-        if force:
-            logger.info("Force rebuild requested")
-            return True
-
-        if not self.dependencies_zip.exists():
-            logger.info("No cached dependencies found, will build")
-            return True
-
-        if not self.dependencies_hash_file.exists():
-            logger.info("No hash file found, will rebuild")
-            return True
-
-        current_hash = dependency_info.dependency_hash
-        stored_hash = self.dependencies_hash_file.read_text().strip()
-
-        if current_hash != stored_hash:
-            logger.info("Dependencies changed, will rebuild")
-            logger.debug(f"  Previous hash: {stored_hash[:12]}")
-            logger.debug(f"  Current hash:  {current_hash[:12]}")
-            return True
-
-        logger.info("Using cached dependencies (no changes detected)")
-        return False
-
-    def save_dependencies_hash(self, dependency_info: DependencyInfo) -> None:
-        """
-        Save dependency hash for future comparisons.
-
-        Args:
-            dependency_info: Dependency information with hash
-        """
-        if dependency_info.dependency_hash:
-            self.dependencies_hash_file.write_text(
-                dependency_info.dependency_hash,
-            )
-
-
 # ===== Project Packaging =====
 
 
@@ -594,6 +433,7 @@ def _get_default_ignore_patterns() -> List[str]:
         ".idea",
         ".vscode",
         "*.log",
+        "logs"
     ]
 
 
@@ -816,15 +656,15 @@ def package(
 
         # Update project_info to use generated main.py
         project_info.entrypoint_file = DEFAULT_ENTRYPOINT_FILE
-        project_info.entrypoint_handler = (
-            entrypoint_info.object_name
-        )  # Use object name
+        project_info.entrypoint_handler = entrypoint_info.object_name
+        # Use object name
         project_info.handler_type = entrypoint_info.object_type  # Use type
         project_info.project_dir = str(temp_source_dir)
 
         generated_main = True
         logger.info(
-            f"Generated main.py template for {entrypoint_info.object_type}: {entrypoint_info.object_name}",
+            f"Generated main.py template for {entrypoint_info.object_type}: "
+            f"{entrypoint_info.object_name}",
         )
         logger.info(
             f"Service will start on {default_host}:{default_port} by default",

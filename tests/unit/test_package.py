@@ -12,15 +12,11 @@ import pytest
 
 from agentscope_runtime.engine.deployers.utils.package import (
     ProjectInfo,
-    DependencyInfo,
     parse_entrypoint,
-    detect_dependencies,
     package_code,
     package,
-    PackageCache,
     project_dir_extractor,
     _auto_detect_entrypoint,
-    _calculate_dependency_hash,
 )
 
 
@@ -39,23 +35,6 @@ class TestProjectInfo:
         assert info.entrypoint_file == "app.py"
         assert info.entrypoint_handler == "app"
         assert info.is_directory_entrypoint is False
-
-
-class TestDependencyInfo:
-    """Test cases for DependencyInfo model."""
-
-    def test_dependency_info_creation(self):
-        """Test DependencyInfo creation."""
-        info = DependencyInfo(
-            requirements_file="/path/requirements.txt",
-            pyproject_file=None,
-            dependency_hash="abc123",
-            has_dependencies=True,
-        )
-        assert info.requirements_file == "/path/requirements.txt"
-        assert info.pyproject_file is None
-        assert info.dependency_hash == "abc123"
-        assert info.has_dependencies is True
 
 
 class TestProjectDirExtractor:
@@ -187,135 +166,6 @@ class TestAutoDetectEntrypoint:
         (tmp_path / "main.py").write_text("# main")
         result = _auto_detect_entrypoint(str(tmp_path))
         assert result == "app.py"
-
-
-class TestDetectDependencies:
-    """Test cases for dependency detection."""
-
-    def test_detect_requirements_txt(self, tmp_path):
-        """Test detection of requirements.txt."""
-        req_file = tmp_path / "requirements.txt"
-        req_file.write_text("fastapi\nuvicorn\n")
-
-        result = detect_dependencies(tmp_path)
-
-        assert result.has_dependencies is True
-        assert result.requirements_file == str(req_file)
-        assert result.pyproject_file is None
-        assert result.dependency_hash is not None
-
-    def test_detect_pyproject_toml(self, tmp_path):
-        """Test detection of pyproject.toml."""
-        pyproject_file = tmp_path / "pyproject.toml"
-        pyproject_file.write_text('[project]\nname = "test"\n')
-
-        result = detect_dependencies(tmp_path)
-
-        assert result.has_dependencies is True
-        assert result.pyproject_file == str(pyproject_file)
-        assert result.requirements_file is None
-        assert result.dependency_hash is not None
-
-    def test_no_dependencies(self, tmp_path):
-        """Test when no dependency files exist."""
-        result = detect_dependencies(tmp_path)
-
-        assert result.has_dependencies is False
-        assert result.requirements_file is None
-        assert result.pyproject_file is None
-        assert result.dependency_hash is None
-
-
-class TestCalculateDependencyHash:
-    """Test cases for dependency hash calculation."""
-
-    def test_hash_requirements_file(self, tmp_path):
-        """Test hashing of requirements.txt."""
-        req_file = tmp_path / "requirements.txt"
-        req_file.write_text("fastapi==0.100.0\n")
-
-        hash1 = _calculate_dependency_hash(str(req_file), None)
-        assert hash1 is not None
-        assert len(hash1) == 64  # SHA256 hex length
-
-        # Same content should produce same hash
-        hash2 = _calculate_dependency_hash(str(req_file), None)
-        assert hash1 == hash2
-
-        # Different content should produce different hash
-        req_file.write_text("fastapi==0.100.1\n")
-        hash3 = _calculate_dependency_hash(str(req_file), None)
-        assert hash1 != hash3
-
-
-class TestPackageCache:
-    """Test cases for package caching."""
-
-    def test_cache_initialization(self, tmp_path):
-        """Test cache initialization."""
-        cache_dir = tmp_path / "cache"
-        cache = PackageCache(cache_dir)
-
-        assert cache.cache_dir == cache_dir
-        assert cache_dir.exists()
-
-    def test_should_rebuild_force(self, tmp_path):
-        """Test force rebuild flag."""
-        cache = PackageCache(tmp_path / "cache")
-        dep_info = DependencyInfo(
-            requirements_file=None,
-            has_dependencies=False,
-        )
-
-        result = cache.should_rebuild_dependencies(dep_info, force=True)
-        assert result is True
-
-    def test_should_rebuild_no_cache(self, tmp_path):
-        """Test rebuild when no cache exists."""
-        cache = PackageCache(tmp_path / "cache")
-        dep_info = DependencyInfo(
-            requirements_file=None,
-            dependency_hash="abc123",
-            has_dependencies=True,
-        )
-
-        result = cache.should_rebuild_dependencies(dep_info, force=False)
-        assert result is True
-
-    def test_should_rebuild_hash_match(self, tmp_path):
-        """Test no rebuild when hash matches."""
-        cache = PackageCache(tmp_path / "cache")
-
-        # Create dummy cache files
-        cache.dependencies_zip.write_text("dummy")
-        cache.dependencies_hash_file.write_text("abc123")
-
-        dep_info = DependencyInfo(
-            requirements_file=None,
-            dependency_hash="abc123",
-            has_dependencies=True,
-        )
-
-        result = cache.should_rebuild_dependencies(dep_info, force=False)
-        assert result is False
-
-    def test_should_rebuild_hash_mismatch(self, tmp_path):
-        """Test rebuild when hash doesn't match."""
-        cache = PackageCache(tmp_path / "cache")
-
-        # Create dummy cache files with different hash
-        cache.dependencies_zip.write_text("dummy")
-        cache.dependencies_hash_file.write_text("old_hash")
-
-        dep_info = DependencyInfo(
-            requirements_file=None,
-            dependency_hash="new_hash",
-            has_dependencies=True,
-        )
-
-        result = cache.should_rebuild_dependencies(dep_info, force=False)
-        assert result is True
-
 
 class TestPackageCode:
     """Test cases for code packaging."""
