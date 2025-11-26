@@ -245,7 +245,7 @@ from typing import Optional, Union, List
 from uuid import uuid4
 
 from agentscope_runtime.engine.schemas.agent_schemas import RunStatus, TextContent, ImageContent, DataContent
-from prompt_toolkit.utils import Event
+from agentscope_runtime.engine.schemas.agent_schemas import Event
 from pydantic import Field
 class Message(Event):
     id: str = Field(default_factory=lambda: "msg_" + str(uuid4()))
