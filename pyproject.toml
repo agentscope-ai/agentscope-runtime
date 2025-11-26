@@ -67,7 +67,7 @@ aliyun_tablestore_ext=[
 ]
 
 memory-ext = [
-    "reme-ai==0.1.9 ; python_full_version >= '3.12'",
+    "reme-ai>=0.2.0.2",
     "mem0ai>=0.1.117"
 ]
 
