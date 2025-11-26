@@ -173,7 +173,44 @@ app.run(host="0.0.0.0", port=8090)
 
 The server will start and listen on: `http://localhost:8090/process`.
 
-### Step 6: Send Request to Agent
+### Step 6: Environment Manager
+To ensure that agents can execute browser operations in a secure and isolated environment, we need to configure a standard `EnvironmentManager` to manage sandbox environment resources.
+The `EnvironmentManager` integrates with `SandboxService` and exposes environment operations: `connect_sandbox`, `release_sandbox`.
+```python
+from agentscope_runtime.engine.services.environment_manager import (
+    create_environment_manager,
+)
+import asyncio
+
+async def setup_basic_environment():
+    env_manager = create_environment_manager()
+    env_manager.configure(
+        enable_logging=True,
+        log_level="INFO",
+        max_concurrent_agents=10,
+        sandbox_image="agentscope/runtime-sandbox-browser:latest",
+        max_workers=5,
+    )
+
+    return env_manager
+
+# Initialize environment when application starts
+async def main():
+    env_manager = await setup_basic_environment()
+
+    # Register with App instance
+    app.register_service_manager(env_manager)
+
+    print("✅ EnvironmentManager registered to AgentApp")
+    return env_manager
+
+if __name__ == "__main__":
+    env_manager = asyncio.run(main())
+```
+With this configuration, the EnvironmentManager will automatically manage the creation, allocation, and recycling of browser sandboxes, ensuring that each agent request executes in an independent secure environment.
+For more details, see {doc}`environment_manager`.
+
+### Step 7: Send Request to Agent
 
 You can send JSON input to the API using `curl`:
 
@@ -195,7 +232,7 @@ curl -N \
 
 You’ll see output streamed in **Server-Sent Events (SSE)** format.
 
-### Step 7: Deploy the Agent with Deployer
+### Step 8: Deploy the Agent with Deployer
 
 The AgentScope Runtime provides a powerful deployment system that allows you to deploy your agent to remote or local container. And we use `LocalDeployManager` as example:
 

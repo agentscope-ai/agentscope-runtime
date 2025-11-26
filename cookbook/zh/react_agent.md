@@ -174,14 +174,14 @@ app.run(host="0.0.0.0", port=8090)
 运行后，服务器会启动并监听：`http://localhost:8090/process`
 
 ### Step 6: 环境管理器（Environment Manager）
-
+为了确保智能体能够在安全隔离的环境中执行浏览器操作，我们需要配置标准的 `EnvironmentManager` 来管理沙箱环境资源。
 `EnvironmentManager` 装配 `SandboxService` 并暴露环境操作：`connect_sandbox`、`release_sandbox`。
 
 ```python
 from agentscope_runtime.engine.services.environment_manager import (
-    EnvironmentManager,
     create_environment_manager,
 )
+import asyncio
 
 async def setup_basic_environment():
     env_manager = create_environment_manager()
@@ -189,6 +189,8 @@ async def setup_basic_environment():
         enable_logging=True,
         log_level="INFO",
         max_concurrent_agents=10,
+        sandbox_image="agentscope/runtime-sandbox-browser:latest",
+        max_workers=5,
     )
 
     return env_manager
@@ -196,6 +198,11 @@ async def setup_basic_environment():
 # 应用启动时初始化环境
 async def main():
     env_manager = await setup_basic_environment()
+
+    # 注册到 App 实例
+    app.register_service_manager(env_manager)
+
+    print("✅ EnvironmentManager 已注册至 AgentApp")
     return env_manager
 
 if __name__ == "__main__":
@@ -203,6 +210,7 @@ if __name__ == "__main__":
 
 ```
 
+通过以上配置，`EnvironmentManager` 将自动管理浏览器沙箱的创建、分配和回收，确保每个智能体请求都在独立的安全环境中执行。
 更多细节见 {doc}`environment_manager`。
 
 ### 步骤7：发送一个请求
