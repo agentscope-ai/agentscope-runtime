@@ -779,7 +779,11 @@ class ModelstudioDeployManager(DeployManager):
                 # 如果是更新agent，且没有传deploy_name, 则不更新名字
                 if agent_id and (deploy_name is None):
                     name = None
+                logger.info(
+                    "Using external wheel file: %s", wheel_path)
+
             else:
+                logger.info("Building wheel package from project")
                 (
                     wheel_path,
                     name,
@@ -793,7 +797,8 @@ class ModelstudioDeployManager(DeployManager):
             console_url = ""
             deploy_identifier = ""
             if not skip_upload:
-                # Only require cloud SDKs and credentials when performing upload/deploy
+                # Only require cloud SDKs and credentials when performing
+                # upload/deploy
                 _assert_cloud_sdks_available()
                 self.oss_config.ensure_valid()
                 self.modelstudio_config.ensure_valid()
@@ -823,7 +828,8 @@ class ModelstudioDeployManager(DeployManager):
         except Exception as e:
             # Print richer error message to improve UX
             err_text = str(e)
-            logger.error("Failed to deploy to modelstudio: %s", err_text)
+            logger.error(
+                "Failed to deploy to modelstudio: %s", err_text)
             raise
 
     async def stop(self) -> None:  # pragma: no cover - not supported yet
