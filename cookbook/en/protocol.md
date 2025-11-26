@@ -155,7 +155,7 @@ class FunctionCallOutput(BaseModel):
 
 ```{code-cell}
 from typing import Dict, Any, Optional, List, Union
-from prompt_toolkit.utils import Event
+from agentscope_runtime.engine.schemas.agent_schemas import Event
 class Content(Event):
     type: str
     """The type of the content part."""

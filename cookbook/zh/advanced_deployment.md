@@ -160,8 +160,7 @@ print("✅ 智能体和端点配置成功")
 # daemon_deploy.py
 import asyncio
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
-# from agentscope_runtime.engine.app import agent_app  # 导入已配置的 app
-from agent_app import app
+from agent_app import app  # 导入已配置的 app
 # 以守护进程模式部署
 async def main():
     # app = agent_app.AgentApp()
