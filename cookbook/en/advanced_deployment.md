@@ -365,12 +365,11 @@ from agentscope_runtime.engine.deployers.kubernetes_deployer import (
     RegistryConfig,
     K8sConfig,
 )
-from agentscope_runtime.engine.app import agent_app  # Import the configured app
+from agent_app import app  # Import the configured app
 
 async def deploy_to_k8s():
     """Deploy AgentApp to Kubernetes"""
 
-    app = agent_app.AgentApp()
     # Configure registry and K8s connection
     deployer = KubernetesDeployManager(
         kube_config=K8sConfig(
@@ -459,12 +458,11 @@ from agentscope_runtime.engine.deployers.modelstudio_deployer import (
     OSSConfig,
     ModelstudioConfig,
 )
-from agentscope_runtime.engine.app import agent_app  # Import the configured app
+from agent_app import app  # Import the configured app
 
 async def deploy_to_modelstudio():
     """Deploy AgentApp to Alibaba Cloud ModelStudio"""
 
-    app = agent_app.AgentApp()
     # Configure OSS and ModelStudio
     deployer = ModelstudioDeployManager(
         oss_config=OSSConfig(

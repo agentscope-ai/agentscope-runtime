@@ -106,7 +106,6 @@ Run custom logic before the application starts and after it stops — for exampl
 **Example Usage**
 
 ```python
-from agentscope_runtime.engine import AgentApp
 async def init_resources(app, **kwargs):
     print("🚀 Service starting, initializing resources...")
 
