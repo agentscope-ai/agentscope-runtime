@@ -84,6 +84,7 @@ def run_app():
             ),
             formatter=DashScopeChatFormatter(),
         )
+        agent.set_console_output_enabled(enabled=False)
 
         if state:
             agent.load_state_dict(state)
