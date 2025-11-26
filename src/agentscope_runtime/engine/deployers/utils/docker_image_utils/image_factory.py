@@ -2,9 +2,9 @@
 # pylint:disable=protected-access
 
 import hashlib
+import json
 import logging
 import os
-import json
 from typing import Optional, List, Dict, Union
 
 from pydantic import BaseModel, Field
@@ -16,7 +16,7 @@ from .docker_image_builder import (
 )
 from .dockerfile_generator import DockerfileGenerator, DockerfileConfig
 from ..detached_app import build_detached_app
-from ..package import project_dir_extractor, DEFAULT_ENTRYPOINT_FILE
+from ..package import DEFAULT_ENTRYPOINT_FILE
 from .....engine.runner import Runner
 
 logger = logging.getLogger(__name__)

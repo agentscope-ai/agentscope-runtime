@@ -13,7 +13,8 @@ class FastAPITemplateManager:
     def __init__(self):
         """Initialize template manager."""
         self.template_dir = os.path.join(
-            os.path.dirname(__file__),
+            os.path.dirname(os.path.dirname(__file__)),
+            "templates",
         )
         self.env = Environment(
             loader=FileSystemLoader(self.template_dir),

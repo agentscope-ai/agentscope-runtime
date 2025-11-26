@@ -57,10 +57,10 @@ class TestProjectDirExtractor:
 
         # Create the mock app in this scope
         # The function will inspect the call stack to find where this object exists
-        mock_app = MockApp()
+        app = MockApp()
 
         try:
-            result = project_dir_extractor(app=mock_app)
+            result = project_dir_extractor(app=app)
             # If successful, verify the result structure
             assert result.project_dir is not None
             assert os.path.exists(result.project_dir)
@@ -80,10 +80,10 @@ class TestProjectDirExtractor:
             def __init__(self):
                 self.framework_type = "agentscope"
 
-        mock_runner = MockRunner()
+        runner = MockRunner()
 
         try:
-            result = project_dir_extractor(runner=mock_runner)
+            result = project_dir_extractor(runner=runner)
             assert result.project_dir is not None
             assert result.entrypoint_handler == "runner"
             assert result.is_directory_entrypoint is False

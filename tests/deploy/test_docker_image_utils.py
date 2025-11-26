@@ -230,12 +230,12 @@ class TestImageFactory:
     def test_build_image_mock(self, mocker):
         mock_bundle = mocker.patch(
             "agentscope_runtime.engine.deployers.utils.docker_image_utils."
-            "runner_image_factory.build_detached_bundle",
+            "image_factory.build_detached_app",
             return_value=(self.temp_dir, mocker.Mock()),
         )
         mock_builder_class = mocker.patch(
             "agentscope_runtime.engine.deployers.utils.docker_image_utils."
-            "runner_image_factory.DockerImageBuilder",
+            "image_factory.DockerImageBuilder",
         )
         """Test build_runner_image method with mocks."""
 
@@ -273,7 +273,7 @@ class TestImageFactory:
         image_factory = ImageFactory()
         mock_build = mocker.patch.object(
             image_factory,
-            "_build_runner_image",
+            "build_image",
             return_value="app-image:latest",
         )
 
@@ -288,4 +288,3 @@ class TestImageFactory:
 
         assert result == "app-image:latest"
         mock_build.assert_called_once()
-        assert mock_build.call_args[0][0] is mock_runner

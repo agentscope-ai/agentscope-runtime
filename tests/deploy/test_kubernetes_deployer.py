@@ -113,7 +113,7 @@ class TestKubernetesDeployManager:
         # Mock the image builder to avoid actual Docker operations
         with patch.object(
             deployer.image_factory,
-            "build_runner_image",
+            "build_image",
             return_value="test-image:latest",
         ) as mock_build:
             # Test deployment
@@ -159,7 +159,7 @@ class TestKubernetesDeployManager:
         # Mock the image builder to return None (build failure)
         with patch.object(
             deployer.image_factory,
-            "build_runner_image",
+            "build_image",
             return_value=None,
         ):
             # Test deployment failure
@@ -193,7 +193,7 @@ class TestKubernetesDeployManager:
         # Mock the image builder to return success, but k8s deployment fails
         with patch.object(
             deployer.image_factory,
-            "build_runner_image",
+            "build_image",
             return_value="test-image:latest",
         ):
             # Test deployment failure
@@ -226,7 +226,7 @@ class TestKubernetesDeployManager:
 
         with patch.object(
             deployer.image_factory,
-            "build_runner_image",
+            "build_image",
             return_value="app-image:latest",
         ) as mock_build:
             result = await deployer.deploy(app=mock_app, replicas=1)
@@ -261,7 +261,7 @@ class TestKubernetesDeployManager:
         # Mock the image builder
         with patch.object(
             deployer.image_factory,
-            "build_runner_image",
+            "build_image",
             return_value="test-image:latest",
         ) as mock_build:
             result = await deployer.deploy(
@@ -295,7 +295,7 @@ class TestKubernetesDeployManager:
         # Mock the image builder
         with patch.object(
             deployer.image_factory,
-            "build_runner_image",
+            "build_image",
             return_value="test-image:latest",
         ):
             result = await deployer.deploy(
