@@ -167,9 +167,9 @@ Using the agent and endpoints defined in the {ref}`Common Agent Setup<common-age
 import asyncio
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
 from agent_app import app  # Import the configured app
+
 # Deploy in daemon mode
 async def main():
-    # app = agent_app.AgentApp()
     await app.deploy(LocalDeployManager())
 
 if __name__ == "__main__":
