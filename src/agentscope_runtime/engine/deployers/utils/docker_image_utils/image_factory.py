@@ -45,7 +45,8 @@ class ImageConfig(BaseModel):
     host: str = "0.0.0.0"  # Container-friendly default
     embed_task_processor: bool = False
     extra_startup_args: Dict[str, Union[str, int, bool]] = Field(
-        default_factory=dict)
+        default_factory=dict,
+    )
 
     # Build configuration
     no_cache: bool = False
@@ -121,11 +122,12 @@ class ImageFactory:
         config: ImageConfig,
     ) -> str:
         """
-        Generate a comprehensive startup command for the containerized application.
+        Generate a comprehensive startup command for the containerized
+        application.
 
-        This method creates a startup command that includes all necessary parameters
-        for running the AgentScope application in a container environment, similar
-        to what's used in the app_main.py.j2 template.
+        This method creates a startup command that includes all necessary
+        parameters for running the AgentScope application in a container
+        environment, similar to what's used in the app_main.py.j2 template.
 
         Args:
             entrypoint_file: Project  entrypoint details
@@ -167,7 +169,7 @@ class ImageFactory:
     def _build_image(
         self,
         app,
-        runner: Runner,
+        runner: Optional[Runner],
         config: ImageConfig,
     ) -> str:
         """

@@ -53,7 +53,6 @@ async def query_func(
     self,
     msgs,
     request: AgentRequest = None,
-    **kwargs,
 ):
     session_id = request.session_id
     user_id = request.user_id
@@ -123,7 +122,6 @@ async def stream_async_handler(request: AgentRequest):
 def stream_sync_handler(request: AgentRequest):
     for i in range(5):
         yield f"sync chunk {i}, with request payload {request}\n"
-
 
 
 @agent_app.task("/task", queue="celery1")

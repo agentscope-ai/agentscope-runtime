@@ -58,17 +58,96 @@ try:
     from alipay.aop.api.AlipayClientConfig import (
         AlipayClientConfig,
     )
+    from alipay.aop.api.request.AlipayTradeWapPayRequest import (
+        AlipayTradeWapPayRequest,
+    )
+    from alipay.aop.api.request.AlipayTradePagePayRequest import (
+        AlipayTradePagePayRequest,
+    )
+    from alipay.aop.api.request.AlipayTradeQueryRequest import (
+        AlipayTradeQueryRequest,
+    )
+    from alipay.aop.api.request.AlipayTradeRefundRequest import (
+        AlipayTradeRefundRequest,
+    )
+    from alipay.aop.api.request.AlipayTradeFastpayRefundQueryRequest import (
+        AlipayTradeFastpayRefundQueryRequest,
+    )
+    from alipay.aop.api.domain.AlipayTradePagePayModel import (
+        AlipayTradePagePayModel,
+    )
+    from alipay.aop.api.domain.AlipayTradeWapPayModel import (
+        AlipayTradeWapPayModel,
+    )
+    from alipay.aop.api.domain.AlipayTradeQueryModel import (
+        AlipayTradeQueryModel,
+    )
+    from alipay.aop.api.domain.AlipayTradeRefundModel import (
+        AlipayTradeRefundModel,
+    )
+    from alipay.aop.api.domain.AlipayTradeFastpayRefundQueryModel import (
+        AlipayTradeFastpayRefundQueryModel,
+    )
     from alipay.aop.api.domain.ExtendParams import (
         ExtendParams,
+    )
+    from alipay.aop.api.response.AlipayTradeQueryResponse import (
+        AlipayTradeQueryResponse,
+    )
+    from alipay.aop.api.response.AlipayTradeRefundResponse import (
+        AlipayTradeRefundResponse,
+    )
+    from alipay.aop.api.response.AlipayTradeFastpayRefundQueryResponse import (
+        AlipayTradeFastpayRefundQueryResponse,
+    )
+
+    # subscribe related info
+    from alipay.aop.api.request.AlipayAipaySubscribeStatusCheckRequest import (
+        AlipayAipaySubscribeStatusCheckRequest,
+    )
+    from alipay.aop.api.request.AlipayAipaySubscribePackageInitializeRequest import (  # noqa: E501
+        AlipayAipaySubscribePackageInitializeRequest,
+    )
+    from alipay.aop.api.request.AlipayAipaySubscribeTimesSaveRequest import (
+        AlipayAipaySubscribeTimesSaveRequest,
+    )
+    from alipay.aop.api.response.AlipayAipaySubscribeStatusCheckResponse import (  # noqa: E501
+        AlipayAipaySubscribeStatusCheckResponse,
+    )
+    from alipay.aop.api.response.AlipayAipaySubscribePackageInitializeResponse import (  # noqa: E501
+        AlipayAipaySubscribePackageInitializeResponse,
+    )
+    from alipay.aop.api.response.AlipayAipaySubscribeTimesSaveResponse import (
+        AlipayAipaySubscribeTimesSaveResponse,
     )
 
     ALIPAY_SDK_AVAILABLE = True
 except ImportError:
     ALIPAY_SDK_AVAILABLE = False
-    # Type-safe placeholders
+    # type safe placeholder
     DefaultAlipayClient: Optional[Type[Any]] = None
     AlipayClientConfig: Optional[Type[Any]] = None
+    AlipayTradeWapPayRequest: Optional[Type[Any]] = None
+    AlipayTradePagePayRequest: Optional[Type[Any]] = None
+    AlipayTradeQueryRequest: Optional[Type[Any]] = None
+    AlipayTradeRefundRequest: Optional[Type[Any]] = None
+    AlipayTradeFastpayRefundQueryRequest: Optional[Type[Any]] = None
+    AlipayTradePagePayModel: Optional[Type[Any]] = None
+    AlipayTradeWapPayModel: Optional[Type[Any]] = None
+    AlipayTradeQueryModel: Optional[Type[Any]] = None
+    AlipayTradeRefundModel: Optional[Type[Any]] = None
+    AlipayTradeFastpayRefundQueryModel: Optional[Type[Any]] = None
+    AlipayTradeQueryResponse: Optional[Type[Any]] = None
+    AlipayTradeRefundResponse: Optional[Type[Any]] = None
+    AlipayTradeFastpayRefundQueryResponse: Optional[Type[Any]] = None
     ExtendParams: Optional[Type[Any]] = None
+    # subscribe related placeholder
+    AlipayAipaySubscribeStatusCheckRequest: Optional[Type[Any]] = None
+    AlipayAipaySubscribePackageInitializeRequest: Optional[Type[Any]] = None
+    AlipayAipaySubscribeTimesSaveRequest: Optional[Type[Any]] = None
+    AlipayAipaySubscribeStatusCheckResponse: Optional[Type[Any]] = None
+    AlipayAipaySubscribePackageInitializeResponse: Optional[Type[Any]] = None
+    AlipayAipaySubscribeTimesSaveResponse: Optional[Type[Any]] = None
 
 
 class AgentExtendParams(

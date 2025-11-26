@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=protected-access
+
 from agentscope_runtime.engine.deployers.utils.app_runner_utils import (
     ensure_runner_from_app,
 )

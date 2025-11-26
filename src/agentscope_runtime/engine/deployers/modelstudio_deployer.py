@@ -780,7 +780,9 @@ class ModelstudioDeployManager(DeployManager):
                 if agent_id and (deploy_name is None):
                     name = None
                 logger.info(
-                    "Using external wheel file: %s", wheel_path)
+                    "Using external wheel file: %s",
+                    wheel_path,
+                )
 
             else:
                 logger.info("Building wheel package from project")
@@ -829,7 +831,9 @@ class ModelstudioDeployManager(DeployManager):
             # Print richer error message to improve UX
             err_text = str(e)
             logger.error(
-                "Failed to deploy to modelstudio: %s", err_text)
+                "Failed to deploy to modelstudio: %s",
+                err_text,
+            )
             raise
 
     async def stop(self) -> None:  # pragma: no cover - not supported yet

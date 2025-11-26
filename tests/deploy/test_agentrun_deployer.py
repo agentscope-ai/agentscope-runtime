@@ -16,6 +16,7 @@ try:
         CodeConfig,
         EndpointConfig,
     )
+
     AGENTRUN_AVAILABLE = True
 except ImportError:
     AGENTRUN_AVAILABLE = False
@@ -30,7 +31,7 @@ except ImportError:
 
 pytestmark = pytest.mark.skipif(
     not AGENTRUN_AVAILABLE,
-    reason="alibabacloud_agentrun20250910 SDK not installed"
+    reason="alibabacloud_agentrun20250910 SDK not installed",
 )
 
 

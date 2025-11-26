@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=too-many-nested-blocks
+# pylint: disable=too-many-nested-blocks, unused-argument
 import asyncio
 import json
 import os
@@ -7,11 +7,17 @@ import os
 import pytest
 import requests
 from agentscope.agent import ReActAgent
-from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
+from agentscope.model import DashScopeChatModel
+from agentscope.pipeline import stream_printing_messages
 
+from agentscope_runtime.adapters.agentscope.memory import (
+    AgentScopeSessionHistoryMemory,
+)
 from agentscope_runtime.engine.app import AgentApp
-from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
+from agentscope_runtime.engine.deployers.local_deployer import (
+    LocalDeployManager,
+)
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from agentscope_runtime.engine.services.agent_state import (
     InMemoryStateService,
@@ -19,66 +25,6 @@ from agentscope_runtime.engine.services.agent_state import (
 from agentscope_runtime.engine.services.session_history import (
     InMemorySessionHistoryService,
 )
-from agentscope_runtime.adapters.agentscope.memory import (
-    AgentScopeSessionHistoryMemory,
-)
-from agentscope.pipeline import stream_printing_messages
-
-
-def local_deploy():
-    asyncio.run(_local_deploy())
-
-
-@pytest.mark.asyncio
-async def _local_deploy():
-    from dotenv import load_dotenv
-
-    load_dotenv()
-
-    server_port = int(os.environ.get("SERVER_PORT", "8090"))
-    server_endpoint = os.environ.get("SERVER_ENDPOINT", "agent")
-
-    agent = AgentScopeAgent(
-        name="Friday",
-        model=DashScopeChatModel(
-            "qwen-turbo",
-            api_key=os.getenv("DASHSCOPE_API_KEY"),
-        ),
-        agent_config={
-            "sys_prompt": "You're a helpful assistant named Friday.",
-        },
-        agent_builder=ReActAgent,
-    )
-
-    runner = Runner(
-        agent=agent,
-    )
-
-    deploy_manager = LocalDeployManager(host="localhost", port=server_port)
-    try:
-        deployment_info = await runner.deploy(
-            deploy_manager,
-            endpoint_path=f"/{server_endpoint}",
-        )
-
-        print("✅ Service deployed successfully!")
-        print(f"   URL: {deployment_info['url']}")
-        print(f"   Endpoint: {deployment_info['url']}/{server_endpoint}")
-        print("\nAgent Service is running in the background.")
-
-        while True:
-            await asyncio.sleep(1)
-
-    except (KeyboardInterrupt, asyncio.CancelledError):
-        # This block will be executed when you press Ctrl+C.
-        print("\nShutdown signal received. Stopping the service...")
-        if deploy_manager.is_running:
-            await deploy_manager.stop()
-        print("✅ Service stopped.")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        if deploy_manager.is_running:
-            await deploy_manager.stop()
 
 
 def parse_sse_line(line):
@@ -265,9 +211,7 @@ async def test_local_deployer_context():
         # Since the logs show the service processed the request
         # successfully, we can consider the integration test passed if
         # no exceptions occurred
-        assert (
-            True  # Basic test of service deployment and request processing
-        )
+        assert True  # Basic test of service deployment and request processing
         # works
 
     finally:

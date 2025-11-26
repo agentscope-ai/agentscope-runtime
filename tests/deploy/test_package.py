@@ -4,7 +4,6 @@ Unit tests for the new project-based packaging system.
 """
 
 import os
-import tempfile
 import shutil
 from pathlib import Path
 
@@ -43,7 +42,8 @@ class TestProjectDirExtractor:
     def test_extract_without_app_or_runner(self):
         """Test that extraction fails without app or runner."""
         with pytest.raises(
-            ValueError, match="Either app or runner must be provided"
+            ValueError,
+            match="Either app or runner must be provided",
         ):
             project_dir_extractor(app=None, runner=None)
 
@@ -56,7 +56,8 @@ class TestProjectDirExtractor:
                 self.app_name = "TestApp"
 
         # Create the mock app in this scope
-        # The function will inspect the call stack to find where this object exists
+        # The function will inspect the call stack to find where this object
+        # exists
         app = MockApp()
 
         try:
@@ -140,7 +141,8 @@ class TestParseEntrypoint:
             parse_entrypoint("/nonexistent/app.py")
 
     def test_parse_directory_without_entrypoint(self, tmp_path):
-        """Test parsing directory without standard entrypoint files raises error."""
+        """Test parsing directory without standard entrypoint files raises
+        error."""
         with pytest.raises(ValueError, match="No entrypoint file found"):
             parse_entrypoint(f"{tmp_path}/")
 
@@ -166,6 +168,7 @@ class TestAutoDetectEntrypoint:
         (tmp_path / "main.py").write_text("# main")
         result = _auto_detect_entrypoint(str(tmp_path))
         assert result == "app.py"
+
 
 class TestPackageCode:
     """Test cases for code packaging."""
@@ -263,7 +266,7 @@ class TestPackageFunction:
         (project_dir / "app.py").write_text("# app")
         (project_dir / "requirements.txt").write_text("pydantic\n")
 
-        result_dir, project_info = package(
+        result_dir, _ = package(
             entrypoint=str(project_dir / "app.py"),
             force_rebuild_deps=True,  # Force rebuild for testing
         )

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=too-many-return-statements
+
 """Shared helpers for building detached deployment bundles."""
 
 from __future__ import annotations
@@ -12,10 +14,18 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from .app_runner_utils import ensure_runner_from_app
-from .package import package, ProjectInfo, DEFAULT_ENTRYPOINT_FILE, tomllib
+from .package import package, ProjectInfo, DEFAULT_ENTRYPOINT_FILE
 from ..adapter.protocol_adapter import ProtocolAdapter
 from .package import DEPLOYMENT_ZIP
 from .wheel_packager import _parse_pyproject_toml
+
+try:
+    import tomllib  # Python 3.11+
+except ImportError:
+    try:
+        import tomli as tomllib  # type: ignore[no-redef]
+    except ImportError:
+        tomllib = None
 
 PROJECT_SUBDIR = ".agentscope_runtime"
 CONFIG_FILENAME = "deploy_config.json"
@@ -31,7 +41,7 @@ def build_detached_app(
     output_dir: Optional[str] = None,
     dockerfile_path: Optional[str] = None,
     use_local_runtime: Optional[bool] = None,
-    **kwargs
+    **kwargs,
 ) -> Tuple[str, ProjectInfo]:
     """
     Create a detached bundle directory ready for execution.
@@ -76,7 +86,7 @@ def build_detached_app(
         runner=None if app is not None else runner,
         output_dir=str(build_root),
         extra_packages=extra_packages,
-        **kwargs
+        **kwargs,
     )
 
     workspace_root = Path(package_path)
@@ -110,12 +120,14 @@ def build_detached_app(
 
     if dockerfile_path:
         dest = project_root / "Dockerfile"
-        with open(dockerfile_path, 'r', encoding='utf-8') as f:
+        with open(dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        new_content = content.replace(DEFAULT_ENTRYPOINT_FILE,
-                                      project_info.entrypoint_file)
-        with open(dest, 'w', encoding='utf-8') as f:
+        new_content = content.replace(
+            DEFAULT_ENTRYPOINT_FILE,
+            project_info.entrypoint_file,
+        )
+        with open(dest, "w", encoding="utf-8") as f:
             f.write(new_content)
         os.remove(dockerfile_path)
 
@@ -210,8 +222,7 @@ def _append_additional_requirements(
         all_requirements = sorted(
             list(
                 set(
-                    base_requirements
-                    + additional_requirements
+                    base_requirements + additional_requirements,
                 ),
             ),
         )
@@ -265,7 +276,7 @@ def _is_dev_version(version: str) -> bool:
     if not version:
         return False
 
-    dev_indicators = ['.dev', '-dev', 'dev', 'alpha', 'beta', 'rc', 'a', 'b']
+    dev_indicators = [".dev", "-dev", "dev", "alpha", "beta", "rc", "a", "b"]
     version_lower = version.lower()
 
     return any(indicator in version_lower for indicator in dev_indicators)
@@ -349,6 +360,7 @@ def _build_and_copy_wheel(wheels_dir: Path) -> Optional[str]:
                     capture_output=True,
                     text=True,
                     timeout=120,
+                    check=False,
                 )
 
                 if result.returncode != 0:
@@ -364,6 +376,7 @@ def _build_and_copy_wheel(wheels_dir: Path) -> Optional[str]:
                     capture_output=True,
                     text=True,
                     timeout=120,
+                    check=False,
                 )
 
                 if result.returncode != 0:
@@ -416,7 +429,6 @@ def _get_unversioned_requirements() -> List[str]:
         "redis",  # For process management
         "celery",  # For task queue
     ]
-
 
 
 def _serialize_protocol_adapters(

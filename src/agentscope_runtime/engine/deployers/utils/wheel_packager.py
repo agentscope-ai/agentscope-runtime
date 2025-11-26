@@ -54,7 +54,9 @@ def _parse_requirements_txt(req_path: Path) -> Tuple[List[str], List[str]]:
             continue
 
         # Check if this is a local wheel file path
-        if line.endswith(".whl") and ("/" in line or "\\" in line or line.startswith(".")):
+        if line.endswith(".whl") and (
+            "/" in line or "\\" in line or line.startswith(".")
+        ):
             local_wheel_paths.append(line)
         else:
             standard_requirements.append(line)
@@ -128,7 +130,9 @@ def _parse_pyproject_toml(pyproject_path: Path) -> List[str]:
     return deps
 
 
-def _gather_user_dependencies(project_dir: Path) -> Tuple[List[str], List[Path]]:
+def _gather_user_dependencies(
+    project_dir: Path,
+) -> Tuple[List[str], List[Path]]:
     """
     Gather user dependencies from pyproject.toml and requirements.txt.
 
@@ -261,12 +265,13 @@ def generate_wrapper_project(
         "alibabacloud-tea-util",
         "python-dotenv",
         "jinja2",
-        "psutil",   
+        "psutil",
     ]
     # De-duplicate while preserving order
     seen = set()
     standard_reqs, local_wheel_paths = _parse_requirements_txt(
-        user_project_dir / "requirements.txt")
+        user_project_dir / "requirements.txt",
+    )
 
     install_requires: List[str] = []
     for pkg in wrapper_deps + standard_reqs:
@@ -420,7 +425,7 @@ import sys
 from pathlib import Path
 from setuptools import setup, find_packages
 from setuptools.command.install import install
-    
+
 def run():
     # Step 1: Install all .whl files in the ./wheel/ directory (relative to setup.py)
     wheel_dir = Path(__file__).parent / "wheel"
@@ -431,7 +436,7 @@ def run():
                 # Use the same Python interpreter to avoid env issues
                 subprocess.check_call([sys.executable, "-m", "pip", "install", str(whl)])
 
-        
+
 setup(
     name='{package_name}',
     version='{version}',

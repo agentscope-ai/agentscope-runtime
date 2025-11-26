@@ -177,7 +177,6 @@ class KubernetesDeployManager(DeployManager):
 
             resource_name = f"agent-{deploy_id[:8]}"
 
-
             logger.info(f"Building kubernetes deployment for {deploy_id}")
 
             # Create Deployment

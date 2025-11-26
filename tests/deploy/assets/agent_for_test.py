@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=wrong-import-position, wrong-import-order
+# pylint:disable=wrong-import-position, wrong-import-order, unused-argument
 import asyncio
 import os
 
 from agentscope.agent import ReActAgent
-from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
+from agentscope.model import DashScopeChatModel
+from agentscope.pipeline import stream_printing_messages
 from agentscope.tool import Toolkit
 
+from agentscope_runtime.adapters.agentscope.memory import (
+    AgentScopeSessionHistoryMemory,
+)
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from agentscope_runtime.engine.services.agent_state import (
@@ -16,10 +20,6 @@ from agentscope_runtime.engine.services.agent_state import (
 from agentscope_runtime.engine.services.session_history import (
     InMemorySessionHistoryService,
 )
-from agentscope_runtime.adapters.agentscope.memory import (
-    AgentScopeSessionHistoryMemory,
-)
-from agentscope.pipeline import stream_printing_messages
 from others.other_project import version
 
 

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=unused-argument
+
 """
 Project-based packaging utilities for AgentApp and Runner deployment.
 
@@ -10,28 +12,17 @@ This module provides packaging utilities that support:
 - CLI-style and object-style deployment patterns
 """
 
-import hashlib
 import inspect
 import logging
 import os
-import re
 import shutil
-import subprocess
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Optional, List, Dict, Tuple, Union
+from typing import Optional, List, Tuple, Union
 
-from pydantic import BaseModel
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
-
-try:
-    import tomllib  # Python 3.11+
-except ImportError:
-    try:
-        import tomli as tomllib  # type: ignore[no-redef]
-    except ImportError:
-        tomllib = None
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +76,7 @@ class ProjectInfo(BaseModel):
 
     project_dir: str  # Absolute path to project root directory
     entrypoint_file: str  # Relative path to entrypoint file (if applicable)
-    entrypoint_handler: str  # Handler name (actual object name, e.g., "agent_app")
+    entrypoint_handler: str  # actual object name, e.g., "agent_app"
     handler_type: Optional[str] = None  # Handler type ("app" or "runner")
     is_directory_entrypoint: bool = False  # True if packaging entire directory
 
@@ -111,7 +102,8 @@ def project_dir_extractor(
         ProjectInfo with project directory, entrypoint file, and handler name
 
     Raises:
-        ValueError: If neither app nor runner is provided or project dir cannot be determined
+        ValueError: If neither app nor runner is provided or project dir
+        cannot be determined
     """
     if app is None and runner is None:
         raise ValueError("Either app or runner must be provided")
@@ -180,7 +172,8 @@ def project_dir_extractor(
     return ProjectInfo(
         project_dir=project_dir,
         entrypoint_file=entrypoint_file,
-        entrypoint_handler=object_name,  # Actual object name (e.g., "agent_app")
+        entrypoint_handler=object_name,  # Actual object name (e.g.,
+        # "agent_app")
         handler_type=target_type,  # Type: "app" or "runner"
         is_directory_entrypoint=False,
     )
@@ -205,7 +198,8 @@ def parse_entrypoint(spec: str) -> ProjectInfo:
         ProjectInfo with parsed information
 
     Raises:
-        ValueError: If specification format is invalid or file/dir doesn't exist
+        ValueError: If specification format is invalid or file/dir doesn't
+        exist
     """
     spec = spec.strip()
 
@@ -289,6 +283,7 @@ def _auto_detect_entrypoint(project_dir: str) -> str:
         f"Expected one of: {', '.join(candidates)}",
     )
 
+
 # ===== Main Template Generation =====
 def _generate_app_main_template(entrypoint_info: EntrypointInfo) -> str:
     """
@@ -319,17 +314,18 @@ def _generate_app_main_template(entrypoint_info: EntrypointInfo) -> str:
             port=entrypoint_info.port,
             extra_parameters=extra_params_dicts,
         )
-    except TemplateNotFound:
+    except TemplateNotFound as e:
         raise RuntimeError(
             f"Template 'app_main.py.j2' not found in {TEMPLATES_DIR}",
-        )
+        ) from e
 
 
 def _generate_runner_main_template(entrypoint_info: EntrypointInfo) -> str:
     """
     Generate main.py template for Runner using Jinja2.
 
-    The template wraps the Runner in an AgentApp so it can be deployed as a service.
+    The template wraps the Runner in an AgentApp so it can be deployed as a
+    service.
 
     Args:
         entrypoint_info: Information about the entrypoint
@@ -367,10 +363,10 @@ def _generate_runner_main_template(entrypoint_info: EntrypointInfo) -> str:
             port=entrypoint_info.port,
             extra_parameters=extra_params_dicts,
         )
-    except TemplateNotFound:
+    except TemplateNotFound as e:
         raise RuntimeError(
             f"Template 'runner_main.py.j2' not found in {TEMPLATES_DIR}",
-        )
+        ) from e
 
 
 def generate_main_template(entrypoint_info: EntrypointInfo) -> str:
@@ -433,7 +429,7 @@ def _get_default_ignore_patterns() -> List[str]:
         ".idea",
         ".vscode",
         "*.log",
-        "logs"
+        "logs",
     ]
 
 
@@ -556,7 +552,8 @@ def package(
 
     This function supports two deployment patterns:
     1. Object-style: package(app=my_app) or package(runner=my_runner)
-    2. Entrypoint-style: package(entrypoint="app.py") or package(entrypoint="project_dir/")
+    2. Entrypoint-style: package(entrypoint="app.py") or package(
+    entrypoint="project_dir/")
 
     For object-style deployment, this function will:
     1. Extract the project directory containing the app/runner
@@ -621,12 +618,12 @@ def package(
         os.makedirs(output_dir, exist_ok=True)
 
     output_path = Path(output_dir)
-
+    module_name = project_info.entrypoint_file.split(".", maxsplit=1)[0]
     # For object-style deployment, generate main.py template
     generated_main = False
     if target_obj is not None:
         entrypoint_info = EntrypointInfo(
-            module_name=project_info.entrypoint_file.split(".")[0],
+            module_name=module_name,
             object_type=project_info.handler_type,
             object_name=project_info.entrypoint_handler,
             host=host,

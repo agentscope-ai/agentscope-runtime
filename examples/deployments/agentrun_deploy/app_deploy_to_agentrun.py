@@ -19,9 +19,6 @@ from agentscope_runtime.engine.deployers.agentrun_deployer import (
     OSSConfig,
     AgentRunConfig,
 )
-from agentscope_runtime.engine.deployers.modelstudio_deployer import (
-    OSSConfig,
-)
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from agentscope_runtime.engine.services.agent_state import (
     InMemoryStateService,
@@ -56,7 +53,6 @@ async def query_func(
     self,
     msgs,
     request: AgentRequest = None,
-    **kwargs,
 ):
     session_id = request.session_id
     user_id = request.user_id
@@ -103,6 +99,7 @@ async def query_func(
         session_id=session_id,
         state=state,
     )
+
 
 # Define endpoints
 @agent_app.endpoint("/sync")

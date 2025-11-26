@@ -1,16 +1,24 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=unused-argument
+
 import asyncio
 import os
 
 import pytest
 from agentscope.agent import ReActAgent
-from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
+from agentscope.model import DashScopeChatModel
+from agentscope.pipeline import stream_printing_messages
 
+from agentscope_runtime.adapters.agentscope.memory import (
+    AgentScopeSessionHistoryMemory,
+)
 from agentscope_runtime.engine.app import AgentApp
-from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
 from agentscope_runtime.engine.deployers.adapter.a2a import (
     A2AFastAPIDefaultAdapter,
+)
+from agentscope_runtime.engine.deployers.local_deployer import (
+    LocalDeployManager,
 )
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from agentscope_runtime.engine.services.agent_state import (
@@ -19,10 +27,6 @@ from agentscope_runtime.engine.services.agent_state import (
 from agentscope_runtime.engine.services.session_history import (
     InMemorySessionHistoryService,
 )
-from agentscope_runtime.adapters.agentscope.memory import (
-    AgentScopeSessionHistoryMemory,
-)
-from agentscope.pipeline import stream_printing_messages
 
 
 def local_deploy():
