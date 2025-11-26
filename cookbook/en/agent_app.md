@@ -105,7 +105,8 @@ Run custom logic before the application starts and after it stops — for exampl
 
 **Example Usage**
 
-```{code-cell}
+```python
+from agentscope_runtime.engine import AgentApp
 async def init_resources(app, **kwargs):
     print("🚀 Service starting, initializing resources...")
 
@@ -151,7 +152,7 @@ Run additional logic when requests enter or complete (e.g., logging, authenticat
 
 **Example**
 
-```{code-cell}
+```python
 @app.middleware("http")
 async def custom_logger(request, call_next):
     print(f"Received request: {request.method} {request.url}")
@@ -177,7 +178,7 @@ Supports long-running background tasks without blocking the main HTTP thread.
 
 **Example Usage**
 
-```{code-cell}
+```python
 app = AgentApp(
     agent=agent,
     broker_url="redis://localhost:6379/0",
@@ -216,8 +217,8 @@ Deploy to different runtime environments via the unified `deploy()` method.
 
 **Example Usage**
 
-```{code-cell}
+```python
 from agentscope_runtime.engine.deployers import LocalDeployManager
 
-await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
+app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```

@@ -40,7 +40,7 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 
 首先导入所有必要的模块：
 
-```{code-cell}
+```python
 import os
 
 from agentscope_runtime.engine import AgentApp
@@ -57,7 +57,7 @@ print("✅ 依赖导入成功")
 
 我们这里使用agentscope作为示例：
 
-```{code-cell}
+```python
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
@@ -91,7 +91,7 @@ pip install "agentscope-runtime[agno]"
 ```
 ````
 
-```{code-cell}
+```python
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 from agentscope_runtime.engine.agents.agno_agent import AgnoAgent
@@ -120,7 +120,7 @@ pip install "agentscope-runtime[autogen]"
 ```
 ````
 
-```{code-cell}
+```python
 from autogen_agentchat.agents import AssistantAgent
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from agentscope_runtime.engine.agents.autogen_agent import AutogenAgent
@@ -150,7 +150,7 @@ pip install "agentscope-runtime[langgraph]"
 ```
 ````
 
-```{code-cell}
+```python
 from typing import TypedDict
 from langgraph import graph, types
 from agentscope_runtime.engine.agents.langgraph_agent import LangGraphAgent
@@ -188,7 +188,7 @@ print("✅ LangGraph agent created successfully")
 
 用agent和 `AgentApp` 创建一个 Agent API 服务器：
 
-```{code-cell}
+```python
 app = AgentApp(agent=agent, endpoint_path="/process")
 
 app.run(host="0.0.0.0", port=8090)
@@ -230,7 +230,7 @@ data: {"sequence_number":4,"object":"message","status":"completed","text":"The c
 
 AgentScope Runtime 提供了一个功能强大的部署系统，可以将你的智能体部署到远程或本地容器中。这里我们以 `LocalDeployManager` 为例：
 
-```{code-cell}
+```python
 async def main():
     await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```

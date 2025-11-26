@@ -608,7 +608,7 @@ async def main():
 
         # Check service health status
         health_status = await context_manager.health_check()
-        print(f"Memory service health status: {health_status['memory']}")
+        print(f"Memory service health status: {health_status.get('memory')}")
 
         # Use service...
 

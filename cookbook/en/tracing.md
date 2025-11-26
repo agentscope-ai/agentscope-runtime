@@ -172,6 +172,7 @@ The tracing module is designed to integrate smoothly with the AgentScope runtime
 
 ```{code-cell}
 from agentscope_runtime.engine.tracing import trace, TraceType
+from typing import Any
 
 # Example from runner.py
 @trace(TraceType.AGENT_STEP)

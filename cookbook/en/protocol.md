@@ -30,7 +30,7 @@ This document describes the structured JSON protocol for communicating with AI a
 
 **Roles**:
 
-```{code-cell}
+```python
 class Role:
     ASSISTANT = "assistant"
     USER = "user"
@@ -40,7 +40,7 @@ class Role:
 
 **Message Types**:
 
-```{code-cell}
+```python
 class MessageType:
     MESSAGE = "message"
     FUNCTION_CALL = "function_call"
@@ -60,7 +60,7 @@ class MessageType:
 
 **Run Statuses**:
 
-```{code-cell}
+```python
 class RunStatus:
     Created = "created"
     InProgress = "in_progress"
@@ -77,7 +77,7 @@ class RunStatus:
 
 **Function Parameters**:
 
-```{code-cell}
+```python
 from typing import Dict, Any, Optional, List, Union
 from pydantic import BaseModel
 class FunctionParameters(BaseModel):
@@ -88,7 +88,7 @@ class FunctionParameters(BaseModel):
 
 **Function Tool**:
 
-```{code-cell}
+```python
 from typing import Dict, Any, Optional, List, Union
 
 from pydantic import BaseModel
@@ -100,7 +100,7 @@ class FunctionTool(BaseModel):
 
 **Tool**:
 
-```{code-cell}
+```python
 from typing import Dict, Any, Optional, List, Union
 from pydantic import BaseModel
 class Tool(BaseModel):
@@ -109,7 +109,7 @@ class Tool(BaseModel):
 ```
 
 **Function Call**:
-```{code-cell}
+```python
 from typing import Dict, Any, Optional, List, Union
 from pydantic import BaseModel
 class FunctionCall(BaseModel):
@@ -134,7 +134,7 @@ class FunctionCall(BaseModel):
 ```
 
 **Function Call Output**:
-```{code-cell}
+```python
 from typing import Dict, Any, Optional, List, Union
 from pydantic import BaseModel
 class FunctionCallOutput(BaseModel):
@@ -153,7 +153,7 @@ class FunctionCallOutput(BaseModel):
 
 **Base Content Model**:
 
-```{code-cell}
+```python
 from typing import Dict, Any, Optional, List, Union
 from agentscope_runtime.engine.schemas.agent_schemas import Event
 class Content(Event):
@@ -175,7 +175,7 @@ class Content(Event):
 
 **Specialized Content Types**:
 
-```{code-cell}
+```python
 from typing import Dict, Any, Optional, List, Union
 from agentscope_runtime.engine.schemas.agent_schemas import ContentType
 class ImageContent(Content):
@@ -240,7 +240,7 @@ class RefusalContent(Content):
 
 ### 4. Message Model
 
-```{code-cell}
+```python
 from typing import Optional, Union, List
 from uuid import uuid4
 
@@ -286,7 +286,7 @@ class Message(Event):
 
 **Base Request**:
 
-```{code-cell}
+```python
 from typing import List
 from pydantic import BaseModel, ConfigDict
 from agentscope_runtime.engine.schemas.agent_schemas import Message
@@ -297,7 +297,7 @@ class BaseRequest(BaseModel):
 
 **Agent Request**:
 
-```{code-cell}
+```python
 from typing import Dict, Any, Optional, List, Union
 
 class AgentRequest(BaseRequest):
@@ -319,8 +319,9 @@ class AgentRequest(BaseRequest):
 
 **Base Response**:
 
-```{code-cell}
-
+```python
+from agentscope_runtime.engine.schemas.agent_schemas import Event
+from datetime import datetime
 class BaseResponse(Event):
     sequence_number: str = None
     id: str = Field(default_factory=lambda: "response_" + str(uuid4()))
@@ -334,14 +335,14 @@ class BaseResponse(Event):
 
 **Agent Response**:
 
-```{code-cell}
+```python
 class AgentResponse(BaseResponse):
     session_id: Optional[str] = None
 ```
 
 ### 7. Error Model
 
-```{code-cell}
+```python
 from pydantic import BaseModel
 class Error(BaseModel):
     code: str

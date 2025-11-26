@@ -173,6 +173,7 @@ except ValueError as e:
 
 ```{code-cell}
 from agentscope_runtime.engine.tracing import trace, TraceType
+from typing import Any
 
 # 来自runner.py的示例
 @trace(TraceType.AGENT_STEP)

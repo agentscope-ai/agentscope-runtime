@@ -30,7 +30,7 @@ kernelspec:
 
 **角色**：
 
-```{code-cell}
+```python
 class Role:
     ASSISTANT = "assistant"
     USER = "user"
@@ -40,7 +40,7 @@ class Role:
 
 **消息类型**：
 
-```{code-cell}
+```python
 class MessageType:
     MESSAGE = "message"
     FUNCTION_CALL = "function_call"
@@ -69,7 +69,7 @@ class MessageType:
 
 **运行状态**：
 
-```{code-cell}
+```python
 class RunStatus:
     Created = "created"
     InProgress = "in_progress"
@@ -86,7 +86,7 @@ class RunStatus:
 
 **函数参数**：
 
-```{code-cell}
+```python
 from typing import Dict, Any, Optional, List
 
 from pydantic import BaseModel
@@ -99,7 +99,7 @@ class FunctionParameters(BaseModel):
 
 **函数工具**：
 
-```{code-cell}
+```python
 from typing import Dict, Any, Optional, List, Union
 
 from pydantic import BaseModel
@@ -112,7 +112,7 @@ class FunctionTool(BaseModel):
 
 **工具**：
 
-```{code-cell}
+```python
 from typing import Dict, Any, Optional, List, Union
 
 from pydantic import BaseModel
@@ -123,7 +123,7 @@ class Tool(BaseModel):
 ```
 
 **函数调用**：
-```{code-cell}
+```python
 from typing import Dict, Any, Optional, List, Union
 
 from pydantic import BaseModel
@@ -148,7 +148,7 @@ class FunctionCall(BaseModel):
 ```
 
 **函数调用输出**：
-```{code-cell}
+```python
 from typing import Dict, Any, Optional, List, Union
 
 from pydantic import BaseModel
@@ -169,7 +169,7 @@ class FunctionCallOutput(BaseModel):
 
 **基础内容模型**：
 
-```{code-cell}
+```python
 from typing import Dict, Any, Optional, List, Union
 from agentscope_runtime.engine.schemas.agent_schemas import Event
 
@@ -192,7 +192,7 @@ class Content(Event):
 
 **专用内容类型**：
 
-```{code-cell}
+```python
 from typing import Dict, Any, Optional, List, Union
 from agentscope_runtime.engine.schemas.agent_schemas import ContentType
 class ImageContent(Content):
@@ -257,7 +257,7 @@ class RefusalContent(Content):
 
 ### 4. 消息模型
 
-```{code-cell}
+```python
 from typing import Optional, Union, List
 from uuid import uuid4
 
@@ -302,7 +302,7 @@ class Message(Event):
 
 **基础请求**：
 
-```{code-cell}
+```python
 from typing import List
 from pydantic import BaseModel, ConfigDict
 from agentscope_runtime.engine.schemas.agent_schemas import Message
@@ -314,7 +314,7 @@ class BaseRequest(BaseModel):
 
 **智能体请求**：
 
-```{code-cell}
+```python
 class AgentRequest(BaseRequest):
     model: Optional[str] = None
     top_p: Optional[float] = None
@@ -334,8 +334,9 @@ class AgentRequest(BaseRequest):
 
 **基础响应**：
 
-```{code-cell}
+```python
 from agentscope_runtime.engine.schemas.agent_schemas import Event
+from datetime import datetime
 class BaseResponse(Event):
     sequence_number: str = None
     id: str = Field(default_factory=lambda: "response_" + str(uuid4()))
@@ -349,7 +350,7 @@ class BaseResponse(Event):
 
 **智能体响应**：
 
-```{code-cell}
+```python
 class AgentResponse(BaseResponse):
     session_id: Optional[str] = None
 ```

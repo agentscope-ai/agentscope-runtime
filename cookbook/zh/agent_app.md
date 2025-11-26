@@ -104,7 +104,7 @@ data: {"sequence_number":4,"object":"message","status":"completed","text":"Hello
 
 **用法示例**
 
-```{code-cell}
+```python
 async def init_resources(app, **kwargs):
     print("🚀 服务启动中，初始化资源...")
 
@@ -150,7 +150,7 @@ curl http://localhost:8090/
 
 **用法示例**
 
-```{code-cell}
+```python
 @app.middleware("http")
 async def custom_logger(request, call_next):
     print(f"收到请求: {request.method} {request.url}")
@@ -177,7 +177,7 @@ AgentApp 内置：
 
 **用法示例**
 
-```{code-cell}
+```python
 app = AgentApp(
     agent=agent,
     broker_url="redis://localhost:6379/0",
@@ -216,8 +216,8 @@ curl http://localhost:8090/longjob/abc123
 
 **用法示例**
 
-```{code-cell}
+```python
 from agentscope_runtime.engine.deployers import LocalDeployManager
 
-await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
+app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```

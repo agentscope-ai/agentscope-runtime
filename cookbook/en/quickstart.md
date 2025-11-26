@@ -40,7 +40,7 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 
 Start by importing all necessary modules:
 
-```{code-cell}
+```python
 import os
 
 from agentscope_runtime.engine import AgentApp
@@ -57,7 +57,7 @@ print("✅ Dependencies imported successfully")
 
 We will take Agentscope as example.
 
-```{code-cell}
+```python
 agent = AgentScopeAgent(
     name="Friday",
     model=OpenAIChatModel(
@@ -88,7 +88,7 @@ pip install "agentscope-runtime[agno]"
 ```
 ````
 
-```{code-cell}
+```python
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 from agentscope_runtime.engine.agents.agno_agent import AgnoAgent
@@ -118,7 +118,7 @@ pip install "agentscope-runtime[autogen]"
 ```
 ````
 
-```{code-cell}
+```python
 from autogen_agentchat.agents import AssistantAgent
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from agentscope_runtime.engine.agents.autogen_agent import AutogenAgent
@@ -148,7 +148,7 @@ pip install "agentscope-runtime[langgraph]"
 ```
 ````
 
-```{code-cell}
+```python
 from typing import TypedDict
 from langgraph import graph, types
 from agentscope_runtime.engine.agents.langgraph_agent import LangGraphAgent
@@ -186,7 +186,7 @@ print("✅ LangGraph agent created successfully")
 
 Create an agent API server using agent and `AgentApp`:
 
-```{code-cell}
+```python
 app = AgentApp(agent=agent, endpoint_path="/process")
 
 app.run(host="0.0.0.0", port=8090)
@@ -228,7 +228,7 @@ data: {"sequence_number":4,"object":"message","status":"completed","text":"The c
 
 The AgentScope Runtime provides a powerful deployment system that allows you to deploy your agent to remote or local container. And we use `LocalDeployManager` as example:
 
-```{code-cell}
+```python
 async def main():
     await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```

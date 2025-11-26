@@ -56,7 +56,7 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 
 首先导入所有必要的模块：
 
-```{code-cell}
+```python
 import os
 
 from agentscope_runtime.engine import AgentApp
@@ -68,7 +68,7 @@ from agentscope_runtime.engine.deployers import LocalDeployManager
 
 定义您的智能体可访问的浏览器工具（如果您想为智能体配置其他工具，请参考{doc}`sandbox`中的工具用法）：
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox.tools.browser import (
     browser_navigate,
     browser_take_screenshot,
@@ -115,7 +115,7 @@ print("✅系统提示词已配置")
 
 使用AgentScope框架中您选择的大模型设置ReAct智能体构建器：
 
-```{code-cell}
+```python
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 
@@ -143,7 +143,7 @@ print("✅ 智能体初始化成功")
 
 用agent和 `AgentApp` 创建一个 Agent API 服务器：
 
-```{code-cell}
+```python
 import os
 
 from agentscope.agent import ReActAgent
@@ -177,7 +177,7 @@ app.run(host="0.0.0.0", port=8090)
 
 `EnvironmentManager` 装配 `SandboxService` 并暴露环境操作：`connect_sandbox`、`release_sandbox`。
 
-```{code-cell}
+```python
 from agentscope_runtime.engine.services.environment_manager import (
     EnvironmentManager,
     create_environment_manager,
