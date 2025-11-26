@@ -116,7 +116,7 @@ class OpenAIMessage(BaseModel):
     """The role of the messages author, should be in `user`,`system`,
     'assistant', 'tool'."""
 
-    content: Optional[Union[str, List[ChatCompletionMessage]]] = None
+    content: Optional[Union[List[ChatCompletionMessage], str]] = None
     """The contents of the message.
 
     Can be a string, a list of content parts for multimodal messages.
@@ -317,24 +317,24 @@ class ResponseFormat(BaseModel):
     json_schema: Optional[JsonSchema] = None
     """The JSON schema for the response format."""
 
-    @model_validator(mode="before")
-    def validate_schema(self, values: dict) -> dict:
-        if not isinstance(values, dict) or "type" not in values:
-            raise ValueError(f"Json schema not valid with type {type(values)}")
-        format_type = values.get("type")
-        json_schema = values.get("json_schema")
-
-        if format_type in ["text", "json_object"] and json_schema is not None:
+    @model_validator(mode="after")
+    def validate_schema(self) -> "ResponseFormat":
+        if (
+            self.type
+            in [
+                "text",
+                "json_object",
+            ]
+            and self.json_schema is not None
+        ):
             raise ValueError(
-                f"Json schema is not allowed for type {format_type}",
+                f"Json schema is not allowed for type {self.type}",
             )
-
-        if format_type == "json_schema":
-            if json_schema is None:
-                raise ValueError(
-                    f"Json schema is required for type {format_type}",
-                )
-        return values
+        if self.type == "json_schema" and self.json_schema is None:
+            raise ValueError(
+                f"Json schema is required for type {self.type}",
+            )
+        return self
 
 
 class ToolChoiceInputFunction(BaseModel):

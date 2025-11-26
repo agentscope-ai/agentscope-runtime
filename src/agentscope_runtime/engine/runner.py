@@ -278,17 +278,11 @@ class Runner:
                 response.add_new_message(event)
             yield seq_gen.yield_with_sequence(event)
 
-        yield seq_gen.yield_with_sequence(response.completed())
+        # Obtain token usage
+        try:
+            if response.output:
+                response.usage = response.output[-1].usage
+        except IndexError:
+            pass
 
-    #  TODO: will be added before 2025/11/30
-    # @trace(TraceType.AGENT_STEP)
-    # async def query(  # pylint:disable=unused-argument
-    #     self,
-    #     message: List[dict],
-    #     session_id: Optional[str] = None,
-    #     **kwargs: Any,
-    # ) -> ChatCompletion:
-    #     """
-    #     Streams the agent.
-    #     """
-    #     return ...
+        yield seq_gen.yield_with_sequence(response.completed())

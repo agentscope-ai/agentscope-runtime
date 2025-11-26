@@ -1,6 +1,6 @@
 ### Develop
 #### 1. Download template
-Download link: https://bailian-cn-beijing.oss-cn-beijing.aliyuncs.com/project/agentscope-bricks-starter.zip
+Download link: https://bailian-cn-beijing.oss-cn-beijing.aliyuncs.com/project/agentscope-runtime-starter.zip
 
 #### 2. Develop your own full-code app and complete local testing
 Ensure the health check endpoint at localhost:8080/health is healthy during testing.

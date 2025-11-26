@@ -20,6 +20,13 @@ parts:
     sections:
       - file: en/context_manager.md
       - file: en/environment_manager.md
+  - file: en/tools/tools.md
+    sections:
+      - file: en/tools/modelstudio_search.md
+      - file: en/tools/modelstudio_rag.md
+      - file: en/tools/modelstudio_generations.md
+      - file: en/tools/alipay.md
+      - file: en/tools/realtime_clients.md
   - file: en/tracing.md
   - file: en/demohouse.md
   - file: en/contribute.md
@@ -60,6 +67,13 @@ parts:
     sections:
       - file: zh/context_manager.md
       - file: zh/environment_manager.md
+  - file: zh/tools/tools.md
+    sections:
+      - file: zh/tools/modelstudio_search.md
+      - file: zh/tools/modelstudio_rag.md
+      - file: zh/tools/modelstudio_generations.md
+      - file: zh/tools/alipay.md
+      - file: zh/tools/realtime_clients.md
   - file: zh/tracing.md
   - file: zh/demohouse.md
   - file: zh/contribute.md

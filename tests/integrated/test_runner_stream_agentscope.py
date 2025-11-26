@@ -6,7 +6,7 @@ import pytest
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
-from agentscope.tool import Toolkit, execute_python_code
+from agentscope.tool import Toolkit
 from agentscope.pipeline import stream_printing_messages
 from agentscope_runtime.engine.schemas.agent_schemas import (
     AgentRequest,
@@ -23,6 +23,8 @@ from agentscope_runtime.engine.services.agent_state import (
 from agentscope_runtime.engine.services.session_history import (
     InMemorySessionHistoryService,
 )
+from agentscope_runtime.adapters.agentscope.tool import sandbox_tool_adapter
+from agentscope_runtime.engine.services.sandbox import SandboxService
 
 
 class MyRunner(Runner):
@@ -41,12 +43,31 @@ class MyRunner(Runner):
         """
         session_id = request.session_id
         user_id = request.user_id
+
         state = await self.state_service.export_state(
             session_id=session_id,
             user_id=user_id,
         )
+
+        # Get sandbox
+        sandboxes = self.sandbox_service.connect(
+            session_id=session_id,
+            user_id=user_id,
+            sandbox_types=["browser"],
+        )
+
+        sandbox = sandboxes[0]
+        browser_tools = [
+            sandbox.browser_navigate,
+            sandbox.browser_take_screenshot,
+            sandbox.browser_snapshot,
+            sandbox.browser_click,
+            sandbox.browser_type,
+        ]
+
         toolkit = Toolkit()
-        toolkit.register_tool_function(execute_python_code)
+        for tool in browser_tools:
+            toolkit.register_tool_function(sandbox_tool_adapter(tool))
 
         # Modify agent according to the config
         agent = ReActAgent(
@@ -54,7 +75,6 @@ class MyRunner(Runner):
             model=DashScopeChatModel(
                 "qwen-turbo",
                 api_key=os.getenv("DASHSCOPE_API_KEY"),
-                enable_thinking=True,
                 stream=True,
             ),
             sys_prompt="You're a helpful assistant named Friday.",
@@ -66,6 +86,8 @@ class MyRunner(Runner):
             ),
             formatter=DashScopeChatFormatter(),
         )
+        agent.set_console_output_enabled(enabled=False)
+
         if state:
             agent.load_state_dict(state)
         async for msg, last in stream_printing_messages(
@@ -86,8 +108,10 @@ class MyRunner(Runner):
         """
         self.state_service = InMemoryStateService()
         self.session_service = InMemorySessionHistoryService()
+        self.sandbox_service = SandboxService()
         await self.state_service.start()
         await self.session_service.start()
+        await self.sandbox_service.start()
 
     async def shutdown_handler(self, *args, **kwargs):
         """
@@ -95,10 +119,11 @@ class MyRunner(Runner):
         """
         await self.state_service.stop()
         await self.session_service.stop()
+        await self.sandbox_service.stop()
 
 
 @pytest.mark.asyncio
-async def test_runner():
+async def test_runner_sample1():
     from dotenv import load_dotenv
 
     load_dotenv("../../.env")
@@ -144,32 +169,11 @@ async def test_runner():
             ],
             "stream": True,
             "session_id": "Test Session",
-            "tools": [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "get_current_weather",
-                        "description": "Get the current weather in a "
-                        "given "
-                        "location",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "location": {
-                                    "type": "string",
-                                    "description": "The city and state, "
-                                    "e.g. San Francisco, CA",
-                                },
-                            },
-                        },
-                    },
-                },
-            ],
         },
     )
 
     print("\n")
-
+    final_text = ""
     async with MyRunner() as runner:
         async for message in runner.stream_query(
             request=request,
@@ -180,9 +184,62 @@ async def test_runner():
                     if RunStatus.Completed == message.status:
                         res = message.content
                         print(res)
+                        if res and len(res) > 0:
+                            final_text = res[0].text
+                            print(final_text)
                 if MessageType.FUNCTION_CALL == message.type:
                     if RunStatus.Completed == message.status:
                         res = message.content
                         print(res)
 
         print("\n")
+    assert "杭州" in final_text
+
+
+@pytest.mark.asyncio
+async def test_runner_sample2():
+    from dotenv import load_dotenv
+
+    load_dotenv("../../.env")
+
+    request = AgentRequest.model_validate(
+        {
+            "input": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "What is in https://example.com?",
+                        },
+                    ],
+                },
+            ],
+            "stream": True,
+            "session_id": "Test Session",
+        },
+    )
+
+    print("\n")
+    final_text = ""
+    async with MyRunner() as runner:
+        async for message in runner.stream_query(
+            request=request,
+        ):
+            print(message.model_dump_json())
+            if message.object == "message":
+                if MessageType.MESSAGE == message.type:
+                    if RunStatus.Completed == message.status:
+                        res = message.content
+                        print(res)
+                        if res and len(res) > 0:
+                            final_text = res[0].text
+                            print(final_text)
+                if MessageType.FUNCTION_CALL == message.type:
+                    if RunStatus.Completed == message.status:
+                        res = message.content
+                        print(res)
+
+        print("\n")
+
+    assert "example.com" in final_text
