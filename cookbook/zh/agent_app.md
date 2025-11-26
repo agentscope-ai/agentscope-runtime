@@ -34,7 +34,7 @@ kernelspec:
 
 **用法示例**
 
-```{code-cell}
+```python
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope.model import OpenAIChatModel

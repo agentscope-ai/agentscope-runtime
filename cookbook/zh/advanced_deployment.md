@@ -234,36 +234,13 @@ print(response)
 ```python
 # detached_deploy.py
 import asyncio
-import os
-from agentscope.agent import ReActAgent
-from agentscope.model import DashScopeChatModel
-from agentscope.tool import Toolkit, view_text_file
-from agentscope.formatter import DashScopeChatFormatter
-from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
 from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
+from agent_app import app  # 导入已配置的 app
 
 async def main():
     """以独立进程模式部署应用"""
     print("🚀 以独立进程模式部署 AgentApp...")
-
-    toolkit = Toolkit()
-    toolkit.register_tool_function(view_text_file)
-
-    formatter = DashScopeChatFormatter()
-
-    agent = ReActAgent(
-        name="Friday",
-        sys_prompt="You're a helpful assistant named Friday.",
-        model=DashScopeChatModel(
-            "qwen-max",
-            api_key=os.getenv("OPENAI_API_KEY"),
-        ),
-        formatter=formatter,  # 使用 DashScopeChatFormatter
-        toolkit=toolkit,
-    )
-    agent.description = "A helpful AI assistant named Friday"
-    app = AgentApp(agent=agent)
 
     # 以独立模式部署
     deployment_info = await app.deploy(

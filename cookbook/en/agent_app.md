@@ -35,7 +35,7 @@ Launch an HTTP API service containing the Agent, listening on the specified port
 
 **Example Usage**
 
-```{code-cell}
+```python
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
 from agentscope.model import OpenAIChatModel
