@@ -15,6 +15,7 @@ from .app_runner_utils import ensure_runner_from_app
 from .package import package, ProjectInfo, DEFAULT_ENTRYPOINT_FILE, tomllib
 from ..adapter.protocol_adapter import ProtocolAdapter
 from .package import DEPLOYMENT_ZIP
+from .wheel_packager import _parse_pyproject_toml
 
 PROJECT_SUBDIR = ".agentscope_runtime"
 CONFIG_FILENAME = "deploy_config.json"
@@ -30,6 +31,7 @@ def build_detached_app(
     output_dir: Optional[str] = None,
     dockerfile_path: Optional[str] = None,
     use_local_runtime: Optional[bool] = None,
+    **kwargs
 ) -> Tuple[str, ProjectInfo]:
     """
     Create a detached bundle directory ready for execution.
@@ -74,6 +76,7 @@ def build_detached_app(
         runner=None if app is not None else runner,
         output_dir=str(build_root),
         extra_packages=extra_packages,
+        **kwargs
     )
 
     workspace_root = Path(package_path)
@@ -159,6 +162,18 @@ def _append_additional_requirements(
     with open(str(req_path), "w", encoding="utf-8") as f:
         if should_use_local:
             # Create wheels subdirectory
+            # Get base requirements from pyproject.toml
+            runtime_source = _get_runtime_source_path()
+            base_requirements = []
+
+            if runtime_source:
+                pyproject_path = runtime_source / "pyproject.toml"
+                try:
+                    base_requirements = _parse_pyproject_toml(pyproject_path)
+                except Exception:
+                    # Fallback to manual
+                    base_requirements = _get_unversioned_requirements()
+
             wheels_dir = extraction_dir / "wheels"
             wheels_dir.mkdir(exist_ok=True)
 
@@ -167,19 +182,9 @@ def _append_additional_requirements(
             if wheel_filename:
                 # Use path relative to extraction_dir
                 # In Docker: wheels/agentscope_runtime-0.2.0-py3-none-any.whl
-                base_requirements = [
-                    "fastapi",
-                    "uvicorn",
-                    f"wheels/{wheel_filename}",  # Relative to extraction_dir
-                    "pydantic",
-                    "jinja2",  # For template rendering
-                    "psutil",  # For process management
-                    "redis",  # For process management
-                    "celery",  # For task queue
-                ]
-            else:
-                # Fallback if wheel build failed
-                base_requirements = _get_unversioned_requirements()
+                base_requirements.append(
+                    f"./wheels/{wheel_filename}",
+                )
         elif package_version:
             # Use versioned requirements for released versions
             base_requirements = [

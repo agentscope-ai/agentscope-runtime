@@ -73,8 +73,8 @@ class EntrypointInfo(BaseModel):
     module_name: str  # Module to import from (e.g., "app_deploy")
     object_name: str  # Object name to import (e.g., "agent_app")
     object_type: str  # "app" or "runner"
-    default_host: str = "0.0.0.0"  # Default host for the service
-    default_port: int = 8090  # Default port for the service
+    host: str = "0.0.0.0"  # Default host for the service
+    port: int = 8090  # Default port for the service
     extra_parameters: List[
         RuntimeParameter
     ] = []  # Additional runtime parameters
@@ -315,8 +315,8 @@ def _generate_app_main_template(entrypoint_info: EntrypointInfo) -> str:
         return template.render(
             module_name=entrypoint_info.module_name,
             object_name=entrypoint_info.object_name,
-            default_host=entrypoint_info.default_host,
-            default_port=entrypoint_info.default_port,
+            host=entrypoint_info.host,
+            port=entrypoint_info.port,
             extra_parameters=extra_params_dicts,
         )
     except TemplateNotFound:
@@ -363,8 +363,8 @@ def _generate_runner_main_template(entrypoint_info: EntrypointInfo) -> str:
             object_name=entrypoint_info.object_name,
             app_name=app_name,
             app_description=app_description,
-            default_host=entrypoint_info.default_host,
-            default_port=entrypoint_info.default_port,
+            host=entrypoint_info.host,
+            port=entrypoint_info.port,
             extra_parameters=extra_params_dicts,
         )
     except TemplateNotFound:
@@ -546,8 +546,8 @@ def package(
     runner=None,
     entrypoint: Optional[str] = None,
     output_dir: Optional[str] = None,
-    default_host: str = "0.0.0.0",
-    default_port: int = 8090,
+    host: str = "0.0.0.0",
+    port: int = 8090,
     extra_parameters: Optional[List[RuntimeParameter]] = None,
     **kwargs,
 ) -> Tuple[str, ProjectInfo]:
@@ -568,8 +568,8 @@ def package(
         runner: Runner instance (for object-style deployment)
         entrypoint: Entrypoint specification (for CLI-style deployment)
         output_dir: Output directory (creates temp dir if None)
-        default_host: Default host for the service (default: "0.0.0.0")
-        default_port: Default port for the service (default: 8090)
+        host: Default host for the service (default: "0.0.0.0")
+        port: Default port for the service (default: 8090)
         extra_parameters: Additional runtime parameters to expose via CLI
         **kwargs: Additional keyword arguments (ignored)
 
@@ -629,8 +629,8 @@ def package(
             module_name=project_info.entrypoint_file.split(".")[0],
             object_type=project_info.handler_type,
             object_name=project_info.entrypoint_handler,
-            default_host=default_host,
-            default_port=default_port,
+            host=host,
+            port=port,
             extra_parameters=extra_parameters or [],
         )
 
@@ -667,7 +667,7 @@ def package(
             f"{entrypoint_info.object_name}",
         )
         logger.info(
-            f"Service will start on {default_host}:{default_port} by default",
+            f"Service will start on {host}:{port} by default",
         )
         if extra_parameters:
             logger.info(

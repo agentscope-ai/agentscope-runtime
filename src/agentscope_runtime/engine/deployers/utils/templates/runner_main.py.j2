@@ -33,14 +33,14 @@ async def main():
     )
     parser.add_argument(
         "--host",
-        default="{{ default_host }}",
-        help="Host to bind to (default: {{ default_host }})"
+        default="{{ host }}",
+        help="Host to bind to (default: {{ host }})"
     )
     parser.add_argument(
         "--port",
         type=int,
-        default={{ default_port }},
-        help="Port to bind to (default: {{ default_port }})"
+        default={{ port }},
+        help="Port to bind to (default: {{ port }})"
     )
     parser.add_argument(
         "--embed-task-processor",

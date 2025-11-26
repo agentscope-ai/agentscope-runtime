@@ -586,7 +586,7 @@ class ModelstudioDeployManager(DeployManager):
         build_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info("Generating wrapper project for %s", name)
-        wrapper_project_dir, _ = await generate_wrapper_project(
+        wrapper_project_dir, _ = generate_wrapper_project(
             build_root=build_dir,
             user_project_dir=project_dir,
             start_cmd=cmd,
@@ -595,7 +595,7 @@ class ModelstudioDeployManager(DeployManager):
         )
 
         logger.info("Building wheel under %s", wrapper_project_dir)
-        wheel_path = await build_wheel(wrapper_project_dir)
+        wheel_path = build_wheel(wrapper_project_dir)
         return wheel_path, name
 
     def _generate_env_file(
@@ -729,7 +729,7 @@ class ModelstudioDeployManager(DeployManager):
         """
         Package the project, upload to OSS and trigger ModelStudio deploy.
 
-        Returns a dict containing deploy_id, wheel_path, artifact_url (if uploaded),
+        Returns a dict containing deploy_id, wheel_path, url (if uploaded),
         resource_name (deploy_name), and workspace_id.
         """
         if not agent_id:
@@ -746,12 +746,13 @@ class ModelstudioDeployManager(DeployManager):
 
                 # Create package project for detached deployment
                 project_dir = await LocalDeployManager.create_detached_project(
-                    runner=runner,
+                    app=app,
                     endpoint_path=endpoint_path,
                     protocol_adapters=protocol_adapters,
                     custom_endpoints=custom_endpoints,
                     requirements=requirements,
                     extra_packages=extra_packages,
+                    port=8080,
                     **kwargs,
                 )
                 if project_dir:

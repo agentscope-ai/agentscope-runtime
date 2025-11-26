@@ -317,6 +317,7 @@ class LocalDeployManager(DeployManager):
             runner=runner,
             requirements=requirements,
             extra_packages=extra_packages,
+            **kwargs,
         )
 
         return project_dir

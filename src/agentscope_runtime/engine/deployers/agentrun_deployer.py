@@ -432,7 +432,7 @@ class AgentRunDeployManager(DeployManager):
         build_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info("Generating wrapper project: %s", name)
-        wrapper_project_dir, _ = await generate_wrapper_project(
+        wrapper_project_dir, _ = generate_wrapper_project(
             build_root=build_dir,
             user_project_dir=project_dir,
             start_cmd=cmd,
@@ -441,7 +441,7 @@ class AgentRunDeployManager(DeployManager):
         )
 
         logger.info("Building wheel package from: %s", wrapper_project_dir)
-        wheel_path = await build_wheel(wrapper_project_dir)
+        wheel_path = build_wheel(wrapper_project_dir)
         logger.info("Wheel package created: %s", wheel_path)
         return wheel_path, name
 
