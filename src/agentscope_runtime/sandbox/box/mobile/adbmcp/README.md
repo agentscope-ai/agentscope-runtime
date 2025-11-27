@@ -1,8 +1,8 @@
 ## Acknowledgements & Credits
 
-This project is a derivative work based on the open-source project **compute-use-mcp**.
+This project is a derivative work based on the open-source project **computer-use-mcp**.
 
-*   **Original Project**: compute-use-mcp
+*   **Original Project**: computer-use-mcp
 *   **Original Author**: Adam Jones (domdomegg)
 *   **Repository URL**: https://github.com/domdomegg/computer-use-mcp.git
 
