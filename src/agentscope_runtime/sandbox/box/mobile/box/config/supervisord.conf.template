@@ -1,0 +1,23 @@
+[supervisord]
+user=root
+logfile=/var/log/supervisord.log
+pidfile=/var/run/supervisord.pid
+nodaemon=true
+
+[program:nginx]
+command=/usr/sbin/nginx -g 'daemon off;'
+autostart=true
+autorestart=true
+priority=20
+stdout_logfile=/var/log/nginx.out.log
+stderr_logfile=/var/log/nginx.err.log
+
+[program:fastapi_app]
+command=/app/python_app/.venv/bin/uvicorn app:app --host 0.0.0.0 --port 8000
+directory=/app/python_app
+autostart=true
+autorestart=true
+priority=10
+stdout_logfile=/var/log/fastapi.out.log
+stderr_logfile=/var/log/fastapi.err.log
+environment=SECRET_TOKEN="${SECRET_TOKEN}"

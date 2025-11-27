@@ -5,81 +5,141 @@ import time
 
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
-from agentscope.tool import Toolkit, view_text_file
+from agentscope.formatter import DashScopeChatFormatter
+from agentscope.tool import Toolkit, execute_python_code
+from agentscope.pipeline import stream_printing_messages
 
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+
+from agentscope_runtime.adapters.agentscope.memory import (
+    AgentScopeSessionHistoryMemory,
+)
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.deployers.local_deployer import (
     LocalDeployManager,
 )
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-
-toolkit = Toolkit()
-# Register an unrelated tool
-toolkit.register_tool_function(view_text_file)
-
-agent = AgentScopeAgent(
-    name="Friday",
-    model=DashScopeChatModel(
-        "qwen-max",
-        api_key=os.getenv("DASHSCOPE_API_KEY"),
-    ),
-    agent_config={
-        "sys_prompt": "You're a helpful assistant named Friday.",
-        "toolkit": toolkit,
-    },
-    agent_builder=ReActAgent,
+from agentscope_runtime.engine.services.agent_state import (
+    InMemoryStateService,
+)
+from agentscope_runtime.engine.services.session_history import (
+    InMemorySessionHistoryService,
 )
 
-print("✅ AgentScope agent created successfully")
-
-
-app = AgentApp(
-    agent=agent,
-    # broker_url="redis://localhost:6379/0",   # Redis database 0 for broker
-    # backend_url="redis://localhost:6379/1",  # Redis database 1 for backend
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
 )
 
 
-@app.endpoint("/sync")
+@agent_app.init
+async def init_func(self):
+    self.state_service = InMemoryStateService()
+    self.session_service = InMemorySessionHistoryService()
+
+    await self.state_service.start()
+    await self.session_service.start()
+
+
+@agent_app.shutdown
+async def shutdown_func(self):
+    await self.state_service.stop()
+    await self.session_service.stop()
+
+
+@agent_app.query(framework="agentscope")
+async def query_func(
+    self,
+    msgs,
+    request: AgentRequest = None,
+    **kwargs,
+):
+    assert kwargs is not None, "kwargs is Required for query_func"
+    session_id = request.session_id
+    user_id = request.user_id
+
+    state = await self.state_service.export_state(
+        session_id=session_id,
+        user_id=user_id,
+    )
+
+    toolkit = Toolkit()
+    toolkit.register_tool_function(execute_python_code)
+
+    agent = ReActAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+            enable_thinking=True,
+            stream=True,
+        ),
+        sys_prompt="You're a helpful assistant named Friday.",
+        toolkit=toolkit,
+        memory=AgentScopeSessionHistoryMemory(
+            service=self.session_service,
+            session_id=session_id,
+            user_id=user_id,
+        ),
+        formatter=DashScopeChatFormatter(),
+    )
+
+    if state:
+        agent.load_state_dict(state)
+
+    async for msg, last in stream_printing_messages(
+        agents=[agent],
+        coroutine_task=agent(msgs),
+    ):
+        yield msg, last
+
+    state = agent.state_dict()
+
+    await self.state_service.save_state(
+        user_id=user_id,
+        session_id=session_id,
+        state=state,
+    )
+
+
+@agent_app.endpoint("/sync")
 def sync_handler(request: AgentRequest):
-    return {"status": "ok", "payload": request}
+    yield {"status": "ok", "payload": request}
 
 
-@app.endpoint("/async")
+@agent_app.endpoint("/async")
 async def async_handler(request: AgentRequest):
-    return {"status": "ok", "payload": request}
+    yield {"status": "ok", "payload": request}
 
 
-@app.endpoint("/stream_async")
+@agent_app.endpoint("/stream_async")
 async def stream_async_handler(request: AgentRequest):
     for i in range(5):
         yield f"async chunk {i}, with request payload {request}\n"
 
 
-@app.endpoint("/stream_sync")
+@agent_app.endpoint("/stream_sync")
 def stream_sync_handler(request: AgentRequest):
     for i in range(5):
         yield f"sync chunk {i}, with request payload {request}\n"
 
 
-@app.task("/task", queue="celery1")
+@agent_app.task("/task", queue="celery1")
 def task_handler(request: AgentRequest):
     time.sleep(30)
-    return {"status": "ok", "payload": request}
+    yield {"status": "ok", "payload": request}
 
 
-@app.task("/atask")
+@agent_app.task("/atask")
 async def atask_handler(request: AgentRequest):
     await asyncio.sleep(15)
-    return {"status": "ok", "payload": request}
+    yield {"status": "ok", "payload": request}
 
 
-# app.run()
+# agent_app.run()
 
 
 async def main():
-    await app.deploy(LocalDeployManager())
+    await agent_app.deploy(LocalDeployManager(port=8080))
 
 
 if __name__ == "__main__":

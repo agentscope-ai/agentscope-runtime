@@ -1,0 +1,95 @@
+# -*- coding: utf-8 -*-
+"""
+Auto-generated main.py for Runner deployment.
+
+This file imports the Runner from the original entrypoint file,
+wraps it in an AgentApp, and runs it as a service.
+"""
+
+import argparse
+import asyncio
+from {{ module_name }} import {{ object_name }}
+from agentscope_runtime.engine.app import AgentApp
+
+# Type whitelist for argument parser to prevent code injection
+ALLOWED_TYPES = {
+    "int": int,
+    "str": str,
+    "float": float,
+    "bool": bool,
+}
+
+
+# Wrap the runner in an AgentApp
+app = AgentApp(
+    app_name="{{ app_name }}",
+    app_description="{{ app_description }}",
+)
+
+
+@app.query(framework="agentscope")
+async def query_func(self, msgs, **kwargs):
+    """Query handler that uses the runner."""
+    result = await {{ object_name }}(msgs)
+    return result
+
+
+async def main():
+    """Run the Runner as an AgentApp service."""
+    parser = argparse.ArgumentParser(
+        description="{{ object_name }} Service (wrapped in AgentApp)"
+    )
+    parser.add_argument(
+        "--host",
+        default="{{ host }}",
+        help="Host to bind to (default: {{ host }})"
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default={{ port }},
+        help="Port to bind to (default: {{ port }})"
+    )
+    parser.add_argument(
+        "--embed-task-processor",
+        action="store_true",
+        default=False,
+        help="Whether to embed task processor"
+    )
+{% if extra_parameters %}
+
+    # Additional runtime parameters
+{% for param in extra_parameters %}
+{% set cli_arg = param.cli_name or '--' + param.name.replace('_', '-') %}
+    parser.add_argument(
+        {{ cli_arg | tojson }},
+{% if param.type == "bool" %}
+        action="store_true",
+        default={{ param.default | default(False) | lower }},
+{% else %}
+        type=ALLOWED_TYPES[{{ param.type | tojson }}],
+        default={{ param.default | tojson if param.default is not none else 'None' }},
+{% endif %}
+        help={{ (param.help or param.name) | tojson }}
+    )
+{% endfor %}
+{% endif %}
+
+    args = parser.parse_args()
+
+    # Run the wrapped AgentApp with specified parameters
+    await app.run(
+        host=args.host,
+        port=args.port,
+        embed_task_processor=args.embed_task_processor,
+{% if extra_parameters %}
+        # Additional parameters
+{% for param in extra_parameters %}
+        {{ param.name }}=args.{{ param.name }},
+{% endfor %}
+{% endif %}
+    )
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

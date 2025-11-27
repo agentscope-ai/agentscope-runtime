@@ -4,14 +4,34 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock, AsyncMock
 
 import pytest
-from agentscope_runtime.engine.deployers.agentrun_deployer import (
-    AgentRunDeployManager,
-    AgentRunConfig,
-    OSSConfig,
-    LogConfig,
-    NetworkConfig,
-    CodeConfig,
-    EndpointConfig,
+
+# Try to import the agentrun deployer, skip all tests if not available
+try:
+    from agentscope_runtime.engine.deployers.agentrun_deployer import (
+        AgentRunDeployManager,
+        AgentRunConfig,
+        OSSConfig,
+        LogConfig,
+        NetworkConfig,
+        CodeConfig,
+        EndpointConfig,
+    )
+
+    AGENTRUN_AVAILABLE = True
+except ImportError:
+    AGENTRUN_AVAILABLE = False
+    # Create dummy classes for type hints
+    AgentRunDeployManager = None  # type: ignore
+    AgentRunConfig = None  # type: ignore
+    OSSConfig = None  # type: ignore
+    LogConfig = None  # type: ignore
+    NetworkConfig = None  # type: ignore
+    CodeConfig = None  # type: ignore
+    EndpointConfig = None  # type: ignore
+
+pytestmark = pytest.mark.skipif(
+    not AGENTRUN_AVAILABLE,
+    reason="alibabacloud_agentrun20250910 SDK not installed",
 )
 
 

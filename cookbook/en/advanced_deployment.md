@@ -14,18 +14,36 @@ kernelspec:
 
 # Advanced Deployment Guide
 
-This guide demonstrates the four advanced deployment methods available in AgentScope Runtime, providing production-ready solutions for different scenarios: **Local Daemon**, **Detached Process**, **Kubernetes Deployment**, and **ModelStudio Deployment**.
+This guide covers the five advanced deployment methods available in AgentScope Runtime, providing production-ready solutions for different scenarios: **Local Daemon**, **Detached Process**, **Kubernetes Deployment**, **ModelStudio Deployment**, and **AgentRun Deployment**.
 
 ## Overview of Deployment Methods
 
-AgentScope Runtime offers four distinct deployment approaches, each tailored for specific use cases:
+AgentScope Runtime offers five distinct deployment approaches, each tailored for specific use cases:
 
 | Deployment Type | Use Case | Scalability | Management | Resource Isolation |
 |----------------|----------|-------------|------------|-------------------|
 | **Local Daemon** | Development & Testing | Single Process | Manual | Process-level |
 | **Detached Process** | Production Services | Single Node | Automated | Process-level |
-| **Kubernetes** | Enterprise & Cloud | Single-node(Will support Multi-node) | Orchestrated | Container-level |
+| **Kubernetes** | Enterprise & Cloud | Single-node (multi-node support coming) | Orchestrated | Container-level |
 | **ModelStudio** | Alibaba Cloud Platform | Cloud-managed | Platform-managed | Container-level |
+| **AgentRun** | AgentRun Platform | Cloud-managed | Platform-managed | Container-level |
+
+### Deployment Modes (DeploymentMode)
+
+`LocalDeployManager` supports two deployment modes:
+
+- **`DAEMON_THREAD`** (default): Runs the service in a daemon thread, main process blocks until service stops
+- **`DETACHED_PROCESS`**: Runs the service in a separate process, main script can exit while service continues running
+
+```{code-cell}
+from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
+
+# Use different deployment modes
+await app.deploy(
+    LocalDeployManager(host="0.0.0.0", port=8080),
+    mode=DeploymentMode.DAEMON_THREAD,  # or DETACHED_PROCESS
+)
+```
 
 ## Prerequisites
 
@@ -35,13 +53,10 @@ Install AgentScope Runtime with all deployment dependencies:
 
 ```bash
 # Basic installation
-pip install agentscope-runtime
+pip install agentscope-runtime>=1.0.0
 
 # For Kubernetes deployment
-pip install "agentscope-runtime[deployment]"
-
-# For sandbox tools (optional)
-pip install "agentscope-runtime[sandbox]"
+pip install "agentscope-runtime[ext]>=1.0.0"
 ```
 
 ### 🔑 Environment Setup
@@ -83,37 +98,104 @@ All deployment methods share the same agent and endpoint configuration. Let's fi
 
 ```{code-cell}
 # agent_app.py - Shared configuration for all deployment methods
+# -*- coding: utf-8 -*-
 import os
-import time
 
 from agentscope.agent import ReActAgent
+from agentscope.formatter import DashScopeChatFormatter
 from agentscope.model import DashScopeChatModel
-from agentscope.tool import Toolkit, view_text_file
+from agentscope.pipeline import stream_printing_messages
+from agentscope.tool import Toolkit, execute_python_code
 
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+from agentscope_runtime.adapters.agentscope.memory import (
+    AgentScopeSessionHistoryMemory,
+)
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-
-# 1. Create agent with toolkit
-toolkit = Toolkit()
-toolkit.register_tool_function(view_text_file)
-
-agent = AgentScopeAgent(
-    name="Friday",
-    model=DashScopeChatModel(
-        "qwen-max",
-        api_key=os.getenv("DASHSCOPE_API_KEY"),
-    ),
-    agent_config={
-        "sys_prompt": "You're a helpful assistant named Friday.",
-        "toolkit": toolkit,
-    },
-    agent_builder=ReActAgent,
+from agentscope_runtime.engine.services.agent_state import (
+    InMemoryStateService,
+)
+from agentscope_runtime.engine.services.session_history import (
+    InMemorySessionHistoryService,
 )
 
-# 2. Create AgentApp with multiple endpoints
-app = AgentApp(agent=agent)
+app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+)
 
+
+@app.init
+async def init_func(self):
+    self.state_service = InMemoryStateService()
+    self.session_service = InMemorySessionHistoryService()
+
+    await self.state_service.start()
+    await self.session_service.start()
+
+
+@app.shutdown
+async def shutdown_func(self):
+    await self.state_service.stop()
+    await self.session_service.stop()
+
+
+@app.query(framework="agentscope")
+async def query_func(
+    self,
+    msgs,
+    request: AgentRequest = None,
+    **kwargs,
+):
+    assert kwargs is not None, "kwargs is Required for query_func"
+    session_id = request.session_id
+    user_id = request.user_id
+
+    state = await self.state_service.export_state(
+        session_id=session_id,
+        user_id=user_id,
+    )
+
+    toolkit = Toolkit()
+    toolkit.register_tool_function(execute_python_code)
+
+    agent = ReActAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+            enable_thinking=True,
+            stream=True,
+        ),
+        sys_prompt="You're a helpful assistant named Friday.",
+        toolkit=toolkit,
+        memory=AgentScopeSessionHistoryMemory(
+            service=self.session_service,
+            session_id=session_id,
+            user_id=user_id,
+        ),
+        formatter=DashScopeChatFormatter(),
+    )
+
+    if state:
+        agent.load_state_dict(state)
+
+    async for msg, last in stream_printing_messages(
+        agents=[agent],
+        coroutine_task=agent(msgs),
+    ):
+        yield msg, last
+
+    state = agent.state_dict()
+
+    await self.state_service.save_state(
+        user_id=user_id,
+        session_id=session_id,
+        state=state,
+    )
+
+
+# 2. Create AgentApp with multiple endpoints
 @app.endpoint("/sync")
 def sync_handler(request: AgentRequest):
     return {"status": "ok", "payload": request}
@@ -294,7 +376,7 @@ production_services = ServicesConfig(
 )
 
 # Deploy with production services
-deployment_info = await runner.deploy(
+deployment_info = await app.deploy(
     deploy_manager=deploy_manager,
     endpoint_path="/process",
     stream=True,
@@ -479,26 +561,142 @@ if __name__ == "__main__":
 - Built-in monitoring and auto-scaling
 - Integrated with DashScope LLM services
 
+## Method 5: AgentRun Deployment
 
-## Summary
+**Best For**: Alibaba Cloud users who need to deploy agents to AgentRun service with automated build, upload, and deployment workflows.
 
-This guide covered three deployment methods for AgentScope Runtime:
+### Features
+- Managed deployment on Alibaba Cloud AgentRun service
+- Automatic project building and packaging
+- OSS integration for artifact storage
+- Complete lifecycle management
+- Automatic runtime endpoint creation and management
 
-### 🏃 **Local Daemon**: Development & Testing
-- Quick setup and direct control
-- Best for development and small-scale usage
-- Manual lifecycle management
+### AgentRun Deployment Prerequisites
 
-### 🔧 **Detached Process**: Production Services
-- Process isolation and automated management
-- Suitable for production single-node deployments
-- Remote control capabilities
+```bash
+# Ensure environment variables are set
+export ALIBABA_CLOUD_ACCESS_KEY_ID="your-access-key-id"
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
+export ALIBABA_CLOUD_REGION_ID="cn-hangzhou"  # or other regions
 
-### ☸️ **Kubernetes**: Enterprise & Cloud
-- Full container orchestration and scaling
-- High availability and cloud-native features
-- Enterprise-grade production deployments
+# OSS configuration (for storing build artifacts)
+export OSS_ACCESS_KEY_ID="your-oss-access-key-id"
+export OSS_ACCESS_KEY_SECRET="your-oss-access-key-secret"
+export OSS_ENDPOINT="oss-cn-hangzhou.aliyuncs.com"
+export OSS_BUCKET_NAME="your-bucket-name"
+```
 
-Choose the deployment method that best fits your use case, infrastructure, and scaling requirements. All methods use the same agent code, making migration between deployment types straightforward as your needs evolve.
+### Implementation
 
-For more detailed information on specific components, refer to the [Manager Module](manager.md), [Sandbox](sandbox.md), and [Quick Start](quickstart.md) guides.
+Using the agent and endpoints defined in the {ref}`Common Agent Setup<common-agent-setup>` section:
+
+```{code-cell}
+# agentrun_deploy.py
+import asyncio
+import os
+from agentscope_runtime.engine.deployers.agentrun_deployer import (
+    AgentRunDeployManager,
+    OSSConfig,
+    AgentRunConfig,
+)
+from agent_app import app  # Import configured app
+
+async def deploy_to_agentrun():
+    """Deploy AgentApp to Alibaba Cloud AgentRun service"""
+
+    # Configure OSS and AgentRun
+    deployer = AgentRunDeployManager(
+        oss_config=OSSConfig(
+            access_key_id=os.environ.get("OSS_ACCESS_KEY_ID"),
+            access_key_secret=os.environ.get("OSS_ACCESS_KEY_SECRET"),
+            endpoint=os.environ.get("OSS_ENDPOINT"),
+            bucket_name=os.environ.get("OSS_BUCKET_NAME"),
+        ),
+        agentrun_config=AgentRunConfig(
+            access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+            access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+            region_id=os.environ.get("ALIBABA_CLOUD_REGION_ID", "cn-hangzhou"),
+        ),
+    )
+
+    # Execute deployment
+    result = await app.deploy(
+        deployer,
+        endpoint_path="/process",
+        requirements=["agentscope", "fastapi", "uvicorn"],
+        environment={
+            "PYTHONPATH": "/app",
+            "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+        },
+        deploy_name="agent-app-example",
+        project_dir=".",  # Current project directory
+        cmd="python -m uvicorn app:app --host 0.0.0.0 --port 8080",
+    )
+
+    print(f"✅ Deployed to AgentRun: {result['url']}")
+    print(f"📍 AgentRun ID: {result.get('agentrun_id', 'N/A')}")
+    print(f"📦 Artifact URL: {result.get('artifact_url', 'N/A')}")
+    return result
+
+if __name__ == "__main__":
+    asyncio.run(deploy_to_agentrun())
+```
+
+**Key Points**:
+- Automatically builds and packages project as wheel file
+- Uploads artifacts to OSS
+- Creates and manages runtime in AgentRun service
+- Automatically creates public access endpoints
+- Supports updating existing deployments (via `agentrun_id` parameter)
+
+### Configuration
+
+#### OSSConfig
+
+OSS configuration for storing build artifacts:
+
+```python
+OSSConfig(
+    access_key_id="your-access-key-id",
+    access_key_secret="your-access-key-secret",
+    endpoint="oss-cn-hangzhou.aliyuncs.com",
+    bucket_name="your-bucket-name",
+)
+```
+
+#### AgentRunConfig
+
+AgentRun service configuration:
+
+```python
+AgentRunConfig(
+    access_key_id="your-access-key-id",
+    access_key_secret="your-access-key-secret",
+    region_id="cn-hangzhou",  # Supported regions: cn-hangzhou, cn-beijing, etc.
+)
+```
+
+### Advanced Usage
+
+#### Using Pre-built Wheel Files
+
+```python
+result = await app.deploy(
+    deployer,
+    external_whl_path="/path/to/prebuilt.whl",  # Use pre-built wheel
+    skip_upload=False,  # Still needs to upload to OSS
+    # ... other parameters
+)
+```
+
+#### Updating Existing Deployment
+
+```python
+result = await app.deploy(
+    deployer,
+    agentrun_id="existing-agentrun-id",  # Update existing deployment
+    # ... other parameters
+)
+```
+

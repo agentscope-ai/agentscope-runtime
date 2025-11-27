@@ -1,4 +1,4 @@
-# Demo 展示厅
+# 参考: Demo 展示厅
 
 ```{note}
 在我们的 展示厅（Demo House） 中，您可以探索各种演示项目，展示如何使用 AgentScope Runtime 构建智能体应用。这些演示项目原先托管在本仓库中，如今已迁移至 [agentscope-ai/agentscope-samples](https://github.com/agentscope-ai/agentscope-samples)，以更好地展示它们与其他 AgentScope 库的集成与协作。
@@ -17,23 +17,6 @@
                 <div class="gallery-item-card-title">浏览器控制智能体</div>
                 <div class="gallery-item-description">
                     在AgentScope Runtime中使用浏览器沙箱创建一个网页浏览器控制智能体。
-                </div>
-            </div>
-        </div>
-    </a>
-    <a class="gallery-item"
-       href="https://github.com/agentscope-ai/agentscope-samples/tree/main/deep_research/qwen_langgraph_search_fullstack_runtime">
-        <div class="gallery-item-card">
-            <div class="gallery-item-card-image-container">
-                <img class="gallery-item-card-img"
-                     src="https://img.alicdn.com/imgextra/i2/O1CN01M4Xm6S1PypUvcjzq5_!!6000000001910-0-tps-1598-1596.jpg"
-                     alt="Qwen LangGraph 搜索">
-            </div>
-            <div class="gallery-item-card-content">
-                <div class="gallery-item-card-title">Qwen LangGraph 搜索
-                </div>
-                <div class="gallery-item-description">
-                    在AgentScope Runtime中开发Qwen LangGraph搜索功能。
                 </div>
             </div>
         </div>

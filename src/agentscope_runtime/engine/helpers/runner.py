@@ -24,3 +24,17 @@ class SimpleRunner(Runner):
         yield "Hi"
         yield "! My name is Friday"
         yield "."
+
+
+class ErrorRunner(Runner):
+    def __init__(self) -> None:
+        super().__init__()
+        self.framework_type = "text"
+
+    async def query_handler(
+        self,
+        request: AgentRequest = None,
+        **kwargs,
+    ):
+        yield "Hi"
+        raise RuntimeError("Error")

@@ -36,6 +36,11 @@ def install_lazy_loader(globals_dict, lazy_map):
                 msg = f"Failed to import {name}. Possible missing dependency."
                 if hint:
                     msg += f" Please install dependency: {hint}"
+                else:
+                    msg += (
+                        " Please install dependency:  pip install "
+                        "agentscope-runtime[ext]"
+                    )
                 raise ImportError(msg) from e
 
             obj = getattr(module, name)

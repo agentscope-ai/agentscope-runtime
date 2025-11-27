@@ -82,7 +82,6 @@ class TracerHandler(ABC):
         raise NotImplementedError("Subclasses must implement on_error method")
 
 
-# 新增基础的LogHandler类
 class BaseLogHandler(TracerHandler):
     """Basic log handler implementation using Python's logging module."""
 
@@ -166,14 +165,16 @@ class BaseLogHandler(TracerHandler):
 
 class Tracer:
     """
-    Tracer class for logging events
-    usage:
-    with tracer.event(TraceType.LLM, payload) as event:
-        event.log("message")
-        ""...logic here...""
-        end_payload = {xxx}
-        # optional on_end call for additional payload and kwargs
-        event.on_end(end_payload, if_success=True)
+    Tracer class for logging events.
+
+    Usage example::
+
+        with tracer.event(TraceType.LLM, payload) as event:
+            event.log("message")
+            # ...logic here...
+            end_payload = {"xxx": "value"}
+            # optional on_end call for additional payload and kwargs
+            event.on_end(end_payload, if_success=True)
     """
 
     def __init__(self, handlers: List[TracerHandler]):

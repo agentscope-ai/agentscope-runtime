@@ -12,7 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# Agent API 协议规范
+# 参考: Agent API 协议规范
 
 ## 概述
 
@@ -275,6 +275,7 @@ class Message(Event):
 class BaseRequest(BaseModel):
     input: List[Message]
     stream: bool = True
+    id: Optional[str] = None
 ```
 
 **智能体请求**：
@@ -292,7 +293,6 @@ class AgentRequest(BaseRequest):
     seed: Optional[int] = None
     tools: Optional[List[Union[Tool, Dict]]] = None
     session_id: Optional[str] = None
-    response_id: Optional[str] = None
 ```
 
 ### 6. 响应模型
@@ -584,3 +584,93 @@ data_builder.complete()
 ```
 
 通过使用Agent API构建器，开发者可以轻松构建符合协议规范的复杂流式响应，实现更好的用户体验和更灵活的响应控制。
+
+## 协议适配器
+
+协议适配器（Protocol Adapter）用于在不同协议之间进行转换，使 AgentScope Runtime 能够支持多种 API 协议。
+
+### 适配器架构
+
+AgentScope Runtime 提供了两种内置协议适配器：
+
+- **A2A 协议适配器**（`A2AFastAPIDefaultAdapter`）：支持 Agent-to-Agent 协议
+- **Response API 协议适配器**（`ResponseAPIDefaultAdapter`）：支持 OpenAI Responses API 协议
+
+### 使用内置适配器
+
+AgentApp 默认会自动注册内置适配器：
+
+```{code-cell}
+from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.deployers.adapter.a2a import A2AFastAPIDefaultAdapter
+from agentscope_runtime.engine.deployers.adapter.responses import ResponseAPIDefaultAdapter
+
+app = AgentApp(agent=agent)
+
+# AgentApp 会自动注册内置适配器
+# 您也可以通过 protocol_adapters 参数自定义
+app = AgentApp(
+    agent=agent,
+    protocol_adapters=[
+        A2AFastAPIDefaultAdapter(
+            agent_name="Friday",
+            agent_description="A helpful assistant",
+        ),
+        ResponseAPIDefaultAdapter(),
+    ],
+)
+```
+
+### 创建自定义适配器
+
+您可以通过继承 `ProtocolAdapter` 基类来创建自定义适配器：
+
+```{code-cell}
+from agentscope_runtime.engine.deployers.adapter.protocol_adapter import ProtocolAdapter
+from typing import Any, Callable
+
+class CustomProtocolAdapter(ProtocolAdapter):
+    """自定义协议适配器示例"""
+
+    def add_endpoint(self, app, func: Callable, **kwargs) -> Any:
+        """添加端点到适配器
+
+        Args:
+            app: FastAPI 应用实例
+            func: 处理函数
+            **kwargs: 其他参数
+
+        Returns:
+            端点对象
+        """
+        # 实现自定义端点添加逻辑
+        @app.post("/custom-endpoint")
+        async def custom_handler(request):
+            # 转换请求格式
+            converted_request = self._convert_request(request)
+            # 调用处理函数
+            result = await func(converted_request)
+            # 转换响应格式
+            return self._convert_response(result)
+
+        return custom_handler
+
+    def _convert_request(self, request):
+        """将外部协议请求转换为内部格式"""
+        # 实现请求转换逻辑
+        pass
+
+    def _convert_response(self, response):
+        """将内部响应转换为外部协议格式"""
+        # 实现响应转换逻辑
+        pass
+```
+
+### 适配器使用场景
+
+1. **多协议支持**：使同一个 Agent 能够同时支持多种 API 协议
+2. **协议转换**：在不同协议之间进行无缝转换
+3. **向后兼容**：支持旧版本协议的同时支持新协议
+4. **自定义协议**：实现特定业务场景的协议适配
+
+更多详细信息，请参考 API 文档中的适配器模块说明。

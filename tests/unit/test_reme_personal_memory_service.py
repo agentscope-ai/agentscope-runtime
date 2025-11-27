@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=redefined-outer-name, protected-access, unused-argument, wrong-import-position
 # flake8: noqa: E402
-import sys
-
 import pytest
 import pytest_asyncio
 
-pytestmark = pytest.mark.skipif(
-    sys.version_info < (3, 12),
-    reason="ReMe requires Python 3.12 or higher",
-)
 
 from agentscope_runtime.engine.schemas.agent_schemas import (
     Message,
@@ -18,13 +12,9 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
     ContentType,
     Role,
 )
-
-if sys.version_info[:2] >= (3, 12):
-    from agentscope_runtime.engine.services.memory import (
-        ReMePersonalMemoryService,
-    )
-else:
-    ReMePersonalMemoryService = None
+from agentscope_runtime.engine.services.memory import (
+    ReMePersonalMemoryService,
+)
 
 
 def create_message(role: str, content: str) -> Message:

@@ -1,23 +1,50 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=protected-access
+# pylint:disable=protected-access, line-too-long
+# mypy: disable-error-code="no-redef"
 
 import logging
 import os
-from typing import Any, Optional
+from typing import Any, Optional, Type
 
 from pydantic import BaseModel, Field
 
 from .base import (
     X_AGENT_CHANNEL,
     _create_alipay_client,
-    AlipayAipaySubscribeStatusCheckRequest,
-    AlipayAipaySubscribePackageInitializeRequest,
-    AlipayAipaySubscribeTimesSaveRequest,
-    AlipayAipaySubscribeStatusCheckResponse,
-    AlipayAipaySubscribePackageInitializeResponse,
-    AlipayAipaySubscribeTimesSaveResponse,
 )
 from ..base import Tool
+
+
+try:
+    from alipay.aop.api.request.AlipayAipaySubscribeStatusCheckRequest import (
+        AlipayAipaySubscribeStatusCheckRequest,
+    )
+    from alipay.aop.api.request.AlipayAipaySubscribePackageInitializeRequest import (  # noqa: E501
+        AlipayAipaySubscribePackageInitializeRequest,
+    )
+    from alipay.aop.api.request.AlipayAipaySubscribeTimesSaveRequest import (
+        AlipayAipaySubscribeTimesSaveRequest,
+    )
+    from alipay.aop.api.response.AlipayAipaySubscribeStatusCheckResponse import (  # noqa: E501
+        AlipayAipaySubscribeStatusCheckResponse,
+    )
+    from alipay.aop.api.response.AlipayAipaySubscribePackageInitializeResponse import (  # noqa: E501
+        AlipayAipaySubscribePackageInitializeResponse,
+    )
+    from alipay.aop.api.response.AlipayAipaySubscribeTimesSaveResponse import (
+        AlipayAipaySubscribeTimesSaveResponse,
+    )
+
+    ALIPAY_SDK_AVAILABLE = True
+except ImportError:
+    ALIPAY_SDK_AVAILABLE = False
+    AlipayAipaySubscribeStatusCheckRequest: Optional[Type[Any]] = None
+    AlipayAipaySubscribePackageInitializeRequest: Optional[Type[Any]] = None
+    AlipayAipaySubscribeTimesSaveRequest: Optional[Type[Any]] = None
+    AlipayAipaySubscribeStatusCheckResponse: Optional[Type[Any]] = None
+    AlipayAipaySubscribePackageInitializeResponse: Optional[Type[Any]] = None
+    AlipayAipaySubscribeTimesSaveResponse: Optional[Type[Any]] = None
+
 
 logger = logging.getLogger(__name__)
 
