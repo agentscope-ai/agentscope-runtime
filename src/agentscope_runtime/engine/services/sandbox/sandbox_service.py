@@ -74,7 +74,7 @@ class SandboxService(ServiceWithLifecycleManager):
         sandbox_types: Optional[List[str]] = None,
     ):
         if sandbox_types is None:
-            sandbox_types = [SandboxType.BASE.value]
+            sandbox_types = [SandboxType.BASE]
 
         sandboxes = []
         for env_type in sandbox_types:

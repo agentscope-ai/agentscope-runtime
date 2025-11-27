@@ -776,7 +776,8 @@ class ModelstudioDeployManager(DeployManager):
                         f"External wheel file not found: {wheel_path}",
                     )
                 name = deploy_name or default_deploy_name()
-                # 如果是更新agent，且没有传deploy_name, 则不更新名字
+                # Don't change name if agent was not updated and
+                # deploye_name was missing
                 if agent_id and (deploy_name is None):
                     name = None
                 logger.info(
