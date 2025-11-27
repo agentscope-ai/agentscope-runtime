@@ -1,22 +1,16 @@
 # -*- coding: utf-8 -*-
-import asyncio
 import os
-import time
 
 from agentscope.agent import ReActAgent
-from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
-from agentscope.tool import Toolkit, execute_python_code
+from agentscope.model import DashScopeChatModel
 from agentscope.pipeline import stream_printing_messages
-
+from agentscope.tool import Toolkit, execute_python_code
 
 from agentscope_runtime.adapters.agentscope.memory import (
     AgentScopeSessionHistoryMemory,
 )
 from agentscope_runtime.engine.app import AgentApp
-from agentscope_runtime.engine.deployers.local_deployer import (
-    LocalDeployManager,
-)
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from agentscope_runtime.engine.services.agent_state import (
     InMemoryStateService,
@@ -99,49 +93,3 @@ async def query_func(
         session_id=session_id,
         state=state,
     )
-
-
-@agent_app.endpoint("/sync")
-def sync_handler(request: AgentRequest):
-    yield {"status": "ok", "payload": request}
-
-
-@agent_app.endpoint("/async")
-async def async_handler(request: AgentRequest):
-    yield {"status": "ok", "payload": request}
-
-
-@agent_app.endpoint("/stream_async")
-async def stream_async_handler(request: AgentRequest):
-    for i in range(5):
-        yield f"async chunk {i}, with request payload {request}\n"
-
-
-@agent_app.endpoint("/stream_sync")
-def stream_sync_handler(request: AgentRequest):
-    for i in range(5):
-        yield f"sync chunk {i}, with request payload {request}\n"
-
-
-@agent_app.task("/task", queue="celery1")
-def task_handler(request: AgentRequest):
-    time.sleep(30)
-    yield {"status": "ok", "payload": request}
-
-
-@agent_app.task("/atask")
-async def atask_handler(request: AgentRequest):
-    await asyncio.sleep(15)
-    yield {"status": "ok", "payload": request}
-
-
-# agent_app.run()
-
-
-async def main():
-    await agent_app.deploy(LocalDeployManager(port=8080))
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
-    input("Press Enter to stop the server...")

@@ -394,12 +394,33 @@ class LocalDeployManager(DeployManager):
     def _is_server_ready(self) -> bool:
         """Check if the server is ready to accept connections."""
         try:
+            # Normalize host for connection check
+            # When service binds to 0.0.0.0, we need to connect to 127.0.0.1
+            check_host = self._normalize_host_for_check(self.host)
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.settimeout(0.1)
-                result = s.connect_ex((self.host, self.port))
+                result = s.connect_ex((check_host, self.port))
                 return result == 0
         except Exception:
             return False
+
+    @staticmethod
+    def _normalize_host_for_check(host: str) -> str:
+        """Normalize host for connection check.
+
+        When a service binds to 0.0.0.0 (all interfaces), it cannot be
+        directly connected to. We need to connect to 127.0.0.1 instead
+        to check if the service is running locally.
+
+        Args:
+            host: The host the service binds to
+
+        Returns:
+            The host to use for connection check
+        """
+        if host in ("0.0.0.0", "::"):
+            return "127.0.0.1"
+        return host
 
     async def _wait_for_server_ready(self, timeout: int = 30):
         """Wait for server to become ready."""

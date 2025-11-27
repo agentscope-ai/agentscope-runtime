@@ -274,9 +274,33 @@ class TestProcessManager:
         mock_socket.return_value.__enter__.return_value = mock_sock
 
         manager = ProcessManager()
-        result = await manager.wait_for_port("127.0.0.1", 8000, timeout=1)
+        result = await manager.wait_for_port(
+            "127.0.0.1",
+            8000,
+            timeout=1,
+        )
 
         assert result is True
+
+    @pytest.mark.asyncio
+    async def test_wait_for_port_with_0_0_0_0(self, mocker):
+        """Test waiting for port when host is 0.0.0.0."""
+        mock_socket = mocker.patch("socket.socket")
+        # Mock successful connection
+        mock_sock = mocker.Mock()
+        mock_sock.connect_ex.return_value = 0  # Success
+        mock_socket.return_value.__enter__.return_value = mock_sock
+
+        manager = ProcessManager()
+        result = await manager.wait_for_port(
+            "0.0.0.0",
+            8000,
+            timeout=1,
+        )
+
+        # Should normalize 0.0.0.0 to 127.0.0.1 for connection check
+        assert result is True
+        mock_sock.connect_ex.assert_called_with(("127.0.0.1", 8000))
 
     @pytest.mark.asyncio
     async def test_wait_for_port_timeout(self, mocker):

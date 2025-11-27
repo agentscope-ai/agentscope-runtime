@@ -216,6 +216,7 @@ Log output in detached process mode is redirected, you can view it through:
 
 ## Files Structure
 
-- `app_deploy.py`: Main deployment script using AgentApp with complete endpoint configuration
+- `app_agent.py`: Main method defined the agent app
+- `app_detached_deploy.py`: Main deployment script using AgentApp with complete endpoint configuration and deployment
 
 This example provides a complete workflow for deploying AgentScope Runtime agents as detached processes with production-ready configurations.

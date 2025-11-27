@@ -106,12 +106,12 @@ async def query_func(
 # Define endpoints
 @agent_app.endpoint("/sync")
 def sync_handler(request: AgentRequest):
-    return {"status": "ok", "payload": request}
+    yield {"status": "ok", "payload": request}
 
 
 @agent_app.endpoint("/async")
 async def async_handler(request: AgentRequest):
-    return {"status": "ok", "payload": request}
+    yield {"status": "ok", "payload": request}
 
 
 @agent_app.endpoint("/stream_async")
@@ -129,13 +129,16 @@ def stream_sync_handler(request: AgentRequest):
 @agent_app.task("/task", queue="celery1")
 def task_handler(request: AgentRequest):
     time.sleep(30)
-    return {"status": "ok", "payload": request}
+    yield {"status": "ok", "payload": request}
 
 
 @agent_app.task("/atask")
 async def atask_handler(request: AgentRequest):
     await asyncio.sleep(15)
-    return {"status": "ok", "payload": request}
+    yield {"status": "ok", "payload": request}
+
+
+# agent_app.run()
 
 
 async def deploy_app_to_agentrun():
