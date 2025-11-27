@@ -466,7 +466,7 @@ limitations under the License.
 
 ## Contributors ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-20-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-21-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
@@ -501,6 +501,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="http://lokk.cn/about"><img src="https://avatars.githubusercontent.com/u/39740818?v=4?s=100" width="100px;" alt="quanyu"/><br /><sub><b>quanyu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=taoquanyus" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Littlegrace111"><img src="https://avatars.githubusercontent.com/u/3880455?v=4?s=100" width="100px;" alt="Grace Wu"/><br /><sub><b>Grace Wu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Littlegrace111" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Littlegrace111" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/pitt-liang"><img src="https://avatars.githubusercontent.com/u/8534560?v=4?s=100" width="100px;" alt="LiangQuan"/><br /><sub><b>LiangQuan</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=pitt-liang" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://lishengcn.cn"><img src="https://avatars.githubusercontent.com/u/12003270?v=4?s=100" width="100px;" alt="ls"/><br /><sub><b>ls</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=lishengzxc" title="Code">💻</a> <a href="#design-lishengzxc" title="Design">🎨</a></td>
     </tr>
   </tbody>
   <tfoot>
