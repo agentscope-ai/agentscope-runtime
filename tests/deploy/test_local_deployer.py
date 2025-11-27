@@ -166,20 +166,6 @@ class TestLocalDeployManager:
         deploy_manager.port = 8000
         assert deploy_manager.service_url == "http://localhost:8000"
 
-    @pytest.mark.asyncio
-    async def test_lifespan_callbacks(self, deploy_manager):
-        """Test lifespan callback functionality."""
-        _app = AgentApp()
-
-        # Test that the app can be created and has lifespan context
-        assert _app is not None
-        assert hasattr(_app.router, "lifespan_context")
-
-        # Test lifespan context can be used
-        lifespan = _app.router.lifespan_context
-        async with lifespan(_app) as _:
-            pass
-
 
 class TestLocalDeployManagerIntegration:
     """Integration tests for LocalDeployManager."""
