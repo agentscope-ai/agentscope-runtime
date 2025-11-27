@@ -53,7 +53,9 @@ async def query_func(
     self,
     msgs,
     request: AgentRequest = None,
+    **kwargs,
 ):
+    assert kwargs is not None, "kwargs is Required for query_func"
     session_id = request.session_id
     user_id = request.user_id
 
