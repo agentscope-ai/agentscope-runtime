@@ -42,6 +42,15 @@ Sandbox模块提供了隔离环境以安全地运行代码。
    :no-index:
 ```
 
+### MobileSandbox
+```{eval-rst}
+.. autoclass:: agentscope_runtime.sandbox.MobileSandbox
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+```
+
 ### TrainingSandbox
 ```{eval-rst}
 .. autoclass:: agentscope_runtime.sandbox.TrainingSandbox

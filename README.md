@@ -313,6 +313,38 @@ with FilesystemSandbox() as box:
     input("Press Enter to continue...")
 ```
 
+#### Mobile Sandbox
+
+Provides a **sandboxed Android emulator environment** that allows executing various mobile operations, such as tapping, swiping, inputting text, and taking screenshots.
+
+##### Prerequisites
+
+- **Linux Host**:
+  When running on a Linux host, this sandbox requires the `binder` and `ashmem` kernel modules to be loaded. If they are missing, execute the following commands on your host to install and load the required modules:
+
+  ```bash
+  # 1. Install extra kernel modules
+  sudo apt update && sudo apt install -y linux-modules-extra-`uname -r`
+
+  # 2. Load modules and create device nodes
+  sudo modprobe binder_linux devices="binder,hwbinder,vndbinder"
+  sudo modprobe ashmem_linux
+- **Architecture Compatibility**:
+  When running on an ARM64/aarch64 architecture (e.g., Apple M-series chips), you may encounter compatibility or performance issues. It is recommended to run on an x86_64 host.
+```python
+from agentscope_runtime.sandbox import MobileSandbox
+
+with MobileSandbox() as box:
+    # By default, pulls 'agentscope/runtime-sandbox-mobile:latest' from DockerHub
+    print(box.list_tools()) # List all available tools
+    print(box.mobile_get_screen_resolution()) # Get the screen resolution
+    print(box.mobile_tap(x=500, y=1000)) # Tap at coordinate (500, 1000)
+    print(box.mobile_input_text("Hello from AgentScope!")) # Input text
+    print(box.mobile_key_event(3)) # Sends a HOME key event (KeyCode: 3)
+    screenshot_result = box.mobile_get_screenshot() # Get the current screenshot
+    input("Press Enter to continue...")
+```
+
 > [!NOTE]
 >
 > To add tools to the AgentScope `Toolkit`:

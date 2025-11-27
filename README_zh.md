@@ -314,6 +314,40 @@ with FilesystemSandbox() as box:
     input("按 Enter 键继续...")
 ```
 
+#### 移动端沙箱（Mobile Sandbox）
+
+提供一个**沙箱化的 Android 模拟器环境**，允许执行各种移动端操作，如点击、滑动、输入文本和截屏等。
+
+##### 运行环境要求
+
+- **Linux 主机**:
+  该沙箱在 Linux 主机上运行时，需要内核加载 `binder` 和 `ashmem` 模块。如果缺失，请在主机上执行以下命令来安装和加载所需模块：
+
+  ```bash
+  # 1. 安装额外的内核模块
+  sudo apt update && sudo apt install -y linux-modules-extra-`uname -r`
+
+  # 2. 加载模块并创建设备节点
+  sudo modprobe binder_linux devices="binder,hwbinder,vndbinder"
+  sudo modprobe ashmem_linux
+  ```
+- **架构兼容性**:
+  在 ARM64/aarch64 架构（如 Apple M 系列芯片）上运行时，可能会遇到兼容性或性能问题，建议在 x86_64 架构的主机上运行。
+
+```python
+from agentscope_runtime.sandbox import MobileSandbox
+
+with MobileSandbox() as box:
+    # 默认从 DockerHub 拉取 'agentscope/runtime-sandbox-mobile:latest' 镜像
+    print(box.list_tools()) # 列出所有可用工具
+    print(box.mobile_get_screen_resolution()) # 获取屏幕分辨率
+    print(box.mobile_tap(x=500, y=1000)) # 在坐标 (500, 1000) 处进行点击
+    print(box.mobile_input_text("Hello from AgentScope!")) # 输入文本
+    print(box.mobile_key_event(3)) # 发送 HOME 按键事件 (KeyCode: 3)
+    screenshot_result = box.mobile_get_screenshot() # 获取当前屏幕截图
+    input("按 Enter 键继续...")
+```
+
 > [!NOTE]
 >
 > 要向 AgentScope 的 `Toolkit` 添加工具：
