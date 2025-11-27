@@ -26,7 +26,7 @@ from agentscope_runtime.tools.base import Tool
 
 
 class AutogenToolAdapter(BaseTool[BaseModel, Any]):
-    """Adapter class that wraps agentscope_runtime zh to make them
+    """Adapter class that wraps agentscope_runtime tools to make them
     compatible with AutoGen.
 
     This adapter allows any tool that inherits from
@@ -145,11 +145,11 @@ def create_autogen_tools(
     """Create a list of tool adapters for use with AutoGen agents.
 
     This is a convenience function that creates adapters for multiple
-    zh at once, similar to how tool.py provides
+    tools at once, similar to how tool.py provides
     LanggraphNode.
 
     Args:
-        tools: Sequence of agentscope_runtime zh to wrap
+        tools: Sequence of agentscope_runtime tools to wrap
         name_overrides: Optional dict mapping tool names to override names
         description_overrides: Optional dict mapping tool names to
                 override descriptions
@@ -159,7 +159,7 @@ def create_autogen_tools(
         List of Tool instances ready to use with AutoGen agents
 
     Examples:
-        Create tools from multiple zh:
+        Create tools from multiple tools:
 
         .. code-block:: python
 
@@ -173,7 +173,7 @@ def create_autogen_tools(
             from autogen_agentchat.agents import AssistantAgent
 
             async def main():
-                # Create zh
+                # Create tools
                 search_tool = ModelstudioSearch()
                 rag_tool = ModelstudioRag()
 

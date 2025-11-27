@@ -3,7 +3,7 @@
 Tests for tool.py module.
 
 These tests verify that the tool.py module works correctly
-with agentscope_bricks zh when AgentScope is available.
+with agentscope_runtime Tools when AgentScope is available.
 """
 
 import pytest
@@ -125,7 +125,7 @@ def test_tool_tool_wrapper_error_handling():
 
 
 def test_multiple_tools_toolkit():
-    """Test creating toolkit with multiple zh."""
+    """Test creating toolkit with multiple tools."""
 
     class MockTool2(Tool[MockInput, MockOutput]):
         name = "mock_tool_2"
@@ -242,7 +242,7 @@ def test_toolkit_json_schemas():
 
 
 def test_multiple_tools_json_schemas():
-    """Test JSON schemas for multiple zh."""
+    """Test JSON schemas for multiple tools."""
     import json
 
     class MockSearchTool(Tool[MockInput, MockOutput]):

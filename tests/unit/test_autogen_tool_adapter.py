@@ -3,7 +3,7 @@
 Tests for tool.py module.
 
 These tests verify that the tool.py module works correctly
-with agentscope_runtime zh when AutoGen is available.
+with agentscope_runtime Tools when AutoGen is available.
 """
 
 import pytest
@@ -35,7 +35,7 @@ class MockTool(Tool[MockInput, MockOutput]):
 
 
 def test_tool_adapter_creation():
-    """Test that ToolToolAdapter can be created successfully."""
+    """Test that AutogenToolAdapter can be created successfully."""
     tool = MockTool()
 
     # This should work with autogen_core available
@@ -47,7 +47,7 @@ def test_tool_adapter_creation():
 
 
 def test_create_tools():
-    """Test that create_tool_tools works correctly."""
+    """Test that create_autogen_tools works correctly."""
     tool = MockTool()
 
     # This should work with autogen_core available
@@ -58,7 +58,7 @@ def test_create_tools():
 
 
 def test_create_tools_with_overrides():
-    """Test create_tool_tools with name and description overrides."""
+    """Test create_autogen_tools with name and description overrides."""
     tool = MockTool()
 
     name_overrides = {"mock_tool": "custom_name"}

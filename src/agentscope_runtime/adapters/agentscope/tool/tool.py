@@ -23,7 +23,7 @@ def agentscope_tool_adapter(
 ) -> RegisteredToolFunction:
     """Convert an agentscope_runtime tool to an AgentScope tool.
 
-    This function wraps agentscope_runtime zh to make them compatible
+    This function wraps agentscope_runtime tools to make them compatible
     with AgentScope's toolkit system.
 
     Args:
@@ -176,22 +176,22 @@ def agentscope_toolkit_adapter(
     name_overrides: Optional[Dict[str, str]] = None,
     description_overrides: Optional[Dict[str, str]] = None,
 ) -> Toolkit:
-    """Create an AgentScope toolkit from multiple agentscope_runtime zh.
+    """Create an AgentScope toolkit from multiple agentscope_runtime tools.
 
     This is a convenience function that creates a toolkit with multiple
-    zh converted to AgentScope tools.
+    tools converted to AgentScope tools.
 
     Args:
-        tools: Sequence of agentscope_runtime zh to convert
+        tools: Sequence of agentscope_runtime tools to convert
         name_overrides: Optional dict mapping tool names to override names
         description_overrides: Optional dict mapping tool names to
             override descriptions
 
     Returns:
-        Toolkit: AgentScope toolkit with all zh as tools
+        Toolkit: AgentScope toolkit with all tools as tools
 
     Examples:
-        Create toolkit from multiple zh:
+        Create toolkit from multiple tools:
 
         .. code-block:: python
 
