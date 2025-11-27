@@ -873,7 +873,7 @@ class FastAPIAppFactory:
                         response_model=None,
                     )
                 else:
-                    # Sync function -> Async wrapper with parameter parsing
+                    # Non-streaming endpoint -> wrapper that preserves handler signature
                     wrapped_handler = (
                         FastAPIAppFactory._create_handler_wrapper(handler)
                     )
