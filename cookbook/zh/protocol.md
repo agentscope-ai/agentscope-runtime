@@ -275,6 +275,7 @@ class Message(Event):
 class BaseRequest(BaseModel):
     input: List[Message]
     stream: bool = True
+    id: Optional[str] = None
 ```
 
 **智能体请求**：
@@ -292,7 +293,6 @@ class AgentRequest(BaseRequest):
     seed: Optional[int] = None
     tools: Optional[List[Union[Tool, Dict]]] = None
     session_id: Optional[str] = None
-    response_id: Optional[str] = None
 ```
 
 ### 6. 响应模型
