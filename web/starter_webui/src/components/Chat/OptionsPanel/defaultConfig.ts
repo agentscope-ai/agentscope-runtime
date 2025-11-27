@@ -34,7 +34,8 @@ export default {
     ],
   },
   api: {
-    baseURL: '',
-    token: '',
+    baseURL: BASE_URL,
+    token: TOKEN,
   },
 };
+ 

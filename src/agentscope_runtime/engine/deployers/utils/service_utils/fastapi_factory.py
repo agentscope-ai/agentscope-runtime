@@ -3,21 +3,93 @@
 # pylint:disable=protected-access
 
 import asyncio
+import functools
 import inspect
 import json
 import logging
 from contextlib import asynccontextmanager
+from dataclasses import asdict, is_dataclass
 from typing import Optional, Callable, Type, Any, List, Dict
 
+from a2a.types import A2ARequest
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
 
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
+from agentscope_runtime.engine.schemas.response_api import ResponseAPI
 from ..deployment_modes import DeploymentMode
+from ...adapter.a2a.a2a_protocol_adapter import A2AFastAPIDefaultAdapter
 from ...adapter.protocol_adapter import ProtocolAdapter
+from ...adapter.responses.response_api_protocol_adapter import (
+    ResponseAPIDefaultAdapter,
+)
 
 logger = logging.getLogger(__name__)
+
+
+class _WrappedFastAPI(FastAPI):
+    """FastAPI subclass that can dynamically augment OpenAPI schemas."""
+
+    _REF_TEMPLATE = "#/components/schemas/{model}"
+
+    def openapi(self) -> dict[str, Any]:
+        """Generate OpenAPI schema with protocol-specific components."""
+        openapi_schema = super().openapi()
+        protocol_adapters = (
+            getattr(self.state, "protocol_adapters", None) or []
+        )
+
+        if protocol_adapters:
+            if any(
+                isinstance(adapter, A2AFastAPIDefaultAdapter)
+                for adapter in protocol_adapters
+            ):
+                self._inject_schema(
+                    openapi_schema,
+                    "A2ARequest",
+                    A2ARequest.model_json_schema(
+                        ref_template=self._REF_TEMPLATE,
+                    ),
+                )
+            if any(
+                isinstance(adapter, ResponseAPIDefaultAdapter)
+                for adapter in protocol_adapters
+            ):
+                self._inject_schema(
+                    openapi_schema,
+                    "ResponseAPI",
+                    ResponseAPI.model_json_schema(
+                        ref_template=self._REF_TEMPLATE,
+                    ),
+                )
+
+        self._inject_schema(
+            openapi_schema,
+            "AgentRequest",
+            AgentRequest.model_json_schema(
+                ref_template=self._REF_TEMPLATE,
+            ),
+        )
+
+        return openapi_schema
+
+    @staticmethod
+    def _inject_schema(
+        openapi_schema: dict[str, Any],
+        schema_name: str,
+        schema_definition: dict[str, Any],
+    ) -> None:
+        """Insert schema definition (and nested defs) into OpenAPI."""
+        components = openapi_schema.setdefault("components", {})
+        component_schemas = components.setdefault("schemas", {})
+
+        defs = schema_definition.pop("$defs", {})
+        for def_name, def_schema in defs.items():
+            component_schemas.setdefault(def_name, def_schema)
+
+        component_schemas[schema_name] = schema_definition
 
 
 async def error_stream(e):
@@ -49,6 +121,7 @@ class FastAPIAppFactory:
         broker_url: Optional[str] = None,
         backend_url: Optional[str] = None,
         enable_embedded_worker: bool = False,
+        app_kwargs: Optional[Dict] = None,
         **kwargs: Any,
     ) -> FastAPI:
         """Create a FastAPI application with unified architecture.
@@ -68,6 +141,7 @@ class FastAPIAppFactory:
             broker_url: Celery broker URL
             backend_url: Celery backend URL
             enable_embedded_worker: Whether to run embedded Celery worker
+            app_kwargs: Additional keyword arguments for the FastAPI app
             **kwargs: Additional keyword arguments
 
         Returns:
@@ -111,7 +185,7 @@ class FastAPIAppFactory:
                 )
 
         # Create FastAPI app
-        app = FastAPI(lifespan=lifespan)
+        app = _WrappedFastAPI(lifespan=lifespan, **(app_kwargs or {}))
 
         # Store configuration in app state
         app.state.deployment_mode = mode
@@ -332,14 +406,36 @@ class FastAPIAppFactory:
 
             return status
 
-        # Main processing endpoint
-        # if stream_enabled:
-        # Streaming endpoint
-        @app.post(endpoint_path)
-        async def stream_endpoint(request: dict):
-            """Streaming endpoint."""
+        # Agent API endpoint
+        @app.post(
+            endpoint_path,
+            openapi_extra={
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AgentRequest",
+                            },
+                        },
+                    },
+                    "required": True,
+                    "description": "Agent API Request Format."
+                    "See https://runtime.agentscope.io/en/protocol.html for "
+                    "more details.",
+                },
+            },
+            tags=["agent-api"],
+        )
+        async def agent_api(request: dict):
+            """
+            Agent API endpoint, see
+            <https://runtime.agentscope.io/en/protocol.html> for more details.
+            """
             return StreamingResponse(
-                FastAPIAppFactory._create_stream_generator(app, request),
+                FastAPIAppFactory._create_stream_generator(
+                    app,
+                    request=request,
+                ),
                 media_type="text/event-stream",
                 headers={
                     "Cache-Control": "no-cache",
@@ -366,9 +462,9 @@ class FastAPIAppFactory:
                 "mode": mode.value,
                 "endpoints": {
                     "process": endpoint_path,
-                    "stream": f"{endpoint_path}/stream"
-                    if stream_enabled
-                    else None,
+                    "stream": (
+                        f"{endpoint_path}/stream" if stream_enabled else None
+                    ),
                     "health": "/health",
                 },
             }
@@ -557,6 +653,7 @@ class FastAPIAppFactory:
                 # Create wrapper that parses JSON to Pydantic model
                 if inspect.iscoroutinefunction(handler):
 
+                    @functools.wraps(handler)
                     async def async_pydantic_wrapper(request: Request):
                         try:
                             body = await request.json()
@@ -574,6 +671,7 @@ class FastAPIAppFactory:
                     return async_pydantic_wrapper
                 else:
 
+                    @functools.wraps(handler)
                     async def sync_pydantic_wrapper(request: Request):
                         try:
                             body = await request.json()
@@ -599,119 +697,101 @@ class FastAPIAppFactory:
             return handler
 
     @staticmethod
+    def _to_sse_event(item: Any) -> str:
+        """Normalize streaming items into JSON-serializable structures."""
+
+        def _serialize(value: Any, depth: int = 0):
+            if depth > 20:
+                return f"<too-deep-level-{depth}-{str(value)}>"
+
+            if isinstance(value, (list, tuple, set)):
+                return [_serialize(i, depth=depth + 1) for i in value]
+            elif isinstance(value, dict):
+                return {
+                    k: _serialize(v, depth=depth + 1) for k, v in value.items()
+                }
+            elif isinstance(value, (str, int, float, bool, type(None))):
+                return value
+            elif isinstance(value, BaseModel):
+                return value.model_dump()
+            elif is_dataclass(value):
+                return asdict(value)
+
+            for attr in ("to_map", "to_dict"):
+                method = getattr(value, attr, None)
+                if callable(method):
+                    return method()
+            return str(value)
+
+        serialized = _serialize(item, depth=0)
+
+        return f"data: {json.dumps(serialized, ensure_ascii=False)}\n\n"
+
+    @staticmethod
     def _create_streaming_parameter_wrapper(
         handler: Callable,
-        is_async_gen: bool = False,
     ):
         """Create a wrapper for streaming handlers that handles parameter
         parsing."""
-        try:
-            sig = inspect.signature(handler)
-            params = list(sig.parameters.values())
-            no_params = False
-            param_annotation = None
+        is_async_gen = inspect.isasyncgenfunction(handler)
 
-            if not params:
-                no_params = True
-            else:
-                # Get the first parameter
-                first_param = params[0]
-                param_annotation = first_param.annotation
+        if is_async_gen:
 
-                # If no annotation or annotation is Request, goto no params
-                # logic
-                if param_annotation in [inspect.Parameter.empty, Request]:
-                    no_params = True
-
-            if no_params:
-                if is_async_gen:
-
-                    async def async_no_param_wrapper():
-                        async def generate():
-                            async for chunk in handler():
-                                yield str(chunk)
-
-                        return StreamingResponse(
-                            generate(),
-                            media_type="text/plain",
+            @functools.wraps(handler)
+            async def wrapped_handler(*args, **kwargs):
+                async def generate():
+                    try:
+                        async for chunk in handler(*args, **kwargs):
+                            yield FastAPIAppFactory._to_sse_event(
+                                chunk,
+                            )
+                    except Exception as e:
+                        logger.error(
+                            f"Error in streaming handler: {e}",
+                            exc_info=True,
                         )
+                        err_event = {
+                            "error": str(e),
+                            "error_type": e.__class__.__name__,
+                            "message": "Error in streaming generator",
+                        }
+                        yield FastAPIAppFactory._to_sse_event(err_event)
 
-                    return async_no_param_wrapper
-                else:
+                return StreamingResponse(
+                    generate(),
+                    media_type="text/event-stream",
+                )
 
-                    async def sync_no_param_wrapper():
-                        def generate():
-                            for chunk in handler():
-                                yield str(chunk)
+            wrapped_handler.__signature__ = inspect.signature(handler)
+            return wrapped_handler
 
-                        return StreamingResponse(
-                            generate(),
-                            media_type="text/plain",
+        else:
+
+            @functools.wraps(handler)
+            def wrapped_handler(*args, **kwargs):
+                def generate():
+                    try:
+                        for chunk in handler(*args, **kwargs):
+                            yield FastAPIAppFactory._to_sse_event(chunk)
+                    except Exception as e:
+                        logger.error(
+                            f"Error in streaming handler: {e}",
+                            exc_info=True,
                         )
+                        err_event = {
+                            "error": str(e),
+                            "error_type": e.__class__.__name__,
+                            "message": "Error in streaming generator",
+                        }
+                        yield FastAPIAppFactory._to_sse_event(err_event)
 
-                    return sync_no_param_wrapper
+                return StreamingResponse(
+                    generate(),
+                    media_type="text/event-stream",
+                )
 
-            # Check if the annotation is a Pydantic model
-            if isinstance(param_annotation, type) and issubclass(
-                param_annotation,
-                BaseModel,
-            ):
-                if is_async_gen:
-
-                    async def async_stream_pydantic_wrapper(
-                        request: Request,
-                    ):
-                        try:
-                            body = await request.json()
-                            parsed_param = param_annotation(**body)
-
-                            async def generate():
-                                async for chunk in handler(parsed_param):
-                                    yield str(chunk)
-
-                            return StreamingResponse(
-                                generate(),
-                                media_type="text/plain",
-                            )
-                        except Exception as e:
-                            return StreamingResponse(
-                                error_stream(e),
-                                media_type="text/event-stream",
-                            )
-
-                    return async_stream_pydantic_wrapper
-                else:
-
-                    async def sync_stream_pydantic_wrapper(
-                        request: Request,
-                    ):
-                        try:
-                            body = await request.json()
-                            parsed_param = param_annotation(**body)
-
-                            def generate():
-                                for chunk in handler(parsed_param):
-                                    yield str(chunk)
-
-                            return StreamingResponse(
-                                generate(),
-                                media_type="text/plain",
-                            )
-                        except Exception as e:
-                            return JSONResponse(
-                                status_code=422,
-                                content={
-                                    "detail": f"Request parsing error:"
-                                    f" {str(e)}",
-                                },
-                            )
-
-                    return sync_stream_pydantic_wrapper
-
-            return handler
-
-        except Exception:
-            return handler
+            wrapped_handler.__signature__ = inspect.signature(handler)
+            return wrapped_handler
 
     @staticmethod
     def _add_custom_endpoints(app: FastAPI):
@@ -742,6 +822,8 @@ class FastAPIAppFactory:
         """Register a single custom endpoint with proper async/sync
         handling."""
 
+        tags = ["custom"]
+
         for method in methods:
             # Check if this is a task endpoint
             if endpoint_config and endpoint_config.get("task_type"):
@@ -751,7 +833,12 @@ class FastAPIAppFactory:
                     handler,
                     endpoint_config.get("queue", "default"),
                 )
-                app.add_api_route(path, task_handler, methods=[method])
+                app.add_api_route(
+                    path,
+                    task_handler,
+                    methods=[method],
+                    tags=tags,
+                )
 
                 # Add task status endpoint - align with BaseApp pattern
                 status_path = f"{path}/{{task_id}}"
@@ -762,47 +849,41 @@ class FastAPIAppFactory:
                     status_path,
                     status_handler,
                     methods=["GET"],
+                    tags=tags,
                 )
 
             else:
                 # Regular endpoint handling with automatic parameter parsing
                 # Check in the correct order: async gen > sync gen > async &
                 # sync
-                if inspect.isasyncgenfunction(handler):
-                    # Async generator -> Streaming response with parameter
-                    # parsing
-                    wrapped_handler = (
-                        FastAPIAppFactory._create_streaming_parameter_wrapper(
-                            handler,
-                            is_async_gen=True,
-                        )
-                    )
 
-                    app.add_api_route(
-                        path,
-                        wrapped_handler,
-                        methods=[method],
-                    )
-                elif inspect.isgeneratorfunction(handler):
-                    # Sync generator -> Streaming response with parameter
-                    # parsing
+                if inspect.isasyncgenfunction(
+                    handler,
+                ) or inspect.isgeneratorfunction(handler):
                     wrapped_handler = (
                         FastAPIAppFactory._create_streaming_parameter_wrapper(
                             handler,
-                            is_async_gen=False,
                         )
                     )
                     app.add_api_route(
                         path,
                         wrapped_handler,
                         methods=[method],
+                        tags=tags,
+                        response_model=None,
                     )
                 else:
                     # Sync function -> Async wrapper with parameter parsing
                     wrapped_handler = (
                         FastAPIAppFactory._create_parameter_wrapper(handler)
                     )
-                    app.add_api_route(path, wrapped_handler, methods=[method])
+                    app.add_api_route(
+                        path,
+                        wrapped_handler,
+                        methods=[method],
+                        response_model=None,
+                        tags=tags,
+                    )
 
     @staticmethod
     def _create_task_handler(app: FastAPI, task_func: Callable, queue: str):

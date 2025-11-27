@@ -10,9 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@agentscope-ai/icons": "^1.0.44",
-    "@agentscope-ai/chat": "^1.1.19",
-    "@agentscope-ai/design": "^1.0.13",
+    "@agentscope-ai/icons": "^1.0.46",
+    "@agentscope-ai/chat": "^1.1.37",
+    "@agentscope-ai/design": "^1.0.14",
     "antd": "^5.29.1",
     "antd-style": "^3.7.1",
     "react": "^18",

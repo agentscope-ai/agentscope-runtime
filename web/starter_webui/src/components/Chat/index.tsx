@@ -2,8 +2,8 @@ import { AgentScopeRuntimeWebUI, IAgentScopeRuntimeWebUIOptions } from '@agentsc
 import OptionsPanel from './OptionsPanel';
 import { useMemo } from 'react';
 import sessionApi from './sessionApi';
-import defaultConfig from './OptionsPanel/defaultConfig';
 import { useLocalStorageState } from 'ahooks';
+import defaultConfig from './OptionsPanel/defaultConfig';
 
 export default function () {
   const [optionsConfig, setOptionsConfig] = useLocalStorageState('agent-scope-runtime-webui-options', {
