@@ -162,16 +162,8 @@ Use the `evaluate` method to assess the status of an instance and obtain a `Rewa
 additional evaluation parameters, passed through `params`.
 
 ```python
-action = {
-        "role": "assistant",
-        "content": "```python\nprint('hello appworld!!')\n```",
-    }
-
-result = box.step(
-        instance_id=instance_id,
-        action=action,
-    )
-print(result)
+score = box.evaluate(instance_id, messages={}, params={"sparse": True})
+print(f"Evaluation score: {score}")
 ```
 
 #### Release Sample

@@ -120,7 +120,7 @@ from agentscope_runtime.engine.tracing.local_logging_handler import LocalLogHand
 # 创建带有多个处理程序的追踪器
 tracer = Tracer(handlers=[
     BaseLogHandler(),
-    LocalLoggingHandler(enable_console=True)
+    LocalLogHandler(enable_console=True)
 ])
 
 with tracer.event(
@@ -142,7 +142,7 @@ with tracer.event(
 from agentscope_runtime.engine.tracing import Tracer, TraceType
 from agentscope_runtime.engine.tracing.local_logging_handler import LocalLogHandler
 
-tracer = Tracer(handlers=[LocalLoggingHandler(enable_console=True)])
+tracer = Tracer(handlers=[LocalLogHandler(enable_console=True)])
 
 def function_with_error():
     """引发异常以演示错误处理的函数。"""

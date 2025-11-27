@@ -12,7 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# 部署配备工具沙箱的ReAct智能体
+# 参考: 完整部署样例
 
 本教程演示了如何使用AgentScope Runtime与[**AgentScope框架**](https://github.com/modelscope/agentscope)创建和部署 *“推理与行动”(ReAct)* 智能体。
 
@@ -22,15 +22,13 @@ ReAct（推理与行动）范式使智能体能够将推理轨迹与特定任务
 
 ## 前置要求
 
-### 🔧 安装要求
-
-安装带有必需依赖项的AgentScope Runtime：
+### 安装依赖
 
 ```bash
 pip install agentscope-runtime
 ```
 
-### 🐳 Sandbox Setup
+### 沙箱
 
 ```{note}
 确保您的浏览器沙箱环境已准备好使用，详细信息请参见{doc}`sandbox`。
@@ -42,7 +40,7 @@ pip install agentscope-runtime
 docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-browser:latest && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-browser:latest agentscope/runtime-sandbox-browser:latest
 ```
 
-### 🔑 API密钥配置
+### API密钥配置
 
 您需要为您选择的LLM提供商准备API密钥。此示例使用DashScope（Qwen），但您可以将其适配到其他提供商：
 
@@ -52,140 +50,213 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 
 ## 分步实现
 
-### 步骤1：导入依赖项
-
-首先导入所有必要的模块：
+### 步骤 1：导入依赖
 
 ```{code-cell}
 import os
 
-from agentscope_runtime.engine import AgentApp
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-from agentscope_runtime.engine.deployers import LocalDeployManager
-```
-
-### 步骤2：配置浏览器工具
-
-定义您的智能体可访问的浏览器工具（如果您想为智能体配置其他工具，请参考{doc}`sandbox`中的工具用法）：
-
-```{code-cell}
-from agentscope_runtime.sandbox.tools.browser import (
-    browser_navigate,
-    browser_take_screenshot,
-    browser_snapshot,
-    browser_click,
-    browser_type,
-)
-
-# Prepare browser tools
-BROWSER_TOOLS = [
-    browser_navigate,
-    browser_take_screenshot,
-    browser_snapshot,browser_click,
-    browser_type,
-]
-
-print(f"✅ 已配置{len(BROWSER_TOOLS)} 个浏览器工具")
-```
-
-### 步骤3：定义系统提示词
-
-创建一个系统提示词，为您的智能体建立角色、目标和网页浏览任务的操作指南：
-
-```{code-cell}
-SYSTEM_PROMPT = """You are a Web-Using AI assistant.
-
-# Objective
-Your goal is to complete given tasks by controlling a browser to navigate web pages.
-
-## Web Browsing Guidelines
-- Use the `browser_navigate` command to jump to specific webpages when needed.
-- Use `generate_response` to answer the user once you have all the required information.
-- Always answer in English.
-
-### Observing Guidelines
-- Always take action based on the elements on the webpage. Never create URLs or generate new pages.
-- If the webpage is blank or an error, such as 404, is found, try refreshing it or go back to the previous page and find another webpage.
-"""
-
-print("✅系统提示词已配置")
-```
-
-### Step 4: 初始化智能体和模型
-
-使用AgentScope框架中您选择的大模型设置ReAct智能体构建器：
-
-```{code-cell}
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
+from agentscope.formatter import DashScopeChatFormatter
+from agentscope.tool import Toolkit, execute_python_code
+from agentscope.pipeline import stream_printing_messages
 
-# Initialize the language model
-model = DashScopeChatModel(
-    "qwen-max",
-    api_key=os.getenv("DASHSCOPE_API_KEY"),
-)
-
-# Create the AgentScope agent
-agent = AgentScopeAgent(
-    name="Friday",
-    model=model,
-    agent_config={
-        "sys_prompt": SYSTEM_PROMPT,
-    },
-    tools=BROWSER_TOOLS,
-    agent_builder=ReActAgent,
-)
-
-print("✅ 智能体初始化成功")
+from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
+from agentscope_runtime.adapters.agentscope.memory import AgentScopeSessionHistoryMemory
+from agentscope_runtime.engine.services.agent_state import InMemoryStateService
+from agentscope_runtime.engine.services.session_history import InMemorySessionHistoryService
+from agentscope_runtime.engine.services.sandbox import SandboxService
+from agentscope_runtime.sandbox import BrowserSandbox
 ```
 
-### Step 5: 创建并启动Agent App
+### 步骤 2：准备浏览器沙箱工具
 
-用agent和 `AgentApp` 创建一个 Agent API 服务器：
+与 `tests/sandbox/test_sandbox.py` 相同，我们可以直接通过上下文管理器验证浏览器沙箱是否可用：
 
 ```{code-cell}
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-
-app = AgentApp(agent=agent, endpoint_path="/process")
-
-app.run(host="0.0.0.0", port=8090)
+with BrowserSandbox() as box:
+    print(box.list_tools())
+    print(box.browser_navigate("https://www.example.com/"))
+    print(box.browser_snapshot())
 ```
 
-运行后，服务器会启动并监听：`http://localhost:8090/process`
+当需要在服务内长期复用沙箱时，参考 `tests/sandbox/test_sandbox_service.py` 使用 `SandboxService` 管理生命周期：
 
-### 步骤6：发送一个请求
+```{code-cell}
+import asyncio
 
-你可以使用 `curl` 向 API 发送 JSON 输入：
+async def bootstrap_browser_sandbox():
+    sandbox_service = SandboxService()
+    await sandbox_service.start()
+
+    session_id = "demo_session"
+    user_id = "demo_user"
+
+    sandboxes = sandbox_service.connect(
+        session_id=session_id,
+        user_id=user_id,
+        sandbox_types=["browser"],
+    )
+    browser_box = sandboxes[0]
+    browser_box.browser_navigate("https://www.example.com/")
+    browser_box.browser_snapshot()
+
+    await sandbox_service.stop()
+
+asyncio.run(bootstrap_browser_sandbox())
+```
+这里的 `sandbox_types=["browser"]` 与 `tests/sandbox/test_sandbox_service.py` 保持一致，可确保同一 `session_id` / `user_id` 复用同一个浏览器沙箱实例。
+
+### 步骤 3：构建 AgentApp
+
+下面的逻辑与测试用例 `run_app()` 完全一致，包含状态服务初始化、会话记忆以及流式响应：
+
+```{code-cell}
+PORT = 8090
+
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+)
+
+
+@agent_app.init
+async def init_func(self):
+    self.state_service = InMemoryStateService()
+    self.session_service = InMemorySessionHistoryService()
+    self.sandbox_service = SandboxService()
+
+    await self.state_service.start()
+    await self.session_service.start()
+    await self.sandbox_service.start()
+
+
+@agent_app.shutdown
+async def shutdown_func(self):
+    await self.state_service.stop()
+    await self.session_service.stop()
+    await self.sandbox_service.stop()
+
+
+@agent_app.query(framework="agentscope")
+async def query_func(self, msgs, request: AgentRequest = None, **kwargs):
+    session_id = request.session_id
+    user_id = request.user_id
+
+    state = await self.state_service.export_state(
+        session_id=session_id,
+        user_id=user_id,
+    )
+
+    sandboxes = self.sandbox_service.connect(
+        session_id=session_id,
+        user_id=user_id,
+        sandbox_types=["browser"],
+    )
+    browser_box = sandboxes[0]
+
+    toolkit = Toolkit()
+    for tool in (
+        browser_box.browser_navigate,
+        browser_box.browser_snapshot,
+        browser_box.browser_take_screenshot,
+        browser_box.browser_click,
+        browser_box.browser_type,
+    ):
+        toolkit.register_tool_function(tool)
+    toolkit.register_tool_function(execute_python_code)
+
+    agent = ReActAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+            enable_thinking=True,
+            stream=True,
+        ),
+        sys_prompt="You're a helpful assistant named Friday.",
+        toolkit=toolkit,
+        memory=AgentScopeSessionHistoryMemory(
+            service=self.session_service,
+            session_id=session_id,
+            user_id=user_id,
+        ),
+        formatter=DashScopeChatFormatter(),
+    )
+    agent.set_console_output_enabled(enabled=False)
+
+    if state:
+        agent.load_state_dict(state)
+
+    async for msg, last in stream_printing_messages(
+        agents=[agent],
+        coroutine_task=agent(msgs),
+    ):
+        yield msg, last
+
+    await self.state_service.save_state(
+        user_id=user_id,
+        session_id=session_id,
+        state=agent.state_dict(),
+    )
+```
+
+上述 `query_func` 会将 Agent 的输出通过 SSE 逐条返回，同时把最新 state 写回内存服务，实现多轮记忆。
+
+借助 `SandboxService`（`sandbox_types=["browser"]`） ，浏览器沙箱会根据同一个 `session_id`、`user_id` 在多轮对话中复用，避免重复启动容器。
+
+### 步骤 4：启动服务
+
+```{code-cell}
+if __name__ == "__main__":
+    agent_app.run(host="127.0.0.1", port=PORT)
+```
+
+运行脚本后即可在 `http://127.0.0.1:8090/process` 收到流式响应。
+
+### 步骤 5：测试 SSE 输出
 
 ```bash
 curl -N \
-  -X POST "http://localhost:8090/process" \
+  -X POST "http://127.0.0.1:8090/process" \
   -H "Content-Type: application/json" \
   -d '{
     "input": [
       {
         "role": "user",
         "content": [
-          { "type": "text", "text": "What is in example?" }
+          { "type": "text", "text": "What is the capital of France?" }
         ]
       }
     ]
   }'
 ```
 
-你将会看到以 **Server-Sent Events (SSE)** 格式流式输出的响应。
+你将看到多条 `data: {...}` 事件以及最终的 `data: [DONE]`。如果消息体中包含 “Paris” 即表示回答正确。
 
-### 步骤7: 使用 Deployer 部署代理
+### 步骤 6：多轮记忆验证
 
-AgentScope Runtime 提供了一个功能强大的部署系统，可以将你的智能体部署到远程或本地容器中。这里我们以 `LocalDeployManager` 为例：
+要验证 `AgentScopeSessionHistoryMemory` 是否生效，可以复用测试中「两轮对话」的交互流程：第一次提交 “My name is Alice.” 并携带固定 `session_id`，第二次询问 “What is my name?”，若返回文本包含 “Alice” 即表示记忆成功。
+
+### 步骤 7：OpenAI 兼容模式
+
+AgentApp 同时暴露了 `compatible-mode/v1` 路径，可使用官方 `openai` SDK 验证：
 
 ```{code-cell}
-async def main():
-    await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
+from openai import OpenAI
+
+client = OpenAI(base_url="http://127.0.0.1:8090/compatible-mode/v1")
+resp = client.responses.create(
+    model="any_name",
+    input="Who are you?",
+)
+
+print(resp.response["output"][0]["content"][0]["text"])
 ```
 
-这段代码会在指定的端口运行你的智能体API Server，使其能够响应外部请求。除了基本的 HTTP API 访问外，你还可以使用不同的协议与智能体进行交互，例如：A2A、Response API、Agent API等。详情请参考 {doc}`protocol`。
+正常情况下你会得到 “I’m Friday ...” 之类的回答。
 
-### 总结
+## 总结
 
-通过遵循这些步骤，您已经成功设置、交互并部署了使用AgentScope框架和AgentScope Runtime的ReAct智能体。此配置允许智能体在沙箱环境中安全地使用浏览器工具，确保安全有效的网页交互。根据需要调整系统提示词、工具或模型，以自定义智能体的行为来适应特定任务或应用程序。
+通过本章节的内容，你可以快速获得一个带有流式响应、会话记忆以及 OpenAI 兼容接口的 ReAct 智能体服务。若需部署到远端或扩展更多工具，只需替换 `DashScopeChatModel`、状态服务或工具注册逻辑即可。

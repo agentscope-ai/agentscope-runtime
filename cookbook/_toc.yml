@@ -7,31 +7,38 @@ parts:
   - file: en/install.md
   - file: en/concept.md
   - file: en/quickstart.md
-  - file: en/sandbox.md
+  - file: en/tool.md
     sections:
-    - file: en/sandbox_advanced.md
-    - file: en/training_sandbox.md
-    - file: en/sandbox_troubleshooting.md
-  - file: en/advanced_deployment.md
-  - file: en/react_agent.md
-  - file: en/agent_app.md
-  - file: en/protocol.md
-  - file: en/manager.md
+    - file: en/sandbox/sandbox.md
+      sections:
+        - file: en/sandbox/advanced.md
+        - file: en/sandbox/training_sandbox.md
+        - file: en/sandbox/troubleshooting.md
+    - file: en/tools/tools.md
+      sections:
+        - file: en/tools/modelstudio_search.md
+        - file: en/tools/modelstudio_rag.md
+        - file: en/tools/modelstudio_generations.md
+        - file: en/tools/alipay.md
+        - file: en/tools/realtime_clients.md
+  - file: en/deployment.md
     sections:
-      - file: en/context_manager.md
-      - file: en/environment_manager.md
-  - file: en/tools/tools.md
+    - file: en/service.md
+    - file: en/agent_app.md
+    - file: en/advanced_deployment.md
+    - file: en/react_agent.md
+  - file: en/use.md
     sections:
-      - file: en/tools/modelstudio_search.md
-      - file: en/tools/modelstudio_rag.md
-      - file: en/tools/modelstudio_generations.md
-      - file: en/tools/alipay.md
-      - file: en/tools/realtime_clients.md
-  - file: en/tracing.md
-  - file: en/demohouse.md
+    - file: en/call.md
+    - file: en/webui.md
+    - file: en/tracing.md
+    - file: en/protocol.md
+    - file: en/demohouse.md
+    - file: en/ut.md
   - file: en/contribute.md
     sections:
     - file: en/README.md
+  - file: en/CHANGELOG.md
 
 - caption: API Reference
   chapters:
@@ -45,8 +52,8 @@ parts:
 
 - caption: 简介
   chapters:
-    - file: zh/intro.md
-      title: "0. 介绍"
+  - file: zh/intro.md
+    title: "0. 介绍"
 
 - caption: 教程
   numbered: 1
@@ -54,31 +61,38 @@ parts:
   - file: zh/install.md
   - file: zh/concept.md
   - file: zh/quickstart.md
-  - file: zh/sandbox.md
+  - file: zh/tool.md
     sections:
-      - file: zh/sandbox_advanced.md
-      - file: zh/training_sandbox.md
-      - file: zh/sandbox_troubleshooting.md
-  - file: zh/advanced_deployment.md
-  - file: zh/react_agent.md
-  - file: zh/agent_app.md
-  - file: zh/protocol.md
-  - file: zh/manager.md
+      - file: zh/sandbox/sandbox.md
+        sections:
+          - file: zh/sandbox/advanced.md
+          - file: zh/sandbox/training_sandbox.md
+          - file: zh/sandbox/troubleshooting.md
+      - file: zh/tools/tools.md
+        sections:
+          - file: zh/tools/modelstudio_search.md
+          - file: zh/tools/modelstudio_rag.md
+          - file: zh/tools/modelstudio_generations.md
+          - file: zh/tools/alipay.md
+          - file: zh/tools/realtime_clients.md
+  - file: zh/deployment.md
     sections:
-      - file: zh/context_manager.md
-      - file: zh/environment_manager.md
-  - file: zh/tools/tools.md
+      - file: zh/service.md
+      - file: zh/agent_app.md
+      - file: zh/advanced_deployment.md
+      - file: zh/react_agent.md
+  - file: zh/use.md
     sections:
-      - file: zh/tools/modelstudio_search.md
-      - file: zh/tools/modelstudio_rag.md
-      - file: zh/tools/modelstudio_generations.md
-      - file: zh/tools/alipay.md
-      - file: zh/tools/realtime_clients.md
-  - file: zh/tracing.md
-  - file: zh/demohouse.md
+      - file: zh/call.md
+      - file: zh/webui.md
+      - file: zh/tracing.md
+      - file: zh/protocol.md
+      - file: zh/demohouse.md
+      - file: zh/ut.md
   - file: zh/contribute.md
     sections:
     - file: zh/README.md
+  - file: zh/CHANGELOG.md
 
 - caption: API 参考
   chapters:

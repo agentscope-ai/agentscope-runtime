@@ -84,6 +84,9 @@ From PyPI:
 ```bash
 # Install core dependencies
 pip install agentscope-runtime
+
+# Install preview version
+pip install --pre agentscope-runtime
 ```
 
 (Optional) From source:
