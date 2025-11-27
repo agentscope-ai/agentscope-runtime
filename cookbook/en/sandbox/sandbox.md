@@ -12,7 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# Tool Sandbox
+# Sandbox
 
 AgentScope Runtime's Sandbox is a versatile tool that provides a **secure** and **isolated** environment for a wide range of operations, including tool execution, browser automation, and file system operations. This tutorial will empower you to set up the tool sandbox dependency and run tools in an environment that you can tailor to your specific needs.
 
@@ -99,183 +99,6 @@ print(json.dumps(result, indent=4, ensure_ascii=False))
 
 If you prefer to build the Docker images yourself or need custom modifications, you can build them from scratch. Please refer to {doc}`sandbox_advanced` for detailed instructions.
 
-## Tool Usage
-
-### Call a Tool
-
-The most basic usage is to directly call built-in tools (such as running Python code or shell commands):
-
-```{note}
-The following two functions will execute independently in separate sandboxes.
-Each function call will start an **embedded** sandbox, execute the function within it, and then close the sandbox. The lifecycle of each sandbox is confined to the duration of the function call in this way.
-```
-
-```{code-cell}
-from agentscope_runtime.sandbox.tools.base import (
-    run_ipython_cell,
-    run_shell_command,
-)
-
-print(run_ipython_cell(code="print('hello world')"))
-print(run_shell_command(command="whoami"))
-```
-
-### Bind Sandbox to a Tool
-
-In addition to directly calling tools, you can bind a specific sandbox to a tool using the bind method. This allows you to specify which sandbox the function will run in, giving you more control over the execution environment. It's important to note that the function's type and the sandbox type must match; otherwise, the function will not execute properly. Here's how you can do it:
-
-```{code-cell}
-from agentscope_runtime.sandbox import BaseSandbox
-
-with BaseSandbox() as sandbox:
-    # Ensure the function's sandbox type matches the sandbox instance type
-    assert run_ipython_cell.sandbox_type == sandbox.sandbox_type
-
-    # Bind the sandbox to the tool functions
-    func1 = run_ipython_cell.bind(sandbox=sandbox)
-    func2 = run_shell_command.bind(sandbox=sandbox)
-
-    # Execute the function within the sandbox
-    print(func1(code="repo = 'agentscope-runtime'"))
-    print(func1(code="print(repo)"))
-    print(func2(command="whoami"))
-```
-
-### Converting an MCP Server into a Tool
-
-`MCPConfigConverter` is used to convert an external MCP (Model Context Protocol) server configuration into an `MCPTool` that can run inside a **Sandbox**. This allows you to call these external tools safely and in isolation within the sandbox environment:
-
-```{code-cell}
-from agentscope_runtime.sandbox.tools.mcp_tool import MCPConfigConverter
-
-# Define MCP server configuration
-config = {
-    "mcpServers": {
-        "time": {
-            "command": "uvx",
-            "args": [
-                "mcp-server-time",
-                "--local-timezone=America/New_York",
-            ],
-        },
-    },
-}
-
-# Convert into a list of MCPTools runnable inside the Sandbox
-mcp_tools = MCPConfigConverter(server_configs=config).to_builtin_tools()
-
-print(mcp_tools)
-```
-
-#### Optional Parameters
-
-- **`sandbox`**: Pass in an existing Sandbox instance to bind the tool to that sandbox.
-- **`sandbox_type`**: When no `sandbox` is provided, specify the sandbox type (e.g. `"base"`, `"gui"`) to automatically create a temporary sandbox for running the tool.
-- **`whitelist` / `blacklist`**: Filter imported tools by name.
-
-#### Registering Tools with Different Sandbox Types
-
-```{code-cell}
-# Automatically create a sandbox of the specified type and register tools
-mcp_tools = MCPConfigConverter(server_configs=config).to_builtin_tools(
-    sandbox_type="base",
-)
-
-# Use an existing sandbox instance to register tools
-with BaseSandbox() as sandbox:
-    mcp_tools = MCPConfigConverter(server_configs=config).to_builtin_tools(
-        sandbox=sandbox,
-    )
-```
-
-The sandbox type selected will determine the environment dependencies used by the converted tools at runtime. Therefore, you should choose the appropriate `sandbox_type` or specific `Sandbox` instance according to your actual needs.
-
-### Function Tool
-
-Besides the tools that run in sandbox environments, you can also add in-process functions as tools for agents. These function tools execute directly within the current Python process without running in sandbox, making them suitable for lightweight operations and calculations.
-
-Function tools offer two creation methods:
-
-- **`FunctionTool` wrapper**: Wrap existing functions or methods using the `FunctionTool` class
-- **Decorator approach**: Use the `@function_tool` decorator to annotate functions directly
-
-```{code-cell}
-from agentscope_runtime.sandbox.tools.function_tool import (
-    FunctionTool,
-    function_tool,
-)
-
-
-class MathCalculator:
-    def calculate_power(self, base: int, exponent: int) -> int:
-        """Calculate the power of a number."""
-        print(f"Calculating {base}^{exponent}...")
-        return base**exponent
-
-
-calculator = MathCalculator()
-
-
-@function_tool(
-    name="calculate_power",
-    description="Calculate the base raised to the power of the exponent",
-)
-def another_calculate_power(base: int, exponent: int) -> int:
-    """Calculate the base raised to the power of the exponent."""
-    print(f"Calculating {base}^{exponent}...")
-    return base**exponent
-
-
-tool_0 = FunctionTool(calculator.calculate_power)
-tool_1 = another_calculate_power
-print(tool_0, tool_1)
-```
-
-### Tool Schema
-
-Each tool has a defined `schema` that specifies the expected structure and types of its input parameters. This schema is useful for understanding how to properly use the tool and what parameters are required. Here's an example of how you can view the schema:
-
-```{code-cell}
-print(json.dumps(run_ipython_cell.schema, indent=4, ensure_ascii=False))
-```
-
-### Function-like Tool Design Philosophy
-
-```{note}
-This section explains the design principles behind our tool module. You can skip this section if you're only interested in practical usage.
-```
-
-Our tool module is designed with a **function-like interface** that abstracts the complexity of sandbox management while providing maximum flexibility. Here are the key design principles:
-
-#### **1. Intuitive Function Call Interface**
-Our tool module provides a function-like interface, allowing you to call tools with a simple function call.
-Tools behave like regular Python functions, making them easy to use and integrate:
-
-```python
-# Simple function-like calls
-result = run_ipython_cell(code="print('hello world')")
-result = tool_instance(param1="value1", param2="value2")
-```
-
-#### **2. Flexible Sandbox Priority System**
-
-The tool module supports three levels of sandbox specification with clear priority:
-
-- **Temporary sandbox** (highest priority, specified during initialization): `tool(sandbox=temp_sandbox, **kwargs)`
-- **Instance-bound sandbox** (second priority, specified through the binding method): `bound_tool = tool.bind(sandbox)`
-- **Dry-run mode** (lowest priority, no sandbox specified): Automatically creates temporary sandbox when none specified
-
-#### **3. Immutable Binding Pattern**
-
-The bind method creates new tool instances rather than modifying existing ones:
-
-```python
-# Creates a new instance, original tool remains unchanged
-bound_tool = original_tool.bind(sandbox=my_sandbox)
-```
-
-This ensures thread safety and allows multiple sandbox-bound versions of the same tool to coexist.
-
 ## Sandbox Usage
 
 ### Create a Sandbox
@@ -343,7 +166,7 @@ with BrowserSandbox() as box:
     input("Press Enter to continue...")
 ```
 
-* **TrainingSandbox**: Sandbox for training and evaluation，please refer to {doc}`training_sandbox` for details.
+* **TrainingSandbox**: Sandbox for training and evaluation，please refer to {doc}`sandbox/training_sandbox` for details.
 
 ```{code-cell}
 from agentscope_runtime.sandbox import TrainingSandbox
@@ -354,8 +177,38 @@ with TrainingSandbox() as box:
     print(profile_list)
 ```
 
+* **Cloud Sandbox**: A cloud-based sandbox environment that doesn't require local Docker containers. `CloudSandbox` is the base class for cloud sandboxes, providing a unified interface.
+
+```{code-cell}
+from agentscope_runtime.sandbox import CloudSandbox
+
+# CloudSandbox is an abstract base class, typically not used directly
+# Please use specific cloud sandbox implementations, such as AgentbaySandbox
+```
+
+* **AgentBay Sandbox (AgentbaySandbox)**: A cloud sandbox implementation based on AgentBay cloud service, supporting multiple image types (Linux, Windows, Browser, CodeSpace, Mobile, etc.).
+
+```{code-cell}
+from agentscope_runtime.sandbox import AgentbaySandbox
+
+# Use AgentBay cloud sandbox (requires API key configuration)
+with AgentbaySandbox(
+    api_key="your_agentbay_api_key",
+    image_id="linux_latest",  # Optional: specify image type
+) as box:
+    print(box.list_tools())  # List all available tools
+    print(box.run_shell_command(command="echo hello from cloud"))
+    print(box.get_session_info())  # Get session information
+```
+
+**AgentBay Sandbox Features**:
+- No local Docker required, fully cloud-based
+- Supports multiple environment types (Linux, Windows, Browser, etc.)
+- Automatic session lifecycle management
+- Direct API communication with cloud service
+
 ```{note}
-We'll be expanding with more types of sandboxes soon—stay tuned!
+More sandbox types are under development—stay tuned!
 ```
 
 ### Add MCP Server to Sandbox
@@ -451,6 +304,140 @@ The `runtime-sandbox-mcp` command accepts the following arguments:
 | `--type`         | `base`, `gui`, `browser`, `filesystem` | Type of sandbox |
 | `--base_url`     | URL string                        | Base URL of a remote sandbox service. Leave empty to run locally. |
 | `--bearer_token` | String token                      | Optional authentication token for secure access.             |
+
+## Sandbox Service
+
+### Managing Sandboxes with `SandboxService`
+
+`SandboxService` provides a unified sandbox management interface, allowing management of sandbox environments for different user sessions through `session_id` and `user_id`. Using `SandboxService` lets you better control the lifecycle of a sandbox and enables sandbox reuse.
+
+```{code-cell}
+from agentscope_runtime.engine.services.sandbox import SandboxService
+
+async def main():
+    # Create and start the sandbox service
+    sandbox_service = SandboxService()
+    await sandbox_service.start()
+
+    session_id = "session_123"
+    user_id = "user_12345"
+
+    # Connect to the sandbox, specifying the required sandbox type
+    sandboxes = sandbox_service.connect(
+        session_id=session_id,
+        user_id=user_id,
+        sandbox_types=["base"],
+    )
+
+    base_sandbox = sandboxes[0]
+
+    # Call utility methods directly on the sandbox instance
+    result = base_sandbox.run_ipython_cell("print('Hello, World!')")
+    base_sandbox.run_ipython_cell("a=1")
+
+    print(result)
+
+    # Using the same session_id and user_id will reuse the same sandbox instance
+    new_sandboxes = sandbox_service.connect(
+        session_id=session_id,
+        user_id=user_id,
+        sandbox_types=["base"],
+    )
+
+    new_base_sandbox = new_sandboxes[0]
+    # Variable 'a' still exists because the same sandbox is reused
+    result = new_base_sandbox.run_ipython_cell("print(a)")
+    print(result)
+
+    # Stop the sandbox service
+    await sandbox_service.stop()
+
+await main()
+```
+
+### Adding an MCP Server Using `SandboxService`
+
+```{code-cell}
+from agentscope_runtime.engine.services.sandbox import SandboxService
+
+async def main():
+    sandbox_service = SandboxService()
+    await sandbox_service.start()
+
+    session_id = "session_mcp"
+    user_id = "user_mcp"
+
+    sandboxes = sandbox_service.connect(
+        session_id=session_id,
+        user_id=user_id,
+        sandbox_types=["base"],
+    )
+
+    sandbox = sandboxes[0]
+
+    mcp_server_configs = {
+        "mcpServers": {
+            "time": {
+                "command": "uvx",
+                "args": [
+                    "mcp-server-time",
+                    "--local-timezone=America/New_York",
+                ],
+            },
+        },
+    }
+
+    # Add MCP server to the sandbox
+    sandbox.add_mcp_servers(server_configs=mcp_server_configs)
+
+    # List all available tools (now includes MCP tools)
+    print(sandbox.list_tools())
+
+    # Use the time tool from the MCP server
+    print(
+        sandbox.call_tool(
+            "get_current_time",
+            arguments={
+                "timezone": "America/New_York",
+            },
+        ),
+    )
+
+    await sandbox_service.stop()
+
+await main()
+```
+
+### Connecting to a Remote Sandbox Using `SandboxService`
+
+```{code-cell}
+from agentscope_runtime.engine.services.sandbox import SandboxService
+
+async def main():
+    # Create SandboxService and specify the remote server address
+    sandbox_service = SandboxService(
+        base_url="http://your_IP_address:8000",  # Replace with actual server IP
+        bearer_token="your_token"  # Optional: if authentication is required
+    )
+    await sandbox_service.start()
+
+    session_id = "remote_session"
+    user_id = "remote_user"
+
+    # Connect to the remote sandbox
+    sandboxes = sandbox_service.connect(
+        session_id=session_id,
+        user_id=user_id,
+        sandbox_types=["base"],
+    )
+
+    base_sandbox = sandboxes[0]
+    print(base_sandbox.run_ipython_cell(code="print('hi')"))
+
+    await sandbox_service.stop()
+
+await main()
+```
 
 ## Tool List
 

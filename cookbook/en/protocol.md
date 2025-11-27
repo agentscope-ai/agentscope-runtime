@@ -578,3 +578,93 @@ data_builder.complete()
 ```
 
 By using the Agent API builder, developers can easily construct complex streaming responses that conform to protocol specifications, achieving better user experience and more flexible response control.
+
+## Protocol Adapters
+
+Protocol Adapters are used to convert between different protocols, enabling AgentScope Runtime to support multiple API protocols.
+
+### Adapter Architecture
+
+AgentScope Runtime provides two built-in protocol adapters:
+
+- **A2A Protocol Adapter** (`A2AFastAPIDefaultAdapter`): Supports Agent-to-Agent protocol
+- **Response API Protocol Adapter** (`ResponseAPIDefaultAdapter`): Supports OpenAI Responses API protocol
+
+### Using Built-in Adapters
+
+AgentApp automatically registers built-in adapters by default:
+
+```{code-cell}
+from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.deployers.adapter.a2a import A2AFastAPIDefaultAdapter
+from agentscope_runtime.engine.deployers.adapter.responses import ResponseAPIDefaultAdapter
+
+app = AgentApp(agent=agent)
+
+# AgentApp automatically registers built-in adapters
+# You can also customize via protocol_adapters parameter
+app = AgentApp(
+    agent=agent,
+    protocol_adapters=[
+        A2AFastAPIDefaultAdapter(
+            agent_name="Friday",
+            agent_description="A helpful assistant",
+        ),
+        ResponseAPIDefaultAdapter(),
+    ],
+)
+```
+
+### Creating Custom Adapters
+
+You can create custom adapters by inheriting from the `ProtocolAdapter` base class:
+
+```{code-cell}
+from agentscope_runtime.engine.deployers.adapter.protocol_adapter import ProtocolAdapter
+from typing import Any, Callable
+
+class CustomProtocolAdapter(ProtocolAdapter):
+    """Custom protocol adapter example"""
+    
+    def add_endpoint(self, app, func: Callable, **kwargs) -> Any:
+        """Add endpoint to adapter
+        
+        Args:
+            app: FastAPI application instance
+            func: Handler function
+            **kwargs: Other parameters
+            
+        Returns:
+            Endpoint object
+        """
+        # Implement custom endpoint addition logic
+        @app.post("/custom-endpoint")
+        async def custom_handler(request):
+            # Convert request format
+            converted_request = self._convert_request(request)
+            # Call handler function
+            result = await func(converted_request)
+            # Convert response format
+            return self._convert_response(result)
+        
+        return custom_handler
+    
+    def _convert_request(self, request):
+        """Convert external protocol request to internal format"""
+        # Implement request conversion logic
+        pass
+    
+    def _convert_response(self, response):
+        """Convert internal response to external protocol format"""
+        # Implement response conversion logic
+        pass
+```
+
+### Adapter Use Cases
+
+1. **Multi-protocol Support**: Enable the same Agent to support multiple API protocols simultaneously
+2. **Protocol Conversion**: Seamless conversion between different protocols
+3. **Backward Compatibility**: Support old protocol versions while supporting new ones
+4. **Custom Protocols**: Implement protocol adapters for specific business scenarios
+
+For more detailed information, please refer to the adapter module documentation in the API reference.

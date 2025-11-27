@@ -137,7 +137,7 @@ class OpenAIMessage(BaseModel):
         Extract the first text content from the message.
 
         :return: First text string found in the content, or None if no text
-        content
+            content.
         """
         if self.content is None:
             return None
@@ -158,7 +158,7 @@ class OpenAIMessage(BaseModel):
         Extract all image content (URLs or base64 data) from the message.
 
         :return: List of image URLs or base64 encoded strings found in the
-        content
+            content.
         """
         images = []
 
@@ -183,7 +183,7 @@ class OpenAIMessage(BaseModel):
         Extract all audio content (URLs or base64 data) from the message.
 
         :return: List of audio URLs or base64 encoded strings found in the
-        content
+            content.
         """
         audios = []
 
@@ -307,11 +307,11 @@ class ResponseFormat(BaseModel):
     """The type of response format being defined.
 
     - `text`: The default response format, which can be either text or any
-    value needed.
+        value needed.
     - `json_object`: Enables JSON mode, which guarantees the message the model
-      generates is valid JSON.
+        generates is valid JSON.
     - `json_schema`: Enables Structured Outputs which guarantees the model will
-      match your supplied JSON schema.
+        match your supplied JSON schema.
     """
 
     json_schema: Optional[JsonSchema] = None

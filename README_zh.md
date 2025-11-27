@@ -84,6 +84,9 @@
 ```bash
 # 安装核心依赖
 pip install agentscope-runtime
+
+# 安装预览版本
+pip install --pre agentscope-runtime
 ```
 
 （可选）从源码安装：

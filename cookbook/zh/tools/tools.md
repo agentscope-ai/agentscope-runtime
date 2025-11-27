@@ -1,4 +1,4 @@
-# Tool 介绍
+# Tools
 
 AgentScope Runtime 通过组件化方案，支持将API转成原子能力，供mcp，agent快速使用。**Tool（工具）** 为常见原子能力提供统一、类型安全的封装，任何编排框架都能即插即用，无需重复接入。
 
@@ -246,11 +246,15 @@ print(final_state["messages"][-1].content)
 - **使用提示**：传入 `messages` 与 `search_options`（策略、`max_results`、`time_range` 等），必要时添加 `search_output_rules` 输出引用或摘要；返回的 `search_result` 与 `search_info` 可直接消费。
 - **延伸阅读**：`cookbook/zh/tools/modelstudio_search.md`，包含策略列表、架构图与源自 `docs/zh/searches.md` 的示例。
 
+具体参考{doc}`modelstudio_search`
+
 ### ModelStudio RAG Tools
 - **核心技能**：`ModelstudioRag`、`ModelstudioRagLite`（位于 `agentscope_runtime.tools.RAGs`）。
 - **适用场景**：依托 DashScope 知识库进行致密/稀疏/混合检索，多轮上下文融合，多模态输入与带引用的生成。
 - **使用提示**：传入对话 `messages`、`rag_options`（`knowledge_base_id`、`top_k`、`score_threshold`、`enable_citation` 等）以及认证 token；输出 `rag_result.answer`、`references`、`confidence`。
 - **延伸阅读**：`cookbook/zh/tools/modelstudio_rag.md`，总结 `docs/zh/RAGs.md` 中的行为细节与优化建议（向量索引、切片策略、流式生成等）。
+
+具体参考{doc}`modelstudio_rag`
 
 ### ModelStudio AIGC（Generations）Tools
 - **核心技能**：`ImageGeneration`、`ImageEdit`、`ImageStyleRepaint` 以及 WAN/Qwen 相关实现（位于 `agentscope_runtime.common.tools.generations`）。
@@ -258,11 +262,15 @@ print(final_state["messages"][-1].content)
 - **使用提示**：提供 Prompt 并可选 `size`、`n`；若需编辑，可传入 `base_image_url`、`mask_image_url`；输出为签名的资源 URL，需及时下载或代理存储。
 - **延伸阅读**：`cookbook/zh/tools/modelstudio_generations.md`，对应 `docs/zh/generations.md`，涵盖所需环境变量、依赖与事件循环示例。
 
+具体参考{doc}`modelstudio_generations`
+
 ### 支付宝支付与订阅 Tools
 - **核心技能**（位于 `agentscope_runtime.tools.alipay`）：`MobileAlipayPayment`、`WebPageAlipayPayment`、`AlipayPaymentQuery`、`AlipayPaymentRefund`、`AlipayRefundQuery`、`AlipaySubscribeStatusCheck`、`AlipaySubscribePackageInitialize`、`AlipaySubscribeTimesSave`、`AlipaySubscribeCheckOrInitialize`。
 - **适用场景**：在企业 Agent 中编排完整支付生命周期（链接生成、状态查询、退款）以及订阅权益或按次扣费管理。
 - **使用提示**：支付类 Tool 接收 `out_trade_no`、`order_title`、`total_amount`；查询/退款类 Tool 主要依赖订单号与可选 `out_request_no`；订阅类 Tool 围绕用户 `uuid` 返回状态、套餐或订阅 URL。
 - **延伸阅读**：`cookbook/zh/tools/alipay.md`（以及 `docs/zh/alipay.md`），详述前置条件、环境变量（`ALIPAY_APP_ID`、`ALIPAY_PRIVATE_KEY` 等）与异步示例。
+
+具体参考{doc}`alipay`
 
 ## 接下来可以做什么
 - **深入阅读**：当需要完整参数或排障指南时，可查看 `cookbook/zh/tools/` 下的各章节。

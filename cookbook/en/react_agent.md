@@ -12,39 +12,37 @@ kernelspec:
   name: python3
 ---
 
-# Deploy a ReAct Agent with Tool Sandbox
+# Reference: Full Deployment Example
 
-This tutorial demonstrates how to create and deploy a *“reasoning and acting” (ReAct)* with AgentScope Runtime and [**AgentScope framework**](https://github.com/modelscope/agentscope).
+This tutorial shows how to build and deploy a *Reason + Act (ReAct)* agent with AgentScope Runtime and the [**AgentScope framework**](https://github.com/modelscope/agentscope).
 
 ```{note}
-The ReAct (Reasoning and Acting) paradigm enables agents to interleave reasoning traces with task-specific actions, making them particularly effective for tool interaction tasks. By combining AgentScope's `ReActAgent` with AgentScope Runtime's infrastructure, you get both intelligent decision-making and secure tool execution.
+The ReAct paradigm interleaves reasoning traces with task-specific actions, which is especially effective for tool-use scenarios. Combining AgentScope's `ReActAgent` with AgentScope Runtime gives you both smart decision making and safe tool execution.
 ```
 
 ## Prerequisites
 
-### 🔧 Installation Requirements
-
-Install AgentScope Runtime with the required dependencies:
+### Install Dependencies
 
 ```bash
 pip install agentscope-runtime
 ```
 
-### 🐳 Sandbox Setup
+### Sandbox
 
 ```{note}
-Make sure your browser sandbox environment is ready to use, see {doc}`sandbox` for details.
+Make sure the browser sandbox environment is ready; refer to {doc}`sandbox` for details.
 ```
 
-Ensure the browser sandbox image is available:
+Pull the browser sandbox image:
 
 ```bash
 docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-browser:latest && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-browser:latest agentscope/runtime-sandbox-browser:latest
 ```
 
-### 🔑 API Key Configuration
+### API Keys
 
-You'll need an API key for your chosen LLM provider. This example uses DashScope (Qwen), but you can adapt it to other providers:
+Provide an API key for your LLM provider. This example uses DashScope (Qwen), but you can adapt it to any vendor:
 
 ```bash
 export DASHSCOPE_API_KEY="your_api_key_here"
@@ -54,136 +52,210 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 
 ### Step 1: Import Dependencies
 
-Start by importing all necessary modules:
-
 ```{code-cell}
 import os
 
-from agentscope_runtime.engine import AgentApp
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-from agentscope_runtime.engine.deployers import LocalDeployManager
-```
-
-### Step 2: Configure Browser Tools
-
-Define the browser tools your agent will have access to (To configure additional tools for the agent, see the “Tool Usage” section in {doc}`sandbox`):
-
-```{code-cell}
-from agentscope_runtime.sandbox.tools.browser import (
-    browser_navigate,
-    browser_take_screenshot,
-    browser_snapshot,
-    browser_click,
-    browser_type,
-)
-
-# Prepare browser tools
-BROWSER_TOOLS = [
-    browser_navigate,
-    browser_take_screenshot,
-    browser_snapshot,browser_click,
-    browser_type,
-]
-
-print(f"✅ Configured {len(BROWSER_TOOLS)} browser tools")
-```
-
-### Step 3: Define System Prompt
-
-Create a system prompt that establishes your agent's role, objectives, and operational guidelines for web browsing tasks:
-
-```{code-cell}
-SYSTEM_PROMPT = """You are a Web-Using AI assistant.
-
-# Objective
-Your goal is to complete given tasks by controlling a browser to navigate web pages.
-
-## Web Browsing Guidelines
-- Use the `browser_navigate` command to jump to specific webpages when needed.
-- Use `generate_response` to answer the user once you have all the required information.
-- Always answer in English.
-
-### Observing Guidelines
-- Always take action based on the elements on the webpage. Never create URLs or generate new pages.
-- If the webpage is blank or an error, such as 404, is found, try refreshing it or go back to the previous page and find another webpage.
-"""
-
-print("✅ System prompt configured")
-```
-
-### Step 4: Initialize Agent and Model
-
-Set up the ReAct agent builder with your chosen language model from the AgentScope framework :
-
-```{code-cell}
 from agentscope.agent import ReActAgent
-from agentscope.model import OpenAIChatModel
+from agentscope.model import DashScopeChatModel
+from agentscope.formatter import DashScopeChatFormatter
+from agentscope.tool import Toolkit, execute_python_code
+from agentscope.pipeline import stream_printing_messages
 
-# Initialize the language model
-model=OpenAIChatModel(
-    "gpt-4",
-    api_key=os.getenv("OPENAI_API_KEY"),
-),
-
-# Create the AgentScope agent
-agent = AgentScopeAgent(
-    name="Friday",
-    model=model,
-    agent_config={
-        "sys_prompt": SYSTEM_PROMPT,
-    },
-    tools=BROWSER_TOOLS,
-    agent_builder=ReActAgent,
-)
-
-print("✅ Agent initialized successfully")
+from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
+from agentscope_runtime.adapters.agentscope.memory import AgentScopeSessionHistoryMemory
+from agentscope_runtime.engine.services.agent_state import InMemoryStateService
+from agentscope_runtime.engine.services.session_history import InMemorySessionHistoryService
+from agentscope_runtime.engine.services.sandbox import SandboxService
+from agentscope_runtime.sandbox import BrowserSandbox
 ```
 
-### Step 5: Create and Launch Agent App
+### Step 2: Prepare Browser Sandbox Tools
 
-Create an agent API server using agent and `AgentApp`:
+Like `tests/sandbox/test_sandbox.py`, you can validate the browser sandbox via a context manager:
 
 ```{code-cell}
-app = AgentApp(agent=agent, endpoint_path="/process")
-
-app.run(host="0.0.0.0", port=8090)
+with BrowserSandbox() as box:
+    print(box.list_tools())
+    print(box.browser_navigate("https://www.example.com/"))
+    print(box.browser_snapshot())
 ```
 
-The server will start and listen on: `http://localhost:8090/process`.
+If the service needs to reuse sandbox instances over time, manage them with `SandboxService` (see `tests/sandbox/test_sandbox_service.py`):
 
-### Step 6: Send Request to Agent
+```{code-cell}
+import asyncio
 
-You can send JSON input to the API using `curl`:
+async def bootstrap_browser_sandbox():
+    sandbox_service = SandboxService()
+    await sandbox_service.start()
+
+    session_id = "demo_session"
+    user_id = "demo_user"
+
+    sandboxes = sandbox_service.connect(
+        session_id=session_id,
+        user_id=user_id,
+        sandbox_types=["browser"],
+    )
+    browser_box = sandboxes[0]
+    browser_box.browser_navigate("https://www.example.com/")
+    browser_box.browser_snapshot()
+
+    await sandbox_service.stop()
+
+asyncio.run(bootstrap_browser_sandbox())
+```
+
+Here `sandbox_types=["browser"]` matches the test suite so a single browser sandbox instance is reused for the same `session_id` / `user_id` pair.
+
+### Step 3: Build the AgentApp
+
+The logic mirrors the `run_app()` test: initialize services, wire up session memory, and stream responses.
+
+```{code-cell}
+PORT = 8090
+
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+)
+
+
+@agent_app.init
+async def init_func(self):
+    self.state_service = InMemoryStateService()
+    self.session_service = InMemorySessionHistoryService()
+    self.sandbox_service = SandboxService()
+
+    await self.state_service.start()
+    await self.session_service.start()
+    await self.sandbox_service.start()
+
+
+@agent_app.shutdown
+async def shutdown_func(self):
+    await self.state_service.stop()
+    await self.session_service.stop()
+    await self.sandbox_service.stop()
+
+
+@agent_app.query(framework="agentscope")
+async def query_func(self, msgs, request: AgentRequest = None, **kwargs):
+    session_id = request.session_id
+    user_id = request.user_id
+
+    state = await self.state_service.export_state(
+        session_id=session_id,
+        user_id=user_id,
+    )
+
+    sandboxes = self.sandbox_service.connect(
+        session_id=session_id,
+        user_id=user_id,
+        sandbox_types=["browser"],
+    )
+    browser_box = sandboxes[0]
+
+    toolkit = Toolkit()
+    for tool in (
+        browser_box.browser_navigate,
+        browser_box.browser_snapshot,
+        browser_box.browser_take_screenshot,
+        browser_box.browser_click,
+        browser_box.browser_type,
+    ):
+        toolkit.register_tool_function(tool)
+    toolkit.register_tool_function(execute_python_code)
+
+    agent = ReActAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+            enable_thinking=True,
+            stream=True,
+        ),
+        sys_prompt="You're a helpful assistant named Friday.",
+        toolkit=toolkit,
+        memory=AgentScopeSessionHistoryMemory(
+            service=self.session_service,
+            session_id=session_id,
+            user_id=user_id,
+        ),
+        formatter=DashScopeChatFormatter(),
+    )
+    agent.set_console_output_enabled(enabled=False)
+
+    if state:
+        agent.load_state_dict(state)
+
+    async for msg, last in stream_printing_messages(
+        agents=[agent],
+        coroutine_task=agent(msgs),
+    ):
+        yield msg, last
+
+    await self.state_service.save_state(
+        user_id=user_id,
+        session_id=session_id,
+        state=agent.state_dict(),
+    )
+```
+
+The `query_func` streams SSE responses and persists the latest agent state, enabling multi-turn memory. Because `SandboxService` is scoped to `session_id` / `user_id`, the same browser sandbox is reused until the session ends.
+
+### Step 4: Launch the Service
+
+```{code-cell}
+if __name__ == "__main__":
+    agent_app.run(host="127.0.0.1", port=PORT)
+```
+
+Once running, call `http://127.0.0.1:8090/process` for streaming answers.
+
+### Step 5: Test SSE Output
 
 ```bash
 curl -N \
-  -X POST "http://localhost:8090/process" \
+  -X POST "http://127.0.0.1:8090/process" \
   -H "Content-Type: application/json" \
   -d '{
     "input": [
       {
         "role": "user",
         "content": [
-          { "type": "text", "text": "What is in example?" }
+          { "type": "text", "text": "What is the capital of France?" }
         ]
       }
     ]
   }'
 ```
 
-You’ll see output streamed in **Server-Sent Events (SSE)** format.
+You should see multiple `data: {...}` SSE events ending with `data: [DONE]`. A response containing “Paris” indicates success.
 
-### Step 7: Deploy the Agent with Deployer
+### Step 6: Verify Multi-turn Memory
 
-The AgentScope Runtime provides a powerful deployment system that allows you to deploy your agent to remote or local container. And we use `LocalDeployManager` as example:
+Reuse the same `session_id` to test `AgentScopeSessionHistoryMemory`: send “My name is Alice.” first, then ask “What is my name?”—the reply should mention “Alice”.
+
+### Step 7: OpenAI-Compatible Mode
+
+AgentApp exposes a `compatible-mode/v1` path so you can test with the official `openai` SDK:
 
 ```{code-cell}
-async def main():
-    await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
+from openai import OpenAI
+
+client = OpenAI(base_url="http://127.0.0.1:8090/compatible-mode/v1")
+resp = client.responses.create(
+    model="any_name",
+    input="Who are you?",
+)
+
+print(resp.response["output"][0]["content"][0]["text"])
 ```
 
-This will run your agent API Server on the specified port, making it accessible for external requests. In addition to basic HTTP API access, you can interact with the agent through different protocols, such as A2A, Response API, Agent API, and others. Please refer {doc}`protocol` for details.
+A successful result should look like “I'm Friday ...”.
 
-### Summary
+## Summary
 
-By following these steps, you've successfully set up, interacted with, and deployed a ReAct Agent using the AgentScope framework and AgentScope Runtime. This configuration allows the agent to use browser tools securely within a sandbox environment, ensuring safe and effective web interactions. Adjust the system prompt, tools, or model as needed to customize the agent’s behavior for specific tasks or applications.
+Following these steps you now have a ReAct agent with streaming responses, session memory, browser sandbox tooling, and an OpenAI-compatible endpoint. To deploy remotely or extend the toolset, swap out the model, state services, or registered tools as needed.

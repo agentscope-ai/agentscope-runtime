@@ -52,6 +52,7 @@ dev = [
     "fakeredis>=2.31.0",
     "sphinx-autoapi>=3.6.0",
     "pytest-mock>=3.15.1",
+    "sphinxcontrib-mermaid>=1.2.3",
 ]
 
 agentrun = [

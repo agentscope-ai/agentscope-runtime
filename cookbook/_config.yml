@@ -34,6 +34,7 @@ sphinx:
     - sphinx.ext.napoleon
     - sphinx.ext.intersphinx
     - sphinx.ext.autosummary
+    - sphinxcontrib.mermaid
   config:
     # API Documentation Configuration
     autosummary_generate: True
