@@ -348,7 +348,7 @@ async def test_stream_with_agent_request_endpoint(start_app):
             assert resp.status == 200
             assert resp.content_type == "text/event-stream"
             text_chunks = await _collect_sse_payloads(resp)
-            assert len(text_chunks) > 0
+            assert len(text_chunks) == 10
 
 
 @pytest.mark.asyncio
@@ -393,3 +393,5 @@ async def test_stream_with_agent_request_direct_return_endpoint(start_app):
             },
         ) as resp:
             assert resp.status == 200
+            data = await resp.json()
+            assert data == {"hello": "world"}
