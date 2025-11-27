@@ -86,7 +86,7 @@ Choose the images based on your specific needs:
 
 You can verify that everything is set up correctly by calling `run_ipython_cell`:
 
-```{code-cell}
+```python
 import json
 from agentscope_runtime.sandbox.tools.base import run_ipython_cell
 
@@ -110,7 +110,7 @@ The following two functions will execute independently in separate sandboxes.
 Each function call will start an **embedded** sandbox, execute the function within it, and then close the sandbox. The lifecycle of each sandbox is confined to the duration of the function call in this way.
 ```
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox.tools.base import (
     run_ipython_cell,
     run_shell_command,
@@ -124,7 +124,7 @@ print(run_shell_command(command="whoami"))
 
 In addition to directly calling tools, you can bind a specific sandbox to a tool using the bind method. This allows you to specify which sandbox the function will run in, giving you more control over the execution environment. It's important to note that the function's type and the sandbox type must match; otherwise, the function will not execute properly. Here's how you can do it:
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox import BaseSandbox
 
 with BaseSandbox() as sandbox:
@@ -145,7 +145,7 @@ with BaseSandbox() as sandbox:
 
 `MCPConfigConverter` is used to convert an external MCP (Model Context Protocol) server configuration into an `MCPTool` that can run inside a **Sandbox**. This allows you to call these external tools safely and in isolation within the sandbox environment:
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox.tools.mcp_tool import MCPConfigConverter
 
 # Define MCP server configuration
@@ -175,7 +175,7 @@ print(mcp_tools)
 
 #### Registering Tools with Different Sandbox Types
 
-```{code-cell}
+```python
 # Automatically create a sandbox of the specified type and register tools
 mcp_tools = MCPConfigConverter(server_configs=config).to_builtin_tools(
     sandbox_type="base",
@@ -199,7 +199,7 @@ Function tools offer two creation methods:
 - **`FunctionTool` wrapper**: Wrap existing functions or methods using the `FunctionTool` class
 - **Decorator approach**: Use the `@function_tool` decorator to annotate functions directly
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox.tools.function_tool import (
     FunctionTool,
     function_tool,
@@ -235,7 +235,7 @@ print(tool_0, tool_1)
 
 Each tool has a defined `schema` that specifies the expected structure and types of its input parameters. This schema is useful for understanding how to properly use the tool and what parameters are required. Here's an example of how you can view the schema:
 
-```{code-cell}
+```python
 print(json.dumps(run_ipython_cell.schema, indent=4, ensure_ascii=False))
 ```
 
@@ -286,7 +286,7 @@ You can create different types of sandboxes via `sandbox` sdk:
 
 * **Base Sandbox**: Use for running **Python code** or **shell commands** in an isolated environment.
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox import BaseSandbox
 
 with BaseSandbox() as box:
@@ -301,7 +301,7 @@ with BaseSandbox() as box:
 
   <img src="https://img.alicdn.com/imgextra/i2/O1CN01df5SaM1xKFQP4KGBW_!!6000000006424-2-tps-2958-1802.png" alt="GUI Sandbox" width="800" height="500">
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox import GuiSandbox
 
 with GuiSandbox() as box:
@@ -317,7 +317,7 @@ with GuiSandbox() as box:
 
   <img src="https://img.alicdn.com/imgextra/i3/O1CN01VocM961vK85gWbJIy_!!6000000006153-2-tps-2730-1686.png" alt="GUI Sandbox" width="800" height="500">
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox import FilesystemSandbox
 
 with FilesystemSandbox() as box:
@@ -332,7 +332,7 @@ with FilesystemSandbox() as box:
 
   <img src="https://img.alicdn.com/imgextra/i4/O1CN01OIq1dD1gAJMcm0RFR_!!6000000004101-2-tps-2734-1684.png" alt="GUI Sandbox" width="800" height="500">
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox import BrowserSandbox
 
 with BrowserSandbox() as box:
@@ -345,7 +345,7 @@ with BrowserSandbox() as box:
 
 * **TrainingSandbox**: Sandbox for training and evaluation，please refer to {doc}`training_sandbox` for details.
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox import TrainingSandbox
 
 # Create a training sandbox
@@ -364,7 +364,7 @@ MCP (Model Context Protocol) is a standardized protocol that enables AI applicat
 
 The sandbox supports integrating MCP servers via the `add_mcp_servers` method. Once added, you can discover available tools using `list_tools` and execute them with `call_tool`. Here's an example of adding a time server that provides timezone-aware time functions:
 
-```{code-cell}
+```python
 with BaseSandbox() as sandbox:
     mcp_server_configs = {
         "mcpServers": {

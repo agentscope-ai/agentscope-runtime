@@ -92,7 +92,7 @@ print(f"✅ 已配置{len(BROWSER_TOOLS)} 个浏览器工具")
 
 创建一个系统提示词，为您的智能体建立角色、目标和网页浏览任务的操作指南：
 
-```{code-cell}
+```python
 SYSTEM_PROMPT = """You are a Web-Using AI assistant.
 
 # Objective

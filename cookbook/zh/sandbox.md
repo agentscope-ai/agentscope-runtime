@@ -86,7 +86,7 @@ docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtim
 
 您可以通过调用`run_ipython_cell`来验证一切设置是否正确：
 
-```{code-cell}
+```python
 import json
 from agentscope_runtime.sandbox.tools.base import run_ipython_cell
 
@@ -110,7 +110,7 @@ print(json.dumps(result, indent=4, ensure_ascii=False))
 每个函数调用都将启动一个**嵌入式**沙箱，在其中执行函数，然后关闭沙箱。每个沙箱的生命周期都限定在函数调用的持续时间内。
 ```
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox.tools.base import (
     run_ipython_cell,
     run_shell_command,
@@ -124,7 +124,7 @@ print(run_shell_command(command="whoami"))
 
 除了直接调用工具外，您还可以使用bind方法将特定沙箱绑定到工具。这允许您指定函数将在哪个沙箱中运行，让您更好地控制执行环境。需要注意的是，函数的类型和沙箱类型必须匹配，否则函数将无法正确执行。以下是操作方法：
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox import BaseSandbox
 
 with BaseSandbox() as sandbox:
@@ -145,7 +145,7 @@ with BaseSandbox() as sandbox:
 
 `MCPConfigConverter` 用于将外部 MCP（Model Context Protocol）服务器的配置，转换成可在 **Sandbox** 中运行的 `MCPTool`。这样可以在沙箱内调用这些外部工具，保证安全与隔离：
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox.tools.mcp_tool import MCPConfigConverter
 
 # 定义 MCP 服务器配置
@@ -175,7 +175,7 @@ print(mcp_tools)
 
 #### 使用不同沙箱类型注册工具
 
-```{code-cell}
+```python
 # 自动创建指定类型的沙箱并注册工具
 mcp_tools = MCPConfigConverter(server_configs=config).to_builtin_tools(
     sandbox_type="base",
@@ -199,7 +199,7 @@ with BaseSandbox() as sandbox:
 - **`FunctionTool` 包装器**：使用 `FunctionTool` 类包装现有函数或方法
 - **装饰器方法**：使用 `@function_tool` 装饰器直接标注函数
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox.tools.function_tool import (
     FunctionTool,
     function_tool,
@@ -235,7 +235,7 @@ print(tool_0, tool_1)
 
 每个工具都有一个定义的`schema`，它指定了输入参数的预期结构和类型。这个schema对于了解如何正确使用工具以及需要哪些参数非常有用。以下是查看schema的示例：
 
-```{code-cell}
+```python
 print(json.dumps(run_ipython_cell.schema, indent=4, ensure_ascii=False))
 ```
 
@@ -288,7 +288,7 @@ bound_tool = original_tool.bind(sandbox=my_sandbox)
 
 * **基础沙箱（Base Sandbox）**：用于在隔离环境中运行 **Python 代码** 或 **Shell 命令**。
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox import BaseSandbox
 
 with BaseSandbox() as box:
@@ -303,7 +303,7 @@ with BaseSandbox() as box:
 
   <img src="https://img.alicdn.com/imgextra/i2/O1CN01df5SaM1xKFQP4KGBW_!!6000000006424-2-tps-2958-1802.png" alt="GUI Sandbox" width="800" height="500">
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox import GuiSandbox
 
 with GuiSandbox() as box:
@@ -319,7 +319,7 @@ with GuiSandbox() as box:
 
   <img src="https://img.alicdn.com/imgextra/i3/O1CN01VocM961vK85gWbJIy_!!6000000006153-2-tps-2730-1686.png" alt="GUI Sandbox" width="800" height="500">
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox import FilesystemSandbox
 
 with FilesystemSandbox() as box:
@@ -334,7 +334,7 @@ with FilesystemSandbox() as box:
 
   <img src="https://img.alicdn.com/imgextra/i4/O1CN01OIq1dD1gAJMcm0RFR_!!6000000004101-2-tps-2734-1684.png" alt="GUI Sandbox" width="800" height="500">
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox import BrowserSandbox
 
 with BrowserSandbox() as box:
@@ -347,7 +347,7 @@ with BrowserSandbox() as box:
 
 * **TrainingSandbox**：训练评估沙箱，详情请参考：{doc}`training_sandbox`。
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox import TrainingSandbox
 
 # 创建训练评估用沙箱
@@ -366,7 +366,7 @@ MCP（模型上下文协议）是一个标准化协议，使AI应用程序能够
 
 沙箱支持通过`add_mcp_servers`方法集成MCP服务器。添加后，您可以使用`list_tools`发现可用工具并使用`call_tool`执行它们。以下是添加提供时区感知的MCP的示例：
 
-```{code-cell}
+```python
 with BaseSandbox() as sandbox:
     mcp_server_configs = {
         "mcpServers": {

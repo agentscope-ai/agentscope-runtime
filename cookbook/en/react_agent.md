@@ -56,7 +56,7 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 
 Start by importing all necessary modules:
 
-```{code-cell}
+```python
 import os
 
 from agentscope_runtime.engine import AgentApp
@@ -68,7 +68,7 @@ from agentscope_runtime.engine.deployers import LocalDeployManager
 
 Define the browser tools your agent will have access to (To configure additional tools for the agent, see the “Tool Usage” section in {doc}`sandbox`):
 
-```{code-cell}
+```python
 from agentscope_runtime.sandbox.tools.browser import (
     browser_navigate,
     browser_take_screenshot,
@@ -92,7 +92,7 @@ print(f"✅ Configured {len(BROWSER_TOOLS)} browser tools")
 
 Create a system prompt that establishes your agent's role, objectives, and operational guidelines for web browsing tasks:
 
-```{code-cell}
+```python
 SYSTEM_PROMPT = """You are a Web-Using AI assistant.
 
 # Objective
@@ -115,7 +115,7 @@ print("✅ System prompt configured")
 
 Set up the ReAct agent builder with your chosen language model from the AgentScope framework :
 
-```{code-cell}
+```python
 from agentscope.agent import ReActAgent
 from agentscope.model import OpenAIChatModel
 

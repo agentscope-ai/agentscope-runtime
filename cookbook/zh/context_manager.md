@@ -599,11 +599,11 @@ async def main():
         context_manager.register(InMemoryMemoryService, name="memory")
 
         # 服务自动启动并准备使用
-        memory_service = context_manager.memory
+        memory_service = context_manager.service_instances
 
         # 检查服务健康状态
         health_status = await context_manager.health_check()
-        print(f"Memory service health status: {health_status['memory']}")
+        print(f"Memory service health status: {health_status.get('memory')}")
 
         # 使用服务...
 

@@ -604,7 +604,7 @@ async def main():
         context_manager.register(InMemoryMemoryService, name="memory")
 
         # Service is automatically started and ready to use
-        memory_service = context_manager.memory
+        memory_service = context_manager.service_instances
 
         # Check service health status
         health_status = await context_manager.health_check()

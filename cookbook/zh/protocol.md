@@ -357,7 +357,7 @@ class AgentResponse(BaseResponse):
 
 ### 7. 错误模型
 
-```{code-cell}
+```python
 class Error(BaseModel):
     code: str
     message: str

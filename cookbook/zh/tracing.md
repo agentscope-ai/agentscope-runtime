@@ -178,7 +178,6 @@ from typing import Any
 # 来自runner.py的示例
 @trace(TraceType.AGENT_STEP)
 async def stream_query(
-    self,
     user_id: str,
     request: dict,
     tools: list = None,
