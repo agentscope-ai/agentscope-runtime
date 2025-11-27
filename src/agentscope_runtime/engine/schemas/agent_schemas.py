@@ -73,6 +73,50 @@ class RunStatus:
     Incomplete = "incomplete"
 
 
+class Usage(BaseModel):
+    """
+    agent tokens usage
+
+    for example
+    {
+        "input_tokens": 1000,
+        "output_tokens": 500,
+        "details": [{
+            "input_tokens": 1000,
+            "output_tokens": 500,
+            "input_cached_tokens": 800,
+            "input_audio_tokens": 0,
+            "output_audio_tokens": 0,
+            "model": qwen3,
+        }]
+    }
+    """
+
+    input_tokens: Optional[int] = None
+    """ agent input tokens """
+
+    output_tokens: Optional[int] = None
+    """ agent output tokens """
+
+    details: Optional[List[Dict]] = None
+    """
+    list of model usage detail
+
+    for example:
+    [
+        {
+            "input_tokens": 1000,
+            "output_tokens": 500,
+            "input_cached_tokens": 800,
+            "input_audio_tokens": 0,
+            "output_audio_tokens": 0,
+            "num_model_requests": 5,
+            "model": qwen3,
+        }
+    ]
+    """
+
+
 class FunctionParameters(BaseModel):
     type: str
     """The type of the parameters object. Must be `object`."""
@@ -345,6 +389,72 @@ class ToolCallOutput(BaseModel):
 
     output: str
     """A JSON string of the output of the function tool call."""
+
+
+class McpCall(BaseModel):
+    id: str
+    """The unique ID of the tool call."""
+
+    arguments: str
+    """A JSON string of the arguments passed to the tool."""
+
+    name: str
+    """The name of the tool that was run."""
+
+    server_label: str
+    """The label of the MCP server running the tool."""
+
+    error: Optional[str] = None
+    """The error from the tool call, if any."""
+
+    output: Optional[str] = None
+    """The output from the tool call."""
+
+
+class McpListToolsTool(BaseModel):
+    input_schema: object
+    """The JSON schema describing the tool's input."""
+
+    name: str
+    """The name of the tool."""
+
+    annotations: Optional[object] = None
+    """Additional annotations about the tool."""
+
+    description: Optional[str] = None
+    """The description of the tool."""
+
+
+class McpListTools(BaseModel):
+    id: str
+    """The unique ID of the list."""
+
+    server_label: str
+    """The label of the MCP server."""
+
+    tools: List[McpListToolsTool]
+    """The tools available on the server."""
+
+    error: Optional[str] = None
+    """Error message if the server could not list tools."""
+
+
+class McpApprovalRequest(BaseModel):
+    """
+    mcp approval request
+    """
+
+    id: str
+    """The unique ID of the approval request."""
+
+    arguments: str
+    """A json string of arguments for the tool."""
+
+    name: str
+    """The name of the tool to run."""
+
+    server_label: str
+    """The label of the mcp server making the request."""
 
 
 AgentRole: TypeAlias = Literal[
@@ -632,6 +742,9 @@ class BaseRequest(BaseModel):
     stream: bool = True
     """If set, partial message deltas will be sent, like in ChatGPT. """
 
+    id: Optional[str] = None
+    """request unique id"""
+
 
 class AgentRequest(BaseRequest):
     """agent request"""
@@ -706,9 +819,6 @@ class AgentRequest(BaseRequest):
 
     session_id: Optional[str] = None
     """conversation id for dialog"""
-
-    response_id: Optional[str] = None
-    """response unique id"""
 
 
 class BaseResponse(Event):

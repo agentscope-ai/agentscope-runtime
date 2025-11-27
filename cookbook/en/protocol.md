@@ -269,6 +269,7 @@ class Message(Event):
 class BaseRequest(BaseModel):
     input: List[Message]
     stream: bool = True
+    id: Optional[str] = None
 ```
 
 **Agent Request**:
@@ -286,7 +287,6 @@ class AgentRequest(BaseRequest):
     seed: Optional[int] = None
     tools: Optional[List[Union[Tool, Dict]]] = None
     session_id: Optional[str] = None
-    response_id: Optional[str] = None
 ```
 
 ### 6. Response Models
