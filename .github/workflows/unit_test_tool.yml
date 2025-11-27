@@ -1,0 +1,56 @@
+name: Unit Tests for Tool
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  test:
+    if: ${{ !(github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, 'docs:')) }}
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+        python-version: [ '3.10' ]
+
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Update setuptools
+        run: |
+          pip install --upgrade pip
+          pip install setuptools==78.1.1 wheel==0.45.1
+
+      - name: Set PYTHONPATH
+        run: |
+          echo "PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/src" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          export PIP_DEFAULT_TIMEOUT=300
+          pip install -q -e ".[dev,tool]"
+
+      - name: Run tests with coverage
+        run: |
+          coverage run -m pytest tests/unit
+
+      - name: Generate coverage report
+        run: |
+          coverage report -m

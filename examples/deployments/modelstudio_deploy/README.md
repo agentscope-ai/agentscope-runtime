@@ -25,8 +25,7 @@ Before running this example, ensure you have:
 
 1. **Install dependencies**:
    ```bash
-   pip install agentscope-runtime==0.1.5b1
-   pip install "agentscope-runtime[deployment]==0.1.5b1"
+   pip install "agentscope-runtime[deployment]>=1.0.0"
    ```
 
 2. **Set environment variables**:
@@ -270,20 +269,20 @@ OSS_ACCESS_KEY_SECRET="your-oss-access-key-secret"
 The example demonstrates how to create multiple endpoints for different use cases:
 
 ```python
-@app.endpoint("/sync")
+@agent_app.endpoint("/sync")
 def sync_handler(request: AgentRequest):
     return {"status": "ok", "payload": request}
 
-@app.endpoint("/async")
+@agent_app.endpoint("/async")
 async def async_handler(request: AgentRequest):
     return {"status": "ok", "payload": request}
 
-@app.endpoint("/stream_async")
+@agent_app.endpoint("/stream_async")
 async def stream_async_handler(request: AgentRequest):
     for i in range(5):
         yield f"async chunk {i}, with request payload {request}\n"
 
-@app.task("/task", queue="celery1")
+@agent_app.task("/task", queue="celery1")
 def task_handler(request: AgentRequest):
     time.sleep(30)
     return {"status": "ok", "payload": request}
@@ -318,7 +317,6 @@ load_dotenv(".env")
 ## Files Structure
 
 - `app_deploy_to_modelstudio.py`: Main deployment script with AgentApp and multiple endpoints
-- `others/other_project.py`: Additional package dependencies (optional)
 - `.env`: Environment variables configuration file (optional)
 
 ## Next Steps

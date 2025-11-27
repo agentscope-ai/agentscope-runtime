@@ -109,7 +109,7 @@ async def _run(
     if mode == "native":
         # Build the current project directly as a wheel, then upload/deploy
         project_dir_path = Path.cwd()
-        built_whl = await build_wheel(project_dir_path)
+        built_whl = build_wheel(project_dir_path)
         return await deployer.deploy(
             project_dir=None,
             cmd=None,

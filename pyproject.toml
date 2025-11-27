@@ -1,6 +1,6 @@
 [project]
 name = "agentscope-runtime"
-version = "1.0.0a2"
+version = "1.0.0a3"
 description = "A production-ready runtime framework for agent applications, providing secure sandboxed execution environments and scalable deployment solutions with multi-framework support."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -21,7 +21,6 @@ dependencies = [
     "shortuuid>=1.0.13",
     "celery[redis]>=5.3.1",
     "a2a-sdk>=0.3.0",
-    "wuying-agentbay-sdk>=0.5.0",
 ]
 
 [tool.setuptools]
@@ -29,7 +28,7 @@ packages = { find = { where = ["src"] } }
 include-package-data = true
 
 [tool.setuptools.package-data]
-"agentscope_runtime.engine.deployers.utils.service_utils" = ["*.j2"]
+"agentscope_runtime.engine.deployers.utils.templates" = ["*.j2"]
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]
@@ -40,6 +39,7 @@ runtime-sandbox-mcp = "agentscope_runtime.sandbox.mcp_server:main"
 runtime-sandbox-server = "agentscope_runtime.sandbox.manager.server.app:main"
 runtime-sandbox-builder = "agentscope_runtime.sandbox.build:main"
 runtime-fc-deploy = "agentscope_runtime.engine.deployers.cli_fc_deploy:main"
+modelstudio-mcp-server = "agentscope_runtime.tools.cli.modelstudio_mcp_server:main"
 
 [project.optional-dependencies]
 dev = [
@@ -52,19 +52,9 @@ dev = [
     "fakeredis>=2.31.0",
     "sphinx-autoapi>=3.6.0",
     "pytest-mock>=3.15.1",
+    "sphinxcontrib-mermaid>=1.2.3",
 ]
 
-langgraph = [
-    "langgraph>=0.5.3",
-]
-
-agno = [
-    "agno>=2.0.0",
-]
-autogen = [
-    "autogen-agentchat>=0.7.4",
-    "autogen-ext[openai]>=0.7.4",
-]
 agentrun = [
     "alibabacloud-agentrun20250910>=2.0.1",
     "alibabacloud_tea_openapi>=0.4.0"
@@ -77,7 +67,7 @@ aliyun_tablestore_ext=[
 ]
 
 memory-ext = [
-    "reme-ai==0.1.9 ; python_full_version >= '3.12'",
+    "reme-ai>=0.2.0.2",
     "mem0ai>=0.1.117"
 ]
 
@@ -95,5 +85,16 @@ deployment = [
     "psutil",
     "shortuuid>=1.0.13",
     "PyYAML",
-    "oss2>=2.19.1"
+    "oss2>=2.19.1",
+    "wuying-agentbay-sdk>=0.5.0",
+]
+
+tool = [
+    "dashscope>=1.25.0",
+    "alipay-sdk-python",
+    "cryptography",
+    "gunicorn>=20.0.0",
+    "starlette>=0.37.0",
+    "asgiref>=3.11.0",
+    "azure-cognitiveservices-speech>=1.47.0",
 ]

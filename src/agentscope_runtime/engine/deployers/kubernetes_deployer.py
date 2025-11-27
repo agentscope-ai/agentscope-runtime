@@ -9,13 +9,11 @@ from pydantic import BaseModel, Field
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .utils.docker_image_utils import (
-    RunnerImageFactory,
+    ImageFactory,
     RegistryConfig,
 )
-from .utils.service_utils import (
-    ServicesConfig,
-)
 from ..runner import Runner
+from ..app.agent_app import AgentApp
 from ...common.container_clients.kubernetes_client import (
     KubernetesClient,
 )
@@ -60,7 +58,7 @@ class KubernetesDeployManager(DeployManager):
         super().__init__()
         self.kubeconfig = kube_config
         self.registry_config = registry_config
-        self.image_factory = RunnerImageFactory()
+        self.image_factory = ImageFactory()
         self.use_deployment = use_deployment
         self.build_context_dir = build_context_dir
         self._deployed_resources = {}
@@ -73,10 +71,10 @@ class KubernetesDeployManager(DeployManager):
 
     async def deploy(
         self,
-        runner: Runner,
+        app: Optional[AgentApp] = None,
+        runner: Optional[Runner] = None,
         endpoint_path: str = "/process",
         stream: bool = True,
-        services_config: Optional[Union[ServicesConfig, dict]] = None,
         custom_endpoints: Optional[List[Dict]] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         requirements: Optional[Union[str, List[str]]] = None,
@@ -96,11 +94,11 @@ class KubernetesDeployManager(DeployManager):
         Deploy runner to Kubernetes.
 
         Args:
+            app: Agent app to be deployed
             runner: Complete Runner object with agent, environment_manager,
                 context_manager
             endpoint_path: API endpoint path
             stream: Enable streaming responses
-            services_config: Services configuration for context manager
             custom_endpoints: Custom endpoints from agent app
             protocol_adapters: protocol adapters
             requirements: PyPI dependencies (following _agent_engines.py
@@ -130,20 +128,11 @@ class KubernetesDeployManager(DeployManager):
         try:
             logger.info(f"Starting deployment {deploy_id}")
 
-            # Handle backward compatibility
-            if runner is None:
-                raise ValueError(
-                    "Runner must be provided",
-                )
-
-            # convert services_config to Model body
-            if services_config and isinstance(services_config, dict):
-                services_config = ServicesConfig(**services_config)
-
             # Step 1: Build image with proper error handling
             logger.info("Building runner image...")
             try:
-                built_image_name = self.image_factory.build_runner_image(
+                built_image_name = self.image_factory.build_image(
+                    app=app,
                     runner=runner,
                     requirements=requirements,
                     extra_packages=extra_packages or [],
@@ -156,7 +145,6 @@ class KubernetesDeployManager(DeployManager):
                     image_tag=image_tag,
                     push_to_registry=push_to_registry,
                     port=port,
-                    services_config=services_config,  # type: ignore[arg-type]
                     protocol_adapters=protocol_adapters,
                     custom_endpoints=custom_endpoints,
                     **kwargs,
@@ -188,6 +176,8 @@ class KubernetesDeployManager(DeployManager):
                 volume_bindings = {}
 
             resource_name = f"agent-{deploy_id[:8]}"
+
+            logger.info(f"Building kubernetes deployment for {deploy_id}")
 
             # Create Deployment
             _id, ports, ip = self.k8s_client.create_deployment(

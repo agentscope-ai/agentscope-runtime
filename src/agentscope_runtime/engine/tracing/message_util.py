@@ -13,7 +13,7 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
     TextContent,
 )
 
-# Use OpenAI's ToolCall type instead of agentscope_bricks
+# Use OpenAI's ToolCall type instead of agentscope_runtime
 ToolCall = ChoiceDeltaToolCall
 
 

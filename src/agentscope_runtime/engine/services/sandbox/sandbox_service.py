@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# mypy: disable-error-code="list-item"
 from typing import List, Optional
 
 from ....sandbox.enums import SandboxType

@@ -30,7 +30,7 @@ except ImportError:  # pragma: no cover - fallback on older Pythons
     tomllib = None  # type: ignore
 
 
-async def _read_text_file_lines(file_path: Path) -> List[str]:
+def _read_text_file_lines(file_path: Path) -> List[str]:
     if not file_path.is_file():
         return []
     return [
@@ -39,16 +39,32 @@ async def _read_text_file_lines(file_path: Path) -> List[str]:
     ]
 
 
-async def _parse_requirements_txt(req_path: Path) -> List[str]:
-    requirements: List[str] = []
-    for line in await _read_text_file_lines(req_path):
+def _parse_requirements_txt(req_path: Path) -> Tuple[List[str], List[str]]:
+    """
+    Parse requirements.txt, separating standard requirements from local wheel paths.
+
+    Returns:
+        Tuple of (standard_requirements, local_wheel_paths)
+    """
+    standard_requirements: List[str] = []
+    local_wheel_paths: List[str] = []
+
+    for line in _read_text_file_lines(req_path):
         if not line or line.startswith("#"):
             continue
-        requirements.append(line)
-    return requirements
+
+        # Check if this is a local wheel file path
+        if line.endswith(".whl") and (
+            "/" in line or "\\" in line or line.startswith(".")
+        ):
+            local_wheel_paths.append(line)
+        else:
+            standard_requirements.append(line)
+
+    return standard_requirements, local_wheel_paths
 
 
-async def _parse_pyproject_toml(pyproject_path: Path) -> List[str]:
+def _parse_pyproject_toml(pyproject_path: Path) -> List[str]:
     deps: List[str] = []
     if not pyproject_path.is_file():
         return deps
@@ -114,15 +130,30 @@ async def _parse_pyproject_toml(pyproject_path: Path) -> List[str]:
     return deps
 
 
-async def _gather_user_dependencies(project_dir: Path) -> List[str]:
+def _gather_user_dependencies(
+    project_dir: Path,
+) -> Tuple[List[str], List[Path]]:
+    """
+    Gather user dependencies from pyproject.toml and requirements.txt.
+
+    Returns:
+        Tuple of (standard_dependencies, local_wheel_files)
+        where local_wheel_files are absolute paths to wheel files
+    """
     pyproject = project_dir / "pyproject.toml"
     req_txt = project_dir / "requirements.txt"
     deps: List[str] = []
+    local_wheels: List[Path] = []
+
     if pyproject.is_file():
-        dep = await _parse_pyproject_toml(pyproject)
+        dep = _parse_pyproject_toml(pyproject)
         deps.extend(dep)
+
     if req_txt.is_file():
-        # Merge requirements.txt too, avoiding duplicates
+        # Parse requirements.txt to separate standard deps from local wheels
+        standard_reqs, local_wheel_paths = _parse_requirements_txt(req_txt)
+
+        # Merge standard requirements, avoiding duplicates
         existing = set(
             d.split("[", 1)[0]
             .split("=", 1)[0]
@@ -132,7 +163,7 @@ async def _gather_user_dependencies(project_dir: Path) -> List[str]:
             .lower()
             for d in deps
         )
-        for r in await _parse_requirements_txt(req_txt):
+        for r in standard_reqs:
             name_key = (
                 r.split("[", 1)[0]
                 .split("=", 1)[0]
@@ -143,7 +174,18 @@ async def _gather_user_dependencies(project_dir: Path) -> List[str]:
             )
             if name_key not in existing:
                 deps.append(r)
-    return deps
+
+        # Process local wheel paths - convert to absolute paths
+        for wheel_path_str in local_wheel_paths:
+            # Handle relative paths like ./wheels/xxx.whl or wheels/xxx.whl
+            wheel_path = Path(wheel_path_str)
+            if not wheel_path.is_absolute():
+                wheel_path = (project_dir / wheel_path).resolve()
+
+            if wheel_path.exists() and wheel_path.is_file():
+                local_wheels.append(wheel_path)
+
+    return deps, local_wheels
 
 
 def _venv_python(venv_dir: Path) -> Path:
@@ -163,7 +205,7 @@ def _write_file(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-async def generate_wrapper_project(
+def generate_wrapper_project(
     build_root: Path,
     user_project_dir: Path,
     start_cmd: str,
@@ -203,28 +245,47 @@ async def generate_wrapper_project(
     )
 
     # 2) Dependencies
-    user_deps = await _gather_user_dependencies(user_project_dir)
+    _, local_wheels = _gather_user_dependencies(user_project_dir)
+
+    # Copy local wheel files to wrapper project
+    if local_wheels:
+        wheels_dir = wrapper_dir / "deploy_starter" / "wheels"
+        wheels_dir.mkdir(parents=True, exist_ok=True)
+        for wheel_file in local_wheels:
+            dest = wheels_dir / wheel_file.name
+            shutil.copy2(wheel_file, dest)
+
     wrapper_deps = [
         "pyyaml",
         "alibabacloud-oss-v2",
-        "alibabacloud-bailian20231229",
+        "alibabacloud-bailian20231229>=2.6.0",
+        "alibabacloud-agentrun20250910>=2.0.1",
         "alibabacloud-credentials",
         "alibabacloud-tea-openapi",
         "alibabacloud-tea-util",
         "python-dotenv",
+        "jinja2",
+        "psutil",
     ]
     # De-duplicate while preserving order
     seen = set()
+    standard_reqs, local_wheel_paths = _parse_requirements_txt(
+        user_project_dir / "requirements.txt",
+    )
+
     install_requires: List[str] = []
-    for pkg in wrapper_deps + user_deps:
+    for pkg in wrapper_deps + standard_reqs:
         key = pkg.strip().lower()
         if key and key not in seen:
             seen.add(key)
             install_requires.append(pkg)
 
+    req_content = "\n".join(install_requires) + "\n"
+    req_content += "\n".join(local_wheel_paths) + "\n"
+
     # 3) Packaging metadata
     unique_suffix = uuid.uuid4().hex[:8]
-    package_name = f"agentdev_starter_{unique_suffix}"
+    package_name = f"agentscope_runtime_{unique_suffix}"
     version = f"0.1.{int(time.time())}"
 
     # 4) Template package: deploy_starter
@@ -248,7 +309,29 @@ def read_config():
         return yaml.safe_load(f) or {{}}
 
 
+def install_local_wheels():
+    \"\"\"Install local wheel files if they exist.\"\"\"
+    wheels_dir = Path(__file__).resolve().parent / 'wheels'
+    if wheels_dir.exists() and wheels_dir.is_dir():
+        wheel_files = list(wheels_dir.glob('*.whl'))
+        if wheel_files:
+            print(f'[deploy_starter] Installing {{len(wheel_files)}} local wheel(s)...')
+            for wheel in wheel_files:
+                try:
+                    subprocess.run(
+                        ['pip', 'install', '--no-deps', str(wheel)],
+                        check=True,
+                        capture_output=True,
+                    )
+                    print(f'[deploy_starter] Installed: {{wheel.name}}')
+                except subprocess.CalledProcessError as e:
+                    print(f'[deploy_starter] Warning: Failed to install {{wheel.name}}: {{e}}', file=sys.stderr)
+
+
 def main():
+    # Install local wheels first
+    install_local_wheels()
+
     cfg = read_config()
     subdir = cfg.get('APP_SUBDIR_NAME')
     if not subdir:
@@ -336,6 +419,23 @@ APP_SUBDIR_NAME: "{project_basename}"
 
     setup_py = f"""
 from setuptools import setup, find_packages
+import os
+import subprocess
+import sys
+from pathlib import Path
+from setuptools import setup, find_packages
+from setuptools.command.install import install
+
+def run():
+    # Step 1: Install all .whl files in the ./wheel/ directory (relative to setup.py)
+    wheel_dir = Path(__file__).parent / "wheel"
+    if wheel_dir.is_dir():
+        whl_files = sorted(wheel_dir.glob("*.whl"))
+        if whl_files:
+            for whl in whl_files:
+                # Use the same Python interpreter to avoid env issues
+                subprocess.check_call([sys.executable, "-m", "pip", "install", str(whl)])
+
 
 setup(
     name='{package_name}',
@@ -350,13 +450,14 @@ setup(
     manifest_in = """
 recursive-include deploy_starter *.yml
 recursive-include deploy_starter/user_bundle *
+recursive-include deploy_starter/wheels *.whl
 """
     _write_file(wrapper_dir / "MANIFEST.in", manifest_in)
 
     return wrapper_dir, wrapper_dir / "dist"
 
 
-async def build_wheel(project_dir: Path) -> Path:
+def build_wheel(project_dir: Path) -> Path:
     """
     Build a wheel inside an isolated virtual environment to avoid PEP 668
     issues. Returns the path to the built wheel.

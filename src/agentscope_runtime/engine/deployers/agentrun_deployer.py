@@ -6,9 +6,9 @@ import asyncio
 import logging
 import os
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional, List, Any, Union, Tuple
-from dataclasses import dataclass
 
 from alibabacloud_agentrun20250910.client import Client as AgentRunClient
 from alibabacloud_agentrun20250910.models import (
@@ -34,7 +34,7 @@ from pydantic import BaseModel, Field
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .local_deployer import LocalDeployManager
-from .utils.service_utils import ServicesConfig
+from .utils.detached_app import get_bundle_entry_script
 from .utils.wheel_packager import (
     default_deploy_name,
     generate_wrapper_project,
@@ -432,7 +432,7 @@ class AgentRunDeployManager(DeployManager):
         build_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info("Generating wrapper project: %s", name)
-        wrapper_project_dir, _ = await generate_wrapper_project(
+        wrapper_project_dir, _ = generate_wrapper_project(
             build_root=build_dir,
             user_project_dir=project_dir,
             start_cmd=cmd,
@@ -441,7 +441,7 @@ class AgentRunDeployManager(DeployManager):
         )
 
         logger.info("Building wheel package from: %s", wrapper_project_dir)
-        wheel_path = await build_wheel(wrapper_project_dir)
+        wheel_path = build_wheel(wrapper_project_dir)
         logger.info("Wheel package created: %s", wheel_path)
         return wheel_path, name
 
@@ -510,7 +510,6 @@ class AgentRunDeployManager(DeployManager):
         self,
         runner: Optional[Runner] = None,
         endpoint_path: str = "/process",
-        services_config: Optional[Union[ServicesConfig, dict]] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
@@ -522,14 +521,15 @@ class AgentRunDeployManager(DeployManager):
         external_whl_path: Optional[str] = None,
         agentrun_id: Optional[str] = None,
         custom_endpoints: Optional[List[Dict]] = None,
+        app=None,
         **kwargs,
     ) -> Dict[str, str]:
         """Deploy agent to AgentRun service.
 
         Args:
+            app: AgentApp instance to deploy.
             runner: Runner instance containing the agent to deploy.
             endpoint_path: HTTP endpoint path for the agent service.
-            services_config: Configuration for additional services.
             protocol_adapters: List of protocol adapters for the agent.
             requirements: Python requirements for the agent (file path or list).
             extra_packages: Additional Python packages to install.
@@ -565,23 +565,17 @@ class AgentRunDeployManager(DeployManager):
                 raise ValueError(
                     "Must provide either runner, project_dir, or external_whl_path",
                 )
-
-        # Convert services_config to ServicesConfig model
-        if services_config and isinstance(services_config, dict):
-            services_config = ServicesConfig(**services_config)
-
         try:
-            if runner:
-                agent = runner._agent
+            if runner or app:
                 logger.info("Creating detached project from runner")
                 if "agent" in kwargs:
                     kwargs.pop("agent")
 
                 # Create package project for detached deployment
                 project_dir = await LocalDeployManager.create_detached_project(
-                    agent=agent,
+                    app=app,
+                    runner=runner,
                     endpoint_path=endpoint_path,
-                    services_config=services_config,  # type: ignore[arg-type]
                     custom_endpoints=custom_endpoints,
                     protocol_adapters=protocol_adapters,
                     requirements=requirements,
@@ -590,7 +584,8 @@ class AgentRunDeployManager(DeployManager):
                 )
                 if project_dir:
                     self._generate_env_file(project_dir, environment)
-                cmd = "python main.py"
+                entry_script = get_bundle_entry_script(project_dir)
+                cmd = f"python {entry_script}"
                 deploy_name = deploy_name or default_deploy_name()
 
             if agentrun_id:

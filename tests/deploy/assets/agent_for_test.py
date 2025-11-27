@@ -1,27 +1,37 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=wrong-import-position, wrong-import-order
+# pylint:disable=wrong-import-position, wrong-import-order, unused-argument
 import asyncio
 import os
 
 from agentscope.agent import ReActAgent
+from agentscope.formatter import DashScopeChatFormatter
 from agentscope.model import DashScopeChatModel
+from agentscope.pipeline import stream_printing_messages
+from agentscope.tool import Toolkit
 
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.engine.schemas.agent_schemas import (
-    MessageType,
-    RunStatus,
-    AgentRequest,
+from agentscope_runtime.adapters.agentscope.memory import (
+    AgentScopeSessionHistoryMemory,
 )
-from agentscope_runtime.engine.services.context_manager import (
-    ContextManager,
+from agentscope_runtime.engine.app import AgentApp
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
+from agentscope_runtime.engine.services.agent_state import (
+    InMemoryStateService,
 )
-from agentscope_runtime.sandbox.tools.function_tool import function_tool
+from agentscope_runtime.engine.services.session_history import (
+    InMemorySessionHistoryService,
+)
 from others.other_project import version
 
 
-@function_tool()
 def weather_search(query: str) -> str:
+    """Search for weather information based on location query.
+
+    Args:
+        query: Location query string
+
+    Returns:
+        Weather information string
+    """
     if "sf" in query.lower() or "san francisco" in query.lower():
         result = "It's 60 degrees and foggy."
     else:
@@ -30,55 +40,93 @@ def weather_search(query: str) -> str:
     return result
 
 
-agent = AgentScopeAgent(
-    name="Friday",
-    model=DashScopeChatModel(
-        "qwen-turbo",
-        api_key=os.getenv("DASHSCOPE_API_KEY"),
-    ),
-    agent_config={
-        "sys_prompt": "You're a helpful assistant named Friday.",
-    },
-    agent_builder=ReActAgent,
-    tools=[
-        weather_search,
-    ],
+# Create AgentApp
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant with weather tool",
 )
+
+
+@agent_app.init
+async def init_func(self):
+    self.state_service = InMemoryStateService()
+    self.session_service = InMemorySessionHistoryService()
+    await self.state_service.start()
+    await self.session_service.start()
+
+
+@agent_app.shutdown
+async def shutdown_func(self):
+    await self.state_service.stop()
+    await self.session_service.stop()
+
+
+@agent_app.query(framework="agentscope")
+async def query_func(
+    self,
+    msgs,
+    request: AgentRequest = None,
+    **kwargs,
+):
+    session_id = request.session_id
+    user_id = request.user_id
+
+    state = await self.state_service.export_state(
+        session_id=session_id,
+        user_id=user_id,
+    )
+
+    toolkit = Toolkit()
+    toolkit.register_tool_function(weather_search)
+
+    agent = ReActAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+            stream=True,
+        ),
+        sys_prompt="You're a helpful assistant named Friday.",
+        toolkit=toolkit,
+        memory=AgentScopeSessionHistoryMemory(
+            service=self.session_service,
+            session_id=session_id,
+            user_id=user_id,
+        ),
+        formatter=DashScopeChatFormatter(),
+    )
+
+    if state:
+        agent.load_state_dict(state)
+
+    async for msg, last in stream_printing_messages(
+        agents=[agent],
+        coroutine_task=agent(msgs),
+    ):
+        yield msg, last
+
+    state = agent.state_dict()
+
+    await self.state_service.save_state(
+        user_id=user_id,
+        session_id=session_id,
+        state=state,
+    )
+
+
 print(f"AgentScope Runtime with dependencies version: {version}")
 
 
 async def run():
-    # Create a request
-    request = AgentRequest(
-        input=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "杭州天气如何？",
-                    },
-                ],
-            },
-        ],
+    # This function demonstrates how the app would be used
+    # In actual tests, the agent_app can be deployed directly
+    from agentscope_runtime.engine.deployers.local_deployer import (
+        LocalDeployManager,
     )
 
-    runner = Runner(
-        agent=agent,
-        context_manager=ContextManager(),
-        # context_manager=None       # Optional
-    )
-    async for message in runner.stream_query(request=request):
-        # Check if this is a completed message
-        if (
-            message.object == "message"
-            and MessageType.MESSAGE == message.type
-            and RunStatus.Completed == message.status
-        ):
-            all_result = message.content[0].text
-        print(message)
-
-    print(f"📝 Agent response: {all_result}")
+    deploy_manager = LocalDeployManager(host="localhost", port=8090)
+    deployment_info = await agent_app.deploy(deploy_manager)
+    print(f"Deployed at: {deployment_info['url']}")
 
 
 if __name__ == "__main__":
