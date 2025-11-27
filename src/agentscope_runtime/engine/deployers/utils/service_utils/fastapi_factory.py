@@ -664,80 +664,28 @@ class FastAPIAppFactory:
         return None
 
     @staticmethod
-    def _create_parameter_wrapper(handler: Callable):
-        """Create a wrapper that handles parameter parsing based on function
-        signature.
-
-        This method inspects the handler function's parameters and creates
-        appropriate wrappers to parse request data into the expected
-        parameter types.
+    def _create_handler_wrapper(handler: Callable):
+        """Create a wrapper for a handler that handles asynchronous or
+        synchronous execution.
         """
-        try:
-            sig = inspect.signature(handler)
-            params = list(sig.parameters.values())
 
-            if not params:
-                # No parameters, call function directly
-                return handler
+        is_awaitable = inspect.iscoroutinefunction(handler)
+        if is_awaitable:
 
-            # Get the first parameter (assuming single parameter for now)
-            first_param = params[0]
-            param_annotation = first_param.annotation
+            @functools.wraps(handler)
+            async def wrapped_handler(*args, **kwargs):
+                return await handler(*args, **kwargs)
 
-            # If no annotation or annotation is Request, pass Request directly
-            if param_annotation in [inspect.Parameter.empty, Request]:
-                return handler
+            wrapped_handler.__signature__ = inspect.signature(handler)
+            return wrapped_handler
+        else:
 
-            # Check if the annotation is a Pydantic model
-            if isinstance(param_annotation, type) and issubclass(
-                param_annotation,
-                BaseModel,
-            ):
-                # Create wrapper that parses JSON to Pydantic model
-                if inspect.iscoroutinefunction(handler):
+            @functools.wraps(handler)
+            def wrapped_handler(*args, **kwargs):
+                return handler(*args, **kwargs)
 
-                    @functools.wraps(handler)
-                    async def async_pydantic_wrapper(request: Request):
-                        try:
-                            body = await request.json()
-                            parsed_param = param_annotation(**body)
-                            return await handler(parsed_param)
-                        except Exception as e:
-                            return JSONResponse(
-                                status_code=422,
-                                content={
-                                    "detail": f"Request parsing error: "
-                                    f"{str(e)}",
-                                },
-                            )
-
-                    return async_pydantic_wrapper
-                else:
-
-                    @functools.wraps(handler)
-                    async def sync_pydantic_wrapper(request: Request):
-                        try:
-                            body = await request.json()
-                            parsed_param = param_annotation(**body)
-                            return handler(parsed_param)
-                        except Exception as e:
-                            return JSONResponse(
-                                status_code=422,
-                                content={
-                                    "detail": f"Request parsing error: "
-                                    f"{str(e)}",
-                                },
-                            )
-
-                    return sync_pydantic_wrapper
-
-            # For other types, fall back to original behavior
-            return handler
-
-        except Exception:
-            # If anything goes wrong with introspection, fall back to
-            # original behavior
-            return handler
+            wrapped_handler.__signature__ = inspect.signature(handler)
+            return wrapped_handler
 
     @staticmethod
     def _to_sse_event(item: Any) -> str:
@@ -918,7 +866,7 @@ class FastAPIAppFactory:
                 else:
                     # Sync function -> Async wrapper with parameter parsing
                     wrapped_handler = (
-                        FastAPIAppFactory._create_parameter_wrapper(handler)
+                        FastAPIAppFactory._create_handler_wrapper(handler)
                     )
                     app.add_api_route(
                         path,

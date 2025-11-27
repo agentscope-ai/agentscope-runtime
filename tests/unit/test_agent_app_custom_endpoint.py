@@ -11,6 +11,7 @@ from pydantic import BaseModel
 import pytest
 
 from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 
 PORT = 8090
 
@@ -105,6 +106,18 @@ def run_app():
             assert message.role == "user"
             assert message.content == f"Hello, world! {i}"
             yield f"async chunk {message.role}, message: {message.content}\n"
+
+    @app.endpoint(path="/stream_with_agent_request")
+    async def stream_with_agent_request(request: AgentRequest):
+        for i in range(10):
+            yield {
+                "messages": "hello",
+                "index": i,
+            }
+
+    @app.endpoint(path="/stream_with_agent_request_direct_return")
+    async def stream_with_agent_request_direct_return(request: AgentRequest):
+        return {"hello": "world"}
 
     app.run(host="127.0.0.1", port=PORT)
 
@@ -289,3 +302,94 @@ async def test_stream_with_messages_endpoint(start_app):
     assert [chunk.rstrip("\n") for chunk in text_chunks] == [
         f"async chunk user, message: Hello, world! {i}" for i in range(5)
     ]
+
+
+@pytest.mark.asyncio
+async def test_stream_with_agent_request_endpoint(start_app):
+    """
+    Test /stream_with_agent_request streaming chunks with agent request.
+    """
+    url = f"http://localhost:{PORT}/stream_with_agent_request"
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            url,
+            json={
+                "input": [
+                    {
+                        "role": "user",
+                        "type": "message",
+                        "content": [{"type": "text", "text": "hello"}],
+                    },
+                    {
+                        "type": "message",
+                        "role": "assistant",
+                        "content": [
+                            {
+                                "object": "content",
+                                "type": "text",
+                                "text": "Hello! How can I assist you today?",
+                            },
+                        ],
+                    },
+                    {
+                        "role": "user",
+                        "type": "message",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "What is the capital of France?",
+                            },
+                        ],
+                    },
+                ],
+                "session_id": "1764056632961",
+            },
+        ) as resp:
+            assert resp.status == 200
+            assert resp.content_type == "text/event-stream"
+            text_chunks = await _collect_sse_payloads(resp)
+            assert len(text_chunks) > 0
+
+
+@pytest.mark.asyncio
+async def test_stream_with_agent_request_direct_return_endpoint(start_app):
+    """
+    Test /stream_with_agent_request_direct_return endpoint
+    """
+    url = f"http://localhost:{PORT}/stream_with_agent_request_direct_return"
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            url,
+            json={
+                "input": [
+                    {
+                        "role": "user",
+                        "type": "message",
+                        "content": [{"type": "text", "text": "hello"}],
+                    },
+                    {
+                        "type": "message",
+                        "role": "assistant",
+                        "content": [
+                            {
+                                "object": "content",
+                                "type": "text",
+                                "text": "Hello! How can I assist you today?",
+                            },
+                        ],
+                    },
+                    {
+                        "role": "user",
+                        "type": "message",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "What is the capital of France?",
+                            },
+                        ],
+                    },
+                ],
+                "session_id": "1764056632961",
+            },
+        ) as resp:
+            assert resp.status == 200
