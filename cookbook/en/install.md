@@ -22,20 +22,22 @@ Agentscope Runtime supports two installation methods: **PyPI** and **from source
 
 ### Install via PyPI
 
-```{warning}
-This project is under rapid development and iteration. We recommend installing from source to get the latest features and bug fixes.
-```
-
 To install the stable release of Agentscope Runtime via PyPI, use:
 
 ```bash
 pip install agentscope-runtime
 ```
 
-For the whole experience, including sandbox capabilities and other agent framework integrations:
+### (Optional) Install preview version (Beta/RC)
+
+If you want to try features that have not been officially released yet, you can install the latest preview version:
 
 ```bash
-pip install "agentscope-runtime[langgraph,agno,autogen]"
+pip install --pre agentscope-runtime
+```
+
+```{note}
+Note: Preview versions may contain features or interface changes that are not fully stable yet. It is recommended to use them in a testing environment.
 ```
 
 ### (Optional) Install from Source
@@ -66,50 +68,15 @@ import agentscope_runtime
 print(f"AgentScope Runtime {agentscope_runtime.__version__} is ready!")
 ```
 
-You should see the version number printed out. The expected output should look like: `AgentScope Runtime 0.1.0 is ready!`
+You should see the version number printed out.
 
-### Check AgentScope Agent
-
-```{code-cell}
-try:
-    from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-    print(f"✅ {AgentScopeAgent.__name__} - Successfully imported")
-except ImportError as e:
-    print(f"❌ AgentScopeAgent - Import failed: {e}")
-    print('💡 Try installing via: pip install "agentscope-runtime[agentscope]"')
-```
-
-### Check Agno Agent
-
-```{code-cell}
-try:
-    from agentscope_runtime.engine.agents.agno_agent import AgnoAgent
-    print(f"✅ {AgnoAgent.__name__} - Successfully imported")
-except ImportError as e:
-    print(f"❌ AgnoAgent - Import failed: {e}")
-    print('💡 Try installing via: pip install "agentscope-runtime[agno]"')
-```
-
-### Check LangGraph Agent
-
-```{code-cell}
-try:
-    from agentscope_runtime.engine.agents.langgraph_agent import LangGraphAgent
-    print(f"✅ {LangGraphAgent.__name__} - Successfully imported")
-except ImportError as e:
-    print(f"❌ LangGraphAgent - Import failed: {e}")
-    print('💡 Try installing via: pip install "agentscope-runtime[langgraph]"')
-```
 
 ## Installation Options Explained
 
-This diagram visualizes installation options as a layered architecture, starting with the core runtime (agentscope-runtime) — which **includes AgentScope Framework and Sandbox dependencies** — at the base. Optional modules (e.g., LangGraph, Agno, AutoGen) stack atop the core, each adding specific functionality (e.g., tool execution, framework integrations) and requiring corresponding dependencies. See details about all installation options at [pyproject.toml](https://github.com/agentscope-ai/agentscope-runtime/blob/main/pyproject.toml).
+The core runtime (`agentscope-runtime`) includes AgentScope Framework and Sandbox dependencies. See details about all installation options at [pyproject.toml](https://github.com/agentscope-ai/agentscope-runtime/blob/main/pyproject.toml).
 
 | **Component**         | **Package**          | **Use-Case**  | **Dependencies**                                             |
 | --------------------- | -------------------- | ------------- | ------------------------------------------------------------ |
 | Core Runtime          | `agentscope-runtime` | Core runtime  | Minimal including AgentScope Framework and Sandbox Dependencies |
 | Development Tools     | `dev`                | Dev utilities | Testing, Linting, Docs                                       |
-| Agno Integration      | `agno`               | Agno          | Agno Framework                                               |
-| LangGraph Integration | `langgraph`          | LangGraph     | LangGraph Framework                                          |
-| AutoGen Integration   | `autogen`            | AutoGen       | AutoGen Framework                                            |
 

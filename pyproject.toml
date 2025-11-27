@@ -40,6 +40,7 @@ runtime-sandbox-mcp = "agentscope_runtime.sandbox.mcp_server:main"
 runtime-sandbox-server = "agentscope_runtime.sandbox.manager.server.app:main"
 runtime-sandbox-builder = "agentscope_runtime.sandbox.build:main"
 runtime-fc-deploy = "agentscope_runtime.engine.deployers.cli_fc_deploy:main"
+modelstudio-mcp-server = "agentscope_runtime.tools.cli.modelstudio_mcp_server:main"
 
 [project.optional-dependencies]
 dev = [
@@ -52,19 +53,9 @@ dev = [
     "fakeredis>=2.31.0",
     "sphinx-autoapi>=3.6.0",
     "pytest-mock>=3.15.1",
+    "sphinxcontrib-mermaid>=1.2.3",
 ]
 
-langgraph = [
-    "langgraph>=0.5.3",
-]
-
-agno = [
-    "agno>=2.0.0",
-]
-autogen = [
-    "autogen-agentchat>=0.7.4",
-    "autogen-ext[openai]>=0.7.4",
-]
 agentrun = [
     "alibabacloud-agentrun20250910>=2.0.1",
     "alibabacloud_tea_openapi>=0.4.0"
@@ -77,7 +68,7 @@ aliyun_tablestore_ext=[
 ]
 
 memory-ext = [
-    "reme-ai==0.1.9 ; python_full_version >= '3.12'",
+    "reme-ai>=0.2.0.2",
     "mem0ai>=0.1.117"
 ]
 
@@ -96,6 +87,16 @@ deployment = [
     "shortuuid>=1.0.13",
     "PyYAML",
     "oss2>=2.19.1"
+]
+
+tool = [
+    "dashscope>=1.25.0",
+    "alipay-sdk-python",
+    "cryptography",
+    "gunicorn>=20.0.0",
+    "starlette>=0.37.0",
+    "asgiref>=3.11.0",
+    "azure-cognitiveservices-speech>=1.47.0",
 ]
 
 sandbox = [

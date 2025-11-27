@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
-import asyncio
 import logging
 import types
-from contextlib import asynccontextmanager
-from typing import Optional, Any, Callable, List
+from typing import Optional, Callable, List
 
 import uvicorn
-from fastapi import FastAPI
 from pydantic import BaseModel
 
 from .base_app import BaseApp
@@ -43,6 +40,7 @@ class AgentApp(BaseApp):
         broker_url: Optional[str] = None,
         backend_url: Optional[str] = None,
         runner: Optional[Runner] = None,
+        enable_embedded_worker: bool = False,
         **kwargs,
     ):
         """
@@ -61,6 +59,7 @@ class AgentApp(BaseApp):
         self.after_finish = after_finish
         self.broker_url = broker_url
         self.backend_url = backend_url
+        self.enable_embedded_worker = enable_embedded_worker
 
         self._runner = runner
         self.custom_endpoints = []  # Store custom endpoints
@@ -79,33 +78,16 @@ class AgentApp(BaseApp):
         response_protocol = ResponseAPIDefaultAdapter()
         self.protocol_adapters = [a2a_protocol, response_protocol]
 
-        @asynccontextmanager
-        async def lifespan(app: FastAPI) -> Any:
-            """Manage the application lifespan."""
-            if hasattr(self, "before_start") and self.before_start:
-                if asyncio.iscoroutinefunction(self.before_start):
-                    await self.before_start(app, **getattr(self, "kwargs", {}))
-                else:
-                    self.before_start(app, **getattr(self, "kwargs", {}))
-            yield
-            if hasattr(self, "after_finish") and self.after_finish:
-                if asyncio.iscoroutinefunction(self.after_finish):
-                    await self.after_finish(app, **getattr(self, "kwargs", {}))
-                else:
-                    self.after_finish(app, **getattr(self, "kwargs", {}))
-
-        kwargs = {
+        self._app_kwargs = {
             "title": "Agent Service",
             "version": __version__,
             "description": "Production-ready Agent Service API",
-            "lifespan": lifespan,
             **kwargs,
         }
 
         super().__init__(
             broker_url=broker_url,
             backend_url=backend_url,
-            **kwargs,
         )
 
         # Store custom endpoints and tasks for deployment
@@ -167,7 +149,6 @@ class AgentApp(BaseApp):
         self,
         host="0.0.0.0",
         port=8090,
-        embed_task_processor=False,
         **kwargs,
     ):
         """
@@ -176,7 +157,6 @@ class AgentApp(BaseApp):
         Args:
             host: Host to bind to
             port: Port to bind to
-            embed_task_processor: Whether to embed task processor
             **kwargs: Additional keyword arguments
         """
         # Build runner
@@ -186,24 +166,7 @@ class AgentApp(BaseApp):
             logger.info(
                 "[AgentApp] Starting AgentApp with FastAPIAppFactory...",
             )
-
-            # Create FastAPI application using the factory
-            fastapi_app = FastAPIAppFactory.create_app(
-                runner=self._runner,
-                endpoint_path=self.endpoint_path,
-                request_model=self.request_model,
-                response_type=self.response_type,
-                stream=self.stream,
-                before_start=self.before_start,
-                after_finish=self.after_finish,
-                mode=DeploymentMode.DAEMON_THREAD,
-                protocol_adapters=self.protocol_adapters,
-                custom_endpoints=self.custom_endpoints,
-                broker_url=self.broker_url,
-                backend_url=self.backend_url,
-                enable_embedded_worker=embed_task_processor,
-                **kwargs,
-            )
+            fastapi_app = self.get_fastapi_app(**kwargs)
 
             logger.info(f"[AgentApp] Starting server on {host}:{port}")
 
@@ -219,6 +182,29 @@ class AgentApp(BaseApp):
         except Exception as e:
             logger.error(f"[AgentApp] Error while running: {e}")
             raise
+
+    def get_fastapi_app(self, **kwargs):
+        """Get the FastAPI application"""
+
+        self._build_runner()
+
+        return FastAPIAppFactory.create_app(
+            runner=self._runner,
+            endpoint_path=self.endpoint_path,
+            request_model=self.request_model,
+            response_type=self.response_type,
+            stream=self.stream,
+            before_start=self.before_start,
+            after_finish=self.after_finish,
+            mode=DeploymentMode.DAEMON_THREAD,
+            protocol_adapters=self.protocol_adapters,
+            custom_endpoints=self.custom_endpoints,
+            broker_url=self.broker_url,
+            backend_url=self.backend_url,
+            enable_embedded_worker=self.enable_embedded_worker,
+            app_kwargs=self._app_kwargs,
+            **kwargs,
+        )
 
     async def deploy(self, deployer: DeployManager, **kwargs):
         """Deploy the agent app with custom endpoints support"""

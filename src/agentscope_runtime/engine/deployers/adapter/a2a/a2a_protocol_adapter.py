@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import posixpath
 from typing import Callable
 
 from a2a.server.apps import A2AFastAPIApplication
@@ -9,12 +10,16 @@ from a2a.types import AgentCard, AgentCapabilities, AgentSkill
 from .a2a_agent_adapter import A2AExecutor
 from ..protocol_adapter import ProtocolAdapter
 
+A2A_JSON_RPC_URL = "/a2a"
+
 
 class A2AFastAPIDefaultAdapter(ProtocolAdapter):
     def __init__(self, agent_name, agent_description, **kwargs):
         super().__init__(**kwargs)
         self._agent_name = agent_name
         self._agent_description = agent_description
+        self._json_rpc_path = kwargs.get("json_rpc_path", A2A_JSON_RPC_URL)
+        self._base_url = kwargs.get("base_url")
 
     def add_endpoint(self, app, func: Callable, **kwargs):
         request_handler = DefaultRequestHandler(
@@ -32,7 +37,14 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             http_handler=request_handler,
         )
 
-        server.add_routes_to_app(app)
+        server.add_routes_to_app(app, rpc_url=self._json_rpc_path)
+
+    def _get_json_rpc_url(self) -> str:
+        base = self._base_url or "http://127.0.0.1:8000"
+        return posixpath.join(
+            base.rstrip("/"),
+            self._json_rpc_path.lstrip("/"),
+        )
 
     def get_agent_card(
         self,
@@ -62,6 +74,6 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             description=agent_description,
             default_input_modes=["text"],
             default_output_modes=["text"],
-            url="http://127.0.0.1:8090/",
+            url=self._get_json_rpc_url(),
             version="1.0.0",
         )

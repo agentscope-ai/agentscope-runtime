@@ -116,7 +116,7 @@ class OpenAIMessage(BaseModel):
     """The role of the messages author, should be in `user`,`system`,
     'assistant', 'tool'."""
 
-    content: Optional[Union[str, List[ChatCompletionMessage]]] = None
+    content: Optional[Union[List[ChatCompletionMessage], str]] = None
     """The contents of the message.
 
     Can be a string, a list of content parts for multimodal messages.
@@ -137,7 +137,7 @@ class OpenAIMessage(BaseModel):
         Extract the first text content from the message.
 
         :return: First text string found in the content, or None if no text
-        content
+            content.
         """
         if self.content is None:
             return None
@@ -158,7 +158,7 @@ class OpenAIMessage(BaseModel):
         Extract all image content (URLs or base64 data) from the message.
 
         :return: List of image URLs or base64 encoded strings found in the
-        content
+            content.
         """
         images = []
 
@@ -183,7 +183,7 @@ class OpenAIMessage(BaseModel):
         Extract all audio content (URLs or base64 data) from the message.
 
         :return: List of audio URLs or base64 encoded strings found in the
-        content
+            content.
         """
         audios = []
 
@@ -307,34 +307,34 @@ class ResponseFormat(BaseModel):
     """The type of response format being defined.
 
     - `text`: The default response format, which can be either text or any
-    value needed.
+        value needed.
     - `json_object`: Enables JSON mode, which guarantees the message the model
-      generates is valid JSON.
+        generates is valid JSON.
     - `json_schema`: Enables Structured Outputs which guarantees the model will
-      match your supplied JSON schema.
+        match your supplied JSON schema.
     """
 
     json_schema: Optional[JsonSchema] = None
     """The JSON schema for the response format."""
 
-    @model_validator(mode="before")
-    def validate_schema(self, values: dict) -> dict:
-        if not isinstance(values, dict) or "type" not in values:
-            raise ValueError(f"Json schema not valid with type {type(values)}")
-        format_type = values.get("type")
-        json_schema = values.get("json_schema")
-
-        if format_type in ["text", "json_object"] and json_schema is not None:
+    @model_validator(mode="after")
+    def validate_schema(self) -> "ResponseFormat":
+        if (
+            self.type
+            in [
+                "text",
+                "json_object",
+            ]
+            and self.json_schema is not None
+        ):
             raise ValueError(
-                f"Json schema is not allowed for type {format_type}",
+                f"Json schema is not allowed for type {self.type}",
             )
-
-        if format_type == "json_schema":
-            if json_schema is None:
-                raise ValueError(
-                    f"Json schema is required for type {format_type}",
-                )
-        return values
+        if self.type == "json_schema" and self.json_schema is None:
+            raise ValueError(
+                f"Json schema is required for type {self.type}",
+            )
+        return self
 
 
 class ToolChoiceInputFunction(BaseModel):
