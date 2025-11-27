@@ -148,8 +148,10 @@ def project_dir_extractor(
             if project_file:
                 break
 
-        except (AttributeError, TypeError):
-            pass
+        except (AttributeError, TypeError) as e:
+            logger.warning(
+                f"Ignore Attribute or Type error: {e}",
+            )
 
         caller_frame = caller_frame.f_back
 

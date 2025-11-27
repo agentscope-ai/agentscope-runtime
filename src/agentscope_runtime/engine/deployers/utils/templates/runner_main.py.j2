@@ -11,6 +11,14 @@ import asyncio
 from {{ module_name }} import {{ object_name }}
 from agentscope_runtime.engine.app import AgentApp
 
+# Type whitelist for argument parser to prevent code injection
+ALLOWED_TYPES = {
+    "int": int,
+    "str": str,
+    "float": float,
+    "bool": bool,
+}
+
 
 # Wrap the runner in an AgentApp
 app = AgentApp(
@@ -54,15 +62,15 @@ async def main():
 {% for param in extra_parameters %}
 {% set cli_arg = param.cli_name or '--' + param.name.replace('_', '-') %}
     parser.add_argument(
-        "{{ cli_arg }}",
+        {{ cli_arg | tojson }},
 {% if param.type == "bool" %}
         action="store_true",
         default={{ param.default | default(False) | lower }},
 {% else %}
-        type={{ param.type }},
+        type=ALLOWED_TYPES[{{ param.type | tojson }}],
         default={{ param.default | tojson if param.default is not none else 'None' }},
 {% endif %}
-        help="{{ param.help or param.name }}"
+        help={{ (param.help or param.name) | tojson }}
     )
 {% endfor %}
 {% endif %}

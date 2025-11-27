@@ -505,5 +505,6 @@ def get_bundle_entry_script(bundle_dir: Union[str, Path]) -> str:
             if script:
                 return script
         except json.JSONDecodeError:
+            # Ignore invalid JSON and fall back to default entry script
             pass
     return DEFAULT_ENTRYPOINT_FILE
