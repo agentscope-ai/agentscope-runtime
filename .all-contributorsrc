@@ -216,6 +216,16 @@
         "code",
         "design"
       ]
+    },
+    {
+      "login": "iSample",
+      "name": "iSample",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12894421?v=4",
+      "profile": "https://github.com/iSample",
+      "contributions": [
+        "code",
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
