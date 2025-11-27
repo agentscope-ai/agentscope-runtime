@@ -7,7 +7,7 @@ import aiofiles
 
 
 class OSSFileNotFoundError(Exception):
-    """当OSS中找不到指定文件时抛出的异常"""
+    """Exception raised when specified file is not found in OSS"""
 
 
 class OSSClient:
@@ -23,7 +23,7 @@ class OSSClient:
         if not endpoint:
             endpoint = os.environ.get("EDS_OSS_ENDPOINT")
         ak = os.environ.get("EDS_OSS_ACCESS_KEY_ID")
-        # 您的AccessKey Secret,
+        # Your AccessKey Secret
         sk = os.environ.get("EDS_OSS_ACCESS_KEY_SECRET")
         auth = oss2.Auth(ak, sk)
         self.__bucket__ = oss2.Bucket(auth, endpoint, bucket_name)
@@ -48,10 +48,10 @@ class OSSClient:
         expire: int = 3600 * 24 * 7,
     ) -> str:
         """
-        生成用于下载的预签名URL
-        :param file_name: 文件名（相对于bucket路径）
-        :param expire: 过期时间（秒）
-        :return: 预签名URL
+        Generate presigned URL for download
+        :param file_name: File name (relative to bucket path)
+        :param expire: Expiration time (seconds)
+        :return: Presigned URL
         """
         return self.__bucket__.sign_url(
             "GET",
@@ -66,20 +66,21 @@ class OSSClient:
         expire: int = 3600 * 1 * 1,
     ) -> str:
         """
-        上传字节数据到OSS并返回签名URL
+        Upload byte data to OSS and return signed URL
 
         Args:
-            data (bytes): 要上传的文件数据
-            file_name (str): 文件名
-            expire (int): 签名URL的过期时间（秒），默认1小时。
+            data (bytes): File data to upload
+            file_name (str): File name
+            expire (int): Expiration time for signed URL
+             (seconds), default 1 hour.
         Returns:
-            str: 签名的URL
+            str: Signed URL
         """
-        # 上传数据
+        # Upload data
         object_name = f"__mPLUG__/uploads/{file_name}"
         self.__bucket__.put_object(object_name, data)
 
-        # 生成签名URL
+        # Generate signed URL
         signed_url = self.__bucket__.sign_url("GET", object_name, expire)
         return signed_url
 
@@ -101,19 +102,20 @@ class OSSClient:
         expire: int = 3600 * 1 * 1,
     ) -> str:
         """
-        上传本地文件到OSS并返回签名URL。
+        Upload local file to OSS and return signed URL.
 
         Args:
-            filepath (str): 本地文件的完整路径。
-            filename (str): 上传到OSS的文件名。
-            expire (int): 签名URL的过期时间（秒），默认1小时。
+            filepath (str): Full path of local file.
+            filename (str): File name to upload to OSS.
+            expire (int): Expiration time for signed URL
+             (seconds), default 1 hour.
 
         Returns:
-            str: 文件的签名下载URL。
+            str: Signed download URL of the file.
         """
         remote_path = f"{self.oss_path}{filename}"
 
-        # 以二进制读模式打开本地文件并上传
+        # Open local file in binary read mode and upload
         with open(filepath, "rb") as file_obj:
             self.__bucket__.put_object(remote_path, file_obj)
 
@@ -121,7 +123,7 @@ class OSSClient:
         return signed_url
 
     def get_url(self, path: str, expire: int = 3600 * 90 * 24) -> str:
-        # 检查文件是否存在
+        # Check if file exists
         start_time = time.time()
         while (
             not self.__bucket__.object_exists(path)
@@ -142,7 +144,7 @@ class OSSClient:
         file_name: str,
         expire: int = 3600 * 24 * 1,
     ) -> str:
-        """异步版本的get_signal_url方法"""
+        """Async version of get_signal_url method"""
         loop = asyncio.get_event_loop()
         signed_url = await loop.run_in_executor(
             None,
@@ -159,10 +161,10 @@ class OSSClient:
         expire: int = 3600 * 24 * 7,
     ) -> str:
         """
-        异步版本的生成用于下载的预签名URL
-        :param file_name: 文件名（相对于bucket路径）
-        :param expire: 过期时间（秒）
-        :return: 预签名URL
+        Async version of generating presigned URL for download
+        :param file_name: File name (relative to bucket path)
+        :param expire: Expiration time (seconds)
+        :return: Presigned URL
         """
         loop = asyncio.get_event_loop()
         signed_url = await loop.run_in_executor(
@@ -181,16 +183,18 @@ class OSSClient:
         expire: int = 3600 * 1 * 1,
     ) -> str:
         """
-        异步版本的上传字节数据到OSS并返回签名URL
+        Async version of uploading byte data to OSS
+         and returning signed URL
 
         Args:
-            data (bytes): 要上传的文件数据
-            file_name (str): 文件名
-            expire (int): 签名URL的过期时间（秒），默认1小时。
+            data (bytes): File data to upload
+            file_name (str): File name
+            expire (int): Expiration time for signed URL
+             (seconds), default 1 hour.
         Returns:
-            str: 签名的URL
+            str: Signed URL
         """
-        # 上传数据
+        # Upload data
         object_name = f"__mPLUG__/uploads/{file_name}"
         loop = asyncio.get_event_loop()
 
@@ -201,7 +205,7 @@ class OSSClient:
             data,
         )
 
-        # 生成签名URL
+        # Generate signed URL
         signed_url = await loop.run_in_executor(
             None,
             self.__bucket__.sign_url,
@@ -217,7 +221,7 @@ class OSSClient:
         file_name: str,
         expire: int = 3600 * 1 * 1,
     ) -> str:
-        """异步版本的upload_local_and_sign方法"""
+        """Async version of upload_local_and_sign method"""
         remote_path = f"{self.oss_path}{file_name}"
         loop = asyncio.get_event_loop()
 
@@ -244,20 +248,21 @@ class OSSClient:
         expire: int = 3600 * 1 * 1,
     ) -> str:
         """
-        异步版本的上传本地文件到OSS并返回签名URL。
+        Async version of uploading local file to OSS and returning signed URL.
 
         Args:
-            filepath (str): 本地文件的完整路径。
-            filename (str): 上传到OSS的文件名。
-            expire (int): 签名URL的过期时间（秒），默认1小时。
+            filepath (str): Full path of local file.
+            filename (str): File name to upload to OSS.
+            expire (int): Expiration time for signed URL
+             (seconds), default 1 hour.
 
         Returns:
-            str: 文件的签名下载URL。
+            str: Signed download URL of the file.
         """
         remote_path = f"{self.oss_path}{filename}"
         loop = asyncio.get_event_loop()
 
-        # 使用aiofiles异步读取文件
+        # Use aiofiles to read file asynchronously
         async with aiofiles.open(filepath, "rb") as file_obj:
             file_data = await file_obj.read()
 
@@ -282,8 +287,8 @@ class OSSClient:
         path: str,
         expire: int = 3600 * 90 * 24,
     ) -> str:
-        """异步版本的get_url方法"""
-        # 检查文件是否存在
+        """Async version of get_url method"""
+        # Check if file exists
         start_time = time.time()
         loop = asyncio.get_event_loop()
 

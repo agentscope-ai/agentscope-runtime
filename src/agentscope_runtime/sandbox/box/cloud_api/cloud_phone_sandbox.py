@@ -320,9 +320,9 @@ class CloudPhoneSandbox(CloudSandbox):
 
     def _tool_send_file(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Send file to the cloud phone."""
-        # 云手机上的文件路径包括文件名
+        # File path on cloud phone includes filename
         source_file_path = arguments.get("source_file_path")
-        # 文件公网下载地址
+        # Public download URL of the file
         upload_url = arguments.get("upload_url")
 
         if not source_file_path or not upload_url:
@@ -446,7 +446,11 @@ class CloudPhoneSandbox(CloudSandbox):
         retry = 3
         while retry > 0:
             try:
-                logger.info("开始初始化云手机实例，尝试调用次数%s", retry)
+                logger.info(
+                    "Starting cloud phone instance initialization,"
+                    " attempt count: %s",
+                    retry,
+                )
                 manager = await asyncio.to_thread(
                     EdsInstanceManager,
                     instance_id,
@@ -480,12 +484,12 @@ class CloudPhoneSandbox(CloudSandbox):
         max_wait_time: int = 300,
         stability_check_duration: int = 4,
     ):
-        """异步等待手机设备就绪"""
+        """Asynchronously wait for phone device to be ready"""
         start_time = time.time()
         stable_start_time = None
         while True:
             try:
-                # 将同步的状态检查操作放到线程池中执行
+                # Execute synchronous status check operation in thread pool
                 method = self.instance_manager.eds_client.list_instance
                 total_count, next_token, devices_info = method(
                     instance_ids=[instance_id],
@@ -496,7 +500,8 @@ class CloudPhoneSandbox(CloudSandbox):
                     and devices_info[0].android_instance_status.lower()
                     == "running"
                 ):
-                    # 第一次检测到运行状态，开始稳定性检查
+                    # First time detecting running status,
+                    # start stability check
                     if stable_start_time is None:
                         stable_start_time = time.time()
                         print(
@@ -504,7 +509,8 @@ class CloudPhoneSandbox(CloudSandbox):
                             "starting stability check...",
                         )
 
-                    # 检查设备是否已稳定运行足够长时间
+                    # Check if device has been running stably
+                    # for sufficient duration
                     stable_duration = time.time() - stable_start_time
                     if stable_duration >= stability_check_duration:
                         print(
@@ -520,7 +526,7 @@ class CloudPhoneSandbox(CloudSandbox):
                     )
 
                 else:
-                    # 状态不是运行中，重置稳定性检查
+                    # Status is not running, reset stability check
                     if stable_start_time is not None:
                         print(
                             f"PHONE {instance_id} status changed, "
@@ -537,7 +543,7 @@ class CloudPhoneSandbox(CloudSandbox):
                         f"{current_status}, waiting...",
                     )
                     if current_status == "stopped":
-                        # 开机
+                        # Start device
                         print(
                             f"Equipment restart for instance_id {instance_id}",
                         )
@@ -555,7 +561,7 @@ class CloudPhoneSandbox(CloudSandbox):
                                 "Failed to start computer resource",
                             )
                     else:
-                        # 没查到设备状态，等待一会，重新查询
+                        # Device status not found, wait a bit and query again
                         print(
                             f"Equipment for instance_id {instance_id} unknown,"
                             " and wait",
@@ -566,7 +572,7 @@ class CloudPhoneSandbox(CloudSandbox):
                         )
                         time.sleep(2)
 
-                # 检查是否超时
+                # Check if timeout occurred
                 if time.time() - start_time > max_wait_time:
                     raise TimeoutError(
                         f"Phone {instance_id} failed to become ready "
@@ -586,7 +592,8 @@ class CloudPhoneSandbox(CloudSandbox):
         self._ensure_initialized()
         for _ in range(max_retry):
             screen_url = await self.instance_manager.get_screenshot_sdk_async()
-            return screen_url
+            if screen_url:
+                return screen_url
         return "Error"
 
     def get_screenshot_oss_phone(
@@ -596,7 +603,8 @@ class CloudPhoneSandbox(CloudSandbox):
         self._ensure_initialized()
         for _ in range(max_retry):
             screen_url = self.instance_manager.get_screenshot_sdk()
-            return screen_url
+            if screen_url:
+                return screen_url
         return "Error"
 
     def get_instance_manager(self, instance_id: str) -> Any:
@@ -604,7 +612,8 @@ class CloudPhoneSandbox(CloudSandbox):
         retry = 3
         while retry > 0:
             try:
-                # 使用ClientPool获取实例管理器，避免重复创建客户端连接
+                # Use ClientPool to get instance manager, avoid
+                # creating duplicate client connections
                 client_pool = getattr(self, "_client_pool", ClientPool())
                 manager = client_pool.get_instance_manager(instance_id)
                 manager.refresh_ticket()

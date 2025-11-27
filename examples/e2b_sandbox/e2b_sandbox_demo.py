@@ -115,7 +115,7 @@ async def test_e2b_sandbox_service():
             # Test basic operations
             result = sandbox.call_tool(
                 "run_shell_command",
-                {"command": "echo 'Hello from Cloud PC Api!'"},
+                {"command": "echo 'Hello from E2B!'"},
             )
             logger.info(f"Command result: {result}")
 

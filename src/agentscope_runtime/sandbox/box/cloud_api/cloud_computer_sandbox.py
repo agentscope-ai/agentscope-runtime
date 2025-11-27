@@ -50,7 +50,8 @@ class CloudComputerSandbox(CloudSandbox):
                 "CLOUD_COMPUTER_SCREENSHOT_DIR",
             )
         else:
-            # 获取当前文件所在目录，并在其下创建 screenshots 子目录
+            # Get the directory of the current file and create
+            # a screenshots subdirectory under it
             current_dir = os.path.dirname(os.path.abspath(__file__))
             self.screenshot_dir = os.path.join(
                 current_dir,
@@ -185,13 +186,13 @@ class CloudComputerSandbox(CloudSandbox):
         desktop_id: str,
         current_status: str,
     ) -> None:
-        """处理桌面不同状态的逻辑"""
+        """Handle logic for different desktop statuses"""
         if current_status == "stopped":
             self._start_desktop(desktop_id)
         elif current_status == "hibernated":
             self._wakeup_desktop(desktop_id)
         else:
-            # 没查到设备状态，等待一会，重新查询
+            # Device status not found, wait a bit and query again
             print(
                 f"Equipment for desktop_id {desktop_id} {current_status},"
                 " and wait",
@@ -203,7 +204,7 @@ class CloudComputerSandbox(CloudSandbox):
             time.sleep(2)
 
     def _start_desktop(self, desktop_id: str) -> None:
-        """启动桌面"""
+        """Start desktop"""
         print(f"Equipment restart for desktop_id {desktop_id}")
         logger.info(f"Equipment restart for desktop_id {desktop_id}")
         e_client = self.instance_manager.ecd_client
@@ -216,7 +217,7 @@ class CloudComputerSandbox(CloudSandbox):
             )
 
     def _wakeup_desktop(self, desktop_id: str) -> None:
-        """唤醒桌面"""
+        """Wake up desktop"""
         print(f"Equipment wakeup for desktop_id {desktop_id}")
         logger.info(f"Equipment wakeup for desktop_id {desktop_id}")
         e_client = self.instance_manager.ecd_client
@@ -234,7 +235,8 @@ class CloudComputerSandbox(CloudSandbox):
         max_wait_time: int = 300,
         stability_check_duration: int = 3,
     ):
-        """异步等待PC设备就绪，增加稳定性检查"""
+        """Asynchronously wait for PC device to be ready,
+        with stability check added"""
         start_time = time.time()
         stable_start_time = None
         ready_status = False
@@ -245,7 +247,8 @@ class CloudComputerSandbox(CloudSandbox):
                 )
 
                 if pc_info and pc_info[0].desktop_status.lower() == "running":
-                    # 第一次检测到运行状态，开始稳定性检查
+                    # First time detecting running status,
+                    # start stability check
                     if stable_start_time is None:
                         stable_start_time = time.time()
                         print(
@@ -253,7 +256,8 @@ class CloudComputerSandbox(CloudSandbox):
                             "starting stability check...",
                         )
 
-                    # 检查设备是否已稳定运行足够长时间
+                    # Check if device has been running
+                    # stably for sufficient duration
                     stable_duration = time.time() - stable_start_time
                     if stable_duration >= stability_check_duration:
                         print(
@@ -269,7 +273,7 @@ class CloudComputerSandbox(CloudSandbox):
                     )
 
                 else:
-                    # 状态不是运行中，重置稳定性检查
+                    # Status is not running, reset stability check
                     if stable_start_time is not None:
                         print(
                             f"PC {desktop_id} status changed, resetting"
@@ -287,10 +291,10 @@ class CloudComputerSandbox(CloudSandbox):
                         "waiting...",
                     )
 
-                    # 处理不同的桌面状态
+                    # Handle different desktop statuses
                     self._handle_desktop_status(desktop_id, current_status)
 
-                # 检查是否超时
+                # Check if timeout occurred
                 if time.time() - start_time > max_wait_time:
                     raise TimeoutError(
                         f"PC {desktop_id} failed to become ready within"
@@ -299,7 +303,7 @@ class CloudComputerSandbox(CloudSandbox):
 
             except Exception as e:
                 print(f"Error checking PC status for {desktop_id}: {e}")
-                # 出现异常时重置稳定性检查
+                # Reset stability check when exception occurs
                 stable_start_time = None
 
             time.sleep(3)
@@ -519,7 +523,7 @@ class CloudComputerSandbox(CloudSandbox):
             "error": result if hasattr(result, "error") else None,
         }
 
-    # 在 tool handlers 部分添加以下新工具方法
+    # Add the following new tool methods in the tool handlers section
 
     def _tool_write_file(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         file_path = arguments.get("file_path")
@@ -671,7 +675,7 @@ class CloudComputerSandbox(CloudSandbox):
                 )
                 if screen_base64:
                     return screen_base64
-            return "Error"  # 重试次数用完后返回错误
+            return "Error"  # Return error after retry attempts are exhausted
         except Exception as error:  # pylint: disable=broad-except
             logger.error("Failed to screenshot_base64 desktop %s", error)
             return "Error"
@@ -741,7 +745,9 @@ class CloudComputerSandbox(CloudSandbox):
         retry = 3
         while retry > 0:
             try:
-                # 使用ClientPool获取实例管理器，避免重复创建客户端连接
+                # Use ClientPool to get instance manager,
+                # avoid creating duplicate
+                # client connections
                 client_pool = getattr(self, "_client_pool", ClientPool())
                 manager = client_pool.get_instance_manager(desktop_id)
                 manager.refresh_aurh_code()

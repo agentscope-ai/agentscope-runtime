@@ -17,13 +17,15 @@ async def download_oss_image_and_save_return_base64(
     local_save_path: str,
 ) -> Optional[str]:
     """
-    根据OSS预签名URL下载图片，保存到本地，并返回Base64编码
-    :param oss_url: str, OSS图片的预签名URL
-    :param local_save_path: str, 本地保存路径（含文件名）
-    :return: str, Base64编码的图片数据
+    Download image from OSS presigned URL, save to local,
+     and return Base64 encoding
+    :param oss_url: str, Presigned URL of OSS image
+    :param local_save_path: str, Local save path
+    (including filename)
+    :return: str, Base64 encoded image data
     """
     try:
-        # 下载图片
+        # Download image
         async with aiohttp.ClientSession() as session:
             async with session.get(oss_url) as response:
                 if response.status != 200:
@@ -31,16 +33,16 @@ async def download_oss_image_and_save_return_base64(
                         f"Download failed with status code {response.status}",
                     )
 
-                # 确保目录存在
+                # Ensure directory exists
                 os.makedirs(os.path.dirname(local_save_path), exist_ok=True)
 
-                # 保存到本地
+                # Save to local
                 content = await response.read()
                 with open(local_save_path, "wb") as f:
                     f.write(content)
                 print(f"Image saved to {local_save_path}")
 
-        # 转换为Base64
+        # Convert to Base64
         with open(local_save_path, "rb") as image_file:
             encoded_str = base64.b64encode(image_file.read()).decode("utf-8")
 
@@ -58,7 +60,7 @@ async def get_image_size_from_url(image_url: str) -> tuple[int, int]:
             content = await response.read()
             image_data = BytesIO(content)
             with Image.open(image_data) as img:
-                return img.size  # 返回 (width, height)
+                return img.size  # Return (width, height)
 
 
 async def download_oss_image_and_save_async(
@@ -66,13 +68,15 @@ async def download_oss_image_and_save_async(
     local_save_path: str,
 ) -> str:
     """
-    根据OSS预签名URL下载图片，保存到本地，并返回Base64编码
-    :param oss_url: str, OSS图片的预签名URL
-    :param local_save_path: str, 本地保存路径（含文件名）
-    :return: str, Base64编码的图片数据
+    Download image from OSS presigned URL, save to local,
+     and return Base64 encoding
+    :param oss_url: str, Presigned URL of OSS image
+    :param local_save_path: str, Local save path
+     (including filename)
+    :return: str, Base64 encoded image data
     """
     try:
-        # 下载图片
+        # Download image
         async with aiohttp.ClientSession() as session:
             async with session.get(oss_url) as response:
                 if response.status != 200:
@@ -81,15 +85,15 @@ async def download_oss_image_and_save_async(
                     )
                 content = await response.read()
 
-        # 确保目录存在
+        # Ensure directory exists
         os.makedirs(os.path.dirname(local_save_path), exist_ok=True)
 
-        # 保存到本地
+        # Save to local
         with open(local_save_path, "wb") as f:
             f.write(content)
         logger.info(f"Image saved to {local_save_path}")
 
-        # 转换为Base64
+        # Convert to Base64
         with open(local_save_path, "rb") as image_file:
             encoded_str = base64.b64encode(
                 image_file.read(),
@@ -107,28 +111,31 @@ def download_oss_image_and_save(
     local_save_path: str,
 ) -> str:
     """
-    根据OSS预签名URL下载图片，保存到本地，并返回Base64编码（同步版本）
-    :param oss_url: str, OSS图片的预签名URL
-    :param local_save_path: str, 本地保存路径（含文件名）
-    :return: str, Base64编码的图片数据
+    Download image from OSS presigned URL, save to local,
+     and return Base64
+     encoding (synchronous version)
+    :param oss_url: str, Presigned URL of OSS image
+    :param local_save_path: str, Local save path
+    (including filename)
+    :return: str, Base64 encoded image data
     """
     try:
-        # 下载图片
+        # Download image
         response = requests.get(oss_url)
         if response.status_code != 200:
             raise RequestException(
                 f"Download failed with status code {response.status_code}",
             )
 
-        # 确保目录存在
+        # Ensure directory exists
         os.makedirs(os.path.dirname(local_save_path), exist_ok=True)
 
-        # 保存到本地
+        # Save to local
         with open(local_save_path, "wb") as f:
             f.write(response.content)
         logger.info(f"Image saved to {local_save_path}")
 
-        # 转换为Base64
+        # Convert to Base64
         with open(local_save_path, "rb") as image_file:
             encoded_str = base64.b64encode(image_file.read()).decode("utf-8")
 

@@ -30,15 +30,16 @@ execute_wait_time_: int = 3
 
 
 class CommandQueryError(Exception):
-    """命令查询状态错误异常"""
+    """Command query status error exception"""
 
 
 class InitError(Exception):
-    """初始化异常"""
+    """Initialization exception"""
 
 
 class ClientPool:
-    """客户端池管理器 - 单例模式管理共享客户端实例"""
+    """Client pool manager - singleton pattern
+    managing shared client instances"""
 
     _instance = None
     _lock = threading.Lock()
@@ -51,7 +52,7 @@ class ClientPool:
         return cls._instance
 
     def __init__(self):
-        # 使用双重检查锁定模式确保只初始化一次
+        # Use double-checked locking pattern to ensure initialization only once
         if not hasattr(self, "_initialized"):
             with self._lock:
                 if not hasattr(self, "_initialized"):
@@ -60,8 +61,8 @@ class ClientPool:
                     self._app_stream_client = None
                     self._instance_managers = (
                         {}
-                    )  # 按desktop_id缓存EcdInstanceManager
-                    # 使用不同的锁来避免死锁
+                    )  # Cache EcdInstanceManager by desktop_id
+                    # Use different locks to avoid deadlocks
                     self._ecd_lock = threading.Lock()
                     self._oss_lock = threading.Lock()
                     self._app_stream_lock = threading.Lock()
@@ -69,7 +70,7 @@ class ClientPool:
                     self._initialized = True
 
     def get_ecd_client(self) -> "EcdClient":
-        """获取共享的EcdClient实例"""
+        """Get shared EcdClient instance"""
         if self._ecd_client is None:
             with self._ecd_lock:
                 if self._ecd_client is None:
@@ -77,7 +78,7 @@ class ClientPool:
         return self._ecd_client
 
     def get_oss_client(self) -> OSSClient:
-        """获取共享的OSSClient实例"""
+        """Get shared OSSClient instance"""
         if self._oss_client is None:
             with self._oss_lock:
                 if self._oss_client is None:
@@ -89,26 +90,35 @@ class ClientPool:
     def get_app_stream_client(
         self,
     ) -> "AppStreamClient":
-        """获取AppStreamClient实例，每次调用都创建新的实例（非共享模式）"""
-        # 每次都创建新的AppStreamClient实例，不使用缓存
+        """Get AppStreamClient instance, create new
+        instance on each call (non-shared mode)"""
+        # Create new AppStreamClient instance each
+        # time, do not use cache
         return AppStreamClient()
 
-    def get_instance_manager(self, desktop_id: str) -> "EcdInstanceManager":
-        """获取指定desktop_id的EcdInstanceManager实例"""
-        # 先检查是否已存在，避免不必要的锁竞争
+    def get_instance_manager(
+        self,
+        desktop_id: str,
+    ) -> "EcdInstanceManager":
+        """Get EcdInstanceManager instance for
+        specified desktop_id"""
+        # Check if it already exists first to avoid
+        # unnecessary lock contention
         if desktop_id in self._instance_managers:
             return self._instance_managers[desktop_id]
 
-        # 在锁外预先获取客户端，避免死锁
+        # Pre-fetch clients outside lock to avoid deadlock
         ecd_client = self.get_ecd_client()
         oss_client = self.get_oss_client()
         app_stream_client = self.get_app_stream_client()
 
-        # 使用专门的锁管理实例管理器
+        # Use dedicated lock to manage instance managers
         with self._instance_manager_lock:
-            # 再次检查，防止在等待锁的过程中已经被其他线程创建
+            # Check again to prevent creation by another
+            # thread while waiting for lock
             if desktop_id not in self._instance_managers:
-                # 创建新的实例管理器，并传入共享的客户端
+                # Create new instance manager and pass
+                # in shared clients
                 manager = EcdInstanceManager(desktop_id)
                 manager.ecd_client = ecd_client
                 manager.oss_client = oss_client
@@ -118,7 +128,8 @@ class ClientPool:
 
 
 class EcdDeviceInfo(BaseModel):
-    # 云电脑设备信息查询字段返回类
+    # Cloud computer device information query
+    # field return class
     connection_status: str = (None,)
     desktop_id: str = (None,)
     desktop_status: str = (None,)
@@ -126,24 +137,27 @@ class EcdDeviceInfo(BaseModel):
 
 
 class CommandTimeoutError(Exception):
-    """命令执行超时异常"""
+    """Command execution timeout exception"""
 
 
 class CommandExecutionError(Exception):
-    """命令执行错误异常"""
+    """Command execution error exception"""
 
 
 class EcdClient:
     def __init__(self) -> None:
         config = open_api_models.Config(
-            access_key_id=os.environ.get("ECD_ALIBABA_CLOUD_ACCESS_KEY_ID"),
-            # 您的AccessKey Secret,
+            access_key_id=os.environ.get(
+                "ECD_ALIBABA_CLOUD_ACCESS_KEY_ID",
+            ),
+            # Your AccessKey Secret
             access_key_secret=os.environ.get(
                 "ECD_ALIBABA_CLOUD_ACCESS_KEY_SECRET",
             ),
         )
-        # Endpoint 请参考 https://api.aliyun.com/product/eds-aic
-        config.endpoint = os.environ.get("ECD_ALIBABA_CLOUD_ENDPOINT")
+        config.endpoint = os.environ.get(
+            "ECD_ALIBABA_CLOUD_ENDPOINT",
+        )
         self.__client__ = ecd20200930Client(config)
 
     def execute_command(
@@ -152,7 +166,7 @@ class EcdClient:
         command: str,
         timeout: int = 60,
     ) -> Tuple[str, str]:
-        # 执行命令
+        # Execute command
         run_command_request = ecd_20200930_models.RunCommandRequest(
             desktop_id=desktop_ids,
             command_content=command,
@@ -182,7 +196,7 @@ class EcdClient:
         desktop_ids: List[str],
         message_id: str,
     ) -> Any:
-        # 查询命令执行结果
+        # Query command execution result
         describe_invocations_request = (
             ecd_20200930_models.DescribeInvocationsRequest(
                 desktop_ids=desktop_ids,
@@ -227,7 +241,7 @@ class EcdClient:
             ):
                 slot_time = execute_wait_time_
             else:
-                slot_time = 3  # 默认值
+                slot_time = 3  # Default value
         slot_time = max(0.5, slot_time)
         timeout = slot_time + timeout
         if execute_id:
@@ -276,13 +290,13 @@ class EcdClient:
             ):
                 slot_time = execute_wait_time_
             else:
-                slot_time = 3  # 默认值
+                slot_time = 3  # Default value
         slot_time = max(0.5, slot_time)
         timeout = slot_time + timeout
         if execute_id:
             while timeout > 0:
                 logger.info("start wait execution")
-                await asyncio.sleep(slot_time)  # 使用 asyncio.sleep
+                await asyncio.sleep(slot_time)  # Use asyncio.sleep
                 logger.info("execution end")
                 msgs = self.query_execute_state(
                     [desktop_id],
@@ -569,26 +583,27 @@ class EcdInstanceManager:
 
     def init_resources(self) -> bool:
         if self._initialized:
-            # 获取新的auth_code
+            # Get new auth_code
             return self.refresh_aurh_code()
         try:
-            # 如果没有预设的客户端（通过ClientPool设置），则创建新的
+            # If no preset clients (set via ClientPool), create new ones
             if self.ecd_client is None:
                 self.ecd_client = EcdClient()
             if self.app_stream_client is None:
-                # 每次都创建新的AppStreamClient实例（非共享模式）
+                # Create new AppStreamClient instance
+                # each time (non-shared mode)
                 self.app_stream_client = AppStreamClient()
             if self.oss_client is None:
                 bucket_name = os.environ.get("EDS_OSS_BUCKET_NAME")
                 endpoint = os.environ.get("EDS_OSS_ENDPOINT")
                 self.oss_client = OSSClient(bucket_name, endpoint)
 
-            # 获取auth_code
+            # Get auth_code
             self.auth_code = self.app_stream_client.search_auth_code()
 
-            # 📝 验证 desktop_id 是否有效（可选）
+            # Verify desktop_id is valid (optional)
             if self.desktop_id and self.ecd_client:
-                # 验证设备是否存在和可用
+                # Verify device exists and is accessible
                 desktop_info = self.ecd_client.search_desktop_info(
                     [self.desktop_id],
                 )
@@ -598,10 +613,10 @@ class EcdInstanceManager:
                         f"or not accessible",
                     )
 
-            # 设置OSS endpoint
+            # Set OSS endpoint
             self.endpoint = os.environ.get("EDS_OSS_ENDPOINT")
 
-            # 🔑 配置参数
+            # Configuration parameters
             self.oss_ak = os.environ.get("EDS_OSS_ACCESS_KEY_ID")
             self.oss_sk = os.environ.get("EDS_OSS_ACCESS_KEY_SECRET")
             self.ratio = 1
@@ -615,43 +630,44 @@ class EcdInstanceManager:
             return False
 
     def refresh_aurh_code(self) -> bool:
-        # 获取新的auth_code
+        # Get new auth_code
         self.auth_code = self.app_stream_client.search_auth_code()
-        # 如果auth_code为空，返回False,否则返回True
+        # Return False if auth_code is empty, otherwise return True
         return bool(self.auth_code)
 
     async def refresh_aurh_code_async(self) -> bool:
-        # 获取新的auth_code
+        # Get new auth_code
         self.auth_code = await self.app_stream_client.search_auth_code_async()
         return bool(self.auth_code)
 
     async def init_resources_async(self) -> bool:
         if self._initialized:
-            # 获取新的auth_code
+            # Get new auth_code
             self.auth_code = (
                 await self.app_stream_client.search_auth_code_async()
             )
             return True
         try:
-            # 如果没有预设的客户端（通过ClientPool设置），则创建新的
+            # If no preset clients (set via ClientPool), create new ones
             if self.ecd_client is None:
                 self.ecd_client = EcdClient()
             if self.app_stream_client is None:
-                # 每次都创建新的AppStreamClient实例（非共享模式）
+                # Create new AppStreamClient instance
+                # each time (non-shared mode)
                 self.app_stream_client = AppStreamClient()
             if self.oss_client is None:
                 bucket_name = os.environ.get("EDS_OSS_BUCKET_NAME")
                 endpoint = os.environ.get("EDS_OSS_ENDPOINT")
                 self.oss_client = OSSClient(bucket_name, endpoint)
 
-            # 获取auth_code
+            # Get auth_code
             self.auth_code = (
                 await self.app_stream_client.search_auth_code_async()
             )
 
-            # 📝 验证 desktop_id 是否有效（可选）
+            # Verify desktop_id is valid (optional)
             if self.desktop_id and self.ecd_client:
-                # 验证设备是否存在和可用
+                # Verify device exists and is accessible
                 desktop_info = self.ecd_client.search_desktop_info(
                     [self.desktop_id],
                 )
@@ -661,10 +677,10 @@ class EcdInstanceManager:
                         f"or not accessible",
                     )
 
-            # 设置OSS endpoint
+            # Set OSS endpoint
             self.endpoint = os.environ.get("EDS_OSS_ENDPOINT")
 
-            # 🔑 配置参数
+            # Configuration parameters
             self.oss_ak = os.environ.get("EDS_OSS_ACCESS_KEY_ID")
             self.oss_sk = os.environ.get("EDS_OSS_ACCESS_KEY_SECRET")
             self.ratio = 1
@@ -683,15 +699,15 @@ class EcdInstanceManager:
         local_save_path: str,
     ) -> str:
         # local_file_name = f"{uuid.uuid4().hex}__screenshot"
-        logger.info("开始截图")
+        logger.info("Starting screenshot")
         save_path = f"C:/file/{local_file_name}"
         file_save_path = f"{local_file_name}.png"
         file_local_save_path = f"{save_path}.png"
         retry = 2
         while retry > 0:
             try:
-                # 截图
-                # 获取oss预签名url上传地址
+                # Take screenshot
+                # Get OSS presigned URL for upload
                 oss_signed_url = self.oss_client.get_signal_url(
                     f"{file_save_path}",
                 )
@@ -699,7 +715,7 @@ class EcdInstanceManager:
                     file_local_save_path,
                     oss_signed_url,
                 )
-                logger.debug(f"文件输出: {file_oss}")
+                logger.debug(f"File output: {file_oss}")
                 if "Traceback" in file_oss:
                     return ""
                 base64_image = ""
@@ -712,14 +728,19 @@ class EcdInstanceManager:
                         local_save_path,
                     )
                     if base64_image:
-                        logger.info("成功获取Base64图片数据")
+                        logger.info(
+                            "Successfully obtained Base64 image data",
+                        )
                         return base64_image
 
                 return f"data:image/png;base64,{base64_image}"
 
             except Exception as e:
                 retry -= 1
-                logger.warning(f"截图失败，重试中... {retry}次剩余，错误: {e}")
+                logger.warning(
+                    f"Screenshot failed, retrying... {retry} "
+                    f"attempts remaining, error: {e}",
+                )
                 time.sleep(2)
 
         return ""
@@ -730,15 +751,15 @@ class EcdInstanceManager:
         local_save_path: str,
     ) -> str:
         # local_file_name = f"{uuid.uuid4().hex}__screenshot"
-        logger.info("开始截图")
+        logger.info("Starting screenshot")
         save_path = f"C:/file/{local_file_name}"
         file_save_path = f"{local_file_name}.png"
         file_local_save_path = f"{save_path}.png"
         retry = 2
         while retry > 0:
             try:
-                # 截图
-                # 获取oss预签名url上传地址
+                # Take screenshot
+                # Get OSS presigned URL for upload
                 oss_signed_url = await self.oss_client.get_signal_url_async(
                     f"{file_save_path}",
                 )
@@ -746,7 +767,7 @@ class EcdInstanceManager:
                     file_local_save_path,
                     oss_signed_url,
                 )
-                logger.debug(f"文件输出: {file_oss}")
+                logger.debug(f"File output: {file_oss}")
                 if "Traceback" in file_oss:
                     return ""
                 base64_image = ""
@@ -759,14 +780,17 @@ class EcdInstanceManager:
                         local_save_path,
                     )
                     if base64_image:
-                        logger.info("成功获取Base64图片数据")
+                        logger.info("Successfully obtained Base64 image data")
                         return base64_image
 
                 return f"data:image/png;base64,{base64_image}"
 
             except Exception as e:
                 retry -= 1
-                logger.warning(f"截图失败，重试中... {retry}次剩余，错误: {e}")
+                logger.warning(
+                    f"Screenshot failed, retrying... {retry} "
+                    f"attempts remaining, error: {e}",
+                )
                 await asyncio.sleep(2)
 
         return ""
@@ -784,8 +808,8 @@ class EcdInstanceManager:
         retry = 3
         while retry > 0:
             try:
-                # 截图
-                # 获取oss预签名url上传地址
+                # Take screenshot
+                # Get OSS presigned URL for upload
                 oss_signed_url = self.oss_client.get_signal_url(
                     f"{file_save_path}",
                 )
@@ -804,11 +828,14 @@ class EcdInstanceManager:
                         local_save_path,
                     )
                     if file_oss_down:
-                        logger.info("成功获取图片数据")
+                        logger.info("Successfully obtained image data")
                         return file_oss_down
             except Exception as e:
                 retry -= 1
-                logger.warning(f"截图失败，重试中... {retry}次剩余，错误: {e}")
+                logger.warning(
+                    f"Screenshot failed, retrying... {retry}"
+                    f" attempts remaining, error: {e}",
+                )
                 time.sleep(2)
 
         return ""
@@ -825,8 +852,8 @@ class EcdInstanceManager:
         retry = 3
         while retry > 0:
             try:
-                # 截图
-                # 获取oss预签名url上传地址
+                # Take screenshot
+                # Get OSS presigned URL for upload
                 oss_signed_url = await self.oss_client.get_signal_url_async(
                     f"{file_save_path}",
                 )
@@ -845,11 +872,14 @@ class EcdInstanceManager:
                         local_save_path,
                     )
                     if file_oss_down:
-                        logger.info("成功获取图片数据")
+                        logger.info("Successfully obtained image data")
                         return file_oss_down
             except Exception as e:
                 retry -= 1
-                logger.warning(f"截图失败，重试中... {retry}次剩余，错误: {e}")
+                logger.warning(
+                    f"Screenshot failed, retrying... {retry} "
+                    f"attempts remaining, error: {e}",
+                )
                 await asyncio.sleep(2)
 
         return ""
@@ -862,8 +892,8 @@ class EcdInstanceManager:
         retry = 3
         while retry > 0:
             try:
-                # 截图
-                # 获取oss预签名url上传地址
+                # Take screenshot
+                # Get OSS presigned URL for upload
                 oss_signed_url = self.oss_client.get_signal_url(
                     f"{file_save_path}",
                 )
@@ -878,7 +908,10 @@ class EcdInstanceManager:
 
             except Exception as e:
                 retry -= 1
-                logger.warning(f"截图失败，重试中... {retry}次剩余，错误: {e}")
+                logger.warning(
+                    f"Screenshot failed, retrying... {retry} "
+                    f"attempts remaining, error: {e}",
+                )
                 time.sleep(2)
 
         return ""
@@ -891,8 +924,8 @@ class EcdInstanceManager:
         retry = 3
         while retry > 0:
             try:
-                # 截图
-                # 获取oss预签名url上传地址
+                # Take screenshot
+                # Get OSS presigned URL for upload
                 oss_signed_url = await self.oss_client.get_signal_url_async(
                     f"{file_save_path}",
                 )
@@ -907,7 +940,10 @@ class EcdInstanceManager:
 
             except Exception as e:
                 retry -= 1
-                logger.warning(f"截图失败，重试中... {retry}次剩余，错误: {e}")
+                logger.warning(
+                    f"Screenshot failed, retrying... {retry} "
+                    f"attempts remaining, error: {e}",
+                )
                 await asyncio.sleep(2)
 
         return ""
@@ -944,10 +980,10 @@ class EcdInstanceManager:
         slot_time: float = None,
         timeout: int = 30,
     ) -> Tuple[str, str]:
-        # 构建 Python 命令并进行 Base64 编码（使用 utf-16le）
+        # Build Python command and Base64 encode (using utf-16le)
         full_python_command = f'\npython -c "{code}"'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -966,10 +1002,10 @@ class EcdInstanceManager:
         slot_time: float = None,
         timeout: int = 30,
     ) -> Tuple[str, str]:
-        # 构建 Python 命令并进行 Base64 编码（使用 utf-16le）
+        # Build Python command and Base64 encode (using utf-16le)
         full_python_command = f'\npython -c "{code}"'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -988,29 +1024,31 @@ class EcdInstanceManager:
         content: str,
         encoding: str = "utf-8",
     ) -> Tuple[str, str]:
-        # 使用 repr() 处理内容，确保所有特殊字符都被正确转义
+        # Use repr() to process content, ensuring all special
+        # characters are properly escaped
         content_repr = repr(content)
 
-        # 使用三重引号包装print语句避免引号冲突
+        # Use triple quotes to wrap print statement
+        # to avoid quote conflicts
         script = f"""
 import os
 file_path = r'{file_path}'
 content = {content_repr}
 encoding = '{encoding}'
-# 创建目录（如果不存在）
+# Create directory if it doesn't exist
 directory = os.path.dirname(file_path)
 if directory and not os.path.exists(directory):
     os.makedirs(directory)
-# 写入文件
+# Write file
 with open(file_path, 'w', encoding=encoding) as f:
     f.write(content)
 print('File written successfully')
 """
 
-        # 使用 @' '@ 语法包装脚本以支持多行内容
+        # Use @' '@ syntax to wrap script to support multi-line content
         full_python_command = f"\npython -c @'{script}'@"
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1045,7 +1083,7 @@ except Exception as e:
 
         full_python_command = f'\npython -c "{script}"'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1077,7 +1115,7 @@ except Exception as e:
 
         full_python_command = f'\npython -c "{script}"'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1107,13 +1145,13 @@ os.remove(screenshot_file)
             screenshot_file=screenshot_file,
         )
 
-        # 转义双引号
+        # Escape double quotes
         # escaped_script = script.replace('"', '""')
 
-        # 构建 Python 命令并进行 Base64 编码（使用 utf-16le）
+        # Build Python command and Base64 encode (using utf-16le)
         full_python_command = f'\npython -c "{script}"'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1143,13 +1181,13 @@ os.remove(screenshot_file)
             screenshot_file=screenshot_file,
         )
 
-        # 转义双引号
+        # Escape double quotes
         # escaped_script = script.replace('"', '""')
 
-        # 构建 Python 命令并进行 Base64 编码（使用 utf-16le）
+        # Build Python command and Base64 encode (using utf-16le)
         full_python_command = f'\npython -c "{script}"'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1176,7 +1214,7 @@ def upload_file(signed_url, file_path):
         print(response.status_code)
     except Exception as e:
         print(e)
-# 确保目录存在
+# Ensure directory exists
 directory = os.path.dirname(file_save_path)
 if directory and not os.path.exists(directory):
     os.makedirs(directory)
@@ -1192,13 +1230,13 @@ os.remove(file_save_path)
             file_save_path=file_save_path,
         )
 
-        # 转义双引号
+        # Escape double quotes
         # escaped_script = script.replace('"', '""')
 
-        # 构建 Python 命令并进行 Base64 编码（使用 utf-16le）
+        # Build Python command and Base64 encode (using utf-16le)
         full_python_command = f'\npython -c "{script}"'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1225,7 +1263,7 @@ def upload_file(signed_url, file_path):
         print(response.status_code)
     except Exception as e:
         print(e)
-# 确保目录存在
+# Ensure directory exists
 directory = os.path.dirname(file_save_path)
 if directory and not os.path.exists(directory):
     os.makedirs(directory)
@@ -1241,13 +1279,13 @@ os.remove(file_save_path)
             file_save_path=file_save_path,
         )
 
-        # 转义双引号
+        # Escape double quotes
         # escaped_script = script.replace('"', '""')
 
-        # 构建 Python 命令并进行 Base64 编码（使用 utf-16le）
+        # Build Python command and Base64 encode (using utf-16le)
         full_python_command = f'\npython -c "{script}"'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1263,7 +1301,7 @@ import time
 import re
 pyautogui.FAILSAFE = False
 
-# 定义快捷键
+# Define shortcut key
 ctrl_key = '{self.ctrl_key}'
 
 def contains_chinese(text):
@@ -1275,21 +1313,21 @@ if 'Outlook' in name:
 
 print(f'Action: open {name}')
 
-# 打开 Windows 搜索栏
-pyautogui.press('win')  # 按下 Win 键
+# Open Windows search bar
+pyautogui.press('win')  # Press Win key
 time.sleep(0.3)
 pyperclip.copy(name)
 time.sleep(0.3)
 pyautogui.keyDown(ctrl_key)
 pyautogui.press('v')
 pyautogui.keyUp(ctrl_key)
-# 回车确认
+# Press Enter to confirm
 time.sleep(0.3)
 pyautogui.press('enter')
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1305,7 +1343,7 @@ import time
 import re
 pyautogui.FAILSAFE = False
 
-# 定义快捷键
+# Define shortcut key
 ctrl_key = '{self.ctrl_key}'
 
 def contains_chinese(text):
@@ -1317,21 +1355,21 @@ if 'Outlook' in name:
 
 print(f'Action: open {name}')
 
-# 打开 Windows 搜索栏
-pyautogui.press('win')  # 按下 Win 键
+# Open Windows search bar
+pyautogui.press('win')  # Press Win key
 time.sleep(0.3)
 pyperclip.copy(name)
 time.sleep(0.3)
 pyautogui.keyDown(ctrl_key)
 pyautogui.press('v')
 pyautogui.keyUp(ctrl_key)
-# 回车确认
+# Press Enter to confirm
 time.sleep(0.3)
 pyautogui.press('enter')
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1340,7 +1378,7 @@ pyautogui.press('enter')
         return await self.run_command_power_shell_async(command)
 
     def home(self) -> Tuple[str, str]:
-        # 显示桌面
+        # Show desktop
         script = """
 import pyautogui
 pyautogui.FAILSAFE = False
@@ -1353,7 +1391,7 @@ pyautogui.keyUp(key1)
         """
         full_python_command = f'\npython -c "{script}"'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1378,7 +1416,7 @@ mouse.click(Button.left, count=count)
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1406,7 +1444,7 @@ pyautogui.rightClick(x, y)
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1432,7 +1470,7 @@ pyautogui.keyUp(key1)
 
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1442,8 +1480,10 @@ pyautogui.keyUp(key1)
 
     def hotkey(self, key_list: List[str]) -> Tuple[str, str]:
         """
-        远程执行组合键操作（例如 ['ctrl', 'c']、['alt', 'f4'] 等）
-        :param key_list: 组合键列表，如 ['ctrl', 'a'], ['alt', 'f4']
+        Execute hotkey operation remotely
+        (e.g., ['ctrl', 'c'], ['alt', 'f4'], etc.)
+        :param key_list: Hotkey list,
+         e.g., ['ctrl', 'a'], ['alt', 'f4']
         """
         script = f"""
 import pyautogui
@@ -1453,7 +1493,7 @@ pyautogui.hotkey('{key_list[0]}', '{key_list[1]}')
 
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1470,7 +1510,7 @@ pyautogui.press('{key}')
 
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1509,7 +1549,7 @@ pyautogui.press('enter')
 
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1543,7 +1583,7 @@ print('Action: drag from (%d, %d) to (%d, %d)' % (x1, y1, x2, y2))
 
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1581,7 +1621,7 @@ pyautogui.press('enter')
 
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1636,7 +1676,7 @@ pyautogui.press('enter')
 
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1656,7 +1696,7 @@ pyautogui.moveTo(x,y)
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1675,7 +1715,7 @@ pyautogui.middleClick(x, y)
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1716,7 +1756,7 @@ if enter == 1:
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1765,7 +1805,7 @@ if enter == 1:
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1789,7 +1829,7 @@ print('scroll_pos')
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1806,7 +1846,7 @@ print('scroll')
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1815,7 +1855,7 @@ print('scroll')
         return self.run_command_power_shell(command)
 
     async def home_async(self) -> Tuple[str, str]:
-        # 显示桌面
+        # Show desktop
         script = """
 import pyautogui
 pyautogui.FAILSAFE = False
@@ -1828,7 +1868,7 @@ pyautogui.keyUp(key1)
         """
         full_python_command = f'\npython -c "{script}"'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1858,7 +1898,7 @@ mouse.click(Button.left, count=count)
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1886,7 +1926,7 @@ pyautogui.rightClick(x, y)
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1912,7 +1952,7 @@ pyautogui.keyUp(key1)
 
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1922,8 +1962,10 @@ pyautogui.keyUp(key1)
 
     async def hotkey_async(self, key_list: List[str]) -> Tuple[str, str]:
         """
-        远程执行组合键操作（例如 ['ctrl', 'c']、['alt', 'f4'] 等）
-        :param key_list: 组合键列表，如 ['ctrl', 'a'], ['alt', 'f4']
+        Execute hotkey operation remotely
+        (e.g., ['ctrl', 'c'], ['alt', 'f4'], etc.)
+        :param key_list: Hotkey list,
+        e.g., ['ctrl', 'a'], ['alt', 'f4']
         """
         script = f"""
 import pyautogui
@@ -1933,7 +1975,7 @@ pyautogui.hotkey('{key_list[0]}', '{key_list[1]}')
 
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1950,7 +1992,7 @@ pyautogui.press('{key}')
 
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -1989,7 +2031,7 @@ pyautogui.press('enter')
 
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -2023,7 +2065,7 @@ print('Action: drag from (%d, %d) to (%d, %d)' % (x1, y1, x2, y2))
 
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -2066,7 +2108,7 @@ pyautogui.press('enter')
 
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -2121,7 +2163,7 @@ pyautogui.press('enter')
 
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -2141,7 +2183,7 @@ pyautogui.moveTo(x,y)
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -2160,7 +2202,7 @@ pyautogui.middleClick(x, y)
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -2201,7 +2243,7 @@ if enter == 1:
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -2250,7 +2292,7 @@ if enter == 1:
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -2279,7 +2321,7 @@ print('scroll_pos')
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -2296,7 +2338,7 @@ print('scroll')
 """
         full_python_command = f'\npython -c @"{script}"@'
 
-        # 构造 PowerShell 命令
+        # Construct PowerShell command
         command = (
             r'$env:Path += ";C:\Program Files\Python310"'
             f"{full_python_command}"
@@ -2309,12 +2351,12 @@ class AppStreamClient:
     def __init__(self) -> None:
         config = open_api_models.Config(
             access_key_id=os.environ.get("ECD_ALIBABA_CLOUD_ACCESS_KEY_ID"),
-            # 您的AccessKey Secret,
+            # Your AccessKey Secret
             access_key_secret=os.environ.get(
                 "ECD_ALIBABA_CLOUD_ACCESS_KEY_SECRET",
             ),
         )
-        # Endpoint 请参考 https://api.aliyun.com/product/eds-aic
+        # Endpoint reference: https://api.aliyun.com/product/eds-aic
         config.endpoint = (
             f"appstream-center."
             f'{os.environ.get("ECD_APP_STREAM_REGION_ID")}.aliyuncs.com'
@@ -2322,7 +2364,7 @@ class AppStreamClient:
         self.__client__ = appstream_center20210218Client(config)
 
     async def search_auth_code_async(self) -> str:
-        """获取新的auth_code，每次调用都会生成新的认证码"""
+        """Get new auth_code, generates new authentication code on each call"""
         get_auth_code_request = (
             appstream_center_20210218_models.GetAuthCodeRequest(
                 end_user_id=os.environ.get("ECD_USERNAME"),
@@ -2330,20 +2372,22 @@ class AppStreamClient:
         )
         runtime = util_models.RuntimeOptions()
         try:
-            # 复制代码运行请自行打印 API 的返回值
+            # Copy code and run, print API return value yourself
             rep = await self.__client__.get_auth_code_with_options_async(
                 get_auth_code_request,
                 runtime,
             )
             auth_code = rep.body.auth_model.auth_code
-            logger.info(f"成功获取新的auth_code: {auth_code[:20]}...")
+            logger.info(
+                f"Successfully obtained new auth_code: {auth_code[:20]}...",
+            )
             return auth_code
         except Exception as error:
             logger.error(f"search authcode failed:{error}")
             return ""
 
     def search_auth_code(self) -> str:
-        """获取新的auth_code，每次调用都会生成新的认证码"""
+        """Get new auth_code, generates new authentication code on each call"""
         get_auth_code_request = (
             appstream_center_20210218_models.GetAuthCodeRequest(
                 end_user_id=os.environ.get("ECD_USERNAME"),
@@ -2351,13 +2395,15 @@ class AppStreamClient:
         )
         runtime = util_models.RuntimeOptions()
         try:
-            # 复制代码运行请自行打印 API 的返回值
+            # Copy code and run, print API return value yourself
             rep = self.__client__.get_auth_code_with_options(
                 get_auth_code_request,
                 runtime,
             )
             auth_code = rep.body.auth_model.auth_code
-            logger.info(f"成功获取新的auth_code: {auth_code[:20]}...")
+            logger.info(
+                f"Successfully obtained new auth_code: {auth_code[:20]}...",
+            )
             return auth_code
         except Exception as error:
             logger.error(f"search authcode failed:{error}")

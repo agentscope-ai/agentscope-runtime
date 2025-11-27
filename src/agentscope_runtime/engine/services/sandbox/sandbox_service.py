@@ -83,7 +83,9 @@ class SandboxService(ServiceWithLifecycleManager):
 
             box_type = SandboxType(env_type)
 
-            # 仅非 AgentBay 走 manager 池
+            # Excluded Types: AgentBay, Cloud_Computer, Cloud_Phone,
+            # and E2B sandbox types do not
+            # go through the standard manager pool
             if box_type not in (
                 SandboxType.AGENTBAY,
                 SandboxType.CLOUD_PHONE,

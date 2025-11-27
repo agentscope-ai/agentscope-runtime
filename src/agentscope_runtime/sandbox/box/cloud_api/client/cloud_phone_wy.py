@@ -22,15 +22,16 @@ execute_wait_time_: int = 5
 
 
 class ScreenshotError(Exception):
-    """截图相关操作异常"""
+    """Screenshot related operation exception"""
 
 
 class InitError(Exception):
-    """初始化异常"""
+    """Initialization exception"""
 
 
 class ClientPool:
-    """客户端池管理器 - 单例模式管理共享客户端实例"""
+    """Client pool manager - singleton pattern managing
+    shared client instances"""
 
     _instance = None
     _lock = threading.Lock()
@@ -44,20 +45,20 @@ class ClientPool:
         return cls._instance
 
     def __init__(self):
-        # 使用 hasattr 确保属性存在
+        # Use hasattr to ensure attribute exists
         if not getattr(self, "_initialized", False):
             self._eds_client = None
             self._oss_client = None
             self._client_lock = threading.Lock()
             self._instance_managers = {}
-            # 使用不同的锁来避免死锁
+            # Use different locks to avoid deadlocks
             self._eds_lock = threading.Lock()
             self._oss_lock = threading.Lock()
             self._instance_manager_lock = threading.Lock()
             self._initialized = True
 
     def get_eds_client(self) -> "EdsClient":
-        """获取共享的EdsClient实例"""
+        """Get shared EdsClient instance"""
         if self._eds_client is None:
             with self._eds_lock:
                 if self._eds_client is None:
@@ -65,7 +66,7 @@ class ClientPool:
         return self._eds_client
 
     def get_oss_client(self) -> OSSClient:
-        """获取共享的OSSClient实例"""
+        """Get shared OSSClient instance"""
         if self._oss_client is None:
             with self._oss_lock:
                 if self._oss_client is None:
@@ -74,21 +75,28 @@ class ClientPool:
                     self._oss_client = OSSClient(bucket_name, endpoint)
         return self._oss_client
 
-    def get_instance_manager(self, instance_id: str) -> "EdsInstanceManager":
-        """获取指定desktop_id的EcdInstanceManager实例"""
-        # 先检查是否已存在，避免不必要的锁竞争
+    def get_instance_manager(
+        self,
+        instance_id: str,
+    ) -> "EdsInstanceManager":
+        """Get EdsInstanceManager instance for
+        specified instance_id"""
+        # Check if it already exists first to avoid
+        # unnecessary lock contention
         if instance_id in self._instance_managers:
             return self._instance_managers[instance_id]
 
-        # 在锁外预先获取客户端，避免死锁
+        # Pre-fetch clients outside lock to avoid deadlock
         eds_client = self.get_eds_client()
         oss_client = self.get_oss_client()
 
-        # 使用专门的锁管理实例管理器
+        # Use dedicated lock to manage instance managers
         with self._instance_manager_lock:
-            # 再次检查，防止在等待锁的过程中已经被其他线程创建
+            # Check again to prevent creation by another thread
+            # while waiting for lock
             if instance_id not in self._instance_managers:
-                # 创建新的实例管理器，并传入共享的客户端
+                # Create new instance manager and pass
+                # in shared clients
                 manager = EdsInstanceManager(instance_id)
                 manager.eds_client = eds_client
                 manager.oss_client = oss_client
@@ -97,7 +105,7 @@ class ClientPool:
 
 
 class EdsDeviceInfo(BaseModel):
-    # 云手机设备信息查询字段返回类
+    # Cloud phone device information query field return class
     android_instance_name: str
     android_instance_id: str
     network_interface_ip: str
@@ -105,25 +113,32 @@ class EdsDeviceInfo(BaseModel):
 
 
 class CommandTimeoutError(Exception):
-    """命令执行超时时抛出的异常"""
+    """Exception raised when command execution times out"""
 
 
 # pylint: disable=too-many-public-methods
 class EdsClient:
     def __init__(self) -> None:
         config = open_api_models.Config(
-            access_key_id=os.environ.get("EDS_ALIBABA_CLOUD_ACCESS_KEY_ID"),
-            # 您的AccessKey Secret,
+            access_key_id=os.environ.get(
+                "EDS_ALIBABA_CLOUD_ACCESS_KEY_ID",
+            ),
+            # Your AccessKey Secret
             access_key_secret=os.environ.get(
                 "EDS_ALIBABA_CLOUD_ACCESS_KEY_SECRET",
             ),
         )
-        # Endpoint 请参考 https://api.aliyun.com/product/eds-aic
-        config.endpoint = os.environ.get("EDS_ALIBABA_CLOUD_ENDPOINT")
+        # Endpoint reference: https://api.aliyun.com/product/eds-aic
+        config.endpoint = os.environ.get(
+            "EDS_ALIBABA_CLOUD_ENDPOINT",
+        )
         config.read_timeout = 6000
         self._client = eds_aic20230930Client(config)
 
-    def client_ticket_create(self, instance_id: str) -> Tuple[str, str, str]:
+    def client_ticket_create(
+        self,
+        instance_id: str,
+    ) -> Tuple[str, str, str]:
         logger.info(f"[{instance_id}]: create ticket")
         batch_get_acp_connection_ticket_request = (
             eds_aic_20230930_models.BatchGetAcpConnectionTicketRequest(
@@ -134,7 +149,7 @@ class EdsClient:
         )
         runtime = util_models.RuntimeOptions()
         try:
-            # 复制代码运行请自行打印 API 的返回值
+            # Copy code and run, print API return value yourself
             rsp = self._client.batch_get_acp_connection_ticket_with_options(
                 batch_get_acp_connection_ticket_request,
                 runtime,
@@ -195,7 +210,7 @@ class EdsClient:
         timeout: int = 60,
     ) -> tuple[str, str | None]:
         logger.info(f"[{instance_ids}]: start to execute command: {command}")
-        # 执行命令
+        # Execute command
         run_command_request = eds_aic_20230930_models.RunCommandRequest(
             instance_ids=instance_ids,
             command_content=command,
@@ -228,7 +243,7 @@ class EdsClient:
         command: str,
         timeout: int = 60,
     ) -> tuple[str, str | None]:
-        # 执行命令
+        # Execute command
         run_command_request = eds_aic_20230930_models.RunCommandRequest(
             instance_ids=instance_ids,
             command_content=command,
@@ -258,7 +273,7 @@ class EdsClient:
         instance_ids: List[str],
         message_id: str,
     ) -> Any:
-        # 查询命令执行结果
+        # Query command execution result
         describe_invocations_request = (
             eds_aic_20230930_models.DescribeInvocationsRequest(
                 instance_ids=instance_ids,
@@ -303,7 +318,7 @@ class EdsClient:
             ):
                 slot_time = execute_wait_time_
             else:
-                slot_time = 3  # 默认值
+                slot_time = 3  # Default value
         slot_time = max(0.5, slot_time)
         timeout = slot_time + timeout
         if execute_id:
@@ -357,7 +372,7 @@ class EdsClient:
             ):
                 slot_time = execute_wait_time_
             else:
-                slot_time = 3  # 默认值
+                slot_time = 3  # Default value
         slot_time = max(0.5, slot_time)
         timeout = slot_time + timeout
         if execute_id:
@@ -400,7 +415,7 @@ class EdsClient:
         )
         runtime = util_models.RuntimeOptions()
         try:
-            # 复制代码运行请自行打印 API 的返回值
+            # Copy code and run, print API return value yourself
             rsp = await self._client.create_screenshot_with_options_async(
                 create_screenshot_request,
                 runtime,
@@ -427,7 +442,7 @@ class EdsClient:
         )
         runtime = util_models.RuntimeOptions()
         try:
-            # 复制代码运行请自行打印 API 的返回值
+            # Copy code and run, print API return value yourself
             rsp = self._client.create_screenshot_with_options(
                 create_screenshot_request,
                 runtime,
@@ -453,7 +468,7 @@ class EdsClient:
         while retry > 0:
             try:
                 await asyncio.sleep(1)
-                # 复制代码运行请自行打印 API 的返回值
+                # Copy code and run, print API return value yourself
                 rsp = await self._client.describe_tasks_with_options_async(
                     describe_tasks_request,
                     runtime,
@@ -482,7 +497,7 @@ class EdsClient:
         while retry > 0:
             try:
                 time.sleep(1)
-                # 复制代码运行请自行打印 API 的返回值
+                # Copy code and run, print API return value yourself
                 rsp = self._client.describe_tasks_with_options(
                     describe_tasks_request,
                     runtime,
@@ -926,7 +941,7 @@ class EdsClient:
 # pylint: disable=too-many-public-methods
 class EdsInstanceManager:
     def __init__(self, instance_id: str = ""):
-        # 📝 直接使用传入的 instance_id，移除本地缓存逻辑
+        # Directly use the passed instance_id, remove local cache logic
         if not instance_id:
             logger.error(
                 "instance_id is required for "
@@ -954,7 +969,7 @@ class EdsInstanceManager:
         self.app_instance_id = None
 
     def refresh_ticket(self):
-        logger.info(f"实例{self.instance_id}:refresh_ticket...")
+        logger.info(f"Instance {self.instance_id}: refreshing ticket...")
         (
             self.ticket,
             self.person_app_id,
@@ -963,10 +978,10 @@ class EdsInstanceManager:
             self.instance_id,
         )
         self._initialized = True
-        logger.info(f"实例{self.instance_id}:refresh_ticket成功")
+        logger.info(f"Instance {self.instance_id}: refresh_ticket succeeded")
 
     async def refresh_ticket_async(self):
-        logger.info(f"实例{self.instance_id}:refresh_ticket...")
+        logger.info(f"Instance {self.instance_id}: refreshing ticket...")
         (
             self.ticket,
             self.person_app_id,
@@ -975,33 +990,38 @@ class EdsInstanceManager:
             self.instance_id,
         )
         self._initialized = True
-        logger.info(f"实例{self.instance_id}:refresh_ticket成功")
+        logger.info(f"Instance {self.instance_id}: refresh_ticket succeeded")
 
     def _ensure_initialized(self):
         if not self._initialized:
-            logger.warning(f"实例{self.instance_id}:请先初始化")
+            logger.warning(
+                f"Instance {self.instance_id}: please initialize first",
+            )
             raise InitError(
                 "Manager not initialized. Call await initialize() first.",
             )
 
-    # 🚫 run_list_instance 函数已被移除，因为设备分配现在由 backend.py 统一管理
+    # run_list_instance function has been removed,
+    # device allocation is now managed by backend.py
 
     async def get_screenshot_sdk_async(self) -> str:
-        logger.info(f"实例{self.instance_id}:获取截图")
+        logger.info(f"Instance {self.instance_id}: getting screenshot")
         task_id = await self.eds_client.create_screenshot_async(
             self.instance_id,
         )
         logger.info(
-            f"实例{self.instance_id}:截图任务创建成功，task_id:{task_id}",
+            f"Instance {self.instance_id}: screenshot "
+            f"task created successfully, task_id:{task_id}",
         )
         result = await self.eds_client.describe_tasks_async([task_id])
         return result
 
     def get_screenshot_sdk(self) -> str:
-        logger.info(f"实例{self.instance_id}:获取截图")
+        logger.info(f"Instance {self.instance_id}: getting screenshot")
         task_id = self.eds_client.create_screenshot(self.instance_id)
         logger.info(
-            f"实例{self.instance_id}:截图任务创建成功，task_id:{task_id}",
+            f"Instance {self.instance_id}: screenshot "
+            f"task created successfully, task_id:{task_id}",
         )
         result = self.eds_client.describe_tasks([task_id])
         return result
@@ -1021,7 +1041,7 @@ class EdsInstanceManager:
         retry = 3
         while retry > 0:
             try:
-                logger.info(f"实例{self.instance_id}:获取截图")
+                logger.info(f"Instance {self.instance_id}: getting screenshot")
                 (
                     status,
                     output,
@@ -1031,7 +1051,9 @@ class EdsInstanceManager:
                     f"&& md5sum {mobile_screen_file_path}",
                 )
                 logger.info(
-                    f"实例{self.instance_id}:获取截图{status}{output},开始上传oss",
+                    f"Instance {self.instance_id}: "
+                    f"screenshot {status}{output},"
+                    f" starting OSS upload",
                 )
                 await self.eds_client.run_command_with_wait_async(
                     self.instance_id,
@@ -1043,7 +1065,9 @@ class EdsInstanceManager:
                     des_oss_sub_path,
                 )
                 logger.info(
-                    f"实例{self.instance_id}:获取截图成功{screen_url}" f",开始删除手机文件",
+                    f"Instance {self.instance_id}: screenshot"
+                    f" succeeded {screen_url}"
+                    f", starting to delete phone file",
                 )
                 await self.eds_client.execute_command_async(
                     [self.instance_id],
@@ -1076,14 +1100,16 @@ class EdsInstanceManager:
         retry = 3
         while retry > 0:
             try:
-                logger.info(f"实例{self.instance_id}:获取截图")
+                logger.info(f"Instance {self.instance_id}: getting screenshot")
                 status, output = self.eds_client.run_command_with_wait(
                     self.instance_id,
                     f"screencap {mobile_screen_file_path} "
                     f"&& md5sum {mobile_screen_file_path}",
                 )
                 logger.info(
-                    f"实例{self.instance_id}:获取截图{status}{output},开始上传oss",
+                    f"Instance {self.instance_id}: "
+                    f"screenshot {status}{output},"
+                    f" starting OSS upload",
                 )
                 self.eds_client.run_command_with_wait(
                     self.instance_id,
@@ -1095,7 +1121,8 @@ class EdsInstanceManager:
                     des_oss_sub_path,
                 )
                 logger.info(
-                    f"实例{self.instance_id}:获取截图成功{screen_url}" f",开始删除手机文件",
+                    f"Instance {self.instance_id}: screenshot succeeded"
+                    f" {screen_url}, starting to delete phone file",
                 )
                 self.eds_client.execute_command(
                     [self.instance_id],
@@ -1142,25 +1169,26 @@ class EdsInstanceManager:
             f"input swipe {x} {y} {x} {y} {time_ms}",
         )
 
-    def download_and_install_apk(
+    def download_set_apk(
         self,
         oss_url: str,
         apk_name: str,
     ) -> tuple[bool, str]:
         """
-        从OSS地址下载APK文件并安装
+        Download APK file from OSS URL and install
 
         Args:
-            oss_url (str): APK文件的OSS下载地址
-            apk_name (str): APK文件名
+            oss_url (str): OSS download URL of APK file
+            apk_name (str): APK file name
 
         Returns:
-            tuple: (status, response) 安装状态和响应信息
+            tuple: (status, response) Installation
+            status and response information
         """
-        # 下载APK文件到云手机
+        # Download APK file to cloud phone
         download_path = f"/data/local/tmp/{apk_name}"
         # download_command = f"curl -o {download_path} {oss_url}"
-        # 合并下载和安装命令，使用分号分隔
+        # Combine download and install commands, separated by semicolon
         combined_command = (
             f"curl -o {download_path} {oss_url} && pm install {download_path}"
         )
@@ -1172,16 +1200,21 @@ class EdsInstanceManager:
             )
 
             if not status:
-                return False, f"下载或安装失败: {rsp or '未知错误'}"
+                return (
+                    False,
+                    f"Download or installation failed"
+                    f": {rsp or 'Unknown error'}",
+                )
 
-            # 判断安装是否成功（检查输出中是否包含Success）
+            # Check if installation succeeded
+            # (check if output contains Success)
             if rsp and "Success" in rsp:
                 return True, rsp
             else:
-                return False, f"安装失败: {rsp or '未知错误'}"
+                return False, f"Installation failed: {rsp or 'Unknown error'}"
 
         except Exception as e:
-            return False, f"下载并安装APK时出错: {str(e)}"
+            return False, f"Error downloading and installing APK: {str(e)}"
 
     def check_and_setup_app(
         self,
@@ -1198,12 +1231,16 @@ class EdsInstanceManager:
 
     def type(self, text: str) -> str | None:
         time_start = time.time()
-        # 转义文本内容
-        escaped_text = text.replace('"', '\\"').replace("'", "\\'")
+        # Escape text content
+        escaped_text = text.replace('"', '\\"')
+        escaped_text = escaped_text.replace("'", "\\'")
 
-        # 组合完整命令：检查输入法 -> 安装ADBKeyboard(如需要) ->
-        # 启用并设置ADBKeyboard -> 发送文本 -> 禁用ADBKeyboard
-        # 注意：这里简化处理，假设ADBKeyboard已经安装
+        # Combine complete command: check input method ->
+        # install ADBKeyboard (if needed) ->
+        # enable and set ADBKeyboard -> send text ->
+        # disable ADBKeyboard
+        # Note: Simplified handling here, assuming ADBKeyboard
+        # is already installed
         combined_command = (
             f"ime enable com.android.adbkeyboard/.AdbIME && "
             f"ime set com.android.adbkeyboard/.AdbIME && "
@@ -1219,7 +1256,7 @@ class EdsInstanceManager:
             slot_time=0.5,
         )
         print(f"{status}{rsp}")
-        print(f"输入文字耗时：{time.time() - time_start}")
+        print(f"Text input time: {time.time() - time_start}")
         return rsp
 
     def slide(
@@ -1306,25 +1343,26 @@ class EdsInstanceManager:
             f"input swipe {x} {y} {x} {y} {time_ms}",
         )
 
-    async def download_and_install_apk_async(
+    async def download_set_apk_async(
         self,
         oss_url: str,
         apk_name: str,
     ) -> tuple[bool, str]:
         """
-        从OSS地址下载APK文件并安装
+        Download APK file from OSS URL and install
 
         Args:
-            oss_url (str): APK文件的OSS下载地址
-            apk_name (str): APK文件名
+            oss_url (str): OSS download URL of APK file
+            apk_name (str): APK file name
 
         Returns:
-            tuple: (status, response) 安装状态和响应信息
+            tuple: (status, response) Installation status and
+             response information
         """
-        # 下载APK文件到云手机
+        # Download APK file to cloud phone
         download_path = f"/data/local/tmp/{apk_name}"
         # download_command = f"curl -o {download_path} {oss_url}"
-        # 合并下载和安装命令，使用分号分隔
+        # Combine download and install commands, separated by semicolon
         combined_command = (
             f"curl -o {download_path} {oss_url} && pm install {download_path}"
         )
@@ -1336,16 +1374,21 @@ class EdsInstanceManager:
             )
 
             if not status:
-                return False, f"下载或安装失败: {rsp or '未知错误'}"
+                return (
+                    False,
+                    f"Download or installation failed:"
+                    f" {rsp or 'Unknown error'}",
+                )
 
-            # 判断安装是否成功（检查输出中是否包含Success）
+            # Check if installation succeeded
+            # (check if output contains Success)
             if rsp and "Success" in rsp:
                 return True, rsp
             else:
-                return False, f"安装失败: {rsp or '未知错误'}"
+                return False, f"Installation failed: {rsp or 'Unknown error'}"
 
         except Exception as e:
-            return False, f"下载并安装APK时出错: {str(e)}"
+            return False, f"Error downloading and installing APK: {str(e)}"
 
     async def check_and_setup_app_async(
         self,
@@ -1355,22 +1398,26 @@ class EdsInstanceManager:
         if internal_oss_url is None or app_name is None:
             return False, "param is empty"
 
-        status_in, rsp_in = await self.download_and_install_apk_async(
+        status_in, rsp_in = await self.download_set_apk_async(
             internal_oss_url,
             app_name,
         )
 
-        # 返回原来的输入法ID，以便后续恢复
+        # Return original input method ID for later restoration
         return status_in, rsp_in
 
     async def type_async(self, text: str) -> str | None:
         time_start = time.time()
-        # 转义文本内容
-        escaped_text = text.replace('"', '\\"').replace("'", "\\'")
+        # Escape text content
+        escaped_text = text.replace('"', '\\"')
+        escaped_text = escaped_text.replace("'", "\\'")
 
-        # 组合完整命令：检查输入法 -> 安装ADBKeyboard(如需要) ->
-        # 启用并设置ADBKeyboard -> 发送文本 -> 禁用ADBKeyboard
-        # 注意：这里简化处理，假设ADBKeyboard已经安装
+        # Combine complete command: check input method ->
+        # install ADBKeyboard (if needed) ->
+        # enable and set ADBKeyboard -> send text ->
+        # disable ADBKeyboard
+        # Note: Simplified handling here, assuming ADBKeyboard
+        # is already installed
         combined_command = (
             f"ime enable com.android.adbkeyboard/.AdbIME && "
             f"ime set com.android.adbkeyboard/.AdbIME && "
@@ -1386,7 +1433,7 @@ class EdsInstanceManager:
             slot_time=0.5,
         )
         print(f"{status}{rsp}")
-        print(f"输入文字耗时：{time.time() - time_start}")
+        print(f"Text input time: {time.time() - time_start}")
         return rsp
 
     async def slide_async(
@@ -1489,7 +1536,8 @@ class EdsInstanceManager:
         )
 
     def remove_file(self, file_path: str) -> tuple[bool, str | None]:
-        # 使用 rm 命令删除文件，-r 递归删除目录，-f 强制删除
+        # Use rm command to delete file, -r recursively
+        # delete directory, -f force delete
         command = f"rm -rf '{file_path}'"
 
         return self.eds_client.run_command_with_wait(
@@ -1501,7 +1549,8 @@ class EdsInstanceManager:
         self,
         file_path: str,
     ) -> tuple[bool, str | None]:
-        # 使用 rm 命令删除文件，-r 递归删除目录，-f 强制删除
+        # Use rm command to delete file, -r recursively
+        # delete directory, -f force delete
         command = f"rm -rf '{file_path}'"
 
         return await self.eds_client.run_command_with_wait_async(
