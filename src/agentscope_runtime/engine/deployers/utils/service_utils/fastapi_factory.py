@@ -665,8 +665,17 @@ class FastAPIAppFactory:
 
     @staticmethod
     def _create_handler_wrapper(handler: Callable):
-        """Create a wrapper for a handler that handles asynchronous or
-        synchronous execution.
+        """Create a wrapper for a handler that preserves function signature.
+
+        This wrapper maintains the handler's signature to enable FastAPI's
+        automatic parameter parsing and dependency injection. For async handlers,
+        it returns an async wrapper; for sync handlers, it returns a sync wrapper.
+
+        Args:
+            handler: The handler function to wrap
+
+        Returns:
+            A wrapped handler that preserves the original function signature
         """
 
         is_awaitable = inspect.iscoroutinefunction(handler)
