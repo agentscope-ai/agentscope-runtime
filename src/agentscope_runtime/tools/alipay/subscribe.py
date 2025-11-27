@@ -16,7 +16,6 @@ from ..base import Tool
 
 
 try:
-    # subscribe related info
     from alipay.aop.api.request.AlipayAipaySubscribeStatusCheckRequest import (
         AlipayAipaySubscribeStatusCheckRequest,
     )
@@ -39,8 +38,6 @@ try:
     ALIPAY_SDK_AVAILABLE = True
 except ImportError:
     ALIPAY_SDK_AVAILABLE = False
-
-    # subscribe related placeholder
     AlipayAipaySubscribeStatusCheckRequest: Optional[Type[Any]] = None
     AlipayAipaySubscribePackageInitializeRequest: Optional[Type[Any]] = None
     AlipayAipaySubscribeTimesSaveRequest: Optional[Type[Any]] = None

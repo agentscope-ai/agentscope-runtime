@@ -60,7 +60,6 @@ try:
     ALIPAY_SDK_AVAILABLE = True
 except ImportError:
     ALIPAY_SDK_AVAILABLE = False
-    # type safe placeholder
     AlipayTradeWapPayRequest: Optional[Type[Any]] = None
     AlipayTradePagePayRequest: Optional[Type[Any]] = None
     AlipayTradeQueryRequest: Optional[Type[Any]] = None
