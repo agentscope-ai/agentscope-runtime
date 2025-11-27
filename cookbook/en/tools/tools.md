@@ -74,7 +74,7 @@ Use this pattern for every custom tool: define Pydantic models, extend `Tool`, i
 
 ## AgentScope Integration Example
 
-We use `tool_adapter` to add tools to AgentScope's `Toolkit`:
+We use `agentscope_tool_adapter` to add tools to AgentScope's `Toolkit`:
 
 ```python
 import asyncio
@@ -87,42 +87,18 @@ from agentscope.tool import Toolkit
 from agentscope.message import Msg
 
 from agentscope_runtime.tools.searches import (
-    ModelstudioSearch,
+    ModelstudioSearchLite,
     SearchInput,
     SearchOptions,
 )
-from agentscope_runtime.adapters.agentscope.tool import tool_adapter
+from agentscope_runtime.adapters.agentscope.tool import agentscope_tool_adapter
 
-search_tool = ModelstudioSearch()
-
-
-@tool_adapter(description=search_tool.description)
-def modelstudio_search_tool(
-    messages: list[dict],
-    search_options: dict | None = None,
-    search_timeout: int | None = None,
-    _type: str | None = None,
-):
-    payload_kwargs = {
-        "messages": messages,
-        "search_options": SearchOptions(**(search_options or {})),
-    }
-    if search_timeout is not None:
-        payload_kwargs["search_timeout"] = search_timeout
-    if _type is not None:
-        payload_kwargs["type"] = _type
-
-    payload = SearchInput(**payload_kwargs)
-    result = search_tool.run(
-        payload,
-        user_id=os.environ["MODELSTUDIO_USER_ID"],
-    )
-    return ModelstudioSearch.return_value_as_string(result)
+search_tool = ModelstudioSearchLite()
+search_tool = agentscope_tool_adapter(search_tool)
 
 
 toolkit = Toolkit()
-
-toolkit.register_tool_function(modelstudio_search_tool)
+toolkit.tools[search_tool.name] = search_tool
 
 agent = ReActAgent(
     name="Friday",
@@ -150,7 +126,10 @@ if __name__ == "__main__":
 
 ## LangGraph Integration Example
 
-To reproduce the “Apply to existing LangGraph project” flow, wrap the tool as a LangChain `StructuredTool`, bind it to a model, and wire it into a LangGraph workflow. The tool schema comes directly from the tool’s input model, so tool calls remain type-safe.
+To reproduce the “Apply to existing LangGraph project” flow, wrap the tool as a Langgraph Node
+by `LanggraphNodeAdapter`, and bind it to a model, and wire it into a LangGraph workflow.
+
+The tool schema comes directly from the tool’s input model, so tool calls remain type-safe.
 
 ```python
 import os
@@ -161,47 +140,28 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import START, END, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
 
-from agentscope_runtime.common.tools.searches import (
-    ModelstudioSearch,
+from agentscope_runtime.tools.searches import (
+    ModelstudioSearchLite,
     SearchInput,
     SearchOptions,
 )
 
-search_tool = ModelstudioSearch()
+from agentscope_runtime.adapters.langgraph.tool import LanggraphNodeAdapter
+search_tool = ModelstudioSearchLite()
 
-
-def search_tool_func(
-    messages: list[dict],
-    search_options: dict | None = None,
-    search_timeout: int | None = None,
-    type: str | None = None,
-):
-    kwargs = {
-        "messages": messages,
-        "search_options": SearchOptions(**(search_options or {})),
-    }
-    if search_timeout is not None:
-        kwargs["search_timeout"] = search_timeout
-    if type is not None:
-        kwargs["type"] = type
-    result = search_tool.run(
-        SearchInput(**kwargs),
-        user_id=os.environ["MODELSTUDIO_USER_ID"],
-    )
-    return ModelstudioSearch.return_value_as_string(result)
-
-
-search_tool = StructuredTool.from_function(
-    func=search_tool_func,
-    name=search_tool.name,
-    description=search_tool.description,
+tool_node = LanggraphNodeAdapter(
+    [
+        ModelstudioSearchLite(),
+    ],
 )
+
+api_key = os.getenv("DASHSCOPE_API_KEY")
 
 llm = ChatOpenAI(
     model="qwen-turbo",
     openai_api_key=os.environ["DASHSCOPE_API_KEY"],
     openai_api_base="https://dashscope.aliyuncs.com/compatible-mode/v1",
-).bind_tools([search_tool])
+).bind_tools(tool_node.tool_schemas)
 
 
 def should_continue(state: MessagesState):
@@ -227,6 +187,45 @@ final_state = app.invoke(
     {"messages": [HumanMessage(content="Give me the latest Hangzhou news.")]}
 )
 print(final_state["messages"][-1].content)
+```
+
+## AutoGen Integration Example
+
+We use `AutogenToolAdapter` to convert our tool to AutogenTool:
+
+```python
+import asyncio
+from agentscope_runtime.tools.searches import ModelstudioSearchLite
+from agentscope_runtime.adapters.autogen.tool import AutogenToolAdapter
+from autogen_ext.models.openai import OpenAIChatCompletionClient
+from autogen_agentchat.agents import AssistantAgent
+from autogen_agentchat.messages import TextMessage
+from autogen_core import CancellationToken
+
+async def main():
+    # Create the search tool
+    search_tool = ModelstudioSearchLite()
+
+    # Create the autogen tool adapter
+    search_tool = AutogenToolAdapter(search_tool)
+
+    # Create an agents with the search tool
+    model = OpenAIChatCompletionClient(model="gpt-4")
+    agents = AssistantAgent(
+        "assistant",
+        tools=[search_tool],
+        model_client=model,
+    )
+
+    # Use the agents
+    response = await agents.on_messages(
+        [TextMessage(content="What's the weather in Beijing?",
+        source="user")],
+        CancellationToken(),
+    )
+    print(response.chat_message)
+
+asyncio.run(main())
 ```
 
 ## Using Tools inside Agents
