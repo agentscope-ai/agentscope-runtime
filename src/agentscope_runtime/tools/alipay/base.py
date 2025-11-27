@@ -24,6 +24,24 @@ from typing import Optional, Any, Type, Dict
 from dotenv import load_dotenv
 from ..utils.crypto_utils import ensure_pkcs1_format
 
+try:
+    from alipay.aop.api.DefaultAlipayClient import (
+        DefaultAlipayClient,
+    )
+    from alipay.aop.api.AlipayClientConfig import (
+        AlipayClientConfig,
+    )
+    from alipay.aop.api.domain.ExtendParams import (
+        ExtendParams,
+    )
+
+    ALIPAY_SDK_AVAILABLE = True
+except ImportError:
+    ALIPAY_SDK_AVAILABLE = False
+    DefaultAlipayClient: Optional[Type[Any]] = None
+    AlipayClientConfig: Optional[Type[Any]] = None
+    ExtendParams: Optional[Type[Any]] = None
+
 logger = logging.getLogger(__name__)
 
 load_dotenv()
@@ -51,24 +69,6 @@ X_AGENT_CHANNEL = "bailian_adk_1.0.0"
 
 
 # Unified Alipay SDK import and availability check
-try:
-    from alipay.aop.api.DefaultAlipayClient import (
-        DefaultAlipayClient,
-    )
-    from alipay.aop.api.AlipayClientConfig import (
-        AlipayClientConfig,
-    )
-    from alipay.aop.api.domain.ExtendParams import (
-        ExtendParams,
-    )
-
-    ALIPAY_SDK_AVAILABLE = True
-except ImportError:
-    ALIPAY_SDK_AVAILABLE = False
-    # Type-safe placeholders
-    DefaultAlipayClient: Optional[Type[Any]] = None
-    AlipayClientConfig: Optional[Type[Any]] = None
-    ExtendParams: Optional[Type[Any]] = None
 
 
 class AgentExtendParams(

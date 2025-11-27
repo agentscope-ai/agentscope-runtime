@@ -13,7 +13,8 @@ class FastAPITemplateManager:
     def __init__(self):
         """Initialize template manager."""
         self.template_dir = os.path.join(
-            os.path.dirname(__file__),
+            os.path.dirname(os.path.dirname(__file__)),
+            "templates",
         )
         self.env = Environment(
             loader=FileSystemLoader(self.template_dir),
@@ -59,7 +60,6 @@ class FastAPITemplateManager:
         response_type: str = "sse",
         runner_code: str = "",
         func_code: str = "",
-        services_config: str = "",
         protocol_adapters: Optional[str] = None,
         **kwargs,
     ) -> str:
@@ -73,7 +73,6 @@ class FastAPITemplateManager:
             response_type: Response type
             runner_code: Code to setup runner
             func_code: Code to setup custom function
-            services_config: Services configuration code
             protocol_adapters: Protocol adapters code string
             **kwargs: Additional template variables
 
@@ -89,7 +88,6 @@ class FastAPITemplateManager:
             response_type=response_type,
             runner_code=runner_code,
             func_code=func_code,
-            services_config=services_config,
             protocol_adapters=protocol_adapters,
             **kwargs,
         )

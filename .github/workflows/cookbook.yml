@@ -24,7 +24,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -q -e ".[dev,langgraph,agno,a2a,autogen,aliyun_tablestore_ext,memory_ext]"
+        pip install -q -e ".[dev,ext]"
     - name: Add execute permission to build.sh
       run: |
         chmod +x cookbook/build.sh

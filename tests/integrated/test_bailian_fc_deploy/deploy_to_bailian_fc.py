@@ -39,7 +39,7 @@ async def deploy_agent_to_bailian_fc():
 
     # Create deployer and runner (agent not used by BailianFCDeployer)
     deployer = ModelstudioDeployManager()
-    runner = Runner(agent=None)  # type: ignore
+    runner = Runner()
 
     deploy_name = f"bailian-fc-demo-{int(time.time())}"
 
@@ -76,7 +76,7 @@ async def deploy_whl_to_bailian_fc():
     deploy_name = "your deploy name"
 
     deployer = ModelstudioDeployManager()
-    runner = Runner(agent=None)  # type: ignore
+    runner = Runner()
     print("🚀 Starting deployment to Bailian FC from wheel...")
     result = await runner.deploy(
         deploy_manager=deployer,

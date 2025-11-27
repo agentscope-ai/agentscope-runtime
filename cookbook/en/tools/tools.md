@@ -1,4 +1,4 @@
-# Tool Introduction
+# Tools
 
 AgentScope Runtime embraces a componentized philosophy, instead of dropping you straight into API details we start with the motivation. **Tools** give us a uniform, type-safe capsule for those accessories so they can plug into any orchestration framework without rewrites.
 
@@ -246,11 +246,16 @@ Each family bundles a set of related ModelStudio or partner services. Refer to t
 - **Usage highlights**: supply `messages` plus `search_options` dict (strategy, `max_results`, `time_range`, etc.), optionally add `search_output_rules` for citations/summaries, and read back `search_result` + `search_info`.
 - **Learn more**: see `cookbook/en/tools/modelstudio_search.md` for strategy lists, architecture diagrams, and code samples derived from `docs/zh/searches.md`.
 
+For details, please see {doc}`modelstudio_search`
+
 ### ModelStudio RAG Tools
+
 - **Key tools**: `ModelstudioRag`, `ModelstudioRagLite` (`agentscope_runtime.common.tools.RAGs`).
 - **When to use**: ground answers in DashScope knowledge bases with dense/sparse/hybrid retrieval, multi-turn context fusion, multimodal inputs, and citation-friendly generation.
 - **Usage highlights**: pass the dialogue `messages`, `rag_options` (`knowledge_base_id`, `top_k`, `score_threshold`, `enable_citation`), plus authentication tokens; consume `rag_result.answer`, `references`, and `confidence`.
 - **Learn more**: consult `cookbook/en/tools/modelstudio_rag.md`, which summarizes the detailed behavior from `docs/en/RAGs.md`, including optimization tips (vector indexes, chunking strategies, streaming generation).
+
+For details, please see {doc}`modelstudio_rag`
 
 ### ModelStudio AIGC (Generations) Tools
 - **Key tools**: `ImageGeneration`, `ImageEdit`, `ImageStyleRepaint` and the WAN/Qwen variants under `agentscope_runtime.tools.generations`.
@@ -258,11 +263,16 @@ Each family bundles a set of related ModelStudio or partner services. Refer to t
 - **Usage highlights**: supply prompts plus optional `size`/`n`, or provide `base_image_url` + `mask_image_url` for edits; outputs are signed asset URLs—download or proxy them promptly.
 - **Learn more**: `cookbook/en/tools/modelstudio_generations.md` mirrors `docs/en/generations.md` with environment variables, dependencies, and example event loops.
 
+For details, please see {doc}`modelstudio_generations`
+
 ### Alipay Payment & Subscription Tools
+
 - **Key tools** (from `agentscope_runtime.tools.alipay`): `MobileAlipayPayment`, `WebPageAlipayPayment`, `AlipayPaymentQuery`, `AlipayPaymentRefund`, `AlipayRefundQuery`, `AlipaySubscribeStatusCheck`, `AlipaySubscribePackageInitialize`, `AlipaySubscribeTimesSave`, `AlipaySubscribeCheckOrInitialize`.
 - **When to use**: orchestrate full payment lifecycles (link creation, status checks, refunds) and manage subscription entitlements or pay-per-use deductions inside enterprise agents.
 - **Usage highlights**: payment tools accept `out_trade_no`, `order_title`, `total_amount`; query/refund tools operate on order IDs plus optional `out_request_no`; subscription tools pivot on user `uuid` and return flags, packages, or subscription URLs.
 - **Learn more**: `cookbook/en/tools/alipay.md` (and the source `docs/en/alipay.md`) detail prerequisites, environment variables (`ALIPAY_APP_ID`, `ALIPAY_PRIVATE_KEY`, etc.), and example async flows.
+
+For details, please see {doc}`alipay`
 
 ## Where to Go Next
 - **Deep dives**: open the per-family cookbook pages under `cookbook/en/tools/` whenever you need exhaustive parameter tables or troubleshooting guides.

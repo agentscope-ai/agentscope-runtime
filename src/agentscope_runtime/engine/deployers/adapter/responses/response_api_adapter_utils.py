@@ -68,11 +68,10 @@ from openai.types.responses.response_output_refusal import (
 )
 from openai.types.responses.response_output_text import ResponseOutputText
 from openai.types.responses.response_reasoning_item import (
-    ResponseReasoningItem,
-)
-
-from openai.types.responses.response_reasoning_item import (
     Content as ReasoningContent,
+)
+from openai.types.responses.response_reasoning_item import (
+    ResponseReasoningItem,
 )
 
 from agentscope_runtime.engine.schemas.agent_schemas import (
@@ -112,7 +111,7 @@ class ResponsesAdapter:
     4. Handle various message types (text, tool calls, reasoning, etc.)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.sequence_counter = 0
         # Temporary storage structure: key is message id, value is dict
         # containing message_type and content_index_list
