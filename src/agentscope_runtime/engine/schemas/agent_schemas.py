@@ -433,6 +433,51 @@ AgentContent = Annotated[
 ]
 
 
+class Usage(BaseModel):
+    """
+    agent tokens usage
+
+    for example
+    {
+        "input_tokens": 1000,
+        "output_tokens": 500,
+        "details": [{
+            "input_tokens": 1000,
+            "output_tokens": 500,
+            "input_cached_tokens": 800,
+            "input_audio_tokens": 0,
+            "output_audio_tokens": 0,
+            "model": qwen3,
+        }]
+    }
+    """
+
+    input_tokens: Optional[int] = None
+    """ agent input tokens """
+
+    output_tokens: Optional[int] = None
+    """ agent output tokens """
+
+    details: Optional[List[Dict]] = None
+    """
+    list of model usage detail
+    
+    for example:
+    [
+        {
+            "input_tokens": 1000,
+            "output_tokens": 500,
+            "input_cached_tokens": 800,
+            "input_audio_tokens": 0,
+            "output_audio_tokens": 0,
+            "num_model_requests": 5,
+            "model": qwen3,
+        }
+    ]
+    """
+
+
+
 class Message(Event):
     id: str = Field(default_factory=lambda: "msg_" + str(uuid4()))
     """message unique id"""
