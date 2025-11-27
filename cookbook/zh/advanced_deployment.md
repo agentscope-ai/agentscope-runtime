@@ -31,11 +31,10 @@ AgentScope Runtime提供五种不同的部署方式，每种都针对特定的�
 
 ### 部署模式（DeploymentMode）
 
-`LocalDeployManager` 支持三种部署模式：
+`LocalDeployManager` 支持两种部署模式：
 
 - **`DAEMON_THREAD`**（默认）：在守护线程中运行服务，主进程阻塞直到服务停止
 - **`DETACHED_PROCESS`**：在独立进程中运行服务，主脚本可以退出而服务继续运行
-- **`STANDALONE`**：打包项目模板模式，用于生成可独立运行的部署包
 
 ```{code-cell}
 from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
@@ -43,7 +42,7 @@ from agentscope_runtime.engine.deployers.utils.deployment_modes import Deploymen
 # 使用不同的部署模式
 await app.deploy(
     LocalDeployManager(host="0.0.0.0", port=8080),
-    mode=DeploymentMode.DAEMON_THREAD,  # 或 DETACHED_PROCESS, STANDALONE
+    mode=DeploymentMode.DAEMON_THREAD,  # 或 DETACHED_PROCESS
 )
 ```
 
@@ -55,13 +54,11 @@ await app.deploy(
 
 ```bash
 # 基础安装
-pip install agentscope-runtime
+pip install agentscope-runtime>=1.0.0
 
 # Kubernetes部署依赖
-pip install "agentscope-runtime[deployment]"
+pip install "agentscope-runtime[deployment]>=1.0.0"
 
-# 沙箱工具（可选）
-pip install "agentscope-runtime[sandbox]"
 ```
 
 ### 🔑 环境配置
@@ -96,38 +93,104 @@ export KUBECONFIG="/path/to/your/kubeconfig"
 所有部署方法共享相同的智能体和端点配置。让我们首先创建基础智能体并定义端点：
 
 ```{code-cell}
-# agent_app.py - 所有部署方法的共享配置
+# agent_app.py - Shared configuration for all deployment methods
+# -*- coding: utf-8 -*-
 import os
-import time
 
 from agentscope.agent import ReActAgent
+from agentscope.formatter import DashScopeChatFormatter
 from agentscope.model import DashScopeChatModel
-from agentscope.tool import Toolkit, view_text_file
+from agentscope.pipeline import stream_printing_messages
+from agentscope.tool import Toolkit, execute_python_code
 
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+from agentscope_runtime.adapters.agentscope.memory import (
+    AgentScopeSessionHistoryMemory,
+)
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-
-# 1. 创建带工具包的智能体
-toolkit = Toolkit()
-toolkit.register_tool_function(view_text_file)
-
-agent = AgentScopeAgent(
-    name="Friday",
-    model=DashScopeChatModel(
-        "qwen-max",
-        api_key=os.getenv("DASHSCOPE_API_KEY"),
-    ),
-    agent_config={
-        "sys_prompt": "You're a helpful assistant named Friday.",
-        "toolkit": toolkit,
-    },
-    agent_builder=ReActAgent,
+from agentscope_runtime.engine.services.agent_state import (
+    InMemoryStateService,
+)
+from agentscope_runtime.engine.services.session_history import (
+    InMemorySessionHistoryService,
 )
 
-# 2. 创建带有多个端点的 AgentApp
-app = AgentApp(agent=agent)
+app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+)
 
+
+@app.init
+async def init_func(self):
+    self.state_service = InMemoryStateService()
+    self.session_service = InMemorySessionHistoryService()
+
+    await self.state_service.start()
+    await self.session_service.start()
+
+
+@app.shutdown
+async def shutdown_func(self):
+    await self.state_service.stop()
+    await self.session_service.stop()
+
+
+@app.query(framework="agentscope")
+async def query_func(
+    self,
+    msgs,
+    request: AgentRequest = None,
+    **kwargs,
+):
+    assert kwargs is not None, "kwargs is Required for query_func"
+    session_id = request.session_id
+    user_id = request.user_id
+
+    state = await self.state_service.export_state(
+        session_id=session_id,
+        user_id=user_id,
+    )
+
+    toolkit = Toolkit()
+    toolkit.register_tool_function(execute_python_code)
+
+    agent = ReActAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+            enable_thinking=True,
+            stream=True,
+        ),
+        sys_prompt="You're a helpful assistant named Friday.",
+        toolkit=toolkit,
+        memory=AgentScopeSessionHistoryMemory(
+            service=self.session_service,
+            session_id=session_id,
+            user_id=user_id,
+        ),
+        formatter=DashScopeChatFormatter(),
+    )
+
+    if state:
+        agent.load_state_dict(state)
+
+    async for msg, last in stream_printing_messages(
+        agents=[agent],
+        coroutine_task=agent(msgs),
+    ):
+        yield msg, last
+
+    state = agent.state_dict()
+
+    await self.state_service.save_state(
+        user_id=user_id,
+        session_id=session_id,
+        state=state,
+    )
+
+# 2. 创建带有多个端点的 AgentApp
 @app.endpoint("/sync")
 def sync_handler(request: AgentRequest):
     return {"status": "ok", "payload": request}
@@ -308,7 +371,7 @@ production_services = ServicesConfig(
 )
 
 # 使用生产服务进行部署
-deployment_info = await runner.deploy(
+deployment_info = await app.deploy(
     deploy_manager=deploy_manager,
     endpoint_path="/process",
     stream=True,

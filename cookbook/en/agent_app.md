@@ -139,7 +139,7 @@ async def init_func(self):
     """Initialize service resources"""
     self.state_service = InMemoryStateService()
     self.session_service = InMemorySessionHistoryService()
-    
+
     await self.state_service.start()
     await self.session_service.start()
     print("✅ Service initialized")
@@ -278,13 +278,13 @@ async def query_func(
     """Custom query handler"""
     session_id = request.session_id
     user_id = request.user_id
-    
+
     # Load session state
     state = await self.state_service.export_state(
         session_id=session_id,
         user_id=user_id,
     )
-    
+
     # Build agent
     agent = ReActAgent(
         name="Friday",
@@ -300,18 +300,18 @@ async def query_func(
             user_id=user_id,
         ),
     )
-    
+
     # Restore state if present
     if state:
         agent.load_state_dict(state)
-    
+
     # Stream responses
     async for msg, last in stream_printing_messages(
         agents=[agent],
         coroutine_task=agent(msgs),
     ):
         yield msg, last
-    
+
     # Persist state
     state = agent.state_dict()
     await self.state_service.save_state(
@@ -376,17 +376,17 @@ async def query_func(
     """Query handler with state persistence"""
     session_id = request.session_id
     user_id = request.user_id
-    
+
     # Load historical state
     state = await self.state_service.export_state(
         session_id=session_id,
         user_id=user_id,
     )
-    
+
     # Register tools
     toolkit = Toolkit()
     toolkit.register_tool_function(execute_python_code)
-    
+
     # Build agent
     agent = ReActAgent(
         name="Friday",
@@ -405,18 +405,18 @@ async def query_func(
         ),
     )
     agent.set_console_output_enabled(enabled=False)
-    
+
     # Restore state if any
     if state:
         agent.load_state_dict(state)
-    
+
     # Stream output
     async for msg, last in stream_printing_messages(
         agents=[agent],
         coroutine_task=agent(msgs),
     ):
         yield msg, last
-    
+
     # Save state
     state = agent.state_dict()
     await self.state_service.save_state(

@@ -142,7 +142,7 @@ async def init_func(self):
     """初始化服务资源"""
     self.state_service = InMemoryStateService()
     self.session_service = InMemorySessionHistoryService()
-    
+
     await self.state_service.start()
     await self.session_service.start()
     print("✅ 服务初始化完成")
@@ -287,13 +287,13 @@ async def query_func(
     """自定义查询处理函数"""
     session_id = request.session_id
     user_id = request.user_id
-    
+
     # 加载会话状态
     state = await self.state_service.export_state(
         session_id=session_id,
         user_id=user_id,
     )
-    
+
     # 创建 Agent 实例
     agent = ReActAgent(
         name="Friday",
@@ -309,18 +309,18 @@ async def query_func(
             user_id=user_id,
         ),
     )
-    
+
     # 恢复状态（如果存在）
     if state:
         agent.load_state_dict(state)
-    
+
     # 流式处理消息
     async for msg, last in stream_printing_messages(
         agents=[agent],
         coroutine_task=agent(msgs),
     ):
         yield msg, last
-    
+
     # 保存状态
     state = agent.state_dict()
     await self.state_service.save_state(
@@ -386,17 +386,17 @@ async def query_func(
     """带状态管理的查询处理"""
     session_id = request.session_id
     user_id = request.user_id
-    
+
     # 加载历史状态
     state = await self.state_service.export_state(
         session_id=session_id,
         user_id=user_id,
     )
-    
+
     # 创建工具包
     toolkit = Toolkit()
     toolkit.register_tool_function(execute_python_code)
-    
+
     # 创建 Agent
     agent = ReActAgent(
         name="Friday",
@@ -415,18 +415,18 @@ async def query_func(
         ),
     )
     agent.set_console_output_enabled(enabled=False)
-    
+
     # 恢复状态
     if state:
         agent.load_state_dict(state)
-    
+
     # 流式处理
     async for msg, last in stream_printing_messages(
         agents=[agent],
         coroutine_task=agent(msgs),
     ):
         yield msg, last
-    
+
     # 保存状态
     state = agent.state_dict()
     await self.state_service.save_state(

@@ -333,7 +333,7 @@ async def main():
     # Initialize the service
     session_history_service = InMemorySessionHistoryService()
     await session_history_service.start()
-    
+
     # Create a session with an auto-generated ID
     user_id = "test_user"
     session = await session_history_service.create_session(user_id)
@@ -347,7 +347,7 @@ async def main():
         session_id="my_custom_session_id",
     )
     print(f"Custom session ID: {custom_session.id}")
-    
+
     await session_history_service.stop()
 
 await main()
@@ -364,12 +364,12 @@ from agentscope_runtime.engine.services.session_history import InMemorySessionHi
 async def main():
     session_history_service = InMemorySessionHistoryService()
     await session_history_service.start()
-    
+
     user_id = "u1"
     # In the in-memory implementation, missing sessions are created automatically
     retrieved_session = await session_history_service.get_session(user_id, "s1")
     assert retrieved_session is not None
-    
+
     await session_history_service.stop()
 
 await main()
@@ -386,7 +386,7 @@ from agentscope_runtime.engine.services.session_history import InMemorySessionHi
 async def main():
     session_history_service = InMemorySessionHistoryService()
     await session_history_service.start()
-    
+
     user_id = "u_list"
     # Create a few sessions
     session1 = await session_history_service.create_session(user_id)
@@ -398,7 +398,7 @@ async def main():
 
     for s in listed_sessions:
         assert s.messages == [], "History is intentionally omitted in list view"
-    
+
     await session_history_service.stop()
 
 await main()
@@ -418,7 +418,7 @@ from agentscope_runtime.engine.schemas.agent_schemas import Message, TextContent
 async def main():
     session_history_service = InMemorySessionHistoryService()
     await session_history_service.start()
-    
+
     user_id = "u_append"
     session = await session_history_service.create_session(user_id)
 
@@ -436,7 +436,7 @@ async def main():
     await session_history_service.append_message(session, messages3)
 
     assert len(session.messages) == 3
-    
+
     await session_history_service.stop()
 
 await main()
@@ -453,7 +453,7 @@ from agentscope_runtime.engine.services.session_history import InMemorySessionHi
 async def main():
     session_history_service = InMemorySessionHistoryService()
     await session_history_service.start()
-    
+
     user_id = "test_user"
     session_to_delete = await session_history_service.create_session(user_id)
     session_id = session_to_delete.id
@@ -466,7 +466,7 @@ async def main():
 
     # No error if the session does not exist
     await session_history_service.delete_session(user_id, "non_existent_id")
-    
+
     await session_history_service.stop()
 
 await main()
@@ -536,7 +536,7 @@ from agentscope_runtime.engine.schemas.agent_schemas import Message, TextContent
 async def main():
     memory_service = InMemoryMemoryService()
     await memory_service.start()
-    
+
     user_id = "user1"
     messages = [
         Message(
@@ -545,7 +545,7 @@ async def main():
         )
     ]
     await memory_service.add_memory(user_id, messages)
-    
+
     await memory_service.stop()
 
 await main()
@@ -563,7 +563,7 @@ from agentscope_runtime.engine.schemas.agent_schemas import Message, TextContent
 async def main():
     memory_service = InMemoryMemoryService()
     await memory_service.start()
-    
+
     user_id = "user1"
     messages = [
         Message(
@@ -572,7 +572,7 @@ async def main():
         )
     ]
     await memory_service.add_memory(user_id, messages)
-    
+
     search_query = [
         Message(
             role="user",
@@ -580,7 +580,7 @@ async def main():
         )
     ]
     retrieved = await memory_service.search_memory(user_id, search_query)
-    
+
     await memory_service.stop()
 
 await main()
@@ -598,7 +598,7 @@ from agentscope_runtime.engine.schemas.agent_schemas import Message, TextContent
 async def main():
     memory_service = InMemoryMemoryService()
     await memory_service.start()
-    
+
     user_id = "user1"
     messages = [
         Message(
@@ -607,12 +607,12 @@ async def main():
         )
     ]
     await memory_service.add_memory(user_id, messages)
-    
+
     memory_list = await memory_service.list_memory(
         user_id,
         filters={"page_size": 10, "page_num": 1}
     )
-    
+
     await memory_service.stop()
 
 await main()
@@ -630,10 +630,10 @@ from agentscope_runtime.engine.schemas.agent_schemas import Message, TextContent
 async def main():
     memory_service = InMemoryMemoryService()
     await memory_service.start()
-    
+
     user_id = "user1"
     session_id = "session1"
-    
+
     messages = [
         Message(
             role="user",
@@ -641,13 +641,13 @@ async def main():
         )
     ]
     await memory_service.add_memory(user_id, messages, session_id=session_id)
-    
+
     # Delete a specific session
     await memory_service.delete_memory(user_id, session_id)
 
     # Or delete everything for the user
     await memory_service.delete_memory(user_id)
-    
+
     await memory_service.stop()
 
 await main()

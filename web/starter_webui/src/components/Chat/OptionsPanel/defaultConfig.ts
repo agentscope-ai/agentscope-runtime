@@ -38,4 +38,4 @@ export default {
     token: TOKEN,
   },
 };
- 
+
