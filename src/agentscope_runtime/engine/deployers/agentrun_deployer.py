@@ -40,7 +40,6 @@ from .utils.wheel_packager import (
     generate_wrapper_project,
     build_wheel,
 )
-from ..runner import Runner
 
 logger = logging.getLogger(__name__)
 
@@ -508,7 +507,7 @@ class AgentRunDeployManager(DeployManager):
 
     async def deploy(
         self,
-        runner: Optional[Runner] = None,
+        runner=None,
         endpoint_path: str = "/process",
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         requirements: Optional[Union[str, List[str]]] = None,

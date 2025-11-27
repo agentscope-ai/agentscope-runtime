@@ -4,10 +4,10 @@
 # pylint:disable=ungrouped-imports, arguments-renamed, protected-access
 #
 # flake8: noqa: E501
+import json
 import logging
 import os
 import time
-import json
 from pathlib import Path
 from typing import Dict, Optional, List, Union, Tuple
 
@@ -23,8 +23,6 @@ from .utils.wheel_packager import (
     build_wheel,
     default_deploy_name,
 )
-from ..runner import Runner
-from ..app.agent_app import AgentApp
 
 logger = logging.getLogger(__name__)
 
@@ -704,8 +702,8 @@ class ModelstudioDeployManager(DeployManager):
 
     async def deploy(
         self,
-        app: Optional[AgentApp] = None,
-        runner: Optional[Runner] = None,
+        app=None,
+        runner=None,
         endpoint_path: str = "/process",
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         requirements: Optional[Union[str, List[str]]] = None,

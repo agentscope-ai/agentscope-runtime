@@ -12,8 +12,6 @@ from .utils.docker_image_utils import (
     ImageFactory,
     RegistryConfig,
 )
-from ..runner import Runner
-from ..app.agent_app import AgentApp
 from ...common.container_clients.kubernetes_client import (
     KubernetesClient,
 )
@@ -71,8 +69,8 @@ class KubernetesDeployManager(DeployManager):
 
     async def deploy(
         self,
-        app: Optional[AgentApp] = None,
-        runner: Optional[Runner] = None,
+        app=None,
+        runner=None,
         endpoint_path: str = "/process",
         stream: bool = True,
         custom_endpoints: Optional[List[Dict]] = None,
