@@ -144,13 +144,25 @@ The engine module contains the core components of AgentScope Runtime.
 
 ### Deployers · Utils
 ```{eval-rst}
+.. automodule:: agentscope_runtime.engine.deployers.utils.app_runner_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+
 .. automodule:: agentscope_runtime.engine.deployers.utils.deployment_modes
    :members:
    :undoc-members:
    :show-inheritance:
    :no-index:
 
-.. automodule:: agentscope_runtime.engine.deployers.utils.package_project_utils
+.. automodule:: agentscope_runtime.engine.deployers.utils.detached_app
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+
+.. automodule:: agentscope_runtime.engine.deployers.utils.package
    :members:
    :undoc-members:
    :show-inheritance:
@@ -174,7 +186,7 @@ The engine module contains the core components of AgentScope Runtime.
    :show-inheritance:
    :no-index:
 
-.. automodule:: agentscope_runtime.engine.deployers.utils.docker_image_utils.runner_image_factory
+.. automodule:: agentscope_runtime.engine.deployers.utils.docker_image_utils.image_factory
    :members:
    :undoc-members:
    :show-inheritance:
@@ -193,18 +205,6 @@ The engine module contains the core components of AgentScope Runtime.
    :no-index:
 
 .. automodule:: agentscope_runtime.engine.deployers.utils.service_utils.process_manager
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :no-index:
-
-.. automodule:: agentscope_runtime.engine.deployers.utils.service_utils.service_config
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :no-index:
-
-.. automodule:: agentscope_runtime.engine.deployers.utils.service_utils.service_factory
    :members:
    :undoc-members:
    :show-inheritance:
