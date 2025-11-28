@@ -91,6 +91,14 @@ OSS_ACCESS_KEY_ID=your-access-key-id
 OSS_ACCESS_KEY_SECRET=your-access-key-secret
 OSS_BUCKET_NAME=your-bucket-name
 
+# S3 设置
+FILE_SYSTEM=s3
+S3_ENDPOINT_URL=http://localhost:9000
+S3_ACCESS_KEY_ID=your-access-key-id
+S3_ACCESS_KEY_SECRET=your-access-key-secret
+S3_BUCKET_NAME=your-bucket-name
+S3_REGION_NAME=us-east-1
+
 # K8S 设置
 K8S_NAMESPACE=default
 KUBECONFIG_PATH=
@@ -148,11 +156,24 @@ Redis 为沙箱状态和状态管理提供缓存。如果只有一个工作进�
 
 | Parameter               | Description      | Default | Notes           |
 | ----------------------- | ---------------- | ------- | --------------- |
-| `FILE_SYSTEM`           | 文件系统类型     | `local` | `local`或 `oss` |
+| `FILE_SYSTEM`           | 文件系统类型     | `local` | `local`、`oss`或 `s3` |
 | `OSS_ENDPOINT`          | OSS端点URL       | 空      | 区域端点        |
 | `OSS_ACCESS_KEY_ID`     | OSS 访问密钥 ID  | 空      | 来自 OSS 控制台 |
 | `OSS_ACCESS_KEY_SECRET` | OSS 访问密钥秘钥 | 空      | 保持安全        |
 | `OSS_BUCKET_NAME`       | OSS 存储桶名称   | 空      | 预创建的存储桶  |
+
+#### （可选）S3 设置
+
+使用[Amazon S3](https://aws.amazon.com/s3/)或兼容S3的存储服务（如MinIO）进行分布式文件存储：
+
+| Parameter               | Description      | Default | Notes           |
+| ----------------------- | ---------------- | ------- | --------------- |
+| `FILE_SYSTEM`           | 文件系统类型     | `local` | `local`、`oss`或 `s3` |
+| `S3_ENDPOINT_URL`       | S3端点URL        | 空      | 对于MinIO，使用http://localhost:9000 |
+| `S3_ACCESS_KEY_ID`      | S3 访问密钥 ID   | 空      | AWS访问密钥或MinIO访问密钥 |
+| `S3_ACCESS_KEY_SECRET`  | S3 访问密钥秘钥  | 空      | AWS密钥或MinIO密钥 |
+| `S3_BUCKET_NAME`        | S3 存储桶名称    | 空      | 预创建的存储桶  |
+| `S3_REGION_NAME`        | S3 区域名称      | `us-east-1` | AWS区域或MinIO区域 |
 
 #### （可选）K8S 设置
 

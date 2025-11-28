@@ -205,6 +205,16 @@ class SandboxManager:
                 self.config.oss_endpoint,
                 self.config.oss_bucket_name,
             )
+        elif self.file_system == "s3":
+            from .storage.s3_storage import S3Storage
+
+            self.storage = S3Storage(
+                self.config.s3_access_key_id,
+                self.config.s3_access_key_secret,
+                self.config.s3_endpoint_url,
+                self.config.s3_bucket_name,
+                self.config.s3_region_name,
+            )
         else:
             self.storage = LocalStorage()
 
