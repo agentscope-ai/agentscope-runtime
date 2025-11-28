@@ -62,7 +62,7 @@ dev = [
     "asgiref",
     "jinja2",
     "langgraph",
-    "autogen",
+    "autogen-agentchat>=0.7.0",
 ]
 
 ext = [
