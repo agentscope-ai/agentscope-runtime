@@ -24,7 +24,9 @@
 
 **A Production-Ready Runtime Framework for Intelligent Agent Applications**
 
-*AgentScope Runtime tackles two critical challenges in agent development: secure sandboxed tool execution and scalable agent deployment. Built with a dual-core architecture, it provides framework-agnostic infrastructure for deploying agents with full observability and safe tool interactions. In addition, the tools module offers a variety of out-of-the-box tools, which are adapted by the framework’s adapters for seamless compatibility with different native intelligent agent frameworks, ensuring developers can retain their original development experience.*
+***AgentScope Runtime** is a full-stack agent runtime that tackles two core challenges: **efficient agent deployment** and **secure sandbox execution**. It ships with foundational services such as short- and long-term memory plus agent state persistence, along with hardened sandbox infrastructure. Whether you need to orchestrate production-grade agents or guarantee safe tool interactions, AgentScope Runtime provides developer-friendly workflows with complete observability.*
+
+*In V1.0, these services are exposed via an **adapter pattern**, enabling seamless integration with the native modules of different agent frameworks while preserving their native interfaces and behaviors, ensuring both compatibility and flexibility.*
 
 </div>
 
@@ -32,7 +34,7 @@
 
 ## 🆕 NEWS
 
-* **[2025-11]** We released **<u>AgentScope Runtime V1.0</u>**, which ensures the native development experience of agent frameworks, allowing them to fully leverage their expressive power. In this version, we further simplified certain abstractions and modules to streamline the architecture. For the complete list of changes, please refer to the changelog.
+* **[2025-12]** We have released **AgentScope Runtime v1.0**, introducing a unified “Agent as API” white-box development experience, with enhanced multi-agent collaboration, state persistence, and cross-framework integration. This release also streamlines abstractions and modules to ensure consistency between development and production environments. Please refer to the **[CHANGELOG](https://runtime.agentscope.io/en/CHANGELOG.html)** for full update details and migration guide.
 
 ---
 
@@ -84,6 +86,9 @@ From PyPI:
 ```bash
 # Install core dependencies
 pip install agentscope-runtime
+
+# Install extension
+pip install "agentscope-runtime[ext]"
 
 # Install preview version
 pip install --pre agentscope-runtime
@@ -310,6 +315,38 @@ with FilesystemSandbox() as box:
     print(box.list_tools()) # List all available tools
     print(box.desktop_url)  # Web desktop access URL
     box.create_directory("test")  # Create a directory
+    input("Press Enter to continue...")
+```
+
+#### Mobile Sandbox
+
+Provides a **sandboxed Android emulator environment** that allows executing various mobile operations, such as tapping, swiping, inputting text, and taking screenshots.
+
+##### Prerequisites
+
+- **Linux Host**:
+  When running on a Linux host, this sandbox requires the `binder` and `ashmem` kernel modules to be loaded. If they are missing, execute the following commands on your host to install and load the required modules:
+
+  ```bash
+  # 1. Install extra kernel modules
+  sudo apt update && sudo apt install -y linux-modules-extra-`uname -r`
+
+  # 2. Load modules and create device nodes
+  sudo modprobe binder_linux devices="binder,hwbinder,vndbinder"
+  sudo modprobe ashmem_linux
+- **Architecture Compatibility**:
+  When running on an ARM64/aarch64 architecture (e.g., Apple M-series chips), you may encounter compatibility or performance issues. It is recommended to run on an x86_64 host.
+```python
+from agentscope_runtime.sandbox import MobileSandbox
+
+with MobileSandbox() as box:
+    # By default, pulls 'agentscope/runtime-sandbox-mobile:latest' from DockerHub
+    print(box.list_tools()) # List all available tools
+    print(box.mobile_get_screen_resolution()) # Get the screen resolution
+    print(box.mobile_tap(x=500, y=1000)) # Tap at coordinate (500, 1000)
+    print(box.mobile_input_text("Hello from AgentScope!")) # Input text
+    print(box.mobile_key_event(3)) # Sends a HOME key event (KeyCode: 3)
+    screenshot_result = box.mobile_get_screenshot() # Get the current screenshot
     input("Press Enter to continue...")
 ```
 

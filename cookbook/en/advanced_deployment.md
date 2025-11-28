@@ -56,7 +56,7 @@ Install AgentScope Runtime with all deployment dependencies:
 pip install agentscope-runtime>=1.0.0
 
 # For Kubernetes deployment
-pip install "agentscope-runtime[deployment]>=1.0.0"
+pip install "agentscope-runtime[ext]>=1.0.0"
 ```
 
 ### 🔑 Environment Setup

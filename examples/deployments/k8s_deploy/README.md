@@ -25,7 +25,7 @@ Before running this example, ensure you have:
 
 1. **Install dependencies**:
    ```bash
-   pip install "agentscope-runtime[deployment]>=1.0.0"
+   pip install "agentscope-runtime[ext]>=1.0.0"
 
    ```
 

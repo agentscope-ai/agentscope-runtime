@@ -57,7 +57,7 @@ await app.deploy(
 pip install agentscope-runtime>=1.0.0
 
 # Kubernetes部署依赖
-pip install "agentscope-runtime[deployment]>=1.0.0"
+pip install "agentscope-runtime[ext]>=1.0.0"
 
 ```
 

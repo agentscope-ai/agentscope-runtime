@@ -31,7 +31,8 @@ def create_message(role: str, content: str) -> Message:
 async def mock_task_memory_service(mocker):
     """Mock the TaskMemoryService from reme_ai."""
     mock_class = mocker.patch(
-        "reme_ai.service.task_memory_service.TaskMemoryService",
+        "agentscope_runtime.engine.services.memory."
+        "reme_task_memory_service.TaskMemoryService",
     )
     instance = mock_class.return_value
     instance.start = mocker.AsyncMock()

@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - 'main'
+      - 'dev'
   pull_request:
     branches:
       - 'main'
+      - 'dev'
 
 jobs:
   test:
@@ -67,7 +69,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          coverage run -m pytest tests/sandbox/test_sandbox.py tests/sandbox/test_tool.py
+          coverage run -m pytest tests/sandbox/test_sandbox.py tests/sandbox/test_sandbox_service.py
 
       - name: Generate coverage report
         run: |

@@ -221,7 +221,7 @@ is_healthy = await sandbox_service.health()
 await sandbox_service.stop()
 ```
 
-See {doc}`sandbox` for details.
+See {doc}`sandbox/sandbox` for details.
 
 ### StateService
 

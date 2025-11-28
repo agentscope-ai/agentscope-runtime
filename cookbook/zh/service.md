@@ -220,7 +220,7 @@ is_healthy = await sandbox_service.health()
 await sandbox_service.stop()
 ```
 
-详细信息请参见 {doc}`sandbox` 。
+详细信息请参见 {doc}`sandbox/sandbox` 。
 
 ### StateService
 

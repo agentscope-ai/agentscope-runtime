@@ -12,7 +12,7 @@
 - Python >= 3.10
 - 安装运行时与云端 SDK：
 ```bash
-pip install agentscope-runtime && pip install "agentscope-runtime[deployment]"
+pip install "agentscope-runtime[ext]"
 ```
 
 - 配置所需环境变量：

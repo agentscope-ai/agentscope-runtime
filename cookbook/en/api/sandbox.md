@@ -42,6 +42,15 @@ The main classes that users typically interact with are directly importable from
    :no-index:
 ```
 
+### MobileSandbox
+```{eval-rst}
+.. autoclass:: agentscope_runtime.sandbox.MobileSandbox
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+```
+
 ### TrainingSandbox
 ```{eval-rst}
 .. autoclass:: agentscope_runtime.sandbox.TrainingSandbox

@@ -68,6 +68,9 @@ docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtim
 
 # Browser image
 docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-browser:latest && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-browser:latest agentscope/runtime-sandbox-browser:latest
+
+# Mobile image
+docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-mobile:latest && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-mobile:latest agentscope/runtime-sandbox-mobile:latest
 ```
 
 #### Option 2: Pull Specific Images
@@ -80,6 +83,7 @@ Choose the images based on your specific needs:
 | **GUI Image**        | Computer Use                          | When you need a graph UI                                     |
 | **Filesystem Image** | File system operations                | When you need file read/write/management                     |
 | **Browser Image**    | Web browser automation                | When you need web scraping or browser control                |
+| **Mobile Image**     | Mobile operations                     | When you need to operate a mobile device |
 | **Training Image**   | Training and evaluating agent         | Used for training and evaluating agent on some benchmark (see {doc}`training_sandbox` for details) |
 
 ### Verify Installation
@@ -163,6 +167,39 @@ with BrowserSandbox() as box:
     print(box.list_tools()) # List all available tools
     print(box.desktop_url)  # Web desktop access URL
     box.browser_navigate("https://www.google.com/")  # Open a webpage
+    input("Press Enter to continue...")
+```
+
+* **Mobile Sandbox**: A sandbox based on an Android emulator, allowing for **mobile operations** such as tapping, swiping, inputting text, and taking screenshots.
+
+  - **Prerequisites**
+
+    - **Linux Host**:
+    When running on a Linux host, this sandbox requires the binder and ashmem kernel modules to be loaded. If they are missing, execute the following commands on your host to install and load the required modules:
+
+    ```bash
+        # 1. Install extra kernel modules
+        sudo apt update && sudo apt install -y linux-modules-extra-`uname -r`
+
+        # 2. Load modules and create device nodes
+        sudo modprobe binder_linux devices="binder,hwbinder,vndbinder"
+        sudo modprobe ashmem_linux
+    ```
+
+    - **Architecture Compatibility**:
+    When running on an ARM64/aarch64 architecture (e.g., Apple M-series chips), you may encounter compatibility or performance issues. It is recommended to run on an x86_64 host.
+
+```{code-cell}
+from agentscope_runtime.sandbox import MobileSandbox
+
+with MobileSandbox() as box:
+    # By default, pulls 'agentscope/runtime-sandbox-mobile:latest' from DockerHub
+    print(box.list_tools()) # List all available tools
+    print(box.mobile_get_screen_resolution()) # Get the screen resolution
+    print(box.mobile_tap(x=500, y=1000)) # Tap at coordinate (500, 1000)
+    print(box.mobile_input_text("Hello from AgentScope!")) # Input text
+    print(box.mobile_key_event(3)) # Sends a HOME key event (KeyCode: 3)
+    screenshot_result = box.mobile_get_screenshot() # Get the current screenshot
     input("Press Enter to continue...")
 ```
 
@@ -445,6 +482,7 @@ await main()
 * Computer-use Tool (Available in `GuiSandbox`)
 * Browser Tools (Available in `BrowserSandbox`)
 * Filesystem Tools (Available in `FilesystemSandbox`)
+* Mobile Tools (Available in `MobileSandbox`)
 
 | Category               | Tool Name                                                    | Description                                                  |
 | ---------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -485,3 +523,10 @@ await main()
 |                        | `browser_network_requests()`                                 | Get all network requests since page load                     |
 |                        | `browser_handle_dialog(accept: bool, promptText: str)`       | Handle browser dialogs (alert, confirm, prompt)              |
 | **Computer Use Tools** | `computer_use(action: str, coordinate: list, text: str)`     | Use a mouse and keyboard to interact with a desktop GUI, supporting actions like moving the cursor, clicking, typing, and taking screenshots |
+| **Mobile Tools**   | `mobile_get_screen_resolution()`                                   | Get the screen resolution of the mobile device                     |
+|                    | `mobile_tap(x: int, y: int)`                                       | Tap at a specific coordinate on the screen                         |
+|                    | `mobile_swipe(start: List[int], end: List[int], duration: int = None)` | Perform a swipe gesture on the screen from a start point to an end point |
+|                    | `mobile_input_text(text: str)`                                     | Input a text string into the currently focused UI element          |
+|                    | `mobile_key_event(code: int \| str)`                                | Send a key event to the device (e.g., HOME, BACK)                  |
+|                    | `mobile_get_screenshot()`                                          | Take a screenshot of the current device screen                     |
+

@@ -24,7 +24,9 @@
 
 **智能体应用的生产就绪运行时框架**
 
-*AgentScope Runtime 解决了智能体开发中的两个关键挑战：安全的沙盒化工具执行和可扩展的智能体部署。其双核心架构为智能体提供了与框架无关的基础设施，支持在部署过程中实现完整的可观测性和安全的工具交互。此外，工具模块提供了丰富的开箱即用工具，并通过适配器适配到不同的原生智能体框架，从而确保兼容性，同时保留原有的开发体验。*
+***AgentScope Runtime** 是一个全面的智能体运行时框架，旨在解决两个关键挑战：**高效的智能体部署**和**沙箱执行**。它内置了基础服务（长短期记忆、智能体状态持久化）和安全沙箱基础设施。无论您需要大规模部署智能体还是确保安全的工具交互，AgentScope Runtime 都能提供具有完整可观测性和开发者友好部署的核心基础设施。*
+
+*在 V1.0 中，这些运行时服务通过 **适配器模式** 对外开放，允许开发者在保留原有智能体框架接口与行为的基础上，将 AgentScope 的状态管理、会话记录、工具调用等模块按需嵌入到应用生命周期中。从过去的 “黑盒化替换” 变为 “白盒化集成”，开发者可以显式地控制服务初始化、工具注册与状态持久化流程，从而在不同框架间实现无缝整合，同时获得更高的扩展性与灵活性。*
 
 </div>
 
@@ -32,7 +34,7 @@
 
 ## 🆕 新闻
 
-* **[2025-11]** 我们发布了 **AgentScope Runtime V1.0**，该版本保证了 agent 框架的原生开发体验，从而能够最大程度发挥其表达能力。同时，我们对部分抽象及模块进行了进一步简化，以优化整体架构。完整更新内容请参考 changelog。
+* **[2025-12]** 我们发布了 **AgentScope Runtime v1.0**，该版本引入统一的 “Agent 作为 API” 白盒化开发体验，并全面强化多智能体协作、状态持久化与跨框架组合能力，同时对抽象与模块进行了简化优化，确保开发与生产环境一致性。完整更新内容与迁移说明请参考 **[CHANGELOG](https://runtime.agentscope.io/zh/CHANGELOG.html)**。
 
 ---
 
@@ -84,6 +86,9 @@
 ```bash
 # 安装核心依赖
 pip install agentscope-runtime
+
+# 安装拓展
+pip install "agentscope-runtime[ext]"
 
 # 安装预览版本
 pip install --pre agentscope-runtime
@@ -311,6 +316,40 @@ with FilesystemSandbox() as box:
     print(box.list_tools()) # 列出所有可用工具
     print(box.desktop_url)  # 桌面访问链接
     box.create_directory("test")  # 创建目录
+    input("按 Enter 键继续...")
+```
+
+#### 移动端沙箱（Mobile Sandbox）
+
+提供一个**沙箱化的 Android 模拟器环境**，允许执行各种移动端操作，如点击、滑动、输入文本和截屏等。
+
+##### 运行环境要求
+
+- **Linux 主机**:
+  该沙箱在 Linux 主机上运行时，需要内核加载 `binder` 和 `ashmem` 模块。如果缺失，请在主机上执行以下命令来安装和加载所需模块：
+
+  ```bash
+  # 1. 安装额外的内核模块
+  sudo apt update && sudo apt install -y linux-modules-extra-`uname -r`
+
+  # 2. 加载模块并创建设备节点
+  sudo modprobe binder_linux devices="binder,hwbinder,vndbinder"
+  sudo modprobe ashmem_linux
+  ```
+- **架构兼容性**:
+  在 ARM64/aarch64 架构（如 Apple M 系列芯片）上运行时，可能会遇到兼容性或性能问题，建议在 x86_64 架构的主机上运行。
+
+```python
+from agentscope_runtime.sandbox import MobileSandbox
+
+with MobileSandbox() as box:
+    # 默认从 DockerHub 拉取 'agentscope/runtime-sandbox-mobile:latest' 镜像
+    print(box.list_tools()) # 列出所有可用工具
+    print(box.mobile_get_screen_resolution()) # 获取屏幕分辨率
+    print(box.mobile_tap(x=500, y=1000)) # 在坐标 (500, 1000) 处进行点击
+    print(box.mobile_input_text("Hello from AgentScope!")) # 输入文本
+    print(box.mobile_key_event(3)) # 发送 HOME 按键事件 (KeyCode: 3)
+    screenshot_result = box.mobile_get_screenshot() # 获取当前屏幕截图
     input("按 Enter 键继续...")
 ```
 

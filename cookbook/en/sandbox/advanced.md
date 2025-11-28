@@ -446,6 +446,9 @@ runtime-sandbox-builder browser
 
 # Build filesystem image (~2Gb)
 runtime-sandbox-builder filesystem
+
+# Build mobile image (~3Gb)
+runtime-sandbox-builder mobile
 ```
 The above commands are useful when you want to:
 

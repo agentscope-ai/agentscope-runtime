@@ -11,7 +11,7 @@
 - 安装运行时以及所需的云 SDK：
 #### 1. 下载 agentscope-runtime
 ```bash
-pip install agentscope-runtime && pip install "agentscope-runtime[deployment]"
+pip install "agentscope-runtime[ext]"
 ```
 #### 2. 设置所需的环境变量：
 ```bash

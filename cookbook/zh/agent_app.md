@@ -14,46 +14,52 @@ kernelspec:
 
 # 简单部署
 
-`AgentApp` 是 **AgentScope Runtime** 中的完整 Agent 服务封装器。
-它可以将任何符合接口的 Agent 变成一个 API 服务，支持：
+`AgentApp` 是 **AgentScope Runtime** 中的全能型应用服务封装器。
+它为你的 agent 逻辑提供 HTTP 服务框架，并可将其作为 API 暴露，支持以下功能：
 
-- 流式输出（SSE）
-- 健康检查接口
-- 生命周期钩子（`before_start` / `after_finish`）
-- Celery 异步任务队列
-- 部署到本地或远程
+- **流式响应（SSE）**，实现实时输出
+- 内置 **健康检查** 接口
+- **生命周期钩子**（`@app.init` / `@app.shutdown`），用于启动与清理逻辑
+- 可选的 **Celery** 异步任务队列
+- 部署到本地或远程目标
 
-下面对每个功能做深入介绍，并提供用法示例。
+**重要说明**：
+在当前版本中，`AgentApp` 不会自动包含 `/process` 端点。
+你必须显式地使用装饰器（例如 `@app.query(...)`）注册一个请求处理函数，服务才能处理传入的请求。
+
+下面的章节将通过具体示例深入介绍每项功能。
 
 ------
 
 ## 初始化与基本运行
 
 **功能**
-启动一个包含 Agent 的 HTTP API 服务，监听指定端口，提供主处理接口（默认 `/process`）。
+
+创建一个最小的 `AgentApp` 实例，并启动基于 FastAPI 的 HTTP 服务骨架。
+初始状态下，服务只提供：
+
+- 欢迎页 `/`
+- 健康检查 `/health`
+- 就绪探针 `/readiness`
+- 存活探针 `/liveness`
+
+**注意**：
+
+- 默认不会暴露 `/process` 或其它业务处理端点。
+- 必须使用如 `@app.query(...)` 装饰器、`@app.task(...)` 等方法注册至少一个 handler，才能对外提供处理请求的 API。
+- 处理函数可以是普通函数或 async 函数，也可以支持流式（async generator）输出。
 
 **用法示例**
 
 ```{code-cell}
 from agentscope_runtime.engine import AgentApp
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-from agentscope.model import OpenAIChatModel
-from agentscope.agent import ReActAgent
 
-# 创建 Agent
-agent = AgentScopeAgent(
-    name="Friday",
-    model=OpenAIChatModel(
-        "gpt-4",
-        api_key="YOUR_OPENAI_KEY",
-    ),
-    agent_config={"sys_prompt": "You are a helpful assistant."},
-    agent_builder=ReActAgent,
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
 )
 
-# 创建并运行 AgentApp
-app = AgentApp(agent=agent, endpoint_path="/process", response_type="sse", stream=True)
-app.run(host="0.0.0.0", port=8090)
+agent_app.run(host="127.0.0.1", port=8090)
 ```
 
 ------
@@ -123,9 +129,11 @@ app = AgentApp(
 
 ### 方式2：使用装饰器（推荐）
 
-除了使用参数传递，还可以使用装饰器方式注册生命周期钩子，这种方式更加灵活和直观：
+除了通过构造函数参数传递钩子函数外，还可以使用装饰器的方式来注册生命周期钩子。
+这种写法有以下优点：
 
-**用法示例**
+1. **更灵活直观** —— 生命周期逻辑直接贴近应用定义，结构更清晰，可读性更高；
+2. **可共享成员变量** —— 装饰器定义的函数会接收 `self`，可以访问 `AgentApp` 实例的属性和服务（例如 `@app.init` 中启动的状态服务、会话服务等），方便在不同生命周期或请求处理逻辑中共享和复用资源；
 
 ```{code-cell}
 from agentscope_runtime.engine import AgentApp
@@ -439,7 +447,7 @@ async def query_func(
 app.run(host="0.0.0.0", port=8090)
 ```
 
-### 与标准 Agent 参数方式的区别
+### 与 V0 版本 Agent 参数方式的区别
 
 | 特性 | 标准方式（agent 参数） | 自定义查询（@app.query） |
 |------|----------------------|------------------------|
@@ -449,6 +457,47 @@ app.run(host="0.0.0.0", port=8090)
 | 多框架支持 | 有限 | 支持多种框架 |
 
 ------
+## 通过 `@app.endpoint` 自定义接口
+
+`AgentApp` 除了可以用 `@app.query(...)` 定义统一的 `/process` 请求入口外，还支持通过 `@app.endpoint(...)` 装饰器为应用注册任意路径的 HTTP 接口。
+
+**主要特点**：
+
+1. **灵活性高** —— 你可以为不同业务定义专门的 API 路径，而不是都走 `/process`；
+2. 多种返回模式—— 支持
+   - 普通同步/异步函数返回 JSON 对象
+   - 生成器（同步或异步）返回 **流式数据**（SSE）
+3. 参数解析——`@app.endpoint`装饰的函数可以自动解析
+   - URL 查询参数
+   - JSON 请求体（自动映射到 Pydantic 模型）
+   - `fastapi.Request` 对象
+   - `AgentRequest` 对象（方便统一 session、用户信息等）
+4. **异常处理** —— 流式生成器抛出的异常会自动封装到 SSE 错误事件中返回给客户端。
+
+**示例**：
+
+```python
+app = AgentApp()
+
+@app.endpoint("/hello")
+def hello_endpoint():
+    return {"msg": "Hello world"}
+
+@app.endpoint("/stream_numbers")
+async def stream_numbers():
+    for i in range(5):
+        yield f"number: {i}\n"
+```
+
+调用：
+
+```bash
+curl -X POST http://localhost:8090/hello
+curl -X POST http://localhost:8090/stream_numbers
+```
+
+---
+
 ## 部署到本地或远程
 
 **功能**

@@ -445,6 +445,9 @@ runtime-sandbox-builder browser
 
 # 构建文件系统镜像（约2GB）
 runtime-sandbox-builder filesystem
+
+# 构建移动端镜像（约3GB）
+runtime-sandbox-builder mobile
 ```
 
 上述命令在以下情况下很有用：
