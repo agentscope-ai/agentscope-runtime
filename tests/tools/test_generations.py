@@ -471,10 +471,6 @@ async def test_image_edit(image_edit):
 
 
 @pytest.fixture
-@pytest.mark.skipif(
-    NO_DASHSCOPE_KEY,
-    reason="DASHSCOPE_API_KEY not set",
-)
 def image_generation():
     return ImageGeneration()
 
@@ -507,10 +503,6 @@ async def test_image_generation(image_generation):
 
 
 @pytest.fixture
-@pytest.mark.skipif(
-    NO_DASHSCOPE_KEY,
-    reason="DASHSCOPE_API_KEY not set",
-)
 def image_style_repaint():
     return ImageStyleRepaint()
 
@@ -544,10 +536,6 @@ async def test_image_style_repaint(image_style_repaint):
 
 
 @pytest.fixture
-@pytest.mark.skipif(
-    NO_DASHSCOPE_KEY,
-    reason="DASHSCOPE_API_KEY not set",
-)
 def image_to_video():
     return ImageToVideo()
 
