@@ -292,3 +292,10 @@ For details, please see {doc}`alipay`
 - **Deep dives**: open the per-family cookbook pages under `cookbook/en/tools/` whenever you need exhaustive parameter tables or troubleshooting guides.
 - **Examples**: re-run the scripts in `examples/` to see how the same tools integrate with AgentScope Runtime, LangGraph, AutoGen, or other frameworks.
 - **New tools**: follow the Quickstart template to wrap additional enterprise APIs; keep naming consistent (`Tool` suffix optional but recommended) and document them alongside the existing cookbook entries.
+
+## 📖 FAQ
+
+**Q: Why can’t or shouldn’t these out‑of‑the‑box Tools run inside a sandbox?**
+**A:** Prebuilt Tools (like Search, RAG, AIGC, Payments) are purely API wrappers. Their logic executes on cloud services or third‑party platforms, and the local process only handles network requests. They do not alter system configurations, access local files, or spawn processes.
+Sandboxing is meant to isolate potentially risky operations (e.g., running untrusted scripts, executing system commands). Since these Tools conform to production safety requirements, we don’t recommend or support running them within a sandbox.
+If your use‑case needs to execute code that could impact the host environment, please follow sandbox integration patterns and create custom Tools designed for sandbox‑enabled engines.
