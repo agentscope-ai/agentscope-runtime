@@ -61,6 +61,8 @@ dev = [
     "jsonref",
     "asgiref",
     "jinja2",
+    "langgraph",
+    "autogen",
 ]
 
 ext = [
