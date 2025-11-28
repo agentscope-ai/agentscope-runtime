@@ -125,11 +125,7 @@ if __name__ == "__main__":
 ```
 
 ## LangGraph Integration Example
-
-To reproduce the “Apply to existing LangGraph project” flow, wrap the tool as a Langgraph Node
-by `LanggraphNodeAdapter`, and bind it to a model, and wire it into a LangGraph workflow.
-
-The tool schema comes directly from the tool’s input model, so tool calls remain type-safe.
+To reproduce the “Apply to existing LangGraph project” flow, wrap the tool as a LangChain `StructuredTool`, bind it to a model, and wire it into a LangGraph workflow. The tool schema comes directly from the tool’s input model, so tool calls remain type-safe.
 
 ```python
 import os
@@ -146,22 +142,41 @@ from agentscope_runtime.tools.searches import (
     SearchOptions,
 )
 
-from agentscope_runtime.adapters.langgraph.tool import LanggraphNodeAdapter
 search_tool = ModelstudioSearchLite()
 
-tool_node = LanggraphNodeAdapter(
-    [
-        ModelstudioSearchLite(),
-    ],
-)
 
-api_key = os.getenv("DASHSCOPE_API_KEY")
+def search_tool_func(
+    messages: list[dict],
+    search_options: dict | None = None,
+    search_timeout: int | None = None,
+    type: str | None = None,
+):
+    kwargs = {
+        "messages": messages,
+        "search_options": SearchOptions(**(search_options or {})),
+    }
+    if search_timeout is not None:
+        kwargs["search_timeout"] = search_timeout
+    if type is not None:
+        kwargs["type"] = type
+    result = search_tool.run(
+        SearchInput(**kwargs),
+        user_id=os.environ["MODELSTUDIO_USER_ID"],
+    )
+    return ModelstudioSearchLite.return_value_as_string(result)
+
+
+search_tool = StructuredTool.from_function(
+    func=search_tool_func,
+    name=search_tool.name,
+    description=search_tool.description,
+)
 
 llm = ChatOpenAI(
     model="qwen-turbo",
     openai_api_key=os.environ["DASHSCOPE_API_KEY"],
     openai_api_base="https://dashscope.aliyuncs.com/compatible-mode/v1",
-).bind_tools(tool_node.tool_schemas)
+).bind_tools([search_tool])
 
 
 def should_continue(state: MessagesState):

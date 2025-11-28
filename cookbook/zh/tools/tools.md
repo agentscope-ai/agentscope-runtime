@@ -126,8 +126,7 @@ if __name__ == "__main__":
 
 ## LangGraph 集成示例
 
-如果要在 LangGraph 项目中沿用上一示例，只需用`LanggraphNodeAdapter`把 Tool 包成 Langgraph Node，
-绑定模型并接入 LangGraph 工作流。工具 Schema 直接来自 Tool 的输入模型，保证调用依旧类型安全。
+如果要在 LangGraph 项目中沿用上一示例，只需把 Tool 包成 LangChain `StructuredTool`，绑定模型并接入 LangGraph 工作流。工具 Schema 直接来自 Tool 的输入模型，保证调用依旧类型安全。
 
 ```python
 import os
@@ -144,22 +143,41 @@ from agentscope_runtime.tools.searches import (
     SearchOptions,
 )
 
-from agentscope_runtime.adapters.langgraph.tool import LanggraphNodeAdapter
 search_tool = ModelstudioSearchLite()
 
-tool_node = LanggraphNodeAdapter(
-    [
-        ModelstudioSearchLite(),
-    ],
-)
 
-api_key = os.getenv("DASHSCOPE_API_KEY")
+def search_tool_func(
+    messages: list[dict],
+    search_options: dict | None = None,
+    search_timeout: int | None = None,
+    type: str | None = None,
+):
+    kwargs = {
+        "messages": messages,
+        "search_options": SearchOptions(**(search_options or {})),
+    }
+    if search_timeout is not None:
+        kwargs["search_timeout"] = search_timeout
+    if type is not None:
+        kwargs["type"] = type
+    result = search_tool.run(
+        SearchInput(**kwargs),
+        user_id=os.environ["MODELSTUDIO_USER_ID"],
+    )
+    return ModelstudioSearchLite.return_value_as_string(result)
+
+
+search_tool = StructuredTool.from_function(
+    func=search_tool_func,
+    name=search_tool.name,
+    description=search_tool.description,
+)
 
 llm = ChatOpenAI(
     model="qwen-turbo",
     openai_api_key=os.environ["DASHSCOPE_API_KEY"],
     openai_api_base="https://dashscope.aliyuncs.com/compatible-mode/v1",
-).bind_tools(tool_node.tool_schemas)
+).bind_tools([search_tool])
 
 
 def should_continue(state: MessagesState):
@@ -184,7 +202,7 @@ app = workflow.compile(checkpointer=MemorySaver())
 final_state = app.invoke(
     {"messages": [HumanMessage(content="Give me the latest Hangzhou news.")]}
 )
-print(final_state["messages"][-1].content)
+print(final_state["messages"][-1].content))
 ```
 
 ## AutoGen 集成示例
