@@ -206,7 +206,7 @@ class TrainingSandbox(Sandbox):
 
 
 @SandboxRegistry.register(
-    build_image_uri("runtime-sandbox-appworld", arm64_compatible=False),
+    build_image_uri("runtime-sandbox-appworld"),
     sandbox_type=SandboxType.APPWORLD,
     runtime_config={"shm_size": "5.06gb"},
     security_level="medium",
@@ -251,7 +251,7 @@ DATASET_SUB_TYPE = os.environ.get("DATASET_SUB_TYPE", "multi_turn")
 
 
 @SandboxRegistry.register(
-    build_image_uri("runtime-sandbox-bfcl", arm64_compatible=False),
+    build_image_uri("runtime-sandbox-bfcl"),
     sandbox_type=SandboxType.BFCL,
     runtime_config={"shm_size": "8.06gb"},
     security_level="medium",
