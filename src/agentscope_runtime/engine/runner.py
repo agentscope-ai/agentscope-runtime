@@ -223,7 +223,7 @@ class Runner:
         seq_gen = SequenceNumberGenerator()
 
         # Initial response
-        response = AgentResponse()
+        response = AgentResponse(id=request.id)
         yield seq_gen.yield_with_sequence(response)
 
         # Set to in-progress status
