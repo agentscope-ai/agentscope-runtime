@@ -3,11 +3,11 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="9. 管理器模块（Manager Module）" href="manager.html"><link rel="prev" title="7. 深入了解AgentApp" href="agent_app.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="参考: Demo 展示厅" href="demohouse.html"><link rel="prev" title="执行轨迹追踪" href="tracing.html">
         <link rel="prefetch" href="../_static/logo.svg" as="image">
 
     <link rel="shortcut icon" href="../_static/logo.svg"><!-- Generated with Sphinx 7.4.7 and Furo 2025.09.25 -->
-        <title>8. Agent API 协议规范 - AgentScope Runtime</title>
+        <title>参考: Agent API 协议规范 - AgentScope Runtime</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
@@ -359,7 +359,7 @@ body.preview-active {
 </style>
 
 <script>
-    const VERSIONS = ["preview", "v0.2.0", "v0.1.6", "v0.1.5", "v0.1.4"];
+    const VERSIONS = ["preview", "v0.2.0"];
     const VERSION_PATTERN = /^\/(v\d+\.\d+\.\d+)\//;
 
     function populateVersionMenu() {
@@ -474,31 +474,54 @@ body.preview-active {
 <li class="toctree-l1"><a class="reference internal" href="../en/install.html">1. Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../en/concept.html">2. Concepts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../en/quickstart.html">3. Quick Start</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../en/sandbox.html">4. Tool Sandbox</a><input aria-label="Toggle navigation of 4. Tool Sandbox" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../en/sandbox_advanced.html">Advanced Usage of Tool Sandbox</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../en/training_sandbox.html">Training Sandbox</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../en/sandbox_troubleshooting.html">Sandbox Troubleshooting</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/tool.html">4. Sandbox and Tools</a><input aria-label="Toggle navigation of 4. Sandbox and Tools" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../en/sandbox/sandbox.html">Sandbox</a><input aria-label="Toggle navigation of Sandbox" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../en/sandbox/advanced.html">Advanced Usage of Tool Sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/sandbox/training_sandbox.html">Training Sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/sandbox/troubleshooting.html">Sandbox Troubleshooting</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../en/advanced_deployment.html">5. Advanced Deployment Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../en/react_agent.html">6. Deploy a ReAct Agent with Tool Sandbox</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../en/agent_app.html">7. Deep Dive into AgentApp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../en/protocol.html">8. Agent API Protocol Specification</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../en/manager.html">9. Manager Module</a><input aria-label="Toggle navigation of 9. Manager Module" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../en/context_manager.html">Context Manager</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../en/environment_manager.html">Environment Manager</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../en/tools/tools.html">Tools</a><input aria-label="Toggle navigation of Tools" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/modelstudio_search.html">Search Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/modelstudio_rag.html">Retrieval-Augmented Generation Components (RAGs)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/modelstudio_generations.html">Image Generation Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/alipay.html">Alipay Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/realtime_clients.html">Realtime Client Tools</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../en/tracing.html">10. Tracing Method Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../en/demohouse.html">11. Demo House</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../en/contribute.html">12. How to Contribute</a><input aria-label="Toggle navigation of 12. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/service/service.html">5. Services and Adapters</a><input aria-label="Toggle navigation of 5. Services and Adapters" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../en/service/session_history.html">Session History Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/service/memory.html">Memory Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/service/sandbox.html">Sandbox Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/service/state.html">Agent State Service</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/deployment.html">6. Deployment</a><input aria-label="Toggle navigation of 6. Deployment" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../en/agent_app.html">Simple Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/advanced_deployment.html">Advanced Deployment Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/react_agent.html">Reference: Full Deployment Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../en/call.html">AgentApp API Invocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/tracing.html">Tracing Method Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/protocol.html">Agent API Protocol Specification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/demohouse.html">Reference: Demo House</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/ut.html">Reference: Tests</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/contribute.html">8. How to Contribute</a><input aria-label="Toggle navigation of 8. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../en/README.html">Contribute to Cookbook</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../en/CHANGELOG.html">9. CHANGELOG</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
 <ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../en/api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../en/api/sandbox.html">Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../en/api/engine.html">Engine</a></li>
 </ul>
@@ -513,31 +536,54 @@ body.preview-active {
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. 安装</a></li>
 <li class="toctree-l1"><a class="reference internal" href="concept.html">2. 概念</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">3. 快速开始</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="sandbox.html">4. 工具沙箱</a><input aria-label="Toggle navigation of 4. 工具沙箱" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="sandbox_advanced.html">工具沙箱高级用法</a></li>
-<li class="toctree-l2"><a class="reference internal" href="training_sandbox.html">训练用沙箱</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sandbox_troubleshooting.html">沙盒故障排除</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tool.html">4. 沙箱与工具</a><input aria-label="Toggle navigation of 4. 沙箱与工具" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="sandbox/sandbox.html">沙箱</a><input aria-label="Toggle navigation of 沙箱" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="sandbox/advanced.html">工具沙箱高级用法</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sandbox/training_sandbox.html">训练用沙箱</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sandbox/troubleshooting.html">沙盒故障排除</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="advanced_deployment.html">5. 高级部署指南</a></li>
-<li class="toctree-l1"><a class="reference internal" href="react_agent.html">6. 部署配备工具沙箱的ReAct智能体</a></li>
-<li class="toctree-l1"><a class="reference internal" href="agent_app.html">7. 深入了解AgentApp</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">8. Agent API 协议规范</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="manager.html">9. 管理器模块（Manager Module）</a><input aria-label="Toggle navigation of 9. 管理器模块（Manager Module）" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="context_manager.html">上下文管理器 (Context Manager)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="environment_manager.html">环境管理器（Environment Manager）</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tools/tools.html">Tools</a><input aria-label="Toggle navigation of Tools" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="tools/modelstudio_search.html">搜索组件 (Searches)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/modelstudio_rag.html">检索增强生成组件 (RAGs)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/modelstudio_generations.html">图像生成组件 (Generations)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/alipay.html">支付宝组件 (Alipay)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/realtime_clients.html">实时客户端组件 (Realtime Clients)</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tracing.html">10. 执行轨迹追踪</a></li>
-<li class="toctree-l1"><a class="reference internal" href="demohouse.html">11. Demo 展示厅</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="contribute.html">12. 如何贡献</a><input aria-label="Toggle navigation of 12. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="service/service.html">5. 服务与适配器</a><input aria-label="Toggle navigation of 5. 服务与适配器" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="service/session_history.html">会话历史服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service/memory.html">记忆服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service/sandbox.html">沙箱服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service/state.html">智能体状态服务</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="deployment.html">6. 部署</a><input aria-label="Toggle navigation of 6. 部署" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="agent_app.html">简单部署</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced_deployment.html">高级部署</a></li>
+<li class="toctree-l2"><a class="reference internal" href="react_agent.html">参考: 完整部署样例</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" checked="" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="call.html">智能体应用API调用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracing.html">执行轨迹追踪</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">参考: Agent API 协议规范</a></li>
+<li class="toctree-l2"><a class="reference internal" href="demohouse.html">参考: Demo 展示厅</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ut.html">参考: 测试用例</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="contribute.html">8. 如何贡献</a><input aria-label="Toggle navigation of 8. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="README.html">参与贡献Cookbook</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="CHANGELOG.html">9. CHANGELOG</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API 参考</span></p>
 <ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="api/sandbox.html">Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/engine.html">Engine</a></li>
 </ul>
@@ -579,7 +625,7 @@ body.preview-active {
         </div>
         <article role="main" id="furo-main-content">
           <section id="agent-api">
-<h1><span class="section-number">8. </span>Agent API 协议规范<a class="headerlink" href="#agent-api" title="Link to this heading">¶</a></h1>
+<h1>参考: Agent API 协议规范<a class="headerlink" href="#agent-api" title="Link to this heading">¶</a></h1>
 <section id="id1">
 <h2>概述<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
 <p>本文档描述了与AI智能体通信的结构化JSON协议。该协议定义了支持以下功能的消息、请求和响应：</p>
@@ -871,6 +917,7 @@ body.preview-active {
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">BaseRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Message</span><span class="p">]</span>
     <span class="n">stream</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </pre></div>
 </div>
 </div>
@@ -890,7 +937,6 @@ body.preview-active {
     <span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">tools</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Tool</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">session_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">response_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </pre></div>
 </div>
 </div>
@@ -1237,6 +1283,104 @@ body.preview-active {
 </section>
 </section>
 </section>
+<section id="id26">
+<h2>协议适配器<a class="headerlink" href="#id26" title="Link to this heading">¶</a></h2>
+<p>协议适配器（Protocol Adapter）用于在不同协议之间进行转换，使 AgentScope Runtime 能够支持多种 API 协议。</p>
+<section id="id27">
+<h3>适配器架构<a class="headerlink" href="#id27" title="Link to this heading">¶</a></h3>
+<p>AgentScope Runtime 提供了两种内置协议适配器：</p>
+<ul class="simple">
+<li><p><strong>A2A 协议适配器</strong>（<code class="docutils literal notranslate"><span class="pre">A2AFastAPIDefaultAdapter</span></code>）：支持 Agent-to-Agent 协议</p></li>
+<li><p><strong>Response API 协议适配器</strong>（<code class="docutils literal notranslate"><span class="pre">ResponseAPIDefaultAdapter</span></code>）：支持 OpenAI Responses API 协议</p></li>
+</ul>
+</section>
+<section id="id28">
+<h3>使用内置适配器<a class="headerlink" href="#id28" title="Link to this heading">¶</a></h3>
+<p>AgentApp 默认会自动注册内置适配器：</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.adapter.a2a</span><span class="w"> </span><span class="kn">import</span> <span class="n">A2AFastAPIDefaultAdapter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.adapter.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResponseAPIDefaultAdapter</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span><span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">)</span>
+
+<span class="c1"># AgentApp 会自动注册内置适配器</span>
+<span class="c1"># 您也可以通过 protocol_adapters 参数自定义</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
+    <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+    <span class="n">protocol_adapters</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">A2AFastAPIDefaultAdapter</span><span class="p">(</span>
+            <span class="n">agent_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+            <span class="n">agent_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">ResponseAPIDefaultAdapter</span><span class="p">(),</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="id29">
+<h3>创建自定义适配器<a class="headerlink" href="#id29" title="Link to this heading">¶</a></h3>
+<p>您可以通过继承 <code class="docutils literal notranslate"><span class="pre">ProtocolAdapter</span></code> 基类来创建自定义适配器：</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.adapter.protocol_adapter</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProtocolAdapter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CustomProtocolAdapter</span><span class="p">(</span><span class="n">ProtocolAdapter</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;自定义协议适配器示例&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_endpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;添加端点到适配器</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            app: FastAPI 应用实例</span>
+<span class="sd">            func: 处理函数</span>
+<span class="sd">            **kwargs: 其他参数</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            端点对象</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># 实现自定义端点添加逻辑</span>
+        <span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/custom-endpoint&quot;</span><span class="p">)</span>
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">custom_handler</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+            <span class="c1"># 转换请求格式</span>
+            <span class="n">converted_request</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_request</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+            <span class="c1"># 调用处理函数</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="n">converted_request</span><span class="p">)</span>
+            <span class="c1"># 转换响应格式</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_response</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">custom_handler</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;将外部协议请求转换为内部格式&quot;&quot;&quot;</span>
+        <span class="c1"># 实现请求转换逻辑</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_response</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;将内部响应转换为外部协议格式&quot;&quot;&quot;</span>
+        <span class="c1"># 实现响应转换逻辑</span>
+        <span class="k">pass</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="id30">
+<h3>适配器使用场景<a class="headerlink" href="#id30" title="Link to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p><strong>多协议支持</strong>：使同一个 Agent 能够同时支持多种 API 协议</p></li>
+<li><p><strong>协议转换</strong>：在不同协议之间进行无缝转换</p></li>
+<li><p><strong>向后兼容</strong>：支持旧版本协议的同时支持新协议</p></li>
+<li><p><strong>自定义协议</strong>：实现特定业务场景的协议适配</p></li>
+</ol>
+<p>更多详细信息，请参考 API 文档中的适配器模块说明。</p>
+</section>
+</section>
 </section>
 
     <script type="text/x-thebe-config">
@@ -1263,23 +1407,23 @@ body.preview-active {
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="manager.html">
+          <a class="next-page" href="demohouse.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title"><span class="section-number">9. </span>管理器模块（Manager Module）</div>
+                <div class="title">参考: Demo 展示厅</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="agent_app.html">
+          <a class="prev-page" href="tracing.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title"><span class="section-number">7. </span>深入了解AgentApp</div>
+                <div class="title">执行轨迹追踪</div>
                 
               </div>
             </a>
@@ -1327,7 +1471,7 @@ body.preview-active {
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">8. Agent API 协议规范</a><ul>
+<li><a class="reference internal" href="#">参考: Agent API 协议规范</a><ul>
 <li><a class="reference internal" href="#id1">概述</a></li>
 <li><a class="reference internal" href="#id2">协议结构</a><ul>
 <li><a class="reference internal" href="#id3">1. 核心枚举</a></li>
@@ -1364,6 +1508,13 @@ body.preview-active {
 <li><a class="reference internal" href="#id25">数据内容构建</a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id26">协议适配器</a><ul>
+<li><a class="reference internal" href="#id27">适配器架构</a></li>
+<li><a class="reference internal" href="#id28">使用内置适配器</a></li>
+<li><a class="reference internal" href="#id29">创建自定义适配器</a></li>
+<li><a class="reference internal" href="#id30">适配器使用场景</a></li>
 </ul>
 </li>
 </ul>

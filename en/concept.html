@@ -359,7 +359,7 @@ body.preview-active {
 </style>
 
 <script>
-    const VERSIONS = ["preview", "v0.2.0", "v0.1.6", "v0.1.5", "v0.1.4"];
+    const VERSIONS = ["preview", "v0.2.0"];
     const VERSION_PATTERN = /^\/(v\d+\.\d+\.\d+)\//;
 
     function populateVersionMenu() {
@@ -474,31 +474,54 @@ body.preview-active {
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. Installation</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">2. Concepts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">3. Quick Start</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="sandbox.html">4. Tool Sandbox</a><input aria-label="Toggle navigation of 4. Tool Sandbox" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="sandbox_advanced.html">Advanced Usage of Tool Sandbox</a></li>
-<li class="toctree-l2"><a class="reference internal" href="training_sandbox.html">Training Sandbox</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sandbox_troubleshooting.html">Sandbox Troubleshooting</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tool.html">4. Sandbox and Tools</a><input aria-label="Toggle navigation of 4. Sandbox and Tools" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="sandbox/sandbox.html">Sandbox</a><input aria-label="Toggle navigation of Sandbox" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="sandbox/advanced.html">Advanced Usage of Tool Sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sandbox/training_sandbox.html">Training Sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sandbox/troubleshooting.html">Sandbox Troubleshooting</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="advanced_deployment.html">5. Advanced Deployment Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="react_agent.html">6. Deploy a ReAct Agent with Tool Sandbox</a></li>
-<li class="toctree-l1"><a class="reference internal" href="agent_app.html">7. Deep Dive into AgentApp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="protocol.html">8. Agent API Protocol Specification</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="manager.html">9. Manager Module</a><input aria-label="Toggle navigation of 9. Manager Module" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="context_manager.html">Context Manager</a></li>
-<li class="toctree-l2"><a class="reference internal" href="environment_manager.html">Environment Manager</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tools/tools.html">Tools</a><input aria-label="Toggle navigation of Tools" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="tools/modelstudio_search.html">Search Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/modelstudio_rag.html">Retrieval-Augmented Generation Components (RAGs)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/modelstudio_generations.html">Image Generation Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/alipay.html">Alipay Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/realtime_clients.html">Realtime Client Tools</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tracing.html">10. Tracing Method Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="demohouse.html">11. Demo House</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="contribute.html">12. How to Contribute</a><input aria-label="Toggle navigation of 12. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="service/service.html">5. Services and Adapters</a><input aria-label="Toggle navigation of 5. Services and Adapters" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="service/session_history.html">Session History Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service/memory.html">Memory Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service/sandbox.html">Sandbox Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service/state.html">Agent State Service</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="deployment.html">6. Deployment</a><input aria-label="Toggle navigation of 6. Deployment" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="agent_app.html">Simple Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced_deployment.html">Advanced Deployment Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="react_agent.html">Reference: Full Deployment Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="call.html">AgentApp API Invocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracing.html">Tracing Method Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="protocol.html">Agent API Protocol Specification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="demohouse.html">Reference: Demo House</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ut.html">Reference: Tests</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="contribute.html">8. How to Contribute</a><input aria-label="Toggle navigation of 8. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="README.html">Contribute to Cookbook</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="CHANGELOG.html">9. CHANGELOG</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
 <ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="api/sandbox.html">Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/engine.html">Engine</a></li>
 </ul>
@@ -513,31 +536,54 @@ body.preview-active {
 <li class="toctree-l1"><a class="reference internal" href="../zh/install.html">1. 安装</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../zh/concept.html">2. 概念</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../zh/quickstart.html">3. 快速开始</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/sandbox.html">4. 工具沙箱</a><input aria-label="Toggle navigation of 4. 工具沙箱" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../zh/sandbox_advanced.html">工具沙箱高级用法</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../zh/training_sandbox.html">训练用沙箱</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../zh/sandbox_troubleshooting.html">沙盒故障排除</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/tool.html">4. 沙箱与工具</a><input aria-label="Toggle navigation of 4. 沙箱与工具" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../zh/sandbox/sandbox.html">沙箱</a><input aria-label="Toggle navigation of 沙箱" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../zh/sandbox/advanced.html">工具沙箱高级用法</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../zh/sandbox/training_sandbox.html">训练用沙箱</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../zh/sandbox/troubleshooting.html">沙盒故障排除</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../zh/advanced_deployment.html">5. 高级部署指南</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../zh/react_agent.html">6. 部署配备工具沙箱的ReAct智能体</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../zh/agent_app.html">7. 深入了解AgentApp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../zh/protocol.html">8. Agent API 协议规范</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/manager.html">9. 管理器模块（Manager Module）</a><input aria-label="Toggle navigation of 9. 管理器模块（Manager Module）" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../zh/context_manager.html">上下文管理器 (Context Manager)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../zh/environment_manager.html">环境管理器（Environment Manager）</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../zh/tools/tools.html">Tools</a><input aria-label="Toggle navigation of Tools" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../zh/tools/modelstudio_search.html">搜索组件 (Searches)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../zh/tools/modelstudio_rag.html">检索增强生成组件 (RAGs)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../zh/tools/modelstudio_generations.html">图像生成组件 (Generations)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../zh/tools/alipay.html">支付宝组件 (Alipay)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../zh/tools/realtime_clients.html">实时客户端组件 (Realtime Clients)</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../zh/tracing.html">10. 执行轨迹追踪</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../zh/demohouse.html">11. Demo 展示厅</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/contribute.html">12. 如何贡献</a><input aria-label="Toggle navigation of 12. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/service/service.html">5. 服务与适配器</a><input aria-label="Toggle navigation of 5. 服务与适配器" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../zh/service/session_history.html">会话历史服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zh/service/memory.html">记忆服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zh/service/sandbox.html">沙箱服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zh/service/state.html">智能体状态服务</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/deployment.html">6. 部署</a><input aria-label="Toggle navigation of 6. 部署" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../zh/agent_app.html">简单部署</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zh/advanced_deployment.html">高级部署</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zh/react_agent.html">参考: 完整部署样例</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../zh/call.html">智能体应用API调用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zh/tracing.html">执行轨迹追踪</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zh/protocol.html">参考: Agent API 协议规范</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zh/demohouse.html">参考: Demo 展示厅</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zh/ut.html">参考: 测试用例</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/contribute.html">8. 如何贡献</a><input aria-label="Toggle navigation of 8. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../zh/README.html">参与贡献Cookbook</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../zh/CHANGELOG.html">9. CHANGELOG</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API 参考</span></p>
 <ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../zh/api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../zh/api/sandbox.html">Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zh/api/engine.html">Engine</a></li>
 </ul>
@@ -580,35 +626,126 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <section id="concepts">
 <h1><span class="section-number">2. </span>Concepts<a class="headerlink" href="#concepts" title="Link to this heading">¶</a></h1>
-<p>This chapter introduces the core concepts of AgentScope Runtime, which provides two main usage patterns:</p>
-<ul class="simple">
-<li><p><strong>Agent Deployment</strong>: Use the Engine Module for full-featured agent deployment with runtime orchestration, context management, and production-ready services</p></li>
-<li><p><strong>Sandboxed Tool Usage</strong>: Use the Sandbox Module independently for secure tool execution and integration in your own applications</p></li>
-</ul>
-<section id="engine-module-concepts">
-<h2>Engine Module Concepts<a class="headerlink" href="#engine-module-concepts" title="Link to this heading">¶</a></h2>
+<p>This chapter introduces the core concepts of AgentScope Runtime.</p>
 <section id="architecture">
-<h3>Architecture<a class="headerlink" href="#architecture" title="Link to this heading">¶</a></h3>
-<p>The engine module in AgentScope Runtime uses a modular architecture with several key components:</p>
-<img src="/_static/agent_architecture.jpg" alt="Installation Options" style="zoom:25%;" />
-<ul class="simple">
-<li><p><strong>Agent</strong>: The core AI component that processes requests and generates responses (can be LLM-based, workflow-based, or custom implementations, such as Agentscope, Agno, LangGraph)</p></li>
-<li><p><strong>AgentApp</strong>: Inherits from the FastAPI App and serves as the application entry point. It is responsible for providing external API interfaces, registering routes, loading configurations, and delegating incoming requests to the Runner for execution.</p></li>
-<li><p><strong>Runner</strong>: Orchestrates the agent execution and manages deployment at runtime</p></li>
-<li><p><strong>Context</strong>: Contains all the information needed for agent execution</p></li>
-<li><p><strong>Context &amp; Env Manager</strong>: Provide additional functional services management, such as session history management, long-term memory management, and sandbox management.</p></li>
-<li><p><strong>Deployer</strong>: Deploy the Runner as a service</p></li>
+<h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading">¶</a></h2>
+<p>AgentScope Runtime uses a modular architecture with several key components:</p>
+<pre  class="mermaid">
+        flowchart LR
+    %% Tools Module
+    subgraph Tools[&quot;🛠 Tools&quot;]
+        RT[&quot;RAG Tool&quot;]
+        ST[&quot;Search Tool&quot;]
+        PT[&quot;Payment Tool&quot;]
+    end
+
+    %% Service Module
+    subgraph Service[&quot;💼 Service&quot;]
+        MS[&quot;Memory Service&quot;]
+        SS[&quot;Session Service&quot;]
+        STS[&quot;State Service&quot;]
+        SBS[&quot;Sandbox Service&quot;]
+    end
+
+    %% Sandbox Module
+    subgraph Sandbox[&quot;🐳 Sandbox&quot;]
+        BS[&quot;Browser Sandbox&quot;]
+        FS[&quot;File System Sandbox&quot;]
+        GS[&quot;GUI Sandbox&quot;]
+        CSB[&quot;Cloud Sandbox&quot;]
+        MSB[&quot;Mobile Sandbox&quot;]
+        ETC[&quot;More...&quot;]
+    end
+
+    %% Adapter Module
+    subgraph Adapter[&quot;🔌 Adapter&quot;]
+        TAD[&quot;Tool Adapter&quot;]
+        MAD[&quot;Memory Adapter&quot;]
+        SAD[&quot;Session Adapter&quot;]
+        STAD[&quot;State Adapter&quot;]
+        SBAD[&quot;Sandbox Tool Adapter&quot;]
+    end
+
+    %% Agent Module
+    subgraph Agent[&quot;🤖 Agent&quot;]
+        AG[&quot;AgentScope&quot;]
+        AG_NOTE[&quot;(More...)&quot;]
+    end
+
+    %% Application Layer
+    subgraph AgentAPP[&quot;📦 Agent App&quot;]
+        RA[&quot;Runner&quot;]
+    end
+
+    %% Deployment Module
+    subgraph Deployer[&quot;🚀 Deployer&quot;]
+        CT[&quot;Container Deployment&quot;]
+        KD[&quot;K8s Deployment&quot;]
+        DP[&quot;Cloud Deployment&quot;]
+        LD[&quot;Local Deployment&quot;]
+    end
+
+    %% External Protocols
+    OAI[&quot;OpenAI SDK&quot;]:::ext
+    A2A[&quot;Google A2A Protocol&quot;]:::ext
+    CUS[&quot;Custom Endpoint&quot;]:::ext
+
+    %% Internal connections
+    RT --&gt; TAD
+    ST --&gt; TAD
+    PT --&gt; TAD
+
+    MS --&gt; MAD
+    SS --&gt; SAD
+    STS --&gt; STAD
+    SBS --&gt; SBAD
+
+    BS --&gt; SBS
+    FS --&gt; SBS
+    GS --&gt; SBS
+    CSB --&gt; SBS
+    MSB --&gt; SBS
+    ETC --&gt; SBS
+
+    %% Big block to big block connection
+    Adapter --&gt; Agent
+
+    AG --&gt; RA
+    RA --&gt; CT
+    RA --&gt; KD
+    RA --&gt; DP
+    RA --&gt; LD
+
+    %% Entire Deployer connects to external protocols
+    Deployer --&gt; OAI
+    Deployer --&gt; A2A
+    Deployer --&gt; CUS
+
+    %% Styles
+    classDef small fill:#0066FF,stroke:#004CBE,color:#FFFFFF,font-weight:bold
+    classDef big fill:#99D6FF,stroke:#004CBE,color:#FFFFFF,font-weight:bold
+    classDef ext fill:#FFFFFF,stroke:#000000,color:#000000,font-weight:bold
+
+    class Tools,Service,Sandbox,Adapter,Agent,AgentAPP,Deployer big
+    class RT,ST,PT,MS,SS,STS,SBS,BS,FS,GS,CSB,MSB,ETC,TAD,MAD,SAD,STAD,SBAD,AG,AG_NOTE,RA,CT,KD,DP,LD small
+    </pre><ul class="simple">
+<li><p><strong>Agent</strong>: The core AI component that processes requests and generates responses; in the runtime we recommend building agents with the AgentScope framework.</p></li>
+<li><p><strong>AgentApp</strong>: Serves as the application entry point. It exposes APIs, registers routes, loads configurations, and delegates incoming requests to the Runner for execution.</p></li>
+<li><p><strong>Runner</strong>: Orchestrates agent execution and manages deployment at runtime, handling agent lifecycle, session management, streaming responses, and service deployment.</p></li>
+<li><p><strong>Deployer</strong>: Deploys the Runner as a service with health checks, monitoring, lifecycle management, SSE-based real-time streaming, error handling, logging, and graceful shutdown.</p></li>
+<li><p><strong>Tool</strong>: Provides ready-to-use services, such as RAG.</p></li>
+<li><p><strong>Service</strong>: Supplies management capabilities required by agents, such as memory management and sandbox management.</p></li>
+<li><p><strong>Adapter</strong>: Adapters that integrate Runtime-provided components/modules with different Agent frameworks.</p></li>
 </ul>
-</section>
 <section id="key-components">
 <h3>Key Components<a class="headerlink" href="#key-components" title="Link to this heading">¶</a></h3>
 <section id="agent">
 <h4>1. Agent<a class="headerlink" href="#agent" title="Link to this heading">¶</a></h4>
-<p>The <code class="docutils literal notranslate"><span class="pre">Agent</span></code> is the core component that processes requests and generates responses. It’s an abstract base class that defines the interface for all agent types. We’ll use <code class="docutils literal notranslate"><span class="pre">AgentScopeAgent</span></code> as our primary example, but the same deployment patterns apply to all agent types.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">Agent</span></code> is the core component that processes requests and generates responses. Many popular frameworks already provide agent abstractions, so the runtime does not introduce an additional <code class="docutils literal notranslate"><span class="pre">Agent</span></code> class—developers can build the required agents with AgentScope.</p>
 </section>
 <section id="agentapp">
 <h4>2. AgentApp<a class="headerlink" href="#agentapp" title="Link to this heading">¶</a></h4>
-<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> is the <strong>entry point</strong> of applications in the AgentScope Runtime. It inherits from <code class="docutils literal notranslate"><span class="pre">BaseApp</span></code> (a base class that extends FastAPI and optionally integrates Celery) and is used to deploy an Agent as an API application that provides services externally.</p>
+<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> is the <strong>application entry point</strong> in AgentScope Runtime. It is used to deploy an agent as an externally accessible API application.</p>
 <p>Its responsibilities include:</p>
 <ul class="simple">
 <li><p>Initializing and binding the <strong>Agent</strong> and <strong>Runner</strong>, delegating requests to the runtime for processing</p></li>
@@ -620,121 +757,46 @@ body.preview-active {
 </section>
 <section id="runner">
 <h4>3. Runner<a class="headerlink" href="#runner" title="Link to this heading">¶</a></h4>
-<p>The <code class="docutils literal notranslate"><span class="pre">Runner</span></code> class provides a flexible and scalable runtime that orchestrates agent execution and offers deployment capabilities. It manages:</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">Runner</span></code> class offers a flexible and extensible runtime that orchestrates agent execution and enables deployment. It manages:</p>
 <ul class="simple">
-<li><p>Agent lifecycle</p></li>
-<li><p>Session management</p></li>
+<li><p>Agent lifecycle through <code class="docutils literal notranslate"><span class="pre">init_handler</span></code> and <code class="docutils literal notranslate"><span class="pre">shutdown_handler</span></code></p></li>
+<li><p>Request processing through <code class="docutils literal notranslate"><span class="pre">query_handler</span></code></p></li>
 <li><p>Streaming responses</p></li>
-<li><p>Service deployment</p></li>
-</ul>
-</section>
-<section id="context">
-<h4>4. Context<a class="headerlink" href="#context" title="Link to this heading">¶</a></h4>
-<p>The <code class="docutils literal notranslate"><span class="pre">Context</span></code> object contains all the information needed for agent execution:</p>
-<ul class="simple">
-<li><p>Agent instance</p></li>
-<li><p>Session information</p></li>
-<li><p>User request</p></li>
-<li><p>Service instances</p></li>
-</ul>
-</section>
-<section id="context-env-manager">
-<h4>5. Context &amp; Env Manager<a class="headerlink" href="#context-env-manager" title="Link to this heading">¶</a></h4>
-<p>Includes <code class="docutils literal notranslate"><span class="pre">ContextManager</span></code> and <code class="docutils literal notranslate"><span class="pre">EnvironmentManager</span></code>:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">ContextManager</span></code>: Provides session history management and long-term memory management.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">EnvironmentManager</span></code>: Provides sandbox lifecycle management.</p></li>
+<li><p>Service deployment via the <code class="docutils literal notranslate"><span class="pre">deploy()</span></code> method</p></li>
 </ul>
 </section>
 <section id="deployer">
-<h4>6. Deployer<a class="headerlink" href="#deployer" title="Link to this heading">¶</a></h4>
-<p>The <code class="docutils literal notranslate"><span class="pre">Deployer</span></code> system provides production-ready deployment capabilities:</p>
+<h4>4. Deployer<a class="headerlink" href="#deployer" title="Link to this heading">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">Deployer</span></code> (implemented as <code class="docutils literal notranslate"><span class="pre">DeployManager</span></code>) provides production-grade deployment capabilities:</p>
 <ul class="simple">
-<li><p>Deploy Runner as a service.</p></li>
+<li><p>Deploying the Runner as a service</p></li>
 <li><p>Health checks, monitoring, and lifecycle management</p></li>
-<li><p>Real-time response streaming with SSE</p></li>
+<li><p>SSE-based real-time response streaming</p></li>
 <li><p>Error handling, logging, and graceful shutdown</p></li>
+<li><p>Support for multiple deployment modes (local, containerized, Kubernetes, etc.)</p></li>
 </ul>
 </section>
-</section>
-</section>
-<section id="sandbox-module-concepts">
-<h2>Sandbox Module Concepts<a class="headerlink" href="#sandbox-module-concepts" title="Link to this heading">¶</a></h2>
-<section id="id1">
-<h3>Architecture<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
-<p>The Sandbox Module provides a <strong>secure</strong> and <strong>isolated</strong> execution environment for various operations including MCP tool execution, browser automation, and file system operations. The architecture is built around three main components:</p>
+<section id="sandbox-tool">
+<h4>5. Sandbox &amp; Tool<a class="headerlink" href="#sandbox-tool" title="Link to this heading">¶</a></h4>
+<p>The runtime offers two patterns for integrating tools:</p>
 <ul class="simple">
-<li><p><strong>Sandbox</strong>: Containerized execution environments that provide isolation and security</p></li>
-<li><p><strong>Tools</strong>: Function-like interfaces that execute within sandboxes</p></li>
+<li><p>Ready-to-use tools provided by service vendors, such as RAG</p></li>
+<li><p>Tool sandboxes that run securely within the runtime, such as a browser</p></li>
 </ul>
 </section>
-<section id="sandbox-types">
-<h3>Sandbox Types<a class="headerlink" href="#sandbox-types" title="Link to this heading">¶</a></h3>
-<p>The system supports multiple sandbox types, each optimized for specific use cases:</p>
-<section id="basesandbox">
-<h4>1. BaseSandbox<a class="headerlink" href="#basesandbox" title="Link to this heading">¶</a></h4>
+<section id="service">
+<h4>6. Service<a class="headerlink" href="#service" title="Link to this heading">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">Service</span></code> includes the following components:</p>
 <ul class="simple">
-<li><p><strong>Purpose</strong>: Basic Python code execution and shell commands</p></li>
-<li><p><strong>Use Case</strong>: Essential for fundamental tool execution and scripting</p></li>
-<li><p><strong>Capabilities</strong>: IPython environment, shell command execution</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">state_service</span></code> for state management</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">memory_service</span></code> for agent memory management</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sandbox_service</span></code> for sandbox orchestration</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">session_history_service</span></code> for persisting session history</p></li>
 </ul>
 </section>
-<section id="guisandbox">
-<h4>2. GuiSandbox<a class="headerlink" href="#guisandbox" title="Link to this heading">¶</a></h4>
-<ul class="simple">
-<li><p><strong>Purpose</strong>: GUI interaction and automation with secure access control</p></li>
-<li><p><strong>Use Case</strong>: User interface testing, desktop automation, and interactive workflows</p></li>
-<li><p><strong>Capabilities</strong>: Simulated user input (clicks, typing), window management, screen capture, etc.</p></li>
-</ul>
-</section>
-<section id="filesystemsandbox">
-<h4>3. FilesystemSandbox<a class="headerlink" href="#filesystemsandbox" title="Link to this heading">¶</a></h4>
-<ul class="simple">
-<li><p><strong>Purpose</strong>: File system operations with secure access control</p></li>
-<li><p><strong>Use Case</strong>: File management, text processing, and data manipulation</p></li>
-<li><p><strong>Capabilities</strong>: File read/write, directory operations, file search and metadata, etc.</p></li>
-</ul>
-</section>
-<section id="browsersandbox">
-<h4>4. BrowserSandbox<a class="headerlink" href="#browsersandbox" title="Link to this heading">¶</a></h4>
-<ul class="simple">
-<li><p><strong>Purpose</strong>: Web browser automation and control</p></li>
-<li><p><strong>Use Case</strong>: Web scraping, UI testing, and browser-based interactions</p></li>
-<li><p><strong>Capabilities</strong>: Page navigation, element interaction, screenshot capture, etc.</p></li>
-</ul>
-</section>
-<section id="trainingsandbox">
-<h4>5. TrainingSandbox<a class="headerlink" href="#trainingsandbox" title="Link to this heading">¶</a></h4>
-<ul class="simple">
-<li><p><strong>Purpose</strong>: Agent training and evaluation environments</p></li>
-<li><p><strong>Use Case</strong>: Benchmarking and performance evaluation</p></li>
-<li><p><strong>Capabilities</strong>: Environment profiling, training data management</p></li>
-</ul>
-</section>
-</section>
-<section id="tool-module">
-<h3>Tool Module<a class="headerlink" href="#tool-module" title="Link to this heading">¶</a></h3>
-<section id="function-like-interface">
-<h4>Function-Like Interface<a class="headerlink" href="#function-like-interface" title="Link to this heading">¶</a></h4>
-<p>Tools are designed with an intuitive function-like interface that abstracts sandbox complexity while providing maximum flexibility:</p>
-<ul class="simple">
-<li><p><strong>Direct Execution</strong>: Tools can be called directly, automatically creating temporary sandboxes</p></li>
-<li><p><strong>Sandbox Binding</strong>: Tools can be bound to specific sandbox instances for persistent execution contexts</p></li>
-<li><p><strong>Schema Definition</strong>: Each tool has a defined schema specifying input parameters and expected behavior</p></li>
-</ul>
-</section>
-<section id="tool-execution-priority">
-<h4>Tool Execution Priority<a class="headerlink" href="#tool-execution-priority" title="Link to this heading">¶</a></h4>
-<p>The tool module implements a three-level sandbox specification priority:</p>
-<ol class="arabic simple">
-<li><p><strong>Temporary Sandbox</strong> (Highest): Specified during function call</p></li>
-<li><p><strong>Instance-Bound Sandbox</strong> (Second): Specified through binding method</p></li>
-<li><p><strong>Dry-run mode</strong> (lowest priority, no sandbox specified): Automatically creates temporary sandbox when none specified, which will be released after tool execution</p></li>
-</ol>
-</section>
-<section id="immutable-binding">
-<h4>Immutable Binding<a class="headerlink" href="#immutable-binding" title="Link to this heading">¶</a></h4>
-<p>When a tool is bound to a specific sandbox, a new tool instance is created rather than modifying the original. This immutable binding pattern ensures thread safety and allows multiple sandbox-bound versions of the same tool to coexist without interference.</p>
+<section id="adapter">
+<h4>7. Adapter<a class="headerlink" href="#adapter" title="Link to this heading">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">Adapter</span></code> is categorized based on different Agent frameworks and includes tool adapters, memory adapters, session adapters, messages protocol adapters, and more.</p>
 </section>
 </section>
 </section>
@@ -829,33 +891,15 @@ body.preview-active {
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">2. Concepts</a><ul>
-<li><a class="reference internal" href="#engine-module-concepts">Engine Module Concepts</a><ul>
-<li><a class="reference internal" href="#architecture">Architecture</a></li>
+<li><a class="reference internal" href="#architecture">Architecture</a><ul>
 <li><a class="reference internal" href="#key-components">Key Components</a><ul>
 <li><a class="reference internal" href="#agent">1. Agent</a></li>
 <li><a class="reference internal" href="#agentapp">2. AgentApp</a></li>
 <li><a class="reference internal" href="#runner">3. Runner</a></li>
-<li><a class="reference internal" href="#context">4. Context</a></li>
-<li><a class="reference internal" href="#context-env-manager">5. Context &amp; Env Manager</a></li>
-<li><a class="reference internal" href="#deployer">6. Deployer</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference internal" href="#sandbox-module-concepts">Sandbox Module Concepts</a><ul>
-<li><a class="reference internal" href="#id1">Architecture</a></li>
-<li><a class="reference internal" href="#sandbox-types">Sandbox Types</a><ul>
-<li><a class="reference internal" href="#basesandbox">1. BaseSandbox</a></li>
-<li><a class="reference internal" href="#guisandbox">2. GuiSandbox</a></li>
-<li><a class="reference internal" href="#filesystemsandbox">3. FilesystemSandbox</a></li>
-<li><a class="reference internal" href="#browsersandbox">4. BrowserSandbox</a></li>
-<li><a class="reference internal" href="#trainingsandbox">5. TrainingSandbox</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#tool-module">Tool Module</a><ul>
-<li><a class="reference internal" href="#function-like-interface">Function-Like Interface</a></li>
-<li><a class="reference internal" href="#tool-execution-priority">Tool Execution Priority</a></li>
-<li><a class="reference internal" href="#immutable-binding">Immutable Binding</a></li>
+<li><a class="reference internal" href="#deployer">4. Deployer</a></li>
+<li><a class="reference internal" href="#sandbox-tool">5. Sandbox &amp; Tool</a></li>
+<li><a class="reference internal" href="#service">6. Service</a></li>
+<li><a class="reference internal" href="#adapter">7. Adapter</a></li>
 </ul>
 </li>
 </ul>
@@ -888,6 +932,371 @@ body.preview-active {
     <script async="async" src="../_static/sphinx-thebe.js?v=c100c467"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.0/dist/mermaid-layout-elk.esm.min.mjs"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";import elkLayouts from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.0/dist/mermaid-layout-elk.esm.min.mjs";mermaid.registerLayoutLoaders(elkLayouts);mermaid.initialize({startOnLoad:false});</script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
+
+const defaultStyle = document.createElement('style');
+defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+`;
+document.head.appendChild(defaultStyle);
+
+const fullscreenStyle = document.createElement('style');
+fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+document.head.appendChild(fullscreenStyle);
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return brightness < 128;
+    }
+    return false;
+};
+
+const load = async () => {
+    await mermaid.run();
+
+    const all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(load, 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(load, 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(load, 200);
+        return;
+    }
+
+    const darkTheme = isDarkTheme();
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    const modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    const modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    let previousScrollOffset = [window.scrollX, window.scrollY];
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    const allButtons = [];
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+
+        container.appendChild(fullscreenBtn);
+        allButtons.push(fullscreenBtn);
+    });
+
+    // Update theme classes when theme changes
+    const updateTheme = () => {
+        const dark = isDarkTheme();
+        allButtons.forEach(btn => {
+            if (dark) {
+                btn.classList.add('dark-theme');
+            } else {
+                btn.classList.remove('dark-theme');
+            }
+        });
+        if (dark) {
+            modal.classList.add('dark-theme');
+            modalContent.classList.add('dark-theme');
+            closeBtn.classList.add('dark-theme');
+        } else {
+            modal.classList.remove('dark-theme');
+            modalContent.classList.remove('dark-theme');
+            closeBtn.classList.remove('dark-theme');
+        }
+    };
+
+    // Watch for theme changes
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style']
+    });
+};
+
+window.addEventListener("load", load);
+</script>
     <script src="../_static/language.js?v=c79991d2"></script>
     </body>
 </html>

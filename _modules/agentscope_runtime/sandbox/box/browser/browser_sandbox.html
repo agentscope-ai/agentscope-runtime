@@ -358,7 +358,7 @@ body.preview-active {
 </style>
 
 <script>
-    const VERSIONS = ["preview", "v0.2.0", "v0.1.6", "v0.1.5", "v0.1.4"];
+    const VERSIONS = ["preview", "v0.2.0"];
     const VERSION_PATTERN = /^\/(v\d+\.\d+\.\d+)\//;
 
     function populateVersionMenu() {
@@ -473,31 +473,54 @@ body.preview-active {
 <li class="toctree-l1"><a class="reference internal" href="../../../../../en/install.html">1. Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../en/concept.html">2. Concepts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../en/quickstart.html">3. Quick Start</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../en/sandbox.html">4. Tool Sandbox</a><input aria-label="Toggle navigation of 4. Tool Sandbox" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../../../../en/sandbox_advanced.html">Advanced Usage of Tool Sandbox</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../../en/training_sandbox.html">Training Sandbox</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../../en/sandbox_troubleshooting.html">Sandbox Troubleshooting</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../en/tool.html">4. Sandbox and Tools</a><input aria-label="Toggle navigation of 4. Sandbox and Tools" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../../en/sandbox/sandbox.html">Sandbox</a><input aria-label="Toggle navigation of Sandbox" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../en/sandbox/advanced.html">Advanced Usage of Tool Sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../en/sandbox/training_sandbox.html">Training Sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../en/sandbox/troubleshooting.html">Sandbox Troubleshooting</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../en/advanced_deployment.html">5. Advanced Deployment Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../en/react_agent.html">6. Deploy a ReAct Agent with Tool Sandbox</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../en/agent_app.html">7. Deep Dive into AgentApp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../en/protocol.html">8. Agent API Protocol Specification</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../en/manager.html">9. Manager Module</a><input aria-label="Toggle navigation of 9. Manager Module" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../../../../en/context_manager.html">Context Manager</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../../en/environment_manager.html">Environment Manager</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../../en/tools/tools.html">Tools</a><input aria-label="Toggle navigation of Tools" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../en/tools/modelstudio_search.html">Search Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../en/tools/modelstudio_rag.html">Retrieval-Augmented Generation Components (RAGs)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../en/tools/modelstudio_generations.html">Image Generation Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../en/tools/alipay.html">Alipay Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../en/tools/realtime_clients.html">Realtime Client Tools</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../en/tracing.html">10. Tracing Method Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../en/demohouse.html">11. Demo House</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../en/contribute.html">12. How to Contribute</a><input aria-label="Toggle navigation of 12. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../en/service/service.html">5. Services and Adapters</a><input aria-label="Toggle navigation of 5. Services and Adapters" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../en/service/session_history.html">Session History Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../en/service/memory.html">Memory Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../en/service/sandbox.html">Sandbox Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../en/service/state.html">Agent State Service</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../en/deployment.html">6. Deployment</a><input aria-label="Toggle navigation of 6. Deployment" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../en/agent_app.html">Simple Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../en/advanced_deployment.html">Advanced Deployment Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../en/react_agent.html">Reference: Full Deployment Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../en/call.html">AgentApp API Invocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../en/tracing.html">Tracing Method Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../en/protocol.html">Agent API Protocol Specification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../en/demohouse.html">Reference: Demo House</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../en/ut.html">Reference: Tests</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../en/contribute.html">8. How to Contribute</a><input aria-label="Toggle navigation of 8. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../en/README.html">Contribute to Cookbook</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../en/CHANGELOG.html">9. CHANGELOG</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
 <ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../en/api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../en/api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../en/api/sandbox.html">Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../en/api/engine.html">Engine</a></li>
 </ul>
@@ -512,31 +535,54 @@ body.preview-active {
 <li class="toctree-l1"><a class="reference internal" href="../../../../../zh/install.html">1. 安装</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../zh/concept.html">2. 概念</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../../zh/quickstart.html">3. 快速开始</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../zh/sandbox.html">4. 工具沙箱</a><input aria-label="Toggle navigation of 4. 工具沙箱" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/sandbox_advanced.html">工具沙箱高级用法</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/training_sandbox.html">训练用沙箱</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/sandbox_troubleshooting.html">沙盒故障排除</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../zh/tool.html">4. 沙箱与工具</a><input aria-label="Toggle navigation of 4. 沙箱与工具" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../../zh/sandbox/sandbox.html">沙箱</a><input aria-label="Toggle navigation of 沙箱" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../zh/sandbox/advanced.html">工具沙箱高级用法</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../zh/sandbox/training_sandbox.html">训练用沙箱</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../zh/sandbox/troubleshooting.html">沙盒故障排除</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../zh/advanced_deployment.html">5. 高级部署指南</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../zh/react_agent.html">6. 部署配备工具沙箱的ReAct智能体</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../zh/agent_app.html">7. 深入了解AgentApp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../zh/protocol.html">8. Agent API 协议规范</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../zh/manager.html">9. 管理器模块（Manager Module）</a><input aria-label="Toggle navigation of 9. 管理器模块（Manager Module）" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/context_manager.html">上下文管理器 (Context Manager)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/environment_manager.html">环境管理器（Environment Manager）</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../../zh/tools/tools.html">Tools</a><input aria-label="Toggle navigation of Tools" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../zh/tools/modelstudio_search.html">搜索组件 (Searches)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../zh/tools/modelstudio_rag.html">检索增强生成组件 (RAGs)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../zh/tools/modelstudio_generations.html">图像生成组件 (Generations)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../zh/tools/alipay.html">支付宝组件 (Alipay)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../zh/tools/realtime_clients.html">实时客户端组件 (Realtime Clients)</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../zh/tracing.html">10. 执行轨迹追踪</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../../zh/demohouse.html">11. Demo 展示厅</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../zh/contribute.html">12. 如何贡献</a><input aria-label="Toggle navigation of 12. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../zh/service/service.html">5. 服务与适配器</a><input aria-label="Toggle navigation of 5. 服务与适配器" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/service/session_history.html">会话历史服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/service/memory.html">记忆服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/service/sandbox.html">沙箱服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/service/state.html">智能体状态服务</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../zh/deployment.html">6. 部署</a><input aria-label="Toggle navigation of 6. 部署" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/agent_app.html">简单部署</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/advanced_deployment.html">高级部署</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/react_agent.html">参考: 完整部署样例</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/call.html">智能体应用API调用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/tracing.html">执行轨迹追踪</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/ut.html">参考: 测试用例</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../zh/contribute.html">8. 如何贡献</a><input aria-label="Toggle navigation of 8. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../zh/README.html">参与贡献Cookbook</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../zh/CHANGELOG.html">9. CHANGELOG</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API 参考</span></p>
 <ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../zh/api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../zh/api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../zh/api/sandbox.html">Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../zh/api/engine.html">Engine</a></li>
 </ul>
@@ -635,12 +681,19 @@ body.preview-active {
 <div class="viewcode-block" id="BrowserSandbox.browser_close">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_close">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close the current browser page.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;browser_close&quot;</span><span class="p">,</span> <span class="p">{})</span></div>
 
 
 <div class="viewcode-block" id="BrowserSandbox.browser_resize">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_resize">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_resize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resize the browser window.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            width (int): Width of the browser window.</span>
+<span class="sd">            height (int): Height of the browser window.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span>
             <span class="s2">&quot;browser_resize&quot;</span><span class="p">,</span>
             <span class="p">{</span><span class="s2">&quot;width&quot;</span><span class="p">:</span> <span class="n">width</span><span class="p">,</span> <span class="s2">&quot;height&quot;</span><span class="p">:</span> <span class="n">height</span><span class="p">},</span>
@@ -650,12 +703,20 @@ body.preview-active {
 <div class="viewcode-block" id="BrowserSandbox.browser_console_messages">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_console_messages">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_console_messages</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return all console messages from the browser.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;browser_console_messages&quot;</span><span class="p">,</span> <span class="p">{})</span></div>
 
 
 <div class="viewcode-block" id="BrowserSandbox.browser_handle_dialog">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_handle_dialog">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_handle_dialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accept</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">prompt_text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle a dialog popup.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            accept (bool): Whether to accept the dialog.</span>
+<span class="sd">            prompt_text (str, optional): Text to input if the dialog is a</span>
+<span class="sd">                prompt.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span>
             <span class="s2">&quot;browser_handle_dialog&quot;</span><span class="p">,</span>
             <span class="p">{</span><span class="s2">&quot;accept&quot;</span><span class="p">:</span> <span class="n">accept</span><span class="p">,</span> <span class="s2">&quot;promptText&quot;</span><span class="p">:</span> <span class="n">prompt_text</span><span class="p">},</span>
@@ -665,42 +726,65 @@ body.preview-active {
 <div class="viewcode-block" id="BrowserSandbox.browser_file_upload">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_file_upload">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_file_upload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paths</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Upload one or multiple files in the browser.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            paths (list[str]): Absolute paths to the files to upload.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;browser_file_upload&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;paths&quot;</span><span class="p">:</span> <span class="n">paths</span><span class="p">})</span></div>
 
 
 <div class="viewcode-block" id="BrowserSandbox.browser_press_key">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_press_key">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_press_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Press a key on the keyboard.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key (str): Name of the key to press or a character to enter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;browser_press_key&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="n">key</span><span class="p">})</span></div>
 
 
 <div class="viewcode-block" id="BrowserSandbox.browser_navigate">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_navigate">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_navigate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Navigate to a specified URL.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            url (str): The URL to load in the browser.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;browser_navigate&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">url</span><span class="p">})</span></div>
 
 
 <div class="viewcode-block" id="BrowserSandbox.browser_navigate_back">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_navigate_back">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_navigate_back</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Go back to the previous page.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;browser_navigate_back&quot;</span><span class="p">,</span> <span class="p">{})</span></div>
 
 
 <div class="viewcode-block" id="BrowserSandbox.browser_navigate_forward">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_navigate_forward">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_navigate_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Go forward to the next page.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;browser_navigate_forward&quot;</span><span class="p">,</span> <span class="p">{})</span></div>
 
 
 <div class="viewcode-block" id="BrowserSandbox.browser_network_requests">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_network_requests">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_network_requests</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return all network requests since the page was loaded.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;browser_network_requests&quot;</span><span class="p">,</span> <span class="p">{})</span></div>
 
 
 <div class="viewcode-block" id="BrowserSandbox.browser_pdf_save">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_pdf_save">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_pdf_save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the current page as a PDF.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            filename (str, optional): File name to save the PDF as.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;browser_pdf_save&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;filename&quot;</span><span class="p">:</span> <span class="n">filename</span><span class="p">})</span></div>
 
 
@@ -713,26 +797,39 @@ body.preview-active {
         <span class="n">element</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
     <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Take a screenshot of the current page or of a specific element.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            raw (bool, optional): If True, save in PNG without compression.</span>
+<span class="sd">                Defaults to False (JPEG).</span>
+<span class="sd">            filename (str, optional): File name for the screenshot.</span>
+<span class="sd">            element (str, optional): Human-readable element description to</span>
+<span class="sd">                screenshot.</span>
+<span class="sd">            ref (str, optional): Exact element reference from the page</span>
+<span class="sd">                snapshot.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span>
             <span class="s2">&quot;browser_take_screenshot&quot;</span><span class="p">,</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="p">,</span>
-                <span class="s2">&quot;filename&quot;</span><span class="p">:</span> <span class="n">filename</span><span class="p">,</span>
-                <span class="s2">&quot;element&quot;</span><span class="p">:</span> <span class="n">element</span><span class="p">,</span>
-                <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">ref</span><span class="p">,</span>
-            <span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="p">,</span> <span class="s2">&quot;filename&quot;</span><span class="p">:</span> <span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;element&quot;</span><span class="p">:</span> <span class="n">element</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">ref</span><span class="p">},</span>
         <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="BrowserSandbox.browser_snapshot">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_snapshot">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Capture an accessibility snapshot of the current page.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;browser_snapshot&quot;</span><span class="p">,</span> <span class="p">{})</span></div>
 
 
 <div class="viewcode-block" id="BrowserSandbox.browser_click">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_click">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Click on an element in the current page.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            element (str): Human-readable element description to click.</span>
+<span class="sd">            ref (str): Exact element reference from the page snapshot.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span>
             <span class="s2">&quot;browser_click&quot;</span><span class="p">,</span>
             <span class="p">{</span><span class="s2">&quot;element&quot;</span><span class="p">:</span> <span class="n">element</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">ref</span><span class="p">},</span>
@@ -748,6 +845,14 @@ body.preview-active {
         <span class="n">end_element</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">end_ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Drag from one element and drop onto another.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            start_element (str): Human-readable source element description.</span>
+<span class="sd">            start_ref (str): Exact source element reference.</span>
+<span class="sd">            end_element (str): Human-readable target element description.</span>
+<span class="sd">            end_ref (str): Exact target element reference.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span>
             <span class="s2">&quot;browser_drag&quot;</span><span class="p">,</span>
             <span class="p">{</span>
@@ -762,6 +867,12 @@ body.preview-active {
 <div class="viewcode-block" id="BrowserSandbox.browser_hover">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_hover">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_hover</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hover over an element in the current page.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            element (str): Human-readable element description.</span>
+<span class="sd">            ref (str): Exact element reference from the page snapshot.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span>
             <span class="s2">&quot;browser_hover&quot;</span><span class="p">,</span>
             <span class="p">{</span><span class="s2">&quot;element&quot;</span><span class="p">:</span> <span class="n">element</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">ref</span><span class="p">},</span>
@@ -778,6 +889,17 @@ body.preview-active {
         <span class="n">submit</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">slowly</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Type text into an editable element.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            element (str): Human-readable element description.</span>
+<span class="sd">            ref (str): Exact element reference.</span>
+<span class="sd">            text (str): Text to type into the element.</span>
+<span class="sd">            submit (bool, optional): Press Enter after typing. Defaults to</span>
+<span class="sd">                False.</span>
+<span class="sd">            slowly (bool, optional): Type one character at a time. Defaults</span>
+<span class="sd">                to False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span>
             <span class="s2">&quot;browser_type&quot;</span><span class="p">,</span>
             <span class="p">{</span>
@@ -793,37 +915,58 @@ body.preview-active {
 <div class="viewcode-block" id="BrowserSandbox.browser_select_option">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_select_option">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_select_option</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select options in a dropdown.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            element (str): Human-readable element description.</span>
+<span class="sd">            ref (str): Exact element reference.</span>
+<span class="sd">            values (list[str]): Values to select.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span>
             <span class="s2">&quot;browser_select_option&quot;</span><span class="p">,</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;element&quot;</span><span class="p">:</span> <span class="n">element</span><span class="p">,</span>
-                <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">ref</span><span class="p">,</span>
-                <span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="n">values</span><span class="p">,</span>
-            <span class="p">},</span>
+            <span class="p">{</span><span class="s2">&quot;element&quot;</span><span class="p">:</span> <span class="n">element</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">ref</span><span class="p">,</span> <span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="n">values</span><span class="p">},</span>
         <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="BrowserSandbox.browser_tab_list">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_tab_list">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_tab_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List all browser tabs.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;browser_tab_list&quot;</span><span class="p">,</span> <span class="p">{})</span></div>
 
 
 <div class="viewcode-block" id="BrowserSandbox.browser_tab_new">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_tab_new">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_tab_new</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Open a new browser tab.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            url (str, optional): URL to open in the new tab. Blank if not</span>
+<span class="sd">                provided.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;browser_tab_new&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">url</span><span class="p">})</span></div>
 
 
 <div class="viewcode-block" id="BrowserSandbox.browser_tab_select">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_tab_select">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_tab_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select a browser tab by index.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            index (int): Index of the tab to select.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;browser_tab_select&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="n">index</span><span class="p">})</span></div>
 
 
 <div class="viewcode-block" id="BrowserSandbox.browser_tab_close">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.BrowserSandbox.browser_tab_close">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">browser_tab_close</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close a browser tab.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            index (int, optional): Index of the tab to close.</span>
+<span class="sd">            Closes current tab if not provided.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;browser_tab_close&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="n">index</span><span class="p">})</span></div>
 
 
@@ -835,6 +978,13 @@ body.preview-active {
         <span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">text_gone</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Wait for text to appear/disappear or for a specified time.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            time (float, optional): Seconds to wait.</span>
+<span class="sd">            text (str, optional): Text to wait for.</span>
+<span class="sd">            text_gone (str, optional): Text to wait to disappear.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span>
             <span class="s2">&quot;browser_wait_for&quot;</span><span class="p">,</span>
             <span class="p">{</span>
@@ -908,6 +1058,371 @@ body.preview-active {
     <script async="async" src="../../../../../_static/sphinx-thebe.js?v=c100c467"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.0/dist/mermaid-layout-elk.esm.min.mjs"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";import elkLayouts from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.0/dist/mermaid-layout-elk.esm.min.mjs";mermaid.registerLayoutLoaders(elkLayouts);mermaid.initialize({startOnLoad:false});</script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
+
+const defaultStyle = document.createElement('style');
+defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+`;
+document.head.appendChild(defaultStyle);
+
+const fullscreenStyle = document.createElement('style');
+fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+document.head.appendChild(fullscreenStyle);
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return brightness < 128;
+    }
+    return false;
+};
+
+const load = async () => {
+    await mermaid.run();
+
+    const all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(load, 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(load, 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(load, 200);
+        return;
+    }
+
+    const darkTheme = isDarkTheme();
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    const modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    const modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    let previousScrollOffset = [window.scrollX, window.scrollY];
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    const allButtons = [];
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+
+        container.appendChild(fullscreenBtn);
+        allButtons.push(fullscreenBtn);
+    });
+
+    // Update theme classes when theme changes
+    const updateTheme = () => {
+        const dark = isDarkTheme();
+        allButtons.forEach(btn => {
+            if (dark) {
+                btn.classList.add('dark-theme');
+            } else {
+                btn.classList.remove('dark-theme');
+            }
+        });
+        if (dark) {
+            modal.classList.add('dark-theme');
+            modalContent.classList.add('dark-theme');
+            closeBtn.classList.add('dark-theme');
+        } else {
+            modal.classList.remove('dark-theme');
+            modalContent.classList.remove('dark-theme');
+            closeBtn.classList.remove('dark-theme');
+        }
+    };
+
+    // Watch for theme changes
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style']
+    });
+};
+
+window.addEventListener("load", load);
+</script>
     <script src="../../../../../_static/language.js?v=c79991d2"></script>
     </body>
 </html>

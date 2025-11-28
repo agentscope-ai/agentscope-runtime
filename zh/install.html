@@ -359,7 +359,7 @@ body.preview-active {
 </style>
 
 <script>
-    const VERSIONS = ["preview", "v0.2.0", "v0.1.6", "v0.1.5", "v0.1.4"];
+    const VERSIONS = ["preview", "v0.2.0"];
     const VERSION_PATTERN = /^\/(v\d+\.\d+\.\d+)\//;
 
     function populateVersionMenu() {
@@ -474,31 +474,54 @@ body.preview-active {
 <li class="toctree-l1"><a class="reference internal" href="../en/install.html">1. Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../en/concept.html">2. Concepts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../en/quickstart.html">3. Quick Start</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../en/sandbox.html">4. Tool Sandbox</a><input aria-label="Toggle navigation of 4. Tool Sandbox" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../en/sandbox_advanced.html">Advanced Usage of Tool Sandbox</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../en/training_sandbox.html">Training Sandbox</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../en/sandbox_troubleshooting.html">Sandbox Troubleshooting</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/tool.html">4. Sandbox and Tools</a><input aria-label="Toggle navigation of 4. Sandbox and Tools" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../en/sandbox/sandbox.html">Sandbox</a><input aria-label="Toggle navigation of Sandbox" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../en/sandbox/advanced.html">Advanced Usage of Tool Sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/sandbox/training_sandbox.html">Training Sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/sandbox/troubleshooting.html">Sandbox Troubleshooting</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../en/advanced_deployment.html">5. Advanced Deployment Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../en/react_agent.html">6. Deploy a ReAct Agent with Tool Sandbox</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../en/agent_app.html">7. Deep Dive into AgentApp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../en/protocol.html">8. Agent API Protocol Specification</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../en/manager.html">9. Manager Module</a><input aria-label="Toggle navigation of 9. Manager Module" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../en/context_manager.html">Context Manager</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../en/environment_manager.html">Environment Manager</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../en/tools/tools.html">Tools</a><input aria-label="Toggle navigation of Tools" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/modelstudio_search.html">Search Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/modelstudio_rag.html">Retrieval-Augmented Generation Components (RAGs)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/modelstudio_generations.html">Image Generation Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/alipay.html">Alipay Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/realtime_clients.html">Realtime Client Tools</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../en/tracing.html">10. Tracing Method Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../en/demohouse.html">11. Demo House</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../en/contribute.html">12. How to Contribute</a><input aria-label="Toggle navigation of 12. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/service/service.html">5. Services and Adapters</a><input aria-label="Toggle navigation of 5. Services and Adapters" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../en/service/session_history.html">Session History Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/service/memory.html">Memory Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/service/sandbox.html">Sandbox Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/service/state.html">Agent State Service</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/deployment.html">6. Deployment</a><input aria-label="Toggle navigation of 6. Deployment" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../en/agent_app.html">Simple Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/advanced_deployment.html">Advanced Deployment Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/react_agent.html">Reference: Full Deployment Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../en/call.html">AgentApp API Invocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/tracing.html">Tracing Method Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/protocol.html">Agent API Protocol Specification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/demohouse.html">Reference: Demo House</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/ut.html">Reference: Tests</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/contribute.html">8. How to Contribute</a><input aria-label="Toggle navigation of 8. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../en/README.html">Contribute to Cookbook</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../en/CHANGELOG.html">9. CHANGELOG</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
 <ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../en/api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../en/api/sandbox.html">Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../en/api/engine.html">Engine</a></li>
 </ul>
@@ -513,31 +536,54 @@ body.preview-active {
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">1. 安装</a></li>
 <li class="toctree-l1"><a class="reference internal" href="concept.html">2. 概念</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">3. 快速开始</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="sandbox.html">4. 工具沙箱</a><input aria-label="Toggle navigation of 4. 工具沙箱" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="sandbox_advanced.html">工具沙箱高级用法</a></li>
-<li class="toctree-l2"><a class="reference internal" href="training_sandbox.html">训练用沙箱</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sandbox_troubleshooting.html">沙盒故障排除</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tool.html">4. 沙箱与工具</a><input aria-label="Toggle navigation of 4. 沙箱与工具" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="sandbox/sandbox.html">沙箱</a><input aria-label="Toggle navigation of 沙箱" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="sandbox/advanced.html">工具沙箱高级用法</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sandbox/training_sandbox.html">训练用沙箱</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sandbox/troubleshooting.html">沙盒故障排除</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="advanced_deployment.html">5. 高级部署指南</a></li>
-<li class="toctree-l1"><a class="reference internal" href="react_agent.html">6. 部署配备工具沙箱的ReAct智能体</a></li>
-<li class="toctree-l1"><a class="reference internal" href="agent_app.html">7. 深入了解AgentApp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="protocol.html">8. Agent API 协议规范</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="manager.html">9. 管理器模块（Manager Module）</a><input aria-label="Toggle navigation of 9. 管理器模块（Manager Module）" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="context_manager.html">上下文管理器 (Context Manager)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="environment_manager.html">环境管理器（Environment Manager）</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tools/tools.html">Tools</a><input aria-label="Toggle navigation of Tools" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="tools/modelstudio_search.html">搜索组件 (Searches)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/modelstudio_rag.html">检索增强生成组件 (RAGs)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/modelstudio_generations.html">图像生成组件 (Generations)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/alipay.html">支付宝组件 (Alipay)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/realtime_clients.html">实时客户端组件 (Realtime Clients)</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tracing.html">10. 执行轨迹追踪</a></li>
-<li class="toctree-l1"><a class="reference internal" href="demohouse.html">11. Demo 展示厅</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="contribute.html">12. 如何贡献</a><input aria-label="Toggle navigation of 12. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="service/service.html">5. 服务与适配器</a><input aria-label="Toggle navigation of 5. 服务与适配器" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="service/session_history.html">会话历史服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service/memory.html">记忆服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service/sandbox.html">沙箱服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service/state.html">智能体状态服务</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="deployment.html">6. 部署</a><input aria-label="Toggle navigation of 6. 部署" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="agent_app.html">简单部署</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced_deployment.html">高级部署</a></li>
+<li class="toctree-l2"><a class="reference internal" href="react_agent.html">参考: 完整部署样例</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="call.html">智能体应用API调用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracing.html">执行轨迹追踪</a></li>
+<li class="toctree-l2"><a class="reference internal" href="protocol.html">参考: Agent API 协议规范</a></li>
+<li class="toctree-l2"><a class="reference internal" href="demohouse.html">参考: Demo 展示厅</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ut.html">参考: 测试用例</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="contribute.html">8. 如何贡献</a><input aria-label="Toggle navigation of 8. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="README.html">参与贡献Cookbook</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="CHANGELOG.html">9. CHANGELOG</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API 参考</span></p>
 <ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="api/sandbox.html">Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/engine.html">Engine</a></li>
 </ul>
@@ -584,22 +630,28 @@ body.preview-active {
 <section id="id2">
 <h2>安装方式<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
 <section id="pypi">
-<h3>1. 通过 PyPI 安装<a class="headerlink" href="#pypi" title="Link to this heading">¶</a></h3>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>本项目正在快速开发和迭代中。我们建议从源码安装以获取最新功能和Bug修复。</p>
-</div>
+<h3>通过 PyPI 安装<a class="headerlink" href="#pypi" title="Link to this heading">¶</a></h3>
 <p>要通过 PyPI 安装Agentscope Runtime的稳定版本，请使用：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>agentscope-runtime
-</pre></div>
-</div>
-<p>如需完整功能，包括沙箱功能和其他智能体框架集成：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[langgraph,agno,autogen]&quot;</span>
+
+<span class="c1"># 若需额外扩展，请使用 extras 安装：</span>
+pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[ext]&quot;</span>
 </pre></div>
 </div>
 </section>
+<section id="beta-rc">
+<h3>（可选）安装预览版本（Beta/RC）<a class="headerlink" href="#beta-rc" title="Link to this heading">¶</a></h3>
+<p>如果您想体验尚未正式发布的功能，可以安装最新的预览版本：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>--pre<span class="w"> </span>agentscope-runtime
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>提示： 预发布版本可能含有尚未完全稳定的功能或接口变动，请在测试环境中使用。</p>
+</div>
+</section>
 <section id="id3">
-<h3>2. （可选）从源码安装<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<h3>（可选）从源码安装<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
 <p>如果您想要使用最新的开发版本或为项目做贡献，可以从源码安装：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/agentscope-ai/agentscope-runtime.git
 
@@ -627,55 +679,10 @@ pip<span class="w"> </span>install<span class="w"> </span>.
 </div>
 </div>
 <p>执行代码后，您应该会看到版本号输出。</p>
-<section id="agentscope-agent">
-<h3>检查 AgentScope Agent<a class="headerlink" href="#agentscope-agent" title="Link to this heading">¶</a></h3>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.agentscope_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentScopeAgent</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ </span><span class="si">{</span><span class="n">AgentScopeAgent</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> - 导入成功&quot;</span><span class="p">)</span>
-<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ AgentScopeAgent - 导入失败：</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;💡 尝试通过以下命令安装：pip install &quot;agentscope-runtime[agentscope]&quot;&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</section>
-<section id="agno-agent">
-<h3>检查 Agno Agent<a class="headerlink" href="#agno-agent" title="Link to this heading">¶</a></h3>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.agno_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgnoAgent</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ </span><span class="si">{</span><span class="n">AgnoAgent</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> - 导入成功&quot;</span><span class="p">)</span>
-<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ AgnoAgent - 导入失败：</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;💡尝试通过以下命令安装：pip install &quot;agentscope-runtime[agno]&quot;&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</section>
-<section id="langgraph-agent">
-<h3>检查 LangGraph Agent<a class="headerlink" href="#langgraph-agent" title="Link to this heading">¶</a></h3>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.langgraph_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">LangGraphAgent</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ </span><span class="si">{</span><span class="n">LangGraphAgent</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> - 导入成功&quot;</span><span class="p">)</span>
-<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ LangGraphAgent -导入失败：</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;💡尝试通过以下命令安装：pip install &quot;agentscope-runtime[langgraph]&quot;&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</section>
 </section>
 <section id="id5">
 <h2>安装选项说明<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h2>
-<p>这个图展示了安装选项的层次结构，从底层核心运行时（agentscope-runtime）开始——其中 <strong>包含 AgentScope 框架 和 Sandbox 依赖</strong>。可选模块（例如 LangGraph、Agno、AutoGen）堆叠在核心之上，每个模块都增加了特定的功能（如工具执行、框架集成），并需要相应的依赖项。查看所有安装选项的详细信息，请参见 <a class="reference external" href="https://github.com/agentscope-ai/agentscope-runtime/blob/main/pyproject.toml">pyproject.toml</a>。</p>
+<p>核心运行时（<code class="docutils literal notranslate"><span class="pre">agentscope-runtime</span></code>）包含 AgentScope 框架和 Sandbox 依赖。查看所有安装选项的详细信息，请参见 <a class="reference external" href="https://github.com/agentscope-ai/agentscope-runtime/blob/main/pyproject.toml">pyproject.toml</a>。</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -696,20 +703,10 @@ pip<span class="w"> </span>install<span class="w"> </span>.
 <td><p>开发工具集</p></td>
 <td><p>测试、代码检查（Linting）、文档</p></td>
 </tr>
-<tr class="row-even"><td><p>Agno 集成</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">agno</span></code></p></td>
-<td><p>Agno</p></td>
-<td><p>Agno 框架</p></td>
-</tr>
-<tr class="row-odd"><td><p>LangGraph 集成</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">langgraph</span></code></p></td>
-<td><p>LangGraph</p></td>
-<td><p>LangGraph 框架</p></td>
-</tr>
-<tr class="row-even"><td><p>AutoGen 集成</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">autogen</span></code></p></td>
-<td><p>AutoGen</p></td>
-<td><p>AutoGen 框架</p></td>
+<tr class="row-even"><td><p>Extension</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ext</span></code></p></td>
+<td><p>部署扩展</p></td>
+<td><p>REME AI、Mem0、阿里云服务、表格存储、LangChain、Azure 语音、对象存储、身份认证、构建工具</p></td>
 </tr>
 </tbody>
 </table>
@@ -807,16 +804,12 @@ pip<span class="w"> </span>install<span class="w"> </span>.
             <ul>
 <li><a class="reference internal" href="#">1. 安装</a><ul>
 <li><a class="reference internal" href="#id2">安装方式</a><ul>
-<li><a class="reference internal" href="#pypi">1. 通过 PyPI 安装</a></li>
-<li><a class="reference internal" href="#id3">2. （可选）从源码安装</a></li>
+<li><a class="reference internal" href="#pypi">通过 PyPI 安装</a></li>
+<li><a class="reference internal" href="#beta-rc">（可选）安装预览版本（Beta/RC）</a></li>
+<li><a class="reference internal" href="#id3">（可选）从源码安装</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id4">检查您的安装</a><ul>
-<li><a class="reference internal" href="#agentscope-agent">检查 AgentScope Agent</a></li>
-<li><a class="reference internal" href="#agno-agent">检查 Agno Agent</a></li>
-<li><a class="reference internal" href="#langgraph-agent">检查 LangGraph Agent</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#id4">检查您的安装</a></li>
 <li><a class="reference internal" href="#id5">安装选项说明</a></li>
 </ul>
 </li>

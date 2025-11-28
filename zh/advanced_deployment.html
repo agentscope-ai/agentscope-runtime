@@ -3,11 +3,11 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="6. 部署配备工具沙箱的ReAct智能体" href="react_agent.html"><link rel="prev" title="沙盒故障排除" href="sandbox_troubleshooting.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="参考: 完整部署样例" href="react_agent.html"><link rel="prev" title="简单部署" href="agent_app.html">
         <link rel="prefetch" href="../_static/logo.svg" as="image">
 
     <link rel="shortcut icon" href="../_static/logo.svg"><!-- Generated with Sphinx 7.4.7 and Furo 2025.09.25 -->
-        <title>5. 高级部署指南 - AgentScope Runtime</title>
+        <title>高级部署 - AgentScope Runtime</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=580074bf" />
     <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
@@ -359,7 +359,7 @@ body.preview-active {
 </style>
 
 <script>
-    const VERSIONS = ["preview", "v0.2.0", "v0.1.6", "v0.1.5", "v0.1.4"];
+    const VERSIONS = ["preview", "v0.2.0"];
     const VERSION_PATTERN = /^\/(v\d+\.\d+\.\d+)\//;
 
     function populateVersionMenu() {
@@ -474,31 +474,54 @@ body.preview-active {
 <li class="toctree-l1"><a class="reference internal" href="../en/install.html">1. Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../en/concept.html">2. Concepts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../en/quickstart.html">3. Quick Start</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../en/sandbox.html">4. Tool Sandbox</a><input aria-label="Toggle navigation of 4. Tool Sandbox" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../en/sandbox_advanced.html">Advanced Usage of Tool Sandbox</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../en/training_sandbox.html">Training Sandbox</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../en/sandbox_troubleshooting.html">Sandbox Troubleshooting</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/tool.html">4. Sandbox and Tools</a><input aria-label="Toggle navigation of 4. Sandbox and Tools" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../en/sandbox/sandbox.html">Sandbox</a><input aria-label="Toggle navigation of Sandbox" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../en/sandbox/advanced.html">Advanced Usage of Tool Sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/sandbox/training_sandbox.html">Training Sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/sandbox/troubleshooting.html">Sandbox Troubleshooting</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../en/advanced_deployment.html">5. Advanced Deployment Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../en/react_agent.html">6. Deploy a ReAct Agent with Tool Sandbox</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../en/agent_app.html">7. Deep Dive into AgentApp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../en/protocol.html">8. Agent API Protocol Specification</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../en/manager.html">9. Manager Module</a><input aria-label="Toggle navigation of 9. Manager Module" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../en/context_manager.html">Context Manager</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../en/environment_manager.html">Environment Manager</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../en/tools/tools.html">Tools</a><input aria-label="Toggle navigation of Tools" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/modelstudio_search.html">Search Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/modelstudio_rag.html">Retrieval-Augmented Generation Components (RAGs)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/modelstudio_generations.html">Image Generation Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/alipay.html">Alipay Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/realtime_clients.html">Realtime Client Tools</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../en/tracing.html">10. Tracing Method Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../en/demohouse.html">11. Demo House</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../en/contribute.html">12. How to Contribute</a><input aria-label="Toggle navigation of 12. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/service/service.html">5. Services and Adapters</a><input aria-label="Toggle navigation of 5. Services and Adapters" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../en/service/session_history.html">Session History Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/service/memory.html">Memory Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/service/sandbox.html">Sandbox Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/service/state.html">Agent State Service</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/deployment.html">6. Deployment</a><input aria-label="Toggle navigation of 6. Deployment" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../en/agent_app.html">Simple Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/advanced_deployment.html">Advanced Deployment Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/react_agent.html">Reference: Full Deployment Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../en/call.html">AgentApp API Invocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/tracing.html">Tracing Method Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/protocol.html">Agent API Protocol Specification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/demohouse.html">Reference: Demo House</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/ut.html">Reference: Tests</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/contribute.html">8. How to Contribute</a><input aria-label="Toggle navigation of 8. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../en/README.html">Contribute to Cookbook</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../en/CHANGELOG.html">9. CHANGELOG</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
 <ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../en/api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../en/api/sandbox.html">Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../en/api/engine.html">Engine</a></li>
 </ul>
@@ -513,31 +536,54 @@ body.preview-active {
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. 安装</a></li>
 <li class="toctree-l1"><a class="reference internal" href="concept.html">2. 概念</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">3. 快速开始</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="sandbox.html">4. 工具沙箱</a><input aria-label="Toggle navigation of 4. 工具沙箱" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="sandbox_advanced.html">工具沙箱高级用法</a></li>
-<li class="toctree-l2"><a class="reference internal" href="training_sandbox.html">训练用沙箱</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sandbox_troubleshooting.html">沙盒故障排除</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tool.html">4. 沙箱与工具</a><input aria-label="Toggle navigation of 4. 沙箱与工具" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="sandbox/sandbox.html">沙箱</a><input aria-label="Toggle navigation of 沙箱" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="sandbox/advanced.html">工具沙箱高级用法</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sandbox/training_sandbox.html">训练用沙箱</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sandbox/troubleshooting.html">沙盒故障排除</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">5. 高级部署指南</a></li>
-<li class="toctree-l1"><a class="reference internal" href="react_agent.html">6. 部署配备工具沙箱的ReAct智能体</a></li>
-<li class="toctree-l1"><a class="reference internal" href="agent_app.html">7. 深入了解AgentApp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="protocol.html">8. Agent API 协议规范</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="manager.html">9. 管理器模块（Manager Module）</a><input aria-label="Toggle navigation of 9. 管理器模块（Manager Module）" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="context_manager.html">上下文管理器 (Context Manager)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="environment_manager.html">环境管理器（Environment Manager）</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tools/tools.html">Tools</a><input aria-label="Toggle navigation of Tools" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="tools/modelstudio_search.html">搜索组件 (Searches)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/modelstudio_rag.html">检索增强生成组件 (RAGs)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/modelstudio_generations.html">图像生成组件 (Generations)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/alipay.html">支付宝组件 (Alipay)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/realtime_clients.html">实时客户端组件 (Realtime Clients)</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tracing.html">10. 执行轨迹追踪</a></li>
-<li class="toctree-l1"><a class="reference internal" href="demohouse.html">11. Demo 展示厅</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="contribute.html">12. 如何贡献</a><input aria-label="Toggle navigation of 12. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="service/service.html">5. 服务与适配器</a><input aria-label="Toggle navigation of 5. 服务与适配器" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="service/session_history.html">会话历史服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service/memory.html">记忆服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service/sandbox.html">沙箱服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service/state.html">智能体状态服务</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="deployment.html">6. 部署</a><input aria-label="Toggle navigation of 6. 部署" checked="" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="agent_app.html">简单部署</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">高级部署</a></li>
+<li class="toctree-l2"><a class="reference internal" href="react_agent.html">参考: 完整部署样例</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="call.html">智能体应用API调用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracing.html">执行轨迹追踪</a></li>
+<li class="toctree-l2"><a class="reference internal" href="protocol.html">参考: Agent API 协议规范</a></li>
+<li class="toctree-l2"><a class="reference internal" href="demohouse.html">参考: Demo 展示厅</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ut.html">参考: 测试用例</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="contribute.html">8. 如何贡献</a><input aria-label="Toggle navigation of 8. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="README.html">参与贡献Cookbook</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="CHANGELOG.html">9. CHANGELOG</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API 参考</span></p>
 <ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="api/sandbox.html">Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/engine.html">Engine</a></li>
 </ul>
@@ -579,11 +625,11 @@ body.preview-active {
         </div>
         <article role="main" id="furo-main-content">
           <section id="id1">
-<h1><span class="section-number">5. </span>高级部署指南<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h1>
-<p>本指南演示了AgentScope Runtime中可用的四种高级部署方法，为不同场景提供生产就绪的解决方案：<strong>本地守护进程</strong>、<strong>独立进程</strong>、<strong>Kubernetes部署</strong>和<strong>ModelStudio部署</strong>。</p>
+<h1>高级部署<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h1>
+<p>章节演示了AgentScope Runtime中可用的五种高级部署方法，为不同场景提供生产就绪的解决方案：<strong>本地守护进程</strong>、<strong>独立进程</strong>、<strong>Kubernetes部署</strong>、<strong>ModelStudio部署</strong>和<strong>AgentRun部署</strong>。</p>
 <section id="id2">
 <h2>部署方法概述<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
-<p>AgentScope Runtime提供四种不同的部署方式，每种都针对特定的使用场景：</p>
+<p>AgentScope Runtime提供五种不同的部署方式，每种都针对特定的使用场景：</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -614,7 +660,13 @@ body.preview-active {
 <td><p>容器级</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>ModelStudio</strong></p></td>
-<td><p>阿里云平台</p></td>
+<td><p>魔搭平台</p></td>
+<td><p>云端管理</p></td>
+<td><p>平台管理</p></td>
+<td><p>容器级</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>AgentRun</strong></p></td>
+<td><p>AgentRun平台</p></td>
 <td><p>云端管理</p></td>
 <td><p>平台管理</p></td>
 <td><p>容器级</p></td>
@@ -622,6 +674,27 @@ body.preview-active {
 </tbody>
 </table>
 </div>
+<section id="deploymentmode">
+<h3>部署模式（DeploymentMode）<a class="headerlink" href="#deploymentmode" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">LocalDeployManager</span></code> 支持两种部署模式：</p>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">DAEMON_THREAD</span></code></strong>（默认）：在守护线程中运行服务，主进程阻塞直到服务停止</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">DETACHED_PROCESS</span></code></strong>：在独立进程中运行服务，主脚本可以退出而服务继续运行</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.utils.deployment_modes</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeploymentMode</span>
+
+<span class="c1"># 使用不同的部署模式</span>
+<span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
+    <span class="n">LocalDeployManager</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8080</span><span class="p">),</span>
+    <span class="n">mode</span><span class="o">=</span><span class="n">DeploymentMode</span><span class="o">.</span><span class="n">DAEMON_THREAD</span><span class="p">,</span>  <span class="c1"># 或 DETACHED_PROCESS</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
 </section>
 <section id="id3">
 <h2>前置条件<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h2>
@@ -629,13 +702,10 @@ body.preview-active {
 <h3>🔧 安装要求<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
 <p>安装包含所有部署依赖的AgentScope Runtime：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 基础安装</span>
-pip<span class="w"> </span>install<span class="w"> </span>agentscope-runtime
+pip<span class="w"> </span>install<span class="w"> </span>agentscope-runtime&gt;<span class="o">=</span><span class="m">1</span>.0.0
 
 <span class="c1"># Kubernetes部署依赖</span>
-pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[deployment]&quot;</span>
-
-<span class="c1"># 沙箱工具（可选）</span>
-pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[sandbox]&quot;</span>
+pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[ext]&gt;=1.0.0&quot;</span>
 </pre></div>
 </div>
 </section>
@@ -676,38 +746,104 @@ pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot
 <p>所有部署方法共享相同的智能体和端点配置。让我们首先创建基础智能体并定义端点：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># agent_app.py - 所有部署方法的共享配置</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># agent_app.py - Shared configuration for all deployment methods</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.formatter</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatFormatter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">Toolkit</span><span class="p">,</span> <span class="n">view_text_file</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">stream_printing_messages</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">Toolkit</span><span class="p">,</span> <span class="n">execute_python_code</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.agentscope_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentScopeAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.adapters.agentscope.memory</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AgentScopeSessionHistoryMemory</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.app</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentRequest</span>
-
-<span class="c1"># 1. 创建带工具包的智能体</span>
-<span class="n">toolkit</span> <span class="o">=</span> <span class="n">Toolkit</span><span class="p">()</span>
-<span class="n">toolkit</span><span class="o">.</span><span class="n">register_tool_function</span><span class="p">(</span><span class="n">view_text_file</span><span class="p">)</span>
-
-<span class="n">agent</span> <span class="o">=</span> <span class="n">AgentScopeAgent</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
-    <span class="n">model</span><span class="o">=</span><span class="n">DashScopeChatModel</span><span class="p">(</span>
-        <span class="s2">&quot;qwen-max&quot;</span><span class="p">,</span>
-        <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
-    <span class="p">),</span>
-    <span class="n">agent_config</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;sys_prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;You&#39;re a helpful assistant named Friday.&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;toolkit&quot;</span><span class="p">:</span> <span class="n">toolkit</span><span class="p">,</span>
-    <span class="p">},</span>
-    <span class="n">agent_builder</span><span class="o">=</span><span class="n">ReActAgent</span><span class="p">,</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.agent_state</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">InMemoryStateService</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.session_history</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">InMemorySessionHistoryService</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="c1"># 2. 创建带有多个端点的 AgentApp</span>
-<span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span><span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
+    <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+    <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
+<span class="p">)</span>
 
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">init</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">state_service</span> <span class="o">=</span> <span class="n">InMemoryStateService</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">session_service</span> <span class="o">=</span> <span class="n">InMemorySessionHistoryService</span><span class="p">()</span>
+
+    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_service</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_service</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">shutdown</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_service</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_service</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">framework</span><span class="o">=</span><span class="s2">&quot;agentscope&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_func</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">msgs</span><span class="p">,</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">assert</span> <span class="n">kwargs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;kwargs is Required for query_func&quot;</span>
+    <span class="n">session_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session_id</span>
+    <span class="n">user_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">user_id</span>
+
+    <span class="n">state</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_service</span><span class="o">.</span><span class="n">export_state</span><span class="p">(</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">toolkit</span> <span class="o">=</span> <span class="n">Toolkit</span><span class="p">()</span>
+    <span class="n">toolkit</span><span class="o">.</span><span class="n">register_tool_function</span><span class="p">(</span><span class="n">execute_python_code</span><span class="p">)</span>
+
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">ReActAgent</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">DashScopeChatModel</span><span class="p">(</span>
+            <span class="s2">&quot;qwen-turbo&quot;</span><span class="p">,</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
+            <span class="n">enable_thinking</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">sys_prompt</span><span class="o">=</span><span class="s2">&quot;You&#39;re a helpful assistant named Friday.&quot;</span><span class="p">,</span>
+        <span class="n">toolkit</span><span class="o">=</span><span class="n">toolkit</span><span class="p">,</span>
+        <span class="n">memory</span><span class="o">=</span><span class="n">AgentScopeSessionHistoryMemory</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">session_service</span><span class="p">,</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">formatter</span><span class="o">=</span><span class="n">DashScopeChatFormatter</span><span class="p">(),</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">state</span><span class="p">:</span>
+        <span class="n">agent</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">for</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span> <span class="ow">in</span> <span class="n">stream_printing_messages</span><span class="p">(</span>
+        <span class="n">agents</span><span class="o">=</span><span class="p">[</span><span class="n">agent</span><span class="p">],</span>
+        <span class="n">coroutine_task</span><span class="o">=</span><span class="n">agent</span><span class="p">(</span><span class="n">msgs</span><span class="p">),</span>
+    <span class="p">):</span>
+        <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
+
+    <span class="n">state</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span>
+
+    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_service</span><span class="o">.</span><span class="n">save_state</span><span class="p">(</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="n">state</span><span class="o">=</span><span class="n">state</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<span class="c1"># 2. 创建带有多个端点的 AgentApp</span>
 <span class="nd">@app</span><span class="o">.</span><span class="n">endpoint</span><span class="p">(</span><span class="s2">&quot;/sync&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">sync_handler</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span><span class="p">):</span>
     <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">,</span> <span class="s2">&quot;payload&quot;</span><span class="p">:</span> <span class="n">request</span><span class="p">}</span>
@@ -899,7 +1035,7 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 <span class="p">)</span>
 
 <span class="c1"># 使用生产服务进行部署</span>
-<span class="n">deployment_info</span> <span class="o">=</span> <span class="k">await</span> <span class="n">runner</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
+<span class="n">deployment_info</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
     <span class="n">deploy_manager</span><span class="o">=</span><span class="n">deploy_manager</span><span class="p">,</span>
     <span class="n">endpoint_path</span><span class="o">=</span><span class="s2">&quot;/process&quot;</span><span class="p">,</span>
     <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -1100,42 +1236,150 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
 </ul>
 </section>
 </section>
+<section id="agentrun">
+<h2>方法5：AgentRun 部署<a class="headerlink" href="#agentrun" title="Link to this heading">¶</a></h2>
+<p><strong>最适合</strong>：阿里云用户，需要将智能体部署到 AgentRun 服务，实现自动化的构建、上传和部署流程。</p>
 <section id="id24">
-<h2>总结<a class="headerlink" href="#id24" title="Link to this heading">¶</a></h2>
-<p>本指南涵盖了AgentScope Runtime的四种部署方法：</p>
-<section id="id25">
-<h3>🏃 <strong>本地守护进程</strong>：开发与测试<a class="headerlink" href="#id25" title="Link to this heading">¶</a></h3>
+<h3>特性<a class="headerlink" href="#id24" title="Link to this heading">¶</a></h3>
 <ul class="simple">
-<li><p>快速设置和直接控制</p></li>
-<li><p>最适合开发和小规模使用</p></li>
-<li><p>手动生命周期管理</p></li>
+<li><p>阿里云 AgentRun 服务的托管部署</p></li>
+<li><p>自动构建和打包项目</p></li>
+<li><p>OSS 集成用于制品存储</p></li>
+<li><p>完整的生命周期管理</p></li>
+<li><p>自动创建和管理运行时端点</p></li>
 </ul>
 </section>
+<section id="id25">
+<h3>AgentRun 部署前置条件<a class="headerlink" href="#id25" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 确保设置环境变量</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_ACCESS_KEY_ID</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span><span class="o">=</span><span class="s2">&quot;your-access-key-secret&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_REGION_ID</span><span class="o">=</span><span class="s2">&quot;cn-hangzhou&quot;</span><span class="w">  </span><span class="c1"># 或其他区域</span>
+
+<span class="c1"># OSS 配置（用于存储构建制品）</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OSS_ACCESS_KEY_ID</span><span class="o">=</span><span class="s2">&quot;your-oss-access-key-id&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OSS_ACCESS_KEY_SECRET</span><span class="o">=</span><span class="s2">&quot;your-oss-access-key-secret&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OSS_ENDPOINT</span><span class="o">=</span><span class="s2">&quot;oss-cn-hangzhou.aliyuncs.com&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OSS_BUCKET_NAME</span><span class="o">=</span><span class="s2">&quot;your-bucket-name&quot;</span>
+</pre></div>
+</div>
+</section>
 <section id="id26">
-<h3>🔧 <strong>独立进程</strong>：生产服务<a class="headerlink" href="#id26" title="Link to this heading">¶</a></h3>
+<h3>实现<a class="headerlink" href="#id26" title="Link to this heading">¶</a></h3>
+<p>使用 <a class="reference internal" href="#zh-common-agent-setup"><span class="std std-ref">通用智能体配置</span></a> 部分定义的智能体和端点：</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># agentrun_deploy.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.agentrun_deployer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AgentRunDeployManager</span><span class="p">,</span>
+    <span class="n">OSSConfig</span><span class="p">,</span>
+    <span class="n">AgentRunConfig</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agent_app</span><span class="w"> </span><span class="kn">import</span> <span class="n">app</span>  <span class="c1"># 导入已配置的 app</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">deploy_to_agentrun</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;将 AgentApp 部署到阿里云 AgentRun 服务&quot;&quot;&quot;</span>
+
+    <span class="c1"># 配置 OSS 和 AgentRun</span>
+    <span class="n">deployer</span> <span class="o">=</span> <span class="n">AgentRunDeployManager</span><span class="p">(</span>
+        <span class="n">oss_config</span><span class="o">=</span><span class="n">OSSConfig</span><span class="p">(</span>
+            <span class="n">access_key_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_ACCESS_KEY_ID&quot;</span><span class="p">),</span>
+            <span class="n">access_key_secret</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_ACCESS_KEY_SECRET&quot;</span><span class="p">),</span>
+            <span class="n">endpoint</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_ENDPOINT&quot;</span><span class="p">),</span>
+            <span class="n">bucket_name</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_BUCKET_NAME&quot;</span><span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">agentrun_config</span><span class="o">=</span><span class="n">AgentRunConfig</span><span class="p">(</span>
+            <span class="n">access_key_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ALIBABA_CLOUD_ACCESS_KEY_ID&quot;</span><span class="p">),</span>
+            <span class="n">access_key_secret</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ALIBABA_CLOUD_ACCESS_KEY_SECRET&quot;</span><span class="p">),</span>
+            <span class="n">region_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ALIBABA_CLOUD_REGION_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;cn-hangzhou&quot;</span><span class="p">),</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="c1"># 执行部署</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
+        <span class="n">deployer</span><span class="p">,</span>
+        <span class="n">endpoint_path</span><span class="o">=</span><span class="s2">&quot;/process&quot;</span><span class="p">,</span>
+        <span class="n">requirements</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;agentscope&quot;</span><span class="p">,</span> <span class="s2">&quot;fastapi&quot;</span><span class="p">,</span> <span class="s2">&quot;uvicorn&quot;</span><span class="p">],</span>
+        <span class="n">environment</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;PYTHONPATH&quot;</span><span class="p">:</span> <span class="s2">&quot;/app&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
+        <span class="p">},</span>
+        <span class="n">deploy_name</span><span class="o">=</span><span class="s2">&quot;agent-app-example&quot;</span><span class="p">,</span>
+        <span class="n">project_dir</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span>  <span class="c1"># 当前项目目录</span>
+        <span class="n">cmd</span><span class="o">=</span><span class="s2">&quot;python -m uvicorn app:app --host 0.0.0.0 --port 8080&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ 部署到 AgentRun：</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📍 AgentRun ID：</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;agentrun_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;N/A&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📦 制品 URL：</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;artifact_url&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;N/A&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">deploy_to_agentrun</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>关键点</strong>：</p>
 <ul class="simple">
-<li><p>进程隔离和自动化管理</p></li>
-<li><p>适用于单节点生产部署</p></li>
-<li><p>远程控制功能</p></li>
+<li><p>自动构建项目并打包为 wheel 文件</p></li>
+<li><p>上传制品到 OSS</p></li>
+<li><p>在 AgentRun 服务中创建和管理运行时</p></li>
+<li><p>自动创建公共访问端点</p></li>
+<li><p>支持更新现有部署（通过 <code class="docutils literal notranslate"><span class="pre">agentrun_id</span></code> 参数）</p></li>
 </ul>
 </section>
 <section id="id27">
-<h3>☸️ <strong>Kubernetes</strong>：企业与云端<a class="headerlink" href="#id27" title="Link to this heading">¶</a></h3>
-<ul class="simple">
-<li><p>完整的容器编排和扩展</p></li>
-<li><p>高可用性和云原生特性</p></li>
-<li><p>企业级生产部署</p></li>
-</ul>
+<h3>配置说明<a class="headerlink" href="#id27" title="Link to this heading">¶</a></h3>
+<section id="ossconfig">
+<h4>OSSConfig<a class="headerlink" href="#ossconfig" title="Link to this heading">¶</a></h4>
+<p>OSS 配置用于存储构建制品：</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">OSSConfig</span><span class="p">(</span>
+    <span class="n">access_key_id</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span><span class="p">,</span>
+    <span class="n">access_key_secret</span><span class="o">=</span><span class="s2">&quot;your-access-key-secret&quot;</span><span class="p">,</span>
+    <span class="n">endpoint</span><span class="o">=</span><span class="s2">&quot;oss-cn-hangzhou.aliyuncs.com&quot;</span><span class="p">,</span>
+    <span class="n">bucket_name</span><span class="o">=</span><span class="s2">&quot;your-bucket-name&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="agentrunconfig">
+<h4>AgentRunConfig<a class="headerlink" href="#agentrunconfig" title="Link to this heading">¶</a></h4>
+<p>AgentRun 服务配置：</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">AgentRunConfig</span><span class="p">(</span>
+    <span class="n">access_key_id</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span><span class="p">,</span>
+    <span class="n">access_key_secret</span><span class="o">=</span><span class="s2">&quot;your-access-key-secret&quot;</span><span class="p">,</span>
+    <span class="n">region_id</span><span class="o">=</span><span class="s2">&quot;cn-hangzhou&quot;</span><span class="p">,</span>  <span class="c1"># 支持的区域：cn-hangzhou, cn-beijing 等</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
 </section>
 <section id="id28">
-<h3>☁️ <strong>ModelStudio</strong>：阿里云平台<a class="headerlink" href="#id28" title="Link to this heading">¶</a></h3>
-<ul class="simple">
-<li><p>完全托管的云部署</p></li>
-<li><p>内置监控和自动扩展</p></li>
-<li><p>与阿里云服务无缝集成</p></li>
-</ul>
-<p>选择最适合您的用例、基础设施和扩展需求的部署方法。所有方法都使用相同的智能体代码，使得随着需求演变在部署类型之间迁移变得简单。</p>
-<p>有关特定组件的更多详细信息，请参阅<a class="reference internal" href="manager.html"><span class="std std-doc">管理器模块</span></a>、<a class="reference internal" href="sandbox.html"><span class="std std-doc">沙箱</span></a>和<a class="reference internal" href="quickstart.html"><span class="std std-doc">快速开始</span></a>指南。</p>
+<h3>高级用法<a class="headerlink" href="#id28" title="Link to this heading">¶</a></h3>
+<section id="wheel">
+<h4>使用预构建的 Wheel 文件<a class="headerlink" href="#wheel" title="Link to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
+    <span class="n">deployer</span><span class="p">,</span>
+    <span class="n">external_whl_path</span><span class="o">=</span><span class="s2">&quot;/path/to/prebuilt.whl&quot;</span><span class="p">,</span>  <span class="c1"># 使用预构建的 wheel</span>
+    <span class="n">skip_upload</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># 仍需要上传到 OSS</span>
+    <span class="c1"># ... 其他参数</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id29">
+<h4>更新现有部署<a class="headerlink" href="#id29" title="Link to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
+    <span class="n">deployer</span><span class="p">,</span>
+    <span class="n">agentrun_id</span><span class="o">=</span><span class="s2">&quot;existing-agentrun-id&quot;</span><span class="p">,</span>  <span class="c1"># 更新现有部署</span>
+    <span class="c1"># ... 其他参数</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
 </section>
 </section>
 </section>
@@ -1169,18 +1413,18 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title"><span class="section-number">6. </span>部署配备工具沙箱的ReAct智能体</div>
+                <div class="title">参考: 完整部署样例</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="sandbox_troubleshooting.html">
+          <a class="prev-page" href="agent_app.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">沙盒故障排除</div>
+                <div class="title">简单部署</div>
                 
               </div>
             </a>
@@ -1228,8 +1472,11 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">5. 高级部署指南</a><ul>
-<li><a class="reference internal" href="#id2">部署方法概述</a></li>
+<li><a class="reference internal" href="#">高级部署</a><ul>
+<li><a class="reference internal" href="#id2">部署方法概述</a><ul>
+<li><a class="reference internal" href="#deploymentmode">部署模式（DeploymentMode）</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#id3">前置条件</a><ul>
 <li><a class="reference internal" href="#id4">🔧 安装要求</a></li>
 <li><a class="reference internal" href="#id5">🔑 环境配置</a></li>
@@ -1265,11 +1512,20 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
 <li><a class="reference internal" href="#id23">实现</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id24">总结</a><ul>
-<li><a class="reference internal" href="#id25">🏃 <strong>本地守护进程</strong>：开发与测试</a></li>
-<li><a class="reference internal" href="#id26">🔧 <strong>独立进程</strong>：生产服务</a></li>
-<li><a class="reference internal" href="#id27">☸️ <strong>Kubernetes</strong>：企业与云端</a></li>
-<li><a class="reference internal" href="#id28">☁️ <strong>ModelStudio</strong>：阿里云平台</a></li>
+<li><a class="reference internal" href="#agentrun">方法5：AgentRun 部署</a><ul>
+<li><a class="reference internal" href="#id24">特性</a></li>
+<li><a class="reference internal" href="#id25">AgentRun 部署前置条件</a></li>
+<li><a class="reference internal" href="#id26">实现</a></li>
+<li><a class="reference internal" href="#id27">配置说明</a><ul>
+<li><a class="reference internal" href="#ossconfig">OSSConfig</a></li>
+<li><a class="reference internal" href="#agentrunconfig">AgentRunConfig</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id28">高级用法</a><ul>
+<li><a class="reference internal" href="#wheel">使用预构建的 Wheel 文件</a></li>
+<li><a class="reference internal" href="#id29">更新现有部署</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

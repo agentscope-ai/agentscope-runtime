@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="4. 工具沙箱" href="sandbox.html"><link rel="prev" title="2. 概念" href="concept.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="4. 沙箱与工具" href="tool.html"><link rel="prev" title="2. 概念" href="concept.html">
         <link rel="prefetch" href="../_static/logo.svg" as="image">
 
     <link rel="shortcut icon" href="../_static/logo.svg"><!-- Generated with Sphinx 7.4.7 and Furo 2025.09.25 -->
@@ -359,7 +359,7 @@ body.preview-active {
 </style>
 
 <script>
-    const VERSIONS = ["preview", "v0.2.0", "v0.1.6", "v0.1.5", "v0.1.4"];
+    const VERSIONS = ["preview", "v0.2.0"];
     const VERSION_PATTERN = /^\/(v\d+\.\d+\.\d+)\//;
 
     function populateVersionMenu() {
@@ -474,31 +474,54 @@ body.preview-active {
 <li class="toctree-l1"><a class="reference internal" href="../en/install.html">1. Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../en/concept.html">2. Concepts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../en/quickstart.html">3. Quick Start</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../en/sandbox.html">4. Tool Sandbox</a><input aria-label="Toggle navigation of 4. Tool Sandbox" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../en/sandbox_advanced.html">Advanced Usage of Tool Sandbox</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../en/training_sandbox.html">Training Sandbox</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../en/sandbox_troubleshooting.html">Sandbox Troubleshooting</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/tool.html">4. Sandbox and Tools</a><input aria-label="Toggle navigation of 4. Sandbox and Tools" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../en/sandbox/sandbox.html">Sandbox</a><input aria-label="Toggle navigation of Sandbox" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../en/sandbox/advanced.html">Advanced Usage of Tool Sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/sandbox/training_sandbox.html">Training Sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/sandbox/troubleshooting.html">Sandbox Troubleshooting</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../en/advanced_deployment.html">5. Advanced Deployment Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../en/react_agent.html">6. Deploy a ReAct Agent with Tool Sandbox</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../en/agent_app.html">7. Deep Dive into AgentApp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../en/protocol.html">8. Agent API Protocol Specification</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../en/manager.html">9. Manager Module</a><input aria-label="Toggle navigation of 9. Manager Module" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../en/context_manager.html">Context Manager</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../en/environment_manager.html">Environment Manager</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../en/tools/tools.html">Tools</a><input aria-label="Toggle navigation of Tools" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/modelstudio_search.html">Search Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/modelstudio_rag.html">Retrieval-Augmented Generation Components (RAGs)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/modelstudio_generations.html">Image Generation Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/alipay.html">Alipay Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../en/tools/realtime_clients.html">Realtime Client Tools</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../en/tracing.html">10. Tracing Method Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../en/demohouse.html">11. Demo House</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../en/contribute.html">12. How to Contribute</a><input aria-label="Toggle navigation of 12. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/service/service.html">5. Services and Adapters</a><input aria-label="Toggle navigation of 5. Services and Adapters" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../en/service/session_history.html">Session History Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/service/memory.html">Memory Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/service/sandbox.html">Sandbox Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/service/state.html">Agent State Service</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/deployment.html">6. Deployment</a><input aria-label="Toggle navigation of 6. Deployment" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../en/agent_app.html">Simple Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/advanced_deployment.html">Advanced Deployment Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/react_agent.html">Reference: Full Deployment Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../en/call.html">AgentApp API Invocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/tracing.html">Tracing Method Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/protocol.html">Agent API Protocol Specification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/demohouse.html">Reference: Demo House</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/ut.html">Reference: Tests</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/contribute.html">8. How to Contribute</a><input aria-label="Toggle navigation of 8. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../en/README.html">Contribute to Cookbook</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../en/CHANGELOG.html">9. CHANGELOG</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
 <ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../en/api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../en/api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../en/api/sandbox.html">Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../en/api/engine.html">Engine</a></li>
 </ul>
@@ -513,31 +536,54 @@ body.preview-active {
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. 安装</a></li>
 <li class="toctree-l1"><a class="reference internal" href="concept.html">2. 概念</a></li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">3. 快速开始</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="sandbox.html">4. 工具沙箱</a><input aria-label="Toggle navigation of 4. 工具沙箱" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="sandbox_advanced.html">工具沙箱高级用法</a></li>
-<li class="toctree-l2"><a class="reference internal" href="training_sandbox.html">训练用沙箱</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sandbox_troubleshooting.html">沙盒故障排除</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tool.html">4. 沙箱与工具</a><input aria-label="Toggle navigation of 4. 沙箱与工具" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="sandbox/sandbox.html">沙箱</a><input aria-label="Toggle navigation of 沙箱" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="sandbox/advanced.html">工具沙箱高级用法</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sandbox/training_sandbox.html">训练用沙箱</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sandbox/troubleshooting.html">沙盒故障排除</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="advanced_deployment.html">5. 高级部署指南</a></li>
-<li class="toctree-l1"><a class="reference internal" href="react_agent.html">6. 部署配备工具沙箱的ReAct智能体</a></li>
-<li class="toctree-l1"><a class="reference internal" href="agent_app.html">7. 深入了解AgentApp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="protocol.html">8. Agent API 协议规范</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="manager.html">9. 管理器模块（Manager Module）</a><input aria-label="Toggle navigation of 9. 管理器模块（Manager Module）" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="context_manager.html">上下文管理器 (Context Manager)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="environment_manager.html">环境管理器（Environment Manager）</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tools/tools.html">Tools</a><input aria-label="Toggle navigation of Tools" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="tools/modelstudio_search.html">搜索组件 (Searches)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/modelstudio_rag.html">检索增强生成组件 (RAGs)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/modelstudio_generations.html">图像生成组件 (Generations)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/alipay.html">支付宝组件 (Alipay)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tools/realtime_clients.html">实时客户端组件 (Realtime Clients)</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tracing.html">10. 执行轨迹追踪</a></li>
-<li class="toctree-l1"><a class="reference internal" href="demohouse.html">11. Demo 展示厅</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="contribute.html">12. 如何贡献</a><input aria-label="Toggle navigation of 12. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="service/service.html">5. 服务与适配器</a><input aria-label="Toggle navigation of 5. 服务与适配器" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="service/session_history.html">会话历史服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service/memory.html">记忆服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service/sandbox.html">沙箱服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service/state.html">智能体状态服务</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="deployment.html">6. 部署</a><input aria-label="Toggle navigation of 6. 部署" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="agent_app.html">简单部署</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced_deployment.html">高级部署</a></li>
+<li class="toctree-l2"><a class="reference internal" href="react_agent.html">参考: 完整部署样例</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="call.html">智能体应用API调用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tracing.html">执行轨迹追踪</a></li>
+<li class="toctree-l2"><a class="reference internal" href="protocol.html">参考: Agent API 协议规范</a></li>
+<li class="toctree-l2"><a class="reference internal" href="demohouse.html">参考: Demo 展示厅</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ut.html">参考: 测试用例</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="contribute.html">8. 如何贡献</a><input aria-label="Toggle navigation of 8. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="README.html">参与贡献Cookbook</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="CHANGELOG.html">9. CHANGELOG</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">API 参考</span></p>
 <ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="api/sandbox.html">Sandbox</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api/engine.html">Engine</a></li>
 </ul>
@@ -580,7 +626,7 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <section id="id1">
 <h1><span class="section-number">3. </span>快速开始<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h1>
-<p>本教程演示如何在 <strong>AgentScope Runtime</strong> 框架中构建一个简单的智能体并将其部署为服务。</p>
+<p>本教程演示如何在 <strong>AgentScope Runtime</strong> 框架中构建一个简单的智能体应用并将其部署为服务。</p>
 <section id="id2">
 <h2>前置条件<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
 <section id="id3">
@@ -592,7 +638,7 @@ body.preview-active {
 </section>
 <section id="api">
 <h3>🔑 API密钥配置<a class="headerlink" href="#api" title="Link to this heading">¶</a></h3>
-<p>您需要为所选的大语言模型提供商提供API密钥。本示例使用DashScope（Qwen）：</p>
+<p>您需要为所选的大语言模型提供商提供API密钥。本示例使用阿里云的Qwen模型，服务提供方是DashScope，所以需要使用其API_KEY，您可以按如下方式将key作为环境变量：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">DASHSCOPE_API_KEY</span><span class="o">=</span><span class="s2">&quot;your_api_key_here&quot;</span>
 </pre></div>
 </div>
@@ -607,12 +653,23 @@ body.preview-active {
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.agentscope_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentScopeAgent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalDeployManager</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIChatModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.formatter</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatFormatter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">Toolkit</span><span class="p">,</span> <span class="n">execute_python_code</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">stream_printing_messages</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentRequest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.adapters.agentscope.memory</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AgentScopeSessionHistoryMemory</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.agent_state</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">InMemoryStateService</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.session_history</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">InMemorySessionHistoryService</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ 依赖导入成功&quot;</span><span class="p">)</span>
 </pre></div>
@@ -620,163 +677,136 @@ body.preview-active {
 </div>
 </div>
 </section>
-<section id="id6">
-<h3>步骤2：创建智能体<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
-<p>我们这里使用agentscope作为示例：</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.agentscope_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentScopeAgent</span>
-
-<span class="n">agent</span> <span class="o">=</span> <span class="n">AgentScopeAgent</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
-    <span class="n">model</span><span class="o">=</span><span class="n">DashScopeChatModel</span><span class="p">(</span>
-        <span class="s2">&quot;qwen-turbo&quot;</span><span class="p">,</span>
-        <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
-    <span class="p">),</span>
-    <span class="n">agent_config</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;sys_prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;You&#39;re a helpful assistant named Friday.&quot;</span><span class="p">,</span>
-    <span class="p">},</span>
-    <span class="n">agent_builder</span><span class="o">=</span><span class="n">ReActAgent</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ AgentScope agent created successfully&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>要使用来自其他框架的其他LLM和智能体实现，请参考 <a class="reference internal" href="#agno-agent-zh"><span class="std std-ref">Agno智能体</span></a>、<a class="reference internal" href="#autogen-agent-zh"><span class="std std-ref">AutoGen智能体</span></a>和<a class="reference internal" href="#langgraph-agent-zh"><span class="std std-ref">LangGraph智能体</span></a>。</p>
-</div>
-<section id="agno-agent">
-<span id="agno-agent-zh"></span><h4>（可选）使用Agno Agent<a class="headerlink" href="#agno-agent" title="Link to this heading">¶</a></h4>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>如果您想要使用Agno的智能体，您应该通过以下命令安装Agno：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[agno]&quot;</span>
-</pre></div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agno.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agno.models.openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIChat</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.agno_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgnoAgent</span>
-
-<span class="n">agent</span> <span class="o">=</span> <span class="n">AgnoAgent</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
-    <span class="n">model</span><span class="o">=</span><span class="n">OpenAIChat</span><span class="p">(</span>
-        <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;gpt-4&quot;</span><span class="p">,</span>
-    <span class="p">),</span>
-    <span class="n">agent_config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;instructions&quot;</span><span class="p">:</span> <span class="s2">&quot;You&#39;re a helpful assistant.&quot;</span><span class="p">,</span>
-    <span class="p">},</span>
-    <span class="n">agent_builder</span><span class="o">=</span><span class="n">Agent</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ Agno agent created successfully&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</section>
-<section id="autogen-agent">
-<span id="autogen-agent-zh"></span><h4>（可选）使用AutoGen Agent<a class="headerlink" href="#autogen-agent" title="Link to this heading">¶</a></h4>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>如果您想要使用AutoGen的智能体，您应该通过以下命令安装AutoGen：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[autogen]&quot;</span>
-</pre></div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">autogen_agentchat.agents</span><span class="w"> </span><span class="kn">import</span> <span class="n">AssistantAgent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">autogen_ext.models.openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIChatCompletionClient</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.autogen_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutogenAgent</span>
-
-<span class="n">agent</span> <span class="o">=</span> <span class="n">AutogenAgent</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
-    <span class="n">model</span><span class="o">=</span><span class="n">OpenAIChatCompletionClient</span><span class="p">(</span>
-        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4&quot;</span><span class="p">,</span>
-    <span class="p">),</span>
-    <span class="n">agent_config</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;system_message&quot;</span><span class="p">:</span> <span class="s2">&quot;You&#39;re a helpful assistant&quot;</span><span class="p">,</span>
-    <span class="p">},</span>
-    <span class="n">agent_builder</span><span class="o">=</span><span class="n">AssistantAgent</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ AutoGen agent created successfully&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</section>
-<section id="langgraph-agent">
-<span id="langgraph-agent-zh"></span><h4>（可选）使用 LangGraph Agent<a class="headerlink" href="#langgraph-agent" title="Link to this heading">¶</a></h4>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>如果您想要使用LangGraph的智能体，您应该通过以下命令安装LangGraph：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;agentscope-runtime[langgraph]&quot;</span>
-</pre></div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph</span><span class="w"> </span><span class="kn">import</span> <span class="n">graph</span><span class="p">,</span> <span class="n">types</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.agents.langgraph_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">LangGraphAgent</span>
-
-
-<span class="c1"># 定义状态</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">State</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
-
-
-<span class="c1"># 定义节点函数</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">set_id</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">):</span>
-    <span class="n">new_id</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">new_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;must set ID&quot;</span>
-    <span class="k">return</span> <span class="n">types</span><span class="o">.</span><span class="n">Command</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="n">State</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">new_id</span><span class="p">),</span> <span class="n">goto</span><span class="o">=</span><span class="s2">&quot;REVERSE_ID&quot;</span><span class="p">)</span>
-
-
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reverse_id</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">):</span>
-    <span class="n">new_id</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">new_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;ID must be set before reversing&quot;</span>
-    <span class="k">return</span> <span class="n">types</span><span class="o">.</span><span class="n">Command</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="n">State</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">new_id</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
-
-
-<span class="n">state_graph</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">StateGraph</span><span class="p">(</span><span class="n">state_schema</span><span class="o">=</span><span class="n">State</span><span class="p">)</span>
-<span class="n">state_graph</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;SET_ID&quot;</span><span class="p">,</span> <span class="n">set_id</span><span class="p">)</span>
-<span class="n">state_graph</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;REVERSE_ID&quot;</span><span class="p">,</span> <span class="n">reverse_id</span><span class="p">)</span>
-<span class="n">state_graph</span><span class="o">.</span><span class="n">set_entry_point</span><span class="p">(</span><span class="s2">&quot;SET_ID&quot;</span><span class="p">)</span>
-<span class="n">compiled_graph</span> <span class="o">=</span> <span class="n">state_graph</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;ID Reversal&quot;</span><span class="p">)</span>
-<span class="n">agent</span> <span class="o">=</span> <span class="n">LangGraphAgent</span><span class="p">(</span><span class="n">graph</span><span class="o">=</span><span class="n">compiled_graph</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ LangGraph agent created successfully&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</section>
-</section>
 <section id="agent-app">
-<h3>步骤3：创建并启动Agent App<a class="headerlink" href="#agent-app" title="Link to this heading">¶</a></h3>
-<p>用agent和 <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 创建一个 Agent API 服务器：</p>
+<h3>步骤2：创建Agent App<a class="headerlink" href="#agent-app" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 是整个 Agent 应用的生命周期和请求调用的核心，接下来所有的初始化、查询处理、关闭资源等都基于它来注册。</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span><span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span> <span class="n">endpoint_path</span><span class="o">=</span><span class="s2">&quot;/process&quot;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
+    <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+    <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
+<span class="p">)</span>
 
-<span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8090</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ Agent App创建成功&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<p>运行后，服务器会启动并监听：<code class="docutils literal notranslate"><span class="pre">http://localhost:8090/process</span></code></p>
+</section>
+<section id="id6">
+<h3>步骤3：注册生命周期方法（初始化 &amp; 关闭）<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<p>这里定义了应用在启动时要做的事情（启动状态管理、会话历史服务），以及关闭时释放这些资源。</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@agent_app</span><span class="o">.</span><span class="n">init</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">state_service</span> <span class="o">=</span> <span class="n">InMemoryStateService</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">session_service</span> <span class="o">=</span> <span class="n">InMemorySessionHistoryService</span><span class="p">()</span>
+
+    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_service</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_service</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+<span class="nd">@agent_app</span><span class="o">.</span><span class="n">shutdown</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_service</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_service</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="agentscope-agent">
+<h3>步骤4：定义 AgentScope Agent 的查询逻辑<a class="headerlink" href="#agentscope-agent" title="Link to this heading">¶</a></h3>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>⚠️ <strong>提示</strong></p>
+<p>此处的 Agent 构建（模型、工具、会话记忆、格式化器等）只是一个示例配置，
+您需要根据实际需求替换为自己的模块实现。
+关于可用的服务类型、适配器用法以及如何替换，请参考 <a class="reference internal" href="service/service.html"><span class="doc">服务与适配器</span></a>。</p>
+</div>
+<p>这一部分定义了Agent API 被调用时的业务逻辑：</p>
+<ul class="simple">
+<li><p><strong>获取会话信息</strong>：确保不同用户或会话的上下文独立。</p></li>
+<li><p><strong>构建 Agent</strong>：包括模型、工具（例如执行 Python 代码）、会话记忆模块、格式化器</p></li>
+<li><p><strong>支持流式输出</strong>：必须使用 <code class="docutils literal notranslate"><span class="pre">stream_printing_messages</span></code> 返回 <code class="docutils literal notranslate"><span class="pre">(msg,</span> <span class="pre">last)</span></code>，为客户端提供边生成边响应的能力。</p></li>
+<li><p><strong>状态持久化</strong>：将 Agent 的当前状态保存下来。</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@agent_app</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">framework</span><span class="o">=</span><span class="s2">&quot;agentscope&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_func</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">msgs</span><span class="p">,</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">session_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session_id</span>
+    <span class="n">user_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">user_id</span>
+
+    <span class="n">state</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_service</span><span class="o">.</span><span class="n">export_state</span><span class="p">(</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">toolkit</span> <span class="o">=</span> <span class="n">Toolkit</span><span class="p">()</span>
+    <span class="n">toolkit</span><span class="o">.</span><span class="n">register_tool_function</span><span class="p">(</span><span class="n">execute_python_code</span><span class="p">)</span>
+
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">ReActAgent</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">DashScopeChatModel</span><span class="p">(</span>
+            <span class="s2">&quot;qwen-turbo&quot;</span><span class="p">,</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
+            <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">sys_prompt</span><span class="o">=</span><span class="s2">&quot;You&#39;re a helpful assistant named Friday.&quot;</span><span class="p">,</span>
+        <span class="n">toolkit</span><span class="o">=</span><span class="n">toolkit</span><span class="p">,</span>
+        <span class="n">memory</span><span class="o">=</span><span class="n">AgentScopeSessionHistoryMemory</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">session_service</span><span class="p">,</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">formatter</span><span class="o">=</span><span class="n">DashScopeChatFormatter</span><span class="p">(),</span>
+    <span class="p">)</span>
+    <span class="n">agent</span><span class="o">.</span><span class="n">set_console_output_enabled</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">state</span><span class="p">:</span>
+        <span class="n">agent</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">for</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span> <span class="ow">in</span> <span class="n">stream_printing_messages</span><span class="p">(</span>
+        <span class="n">agents</span><span class="o">=</span><span class="p">[</span><span class="n">agent</span><span class="p">],</span>
+        <span class="n">coroutine_task</span><span class="o">=</span><span class="n">agent</span><span class="p">(</span><span class="n">msgs</span><span class="p">),</span>
+    <span class="p">):</span>
+        <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
+
+    <span class="n">state</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span>
+
+    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_service</span><span class="o">.</span><span class="n">save_state</span><span class="p">(</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="n">state</span><span class="o">=</span><span class="n">state</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
 </section>
 <section id="id7">
-<h3>步骤4：发送一个请求<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
+<h3>步骤5：启动Agent App<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
+<p>启动 Agent API 服务器，运行后，服务器会启动并监听：<code class="docutils literal notranslate"><span class="pre">http://localhost:8090/process</span></code>：</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 启动服务（监听8090端口）</span>
+<span class="n">agent_app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8090</span><span class="p">)</span>
+
+<span class="c1"># 如果希望同时启用内置的 Web 对话界面，可设置 web_ui=True</span>
+<span class="c1"># agent_app.run(host=&quot;0.0.0.0&quot;, port=8090, web_ui=True)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="id8">
+<h3>步骤6：发送一个请求<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
 <p>你可以使用 <code class="docutils literal notranslate"><span class="pre">curl</span></code> 向 API 发送 JSON 输入：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-N<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://localhost:8090/process&quot;</span><span class="w"> </span><span class="se">\</span>
@@ -802,8 +832,8 @@ data:<span class="w"> </span><span class="o">{</span><span class="s2">&quot;sequ
 </pre></div>
 </div>
 </section>
-<section id="deployer">
-<h3>步骤5: 使用 Deployer 部署代理<a class="headerlink" href="#deployer" title="Link to this heading">¶</a></h3>
+<section id="deploymanager">
+<h3>步骤7: 使用 DeployManager 部署智能体应用<a class="headerlink" href="#deploymanager" title="Link to this heading">¶</a></h3>
 <p>AgentScope Runtime 提供了一个功能强大的部署系统，可以将你的智能体部署到远程或本地容器中。这里我们以 <code class="docutils literal notranslate"><span class="pre">LocalDeployManager</span></code> 为例：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -813,7 +843,7 @@ data:<span class="w"> </span><span class="o">{</span><span class="s2">&quot;sequ
 </div>
 </div>
 </div>
-<p>这段代码会在指定的端口运行你的智能体API Server，使其能够响应外部请求。除了基本的 HTTP API 访问外，你还可以使用不同的协议与智能体进行交互，例如：A2A、Response API、Agent API等。详情请参考 <a class="reference internal" href="protocol.html"><span class="doc">Agent API 协议规范</span></a>。</p>
+<p>这段代码会在指定的端口运行你的智能体API Server，使其能够响应外部请求。除了基本的 HTTP API 访问外，你还可以使用不同的协议与智能体进行交互，例如：A2A、Response API、Agent API等。详情请参考 <a class="reference internal" href="protocol.html"><span class="doc">参考: Agent API 协议规范</span></a>。</p>
 <p>例如用户可以通过OpenAI SDK 来请求这个部署。</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAI</span>
 
@@ -828,6 +858,16 @@ data:<span class="w"> </span><span class="o">{</span><span class="s2">&quot;sequ
 </pre></div>
 </div>
 </section>
+</section>
+<section id="id9">
+<h2>章节导读<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h2>
+<p>后续的章节包括如下几个部分</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="tool.html"><span class="doc">沙箱与工具</span></a>: 帮助您在Agent中加入工具</p></li>
+<li><p><a class="reference internal" href="deployment.html"><span class="doc">部署</span></a>: 帮助您部署Agent，打包成服务</p></li>
+<li><p><a class="reference internal" href="use.html"><span class="doc">使用</span></a>: 帮助您调用部署后的服务</p></li>
+<li><p><a class="reference internal" href="contribute.html"><span class="doc">如何贡献</span></a>: 贡献代码给本项目的参考文档</p></li>
+</ul>
 </section>
 </section>
 
@@ -855,12 +895,12 @@ data:<span class="w"> </span><span class="o">{</span><span class="s2">&quot;sequ
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="sandbox.html">
+          <a class="next-page" href="tool.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title"><span class="section-number">4. </span>工具沙箱</div>
+                <div class="title"><span class="section-number">4. </span>沙箱与工具</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -927,17 +967,15 @@ data:<span class="w"> </span><span class="o">{</span><span class="s2">&quot;sequ
 </li>
 <li><a class="reference internal" href="#id4">分步实现</a><ul>
 <li><a class="reference internal" href="#id5">步骤1：导入依赖</a></li>
-<li><a class="reference internal" href="#id6">步骤2：创建智能体</a><ul>
-<li><a class="reference internal" href="#agno-agent">（可选）使用Agno Agent</a></li>
-<li><a class="reference internal" href="#autogen-agent">（可选）使用AutoGen Agent</a></li>
-<li><a class="reference internal" href="#langgraph-agent">（可选）使用 LangGraph Agent</a></li>
+<li><a class="reference internal" href="#agent-app">步骤2：创建Agent App</a></li>
+<li><a class="reference internal" href="#id6">步骤3：注册生命周期方法（初始化 &amp; 关闭）</a></li>
+<li><a class="reference internal" href="#agentscope-agent">步骤4：定义 AgentScope Agent 的查询逻辑</a></li>
+<li><a class="reference internal" href="#id7">步骤5：启动Agent App</a></li>
+<li><a class="reference internal" href="#id8">步骤6：发送一个请求</a></li>
+<li><a class="reference internal" href="#deploymanager">步骤7: 使用 DeployManager 部署智能体应用</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#agent-app">步骤3：创建并启动Agent App</a></li>
-<li><a class="reference internal" href="#id7">步骤4：发送一个请求</a></li>
-<li><a class="reference internal" href="#deployer">步骤5: 使用 Deployer 部署代理</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#id9">章节导读</a></li>
 </ul>
 </li>
 </ul>
