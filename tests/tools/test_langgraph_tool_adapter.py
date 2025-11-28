@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=unused-argument
+
 """
 Tests for langgraph tool adapter module.
 
