@@ -5,7 +5,7 @@ This directory contains various search service components that provide intellige
 ## 📋 Component List
 
 ### 1. ModelstudioSearch - DashScope Search Component
-Core intelligent search service that supports multiple search strategies and information sources.
+A core intelligent search service that supports multiple search strategies and information sources.
 
 **Prerequisites:**
 - Valid DashScope API key, **This component is currently in beta testing phase, please contact developers and provide DASHSCOPE_API_KEY**
@@ -224,8 +224,8 @@ asyncio.run(advanced_search_example())
 ## ⚠️ Usage Considerations
 
 ### Search Strategy Selection
-- Choose appropriate search strategy based on query type
-- Consider timeliness requirements of results
+- Choose an appropriate search strategy based on the query type
+- Consider the timeliness requirements of results
 - Balance search depth and response speed
 - Adjust search parameters based on user scenarios
 
@@ -233,7 +233,7 @@ asyncio.run(advanced_search_example())
 - Set appropriate relevance thresholds
 - Verify accuracy of search results
 - Handle cases with insufficient search results
-- Establish user feedback mechanism to improve search quality
+- Establish a user feedback mechanism to improve search quality
 
 ### API Usage Limitations
 - Follow search service call frequency limits

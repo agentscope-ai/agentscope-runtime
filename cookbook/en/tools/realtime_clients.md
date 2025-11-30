@@ -1,6 +1,6 @@
 # Realtime Client Tools
 
-This directory hosts realtime audio tools that power end-to-end speech experiences, including automatic speech recognition (ASR), text-to-speech (TTS), and bidirectional streaming pipelines.
+This directory hosts real-time audio tools that power end-to-end speech experiences, including automatic speech recognition (ASR), text-to-speech (TTS), and bidirectional streaming pipelines.
 
 ## 📋 Component Catalog
 
@@ -15,7 +15,7 @@ A client wrapper around the ModelStudio (DashScope) automatic speech recognition
 **Configuration Model (`ModelstudioAsrConfig`)**
 - Accepts common audio formats (WAV, MP3, PCM, etc.)
 - Configurable sampling rate and channel count
-- Supports realtime streaming and batch transcription
+- Supports real-time streaming and batch transcription
 - Language and dialect options
 
 **Key Features**
@@ -36,7 +36,7 @@ Client for ModelStudio’s text-to-speech service.
 **Configuration Model (`ModelstudioTtsConfig`)**
 - Multiple output formats (WAV, MP3, PCM, etc.)
 - Adjustable sampling rate and audio quality
-- Works for realtime streaming or batch synthesis
+- Works for real-time streaming or batch synthesis
 - Voice timbre and speech parameter controls
 
 **Key Features**
@@ -87,7 +87,7 @@ Client for Azure Speech Service TTS.
 - **Multilingual**: major languages and dialects worldwide
 
 ### 5. RealtimeTool – Base Class for Realtime Components
-Provides shared infrastructure for realtime audio tools.
+Provides shared infrastructure for real-time audio tools.
 
 **Core Traits**
 - **Async processing**: non-blocking audio streaming
@@ -337,7 +337,7 @@ asyncio.run(azure_example())
 - Keep audio input clean to avoid noise interference
 - Use appropriate sampling rates (typically 16 kHz or 48 kHz)
 - Control end-to-end latency for better UX
-- Periodically check microphone status
+- Periodically check the microphone status
 
 ### Network and Performance
 - Ensure network stability to prevent streaming gaps
@@ -352,7 +352,7 @@ asyncio.run(azure_example())
 - Delete unnecessary recordings routinely
 
 ## 🔗 Related Components
-- Combine with dialog managers to build voice-first agents
+- Combine with dialogue managers to build voice-first agents
 - Integrate with intent recognition to understand spoken intent
 - Pair with memory components to persist voice interaction history
 - Extend via the plugin system for additional speech tooling

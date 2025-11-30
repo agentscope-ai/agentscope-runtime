@@ -15,12 +15,12 @@ kernelspec:
 # Advanced Usage of Tool Sandbox
 
 ```{note}
-This section covers advanced sandbox usages. We strongly recommend completing the basic tutorial in the previous section ({doc}`sandbox`) before proceeding.
+This section covers advanced sandbox usage. Complete the basic tutorial in the previous section ({doc}`sandbox`) first.
 ```
 
 ## Remote Sandbox Server
 
-Remote sandbox servers enable you to deploy sandboxes as standalone services, providing benefits like resource isolation and centralized management. This section covers how to set up and configure sandbox servers. After setting up, you can connect to the remote sandbox server via the sandbox SDK.
+Remote sandbox servers let you deploy isolated, standalone services. This section explains the setup and configuration of a sandbox server. After setup, connect using the sandbox SDK.
 
 ### Quick Start with Default Configuration
 
@@ -47,14 +47,14 @@ runtime-sandbox-server --config custom.env
 ```
 
 ```{note}
-If you plan to use the sandbox on a large scale in production, we recommend deploying it directly in Alibaba Cloud for managed hosting.
+If you plan to use the sandbox at scale in production, we recommend deploying it directly on Alibaba Cloud for managed hosting.
 
 [One-click deploy sandbox on Alibaba Cloud](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83)
 ```
 
 ### Custom Configuration
 
-For custom deployments or specific requirements, you can customize the server configuration by creating a `.env` file in your working directory:
+For custom deployments or specific requirements, you can customise the server configuration by creating a `.env` file in your working directory:
 
 ```bash
 # .env
@@ -109,6 +109,7 @@ KUBECONFIG_PATH=
 | `BEARER_TOKEN` | Authentication token       | Empty       | `your-secret-token`                 |
 
 #### Runtime Manager Settings
+
 | Parameter | Description | Default                    | Notes |
 | --- | --- |----------------------------| --- |
 | `DEFAULT_SANDBOX_TYPE` | Default sandbox type(s) | `base`                     | Can be a single type or a list of types, enabling multiple independent sandbox pools. Valid values include base, filesystem, browser, etc.<br/>Supported formats:<br/>• Single type: `DEFAULT_SANDBOX_TYPE=base`<br/>• Multiple types (comma-separated): `DEFAULT_SANDBOX_TYPE=base,gui`<br/>• Multiple types (JSON list): `DEFAULT_SANDBOX_TYPE=["base","gui"]`<br/>Each type will have its own separate pre-warmed pool. |
@@ -120,7 +121,7 @@ KUBECONFIG_PATH=
 | `READONLY_MOUNTS` | Read-only directory mounts | `None` | A dictionary mapping **host paths** to **container paths**, mounted in **read-only** mode. Used to share files/configurations without allowing container writes. Example:<br/>`{"\/Users\/alice\/data": "\/data"}` mounts the host's `/Users/alice/data` to `/data` inside the container as read-only. |
 | `PORT_RANGE` | Available port range | `[49152,59152]`            | For service port allocation |
 
-####  (Optional) Redis Settings
+#### (Optional) Redis Settings
 
 ```{note}
 **When to use Redis:**
@@ -192,9 +193,9 @@ This allows you to modify the security level, add environment variables, define 
 
 See {ref}`Custom Sandbox Class <custom_sandbox>`
 
-> - `@SandboxRegistry.register` will register the class into the sandbox manager, so it can be recognized and used at startup.
+> - `@SandboxRegistry.register` will register the class into the sandbox manager, so it can be recognised and used at startup.
 > - The `environment` field can inject external API keys or other necessary configurations into the sandbox.
-> - The class inherits from `Sandbox` and can override its methods to implement more customized logic.
+> - The class inherits from `Sandbox` and can override its methods to implement more customised logic.
 
 #### Loading the extension at startup
 
@@ -241,7 +242,7 @@ with BaseSandbox(
 
 ## Custom Built Sandbox
 
-While the built-in sandbox types cover common use cases, you may encounter scenarios requiring specialized environments or unique tool combinations. Creating custom sandboxes allows you to tailor the execution environment to your specific needs. This section demonstrates how to build and register your custom sandbox types.
+While the built-in sandbox types cover common use cases, you may encounter scenarios requiring specialised environments or unique tool combinations. Creating custom sandboxes allows you to tailor the execution environment to your specific needs. This section demonstrates how to build and register your custom sandbox types.
 
 ### Install from Source (Required for Custom Sandbox)
 
@@ -320,7 +321,7 @@ Creating a custom sandbox also requires preparing the corresponding Docker image
 - **Advanced Customization**: For more advanced usage and customization, you must be very familiar with Dockerfile syntax and Docker best practices
 ```
 
-Here's an example Dockerfile for a custom sandbox with filesystem, browser, and some useful MCP tools in one sandbox:
+Here's an example Dockerfile for a custom sandbox with a filesystem, a browser, and some useful MCP tools in one sandbox:
 
 
 ```dockerfile
@@ -423,7 +424,7 @@ runtime-sandbox-builder my_custom_sandbox --dockerfile_path examples/custom_sand
 
 - `custom_sandbox`: The name/tag for your custom sandbox image
 - `--dockerfile_path`: Path to your custom Dockerfile
-- `--extension`: Path to your custom sandbox python module
+- `--extension`: Path to your custom sandbox Python module
 
 Once built, your custom sandbox image will be ready to use with the corresponding sandbox class you defined.
 
@@ -438,7 +439,7 @@ runtime-sandbox-builder all
 # Build base image (~1Gb)
 runtime-sandbox-builder base
 
-# Build gui image (~2Gb)
+# Build GUI image (~2Gb)
 runtime-sandbox-builder gui
 
 # Build browser image (~2Gb)
@@ -453,7 +454,7 @@ runtime-sandbox-builder mobile
 The above commands are useful when you want to:
 
 - Build images locally instead of pulling from the registry
-- Customize the base images before building your own
+- Customise the base images before building your own
 - Ensure you have the latest version of the built-in images
 - Work in air-gapped environments
 

@@ -36,7 +36,7 @@ For more detailed change descriptions and the migration guide, please refer to: 
 
 ## What is AgentScope Runtime?
 
-**AgentScope Runtime** is a full-stack agent runtime that tackles two core challenges: **efficient agent deployment** and **secure sandbox execution**. It ships with foundational services such as short- and long-term memory plus agent state persistence, along with hardened sandbox infrastructure. Whether you need to orchestrate production-grade agents or guarantee safe tool interactions, AgentScope Runtime provides developer-friendly workflows with complete observability.
+**AgentScope Runtime** is a full-stack agent runtime that tackles two core challenges: **efficient agent deployment** and **secure sandbox execution**. It ships with foundational services such as short- and long-term memory plus agent-state persistence, along with hardened sandbox infrastructure. Whether you need to orchestrate production-grade agents or guarantee safe tool interactions, AgentScope Runtime provides developer-friendly workflows with complete observability.
 
 In V1.0, these services are exposed via an **adapter pattern**, enabling seamless integration with the native modules of different agent frameworks while preserving their native interfaces and behaviors, ensuring both compatibility and flexibility.
 
@@ -46,7 +46,7 @@ This cookbook walks you through building service-ready agent applications with *
 
 **⚙️ Agent Deployment Runtime (Engine)**
 
-Provides `AgentApp` as the main entry point for agent applications, along with production‑grade infrastructure for deploying, managing, and traing agents. It also includes built‑in services such as session history, long‑term memory, and agent state management.
+Provides `AgentApp` as the main entry point for agent applications, along with production‑grade infrastructure for deploying, managing, and training agents. It also includes built‑in services such as session history, long‑term memory, and agent state management.
 
 **🔒 Sandbox Execution Runtime (Sandbox)**
 

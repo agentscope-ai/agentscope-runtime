@@ -1,6 +1,6 @@
 # Sandbox and Tools
 
-In AgentScope Runtime, tools are how agents deliver business capabilities. Whether you call model services directly, run browser automation, or integrate corporate APIs, the tool stack must be safe, controllable, and extensible. This chapter outlines the overall approach and links to the follow-up sections (Ready-to-use Tools, Sandbox Basics/Advanced, Training Sandbox, Sandbox Troubleshooting) so you can select the right path for your scenario.
+In AgentScope Runtime, tools enable agents to deliver business capabilities. Whether you call model services directly, run browser automation, or integrate corporate APIs, the tool stack must be safe, controllable, and extensible. This chapter outlines the overall approach and links to the follow-up sections (Ready-to-use Tools, Sandbox Basics/Advanced, Training Sandbox, Sandbox Troubleshooting) so you can select the right path for your scenario.
 
 ## Tool Integration Modes
 
@@ -13,7 +13,7 @@ Runtime supports three common ways to connect tools:
 
 ### Ready-to-use Tools
 
-Showcases the built-in tools you can call directly within Runtime—retrieval, web search, payment, and more. It is ideal when you want to reuse the Alibaba Cloud ecosystem quickly. Configuration patterns and best practices are included in {doc}`tools/tools`.
+Showcases the built-in tools you can call directly within Runtime—retrieval, web search, payment, and more. It is ideal when you want to quickly reuse the Alibaba Cloud ecosystem. Configuration patterns and best practices are included in {doc}`tools/tools`.
 
 ### Sandbox
 
@@ -28,7 +28,7 @@ See {doc}`sandbox/sandbox` for hands-on details.
 
 Dives into multi-tenancy, security compliance, and remote sandbox proxies. Targeted at teams that need to run at scale or meet enterprise security requirements, covering:
 
-- More settings about sandbox.
+- More settings about the sandbox.
 - Integrations with Kubernetes or remote container fleets.
 - Extension hooks for new sandbox types.
 
@@ -53,5 +53,4 @@ Follow {doc}`sandbox/troubleshooting` for the diagnostic steps.
 3. Use the advanced sandbox chapters to perform batch validation and production hardening.
 4. Consult the troubleshooting section whenever stability issues arise.
 
-This approach yields a secure, reliable, and extensible tool stack so your agents can keep evolving.
-
+This approach yields a secure, reliable, and extensible tool stack that lets your agents keep evolving.

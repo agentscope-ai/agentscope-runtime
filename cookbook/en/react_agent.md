@@ -17,7 +17,7 @@ kernelspec:
 This tutorial shows how to build and deploy a *Reason + Act (ReAct)* agent with AgentScope Runtime and the [**AgentScope framework**](https://github.com/modelscope/agentscope).
 
 ```{note}
-The ReAct paradigm interleaves reasoning traces with task-specific actions, which is especially effective for tool-use scenarios. Combining AgentScope's `ReActAgent` with AgentScope Runtime gives you both smart decision making and safe tool execution.
+The ReAct paradigm interleaves reasoning traces with task-specific actions, which is especially effective for tool-use scenarios. Combining AgentScope's `ReActAgent` with AgentScope Runtime gives you both smart decision-making and safe tool execution.
 ```
 
 ## Prerequisites
@@ -107,7 +107,7 @@ async def bootstrap_browser_sandbox():
 asyncio.run(bootstrap_browser_sandbox())
 ```
 
-Here `sandbox_types=["browser"]` matches the test suite so a single browser sandbox instance is reused for the same `session_id` / `user_id` pair.
+Here, `sandbox_types=["browser"]` matches the test suite, so a single browser sandbox instance is reused for the same `session_id` / `user_id` pair.
 
 ### Step 3: Build the AgentApp
 
@@ -265,4 +265,4 @@ A successful result should look like “I'm Friday ...”.
 
 ## Summary
 
-Following these steps you now have a ReAct agent with streaming responses, session memory, browser sandbox tooling, and an OpenAI-compatible endpoint. To deploy remotely or extend the toolset, swap out the model, state services, or registered tools as needed.
+Following these steps, you now have a ReAct agent with streaming responses, session memory, browser sandbox tooling, and an OpenAI-compatible endpoint. To deploy remotely or extend the toolset, swap out the model, state services, or registered tools as needed.
