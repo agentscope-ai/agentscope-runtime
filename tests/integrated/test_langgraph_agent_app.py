@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Integration test for LangGraph AgentApp."""
+# pylint: disable=all
+
 import json
 import multiprocessing
 import os
@@ -27,7 +28,7 @@ class AgentState(TypedDict):
 
 
 def add_time(state: AgentState):
-    new_message = HumanMessage(content="今天是 2025年 8 月 21 日")
+    new_message = HumanMessage(content="Today is August 21, 2025")
     return {"messages": [new_message]}
 
 
@@ -58,7 +59,6 @@ def build_graph():
 
     def call_model(state: AgentState):
         """Call the LLM to generate a joke about a topic"""
-        # Note that message events are emitted even when the LLM is run using .invoke rather than .stream
         model_response = llm.invoke(state["messages"])
         return {"messages": model_response}
 
@@ -94,6 +94,8 @@ def run_langgraph_app():
         # Extract session information
         session_id = request.session_id
         user_id = request.user_id
+        print("Session ID:", session_id)
+        print("User ID:", user_id)
 
         graph = build_graph()
 
@@ -103,7 +105,9 @@ def run_langgraph_app():
             config={"configurable": {"thread_id": session_id}},
         ):
             is_last_chunk = (
-                True if getattr(chunk, "chunk_position", "") == "last" else False
+                True
+                if getattr(chunk, "chunk_position", "") == "last"
+                else False
             )
             yield chunk, is_last_chunk
 
@@ -112,7 +116,7 @@ def run_langgraph_app():
 
 @pytest.fixture(scope="module")
 def start_langgraph_app():
-    """Launch LangGraph AgentApp in a separate process before the async tests."""
+    """Launch AgentApp in a separate process before the async tests."""
     proc = multiprocessing.Process(target=run_langgraph_app)
     proc.start()
     import socket
@@ -137,7 +141,7 @@ def start_langgraph_app():
 @pytest.mark.asyncio
 async def test_langgraph_process_endpoint_stream_async(start_langgraph_app):
     """
-    Async test for streaming /process endpoint (SSE, multiple JSON events) with LangGraph.
+    Async test for streaming /process endpoint (SSE, multiple JSON events).
     """
     url = f"http://localhost:{PORT}/process"
     payload = {
@@ -175,7 +179,9 @@ async def test_langgraph_process_endpoint_stream_async(start_langgraph_app):
                 # Check if this event has "output" from the assistant
                 if "output" in event:
                     try:
-                        text_content = event["output"][-1]["content"][0]["text"].lower()
+                        text_content = event["output"][-1]["content"][0][
+                            "text"
+                        ].lower()
                         if text_content:
                             found_response = True
                     except Exception:
@@ -183,13 +189,15 @@ async def test_langgraph_process_endpoint_stream_async(start_langgraph_app):
                         pass
 
             # Final assertion — we must have seen "paris" in at least one event
-            assert found_response, "Did not find 'paris' in any streamed output event"
+            assert (
+                found_response
+            ), "Did not find 'paris' in any streamed output event"
 
 
 @pytest.mark.asyncio
 async def test_langgraph_multi_turn_stream_async(start_langgraph_app):
     """
-    Async test for multi-turn conversation with streaming output using LangGraph.
+    Async test for multi-turn conversation with streaming output.
     """
     session_id = "langgraph_test_session"
     url = f"http://localhost:{PORT}/process"
@@ -217,7 +225,6 @@ async def test_langgraph_multi_turn_stream_async(start_langgraph_app):
                     continue
                 chunks.append(chunk.decode("utf-8").strip())
 
-            # Process all chunks similar to test_langgraph_process_endpoint_stream_async
             found_response = False
             line = chunks[-1]
             # SSE lines start with "data:"
@@ -225,7 +232,6 @@ async def test_langgraph_multi_turn_stream_async(start_langgraph_app):
                 data_str = line[len("data:") :].strip()
                 event = json.loads(data_str)
 
-    # Second turn - Optimized based on test_langgraph_process_endpoint_stream_async
     payload2 = {
         "input": [
             {
@@ -249,7 +255,6 @@ async def test_langgraph_multi_turn_stream_async(start_langgraph_app):
                     continue
                 chunks.append(chunk.decode("utf-8").strip())
 
-            # Process all chunks similar to test_langgraph_process_endpoint_stream_async
             found_response = False
             line = chunks[-1]
             # SSE lines start with "data:"
@@ -260,7 +265,9 @@ async def test_langgraph_multi_turn_stream_async(start_langgraph_app):
                 # Check if this event has "output" from the assistant
                 if "output" in event:
                     try:
-                        text_content = event["output"][-1]["content"][0]["text"].lower()
+                        text_content = event["output"][-1]["content"][0][
+                            "text"
+                        ].lower()
                         if text_content:
                             found_response = True
                     except Exception:

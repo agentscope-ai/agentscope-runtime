@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=all
+
 import os
 import uuid
 
@@ -47,7 +49,8 @@ async def init_func(self):
     global_long_term_memory = self.long_term_mem
 
 
-# Shutdown services, in this case, we don't use any resources, so we don't need to do anything here
+# Shutdown services, in this case,
+# we don't use any resources, so we don't need to do anything here
 @agent_app.shutdown
 async def shutdown_func(self):
     pass
@@ -96,7 +99,9 @@ async def query_func(
             memory_id = str(uuid.uuid4())
             memory = {"lastest_tool_call": chunk.name}
             global_long_term_memory.put(
-                namespace_for_long_term_memory, memory_id, memory
+                namespace_for_long_term_memory,
+                memory_id,
+                memory,
             )
         yield chunk, is_last_chunk
 
@@ -129,9 +134,11 @@ async def list_short_term_memory():
     short_mems = list(global_short_term_memory.list(None))
     for short_mem in short_mems:
         ch_vals = short_mem.checkpoint["channel_values"]
-        # 忽略 __pregel_tasks 字段，该字段不可序列化
+        # Ignore the __pregel_tasks field, which is not serializable
         safe_dict = {
-            key: value for key, value in ch_vals.items() if key != "__pregel_tasks"
+            key: value
+            for key, value in ch_vals.items()
+            if key != "__pregel_tasks"
         }
         result.append(safe_dict)
     return result
@@ -142,7 +149,9 @@ async def get_long_term_memory(user_id: str):
     if global_short_term_memory is None:
         return {"error": "Short-term memory not initialized yet."}
     namespace_for_long_term_memory = (user_id, "memories")
-    long_term_mem = global_long_term_memory.search(namespace_for_long_term_memory)
+    long_term_mem = global_long_term_memory.search(
+        namespace_for_long_term_memory,
+    )
 
     def serialize_search_item(item):
         return {

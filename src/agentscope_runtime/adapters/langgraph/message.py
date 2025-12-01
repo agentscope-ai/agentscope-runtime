@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=too-many-branches,too-many-statements
+# pylint:disable=too-many-branches,too-many-statements,too-many-return-statements
 """Message conversion between LangGraph and AgentScope runtime."""
 import json
 
 from collections import OrderedDict
 from typing import Union, List
-from urllib.parse import urlparse
 
 from langchain_core.messages import (
     AIMessage,
@@ -18,7 +17,6 @@ from langchain_core.messages import (
 from ...engine.schemas.agent_schemas import (
     Message,
     FunctionCall,
-    FunctionCallOutput,
     MessageType,
 )
 from ...engine.helpers.agent_api_builder import ResponseBuilder
@@ -87,7 +85,8 @@ def langgraph_msg_to_message(
                 mb.complete()
                 results.append(mb.get_message_data())
 
-            # If there's content in addition to tool calls, create a separate message
+            # If there's content in addition to tool calls,
+            # create a separate message
             if msg.content:
                 rb = ResponseBuilder()
                 mb = rb.create_message_builder(
@@ -247,7 +246,8 @@ def message_to_langgraph_msg(
 
             if orig_id and orig_id not in grouped:
                 grouped[orig_id] = orig_msg
-            # For now, we won't combine messages as LangGraph messages are typically separate
+            # For now, we won't combine messages as LangGraph messages
+            # are typically separate,
             # But we keep the structure in case we need it later
 
         return list(grouped.values()) if grouped else converted_list

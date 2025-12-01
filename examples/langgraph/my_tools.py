@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=all
+
 import json
 import logging
 import os
@@ -12,7 +14,6 @@ from typing import Optional
 import requests
 from langchain_core.tools import tool
 
-# 设置日志
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 def _view_text_file(file_path: str, ranges: Optional[List[int]] = None) -> str:
     """Reads and returns part or all of a text file's contents."""
     logger.debug(
-        f"_view_text_file called with file_path: {file_path}, ranges: {ranges}",
+        f"view_text_file called with file_path: {file_path}",
     )
 
     try:
@@ -40,7 +41,7 @@ def _view_text_file(file_path: str, ranges: Optional[List[int]] = None) -> str:
             # Ensure ranges list has at least 2 elements
             if len(ranges) < 2:
                 logger.warning(
-                    f"Invalid ranges parameter: {ranges}. Returning entire file.",
+                    f"Invalid ranges parameter: {ranges}.",
                 )
                 selected_lines = lines
             else:
@@ -86,21 +87,18 @@ def read_plan_file(
         return "Error: File path cannot be empty"
 
     try:
-        # 检查文件是否存在
         if not os.path.exists(file_path):
             logger.warning(f"Plan file does not exist: {file_path}")
             return f"Plan file does not exist: {file_path}"
 
-        # 获取文件信息
         file_size = os.path.getsize(file_path)
         logger.debug(f"Plan file size: {file_size} bytes")
 
         with open(file_path, encoding="utf-8") as f:
             content = f.read()
 
-        content_length = len(content)
         logger.info(
-            f"Successfully read plan file {file_path}, content length: {content_length}",
+            f"Successfully read plan file {file_path}",
         )
         logger.debug(f"First 200 characters of content: {content[:200]}...")
         return content
@@ -126,9 +124,9 @@ def update_plan_file(
     ] = False,
     adjustment_reason: Annotated[str, "Reason for adjusting the plan."] = "",
 ) -> str:
-    """Update or create a plan file with the given content. Can also adjust the plan based on previous results."""
+    """Update or create a plan file with the given content."""
     logger.info(
-        f"update_plan_file called with file_path: {file_path}, adjust_plan: {adjust_plan}",
+        f"update_plan_file,file_path: {file_path},adjust_plan: {adjust_plan}",
     )
     logger.debug(f"Content length: {len(content)} characters")
 
@@ -147,12 +145,10 @@ def update_plan_file(
         logger.debug("No plan adjustment requested")
 
     try:
-        # 确保目录存在
         parent_dir = Path(file_path).parent
         logger.debug(f"Ensuring parent directory exists: {parent_dir}")
         parent_dir.mkdir(parents=True, exist_ok=True)
 
-        # 检查原文件是否存在
         file_exists = os.path.exists(file_path)
         if file_exists:
             original_size = os.path.getsize(file_path)
@@ -162,7 +158,6 @@ def update_plan_file(
         else:
             logger.debug("Creating new plan file")
 
-        # 如果需要调整计划，在内容前添加调整说明
         if adjust_plan and adjustment_reason:
             adjusted_content = (
                 f"# Plan Adjustment Reason: {adjustment_reason}\n\n{content}"
@@ -171,15 +166,14 @@ def update_plan_file(
         else:
             adjusted_content = content
 
-        # 写入文件
         logger.debug(f"Writing to plan file: {file_path}")
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(adjusted_content)
 
-        # 获取新文件信息
         new_size = os.path.getsize(file_path)
         logger.info(
-            f"Successfully updated plan file {file_path}. New size: {new_size} bytes",
+            f"Successfully updated plan file {file_path}. "
+            f"New size: {new_size} bytes",
         )
         return f"Successfully updated plan file {file_path}"
     except PermissionError as e:
@@ -206,25 +200,20 @@ def iqs_generic_search(
 
     Args:
         query: The search query (2-100 characters)
-        category: The category to search in. If specified, only results from the specified category will be returned. Multiple categories can be specified, separated by commas. Supported values: finance/law/medical/internet/tax/news_province/news_center/alipai_tech_docs.
+        category: The category to search in.
         limit: Maximum number of results to return (default: 15)
 
     Returns:
         Dict containing search results with 'output' and 'scene_items' keys
     """
     logger.info(
-        f"iqs_generic_search called with query: {query}, category: {category}, limit: {limit}",
+        f"iqs_generic_search, query: {query}, category: {category}",
     )
     logger.debug(f"Query length: {len(query)} characters")
 
     api_key = os.environ.get("IQS_API_KEY")
     if not api_key:
         logger.warning("IQS_API_KEY environment variable not set")
-    else:
-        # Log first 4 characters of API key for debugging (without revealing the full key)
-        logger.debug(
-            f"IQS_API_KEY is set (first 4 chars): {api_key[:4] if len(api_key) >= 4 else api_key}",
-        )
 
     engine_type = "Generic"
 
@@ -281,10 +270,10 @@ def iqs_generic_search(
 
     if response.status_code != requests.codes.ok:
         logger.error(
-            f"IQS UnifiedSearch error with status {response.status_code}: {response.text}",
+            f"IQS UnifiedSearch error: {response}",
         )
         raise RuntimeError(
-            f"IQS UnifiedSearch error with status {response.status_code}: {response.text}",
+            f"IQS UnifiedSearch error: {response}",
         )
 
     try:
@@ -301,16 +290,7 @@ def iqs_generic_search(
     page_items = response_dict.get("pageItems", [])
     logger.info(f"Found {len(page_items)} page items, limiting to {limit}")
 
-    # Log some statistics about the results
-    if page_items:
-        logger.debug(
-            f"First item keys: {list(page_items[0].keys()) if page_items else 'None'}",
-        )
-
     for i, item in enumerate(page_items[:limit]):
-        logger.debug(
-            f"Processing item {i+1}/{min(limit, len(page_items))}: {item.get('title', 'No title')}",
-        )
         page_item = {
             "title": item.get("title"),
             "link": item.get("link"),
@@ -327,7 +307,8 @@ def iqs_generic_search(
 
     logger.info(f"Returning {len(page_list)} results")
     logger.debug(
-        f"Result structure: {len(page_list)} items in output, {len(response_dict.get('sceneItems', []))} scene items",
+        f"Result structure: {len(page_list)} items in output, "
+        f"{len(response_dict.get('sceneItems', []))} scene items",
     )
 
     result = {

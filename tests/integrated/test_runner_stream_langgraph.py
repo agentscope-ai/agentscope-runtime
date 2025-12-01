@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Integration test for LangGraph runner with streaming output."""
+# pylint: disable=all
+
 import os
 import pytest
-from unittest.mock import AsyncMock, Mock
 
 from langchain.agents import AgentState
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain_core.runnables import RunnableLambda
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.constants import START
@@ -18,15 +16,6 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
     RunStatus,
 )
 from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.adapters.langgraph.memory import (
-    LangGraphSessionHistoryMemory,
-)
-from agentscope_runtime.engine.services.agent_state import (
-    InMemoryStateService,
-)
-from agentscope_runtime.engine.services.session_history import (
-    InMemorySessionHistoryService,
-)
 
 
 class MyLangGraphRunner(Runner):
@@ -66,7 +55,6 @@ class MyLangGraphRunner(Runner):
 
         def call_model(state: AgentState):
             """Call the LLM to generate a joke about a topic"""
-            # Note that message events are emitted even when the LLM is run using .invoke rather than .stream
             model_response = llm.invoke(state["messages"])
             return {"messages": model_response}
 
@@ -76,12 +64,14 @@ class MyLangGraphRunner(Runner):
         graph = workflow.compile(name="langgraph_agent")
 
         async for chunk, meta_data in graph.astream(
-                input={"messages": msgs},
-                stream_mode="messages",
-                config={"configurable": {"thread_id": session_id}},
+            input={"messages": msgs},
+            stream_mode="messages",
+            config={"configurable": {"thread_id": session_id}},
         ):
             is_last_chunk = (
-                True if getattr(chunk, "chunk_position", "") == "last" else False
+                True
+                if getattr(chunk, "chunk_position", "") == "last"
+                else False
             )
             yield chunk, is_last_chunk
 
@@ -100,7 +90,7 @@ async def test_runner_sample1():
                     "content": [
                         {
                             "type": "text",
-                            "text": "杭州的天气怎么样？",
+                            "text": "What's the weather like in Hangzhou?",
                         },
                     ],
                 },
@@ -112,7 +102,7 @@ async def test_runner_sample1():
                             "data": {
                                 "call_id": "call_eb113ba709d54ab6a4dcbf",
                                 "name": "get_current_weather",
-                                "arguments": '{"location": "杭州"}',
+                                "arguments": '{"location": "Hangzhou"}',
                             },
                         },
                     ],
@@ -157,7 +147,7 @@ async def test_runner_sample1():
                         print(res)
 
         print("\n")
-    assert "杭州" in final_text
+    assert "Hangzhou" in final_text
 
 
 @pytest.mark.asyncio

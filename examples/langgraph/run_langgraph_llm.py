@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# pylint: disable=all
+
 import os
 
 from langchain.agents import AgentState
@@ -27,7 +30,8 @@ async def init_func(self):
     global_short_term_memory = self.short_term_mem
 
 
-# Shutdown services, in this case, we don't use any resources, so we don't need to do anything here
+# Shutdown services, in this case,
+# we don't use any resources, so we don't need to do anything here
 @agent_app.shutdown
 async def shutdown_func(self):
     pass
@@ -52,7 +56,6 @@ async def query_func(
 
     def call_model(state: AgentState):
         """Call the LLM to generate a joke about a topic"""
-        # Note that message events are emitted even when the LLM is run using .invoke rather than .stream
         model_response = llm.invoke(state["messages"])
         return {"messages": model_response}
 
@@ -100,9 +103,11 @@ async def list_short_term_memory():
     short_mems = list(global_short_term_memory.list(None))
     for short_mem in short_mems:
         ch_vals = short_mem.checkpoint["channel_values"]
-        # 忽略 __pregel_tasks 字段，该字段不可序列化
+        # Ignore the __pregel_tasks field, which is not serializable
         safe_dict = {
-            key: value for key, value in ch_vals.items() if key != "__pregel_tasks"
+            key: value
+            for key, value in ch_vals.items()
+            if key != "__pregel_tasks"
         }
         result.append(safe_dict)
     return result
