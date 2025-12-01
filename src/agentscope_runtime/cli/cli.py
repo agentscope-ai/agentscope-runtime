@@ -1,0 +1,41 @@
+"""AgentScope Runtime CLI - Main entry point."""
+
+import click
+from agentscope_runtime.version import __version__
+
+
+@click.group()
+@click.version_option(version=__version__, prog_name="as-runtime")
+@click.pass_context
+def cli(ctx):
+    """
+    AgentScope Runtime - Unified CLI for agent lifecycle management.
+
+    Manage your agent development, deployment, and runtime operations from a single command.
+    """
+    # Ensure context object exists
+    ctx.ensure_object(dict)
+
+
+# Import command groups (to be registered below)
+from agentscope_runtime.cli.commands import run, web, deploy, list_cmd, status, stop, invoke, sandbox
+
+
+# Register commands
+cli.add_command(run.run)
+cli.add_command(web.web)
+cli.add_command(deploy.deploy)
+cli.add_command(list_cmd.list_deployments)
+cli.add_command(status.status)
+cli.add_command(stop.stop)
+cli.add_command(invoke.invoke)
+cli.add_command(sandbox.sandbox)
+
+
+def main():
+    """Entry point for console script."""
+    cli(obj={})
+
+
+if __name__ == "__main__":
+    main()
