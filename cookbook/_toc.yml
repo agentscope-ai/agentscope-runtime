@@ -42,7 +42,7 @@ parts:
     - file: en/ut.md
   - file: en/contribute.md
     sections:
-    - file: en/README_zh.md
+    - file: en/README.md
   - file: en/CHANGELOG.md
 
 - caption: API Reference
@@ -101,7 +101,7 @@ parts:
       - file: zh/ut.md
   - file: zh/contribute.md
     sections:
-    - file: zh/README_zh.md
+    - file: zh/README.md
   - file: zh/CHANGELOG.md
 
 - caption: API 参考
