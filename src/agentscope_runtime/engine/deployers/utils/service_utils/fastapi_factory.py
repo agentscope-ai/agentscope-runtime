@@ -17,12 +17,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
 
-from agentscope_runtime.engine.schemas.response_api import ResponseAPI
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from .service_config import ServicesConfig, DEFAULT_SERVICES_CONFIG
+from agentscope_runtime.engine.schemas.response_api import ResponseAPI
 from ..deployment_modes import DeploymentMode
-from ...adapter.protocol_adapter import ProtocolAdapter
 from ...adapter.a2a.a2a_protocol_adapter import A2AFastAPIDefaultAdapter
+from ...adapter.protocol_adapter import ProtocolAdapter
 from ...adapter.responses.response_api_protocol_adapter import (
     ResponseAPIDefaultAdapter,
 )
@@ -114,7 +113,6 @@ class FastAPIAppFactory:
         before_start: Optional[Callable] = None,
         after_finish: Optional[Callable] = None,
         mode: DeploymentMode = DeploymentMode.DAEMON_THREAD,
-        services_config: Optional[ServicesConfig] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         custom_endpoints: Optional[
             List[Dict]
@@ -138,7 +136,6 @@ class FastAPIAppFactory:
             before_start: Callback function called before server starts
             after_finish: Callback function called after server finishes
             mode: Deployment mode
-            services_config: Services configuration
             protocol_adapters: Protocol adapters
             custom_endpoints: List of custom endpoint configurations
             broker_url: Celery broker URL
@@ -150,9 +147,6 @@ class FastAPIAppFactory:
         Returns:
             FastAPI application instance
         """
-        # Use default services config if not provided
-        if services_config is None:
-            services_config = DEFAULT_SERVICES_CONFIG
 
         # Initialize Celery mixin if broker and backend URLs are provided
         celery_mixin = None
@@ -177,7 +171,6 @@ class FastAPIAppFactory:
                 await FastAPIAppFactory._handle_startup(
                     app,
                     mode,
-                    services_config,
                     runner,
                     before_start,
                     **kwargs,
@@ -196,7 +189,6 @@ class FastAPIAppFactory:
 
         # Store configuration in app state
         app.state.deployment_mode = mode
-        app.state.services_config = services_config
         app.state.stream_enabled = stream
         app.state.custom_func = func
         app.state.runner = runner
@@ -234,7 +226,6 @@ class FastAPIAppFactory:
     async def _handle_startup(
         app: FastAPI,
         mode: DeploymentMode,
-        services_config: ServicesConfig,
         external_runner: Optional[Any],
         before_start: Optional[Callable],
         **kwargs,
@@ -345,7 +336,7 @@ class FastAPIAppFactory:
                 logger.error(f"Warning: Error during runner cleanup: {e}")
 
     @staticmethod
-    async def _create_internal_runner(services_config: ServicesConfig):
+    async def _create_internal_runner():
         """Create internal runner with configured services."""
         from agentscope_runtime.engine import Runner
 
@@ -481,8 +472,6 @@ class FastAPIAppFactory:
         # Mode-specific endpoints
         if mode == DeploymentMode.DETACHED_PROCESS:
             FastAPIAppFactory._add_process_control_endpoints(app)
-        elif mode == DeploymentMode.STANDALONE:
-            FastAPIAppFactory._add_configuration_endpoints(app)
 
     @staticmethod
     def _add_process_control_endpoints(app: FastAPI):
@@ -517,38 +506,6 @@ class FastAPIAppFactory:
                 "cpu_percent": process.cpu_percent(),
                 "uptime": process.create_time(),
             }
-
-    @staticmethod
-    def _add_configuration_endpoints(app: FastAPI):
-        """Add configuration endpoints for standalone mode."""
-
-        @app.get("/config")
-        async def get_configuration():
-            """Get current service configuration."""
-            return {
-                "services_config": app.state.services_config.model_dump(),
-                "deployment_mode": app.state.deployment_mode.value,
-                "stream_enabled": app.state.stream_enabled,
-            }
-
-        @app.get("/config/services")
-        async def get_services_status():
-            """Get services status."""
-            status = {}
-            if hasattr(app.state, "runner") and app.state.runner:
-                runner = app.state.runner
-                if hasattr(runner, "context_manager"):
-                    cm = runner.context_manager
-                    status["memory_service"] = (
-                        "connected" if cm.memory_service else "disconnected"
-                    )
-                    status["session_history_service"] = (
-                        "connected"
-                        if cm.session_history_service
-                        else "disconnected"
-                    )
-
-            return {"services": status}
 
     @staticmethod
     async def _handle_request(
@@ -668,8 +625,9 @@ class FastAPIAppFactory:
         """Create a wrapper for a handler that preserves function signature.
 
         This wrapper maintains the handler's signature to enable FastAPI's
-        automatic parameter parsing and dependency injection. For async handlers,
-        it returns an async wrapper; for sync handlers, it returns a sync wrapper.
+        automatic parameter parsing and dependency injection. For async
+        handlers, it returns an async wrapper; for sync handlers,
+        it returns a sync wrapper.
 
         Args:
             handler: The handler function to wrap
@@ -873,7 +831,8 @@ class FastAPIAppFactory:
                         response_model=None,
                     )
                 else:
-                    # Non-streaming endpoint -> wrapper that preserves handler signature
+                    # Non-streaming endpoint -> wrapper that preserves
+                    # handler signature
                     wrapped_handler = (
                         FastAPIAppFactory._create_handler_wrapper(handler)
                     )

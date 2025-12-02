@@ -31,7 +31,7 @@ pip install agentscope-runtime
 ### 沙箱
 
 ```{note}
-确保您的浏览器沙箱环境已准备好使用，详细信息请参见{doc}`sandbox`。
+确保您的浏览器沙箱环境已准备好使用，详细信息请参见{doc}`sandbox/sandbox`。
 ```
 
 确保浏览器沙箱镜像可用：
@@ -109,6 +109,14 @@ asyncio.run(bootstrap_browser_sandbox())
 这里的 `sandbox_types=["browser"]` 与 `tests/sandbox/test_sandbox_service.py` 保持一致，可确保同一 `session_id` / `user_id` 复用同一个浏览器沙箱实例。
 
 ### 步骤 3：构建 AgentApp
+
+```{important}
+⚠️ **提示**
+
+此处的 Agent 构建（模型、工具、会话记忆、格式化器等）只是一个示例配置，
+您需要根据实际需求替换为自己的模块实现。
+关于可用的服务类型、适配器用法以及如何替换，请参考 {doc}`service/service`。
+```
 
 下面的逻辑与测试用例 `run_app()` 完全一致，包含状态服务初始化、会话记忆以及流式响应：
 

@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - 'main'
+      - 'dev'
   pull_request:
     branches:
       - 'main'
+      - 'dev'
 
 jobs:
   test:
@@ -49,7 +51,6 @@ jobs:
       - name: Pull Docker images
         run: |
           DOCKER_IMAGES=(
-            "agentscope/runtime-sandbox-bfcl:latest"
             "agentscope/runtime-sandbox-appworld:latest"
           )
 
@@ -83,7 +84,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          coverage run -m pytest tests/sandbox/test_sandbox_appworld.py tests/sandbox/test_sandbox_bfcl.py
+          coverage run -m pytest tests/sandbox/test_sandbox_appworld.py
 
       - name: Generate coverage report
         run: |

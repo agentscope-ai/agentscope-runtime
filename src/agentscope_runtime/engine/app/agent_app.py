@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import logging
 import types
+import subprocess
+import shlex
 from typing import Optional, Callable, List
 
 import uvicorn
@@ -149,15 +151,35 @@ class AgentApp(BaseApp):
         self,
         host="0.0.0.0",
         port=8090,
+        web_ui=False,
         **kwargs,
     ):
         """
-        Run the AgentApp using FastAPIAppFactory directly.
+        Launch the AgentApp HTTP API server.
+
+        This method starts a FastAPI server for the agent service.
+        Optionally, it can also launch a browser-based Web UI for
+        interacting with the agent.
+
+        Note:
+        If `web_ui=True` and this is the **first time** launching the Web UI,
+        additional time may be required to initialize. This happens because the
+        underlying Node.js command (`npx @agentscope-ai/chat
+        agentscope-runtime-webui`) might install dependencies and set up
+        the runtime environment.
 
         Args:
-            host: Host to bind to
-            port: Port to bind to
-            **kwargs: Additional keyword arguments
+            host (str): Host address to bind to. Default "0.0.0.0".
+            port (int): Port number to serve the application on. Default 8090.
+            web_ui (bool): If True, launches the Agentscope Web UI in a
+                separate process, pointing it to the API endpoint. This
+                allows interactive use via browser. Default False.
+            **kwargs: Additional keyword arguments passed to FastAPIAppFactory
+                when creating the FastAPI application.
+
+        Example:
+            >>> app = AgentApp(app_name="MyAgent")
+            >>> app.run(host="127.0.0.1", port=8000, web_ui=True)
         """
         # Build runner
         self._build_runner()
@@ -170,23 +192,44 @@ class AgentApp(BaseApp):
 
             logger.info(f"[AgentApp] Starting server on {host}:{port}")
 
-            # Start the FastAPI application with uvicorn
-            uvicorn.run(
-                fastapi_app,
-                host=host,
-                port=port,
-                log_level="info",
-                access_log=True,
-            )
+            if web_ui:
+                webui_url = f"http://{host}:{port}{self.endpoint_path}"
+                cmd = (
+                    f"npx @agentscope-ai/chat agentscope-runtime-webui "
+                    f"--url {webui_url}"
+                )
+                logger.info(f"[AgentApp] WebUI started at {webui_url}")
+                logger.info(
+                    "[AgentApp] Note: First WebUI launch may take extra time "
+                    "as dependencies are installed.",
+                )
+                with subprocess.Popen(shlex.split(cmd)):
+                    uvicorn.run(
+                        fastapi_app,
+                        host=host,
+                        port=port,
+                        log_level="info",
+                        access_log=True,
+                    )
+            else:
+                uvicorn.run(
+                    fastapi_app,
+                    host=host,
+                    port=port,
+                    log_level="info",
+                    access_log=True,
+                )
 
-        except Exception as e:
-            logger.error(f"[AgentApp] Error while running: {e}")
-            raise
+        except KeyboardInterrupt:
+            logger.info(
+                "[AgentApp] KeyboardInterrupt received, shutting down...",
+            )
 
     def get_fastapi_app(self, **kwargs):
         """Get the FastAPI application"""
 
         self._build_runner()
+        mode = kwargs.pop("mode", DeploymentMode.DAEMON_THREAD)
 
         return FastAPIAppFactory.create_app(
             runner=self._runner,
@@ -196,7 +239,7 @@ class AgentApp(BaseApp):
             stream=self.stream,
             before_start=self.before_start,
             after_finish=self.after_finish,
-            mode=DeploymentMode.DAEMON_THREAD,
+            mode=mode,
             protocol_adapters=self.protocol_adapters,
             custom_endpoints=self.custom_endpoints,
             broker_url=self.broker_url,
@@ -213,13 +256,14 @@ class AgentApp(BaseApp):
         self._build_runner()
 
         deploy_kwargs = {
-            **kwargs,
+            "app": self,
             "custom_endpoints": self.custom_endpoints,
             "runner": self._runner,
             "endpoint_path": self.endpoint_path,
             "stream": self.stream,
             "protocol_adapters": self.protocol_adapters,
         }
+        deploy_kwargs.update(kwargs)
         return await deployer.deploy(**deploy_kwargs)
 
     def endpoint(self, path: str, methods: Optional[List[str]] = None):

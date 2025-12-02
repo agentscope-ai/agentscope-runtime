@@ -98,10 +98,18 @@ async def shutdown_func(self):
 
 ### 步骤4：定义 AgentScope Agent 的查询逻辑
 
+```{important}
+⚠️ **提示**
+
+此处的 Agent 构建（模型、工具、会话记忆、格式化器等）只是一个示例配置，
+您需要根据实际需求替换为自己的模块实现。
+关于可用的服务类型、适配器用法以及如何替换，请参考 {doc}`service/service`。
+```
+
 这一部分定义了Agent API 被调用时的业务逻辑：
 
 - **获取会话信息**：确保不同用户或会话的上下文独立。
-- **构建 Agent**：包括模型、工具（例如执行 Python 代码）、会话记忆模块、格式化器。
+- **构建 Agent**：包括模型、工具（例如执行 Python 代码）、会话记忆模块、格式化器
 - **支持流式输出**：必须使用 `stream_printing_messages` 返回 `(msg, last)`，为客户端提供边生成边响应的能力。
 - **状态持久化**：将 Agent 的当前状态保存下来。
 
@@ -165,7 +173,11 @@ async def query_func(
 启动 Agent API 服务器，运行后，服务器会启动并监听：`http://localhost:8090/process`：
 
 ```{code-cell}
+# 启动服务（监听8090端口）
 agent_app.run(host="0.0.0.0", port=8090)
+
+# 如果希望同时启用内置的 Web 对话界面，可设置 web_ui=True
+# agent_app.run(host="0.0.0.0", port=8090, web_ui=True)
 ```
 
 ### 步骤6：发送一个请求

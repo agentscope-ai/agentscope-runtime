@@ -31,7 +31,7 @@ SSE_HEADERS = {
 
 
 class ResponseAPIDefaultAdapter(ProtocolAdapter):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self._executor: Optional[ResponseAPIExecutor] = None
         self._timeout = kwargs.get("timeout", 300)  # seconds

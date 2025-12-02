@@ -58,10 +58,10 @@ All Docker images are hosted on Alibaba Cloud Container Registry (ACR) for optim
 ```
 
 ```bash
-# Pull and tag Appworld ARM64 architecture image
-docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64 && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64 agentscope/runtime-sandbox-appworld:latest-arm64
+# Pull Appworld image from DockerHub
+docker pull agentscope/runtime-sandbox-appworld:latest
 
-# Pull and tag Appworld X86_64 architecture image
+# Pull and tag Appworld image from ACR
 docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest agentscope/runtime-sandbox-appworld:latest
 ```
 
@@ -81,7 +81,7 @@ print(profile_list[0])
 #### (Optional) Build the Docker Image from Scratch
 
 f you prefer to build images locally via `Dockerfile` or need custom modifications, you can build them from scratch.
-Please refer to {doc}`sandbox_advanced` for detailed instructions.
+Please refer to {doc}`advanced` for detailed instructions.
 
 For training sandboxes, different datasets use different Dockerfiles, located at
 `src/agentscope_runtime/sandbox/box/training_box/environments/{dataset_name}`.
@@ -190,10 +190,10 @@ All Docker images are hosted on Alibaba Cloud Container Registry (ACR) for optim
 ```
 
 ```bash
-# Pull and tag BFCL ARM64 architecture image
-docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest-arm64 && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest-arm64 agentscope/runtime-sandbox-bfcl:latest-arm64
+# Pull BFCL image from DockerHub
+docker pull agentscope/runtime-sandbox-bfcl:latest
 
-# Pull and tag BFCL X86 architecture image
+# Pull and tag BFCL image from ACR
 docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest agentscope/runtime-sandbox-bfcl:latest
 ```
 
@@ -301,7 +301,6 @@ for turn_no, msg in enumerate(ASSISTANT_MESSAGES, 1):
 ```python
 score = box.evaluate(inst_id, params={"sparse": True})
 print(f"\n[RESULT] sparse_score = {score}")
-
 ```
 #### Release Instance
 ```python

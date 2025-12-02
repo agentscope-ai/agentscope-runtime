@@ -30,7 +30,7 @@
 ### 服务
 
 `Service` 章节介绍了 Runtime 内建的会话历史、记忆、沙箱、状态等基础服务，以及统一的生命周期接口。阅读该章节可以了解如何选择合适的实现（内存、Redis、Tablestore 等），以及如何通过 `start()`、`stop()`、`health()` 管理服务，确保部署环境具备稳定的支撑能力。
-详细文档见 {doc}`service`。
+详细文档见 {doc}`service/service`。
 
 ### 简单部署
 

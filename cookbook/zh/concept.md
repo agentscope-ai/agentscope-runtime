@@ -23,33 +23,42 @@ AgentScope Runtime使用模块化架构，包含几个关键组件：
 ```{mermaid}
 flowchart LR
     %% 工具模块
-    subgraph Tools["🛠 工具模块"]
+    subgraph Tools["🛠 工具"]
         RT["RAG 工具"]
         ST["搜索工具"]
         PT["支付工具"]
     end
 
     %% 服务模块
-    subgraph Service["💼 服务模块"]
+    subgraph Service["💼 服务"]
         MS["记忆服务"]
         SS["会话服务"]
         STS["状态服务"]
-        SBS["沙盒服务"]
+        SBS["沙箱服务"]
     end
 
-    %% 沙盒模块
-    subgraph Sandbox["🐳 沙盒模块"]
-        BS["浏览器沙盒"]
-        FS["文件系统沙盒"]
-        GS["图形界面沙盒"]
-        CSB["云端沙盒"]
-        MSB["移动端沙盒"]
+    %% 沙箱模块
+    subgraph Sandbox["🐳 沙箱"]
+        BS["浏览器沙箱"]
+        FS["文件系统沙箱"]
+        GS["GUI 沙箱"]
+        CSB["云沙箱"]
+        MSB["移动端沙箱"]
         ETC["更多..."]
     end
 
-    %% 智能体模块
-    subgraph Agent["🤖 智能体模块"]
-        AG["AgentScope 引擎"]
+    %% 适配器模块（大块）
+    subgraph Adapter["🔌 适配器"]
+        TAD["工具适配器"]
+        MAD["记忆适配器"]
+        SAD["会话适配器"]
+        STAD["状态适配器"]
+        SBAD["沙箱工具适配器"]
+    end
+
+    %% Agent 模块（大块）
+    subgraph Agent["🤖 智能体"]
+        AG["AgentScope"]
         AG_NOTE["（更多...）"]
     end
 
@@ -59,24 +68,28 @@ flowchart LR
     end
 
     %% 部署模块
-    subgraph Deployer["🚀 部署模块"]
+    subgraph Deployer["🚀 部署器"]
         CT["容器部署"]
         KD["K8s 部署"]
-        DP["云端部署"]
+        DP["云部署"]
         LD["本地部署"]
     end
 
     %% 外部协议
     OAI["OpenAI SDK"]:::ext
     A2A["Google A2A 协议"]:::ext
-    CUS["自定义Endpoint"]:::ext
+    CUS["自定义端点"]:::ext
 
     %% 内部连接
-    RT --> AG
-    MS --> AG
-    SS --> AG
-    STS --> AG
-    SBS --> AG
+    RT --> TAD
+    ST --> TAD
+    PT --> TAD
+
+    MS --> MAD
+    SS --> SAD
+    STS --> STAD
+    SBS --> SBAD
+
     BS --> SBS
     FS --> SBS
     GS --> SBS
@@ -84,24 +97,27 @@ flowchart LR
     MSB --> SBS
     ETC --> SBS
 
+    %% 大块到大块的连接
+    Adapter --> Agent
+
     AG --> RA
     RA --> CT
     RA --> KD
     RA --> DP
     RA --> LD
 
-    %% 部署模块连接外部协议
+    %% 整个部署模块连接到外部协议
     Deployer --> OAI
     Deployer --> A2A
     Deployer --> CUS
 
-    %% 样式定义
+    %% 样式
     classDef small fill:#0066FF,stroke:#004CBE,color:#FFFFFF,font-weight:bold
     classDef big fill:#99D6FF,stroke:#004CBE,color:#FFFFFF,font-weight:bold
     classDef ext fill:#FFFFFF,stroke:#000000,color:#000000,font-weight:bold
 
-    class Tools,Service,Sandbox,Agent,AgentAPP,Deployer big
-    class RT,ST,PT,MS,SS,STS,SBS,BS,FS,GS,CSB,MSB,ETC,AG,AG_NOTE,RA,CT,KD,DP,LD small
+    class Tools,Service,Sandbox,Adapter,Agent,AgentAPP,Deployer big
+    class RT,ST,PT,MS,SS,STS,SBS,BS,FS,GS,CSB,MSB,ETC,TAD,MAD,SAD,STAD,SBAD,AG,AG_NOTE,RA,CT,KD,DP,LD small
 
 ```
 
@@ -111,6 +127,7 @@ flowchart LR
 - **Deployer**：将Runner部署为服务，提供健康检查、监控、生命周期管理、使用SSE的实时响应流式传输、错误处理、日志记录和优雅关闭。
 - **Tool**: 提供即用型服务，比如RAG。
 - **Service**：提供智能体所需要的管理服务，比如记忆管理，沙箱管理等。
+- **Adapter**：将Runtime提供的组件/模块适配到不同Agent框架的适配器
 
 ### 关键组件
 
@@ -159,7 +176,12 @@ Runtime提供两种工具接入方式
 #### 6. Service
 
 `Service`包含如下几种：
+
 - `state_service` 状态服务
 - `memory_service` 智能体记忆服务
 - `sandbox_service` 即沙箱服务
 - `session_history_service` 即会话历史记录保存服务
+
+#### 7. Adapter
+
+`Adapter`按照不同Agent框架分类，包含工具适配器、记忆适配器、会话适配器、消息协议适配器等。

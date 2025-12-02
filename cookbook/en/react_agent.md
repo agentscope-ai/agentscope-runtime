@@ -31,7 +31,7 @@ pip install agentscope-runtime
 ### Sandbox
 
 ```{note}
-Make sure the browser sandbox environment is ready; refer to {doc}`sandbox` for details.
+Make sure the browser sandbox environment is ready; refer to {doc}`sandbox/sandbox` for details.
 ```
 
 Pull the browser sandbox image:
@@ -110,6 +110,13 @@ asyncio.run(bootstrap_browser_sandbox())
 Here `sandbox_types=["browser"]` matches the test suite so a single browser sandbox instance is reused for the same `session_id` / `user_id` pair.
 
 ### Step 3: Build the AgentApp
+
+```{important}
+⚠️ Important
+The Agent setup shown here (model, tools, conversation memory, formatter, etc.) is provided as an example configuration only.
+Please adapt and replace these components with your own implementations based on your requirements.
+For details on available service types, adapter usage, and how to swap them out, see {doc}`service/service`.
+```
 
 The logic mirrors the `run_app()` test: initialize services, wire up session memory, and stream responses.
 

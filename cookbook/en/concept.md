@@ -47,6 +47,15 @@ flowchart LR
         ETC["More..."]
     end
 
+    %% Adapter Module
+    subgraph Adapter["🔌 Adapter"]
+        TAD["Tool Adapter"]
+        MAD["Memory Adapter"]
+        SAD["Session Adapter"]
+        STAD["State Adapter"]
+        SBAD["Sandbox Tool Adapter"]
+    end
+
     %% Agent Module
     subgraph Agent["🤖 Agent"]
         AG["AgentScope"]
@@ -69,20 +78,27 @@ flowchart LR
     %% External Protocols
     OAI["OpenAI SDK"]:::ext
     A2A["Google A2A Protocol"]:::ext
-    CUS["自定义Endpoint"]:::ext
+    CUS["Custom Endpoint"]:::ext
 
     %% Internal connections
-    RT --> AG
-    MS --> AG
-    SS --> AG
-    STS --> AG
-    SBS --> AG
+    RT --> TAD
+    ST --> TAD
+    PT --> TAD
+
+    MS --> MAD
+    SS --> SAD
+    STS --> STAD
+    SBS --> SBAD
+
     BS --> SBS
     FS --> SBS
     GS --> SBS
     CSB --> SBS
     MSB --> SBS
     ETC --> SBS
+
+    %% Big block to big block connection
+    Adapter --> Agent
 
     AG --> RA
     RA --> CT
@@ -100,9 +116,8 @@ flowchart LR
     classDef big fill:#99D6FF,stroke:#004CBE,color:#FFFFFF,font-weight:bold
     classDef ext fill:#FFFFFF,stroke:#000000,color:#000000,font-weight:bold
 
-    class Tools,Service,Sandbox,Agent,AgentAPP,Deployer big
-    class RT,ST,PT,MS,SS,STS,SBS,BS,FS,GS,CSB,MSB,ETC,AG,AG_NOTE,RA,CT,KD,DP,LD small
-
+    class Tools,Service,Sandbox,Adapter,Agent,AgentAPP,Deployer big
+    class RT,ST,PT,MS,SS,STS,SBS,BS,FS,GS,CSB,MSB,ETC,TAD,MAD,SAD,STAD,SBAD,AG,AG_NOTE,RA,CT,KD,DP,LD small
 ```
 
 - **Agent**: The core AI component that processes requests and generates responses; in the runtime we recommend building agents with the AgentScope framework.
@@ -111,6 +126,7 @@ flowchart LR
 - **Deployer**: Deploys the Runner as a service with health checks, monitoring, lifecycle management, SSE-based real-time streaming, error handling, logging, and graceful shutdown.
 - **Tool**: Provides ready-to-use services, such as RAG.
 - **Service**: Supplies management capabilities required by agents, such as memory management and sandbox management.
+- **Adapter**: Adapters that integrate Runtime-provided components/modules with different Agent frameworks.
 
 ### Key Components
 
@@ -164,3 +180,7 @@ The runtime offers two patterns for integrating tools:
 - `memory_service` for agent memory management
 - `sandbox_service` for sandbox orchestration
 - `session_history_service` for persisting session history
+
+#### 7. Adapter
+
+`Adapter` is categorized based on different Agent frameworks and includes tool adapters, memory adapters, session adapters, messages protocol adapters, and more.

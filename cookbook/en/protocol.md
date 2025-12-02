@@ -625,15 +625,15 @@ from typing import Any, Callable
 
 class CustomProtocolAdapter(ProtocolAdapter):
     """Custom protocol adapter example"""
-    
+
     def add_endpoint(self, app, func: Callable, **kwargs) -> Any:
         """Add endpoint to adapter
-        
+
         Args:
             app: FastAPI application instance
             func: Handler function
             **kwargs: Other parameters
-            
+
         Returns:
             Endpoint object
         """
@@ -646,14 +646,14 @@ class CustomProtocolAdapter(ProtocolAdapter):
             result = await func(converted_request)
             # Convert response format
             return self._convert_response(result)
-        
+
         return custom_handler
-    
+
     def _convert_request(self, request):
         """Convert external protocol request to internal format"""
         # Implement request conversion logic
         pass
-    
+
     def _convert_response(self, response):
         """Convert internal response to external protocol format"""
         # Implement response conversion logic

@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import inspect
+import traceback
 import uuid
 from contextlib import AsyncExitStack
 from typing import (
@@ -15,9 +16,6 @@ from typing import (
     AsyncIterator,
 )
 
-from agentscope_runtime.engine.deployers.utils.service_utils import (
-    ServicesConfig,
-)
 from .deployers import (
     DeployManager,
     LocalDeployManager,
@@ -29,6 +27,7 @@ from .schemas.agent_schemas import (
     RunStatus,
     AgentResponse,
     SequenceNumberGenerator,
+    Error,
 )
 from .tracing import TraceType
 from .tracing.wrapper import trace
@@ -126,7 +125,6 @@ class Runner:
         base_image: str = "python:3.9-slim",
         environment: Optional[Dict[str, str]] = None,
         runtime_config: Optional[Dict] = None,
-        services_config: Optional[Union[ServicesConfig, dict]] = None,
         **kwargs,
     ):
         """
@@ -142,7 +140,6 @@ class Runner:
             base_image: Docker base image (for containerized deployment)
             environment: Environment variables dict
             runtime_config: Runtime configuration dict
-            services_config: Services configuration dict
             **kwargs: Additional arguments passed to deployment manager
         Returns:
             URL of the deployed service
@@ -160,7 +157,6 @@ class Runner:
             base_image=base_image,
             environment=environment,
             runtime_config=runtime_config,
-            services_config=services_config,
             **kwargs,
         )
 
@@ -223,7 +219,7 @@ class Runner:
         seq_gen = SequenceNumberGenerator()
 
         # Initial response
-        response = AgentResponse()
+        response = AgentResponse(id=request.id)
         yield seq_gen.yield_with_sequence(response)
 
         # Set to in-progress status
@@ -264,25 +260,36 @@ class Runner:
 
             stream_adapter = identity_stream_adapter
 
-        async for event in stream_adapter(
-            source_stream=self._call_handler_streaming(
-                self.query_handler,
-                **query_kwargs,
-                **kwargs,
-            ),
-        ):
-            if (
-                event.status == RunStatus.Completed
-                and event.object == "message"
+        try:
+            async for event in stream_adapter(
+                source_stream=self._call_handler_streaming(
+                    self.query_handler,
+                    **query_kwargs,
+                    **kwargs,
+                ),
             ):
-                response.add_new_message(event)
-            yield seq_gen.yield_with_sequence(event)
+                if (
+                    event.status == RunStatus.Completed
+                    and event.object == "message"
+                ):
+                    response.add_new_message(event)
+                yield seq_gen.yield_with_sequence(event)
+        except Exception as e:
+            # TODO: fix code
+            error = Error(
+                code="500",
+                message=f"Error happens in `query_handler`: {e}",
+            )
+            logger.error(f"{error.model_dump()}: {traceback.format_exc()}")
+            yield seq_gen.yield_with_sequence(response.failed(error))
+            return
 
         # Obtain token usage
         try:
             if response.output:
                 response.usage = response.output[-1].usage
         except IndexError:
+            # Avoid empty message
             pass
 
         yield seq_gen.yield_with_sequence(response.completed())

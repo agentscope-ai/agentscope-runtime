@@ -188,6 +188,10 @@ class SandboxManager:
                 )
 
                 self.client = AgentRunClient(config=self.config)
+            elif self.container_deployment == "fc":
+                from ...common.container_clients.fc_client import FCClient
+
+                self.client = FCClient(config=self.config)
             else:
                 raise NotImplementedError("Not implemented")
         else:
@@ -486,7 +490,11 @@ class SandboxManager:
                 mount_dir = os.path.join(self.default_mount_dir, session_id)
                 os.makedirs(mount_dir, exist_ok=True)
 
-        if mount_dir and self.container_deployment != "agentrun":
+        if (
+            mount_dir
+            and self.container_deployment != "agentrun"
+            and self.container_deployment != "fc"
+        ):
             if not os.path.isabs(mount_dir):
                 mount_dir = os.path.abspath(mount_dir)
 
@@ -501,6 +509,7 @@ class SandboxManager:
             mount_dir
             and storage_path
             and self.container_deployment != "agentrun"
+            and self.container_deployment != "fc"
         ):
             self.storage.download_folder(storage_path, mount_dir)
 
@@ -516,7 +525,11 @@ class SandboxManager:
             runtime_token = secrets.token_hex(16)
 
             # Prepare volume bindings if a mount directory is provided
-            if mount_dir and self.container_deployment != "agentrun":
+            if (
+                mount_dir
+                and self.container_deployment != "agentrun"
+                and self.container_deployment != "fc"
+            ):
                 volume_bindings = {
                     mount_dir: {
                         "bind": self.workdir,

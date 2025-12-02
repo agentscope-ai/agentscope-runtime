@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - 'main'
+      - 'dev'
+  pull_request:
+    branches:
+      - 'main'
+      - 'dev'
 
 jobs:
   test:
@@ -45,11 +50,11 @@ jobs:
       - name: Install dependencies
         run: |
           export PIP_DEFAULT_TIMEOUT=300
-          pip install -q -e ".[dev,tool]"
+          pip install -q -e ".[dev,ext]"
 
       - name: Run tests with coverage
         run: |
-          coverage run -m pytest tests/unit
+          coverage run -m pytest tests/tools
 
       - name: Generate coverage report
         run: |

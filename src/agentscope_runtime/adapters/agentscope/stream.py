@@ -30,14 +30,31 @@ def _update_obj_attrs(obj, **attrs):
 async def adapt_agentscope_message_stream(
     source_stream: AsyncIterator[Tuple[Msg, bool]],
 ) -> AsyncIterator[Message]:
-    # Judge whether a new message by msg.id
+    # Initialize variables to avoid uncaught errors
     msg_id = None
+    last_content = ""
+    metadata = None
+    usage = None
+    tool_start = False
+    message = Message(type=MessageType.MESSAGE, role="assistant")
+    reasoning_message = Message(
+        type=MessageType.REASONING,
+        role="assistant",
+    )
+    local_truncate_memory = ""
+    local_truncate_reasoning_memory = ""
+    should_start_message = True
+    should_start_reasoning_message = True
+    tool_use_messages_dict = {}
+    index = None
 
     # Run agent
     async for msg, last in source_stream:
         # deepcopy required to avoid modifying the original message object
         # which may be used elsewhere in the streaming pipeline
         msg = copy.deepcopy(msg)
+
+        assert isinstance(msg, Msg), f"Expected Msg, got {type(msg)}"
 
         # If a new message, create new Message
         if msg.id != msg_id:
@@ -235,9 +252,41 @@ async def adapt_agentscope_message_stream(
                         call_id = element.get("id")
 
                         if last:
-                            plugin_call_message = tool_use_messages_dict[
-                                call_id
-                            ]
+                            plugin_call_message = tool_use_messages_dict.get(
+                                call_id,
+                            )
+
+                            if plugin_call_message is None:
+                                # Only one tool use message yields, we fake
+                                #  Build a new tool call message
+                                plugin_call_message = Message(
+                                    type=MessageType.PLUGIN_CALL,
+                                    role="assistant",
+                                )
+
+                                data_delta_content = DataContent(
+                                    index=index,
+                                    data=FunctionCall(
+                                        call_id=element.get("id"),
+                                        name=element.get("name"),
+                                        arguments="",
+                                    ).model_dump(),
+                                    delta=True,
+                                )
+
+                                plugin_call_message = _update_obj_attrs(
+                                    plugin_call_message,
+                                    metadata=metadata,
+                                    usage=usage,
+                                )
+                                yield plugin_call_message.in_progress()
+                                data_delta_content = (
+                                    plugin_call_message.add_delta_content(
+                                        new_content=data_delta_content,
+                                    )
+                                )
+                                yield data_delta_content
+
                             json_str = json.dumps(element.get("input"))
                             data_delta_content = DataContent(
                                 index=index,
@@ -394,7 +443,6 @@ async def adapt_agentscope_message_stream(
                                 ):
                                     _format = None
                                 kwargs.update({"format": _format, "data": url})
-
                             # Base64Source runtime check (dict with type ==
                             # "base64")
                             elif (
@@ -415,11 +463,11 @@ async def adapt_agentscope_message_stream(
                                 kwargs.update(
                                     {"format": media_type, "data": url},
                                 )
-                                delta_content = AudioContent(
-                                    delta=True,
-                                    index=index,
-                                    **kwargs,
-                                )
+                            delta_content = AudioContent(
+                                delta=True,
+                                index=index,
+                                **kwargs,
+                            )
                         else:
                             delta_content = TextContent(
                                 delta=True,

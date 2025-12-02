@@ -24,7 +24,9 @@
 
 **A Production-Ready Runtime Framework for Intelligent Agent Applications**
 
-*AgentScope Runtime tackles two critical challenges in agent development: secure sandboxed tool execution and scalable agent deployment. Built with a dual-core architecture, it provides framework-agnostic infrastructure for deploying agents with full observability and safe tool interactions. In addition, the tools module offers a variety of out-of-the-box tools, which are adapted by the framework’s adapters for seamless compatibility with different native intelligent agent frameworks, ensuring developers can retain their original development experience.*
+***AgentScope Runtime** is a full-stack agent runtime that tackles two core challenges: **efficient agent deployment** and **secure sandbox execution**. It ships with foundational services such as short- and long-term memory plus agent state persistence, along with hardened sandbox infrastructure. Whether you need to orchestrate production-grade agents or guarantee safe tool interactions, AgentScope Runtime provides developer-friendly workflows with complete observability.*
+
+*In V1.0, these services are exposed via an **adapter pattern**, enabling seamless integration with the native modules of different agent frameworks while preserving their native interfaces and behaviors, ensuring both compatibility and flexibility.*
 
 </div>
 
@@ -32,7 +34,7 @@
 
 ## 🆕 NEWS
 
-* **[2025-11]** We released **<u>AgentScope Runtime V1.0</u>**, which ensures the native development experience of agent frameworks, allowing them to fully leverage their expressive power. In this version, we further simplified certain abstractions and modules to streamline the architecture. For the complete list of changes, please refer to the changelog.
+* **[2025-12]** We have released **AgentScope Runtime v1.0**, introducing a unified “Agent as API” white-box development experience, with enhanced multi-agent collaboration, state persistence, and cross-framework integration. This release also streamlines abstractions and modules to ensure consistency between development and production environments. Please refer to the **[CHANGELOG](https://runtime.agentscope.io/en/CHANGELOG.html)** for full update details and migration guide.
 
 ---
 
@@ -84,6 +86,9 @@ From PyPI:
 ```bash
 # Install core dependencies
 pip install agentscope-runtime
+
+# Install extension
+pip install "agentscope-runtime[ext]"
 
 # Install preview version
 pip install --pre agentscope-runtime
@@ -313,6 +318,38 @@ with FilesystemSandbox() as box:
     input("Press Enter to continue...")
 ```
 
+#### Mobile Sandbox
+
+Provides a **sandboxed Android emulator environment** that allows executing various mobile operations, such as tapping, swiping, inputting text, and taking screenshots.
+
+##### Prerequisites
+
+- **Linux Host**:
+  When running on a Linux host, this sandbox requires the `binder` and `ashmem` kernel modules to be loaded. If they are missing, execute the following commands on your host to install and load the required modules:
+
+  ```bash
+  # 1. Install extra kernel modules
+  sudo apt update && sudo apt install -y linux-modules-extra-`uname -r`
+
+  # 2. Load modules and create device nodes
+  sudo modprobe binder_linux devices="binder,hwbinder,vndbinder"
+  sudo modprobe ashmem_linux
+- **Architecture Compatibility**:
+  When running on an ARM64/aarch64 architecture (e.g., Apple M-series chips), you may encounter compatibility or performance issues. It is recommended to run on an x86_64 host.
+```python
+from agentscope_runtime.sandbox import MobileSandbox
+
+with MobileSandbox() as box:
+    # By default, pulls 'agentscope/runtime-sandbox-mobile:latest' from DockerHub
+    print(box.list_tools()) # List all available tools
+    print(box.mobile_get_screen_resolution()) # Get the screen resolution
+    print(box.mobile_tap(x=500, y=1000)) # Tap at coordinate (500, 1000)
+    print(box.mobile_input_text("Hello from AgentScope!")) # Input text
+    print(box.mobile_key_event(3)) # Sends a HOME key event (KeyCode: 3)
+    screenshot_result = box.mobile_get_screenshot() # Get the current screenshot
+    input("Press Enter to continue...")
+```
+
 > [!NOTE]
 >
 > To add tools to the AgentScope `Toolkit`:
@@ -482,10 +519,10 @@ limitations under the License.
 
 ## Contributors ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-19-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-23-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/emoji-key/)):
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
@@ -516,6 +553,12 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="http://ceshihao.github.io"><img src="https://avatars.githubusercontent.com/u/7711875?v=4?s=100" width="100px;" alt="Zheng Dayu"/><br /><sub><b>Zheng Dayu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=ceshihao" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Aceshihao" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://lokk.cn/about"><img src="https://avatars.githubusercontent.com/u/39740818?v=4?s=100" width="100px;" alt="quanyu"/><br /><sub><b>quanyu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=taoquanyus" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Littlegrace111"><img src="https://avatars.githubusercontent.com/u/3880455?v=4?s=100" width="100px;" alt="Grace Wu"/><br /><sub><b>Grace Wu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Littlegrace111" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Littlegrace111" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/pitt-liang"><img src="https://avatars.githubusercontent.com/u/8534560?v=4?s=100" width="100px;" alt="LiangQuan"/><br /><sub><b>LiangQuan</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=pitt-liang" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://lishengcn.cn"><img src="https://avatars.githubusercontent.com/u/12003270?v=4?s=100" width="100px;" alt="ls"/><br /><sub><b>ls</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=lishengzxc" title="Code">💻</a> <a href="#design-lishengzxc" title="Design">🎨</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/iSample"><img src="https://avatars.githubusercontent.com/u/12894421?v=4?s=100" width="100px;" alt="iSample"/><br /><sub><b>iSample</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=iSample" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=iSample" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/XiuShenAl"><img src="https://avatars.githubusercontent.com/u/242360128?v=4?s=100" width="100px;" alt="XiuShenAl"/><br /><sub><b>XiuShenAl</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=XiuShenAl" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=XiuShenAl" title="Documentation">📖</a></td>
     </tr>
   </tbody>
   <tfoot>

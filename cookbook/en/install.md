@@ -26,6 +26,9 @@ To install the stable release of Agentscope Runtime via PyPI, use:
 
 ```bash
 pip install agentscope-runtime
+
+# For additional extensions, install with extras:
+pip install "agentscope-runtime[ext]"
 ```
 
 ### (Optional) Install preview version (Beta/RC)
@@ -75,8 +78,9 @@ You should see the version number printed out.
 
 The core runtime (`agentscope-runtime`) includes AgentScope Framework and Sandbox dependencies. See details about all installation options at [pyproject.toml](https://github.com/agentscope-ai/agentscope-runtime/blob/main/pyproject.toml).
 
-| **Component**         | **Package**          | **Use-Case**  | **Dependencies**                                             |
-| --------------------- | -------------------- | ------------- | ------------------------------------------------------------ |
-| Core Runtime          | `agentscope-runtime` | Core runtime  | Minimal including AgentScope Framework and Sandbox Dependencies |
-| Development Tools     | `dev`                | Dev utilities | Testing, Linting, Docs                                       |
+| **Component**     | **Package**          | **Use-Case**  | **Dependencies**                                             |
+| ----------------- | -------------------- | ------------- | ------------------------------------------------------------ |
+| Core Runtime      | `agentscope-runtime` | Core runtime  | Minimal including AgentScope Framework and Sandbox Dependencies |
+| Development Tools | `dev`                | Dev utilities | Testing, Linting, Docs                                       |
+| Extention         | `ext`                | Deployment    | REME AI, Mem0, Alibaba Cloud services, TableStore, LangChain, Azure Speech, OSS, Authentication, Build tools |
 

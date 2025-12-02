@@ -16,7 +16,13 @@ from agentscope_runtime.engine.schemas.realtime import (
     AzureAsrConfig,
 )
 
+NO_DASHSCOPE_KEY = os.getenv("DASHSCOPE_API_KEY", "") == ""
 
+
+@pytest.mark.skipif(
+    NO_DASHSCOPE_KEY,
+    reason="DASHSCOPE_API_KEY not set",
+)
 def test_modelstudio_asr_client():
     def on_asr_event(sentence_end: bool, sentence_text: str) -> None:
         print(f"on_asr_event: end={sentence_end}, text={sentence_text}")

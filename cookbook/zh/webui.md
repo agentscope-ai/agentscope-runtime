@@ -13,9 +13,24 @@ http://localhost:8090/process
 
 此外，本章节需要依赖 **Node.js** 环境，并使用 `npm` 或 `npx` 工具，请先确保它们已正确安装。
 
-------
+## 方法一：直接在 Python 中启动 Agent 并启用 WebUI
 
-## 方法一：使用 `npx` 快速启动
+这种方式适合直接在 Python 环境中运行智能体（Agent）并启动内置的 WebUI，只需确保你已经部署了 Agent 所需模型环境，并设置好 API Key。
+
+```python
+from agentscope_runtime.engine import AgentApp
+
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+)
+# 此处省略智能体构建逻辑
+
+# 启动服务并同时启用 WebUI
+agent_app.run(host="127.0.0.1", port=8090, web_ui=True)
+```
+
+## 方法二：使用 `npx` 快速启动
 
 如果您只是想快速体验，或者不需要改动代码，可直接在终端运行以下命令：
 
@@ -33,9 +48,7 @@ http://localhost:5173
 
 启动完成后，在浏览器打开 [http://localhost:5173](http://localhost:5173/)，即可进入 WebUI，并以对话的方式直接调用您的 Agent。
 
-------
-
-## 方法二：本地安装并启动（适用于开发与二次定制）
+## 方法三：本地安装并启动（适用于开发与二次定制）
 
 如果您计划深入开发或想详细了解 WebUI 细节，可以在 **AgentScope-Runtime** 的 `web/starter_webui` 目录下启动本地环境：
 

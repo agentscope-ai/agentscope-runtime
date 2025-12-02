@@ -1,0 +1,37 @@
+{
+  "dxt_version": "0.1",
+  "name": "computer-use-mcp",
+  "display_name": "Computer Use",
+  "version": "{{VERSION}}",
+  "description": "💻 MCP server for Claude to control your computer. Implements computer use capabilities similar to Anthropic's official computer use guide.",
+  "icon": "icon.png",
+  "author": {
+    "name": "Adam Jones (domdomegg)",
+    "url": "https://github.com/domdomegg"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/domdomegg/computer-use-mcp"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/index.js"]
+    }
+  },
+  "tools": [
+    {
+      "name": "computer",
+      "description": "Use a computer to complete tasks. This tool can take screenshots, click, type, scroll, and more."
+    }
+  ],
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=16.0.0"
+    }
+  }
+}

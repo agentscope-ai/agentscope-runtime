@@ -1,33 +1,79 @@
 # -*- coding: utf-8 -*-
+# mypy: disable-error-code="no-redef"
+
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, Type
 
 from pydantic import BaseModel, Field
-
-from ..base import Tool
-
 
 from .base import (
     AP_RETURN_URL,
     AP_NOTIFY_URL,
     X_AGENT_CHANNEL,
     _create_alipay_client,
-    AlipayTradeWapPayModel,
-    AlipayTradeWapPayRequest,
-    AlipayTradePagePayModel,
-    AlipayTradePagePayRequest,
-    AlipayTradeQueryModel,
-    AlipayTradeQueryRequest,
-    AlipayTradeQueryResponse,
-    AlipayTradeRefundModel,
-    AlipayTradeRefundRequest,
-    AlipayTradeRefundResponse,
-    AlipayTradeFastpayRefundQueryModel,
-    AlipayTradeFastpayRefundQueryRequest,
-    AlipayTradeFastpayRefundQueryResponse,
     AgentExtendParams,
 )
+from ..base import Tool
+
+try:
+    from alipay.aop.api.request.AlipayTradeWapPayRequest import (
+        AlipayTradeWapPayRequest,
+    )
+    from alipay.aop.api.request.AlipayTradePagePayRequest import (
+        AlipayTradePagePayRequest,
+    )
+    from alipay.aop.api.request.AlipayTradeQueryRequest import (
+        AlipayTradeQueryRequest,
+    )
+    from alipay.aop.api.request.AlipayTradeRefundRequest import (
+        AlipayTradeRefundRequest,
+    )
+    from alipay.aop.api.request.AlipayTradeFastpayRefundQueryRequest import (
+        AlipayTradeFastpayRefundQueryRequest,
+    )
+    from alipay.aop.api.domain.AlipayTradePagePayModel import (
+        AlipayTradePagePayModel,
+    )
+    from alipay.aop.api.domain.AlipayTradeWapPayModel import (
+        AlipayTradeWapPayModel,
+    )
+    from alipay.aop.api.domain.AlipayTradeQueryModel import (
+        AlipayTradeQueryModel,
+    )
+    from alipay.aop.api.domain.AlipayTradeRefundModel import (
+        AlipayTradeRefundModel,
+    )
+    from alipay.aop.api.domain.AlipayTradeFastpayRefundQueryModel import (
+        AlipayTradeFastpayRefundQueryModel,
+    )
+    from alipay.aop.api.response.AlipayTradeQueryResponse import (
+        AlipayTradeQueryResponse,
+    )
+    from alipay.aop.api.response.AlipayTradeRefundResponse import (
+        AlipayTradeRefundResponse,
+    )
+    from alipay.aop.api.response.AlipayTradeFastpayRefundQueryResponse import (
+        AlipayTradeFastpayRefundQueryResponse,
+    )
+
+    ALIPAY_SDK_AVAILABLE = True
+except ImportError:
+    ALIPAY_SDK_AVAILABLE = False
+    AlipayTradeWapPayRequest: Optional[Type[Any]] = None
+    AlipayTradePagePayRequest: Optional[Type[Any]] = None
+    AlipayTradeQueryRequest: Optional[Type[Any]] = None
+    AlipayTradeRefundRequest: Optional[Type[Any]] = None
+    AlipayTradeFastpayRefundQueryRequest: Optional[Type[Any]] = None
+    AlipayTradePagePayModel: Optional[Type[Any]] = None
+    AlipayTradeWapPayModel: Optional[Type[Any]] = None
+    AlipayTradeQueryModel: Optional[Type[Any]] = None
+    AlipayTradeRefundModel: Optional[Type[Any]] = None
+    AlipayTradeFastpayRefundQueryModel: Optional[Type[Any]] = None
+    AlipayTradeQueryResponse: Optional[Type[Any]] = None
+    AlipayTradeRefundResponse: Optional[Type[Any]] = None
+    AlipayTradeFastpayRefundQueryResponse: Optional[Type[Any]] = None
+
 
 logger = logging.getLogger(__name__)
 

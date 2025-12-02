@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# mypy: disable-error-code="list-item"
 from typing import List, Optional
 
 from ....sandbox.enums import SandboxType
@@ -83,9 +84,6 @@ class SandboxService(ServiceWithLifecycleManager):
 
             box_type = SandboxType(env_type)
 
-            # Excluded Types: AgentBay, Cloud_Computer, Cloud_Phone,
-            # and E2B sandbox types do not
-            # go through the standard manager pool
             if box_type not in (
                 SandboxType.AGENTBAY,
                 SandboxType.CLOUD_PHONE,

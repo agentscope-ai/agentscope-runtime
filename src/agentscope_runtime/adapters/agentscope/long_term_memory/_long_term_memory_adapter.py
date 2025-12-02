@@ -10,7 +10,7 @@ from agentscope.message import Msg, TextBlock, ThinkingBlock
 from agentscope.tool import ToolResponse
 
 from ..message import agentscope_msg_to_message
-from ....engine.services.memory_service import MemoryService
+from ....engine.services.memory import MemoryService
 
 
 class AgentScopeLongTermMemory(LongTermMemoryBase):

@@ -182,26 +182,107 @@ deploy_manager = LocalDeployManager(
 )
 ```
 
-### Celery Configuration
-If you need to use Celery tasks, make sure Redis is running:
-
-```bash
-# Start Redis (required for Celery)
-redis-server
-
-# Or using Docker
-docker run -d -p 6379:6379 redis:latest
-```
-
-Configure Celery in your AgentApp:
+### Agent Configuration
+User could define their own `init`, `shutdown` and `process` method to call an agent or workflow during runtime.
+Then deploy the runtime to any platform.
+The following example show a suggested method define an agent in runtime.
 
 ```python
-app = AgentApp(
-    agent=agent,
-    broker_url="redis://localhost:6379/0",   # Redis database 0 for broker
-    backend_url="redis://localhost:6379/1",  # Redis database 1 for backend
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
 )
+
+
+@agent_app.init
+async def init_func(self):
+    self.state_service = InMemoryStateService()
+    self.session_service = InMemorySessionHistoryService()
+
+    await self.state_service.start()
+    await self.session_service.start()
+
+
+@agent_app.shutdown
+async def shutdown_func(self):
+    await self.state_service.stop()
+    await self.session_service.stop()
+
+
+@agent_app.query(framework="agentscope")
+async def query_func(
+    self,
+    msgs,
+    request: AgentRequest = None,
+):
+    session_id = request.session_id
+    user_id = request.user_id
+
+    state = await self.state_service.export_state(
+        session_id=session_id,
+        user_id=user_id,
+    )
+
+    toolkit = Toolkit()
+    toolkit.register_tool_function(execute_python_code)
+
+    agent = ReActAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+            enable_thinking=True,
+            stream=True,
+        ),
+        sys_prompt="You're a helpful assistant named Friday.",
+        toolkit=toolkit,
+        memory=AgentScopeSessionHistoryMemory(
+            service=self.session_service,
+            session_id=session_id,
+            user_id=user_id,
+        ),
+        formatter=DashScopeChatFormatter(),
+    )
+
+    if state:
+        agent.load_state_dict(state)
+
+    async for msg, last in stream_printing_messages(
+        agents=[agent],
+        coroutine_task=agent(msgs),
+    ):
+        yield msg, last
+
+    state = agent.state_dict()
+
+    await self.state_service.save_state(
+        user_id=user_id,
+        session_id=session_id,
+        state=state,
+    )
+
 ```
+
+Then we could run the runtime by:
+```python
+agent_app.run(host="0.0.0.0", port=8080)
+```
+
+or deploy runtime by
+```python
+
+async def main():
+    await agent_app.deploy(deploy_manager)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+    input("Press Enter to stop the server...")
+```
+
+both function will start an app that provide responses api, or agentic api service.
+The difference is the deploy_manger could be different manager such as `k8s`, `modelstudio`, `detached process`.
+
 
 ## Important Notes
 
@@ -209,26 +290,6 @@ app = AgentApp(
 2. **Manual Management**: Service must be stopped manually with Ctrl+C or by terminating the process
 3. **Development Use**: Best suited for development and testing environments
 4. **No Background Execution**: Unlike detached process mode, the script must remain running
-
-## Troubleshooting
-
-### Port Already in Use
-```bash
-# Check port usage
-lsof -i :8080
-
-# Or change port in the script
-# Modify the port parameter in LocalDeployManager
-```
-
-### Redis Connection Error
-If Celery tasks fail, ensure Redis is running:
-```bash
-# Check Redis status
-redis-cli ping
-
-# Should return: PONG
-```
 
 ### Process Termination
 To stop the service:
@@ -247,7 +308,6 @@ To stop the service:
 ## Files Structure
 
 - `app_deploy.py`: Main deployment script using AgentApp with multiple endpoints
-- `local_deploy.py`: Simple deployment using Runner
 
 This example provides a straightforward way to deploy AgentScope Runtime agents as daemon services for development and testing purposes.
 

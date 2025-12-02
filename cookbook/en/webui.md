@@ -14,7 +14,24 @@ http://localhost:8090/process
 
 This guide also requires a **Node.js** environment along with `npm` or `npx`. Please make sure they are properly installed.
 
-## Method 1: Quick Start via `npx`
+## Method 1: Start the Agent Directly in Python and Enable the WebUI
+
+This approach is suitable for running the Agent directly in a Python environment and enabling the built‑in WebUI. You only need to ensure that the model environment required by the Agent has been deployed and the API key is properly configured.
+
+```python
+from agentscope_runtime.engine import AgentApp
+
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+)
+# Agent construction logic omitted here
+
+# Start the service and enable the WebUI at the same time
+agent_app.run(host="127.0.0.1", port=8090, web_ui=True)
+```
+
+## Method 2: Quick Start via `npx`
 
 If you just want to try it out quickly, or don’t need to modify code, you can simply run the following command in your terminal:
 
@@ -32,7 +49,7 @@ http://localhost:5173
 
 Open [http://localhost:5173](http://localhost:5173/) in your browser and you can enter the WebUI to interact with your Agent via a chat interface.
 
-## Method 2: Local Installation and Startup (for development and customization)
+## Method 3: Local Installation and Startup (for development and customization)
 
 If you plan to go deeper into development or want to customize the WebUI, you can start a local environment in the **AgentScope-Runtime** `web/starter_webui` directory:
 

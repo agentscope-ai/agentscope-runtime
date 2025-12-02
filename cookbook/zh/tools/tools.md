@@ -74,7 +74,7 @@ asyncio.run(main())
 
 ## AgentScope集成示例
 
-我们使用`tool_adapter`将工具添加到AgentScope的`Toolkit`中：
+我们使用`agentscope_tool_adapter`将工具添加到AgentScope的`Toolkit`中：
 
 ```python
 import asyncio
@@ -87,42 +87,18 @@ from agentscope.tool import Toolkit
 from agentscope.message import Msg
 
 from agentscope_runtime.tools.searches import (
-    ModelstudioSearch,
+    ModelstudioSearchLite,
     SearchInput,
     SearchOptions,
 )
-from agentscope_runtime.adapters.agentscope.tool import tool_adapter
+from agentscope_runtime.adapters.agentscope.tool import agentscope_tool_adapter
 
-search_tool = ModelstudioSearch()
-
-
-@tool_adapter(description=search_tool.description)
-def modelstudio_search_tool(
-    messages: list[dict],
-    search_options: dict | None = None,
-    search_timeout: int | None = None,
-    _type: str | None = None,
-):
-    payload_kwargs = {
-        "messages": messages,
-        "search_options": SearchOptions(**(search_options or {})),
-    }
-    if search_timeout is not None:
-        payload_kwargs["search_timeout"] = search_timeout
-    if _type is not None:
-        payload_kwargs["type"] = _type
-
-    payload = SearchInput(**payload_kwargs)
-    result = search_tool.run(
-        payload,
-        user_id=os.environ["MODELSTUDIO_USER_ID"],
-    )
-    return ModelstudioSearch.return_value_as_string(result)
+search_tool = ModelstudioSearchLite()
+search_tool = agentscope_tool_adapter(search_tool)
 
 
 toolkit = Toolkit()
-
-toolkit.register_tool_function(modelstudio_search_tool)
+toolkit.tools[search_tool.name] = search_tool
 
 agent = ReActAgent(
     name="Friday",
@@ -161,13 +137,13 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import START, END, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
 
-from agentscope_runtime.common.tools.searches import (
-    ModelstudioSearch,
+from agentscope_runtime.tools.searches import (
+    ModelstudioSearchLite,
     SearchInput,
     SearchOptions,
 )
 
-search_tool = ModelstudioSearch()
+search_tool = ModelstudioSearchLite()
 
 
 def search_tool_func(
@@ -188,7 +164,7 @@ def search_tool_func(
         SearchInput(**kwargs),
         user_id=os.environ["MODELSTUDIO_USER_ID"],
     )
-    return ModelstudioSearch.return_value_as_string(result)
+    return ModelstudioSearchLite.return_value_as_string(result)
 
 
 search_tool = StructuredTool.from_function(
@@ -226,8 +202,48 @@ app = workflow.compile(checkpointer=MemorySaver())
 final_state = app.invoke(
     {"messages": [HumanMessage(content="Give me the latest Hangzhou news.")]}
 )
-print(final_state["messages"][-1].content)
+print(final_state["messages"][-1].content))
 ```
+
+## AutoGen 集成示例
+
+利用 `AutogenToolAdapter` 把 Tool 转换成AutogenTool
+
+```python
+import asyncio
+from agentscope_runtime.tools.searches import ModelstudioSearchLite
+from agentscope_runtime.adapters.autogen.tool import AutogenToolAdapter
+from autogen_ext.models.openai import OpenAIChatCompletionClient
+from autogen_agentchat.agents import AssistantAgent
+from autogen_agentchat.messages import TextMessage
+from autogen_core import CancellationToken
+
+async def main():
+    # Create the search tool
+    search_tool = ModelstudioSearchLite()
+
+    # Create the autogen tool adapter
+    search_tool = AutogenToolAdapter(search_tool)
+
+    # Create an agents with the search tool
+    model = OpenAIChatCompletionClient(model="gpt-4")
+    agents = AssistantAgent(
+        "assistant",
+        tools=[search_tool],
+        model_client=model,
+    )
+
+    # Use the agents
+    response = await agents.on_messages(
+        [TextMessage(content="What's the weather in Beijing?",
+        source="user")],
+        CancellationToken(),
+    )
+    print(response.chat_message)
+
+asyncio.run(main())
+```
+
 
 ## 在 Agent 中使用 Tool 的操作建议
 1. **配置凭证**：在启动 Agent 前准备好 DashScope Key、支付宝密钥等环境变量，以便 Tool 读取并完成鉴权。
@@ -276,3 +292,11 @@ print(final_state["messages"][-1].content)
 - **深入阅读**：当需要完整参数或排障指南时，可查看 `cookbook/zh/tools/` 下的各章节。
 - **示例复现**：运行 `examples/` 中的脚本，了解相同 Tool 如何接入 AgentScope Runtime、LangGraph、AutoGen 或其他框架。
 - **新增 Tool**：按 Quickstart 模板封装更多企业 API，命名保持一致（推荐使用 `Tool` 后缀），并在 cookbook 中补充文档。
+
+
+## 📖 FAQ
+
+**Q: 为什么这些开箱即用的 Tool 不能（或不需要）在沙箱中运行？**
+**A:** 预置 Tool（如 Search、RAG、AIGC、Payments 等）本质上是 API 请求的封装，逻辑在云端或第三方服务完成，本地仅发出网络请求，不会修改系统配置、访问本地文件或启动进程。
+沙箱的意义在于隔离可能有风险的操作（例如运行未知脚本、执行系统命令），而这些 Tool 已符合生产级安全要求，因此我们不建议也不会在沙箱中支持它们。
+如果你的场景需要运行可能影响宿主环境的代码，请参考沙箱适配方式，编写自定义 Tool 并部署到支持沙箱的执行引擎中。

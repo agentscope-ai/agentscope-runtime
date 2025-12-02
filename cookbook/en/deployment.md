@@ -29,7 +29,7 @@ Most deployments follow these stages:
 
 ### Service
 
-The `Service` chapter explains the built-in session history, memory, sandbox, and state services plus the shared lifecycle interface. It helps you pick the right implementations (in-memory, Redis, Tablestore, and more) and shows how to manage them via `start()`, `stop()`, and `health()` so your deployment has a reliable backbone. See {doc}`service`.
+The `Service` chapter explains the built-in session history, memory, sandbox, and state services plus the shared lifecycle interface. It helps you pick the right implementations (in-memory, Redis, Tablestore, and more) and shows how to manage them via `start()`, `stop()`, and `health()` so your deployment has a reliable backbone. See {doc}`service/service`.
 
 ### Simple Deployment
 

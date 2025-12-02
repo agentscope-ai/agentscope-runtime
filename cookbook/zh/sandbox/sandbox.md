@@ -68,6 +68,9 @@ docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtim
 
 # 浏览器镜像
 docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-browser:latest && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-browser:latest agentscope/runtime-sandbox-browser:latest
+
+# 移动端镜像
+docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-mobile:latest && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-mobile:latest agentscope/runtime-sandbox-mobile:latest
 ```
 
 #### 选项2：拉取特定镜像
@@ -80,6 +83,7 @@ docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtim
 | **GUI Image**        | 计算机操作                | 当你需要图形操作页面时                                       |
 | **Filesystem Image** | 文件系统操作              | 当您需要文件读取/写入/管理时                                 |
 | **Browser Image**    | Web浏览器自动化           | 当您需要网络爬取或浏览器控制时                               |
+| **Mobile Image**     | 移动端操作                | 当您需要操作移动端设备时                                    |
 | **Training Image**   | 训练和评估智能体          | 当你需要在某些基准数据集上训练和评估智能体时 （详情请参考 {doc}`training_sandbox` ） |
 
 ### 验证安装
@@ -97,7 +101,7 @@ print(json.dumps(result, indent=4, ensure_ascii=False))
 
 ### （可选）从头构建Docker镜像
 
-如果您更倾向于在本地自己通过`Dockerfile`构建镜像或需要自定义修改，可以从头构建它们。请参阅 {doc}`sandbox_advanced` 了解详细说明。
+如果您更倾向于在本地自己通过`Dockerfile`构建镜像或需要自定义修改，可以从头构建它们。请参阅 {doc}`advanced` 了解详细说明。
 
 ## 沙箱使用
 
@@ -198,7 +202,40 @@ with BrowserSandbox() as box:
     input("按 Enter 键继续...")
 ```
 
-* **TrainingSandbox**：训练评估沙箱，详情请参考：{doc}`sandbox/training_sandbox`。
+* **移动端沙箱（Mobile Sandbox）**: 基于 Android 模拟器的沙箱，可进行移动端操作，如点击、滑动、输入文本和截屏等。
+
+  - **运行环境要求**
+
+    - **Linux 主机**:
+    该沙箱在 Linux 主机上运行时，需要内核加载 `binder` 和 `ashmem` 模块。如果缺失，请在主机上执行以下命令来安装和加载所需模块：
+
+    ```bash
+        # 1. 安装额外的内核模块
+        sudo apt update && sudo apt install -y linux-modules-extra-`uname -r`
+
+        # 2. 加载模块并创建设备节点
+        sudo modprobe binder_linux devices="binder,hwbinder,vndbinder"
+        sudo modprobe ashmem_linux
+    ```
+
+    - **架构兼容性**:
+    在 ARM64/aarch64 架构（如 Apple M 系列芯片）上运行时，可能会遇到兼容性或性能问题，建议在 x86_64 架构的主机上运行。
+
+```{code-cell}
+from agentscope_runtime.sandbox import MobileSandbox
+
+with MobileSandbox() as box:
+    # 默认从 DockerHub 拉取 'agentscope/runtime-sandbox-mobile:latest' 镜像
+    print(box.list_tools()) # 列出所有可用工具
+    print(box.mobile_get_screen_resolution()) # 获取屏幕分辨率
+    print(box.mobile_tap(x=500, y=1000)) # 在坐标 (500, 1000) 处进行点击
+    print(box.mobile_input_text("Hello from AgentScope!")) # 输入文本
+    print(box.mobile_key_event(3)) # 发送 HOME 按键事件 (KeyCode: 3)
+    screenshot_result = box.mobile_get_screenshot() # 获取当前屏幕截图
+    input("按 Enter 键继续...")
+```
+
+* **TrainingSandbox**：训练评估沙箱，详情请参考：{doc}`training_sandbox`。
 
 ```{code-cell}
 from agentscope_runtime.sandbox import TrainingSandbox
@@ -289,7 +326,7 @@ with BaseSandbox() as sandbox:
 * 在资源受限的本地机器上开发，同时在高性能服务器上执行
 * K8S集群部署沙盒服务
 
-有关sandbox-server的更高级用法，请参阅{doc}`sandbox_advanced`了解详细说明。
+有关sandbox-server的更高级用法，请参阅{doc}`advanced`了解详细说明。
 ```
 
 您可以在本地机器或不同机器上启动沙箱服务器，以便于远程访问。您应该通过以下命令启动沙箱服务器：
@@ -477,6 +514,7 @@ await main()
 * 计算机操作工具（在`GuiSandbox`中可用）
 * 文件系统工具（在`FilesystemSandbox`中可用）
 * 浏览器工具（在`BrowserSandbox`中可用）
+* 移动端工具（在`MobileSandbox`中可用）
 
 | 分类               | 工具名称                                                     | 描述                                                         |
 | ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -517,3 +555,10 @@ await main()
 |                    | `browser_network_requests()`                                 | 获取页面加载以来的所有网络请求                               |
 |                    | `browser_handle_dialog(accept: bool, promptText: str)`       | 处理浏览器对话框（警告、确认、提示）                         |
 | **计算机操作工具** | `computer_use(action: str, coordinate: list, text: str)`     | 使用鼠标和键盘与桌面 GUI 互动，支持以下操作：移动光标、点击、输入文字以及截图 |
+| **移动端工具**     | `mobile_get_screen_resolution()`                                 | 获取移动设备的屏幕分辨率                                     |
+|                    | `mobile_tap(x: int, y: int)`                                     | 在屏幕上的特定坐标处进行点击                                 |
+|                    | `mobile_swipe(start: List[int], end: List[int], duration: int = None)` | 在屏幕上从起点到终点执行滑动操作                         |
+|                    | `mobile_input_text(text: str)`                                   | 在当前聚焦的UI元素中输入文本字符串                           |
+|                    | `mobile_key_event(code: int\|str)`                        | 向设备发送一个按键事件（如 HOME、BACK）                  |
+|                    | `mobile_get_screenshot()`                                        | 获取当前设备屏幕的截图                                       |
+

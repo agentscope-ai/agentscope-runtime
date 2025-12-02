@@ -631,15 +631,15 @@ from typing import Any, Callable
 
 class CustomProtocolAdapter(ProtocolAdapter):
     """自定义协议适配器示例"""
-    
+
     def add_endpoint(self, app, func: Callable, **kwargs) -> Any:
         """添加端点到适配器
-        
+
         Args:
             app: FastAPI 应用实例
             func: 处理函数
             **kwargs: 其他参数
-            
+
         Returns:
             端点对象
         """
@@ -652,14 +652,14 @@ class CustomProtocolAdapter(ProtocolAdapter):
             result = await func(converted_request)
             # 转换响应格式
             return self._convert_response(result)
-        
+
         return custom_handler
-    
+
     def _convert_request(self, request):
         """将外部协议请求转换为内部格式"""
         # 实现请求转换逻辑
         pass
-    
+
     def _convert_response(self, response):
         """将内部响应转换为外部协议格式"""
         # 实现响应转换逻辑

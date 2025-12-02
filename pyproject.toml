@@ -1,6 +1,6 @@
 [project]
 name = "agentscope-runtime"
-version = "1.0.0a2"
+version = "1.0.0b2"
 description = "A production-ready runtime framework for agent applications, providing secure sandboxed execution environments and scalable deployment solutions with multi-framework support."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -21,7 +21,11 @@ dependencies = [
     "shortuuid>=1.0.13",
     "celery[redis]>=5.3.1",
     "a2a-sdk>=0.3.0",
-    "wuying-agentbay-sdk>=0.5.0",
+    "jinja2",
+    "psutil",
+    "dashscope>=1.25.0",
+    "jsonref",
+    "asgiref",
 ]
 
 [tool.setuptools]
@@ -29,7 +33,7 @@ packages = { find = { where = ["src"] } }
 include-package-data = true
 
 [tool.setuptools.package-data]
-"agentscope_runtime.engine.deployers.utils.service_utils" = ["*.j2"]
+"agentscope_runtime.engine.deployers.utils.templates" = ["*.j2"]
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]
@@ -54,61 +58,36 @@ dev = [
     "sphinx-autoapi>=3.6.0",
     "pytest-mock>=3.15.1",
     "sphinxcontrib-mermaid>=1.2.3",
+    "langgraph>=0.4.0",
+    "autogen-agentchat>=0.7.0",
 ]
 
-agentrun = [
-    "alibabacloud-agentrun20250910>=2.0.1",
-    "alibabacloud_tea_openapi>=0.4.0"
-]
-
-aliyun_tablestore_ext=[
-    "tablestore-for-agent-memory>=1.1.0",
-    "dashscope>=1.24.4",
-    "langchain-community>=0.3.27",
-]
-
-memory-ext = [
+ext = [
     "reme-ai>=0.2.0.2",
-    "mem0ai>=0.1.117"
-]
-
-
-deployment = [
+    "mem0ai>=0.1.117",
     "alibabacloud-agentrun20250910>=2.0.1",
-    "alibabacloud-oss-v2",
-    "alibabacloud-bailian20231229>=2.6.0",
-    "build",
-    "setuptools>=40.8.0",
-    "wheel",
-    "steel-sdk>=0.1.0",
-    "alibabacloud-credentials",
-    "jinja2",
-    "psutil",
-    "shortuuid>=1.0.13",
-    "PyYAML",
-    "oss2>=2.19.1"
-]
-
-tool = [
-    "dashscope>=1.25.0",
+    "alibabacloud_tea_openapi>=0.4.0",
+    "alibabacloud-fc20230330>=4.4.0",
+    "tablestore-for-agent-memory>=1.1.0",
+    "langchain-community>=0.3.27",
+    "wuying-agentbay-sdk>=0.5.0",
     "alipay-sdk-python",
     "cryptography",
     "gunicorn>=20.0.0",
     "starlette>=0.37.0",
     "asgiref>=3.11.0",
     "azure-cognitiveservices-speech>=1.47.0",
-]
-
-sandbox = [
-    "jinja2",
-    "pytest>=8.3.5",
-    "pytest-asyncio>=0.23.0",
-    "wuying-agentbay-sdk>=0.5.0",
+    "alibabacloud-oss-v2",
+    "alibabacloud-bailian20231229>=2.6.0",
+    "build",
+    "setuptools>=40.8.0",
+    "wheel",
+    "alibabacloud-credentials",
+    "PyYAML",
+    "aiohttp",
     "alibabacloud_ecd20200930",
     "alibabacloud_eds_aic20230930",
     "alibabacloud_appstream_center20210218",
-    "aiohttp",
     "e2b-desktop>=2.0.0",
-    "psutil",
-    "pytest-asyncio"
+    "trio"
 ]

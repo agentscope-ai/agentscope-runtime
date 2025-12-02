@@ -51,10 +51,10 @@ pip install agentscope-runtime
 ```
 
 ```bash
-# 拉取并标记Appworld ARM64架构镜像
-docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64 && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest-arm64 agentscope/runtime-sandbox-appworld:latest-arm64
+# 从 DockerHub 拉取 Appworld 镜像
+docker pull agentscope/runtime-sandbox-appworld:latest
 
-# 拉取并标记 Appworld X86_64 架构镜像
+# 从 ACR 拉取 Appworld 镜像并打标签
 docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-appworld:latest agentscope/runtime-sandbox-appworld:latest
 ```
 
@@ -72,7 +72,7 @@ print(profile_list[0])
 
 #### （可选）从头构建Docker镜像
 
-如果您更倾向于在本地自己通过`Dockerfile`构建镜像或需要自定义修改，可以从头构建它们。请参阅 {doc}`sandbox_advanced` 了解详细说明。
+如果您更倾向于在本地自己通过`Dockerfile`构建镜像或需要自定义修改，可以从头构建它们。请参阅 {doc}`advanced` 了解详细说明。
 
 对于训练用沙箱，不同数据集使用不同的DockerFile，其路径在
 `src/agentscope_runtime/sandbox/box/training_box/environments/{dataset_name}`下
@@ -109,8 +109,6 @@ print(profile_list[0])
 中
 
 ```python
-
-
 profile_list = box.get_env_profile(env_type="appworld", split="train")
 init_response = box.create_instance(
         env_type="appworld",
@@ -119,8 +117,6 @@ init_response = box.create_instance(
 instance_id = init_response["info"]["instance_id"]
 query = init_response["state"]
 print(f"Created instance {instance_id} with query: {query}")
-
-
 ```
 
 #### 使用训练样本
@@ -139,7 +135,6 @@ result = box.step(
         action=action,
     )
 print(result)
-
 ```
 
 #### 评测训练样本
@@ -173,10 +168,10 @@ print(f"Instance released: {success}")
 ```
 
 ```bash
-# 拉取并标记BFCL ARM64架构镜像
-docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest-arm64 && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest-arm64 agentscope/runtime-sandbox-bfcl:latest-arm64
+# 从 DockerHub 拉取 BFCL 镜像
+docker pull agentscope/runtime-sandbox-bfcl:latest
 
-# 拉取并标记 BFCL X86_64 架构镜像
+# 从 ACR 拉取 BFCL 镜像并打标签
 docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest && docker tag agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-bfcl:latest agentscope/runtime-sandbox-bfcl:latest
 ```
 

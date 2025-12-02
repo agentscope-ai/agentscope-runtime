@@ -86,7 +86,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \\
 # Command to run the application
 {startup_command_section}"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.temp_files: List[str] = []
 
     def generate_dockerfile_content(self, config: DockerfileConfig) -> str:

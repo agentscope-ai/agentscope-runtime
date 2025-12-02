@@ -16,6 +16,13 @@ from agentscope_runtime.engine.schemas.realtime import (
 )
 
 
+NO_DASHSCOPE_KEY = os.getenv("DASHSCOPE_API_KEY", "") == ""
+
+
+@pytest.mark.skipif(
+    NO_DASHSCOPE_KEY,
+    reason="DASHSCOPE_API_KEY not set",
+)
 def test_modelstudio_tts_client():
     def on_tts_data(data: bytes, chat_id: str, data_index: int) -> None:
         print(

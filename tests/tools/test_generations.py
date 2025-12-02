@@ -56,6 +56,7 @@ from agentscope_runtime.tools.generations import (
 # ============================================================================
 
 NO_LONGRUN_TEST = os.getenv("NO_LONGRUN_TEST", "true") == "true"
+NO_DASHSCOPE_KEY = os.getenv("DASHSCOPE_API_KEY", "") == ""
 
 
 @pytest.fixture
@@ -440,6 +441,10 @@ def image_edit():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(
+    NO_DASHSCOPE_KEY,
+    reason="DASHSCOPE_API_KEY not set",
+)
 async def test_image_edit(image_edit):
     """Test image editing functionality"""
     image_edit_input = ImageEditInput(
@@ -471,6 +476,10 @@ def image_generation():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(
+    NO_DASHSCOPE_KEY,
+    reason="DASHSCOPE_API_KEY not set",
+)
 async def test_image_generation(image_generation):
     """Test image generation from text"""
     image_gen_input = ImageGenInput(
@@ -499,6 +508,10 @@ def image_style_repaint():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(
+    NO_DASHSCOPE_KEY,
+    reason="DASHSCOPE_API_KEY not set",
+)
 async def test_image_style_repaint(image_style_repaint):
     """Test image style repainting"""
     image_style_repaint_input = ImageStyleRepaintInput(
@@ -592,6 +605,10 @@ def qwen_image_edit():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(
+    NO_DASHSCOPE_KEY,
+    reason="DASHSCOPE_API_KEY not set",
+)
 async def test_qwen_image_edit(qwen_image_edit):
     """Test Qwen image editing"""
     base_image_url = (
@@ -648,6 +665,10 @@ def qwen_image_gen():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(
+    NO_DASHSCOPE_KEY,
+    reason="DASHSCOPE_API_KEY not set",
+)
 async def test_qwen_image_gen(qwen_image_gen):
     """Test Qwen image generation"""
     test_inputs = [
@@ -700,6 +721,10 @@ def qwen_text_to_speech():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(
+    NO_DASHSCOPE_KEY,
+    reason="DASHSCOPE_API_KEY not set",
+)
 async def test_qwen_text_to_speech(qwen_text_to_speech):
     """Test Qwen text to speech"""
     test_inputs = [
@@ -1053,6 +1078,10 @@ def speech_to_text():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(
+    NO_DASHSCOPE_KEY,
+    reason="DASHSCOPE_API_KEY not set",
+)
 async def test_speech_to_text(speech_to_text):
     """Test speech to text transcription"""
     file_urls = [

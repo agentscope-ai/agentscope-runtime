@@ -74,7 +74,7 @@ Use this pattern for every custom tool: define Pydantic models, extend `Tool`, i
 
 ## AgentScope Integration Example
 
-We use `tool_adapter` to add tools to AgentScope's `Toolkit`:
+We use `agentscope_tool_adapter` to add tools to AgentScope's `Toolkit`:
 
 ```python
 import asyncio
@@ -87,42 +87,18 @@ from agentscope.tool import Toolkit
 from agentscope.message import Msg
 
 from agentscope_runtime.tools.searches import (
-    ModelstudioSearch,
+    ModelstudioSearchLite,
     SearchInput,
     SearchOptions,
 )
-from agentscope_runtime.adapters.agentscope.tool import tool_adapter
+from agentscope_runtime.adapters.agentscope.tool import agentscope_tool_adapter
 
-search_tool = ModelstudioSearch()
-
-
-@tool_adapter(description=search_tool.description)
-def modelstudio_search_tool(
-    messages: list[dict],
-    search_options: dict | None = None,
-    search_timeout: int | None = None,
-    _type: str | None = None,
-):
-    payload_kwargs = {
-        "messages": messages,
-        "search_options": SearchOptions(**(search_options or {})),
-    }
-    if search_timeout is not None:
-        payload_kwargs["search_timeout"] = search_timeout
-    if _type is not None:
-        payload_kwargs["type"] = _type
-
-    payload = SearchInput(**payload_kwargs)
-    result = search_tool.run(
-        payload,
-        user_id=os.environ["MODELSTUDIO_USER_ID"],
-    )
-    return ModelstudioSearch.return_value_as_string(result)
+search_tool = ModelstudioSearchLite()
+search_tool = agentscope_tool_adapter(search_tool)
 
 
 toolkit = Toolkit()
-
-toolkit.register_tool_function(modelstudio_search_tool)
+toolkit.tools[search_tool.name] = search_tool
 
 agent = ReActAgent(
     name="Friday",
@@ -149,7 +125,6 @@ if __name__ == "__main__":
 ```
 
 ## LangGraph Integration Example
-
 To reproduce the “Apply to existing LangGraph project” flow, wrap the tool as a LangChain `StructuredTool`, bind it to a model, and wire it into a LangGraph workflow. The tool schema comes directly from the tool’s input model, so tool calls remain type-safe.
 
 ```python
@@ -161,13 +136,13 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import START, END, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
 
-from agentscope_runtime.common.tools.searches import (
-    ModelstudioSearch,
+from agentscope_runtime.tools.searches import (
+    ModelstudioSearchLite,
     SearchInput,
     SearchOptions,
 )
 
-search_tool = ModelstudioSearch()
+search_tool = ModelstudioSearchLite()
 
 
 def search_tool_func(
@@ -188,7 +163,7 @@ def search_tool_func(
         SearchInput(**kwargs),
         user_id=os.environ["MODELSTUDIO_USER_ID"],
     )
-    return ModelstudioSearch.return_value_as_string(result)
+    return ModelstudioSearchLite.return_value_as_string(result)
 
 
 search_tool = StructuredTool.from_function(
@@ -227,6 +202,45 @@ final_state = app.invoke(
     {"messages": [HumanMessage(content="Give me the latest Hangzhou news.")]}
 )
 print(final_state["messages"][-1].content)
+```
+
+## AutoGen Integration Example
+
+We use `AutogenToolAdapter` to convert our tool to AutogenTool:
+
+```python
+import asyncio
+from agentscope_runtime.tools.searches import ModelstudioSearchLite
+from agentscope_runtime.adapters.autogen.tool import AutogenToolAdapter
+from autogen_ext.models.openai import OpenAIChatCompletionClient
+from autogen_agentchat.agents import AssistantAgent
+from autogen_agentchat.messages import TextMessage
+from autogen_core import CancellationToken
+
+async def main():
+    # Create the search tool
+    search_tool = ModelstudioSearchLite()
+
+    # Create the autogen tool adapter
+    search_tool = AutogenToolAdapter(search_tool)
+
+    # Create an agents with the search tool
+    model = OpenAIChatCompletionClient(model="gpt-4")
+    agents = AssistantAgent(
+        "assistant",
+        tools=[search_tool],
+        model_client=model,
+    )
+
+    # Use the agents
+    response = await agents.on_messages(
+        [TextMessage(content="What's the weather in Beijing?",
+        source="user")],
+        CancellationToken(),
+    )
+    print(response.chat_message)
+
+asyncio.run(main())
 ```
 
 ## Using Tools inside Agents
@@ -278,3 +292,10 @@ For details, please see {doc}`alipay`
 - **Deep dives**: open the per-family cookbook pages under `cookbook/en/tools/` whenever you need exhaustive parameter tables or troubleshooting guides.
 - **Examples**: re-run the scripts in `examples/` to see how the same tools integrate with AgentScope Runtime, LangGraph, AutoGen, or other frameworks.
 - **New tools**: follow the Quickstart template to wrap additional enterprise APIs; keep naming consistent (`Tool` suffix optional but recommended) and document them alongside the existing cookbook entries.
+
+## 📖 FAQ
+
+**Q: Why can’t or shouldn’t these out‑of‑the‑box Tools run inside a sandbox?**
+**A:** Prebuilt Tools (like Search, RAG, AIGC, Payments) are purely API wrappers. Their logic executes on cloud services or third‑party platforms, and the local process only handles network requests. They do not alter system configurations, access local files, or spawn processes.
+Sandboxing is meant to isolate potentially risky operations (e.g., running untrusted scripts, executing system commands). Since these Tools conform to production safety requirements, we don’t recommend or support running them within a sandbox.
+If your use‑case needs to execute code that could impact the host environment, please follow sandbox integration patterns and create custom Tools designed for sandbox‑enabled engines.

@@ -251,13 +251,17 @@ class ProcessManager:
         """
         import socket
 
+        # Normalize host for connection check
+        # When service binds to 0.0.0.0, we need to connect to 127.0.0.1
+        check_host = self._normalize_host_for_check(host)
+
         end_time = asyncio.get_event_loop().time() + timeout
 
         while asyncio.get_event_loop().time() < end_time:
             try:
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                     sock.settimeout(1)
-                    result = sock.connect_ex((host, port))
+                    result = sock.connect_ex((check_host, port))
                     if result == 0:
                         return True
             except Exception:
@@ -266,3 +270,21 @@ class ProcessManager:
             await asyncio.sleep(0.5)
 
         return False
+
+    @staticmethod
+    def _normalize_host_for_check(host: str) -> str:
+        """Normalize host for connection check.
+
+        When a service binds to 0.0.0.0 (all interfaces), it cannot be
+        directly connected to. We need to connect to 127.0.0.1 instead
+        to check if the service is running locally.
+
+        Args:
+            host: The host the service binds to
+
+        Returns:
+            The host to use for connection check
+        """
+        if host in ("0.0.0.0", "::"):
+            return "127.0.0.1"
+        return host

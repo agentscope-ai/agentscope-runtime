@@ -456,9 +456,9 @@ async def main():
 
     tests = [
         ("Cloud Api Sandbox Service", test_cloud_pc_api_sandbox_service),
-        ("Cloud Api Sandbox Service", test_cloud_phone_api_sandbox_service),
-        ("AgentBay Sandbox Direct", test_cloud_pc_api_sandbox_direct()),
-        ("AgentBay Sandbox Direct", test_cloud_phone_api_sandbox_direct()),
+        # ("Cloud Api Sandbox Service", test_cloud_phone_api_sandbox_service),
+        # ("AgentBay Sandbox Direct", test_cloud_pc_api_sandbox_direct()),
+        # ("AgentBay Sandbox Direct", test_cloud_phone_api_sandbox_direct()),
     ]
 
     results = []

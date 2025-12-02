@@ -99,10 +99,17 @@ async def shutdown_func(self):
 
 ### Step 4: Define the AgentScope Query Logic
 
+```{important}
+⚠️ Important
+The Agent setup shown here (model, tools, conversation memory, formatter, etc.) is provided as an example configuration only.
+Please adapt and replace these components with your own implementations based on your requirements.
+For details on available service types, adapter usage, and how to swap them out, see {doc}`service/service`.
+```
+
 When the agent endpoint is invoked, we:
 
 - **Load session context** to keep different sessions isolated.
-- **Construct the agent** with model, tools (e.g., Python execution), memory, and formatter.
+- **Build an Agent**: includes the model, tools (such as executing Python code), conversation memory modules, and formatter — for details, please refer to {doc}`service/service`.
 - **Stream responses** via `stream_printing_messages`, yielding `(msg, last)` so clients receive output as it is generated.
 - **Persist state** so the next request can resume.
 
@@ -166,7 +173,11 @@ async def query_func(
 Start the Agent API server. After launch it listens on `http://localhost:8090/process`:
 
 ```{code-cell}
+# Start the service (listen on port 8090)
 agent_app.run(host="0.0.0.0", port=8090)
+
+# If you want to enable the built-in web chat interface at the same time, set web_ui=True
+# agent_app.run(host="0.0.0.0", port=8090, web_ui=True)
 ```
 
 ### Step 6: Send a Request

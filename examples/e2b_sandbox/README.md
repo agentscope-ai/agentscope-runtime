@@ -1,98 +1,139 @@
-# E2B Desktop Sandbox 文档
+# E2B Desktop Sandbox Documentation
 
-## 概述
+## Overview
 
-E2bSandBox 是基于 E2B 云桌面服务构建的 GUI 沙箱环境，允许用户远程控制云上的桌面环境。
+E2bSandBox is a GUI sandbox environment built on the E2B cloud desktop service that allows users to remotely control desktop environments in the cloud.
 
-## 功能特性
+## Features
 
-### E2B 桌面沙箱 (E2bSandBox)
+### E2B Desktop Sandbox (E2bSandBox)
 
-- **环境类型**: 云桌面环境
-- **提供商**: E2B Desktop
-- **安全等级**: 高
-- **接入方式**: E2B Desktop Python SDK 调用
+- **Environment Type**: Cloud desktop environment
+- **Provider**: E2B Desktop
+- **Security Level**: High
+- **Access Method**: E2B Desktop Python SDK invocation
 
-## 支持的操作
+## Supported Operations
 
-### 桌面控制工具
+### Desktop Control Tools
 
-- click: 点击屏幕坐标
-- right_click: 右键点击
-- type_text: 输入文本
-- press_key: 按键
-- launch_app: 启动应用程序
-- click_and_type: 点击并输入文本
+- click: Click screen coordinates
+- right_click: Right-click
+- type_text: Input text
+- press_key: Press key
+- launch_app: Launch application
+- click_and_type: Click and input text
 
-### 命令行工具
+### Command Line Tools
 
-- run_shell_command: 运行 shell 命令
+- run_shell_command: Run shell commands
 
-### 系统工具
+### System Tools
 
-- screenshot: 截图
+- screenshot: Take screenshots
 
-## 集成到 Agentscope-Runtime
+## Integration with Agentscope-Runtime
 
-E2B Desktop Sandbox 已经被集成到 Agentscope-Runtime 中，提供了与 Docker 沙箱类似的使用体验。
+The E2B Desktop Sandbox has been integrated into Agentscope-Runtime, providing a similar user experience to Docker sandboxes.
 
-### 类层次结构
+## E2B Sandbox Integration into Agentscope-Runtime:
+
+Currently, Agentscope-Runtime's sandbox containers are implemented based on Docker, and cloud containers are implemented based on Kubernetes. Integrating E2B Sandbox into AgentScope-Runtime provides users with another choice for cloud sandbox environments, allowing them to choose between Docker container sandboxes and E2B sandboxes.
+
+### Core Concept:
+
+The core idea is to encapsulate the E2B Sandbox as a Sandbox integration into AgentScope-Runtime, serving as another cloud sandbox option. Since E2B Sandbox does not depend on containers, we create the [CloudSandbox](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/cloud/cloud_sandbox.py#L18-L253) base class inheriting from the [Sandbox](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/sandbox.py#L14-L170) class. This enables Agentscope-Runtime to support both traditional container sandboxes and cloud-native sandboxes, maintaining consistency with traditional container sandboxes in usage.
+
+### 1. Core Architecture Integration
+
+- **New Sandbox Type**: [SandboxType.E2B](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/enums.py#L74-L74) enumeration for creating E2B Sandboxes, supporting dynamic enumeration extension
+- **CloudSandbox Base Class**: Abstract base class providing unified interface for cloud service sandboxes, not dependent on container management, communicating directly through cloud APIs, extensible to different cloud providers
+- **E2bSandBox Implementation**: Inherits from [CloudSandbox](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/cloud/cloud_sandbox.py#L18-L253), accesses cloud sandboxes directly through E2B SDK, implementing complete tool mapping and error handling
+- **SandboxService Support**: Maintains compatibility with existing [sandbox_service](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/engine/services/sandbox/sandbox_service.py#L0-L210) calling methods, specially handles E2B sandbox types, resource cleanup
+
+### 2. Class Hierarchy Structure
 
 ```
-Sandbox (基类)
-└── CloudSandbox (云沙箱基类)
-    └── E2bSandBox (E2B桌面实现)
+Sandbox (Base Class)
+└── CloudSandbox (Cloud Sandbox Base Class)
+    └── E2bSandBox (E2B Desktop Implementation)
 ```
-### 注册信息
 
-- **E2B桌面**: 注册名为 `e2b-desktop`，类型为 SandboxType.E2B
 
-## 如何使用
+### 3. File Structure
 
-### 1. 设置环境变量
+```
+src/agentscope_runtime/sandbox/
+├── enums.py                          # Added AGENTBAY enumeration
+├── box/
+│   ├── cloud/
+│   │   ├── __init__.py               # Added
+│   │   └── cloud_sandbox.py         # Added CloudSandbox base class
+│   └── e2b/
+│       ├── __init__.py               # Added
+│       └── e2b_sandbox.py           # Added E2bSandBox implementation
+└── __init__.py                       # Updated exports
+```
 
-根据 E2B 官方文档配置相应的认证信息。
-##### 1.1.1 E2B 开通
-    访问E2B官网注册并获取，然后配置到E2B_API_KEY
-    https://e2b.dev
 
-编辑当前目录下的.env.template文件或者设置环境变量
+### 4. Service Layer Integration
+
+- **Registration Mechanism**: Register using [@SandboxRegistry.register](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/registry.py#L38-L89) decorator
+- **Service Integration**: Special handling of E2B types in [SandboxService](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/engine/services/sandbox/sandbox_service.py#L10-L209)
+- **Compatibility**: Full compatibility with existing sandbox interfaces
+- **Lifecycle Management**: Supports creation, connection, and release of cloud resources
+
+## How to Use
+
+### 1. Set Environment Variables
+
+Configure authentication information according to E2B official documentation.
+##### 1.1.1 E2B Activation
+Visit the E2B website to register and obtain credentials, then configure E2B_API_KEY
+https://e2b.dev
+
+Edit the .env.template file in the current directory or set environment variables
 
 ```bash
 # E2B API Key
 export E2B_API_KEY=
-# docker 运行环境 $home 替换为用户主目录,直接使用云沙箱的方式下无需配置，unix:///$home/.colima/default/docker.sock
+# Docker runtime environment $home replaced with user home directory, no configuration needed when using cloud sandbox directly, unix:///$home/.colima/default/docker.sock
 export DOCKER_HOST=''
-
 ```
 
-依赖安装
+
+Dependency Installation
 
 ```bash
-# 在agentscope-runtime 根目录下执行
-pip install ".[sandbox]"
+# Install core dependencies
+pip install agentscope-runtime
+
+# Install extensions
+pip install "agentscope-runtime[ext]"
 ```
 
 
-### 2. 直接使用 E2B 桌面沙箱
+### 2. Direct Usage of E2B Desktop Sandbox
 
 ```python
 from agentscope_runtime.sandbox.box.e2b.e2b_sandbox import E2bSandBox
 
 sandbox = E2bSandBox()
 
-# 运行shell命令
+# Run shell command
 result = sandbox.call_tool("run_shell_command", {"command": "echo Hello World"})
 print(result["output"])
 
-# 截图
+# Screenshot
 result_screenshot = sandbox.call_tool(
                 "screenshot",
                 {"file_path": f"{os.getcwd()}/screenshot.png"},
             )
 print(f"screenshot result: {result_screenshot}")
 ```
-### 3. 通过 SandboxService 使用
+
+
+### 3. Using via SandboxService
 
 ```python
 from agentscope_runtime.sandbox.enums import SandboxType
@@ -105,18 +146,26 @@ sandboxes = sandbox_service.connect(
     sandbox_types=[SandboxType.E2B]
 )
 ```
-## 配置参数
 
-### E2B 桌面沙箱配置
 
-| 参数 | 类型 | 描述 |
-|------|------|------|
-| timeout | int | 操作超时时间(秒)，默认600 |
-| command_timeout | int | 命令执行超时时间(秒)，默认60 |
+## Configuration Parameters
 
-## 注意事项
+### E2B Desktop Sandbox Configuration
 
-1. 使用前需要确保已注册并配置好 E2B 服务
-2. 需要正确配置相应的环境变量
-3. E2B 服务会产生相应的资源费用
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| timeout | int | Operation timeout (seconds), default 600 |
+| command_timeout | int | Command execution timeout (seconds), default 60 |
+
+## Notes
+
+1. Ensure E2B service is registered and configured before use
+2. Need to properly configure corresponding environment variables
+3. E2B service will incur corresponding resource costs
+
+## Running Demo
+
+```bash
+# Sandbox demo
+python examples/e2b_sandbox/e2b_sandbox_demo.py
 ```

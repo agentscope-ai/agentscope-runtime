@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=redefined-outer-name
+import os
 from unittest.mock import AsyncMock
 
 import pytest
@@ -14,12 +15,18 @@ from agentscope_runtime.tools.RAGs.modelstudio_rag_lite import (
     ModelstudioRagLite,
 )
 
+NO_DASHSCOPE_KEY = os.getenv("DASHSCOPE_API_KEY", "") == ""
+
 
 @pytest.fixture
 def rag_component():
     return ModelstudioRag()
 
 
+@pytest.mark.skipif(
+    NO_DASHSCOPE_KEY,
+    reason="DASHSCOPE_API_KEY not set",
+)
 def test_arun_success(rag_component):
     messages = [
         {
@@ -58,6 +65,10 @@ ${documents}
     assert isinstance(result.messages[0], OpenAIMessage)
 
 
+@pytest.mark.skipif(
+    NO_DASHSCOPE_KEY,
+    reason="DASHSCOPE_API_KEY not set",
+)
 def test_image_rags(rag_component):
     messages = [
         {"role": "user", "content": "Help me find similar products"},
@@ -100,6 +111,10 @@ def rag_lite():
     return rag
 
 
+@pytest.mark.skipif(
+    NO_DASHSCOPE_KEY,
+    reason="DASHSCOPE_API_KEY not set",
+)
 def test_arun_success_lite(rag_lite):
     messages = [
         {

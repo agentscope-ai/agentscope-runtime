@@ -1,0 +1,10 @@
+{
+  "extends": ["@tsconfig/node-lts/tsconfig.json", "tsconfig-domdomegg/tsconfig.json"],
+  "compilerOptions": {
+    "types": ["node"],
+    "sourceMap": true
+  },
+  "include": [
+    "src/**/*"
+  ]
+}

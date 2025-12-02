@@ -18,9 +18,6 @@ install_lazy_loader(
         "SessionHistoryService": ".session_history_service",
         "InMemorySessionHistoryService": ".session_history_service",
         "RedisSessionHistoryService": ".redis_session_history_service",
-        "TablestoreSessionHistoryService": {
-            "module": ".tablestore_session_history_service",
-            "hint": "pip install agentscope-runtime[aliyun_tablestore_ext]",
-        },
+        "TablestoreSessionHistoryService": ".tablestore_session_history_service",  # noqa
     },
 )

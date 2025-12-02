@@ -144,13 +144,25 @@ Engine 模块涵盖 AgentScope Runtime 的核心执行、部署与服务能力�
 
 ### Deployers · Utils
 ```{eval-rst}
+.. automodule:: agentscope_runtime.engine.deployers.utils.app_runner_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+
 .. automodule:: agentscope_runtime.engine.deployers.utils.deployment_modes
    :members:
    :undoc-members:
    :show-inheritance:
    :no-index:
 
-.. automodule:: agentscope_runtime.engine.deployers.utils.package_project_utils
+.. automodule:: agentscope_runtime.engine.deployers.utils.detached_app
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+
+.. automodule:: agentscope_runtime.engine.deployers.utils.package
    :members:
    :undoc-members:
    :show-inheritance:
@@ -174,7 +186,7 @@ Engine 模块涵盖 AgentScope Runtime 的核心执行、部署与服务能力�
    :show-inheritance:
    :no-index:
 
-.. automodule:: agentscope_runtime.engine.deployers.utils.docker_image_utils.runner_image_factory
+.. automodule:: agentscope_runtime.engine.deployers.utils.docker_image_utils.image_factory
    :members:
    :undoc-members:
    :show-inheritance:
@@ -193,18 +205,6 @@ Engine 模块涵盖 AgentScope Runtime 的核心执行、部署与服务能力�
    :no-index:
 
 .. automodule:: agentscope_runtime.engine.deployers.utils.service_utils.process_manager
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :no-index:
-
-.. automodule:: agentscope_runtime.engine.deployers.utils.service_utils.service_config
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :no-index:
-
-.. automodule:: agentscope_runtime.engine.deployers.utils.service_utils.service_factory
    :members:
    :undoc-members:
    :show-inheritance:
