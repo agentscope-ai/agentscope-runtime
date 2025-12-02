@@ -420,7 +420,22 @@ export RUNTIME_SANDBOX_IMAGE_TAG="preview"
 agentscope-registry.ap-southeast-1.cr.aliyuncs.com/myteam/runtime-sandbox-base:preview
 ```
 
+---
 
+#### Serverless 沙箱部署
+
+AgentScope Runtime 同样支持 serverless 部署，适用于在无服务器环境中运行沙箱，例如 [阿里云函数计算（FC）](https://help.aliyun.com/zh/functioncompute/fc/)或[阿里云 AgentRun](https://docs.agent.run/)。
+
+首先，请参考[文档](https://runtime.agentscope.io/zh/sandbox/advanced.html#optional-function-compute-fc-settings)配置 serverless 环境变量。
+将 `CONTAINER_DEPLOYMENT` 设置为 `fc` 或 `agentrun` 以启用 serverless 部署。
+
+然后，启动沙箱服务器，使用 `--config` 选项指定 serverless 环境配置：
+
+```bash
+# 此命令将加载 `fc.env` 文件中定义的设置
+runtime-sandbox-server --config fc.env
+```
+服务器启动后，您可以通过URL `http://localhost:8000` 访问沙箱服务器，并调用上述描述的沙箱工具。
 
 ---
 
@@ -474,6 +489,41 @@ response = client.responses.create(
 
 print(response)
 ```
+
+此外，`DeployManager` 也支持 Serverless 部署，例如将您的 agent 应用部署到
+[ModelStudio](https://bailian.console.aliyun.com/?admin=1&tab=doc#/doc/?type=app&url=2983030)
+或 [AgentRun](https://docs.agent.run/)。
+
+```python
+from agentscope_runtime.engine.deployers import ModelStudioDeployManager
+# 创建部署管理器
+deployer = ModelstudioDeployManager(
+    oss_config=OSSConfig(
+        access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+        access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+    ),
+    modelstudio_config=ModelstudioConfig(
+        workspace_id=os.environ.get("MODELSTUDIO_WORKSPACE_ID"),
+        access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+        access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+        dashscope_api_key=os.environ.get("DASHSCOPE_API_KEY"),
+    ),
+)
+
+# 部署到 ModelStudio
+result = await app.deploy(
+    deployer,
+    deploy_name="agent-app-example",
+    telemetry_enabled=True,
+    requirements=["agentscope", "fastapi", "uvicorn"],
+    environment={
+        "PYTHONPATH": "/app",
+        "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+    },
+)
+```
+
+有关更高级的 serverless 部署指南，请参考[文档](https://runtime.agentscope.io/zh/advanced_deployment.html#method-4-modelstudio-deployment)。
 
 ---
 

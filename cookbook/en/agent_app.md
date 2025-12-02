@@ -507,3 +507,6 @@ await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```
 
 See {doc}`advanced_deployment` for additional deployers (Kubernetes, ModelStudio, AgentRun, etc.) and more configuration tips.
+
+AgentScope Runtime provides serverless deployment options, including deploying agents to ModelStudio(FC) and AgentRun.
+See {doc}`advanced_deployment` for more configuration details about ModelStudio and AgentRun.

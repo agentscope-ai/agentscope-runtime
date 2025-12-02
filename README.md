@@ -419,6 +419,22 @@ agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-ba
 
 ---
 
+#### Serverless Sandbox Deployment
+
+AgentScope Runtime also supports serverless deployment, which is suitable for running sandboxes in a serverless environment,
+[Alibaba Cloud Function Compute (FC)](https://help.aliyun.com/zh/functioncompute/fc/) or [Alibaba Cloud AgentRun](https://docs.agent.run/).
+
+First, please refer to the [documentation](https://runtime.agentscope.io/en/sandbox/advanced.html#optional-function-compute-fc-settings) to configure the serverless environment variables.
+Make `CONTAINER_DEPLOYMENT` to `fc` or `agentrun` to enable serverless deployment.
+
+Then, start a sandbox server, use the `--config` option to specify a serverless environment setup:
+
+```bash
+# This command will load the settings defined in the `custom.env` file
+runtime-sandbox-server --config fc.env
+```
+After the server starts, you can access the sandbox server at baseurl `http://localhost:8000` and invoke sandbox tools described above.
+
 ## 📚 Cookbook
 
 - **[📖 Cookbook](https://runtime.agentscope.io/en/intro.html)**: Comprehensive tutorials
@@ -469,6 +485,40 @@ response = client.responses.create(
 print(response)
 ```
 
+Besides, `DeployManager` also supports serverless deployments, such as deploying your agent app
+to [ModelStudio](https://bailian.console.aliyun.com/?admin=1&tab=doc#/doc/?type=app&url=2983030)
+or [AgentRun](https://docs.agent.run/).
+
+```python
+from agentscope_runtime.engine.deployers import ModelStudioDeployManager
+# Create deployment manager
+deployer = ModelstudioDeployManager(
+    oss_config=OSSConfig(
+        access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+        access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+    ),
+    modelstudio_config=ModelstudioConfig(
+        workspace_id=os.environ.get("MODELSTUDIO_WORKSPACE_ID"),
+        access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+        access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+        dashscope_api_key=os.environ.get("DASHSCOPE_API_KEY"),
+    ),
+)
+
+# Deploy to ModelStudio
+result = await app.deploy(
+    deployer,
+    deploy_name="agent-app-example",
+    telemetry_enabled=True,
+    requirements=["agentscope", "fastapi", "uvicorn"],
+    environment={
+        "PYTHONPATH": "/app",
+        "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+    },
+)
+```
+
+For more advanced serverless deployment guides, please refer to the [documentation](https://runtime.agentscope.io/en/advanced_deployment.html#method-4-modelstudio-deployment).
 
 ---
 

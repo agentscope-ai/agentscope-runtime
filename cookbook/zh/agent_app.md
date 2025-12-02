@@ -513,3 +513,6 @@ await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```
 
 更多部署选项和详细说明，请参考 {doc}`advanced_deployment` 文档。
+
+AgentScope Runtime 提供了Serverless的部署方案，您可以将您的Agent部署到 ModelStudio(FC) 或 AgentRun 上。
+参考 {doc}`advanced_deployment` 文档，查看ModelStudio和AgentRun部署部分获取更多配置详情.

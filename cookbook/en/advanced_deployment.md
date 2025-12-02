@@ -478,7 +478,7 @@ if __name__ == "__main__":
 - Can be scaled with `kubectl scale deployment`
 
 
-## Method 4: ModelStudio Deployment
+## Method 4: Serverless Deployment: ModelStudio
 
 **Best for**: Alibaba Cloud users requiring managed cloud deployment with built-in monitoring, scaling, and integration with Alibaba Cloud ecosystem.
 
@@ -561,7 +561,7 @@ if __name__ == "__main__":
 - Built-in monitoring and auto-scaling
 - Integrated with DashScope LLM services
 
-## Method 5: AgentRun Deployment
+## Method 5: Serverless Deployment: AgentRun
 
 **Best For**: Alibaba Cloud users who need to deploy agents to AgentRun service with automated build, upload, and deployment workflows.
 
