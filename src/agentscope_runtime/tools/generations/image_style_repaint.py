@@ -74,7 +74,11 @@ class ImageStyleRepaint(
     """
 
     name: str = "modelstudio_image_style_repaint"
-    description: str = "人像风格重绘服务，输入原始图像和风格数据(索引或参考图像），返回重绘后的图像。"
+    description: str = (
+        "[模型: wanx-style-repaint-v1] 人像风格重绘服务。支持将人物照片转换为多种预设或自定义的艺术风格。\n"
+        "输入：一张人物图像 + 风格数据（可为风格索引或参考图像）；输出：风格化后的人像图像URL。\n"
+        "适用于艺术创作、个性化头像、视觉设计等场景。\n"
+    )
 
     def __init__(self, name: str = None, description: str = None):
         super().__init__(name=name, description=description)

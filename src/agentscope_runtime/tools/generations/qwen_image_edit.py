@@ -121,6 +121,16 @@ class QwenImageEdit(Tool[QwenImageEditInput, QwenImageEditOutput]):
             },
         ]
 
+        # >>> 新增：标准化 watermark 输入为布尔值 <<<
+        if args.watermark is not None:
+            if isinstance(args.watermark, str):
+                args.watermark = args.watermark.strip().lower() in (
+                    "true",
+                    "1",
+                )
+            else:
+                args.watermark = bool(args.watermark)
+
         parameters = {}
         if args.negative_prompt:
             parameters["negative_prompt"] = args.negative_prompt
