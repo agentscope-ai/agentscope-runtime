@@ -236,6 +236,15 @@
         "code",
         "doc"
       ]
+    },
+    {
+      "login": "k-farruh",
+      "name": "Farruh Kushnazarov",
+      "avatar_url": "https://avatars.githubusercontent.com/u/33511681?v=4",
+      "profile": "https://github.com/k-farruh",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
