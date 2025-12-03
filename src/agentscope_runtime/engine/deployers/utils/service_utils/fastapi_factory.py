@@ -793,11 +793,6 @@ class FastAPIAppFactory:
 
         # Make sure FastAPI doesn't see any stale __wrapped__ pointing back to
         # the original async-generator; if present, remove it.
-        if hasattr(wrapped_handler, "__wrapped__"):
-            try:
-                delattr(wrapped_handler, "__wrapped__")
-            except Exception:  # pragma: no cover - very defensive
-                pass
 
         return wrapped_handler
 
