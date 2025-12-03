@@ -1322,9 +1322,32 @@ body.preview-active {
 <span class="sd">        parsing.&quot;&quot;&quot;</span>
         <span class="n">is_async_gen</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isasyncgenfunction</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
 
+        <span class="c1"># NOTE:</span>
+        <span class="c1"># -----</span>
+        <span class="c1"># FastAPI &gt;= 0.123.5 uses Dependant.is_coroutine_callable, which in</span>
+        <span class="c1"># turn unwraps callables via inspect.unwrap() and then inspects the</span>
+        <span class="c1"># unwrapped target to decide whether it is a coroutine function /</span>
+        <span class="c1"># generator / async generator.</span>
+        <span class="c1">#</span>
+        <span class="c1"># If we decorate an async-generator handler with</span>
+        <span class="c1"># functools.wraps(handler), FastAPI will unwrap back to the original</span>
+        <span class="c1"># async-generator function and *misclassify* the endpoint as</span>
+        <span class="c1"># non-coroutine. It will then call our async wrapper *without awaiting</span>
+        <span class="c1"># it*, and later try to JSON-encode the resulting coroutine object,</span>
+        <span class="c1"># causing errors like:</span>
+        <span class="c1"># TypeError(&quot;&#39;coroutine&#39; object is not iterable&quot;)</span>
+        <span class="c1">#</span>
+        <span class="c1"># To avoid that, we deliberately do NOT use functools.wraps() here.</span>
+        <span class="c1"># Instead, we manually copy the key metadata (name, qualname, doc,</span>
+        <span class="c1"># module, and signature) from the original handler, but we do NOT set</span>
+        <span class="c1"># __wrapped__. This ensures:</span>
+        <span class="c1">#   * FastAPI sees the wrapper itself as the callable (an async def),</span>
+        <span class="c1">#     so Dependant.is_coroutine_callable is True, and it is properly</span>
+        <span class="c1">#     awaited.</span>
+        <span class="c1">#   * FastAPI still sees the correct signature for parameter parsing.</span>
+
         <span class="k">if</span> <span class="n">is_async_gen</span><span class="p">:</span>
 
-            <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
             <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">wrapped_handler</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
                 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">():</span>
                     <span class="k">try</span><span class="p">:</span>
@@ -1349,12 +1372,8 @@ body.preview-active {
                     <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;text/event-stream&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
 
-            <span class="n">wrapped_handler</span><span class="o">.</span><span class="n">__signature__</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">wrapped_handler</span>
-
         <span class="k">else</span><span class="p">:</span>
 
-            <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
             <span class="k">def</span><span class="w"> </span><span class="nf">wrapped_handler</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
                 <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">():</span>
                     <span class="k">try</span><span class="p">:</span>
@@ -1377,8 +1396,34 @@ body.preview-active {
                     <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;text/event-stream&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
 
-            <span class="n">wrapped_handler</span><span class="o">.</span><span class="n">__signature__</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">wrapped_handler</span>
+        <span class="c1"># Manually propagate essential metadata without creating a __wrapped__</span>
+        <span class="c1"># chain that would confuse FastAPI&#39;s unwrap logic.</span>
+        <span class="n">wrapped_handler</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+            <span class="n">handler</span><span class="p">,</span>
+            <span class="s2">&quot;__name__&quot;</span><span class="p">,</span>
+            <span class="n">wrapped_handler</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">wrapped_handler</span><span class="o">.</span><span class="vm">__qualname__</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+            <span class="n">handler</span><span class="p">,</span>
+            <span class="s2">&quot;__qualname__&quot;</span><span class="p">,</span>
+            <span class="n">wrapped_handler</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">wrapped_handler</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+            <span class="n">handler</span><span class="p">,</span>
+            <span class="s2">&quot;__doc__&quot;</span><span class="p">,</span>
+            <span class="n">wrapped_handler</span><span class="o">.</span><span class="vm">__doc__</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">wrapped_handler</span><span class="o">.</span><span class="vm">__module__</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+            <span class="n">handler</span><span class="p">,</span>
+            <span class="s2">&quot;__module__&quot;</span><span class="p">,</span>
+            <span class="n">wrapped_handler</span><span class="o">.</span><span class="vm">__module__</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">wrapped_handler</span><span class="o">.</span><span class="n">__signature__</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+
+        <span class="c1"># Make sure FastAPI doesn&#39;t see any stale __wrapped__ pointing back to</span>
+        <span class="c1"># the original async-generator; if present, remove it.</span>
+
+        <span class="k">return</span> <span class="n">wrapped_handler</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_add_custom_endpoints</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>

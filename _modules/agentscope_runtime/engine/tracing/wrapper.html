@@ -628,6 +628,7 @@ body.preview-active {
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
@@ -646,7 +647,7 @@ body.preview-active {
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.propagate</span><span class="w"> </span><span class="kn">import</span> <span class="n">extract</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">attach</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.trace</span><span class="w"> </span><span class="kn">import</span> <span class="n">StatusCode</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.trace</span><span class="w"> </span><span class="kn">import</span> <span class="n">StatusCode</span><span class="p">,</span> <span class="n">NoOpTracerProvider</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry</span><span class="w"> </span><span class="kn">import</span> <span class="n">trace</span> <span class="k">as</span> <span class="n">ot_trace</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.exporter.otlp.proto.grpc.trace_exporter</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">OTLPSpanExporter</span> <span class="k">as</span> <span class="n">OTLPSpanGrpcExporter</span><span class="p">,</span>
@@ -803,7 +804,7 @@ body.preview-active {
                 <span class="o">**</span><span class="n">common_attrs</span><span class="p">,</span>
             <span class="p">}</span>
 
-            <span class="k">with</span> <span class="n">_ot_tracer</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span>
+            <span class="k">with</span> <span class="n">_get_ot_tracer</span><span class="p">()</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span>
                 <span class="n">final_trace_name</span><span class="p">,</span>
                 <span class="n">context</span><span class="o">=</span><span class="n">parent_ctx</span><span class="p">,</span>
                 <span class="n">attributes</span><span class="o">=</span><span class="n">span_attributes</span><span class="p">,</span>
@@ -906,7 +907,7 @@ body.preview-active {
                 <span class="o">**</span><span class="n">common_attrs</span><span class="p">,</span>
             <span class="p">}</span>
 
-            <span class="k">with</span> <span class="n">_ot_tracer</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span>
+            <span class="k">with</span> <span class="n">_get_ot_tracer</span><span class="p">()</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span>
                 <span class="n">final_trace_name</span><span class="p">,</span>
                 <span class="n">context</span><span class="o">=</span><span class="n">parent_ctx</span><span class="p">,</span>
                 <span class="n">attributes</span><span class="o">=</span><span class="n">span_attributes</span><span class="p">,</span>
@@ -1011,7 +1012,7 @@ body.preview-active {
                 <span class="o">**</span><span class="n">common_attrs</span><span class="p">,</span>
             <span class="p">}</span>
 
-            <span class="k">with</span> <span class="n">_ot_tracer</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span>
+            <span class="k">with</span> <span class="n">_get_ot_tracer</span><span class="p">()</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span>
                 <span class="n">final_trace_name</span><span class="p">,</span>
                 <span class="n">context</span><span class="o">=</span><span class="n">parent_ctx</span><span class="p">,</span>
                 <span class="n">attributes</span><span class="o">=</span><span class="n">span_attributes</span><span class="p">,</span>
@@ -1144,7 +1145,7 @@ body.preview-active {
                 <span class="o">**</span><span class="n">common_attrs</span><span class="p">,</span>
             <span class="p">}</span>
 
-            <span class="k">with</span> <span class="n">_ot_tracer</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span>
+            <span class="k">with</span> <span class="n">_get_ot_tracer</span><span class="p">()</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span>
                 <span class="n">final_trace_name</span><span class="p">,</span>
                 <span class="n">context</span><span class="o">=</span><span class="n">parent_ctx</span><span class="p">,</span>
                 <span class="n">attributes</span><span class="o">=</span><span class="n">span_attributes</span><span class="p">,</span>
@@ -1524,11 +1525,15 @@ body.preview-active {
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_tracer</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Tracer</span><span class="p">:</span>
     <span class="n">handlers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">TracerHandler</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">if</span> <span class="n">_str_to_bool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;TRACE_ENABLE_LOG&quot;</span><span class="p">,</span> <span class="s2">&quot;true&quot;</span><span class="p">)):</span>
+    <span class="k">if</span> <span class="n">_str_to_bool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;TRACE_ENABLE_LOG&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">)):</span>
         <span class="n">handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">LocalLogHandler</span><span class="p">(</span><span class="n">enable_console</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 
     <span class="n">tracer</span> <span class="o">=</span> <span class="n">Tracer</span><span class="p">(</span><span class="n">handlers</span><span class="o">=</span><span class="n">handlers</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">tracer</span>
+
+
+<span class="n">_otel_tracer_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+<span class="n">_otel_tracer</span> <span class="o">=</span> <span class="kc">None</span>
 
 
 <span class="c1"># TODO: support more tracing protocols and platforms</span>
@@ -1539,36 +1544,49 @@ body.preview-active {
 <span class="sd">        ot_trace.Tracer: The OpenTelemetry tracer instance.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">resource</span> <span class="o">=</span> <span class="n">Resource</span><span class="p">(</span>
-        <span class="n">attributes</span><span class="o">=</span><span class="p">{</span>
-            <span class="n">SERVICE_NAME</span><span class="p">:</span> <span class="n">_get_service_name</span><span class="p">(),</span>
-            <span class="n">SERVICE_VERSION</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SERVICE_VERSION&quot;</span><span class="p">,</span> <span class="s2">&quot;1.0.0&quot;</span><span class="p">),</span>
-            <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;agentscope_runtime-source&quot;</span><span class="p">,</span>
-        <span class="p">},</span>
-    <span class="p">)</span>
-    <span class="n">provider</span> <span class="o">=</span> <span class="n">TracerProvider</span><span class="p">(</span><span class="n">resource</span><span class="o">=</span><span class="n">resource</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">_str_to_bool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;TRACE_ENABLE_REPORT&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">)):</span>
-        <span class="n">span_exporter</span> <span class="o">=</span> <span class="n">BatchSpanProcessor</span><span class="p">(</span>
-            <span class="n">OTLPSpanGrpcExporter</span><span class="p">(</span>
-                <span class="n">endpoint</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;TRACE_ENDPOINT&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
-                <span class="n">headers</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Authentication=&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;TRACE_AUTHENTICATION&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-            <span class="p">),</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_ot_tracer_inner</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ot_trace</span><span class="o">.</span><span class="n">Tracer</span><span class="p">:</span>
+        <span class="n">existing_provider</span> <span class="o">=</span> <span class="n">ot_trace</span><span class="o">.</span><span class="n">get_tracer_provider</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">existing_provider</span><span class="p">,</span> <span class="n">NoOpTracerProvider</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ot_trace</span><span class="o">.</span><span class="n">get_tracer</span><span class="p">(</span><span class="s2">&quot;agentscope_runtime&quot;</span><span class="p">)</span>
+
+        <span class="n">resource</span> <span class="o">=</span> <span class="n">Resource</span><span class="p">(</span>
+            <span class="n">attributes</span><span class="o">=</span><span class="p">{</span>
+                <span class="n">SERVICE_NAME</span><span class="p">:</span> <span class="n">_get_service_name</span><span class="p">(),</span>
+                <span class="n">SERVICE_VERSION</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SERVICE_VERSION&quot;</span><span class="p">,</span> <span class="s2">&quot;1.0.0&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;agentscope_runtime-source&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
         <span class="p">)</span>
-        <span class="n">provider</span><span class="o">.</span><span class="n">add_span_processor</span><span class="p">(</span><span class="n">span_exporter</span><span class="p">)</span>
+        <span class="n">provider</span> <span class="o">=</span> <span class="n">TracerProvider</span><span class="p">(</span><span class="n">resource</span><span class="o">=</span><span class="n">resource</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_str_to_bool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;TRACE_ENABLE_REPORT&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">)):</span>
+            <span class="n">span_exporter</span> <span class="o">=</span> <span class="n">BatchSpanProcessor</span><span class="p">(</span>
+                <span class="n">OTLPSpanGrpcExporter</span><span class="p">(</span>
+                    <span class="n">endpoint</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;TRACE_ENDPOINT&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                    <span class="n">headers</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Authentication=&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;TRACE_AUTHENTICATION&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+            <span class="n">provider</span><span class="o">.</span><span class="n">add_span_processor</span><span class="p">(</span><span class="n">span_exporter</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">_str_to_bool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;TRACE_ENABLE_DEBUG&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">)):</span>
-        <span class="n">span_logger</span> <span class="o">=</span> <span class="n">BatchSpanProcessor</span><span class="p">(</span><span class="n">ConsoleSpanExporter</span><span class="p">())</span>
-        <span class="n">provider</span><span class="o">.</span><span class="n">add_span_processor</span><span class="p">(</span><span class="n">span_logger</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_str_to_bool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;TRACE_ENABLE_DEBUG&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">)):</span>
+            <span class="n">span_logger</span> <span class="o">=</span> <span class="n">BatchSpanProcessor</span><span class="p">(</span><span class="n">ConsoleSpanExporter</span><span class="p">())</span>
+            <span class="n">provider</span><span class="o">.</span><span class="n">add_span_processor</span><span class="p">(</span><span class="n">span_logger</span><span class="p">)</span>
 
-    <span class="n">tracer</span> <span class="o">=</span> <span class="n">ot_trace</span><span class="o">.</span><span class="n">get_tracer</span><span class="p">(</span>
-        <span class="s2">&quot;agentscope_runtime&quot;</span><span class="p">,</span>
-        <span class="n">tracer_provider</span><span class="o">=</span><span class="n">provider</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="k">return</span> <span class="n">tracer</span>
+        <span class="n">tracer</span> <span class="o">=</span> <span class="n">ot_trace</span><span class="o">.</span><span class="n">get_tracer</span><span class="p">(</span>
+            <span class="s2">&quot;agentscope_runtime&quot;</span><span class="p">,</span>
+            <span class="n">tracer_provider</span><span class="o">=</span><span class="n">provider</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">tracer</span>
 
+    <span class="k">global</span> <span class="n">_otel_tracer</span>
 
-<span class="n">_ot_tracer</span> <span class="o">=</span> <span class="n">_get_ot_tracer</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">_otel_tracer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">_otel_tracer_lock</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">_otel_tracer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">_otel_tracer</span> <span class="o">=</span> <span class="n">_get_ot_tracer_inner</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">_otel_tracer</span>
+
 
 <span class="n">_tracer</span> <span class="o">=</span> <span class="n">_get_tracer</span><span class="p">()</span>
 </pre></div>
