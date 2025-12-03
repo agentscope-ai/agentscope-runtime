@@ -53,6 +53,7 @@ class MessageType:
     MCP_APPROVAL_REQUEST = "mcp_approval_request"
     MCP_TOOL_CALL = "mcp_call"
     MCP_APPROVAL_RESPONSE = "mcp_approval_response"
+    MCP_TOOL_CALL_OUTPUT = "mcp_call_output"
     REASONING = "reasoning"  # 新增：推理过程消息类型
     HEARTBEAT = "heartbeat"
     ERROR = "error"
