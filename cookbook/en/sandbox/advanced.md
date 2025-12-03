@@ -184,6 +184,27 @@ To configure settings specific to [AgentRun](https://functionai.console.aliyun.c
 | `AGENT_RUN_LOG_PROJECT`       | SLS Log Project              | `None`                           | SLS log project name (optional)                                                                             |
 | `AGENT_RUN_LOG_STORE`         | SLS Log Store                | `None`                           | SLS log store name (optional)                                                                              |
 
+#### (Optional) Function Compute (FC) Settings
+
+[Function Compute](https://fcnext.console.aliyun.com/) (FC) is a serverless computing service that allows you to run your code without managing infrastructure. You can deploy sandbox servers on FC.
+
+To configure settings specific to [FC](https://fcnext.console.aliyun.com/) in your sandbox server, ensure you set `CONTAINER_DEPLOYMENT=fc`. Consider adjusting the following parameters:
+
+| Parameter                     | Description              | Default                          | Notes                                                                                                                                                        |
+|-------------------------------| ------------------------ |----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `FC_ACCOUNT_ID`               | Alibaba Cloud Account ID             | Empty                           | Alibaba Cloud main account ID. Log in to the [RAM console](https://ram.console.aliyun.com/profile/access-keys) to get the Alibaba Cloud account ID and AK/SK |
+| `FC_ACCESS_KEY_ID`     | Access Key ID               | Empty             | Alibaba Cloud AccessKey ID, requires `AliyunFCFullAccess` permission                                                                                         |
+| `FC_ACCESS_KEY_SECRET` | Access Key Secret           | Empty         | Alibaba Cloud AccessKey Secret                                                                                                                               |
+| `FC_REGION_ID`         | Deployment Region ID               | Empty | FC deployment region ID                                                                                                                                      |
+| `FC_CPU`               | CPU Specification                  | `2.0`                            | vCPU specification                                                                                                                                           |
+| `FC_MEMORY`            | Memory Specification                 | `2048`                           | Memory specification (MB)                                                                                                                                    |
+| `FC_VPC_ID`            | VPC ID                   | `None`                           | VPC network ID (optional)                                                                                                                                    |
+| `FC_VSWITCH_IDS`       | Switch ID List             | `None`                           | VSwitch ID list (optional)                                                                                                                                   |
+| `FC_SECURITY_GROUP_ID` | Security Group ID                 | `None`                           | Security group ID (optional)                                                                                                                                 |
+| `FC_PREFIX`            | Resource Name Prefix             | `agentscope-sandbox`             | Prefix for created resource names                                                                                                                            |
+| `FC_LOG_PROJECT`       | SLS Log Project              | `None`                           | SLS log project name (optional)                                                                                                                              |
+| `FC_LOG_STORE`         | SLS Log Store                | `None`                           | SLS log store name (optional)                                                                                                                                |
+
 ### Loading Custom Sandbox
 
 In addition to the default basic sandbox types, you can implement a custom sandbox by writing an extension module and loading it with the `--extension` parameter.

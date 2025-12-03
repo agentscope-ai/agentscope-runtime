@@ -20,7 +20,90 @@ This chapter introduces the core concepts of AgentScope Runtime.
 
 AgentScope Runtime uses a modular architecture with several key components:
 
-![alt text](architecture.png)
+```{mermaid}
+flowchart LR
+    %% Tools Module
+    subgraph Tools["🛠 Tools"]
+        RT["RAG Tool"]
+        ST["Search Tool"]
+        PT["Payment Tool"]
+    end
+    %% Service Module
+    subgraph Service["💼 Service"]
+        MS["Memory Service"]
+        SS["Session Service"]
+        STS["State Service"]
+        SBS["Sandbox Service"]
+    end
+    %% Sandbox Module
+    subgraph Sandbox["🐳 Sandbox"]
+        BS["Browser Sandbox"]
+        FS["File System Sandbox"]
+        GS["GUI Sandbox"]
+        CSB["Cloud Sandbox"]
+        MSB["Mobile Sandbox"]
+        ETC["More..."]
+    end
+    %% Adapter Module
+    subgraph Adapter["🔌 Adapter"]
+        TAD["Tool Adapter"]
+        MAD["Memory Adapter"]
+        SAD["Session Adapter"]
+        STAD["State Adapter"]
+        SBAD["Sandbox Tool Adapter"]
+    end
+    %% Agent Module
+    subgraph Agent["🤖 Agent"]
+        AG["AgentScope"]
+        AG_NOTE["(More...)"]
+    end
+    %% Application Layer
+    subgraph AgentAPP["📦 Agent App"]
+        RA["Runner"]
+    end
+    %% Deployment Module
+    subgraph Deployer["🚀 Deployer"]
+        CT["Container Deployment"]
+        KD["K8s Deployment"]
+        DP["Cloud Deployment"]
+        LD["Local Deployment"]
+    end
+    %% External Protocols
+    OAI["OpenAI SDK"]:::ext
+    A2A["Google A2A Protocol"]:::ext
+    CUS["Custom Endpoint"]:::ext
+    %% Internal connections
+    RT --> TAD
+    ST --> TAD
+    PT --> TAD
+    MS --> MAD
+    SS --> SAD
+    STS --> STAD
+    SBS --> SBAD
+    BS --> SBS
+    FS --> SBS
+    GS --> SBS
+    CSB --> SBS
+    MSB --> SBS
+    ETC --> SBS
+    %% Big block to big block connection
+    Adapter --> Agent
+    AG --> RA
+    RA --> CT
+    RA --> KD
+    RA --> DP
+    RA --> LD
+    %% Entire Deployer connects to external protocols
+    Deployer --> OAI
+    Deployer --> A2A
+    Deployer --> CUS
+    %% Styles
+    classDef small fill:#0066FF,stroke:#004CBE,color:#FFFFFF,font-weight:bold
+    classDef big fill:#99D6FF,stroke:#004CBE,color:#FFFFFF,font-weight:bold
+    classDef ext fill:#FFFFFF,stroke:#000000,color:#000000,font-weight:bold
+    class Tools,Service,Sandbox,Adapter,Agent,AgentAPP,Deployer big
+    class RT,ST,PT,MS,SS,STS,SBS,BS,FS,GS,CSB,MSB,ETC,TAD,MAD,SAD,STAD,SBAD,AG,AG_NOTE,RA,CT,KD,DP,LD small
+```
 
 - **Agent**: The core AI component that processes requests and generates responses; in the runtime we recommend building agents with the AgentScope framework.
 - **AgentApp**: Serves as the application entry point. It exposes APIs, registers routes, loads configurations, and delegates incoming requests to the Runner for execution.

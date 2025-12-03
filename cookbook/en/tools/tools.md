@@ -155,7 +155,7 @@ def search_tool_func(
         "messages": messages,
         "search_options": SearchOptions(**(search_options or {})),
     }
-    if search_timeout is not set to None:
+    if search_timeout is not None:
         kwargs["search_timeout"] = search_timeout
     if type is not None:
         kwargs["type"] = type
