@@ -157,16 +157,16 @@ class McpCall(BaseModel):
     MCP TOOL CALL MESSAGE BODY
     """
 
-    call_id: str
+    call_id: Optional[str] = None
     """The unique ID of the tool call."""
 
-    arguments: str
+    arguments: Optional[str] = None
     """A JSON string of the arguments passed to the tool."""
 
-    name: str
+    name: Optional[str] = None
     """The name of the tool that was run."""
 
-    server_label: str
+    server_label: Optional[str] = None
     """The label of the MCP server running the tool."""
 
 
