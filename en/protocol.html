@@ -732,7 +732,7 @@ body.preview-active {
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">FunctionCall</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Model class for assistant prompt message tool call function.</span>
+<span class="sd">    Model class for the assistant prompt message tool call function.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">call_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -758,7 +758,7 @@ body.preview-active {
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">FunctionCallOutput</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Model class for assistant prompt message tool call function.</span>
+<span class="sd">    Model class for the assistant prompt message tool call function.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">call_id</span><span class="p">:</span> <span class="nb">str</span>
@@ -879,7 +879,7 @@ body.preview-active {
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The status of the message. in_progress, completed, or incomplete&quot;&quot;&quot;</span>
 
     <span class="n">role</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The role of the messages author, should be in `user`,`system`,</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The role of messages author, should be in `user`,`system`,</span>
 <span class="sd">    &#39;assistant&#39;.&quot;&quot;&quot;</span>
 
     <span class="n">content</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
@@ -1236,7 +1236,7 @@ body.preview-active {
 <h3>7. Advanced Usage<a class="headerlink" href="#advanced-usage" title="Link to this heading">¶</a></h3>
 <section id="multi-content-message-building">
 <h4>Multi-Content Message Building<a class="headerlink" href="#multi-content-message-building" title="Link to this heading">¶</a></h4>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create message containing text and image</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a message containing text and image</span>
 <span class="n">message_builder</span> <span class="o">=</span> <span class="n">response_builder</span><span class="o">.</span><span class="n">create_message_builder</span><span class="p">()</span>
 
 <span class="c1"># Add text content</span>
@@ -1256,7 +1256,7 @@ body.preview-active {
 </section>
 <section id="data-content-building">
 <h4>Data Content Building<a class="headerlink" href="#data-content-building" title="Link to this heading">¶</a></h4>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create message containing structured data</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a message containing structured data</span>
 <span class="n">data_builder</span> <span class="o">=</span> <span class="n">message_builder</span><span class="o">.</span><span class="n">create_content_builder</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
 <span class="c1"># Set data content</span>
@@ -1300,7 +1300,7 @@ body.preview-active {
 <span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span><span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">)</span>
 
 <span class="c1"># AgentApp automatically registers built-in adapters</span>
-<span class="c1"># You can also customize via protocol_adapters parameter</span>
+<span class="c1"># You can also customize via the protocol_adapters parameter</span>
 <span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
     <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
     <span class="n">protocol_adapters</span><span class="o">=</span><span class="p">[</span>

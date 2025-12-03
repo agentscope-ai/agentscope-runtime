@@ -626,14 +626,14 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <section id="alipay-components">
 <h1>Alipay Components<a class="headerlink" href="#alipay-components" title="Link to this heading">¶</a></h1>
-<p>This directory contains various Alipay payment and subscription service components, providing comprehensive payment processing, subscription management, and transaction query functionality.</p>
+<p>This directory contains various Alipay payment and subscription service components that provide comprehensive payment processing, subscription management, and transaction query functionality.</p>
 <section id="component-list">
 <h2>📋 Component List<a class="headerlink" href="#component-list" title="Link to this heading">¶</a></h2>
 <section id="payment-components">
 <h3>1. Payment Components<a class="headerlink" href="#payment-components" title="Link to this heading">¶</a></h3>
 <section id="mobilealipaypayment-mobile-alipay-payment">
 <h4>MobileAlipayPayment - Mobile Alipay Payment<a class="headerlink" href="#mobilealipaypayment-mobile-alipay-payment" title="Link to this heading">¶</a></h4>
-<p>Alipay payment component for mobile browsers, supporting mobile app redirection and in-browser payments.</p>
+<p>Alipay payment component for mobile browsers. This supports redirecting users to the Alipay mobile app or completing payments directly in a mobile browser, providing flexibility for different payment scenarios.</p>
 <p><strong>Prerequisites:</strong></p>
 <ul class="simple">
 <li><p>Valid Alipay application configuration</p></li>
@@ -652,15 +652,14 @@ body.preview-active {
 </ul>
 <p><strong>Key Features:</strong></p>
 <ul class="simple">
-<li><p>Uses QUICK_WAP_WAY product code</p></li>
-<li><p>Supports Alipay app redirection payment</p></li>
-<li><p>Supports direct in-browser payment</p></li>
+<li><p>QUICK_WAP_WAY product code</p></li>
+<li><p>Supports app and in-browser payments</p></li>
 <li><p>Returns ready-to-use payment links</p></li>
 </ul>
 </section>
 <section id="webpagealipaypayment-desktop-web-alipay-payment">
 <h4>WebPageAlipayPayment - Desktop Web Alipay Payment<a class="headerlink" href="#webpagealipaypayment-desktop-web-alipay-payment" title="Link to this heading">¶</a></h4>
-<p>Alipay payment component for desktop browsers, providing QR code scanning payment functionality.</p>
+<p>This Alipay payment component is designed for desktop browsers. It allows users to pay by scanning a QR code shown on the desktop website with their Alipay app, making it easy for desktop users to complete payments.</p>
 <p><strong>Prerequisites:</strong></p>
 <ul class="simple">
 <li><p>Valid Alipay application configuration</p></li>
@@ -679,9 +678,8 @@ body.preview-active {
 </ul>
 <p><strong>Key Features:</strong></p>
 <ul class="simple">
-<li><p>Uses FAST_INSTANT_TRADE_PAY product code</p></li>
-<li><p>Supports QR code scanning payment</p></li>
-<li><p>Suitable for desktop websites</p></li>
+<li><p>FAST_INSTANT_TRADE_PAY product code</p></li>
+<li><p>Supports QR code payment on desktops</p></li>
 </ul>
 </section>
 </section>
@@ -738,9 +736,8 @@ body.preview-active {
 </ul>
 <p><strong>Key Functions:</strong></p>
 <ul class="simple">
-<li><p>Query refund processing status</p></li>
+<li><p>Query and validate refund status</p></li>
 <li><p>Retrieve refund details</p></li>
-<li><p>Support refund status validation</p></li>
 </ul>
 </section>
 </section>
@@ -748,7 +745,7 @@ body.preview-active {
 <h3>3. Subscription Service Components<a class="headerlink" href="#subscription-service-components" title="Link to this heading">¶</a></h3>
 <section id="alipaysubscribestatuscheck-subscription-status-check">
 <h4>AlipaySubscribeStatusCheck - Subscription Status Check<a class="headerlink" href="#alipaysubscribestatuscheck-subscription-status-check" title="Link to this heading">¶</a></h4>
-<p>Check user’s agent subscription status, returning membership information and package details.</p>
+<p>Check the user’s agent subscription status and return membership information and package details.</p>
 <p><strong>Input Parameters (SubscribeStatusCheckInput):</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">uuid</span></code> (str): Account ID</p></li>
@@ -760,8 +757,8 @@ body.preview-active {
 </ul>
 <p><strong>Key Functions:</strong></p>
 <ul class="simple">
-<li><p>Check user membership status</p></li>
-<li><p>Return package validity period or remaining usage count</p></li>
+<li><p>Check membership status</p></li>
+<li><p>Return package validity or usage count</p></li>
 </ul>
 </section>
 <section id="alipaysubscribepackageinitialize-subscription-initialization">
@@ -777,13 +774,13 @@ body.preview-active {
 </ul>
 <p><strong>Key Functions:</strong></p>
 <ul class="simple">
-<li><p>Generate subscription purchase links</p></li>
-<li><p>Support both time-based and usage-based subscription models</p></li>
+<li><p>Generate subscription links</p></li>
+<li><p>Support time/usage-based models</p></li>
 </ul>
 </section>
 <section id="alipaysubscribetimessave-subscription-usage-tracking">
 <h4>AlipaySubscribeTimesSave - Subscription Usage Tracking<a class="headerlink" href="#alipaysubscribetimessave-subscription-usage-tracking" title="Link to this heading">¶</a></h4>
-<p>Record user’s usage count of agent services for pay-per-use deduction.</p>
+<p>Record the user’s usage count of agent services for pay-per-use deduction.</p>
 <p><strong>Input Parameters (SubscribeTimesSaveInput):</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">uuid</span></code> (str): Account ID</p></li>
@@ -801,7 +798,7 @@ body.preview-active {
 </section>
 <section id="alipaysubscribecheckorinitialize-subscription-check-or-initialize">
 <h4>AlipaySubscribeCheckOrInitialize - Subscription Check or Initialize<a class="headerlink" href="#alipaysubscribecheckorinitialize-subscription-check-or-initialize" title="Link to this heading">¶</a></h4>
-<p>One-stop subscription service component that automatically checks user subscription status and returns purchase links if not subscribed.</p>
+<p>One-stop subscription service component that automatically checks a user’s subscription status and returns purchase links if they are not subscribed.</p>
 <p><strong>Input Parameters (SubscribeCheckOrInitializeInput):</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">uuid</span></code> (str): Account ID</p></li>
@@ -813,197 +810,226 @@ body.preview-active {
 </ul>
 <p><strong>Key Functions:</strong></p>
 <ul class="simple">
-<li><p>Automatically check subscription status</p></li>
-<li><p>Auto-generate purchase links if not subscribed</p></li>
-<li><p>Simplify business logic handling</p></li>
+<li><p>Automatically check subscription status (checks if the user is already subscribed)</p></li>
+<li><p>Auto-generate purchase links if not subscribed (creates a subscription link for non-subscribed users)</p></li>
+<li><p>Simplify business logic handling (reduces complexity for businesses managing subscriptions)</p></li>
 </ul>
 </section>
 </section>
 </section>
 <section id="environment-variable-configuration">
 <h2>🔧 Environment Variable Configuration<a class="headerlink" href="#environment-variable-configuration" title="Link to this heading">¶</a></h2>
-<div class="table-wrapper colwidths-auto docutils container">
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>Environment Variable</p></th>
-<th class="head"><p>Required</p></th>
-<th class="head"><p>Default Value</p></th>
-<th class="head"><p>Description</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ALIPAY_APP_ID</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>-</p></td>
-<td><p>Alipay application ID</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ALIPAY_PRIVATE_KEY</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>-</p></td>
-<td><p>Application private key</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ALIPAY_PUBLIC_KEY</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>-</p></td>
-<td><p>Alipay public key</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ALIPAY_GATEWAY</span></code></p></td>
-<td><p>❌</p></td>
-<td><p>https://openapi.alipay.com/gateway.do</p></td>
-<td><p>Alipay gateway address</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AP_RETURN_URL</span></code></p></td>
-<td><p>❌</p></td>
-<td><p>-</p></td>
-<td><p>Payment completion callback URL</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AP_NOTIFY_URL</span></code></p></td>
-<td><p>❌</p></td>
-<td><p>-</p></td>
-<td><p>Payment asynchronous notification URL</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SUBSCRIBE_PLAN_ID</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>-</p></td>
-<td><p>Subscription plan ID</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">X_AGENT_NAME</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>-</p></td>
-<td><p>Agent name</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">USE_TIMES</span></code></p></td>
-<td><p>❌</p></td>
-<td><p>1</p></td>
-<td><p>Usage count deducted per use</p></td>
-</tr>
-</tbody>
-</table>
-</div>
+<p>| Environment Variable | Required | Default Value | Description |</p>
+<p>|———————|———-|—————|————-|</p>
+<p>| <code class="docutils literal notranslate"><span class="pre">ALIPAY_APP_ID</span></code> | ✅ | - | Alipay application ID |</p>
+<p>| <code class="docutils literal notranslate"><span class="pre">ALIPAY_PRIVATE_KEY</span></code> | ✅ | - | Application private key |</p>
+<p>| <code class="docutils literal notranslate"><span class="pre">ALIPAY_PUBLIC_KEY</span></code> | ✅ | - | Alipay public key |</p>
+<p>| <code class="docutils literal notranslate"><span class="pre">ALIPAY_GATEWAY</span></code> | ❌ | https://openapi.alipay.com/gateway.do | Alipay gateway address |</p>
+<p>| <code class="docutils literal notranslate"><span class="pre">AP_RETURN_URL</span></code> | ❌ | - | Payment completion callback URL |</p>
+<p>| <code class="docutils literal notranslate"><span class="pre">AP_NOTIFY_URL</span></code> | ❌ | - | Payment asynchronous notification URL |</p>
+<p>| <code class="docutils literal notranslate"><span class="pre">SUBSCRIBE_PLAN_ID</span></code> | ✅ | - | Subscription plan ID |</p>
+<p>| <code class="docutils literal notranslate"><span class="pre">X_AGENT_NAME</span></code> | ✅ | - | Agent name |</p>
+<p>| <code class="docutils literal notranslate"><span class="pre">USE_TIMES</span></code> | ❌ | 1 | Usage count deducted per use |</p>
 </section>
 <section id="usage-examples">
 <h2>🚀 Usage Examples<a class="headerlink" href="#usage-examples" title="Link to this heading">¶</a></h2>
 <section id="basic-payment-example">
 <h3>Basic Payment Example<a class="headerlink" href="#basic-payment-example" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.tools.alipay.payment</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.tools.alipay.payment</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+
     <span class="n">MobileAlipayPayment</span><span class="p">,</span>
+
     <span class="n">WebPageAlipayPayment</span>
+
 <span class="p">)</span>
+
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 
 <span class="c1"># Mobile payment</span>
+
 <span class="n">mobile_payment</span> <span class="o">=</span> <span class="n">MobileAlipayPayment</span><span class="p">()</span>
+
 <span class="n">webpage_payment</span> <span class="o">=</span> <span class="n">WebPageAlipayPayment</span><span class="p">()</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">mobile_payment_example</span><span class="p">():</span>
+
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">mobile_payment</span><span class="o">.</span><span class="n">arun</span><span class="p">({</span>
+
         <span class="s2">&quot;out_trade_no&quot;</span><span class="p">:</span> <span class="s2">&quot;ORDER_20241218_001&quot;</span><span class="p">,</span>
+
         <span class="s2">&quot;order_title&quot;</span><span class="p">:</span> <span class="s2">&quot;AI Agent Service&quot;</span><span class="p">,</span>
+
         <span class="s2">&quot;total_amount&quot;</span><span class="p">:</span> <span class="mf">99.99</span>
+
     <span class="p">})</span>
+
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mobile payment link:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">webpage_payment_example</span><span class="p">():</span>
+
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">webpage_payment</span><span class="o">.</span><span class="n">arun</span><span class="p">({</span>
+
         <span class="s2">&quot;out_trade_no&quot;</span><span class="p">:</span> <span class="s2">&quot;ORDER_20241218_002&quot;</span><span class="p">,</span>
+
         <span class="s2">&quot;order_title&quot;</span><span class="p">:</span> <span class="s2">&quot;AI Agent Premium Service&quot;</span><span class="p">,</span>
+
         <span class="s2">&quot;total_amount&quot;</span><span class="p">:</span> <span class="mf">199.99</span>
+
     <span class="p">})</span>
+
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Web payment link:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
 
 <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">mobile_payment_example</span><span class="p">())</span>
+
 <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">webpage_payment_example</span><span class="p">())</span>
+
 </pre></div>
 </div>
 </section>
 <section id="transaction-management-example">
 <h3>Transaction Management Example<a class="headerlink" href="#transaction-management-example" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.tools.alipay.payment</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.tools.alipay.payment</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+
     <span class="n">AlipayPaymentQuery</span><span class="p">,</span>
+
     <span class="n">AlipayPaymentRefund</span><span class="p">,</span>
+
     <span class="n">AlipayRefundQuery</span>
+
 <span class="p">)</span>
 
 <span class="n">query_component</span> <span class="o">=</span> <span class="n">AlipayPaymentQuery</span><span class="p">()</span>
+
 <span class="n">refund_component</span> <span class="o">=</span> <span class="n">AlipayPaymentRefund</span><span class="p">()</span>
+
 <span class="n">refund_query_component</span> <span class="o">=</span> <span class="n">AlipayRefundQuery</span><span class="p">()</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">transaction_management_example</span><span class="p">():</span>
+
     <span class="c1"># Query payment status</span>
+
     <span class="n">query_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">query_component</span><span class="o">.</span><span class="n">arun</span><span class="p">({</span>
+
         <span class="s2">&quot;out_trade_no&quot;</span><span class="p">:</span> <span class="s2">&quot;ORDER_20241218_001&quot;</span>
+
     <span class="p">})</span>
+
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Transaction status:&quot;</span><span class="p">,</span> <span class="n">query_result</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
 
     <span class="c1"># Initiate refund</span>
+
     <span class="n">refund_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">refund_component</span><span class="o">.</span><span class="n">arun</span><span class="p">({</span>
+
         <span class="s2">&quot;out_trade_no&quot;</span><span class="p">:</span> <span class="s2">&quot;ORDER_20241218_001&quot;</span><span class="p">,</span>
+
         <span class="s2">&quot;refund_amount&quot;</span><span class="p">:</span> <span class="mf">50.0</span><span class="p">,</span>
+
         <span class="s2">&quot;refund_reason&quot;</span><span class="p">:</span> <span class="s2">&quot;User requested refund&quot;</span>
+
     <span class="p">})</span>
+
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Refund result:&quot;</span><span class="p">,</span> <span class="n">refund_result</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
 
     <span class="c1"># Query refund status</span>
+
     <span class="n">refund_query_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">refund_query_component</span><span class="o">.</span><span class="n">arun</span><span class="p">({</span>
+
         <span class="s2">&quot;out_trade_no&quot;</span><span class="p">:</span> <span class="s2">&quot;ORDER_20241218_001&quot;</span><span class="p">,</span>
+
         <span class="s2">&quot;out_request_no&quot;</span><span class="p">:</span> <span class="s2">&quot;ORDER_20241218_001_refund_1734509344&quot;</span>
+
     <span class="p">})</span>
+
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Refund status:&quot;</span><span class="p">,</span> <span class="n">refund_query_result</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
 
 <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">transaction_management_example</span><span class="p">())</span>
+
 </pre></div>
 </div>
 </section>
 <section id="subscription-service-example">
 <h3>Subscription Service Example<a class="headerlink" href="#subscription-service-example" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.tools.alipay.subscribe</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.tools.alipay.subscribe</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+
     <span class="n">AlipaySubscribeStatusCheck</span><span class="p">,</span>
+
     <span class="n">AlipaySubscribePackageInitialize</span><span class="p">,</span>
+
     <span class="n">AlipaySubscribeTimesSave</span><span class="p">,</span>
+
     <span class="n">AlipaySubscribeCheckOrInitialize</span>
+
 <span class="p">)</span>
 
 <span class="n">status_check</span> <span class="o">=</span> <span class="n">AlipaySubscribeStatusCheck</span><span class="p">()</span>
+
 <span class="n">initialize</span> <span class="o">=</span> <span class="n">AlipaySubscribePackageInitialize</span><span class="p">()</span>
+
 <span class="n">times_save</span> <span class="o">=</span> <span class="n">AlipaySubscribeTimesSave</span><span class="p">()</span>
+
 <span class="n">check_or_init</span> <span class="o">=</span> <span class="n">AlipaySubscribeCheckOrInitialize</span><span class="p">()</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">subscription_example</span><span class="p">():</span>
+
     <span class="n">user_uuid</span> <span class="o">=</span> <span class="s2">&quot;user_12345&quot;</span>
 
     <span class="c1"># Check subscription status</span>
+
     <span class="n">status</span> <span class="o">=</span> <span class="k">await</span> <span class="n">status_check</span><span class="o">.</span><span class="n">arun</span><span class="p">({</span><span class="s2">&quot;uuid&quot;</span><span class="p">:</span> <span class="n">user_uuid</span><span class="p">})</span>
+
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Subscription status: </span><span class="si">{</span><span class="n">status</span><span class="o">.</span><span class="n">subscribe_flag</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
     <span class="k">if</span> <span class="n">status</span><span class="o">.</span><span class="n">subscribe_flag</span><span class="p">:</span>
+
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Package info: </span><span class="si">{</span><span class="n">status</span><span class="o">.</span><span class="n">subscribe_package</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="c1"># If not subscribed, get subscription link</span>
+
     <span class="k">if</span> <span class="ow">not</span> <span class="n">status</span><span class="o">.</span><span class="n">subscribe_flag</span><span class="p">:</span>
+
         <span class="n">init_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">initialize</span><span class="o">.</span><span class="n">arun</span><span class="p">({</span><span class="s2">&quot;uuid&quot;</span><span class="p">:</span> <span class="n">user_uuid</span><span class="p">})</span>
+
         <span class="k">if</span> <span class="n">init_result</span><span class="o">.</span><span class="n">subscribe_url</span><span class="p">:</span>
+
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Subscription link: </span><span class="si">{</span><span class="n">init_result</span><span class="o">.</span><span class="n">subscribe_url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="c1"># Track usage after service use</span>
+
     <span class="k">if</span> <span class="n">status</span><span class="o">.</span><span class="n">subscribe_flag</span><span class="p">:</span>
+
         <span class="n">times_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">times_save</span><span class="o">.</span><span class="n">arun</span><span class="p">({</span>
+
             <span class="s2">&quot;uuid&quot;</span><span class="p">:</span> <span class="n">user_uuid</span><span class="p">,</span>
+
             <span class="s2">&quot;out_request_no&quot;</span><span class="p">:</span> <span class="s2">&quot;user_12345_20241218_001&quot;</span><span class="p">,</span>
+
         <span class="p">})</span>
+
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Usage tracking result: </span><span class="si">{</span><span class="n">times_result</span><span class="o">.</span><span class="n">success</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">one_step_subscription_example</span><span class="p">():</span>
+
     <span class="n">user_uuid</span> <span class="o">=</span> <span class="s2">&quot;user_67890&quot;</span>
 
     <span class="c1"># One-step subscription check or initialization</span>
+
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">check_or_init</span><span class="o">.</span><span class="n">arun</span><span class="p">({</span><span class="s2">&quot;uuid&quot;</span><span class="p">:</span> <span class="n">user_uuid</span><span class="p">})</span>
 
     <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">subscribe_flag</span><span class="p">:</span>
+
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;User is subscribed, can use service&quot;</span><span class="p">)</span>
+
     <span class="k">else</span><span class="p">:</span>
+
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;User not subscribed, subscription link: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">subscribe_url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">subscription_example</span><span class="p">())</span>
+
 <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">one_step_subscription_example</span><span class="p">())</span>
+
 </pre></div>
 </div>
 </section>

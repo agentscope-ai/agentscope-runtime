@@ -659,14 +659,14 @@ body.preview-active {
 </section>
 <section id="what-is-agentscope-runtime">
 <h2>What is AgentScope Runtime?<a class="headerlink" href="#what-is-agentscope-runtime" title="Link to this heading">¶</a></h2>
-<p><strong>AgentScope Runtime</strong> is a full-stack agent runtime that tackles two core challenges: <strong>efficient agent deployment</strong> and <strong>secure sandbox execution</strong>. It ships with foundational services such as short- and long-term memory plus agent state persistence, along with hardened sandbox infrastructure. Whether you need to orchestrate production-grade agents or guarantee safe tool interactions, AgentScope Runtime provides developer-friendly workflows with complete observability.</p>
+<p><strong>AgentScope Runtime</strong> is a full-stack agent runtime that tackles two core challenges: <strong>efficient agent deployment</strong> and <strong>secure sandbox execution</strong>. It ships with foundational services such as short- and long-term memory plus agent-state persistence, along with hardened sandbox infrastructure. Whether you need to orchestrate production-grade agents or guarantee safe tool interactions, AgentScope Runtime provides developer-friendly workflows with complete observability.</p>
 <p>In V1.0, these services are exposed via an <strong>adapter pattern</strong>, enabling seamless integration with the native modules of different agent frameworks while preserving their native interfaces and behaviors, ensuring both compatibility and flexibility.</p>
 <p>This cookbook walks you through building service-ready agent applications with <strong>AgentScope Runtime</strong>.</p>
 </section>
 <section id="core-architecture">
 <h2>Core Architecture<a class="headerlink" href="#core-architecture" title="Link to this heading">¶</a></h2>
 <p><strong>⚙️ Agent Deployment Runtime (Engine)</strong></p>
-<p>Provides <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> as the main entry point for agent applications, along with production‑grade infrastructure for deploying, managing, and traing agents. It also includes built‑in services such as session history, long‑term memory, and agent state management.</p>
+<p>Provides <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> as the main entry point for agent applications, along with production‑grade infrastructure for deploying, managing, and training agents. It also includes built‑in services such as session history, long‑term memory, and agent state management.</p>
 <p><strong>🔒 Sandbox Execution Runtime (Sandbox)</strong></p>
 <p>Secure, isolated environments that let agents execute code, control browsers, manipulate files, and integrate MCP tools—without exposing your host system.</p>
 <p><strong>🛠️ Production‑Grade Tool Services (Tool)</strong></p>

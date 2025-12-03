@@ -684,12 +684,12 @@ body.preview-active {
 </div>
 </div>
 </div>
-<p>Notice that for the method with a generator as the result, especially in the LLM generating case, the trace will only record the first and last generator result to avoid recording redundant logs.</p>
+<p>Notice that, for the method with a generator as the result, especially in the LLM-generating case, the trace will only record the first and last generator results to avoid redundant logs.</p>
 </section>
 </section>
 <section id="usage-pattern-2-context-manager-based-tracing">
 <h2>Usage Pattern 2: Context Manager-Based Tracing<a class="headerlink" href="#usage-pattern-2-context-manager-based-tracing" title="Link to this heading">¶</a></h2>
-<p>To have more precise control, you can use a context manager. This method allows you to manually control when tracing starts and stops, as well as add custom logging during execution.</p>
+<p>To have more precise control, you can use a context manager. This method allows you to manually control when tracing starts and stops, and to add custom logging during execution.</p>
 <section id="basic-context-manager-usage">
 <h3>Basic Context Manager Usage<a class="headerlink" href="#basic-context-manager-usage" title="Link to this heading">¶</a></h3>
 <div class="cell docutils container">
@@ -725,8 +725,8 @@ body.preview-active {
 </section>
 <section id="handler-types">
 <h2>Handler Types<a class="headerlink" href="#handler-types" title="Link to this heading">¶</a></h2>
-<p>Currently, we only provide a default local log tracer; more handlers will be supported, such as langfuse. The user could fulfill a custom handler based on their preference.</p>
-<p>Meanwhile, the user could add multiple handlers at the same time in one trace.</p>
+<p>Currently, we only provide a default local log tracer; additional handlers, such as langfuse, will be supported. The user could fulfill a custom handler based on their preference.</p>
+<p>Meanwhile, the user could add multiple handlers to a single trace.</p>
 <section id="multiple-handlers">
 <h3>Multiple Handlers<a class="headerlink" href="#multiple-handlers" title="Link to this heading">¶</a></h3>
 <div class="cell docutils container">

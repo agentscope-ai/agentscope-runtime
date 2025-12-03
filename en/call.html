@@ -686,7 +686,7 @@ body.preview-active {
 <li><p>First call: <code class="docutils literal notranslate"><span class="pre">&quot;My</span> <span class="pre">name</span> <span class="pre">is</span> <span class="pre">Alice.&quot;</span></code></p></li>
 <li><p>Second call: <code class="docutils literal notranslate"><span class="pre">&quot;What</span> <span class="pre">is</span> <span class="pre">my</span> <span class="pre">name?&quot;</span></code></p></li>
 </ol>
-<p>The SSE stream will mention “Alice”, confirming that session state is in effect.</p>
+<p>The SSE stream will mention “Alice”, confirming that the session state is in effect.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">session_id</span> <span class="o">=</span> <span class="s2">&quot;123456&quot;</span>
 
 <span class="k">async</span> <span class="k">with</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
@@ -784,7 +784,7 @@ body.preview-active {
 <li><p><strong>Parsing errors</strong>: SSE frames must be processed line by line; tolerate keep-alive blank lines or partial JSON chunks.</p></li>
 <li><p><strong>Context not retained</strong>: Confirm every request includes the same <code class="docutils literal notranslate"><span class="pre">session_id</span></code>, and that the <code class="docutils literal notranslate"><span class="pre">state/session</span></code> services are properly started within <code class="docutils literal notranslate"><span class="pre">init_func</span></code>.</p></li>
 </ul>
-<p>With the examples above you can quickly validate and consume a deployed Agent service.</p>
+<p>With the examples above, you can quickly validate and consume a deployed Agent service.</p>
 </section>
 </section>
 

@@ -626,12 +626,12 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <section id="sandbox">
 <h1>Sandbox<a class="headerlink" href="#sandbox" title="Link to this heading">¶</a></h1>
-<p>AgentScope Runtime’s Sandbox is a versatile tool that provides a <strong>secure</strong> and <strong>isolated</strong> environment for a wide range of operations, including tool execution, browser automation, and file system operations. This tutorial will empower you to set up the tool sandbox dependency and run tools in an environment that you can tailor to your specific needs.</p>
+<p>AgentScope Runtime’s Sandbox is a versatile tool that provides a <strong>secure</strong> and <strong>isolated</strong> environment for a wide range of operations, including tool execution, browser automation, and file system operations. This tutorial will empower you to set up the tool sandbox dependency and run tools in an environment tailored to your specific needs.</p>
 <section id="prerequisites">
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The current sandbox environment utilizes Docker for default isolation. In addition, we offer support for Kubernetes (K8s) as a remote service backend. Looking ahead, we plan to incorporate more third-party hosting solutions in future releases.</p>
+<p>The current sandbox environment utilises Docker for default isolation. In addition, we offer support for Kubernetes (K8S) as a remote service backend. Looking ahead, we plan to incorporate more third-party hosting solutions in future releases.</p>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -749,8 +749,8 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <h2>Sandbox Usage<a class="headerlink" href="#sandbox-usage" title="Link to this heading">¶</a></h2>
 <section id="create-a-sandbox">
 <h3>Create a Sandbox<a class="headerlink" href="#create-a-sandbox" title="Link to this heading">¶</a></h3>
-<p>The previous section introduced tool-centered usage methods, while this section introduces sandbox-centered usage methods.</p>
-<p>You can create different types of sandboxes via <code class="docutils literal notranslate"><span class="pre">sandbox</span></code> sdk:</p>
+<p>The previous section introduced tool-centred usage methods, while this section introduces sandbox-centred usage methods.</p>
+<p>You can create different types of sandboxes via the <code class="docutils literal notranslate"><span class="pre">sandbox</span></code> SDK:</p>
 <ul class="simple">
 <li><p><strong>Base Sandbox</strong>: Use for running <strong>Python code</strong> or <strong>shell commands</strong> in an isolated environment.</p></li>
 </ul>
@@ -925,7 +925,7 @@ When running on an ARM64/aarch64 architecture (e.g., Apple M-series chips), you 
 </section>
 <section id="add-mcp-server-to-sandbox">
 <h3>Add MCP Server to Sandbox<a class="headerlink" href="#add-mcp-server-to-sandbox" title="Link to this heading">¶</a></h3>
-<p>MCP (Model Context Protocol) is a standardized protocol that enables AI applications to connect to external data sources and tools securely. By integrating MCP servers into your sandbox, you can extend the sandbox’s capabilities with specialized tools and services without compromising security.</p>
+<p>MCP (Model Context Protocol) is a standardised protocol that enables AI applications to securely connect to external data sources and tools. By integrating MCP servers into your sandbox, you can extend the sandbox’s capabilities with specialised tools and services without compromising security.</p>
 <p>The sandbox supports integrating MCP servers via the <code class="docutils literal notranslate"><span class="pre">add_mcp_servers</span></code> method. Once added, you can discover available tools using <code class="docutils literal notranslate"><span class="pre">list_tools</span></code> and execute them with <code class="docutils literal notranslate"><span class="pre">call_tool</span></code>. Here’s an example of adding a time server that provides timezone-aware time functions:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -975,7 +975,7 @@ When running on an ARM64/aarch64 architecture (e.g., Apple M-series chips), you 
 </ul>
 <p>For more advanced usage of sandbox-server, please refer to <a class="reference internal" href="advanced.html"><span class="doc">Advanced Usage of Tool Sandbox</span></a> for detailed instructions.</p>
 </div>
-<p>You can start the sandbox server on your local machine or different machines for convenient remote access. You should start a sandbox server via:</p>
+<p>You can start the sandbox server on your local machine or on different machines for convenient remote access. You should start a sandbox server via:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-server
 </pre></div>
 </div>
@@ -988,7 +988,7 @@ When running on an ARM64/aarch64 architecture (e.g., Apple M-series chips), you 
 </section>
 <section id="expose-sandbox-as-an-mcp-server">
 <h3>Expose Sandbox as an MCP Server<a class="headerlink" href="#expose-sandbox-as-an-mcp-server" title="Link to this heading">¶</a></h3>
-<p>Configure the local Sandbox Runtime as an MCP server named <code class="docutils literal notranslate"><span class="pre">sandbox</span></code>, so it can be invoked by MCP-compatible clients to safely execute command from sandbox via a remote sandbox server <code class="docutils literal notranslate"><span class="pre">http://127.0.0.1:8000</span></code>.</p>
+<p>Configure the local Sandbox Runtime as an MCP server named <code class="docutils literal notranslate"><span class="pre">sandbox</span></code>, so it can be invoked by MCP-compatible clients to safely execute commands from the sandbox via a remote sandbox server <code class="docutils literal notranslate"><span class="pre">http://127.0.0.1:8000</span></code>.</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">&quot;sandbox&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1039,7 +1039,7 @@ When running on an ARM64/aarch64 architecture (e.g., Apple M-series chips), you 
 <h2>Sandbox Service<a class="headerlink" href="#sandbox-service" title="Link to this heading">¶</a></h2>
 <section id="managing-sandboxes-with-sandboxservice">
 <h3>Managing Sandboxes with <code class="docutils literal notranslate"><span class="pre">SandboxService</span></code><a class="headerlink" href="#managing-sandboxes-with-sandboxservice" title="Link to this heading">¶</a></h3>
-<p><code class="docutils literal notranslate"><span class="pre">SandboxService</span></code> provides a unified sandbox management interface, allowing management of sandbox environments for different user sessions through <code class="docutils literal notranslate"><span class="pre">session_id</span></code> and <code class="docutils literal notranslate"><span class="pre">user_id</span></code>. Using <code class="docutils literal notranslate"><span class="pre">SandboxService</span></code> lets you better control the lifecycle of a sandbox and enables sandbox reuse.</p>
+<p><code class="docutils literal notranslate"><span class="pre">SandboxService</span></code> provides a unified sandbox management interface, enabling management of sandbox environments across different user sessions via <code class="docutils literal notranslate"><span class="pre">session_id</span></code> and <code class="docutils literal notranslate"><span class="pre">user_id</span></code>. Using <code class="docutils literal notranslate"><span class="pre">SandboxService</span></code> lets you better control a sandbox’s lifecycle and enables sandbox reuse.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxService</span>

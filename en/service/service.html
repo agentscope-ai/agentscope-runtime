@@ -747,7 +747,7 @@ Sandboxes are organized using a composite key of session ID and user ID, giving 
 </section>
 <section id="state-service-stateservice">
 <h3>4. State Service (<code class="docutils literal notranslate"><span class="pre">StateService</span></code>)<a class="headerlink" href="#state-service-stateservice" title="Link to this heading">¶</a></h3>
-<p>Allows saving and retrieving a serializable state of an agent so that context can be preserved across multiple turns — or even across sessions.</p>
+<p>Allows saving and retrieving the agent’s serializable state, preserving context across multiple turns—or even across sessions.</p>
 <section id="id3">
 <h4>Usage in AgentScope<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h4>
 <p>In AgentScope, you don’t need an adapter — directly call <code class="docutils literal notranslate"><span class="pre">StateService</span></code>’s <code class="docutils literal notranslate"><span class="pre">export_state</span></code> and <code class="docutils literal notranslate"><span class="pre">save_state</span></code>:</p>

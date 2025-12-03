@@ -680,7 +680,7 @@ body.preview-active {
 </section>
 <section id="step-2-create-the-agent-app">
 <h3>Step 2: Create the Agent App<a class="headerlink" href="#step-2-create-the-agent-app" title="Link to this heading">¶</a></h3>
-<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> is the lifecycle and request hub of the agent application. All initialization, query handling, and shutdown routines are registered on it:</p>
+<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> is the lifecycle and request hub of the agent application. All initialisation, query handling, and shutdown routines are registered on it:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
@@ -793,7 +793,7 @@ For details on available service types, adapter usage, and how to swap them out,
 </section>
 <section id="step-5-run-the-agent-app">
 <h3>Step 5: Run the Agent App<a class="headerlink" href="#step-5-run-the-agent-app" title="Link to this heading">¶</a></h3>
-<p>Start the Agent API server. After launch it listens on <code class="docutils literal notranslate"><span class="pre">http://localhost:8090/process</span></code>:</p>
+<p>Start the Agent API server. After launch, it listens on <code class="docutils literal notranslate"><span class="pre">http://localhost:8090/process</span></code>:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Start the service (listen on port 8090)</span>
@@ -846,7 +846,7 @@ data:<span class="w"> </span><span class="o">{</span><span class="s2">&quot;sequ
 </div>
 </div>
 </div>
-<p>This spins up the agent server on the specified port so external clients can call it. Beyond the basic HTTP API, you can also interact with the deployment through protocols like A2A, Response API, and Agent API—see <a class="reference internal" href="protocol.html"><span class="doc">Agent API Protocol Specification</span></a> for details.</p>
+<p>This spins up the agent server on the specified port so external clients can call it. Beyond the basic HTTP API, you can also interact with the deployment via protocols such as A2A, Response API, and Agent API—see <a class="reference internal" href="protocol.html"><span class="doc">Agent API Protocol Specification</span></a> for details.</p>
 <p>Clients can even call the service through the OpenAI SDK:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAI</span>
 

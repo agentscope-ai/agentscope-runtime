@@ -632,11 +632,9 @@ body.preview-active {
 </div>
 <section id="background">
 <h2>Background<a class="headerlink" href="#background" title="Link to this heading">¶</a></h2>
-<p>The Training Sandbox of AgentScope Runtime is primarily designed for training and evaluation functions. The sandbox’s
-data is mainly based on public datasets (such as Appworld, Webshop, BFCL, etc.), providing data supply for Agent
+<p>The Training Sandbox of the AgentScope Runtime is primarily designed for training and evaluation. The sandbox’s data is mainly based on public datasets (such as Appworld, Webshop, BFCL, etc.), providing data supply for Agent.
 training, tools for dataset calling, and real-time Reward verification.</p>
-<p>The Training Sandbox primarily implements high-concurrency data calling through Ray, supporting external Agents to
-create, execute, and evaluate instances for different samples after sandbox creation.</p>
+<p>The Training Sandbox primarily implements high-concurrency data access using Ray, enabling external Agents to create, execute, and evaluate instances for different samples after sandbox creation.</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/StonyBrookNLP/appworld">APPWorld</a>: APPWorld is an advanced, high-fidelity environment designed to test and evaluate autonomous AI agents’ ability to perform complex, multi-step tasks using realistic APIs and user
 scenarios. It serves as a crucial testing ground for the AI agents, allowing them to learn and adapt to real-world scenarios.</p></li>
@@ -658,7 +656,7 @@ scenarios. It serves as a crucial testing ground for the AI agents, allowing the
 <h4>Prepare Docker Image<a class="headerlink" href="#prepare-docker-image" title="Link to this heading">¶</a></h4>
 <p>Pull the image from DockerHub. Suppose you failed to pull the Docker image from DockerHub. In that case, we also provide
 a script for building the Docker image locally.</p>
-<p>To ensure a complete sandbox experience with all features enabled, follow the steps below to pull and tag the necessary
+<p>To ensure a complete sandbox experience with all features enabled, follow the steps below to pull and tag the necessary.
 Docker images from our repository:</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -675,7 +673,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </section>
 <section id="verify-installation">
 <h4>Verify Installation<a class="headerlink" href="#verify-installation" title="Link to this heading">¶</a></h4>
-<p>You can verify that everything is set up correctly by calling <code class="docutils literal notranslate"><span class="pre">get_env_profile</span></code>. If success, you can get a training ID:</p>
+<p>You can verify that everything is set up correctly by calling <code class="docutils literal notranslate"><span class="pre">get_env_profile</span></code>. If successful, you can get a training ID:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.box.training_box.training_box</span><span class="w"> </span><span class="kn">import</span> <span class="n">APPWorldSandbox</span>
 
 
@@ -687,7 +685,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </section>
 <section id="optional-build-the-docker-image-from-scratch">
 <h4>(Optional) Build the Docker Image from Scratch<a class="headerlink" href="#optional-build-the-docker-image-from-scratch" title="Link to this heading">¶</a></h4>
-<p>f you prefer to build images locally via <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code> or need custom modifications, you can build them from scratch.
+<p>If you prefer to build images locally via <code class="docutils literal notranslate"><span class="pre">Dockerfile</span></code> or need custom modifications, you can build them from scratch.
 Please refer to <a class="reference internal" href="advanced.html"><span class="doc">Advanced Usage of Tool Sandbox</span></a> for detailed instructions.</p>
 <p>For training sandboxes, different datasets use different Dockerfiles, located at
 <code class="docutils literal notranslate"><span class="pre">src/agentscope_runtime/sandbox/box/training_box/environments/{dataset_name}</span></code>.</p>
@@ -714,9 +712,9 @@ Please refer to <a class="reference internal" href="advanced.html"><span class="
 </section>
 <section id="get-training-sample-query">
 <h4>Get Training Sample Query<a class="headerlink" href="#get-training-sample-query" title="Link to this heading">¶</a></h4>
-<p>We can select one task from the training set as an example and display its query along with the system prompt using
+<p>We can select one task from the training set as an example and display its query along with the system prompt.
 the <code class="docutils literal notranslate"><span class="pre">create_instance</span></code> method.</p>
-<p>The initial state will include a unique ID for the newly created instance of the query, and we can generate additional
+<p>The initial state will include a unique ID for the newly created instance of the query, and we can generate additional.
 instances for parallel training.</p>
 <p>The prompt (<code class="docutils literal notranslate"><span class="pre">system</span> <span class="pre">prompt</span></code>) and actual question (<code class="docutils literal notranslate"><span class="pre">user</span> <span class="pre">prompt</span></code>) provided by the training set will be returned as a
 <code class="docutils literal notranslate"><span class="pre">Message</span> <span class="pre">List</span></code>, located in the state of the return value.</p>
@@ -735,8 +733,7 @@ instances for parallel training.</p>
 </section>
 <section id="agent-action-step">
 <h4>Agent Action Step<a class="headerlink" href="#agent-action-step" title="Link to this heading">¶</a></h4>
-<p>We first feed the initial state information to the LLM agent and then load the response back to the Sandbox. This form
-of transmission can be repeated using the step method. Instance_id is required to identify different sessions during the
+<p>We first feed the initial state information to the LLM agent, then load the response back into the Sandbox. This form of transmission can be repeated using the step method. Instance_id is required to identify different sessions during the
 training or inference processing. A basic reward is provided after each step.</p>
 <p>This method currently only supports input in <code class="docutils literal notranslate"><span class="pre">Message</span></code> format, recommended to input with <code class="docutils literal notranslate"><span class="pre">&quot;role&quot;:</span> <span class="pre">&quot;assistant&quot;</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">action</span> <span class="o">=</span> <span class="p">{</span>
@@ -764,7 +761,7 @@ additional evaluation parameters, passed through <code class="docutils literal n
 </section>
 <section id="release-sample">
 <h4>Release Sample<a class="headerlink" href="#release-sample" title="Link to this heading">¶</a></h4>
-<p>You are also allowed to release the cases manually using the release method if needed.
+<p>You can also release the cases manually using the release method if needed.
 Instances will be auto-released in 5 minutes.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">success</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">release_instance</span><span class="p">(</span><span class="n">instance_id</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Instance released: </span><span class="si">{</span><span class="n">success</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -778,7 +775,7 @@ Instances will be auto-released in 5 minutes.</p>
 <h4>Prepare Docker Image<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h4>
 <p>Pull the image from DockerHub. Suppose you failed to pull the Docker image from DockerHub. In that case, we also provide
 a script for building the Docker image locally.</p>
-<p>To ensure a complete sandbox experience with all features enabled, follow the steps below to pull and tag the necessary
+<p>To ensure a complete sandbox experience with all features enabled, follow the steps below to pull and tag the necessary.
 Docker images from our repository:</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -802,17 +799,17 @@ At the root folder, run the following code:
 <section id="initialize">
 <h4>Initialize<a class="headerlink" href="#initialize" title="Link to this heading">¶</a></h4>
 <p>BFCL has multiple sub-dataset <em>all, all_scoring, multi_turn, single_turn, live， non_live, non_python, python</em>.
-Please determine which subset to test before initializing the sandbox where OPENAPI_API_KEY is required for the evaluaton process.</p>
+Please determine which subset to test before initialising the sandbox, where OPENAPI_API_KEY is required for the evaluation process.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
-<span class="c1">#determined the subset and pass the openaikey if you need to step and evalaute samples.</span>
+<span class="c1">#determined the subset and passed the OpenAI key if you need to step and evaluate samples.</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">)</span>
 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;DATASET_SUB_TYPE&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;multi_turn&quot;</span>
-<span class="c1"># os.environ[&quot;DATASET_SUB_TYPE&quot;] can be one of the following: &quot;all&quot;,&quot;all_scoring&quot;,&quot;multi_turn&quot;,&quot;single_turn&quot;,&quot;live&quot;,&quot;non_live&quot;,&quot;non_python&quot;,&quot;python&quot;</span>
+<span class="c1"># os. environ[&quot;DATASET_SUB_TYPE&quot;] can be one of the following: &quot;all&quot;,&quot;all_scoring&quot;,&quot;multi_turn&quot;,&quot;single_turn&quot;,&quot;live&quot;,&quot;non_live&quot;,&quot;non_python&quot;,&quot;python&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.box.training_box.training_box</span><span class="w"> </span><span class="kn">import</span> <span class="n">BFCLSandbox</span>
 
-<span class="c1">#initialize sandbox</span>
+<span class="c1"># initialise sandbox</span>
 <span class="n">box</span> <span class="o">=</span> <span class="n">BFCLSandbox</span><span class="p">()</span>
 <span class="n">profile_list</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">get_env_profile</span><span class="p">(</span><span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;bfcl&quot;</span><span class="p">)</span>
 <span class="n">init_response</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">create_instance</span><span class="p">(</span>

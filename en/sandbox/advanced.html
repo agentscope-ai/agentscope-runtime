@@ -628,11 +628,11 @@ body.preview-active {
 <h1>Advanced Usage of Tool Sandbox<a class="headerlink" href="#advanced-usage-of-tool-sandbox" title="Link to this heading">¶</a></h1>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>This section covers advanced sandbox usages. We strongly recommend completing the basic tutorial in the previous section (<a class="reference internal" href="sandbox.html"><span class="doc">Sandbox</span></a>) before proceeding.</p>
+<p>This section covers advanced sandbox usage. Complete the basic tutorial in the previous section (<a class="reference internal" href="sandbox.html"><span class="doc">Sandbox</span></a>) first.</p>
 </div>
 <section id="remote-sandbox-server">
 <h2>Remote Sandbox Server<a class="headerlink" href="#remote-sandbox-server" title="Link to this heading">¶</a></h2>
-<p>Remote sandbox servers enable you to deploy sandboxes as standalone services, providing benefits like resource isolation and centralized management. This section covers how to set up and configure sandbox servers. After setting up, you can connect to the remote sandbox server via the sandbox SDK.</p>
+<p>Remote sandbox servers let you deploy isolated, standalone services. This section explains the setup and configuration of a sandbox server. After setup, connect using the sandbox SDK.</p>
 <section id="quick-start-with-default-configuration">
 <h3>Quick Start with Default Configuration<a class="headerlink" href="#quick-start-with-default-configuration" title="Link to this heading">¶</a></h3>
 <p>The simplest way to start a sandbox server is by using the default configuration:</p>
@@ -655,13 +655,13 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>If you plan to use the sandbox on a large scale in production, we recommend deploying it directly in Alibaba Cloud for managed hosting.</p>
+<p>If you plan to use the sandbox at scale in production, we recommend deploying it directly on Alibaba Cloud for managed hosting.</p>
 <p><a class="reference external" href="https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83">One-click deploy sandbox on Alibaba Cloud</a></p>
 </div>
 </section>
 <section id="custom-configuration">
 <h3>Custom Configuration<a class="headerlink" href="#custom-configuration" title="Link to this heading">¶</a></h3>
-<p>For custom deployments or specific requirements, you can customize the server configuration by creating a <code class="docutils literal notranslate"><span class="pre">.env</span></code> file in your working directory:</p>
+<p>For custom deployments or specific requirements, you can customise the server configuration by creating a <code class="docutils literal notranslate"><span class="pre">.env</span></code> file in your working directory:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># .env</span>
 <span class="c1"># Service settings</span>
 <span class="nv">HOST</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span>
@@ -935,8 +935,9 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </table>
 </div>
 </section>
+</section>
 <section id="optional-agentrun-settings">
-<h4>(Optional) AgentRun Settings<a class="headerlink" href="#optional-agentrun-settings" title="Link to this heading">¶</a></h4>
+<h3>(Optional) AgentRun Settings<a class="headerlink" href="#optional-agentrun-settings" title="Link to this heading">¶</a></h3>
 <p><a class="reference external" href="https://functionai.console.aliyun.com/cn-hangzhou/agent/">AgentRun</a> is a serverless intelligent Agent development framework launched by Alibaba Cloud. It provides a complete set of tools to help developers quickly build, deploy, and manage AI Agent applications. You can deploy the sandbox servers on AgentRun.</p>
 <p>To configure settings specific to <a class="reference external" href="https://functionai.console.aliyun.com/cn-hangzhou/agent/">AgentRun</a> in your sandbox server, ensure you set <code class="docutils literal notranslate"><span class="pre">CONTAINER_DEPLOYMENT=agentrun</span></code>. Consider adjusting the following parameters:</p>
 <div class="table-wrapper colwidths-auto docutils container">
@@ -977,7 +978,7 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_MEMORY</span></code></p></td>
 <td><p>Memory Specification</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">2048</span></code></p></td>
-<td><p>Memory specification (MB)</p></td>
+<td><p>Memory specification(MB)</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_VPC_ID</span></code></p></td>
 <td><p>VPC ID</p></td>
@@ -1012,7 +1013,6 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </tbody>
 </table>
 </div>
-</section>
 <section id="optional-function-compute-fc-settings">
 <h4>(Optional) Function Compute (FC) Settings<a class="headerlink" href="#optional-function-compute-fc-settings" title="Link to this heading">¶</a></h4>
 <p><a class="reference external" href="https://fcnext.console.aliyun.com/">Function Compute</a> (FC) is a serverless computing service that allows you to run your code without managing infrastructure. You can deploy sandbox servers on FC.</p>
@@ -1101,9 +1101,9 @@ This allows you to modify the security level, add environment variables, define 
 <p>See <a class="reference internal" href="#custom-sandbox"><span class="std std-ref">Custom Sandbox Class</span></a></p>
 <blockquote>
 <div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&#64;SandboxRegistry.register</span></code> will register the class into the sandbox manager, so it can be recognized and used at startup.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&#64;SandboxRegistry.register</span></code> will register the class into the sandbox manager, so it can be recognised and used at startup.</p></li>
 <li><p>The <code class="docutils literal notranslate"><span class="pre">environment</span></code> field can inject external API keys or other necessary configurations into the sandbox.</p></li>
-<li><p>The class inherits from <code class="docutils literal notranslate"><span class="pre">Sandbox</span></code> and can override its methods to implement more customized logic.</p></li>
+<li><p>The class inherits from <code class="docutils literal notranslate"><span class="pre">Sandbox</span></code> and can override its methods to implement more customised logic.</p></li>
 </ul>
 </div></blockquote>
 </section>
@@ -1148,7 +1148,7 @@ This allows you to modify the security level, add environment variables, define 
 </section>
 <section id="custom-built-sandbox">
 <h2>Custom Built Sandbox<a class="headerlink" href="#custom-built-sandbox" title="Link to this heading">¶</a></h2>
-<p>While the built-in sandbox types cover common use cases, you may encounter scenarios requiring specialized environments or unique tool combinations. Creating custom sandboxes allows you to tailor the execution environment to your specific needs. This section demonstrates how to build and register your custom sandbox types.</p>
+<p>While the built-in sandbox types cover common use cases, you may encounter scenarios requiring specialised environments or unique tool combinations. Creating custom sandboxes allows you to tailor the execution environment to your specific needs. This section demonstrates how to build and register your custom sandbox types.</p>
 <section id="install-from-source-required-for-custom-sandbox">
 <h3>Install from Source (Required for Custom Sandbox)<a class="headerlink" href="#install-from-source-required-for-custom-sandbox" title="Link to this heading">¶</a></h3>
 <p>To create custom sandboxes, you need to install AgentScope Runtime from source in editable mode, which allows you to modify the code and see changes immediately:</p>
@@ -1225,7 +1225,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <li><p><strong>Advanced Customization</strong>: For more advanced usage and customization, you must be very familiar with Dockerfile syntax and Docker best practices</p></li>
 </ul>
 </div>
-<p>Here’s an example Dockerfile for a custom sandbox with filesystem, browser, and some useful MCP tools in one sandbox:</p>
+<p>Here’s an example Dockerfile for a custom sandbox with a filesystem, a browser, and some useful MCP tools in one sandbox:</p>
 <div class="highlight-dockerfile notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">node:22-slim</span>
 
 <span class="c"># Set ENV variables</span>
@@ -1324,7 +1324,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">custom_sandbox</span></code>: The name/tag for your custom sandbox image</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--dockerfile_path</span></code>: Path to your custom Dockerfile</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--extension</span></code>: Path to your custom sandbox python module</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--extension</span></code>: Path to your custom sandbox Python module</p></li>
 </ul>
 <p>Once built, your custom sandbox image will be ready to use with the corresponding sandbox class you defined.</p>
 <section id="building-built-in-images-locally">
@@ -1336,7 +1336,7 @@ runtime-sandbox-builder<span class="w"> </span>all
 <span class="c1"># Build base image (~1Gb)</span>
 runtime-sandbox-builder<span class="w"> </span>base
 
-<span class="c1"># Build gui image (~2Gb)</span>
+<span class="c1"># Build GUI image (~2Gb)</span>
 runtime-sandbox-builder<span class="w"> </span>gui
 
 <span class="c1"># Build browser image (~2Gb)</span>
@@ -1352,7 +1352,7 @@ runtime-sandbox-builder<span class="w"> </span>mobile
 <p>The above commands are useful when you want to:</p>
 <ul class="simple">
 <li><p>Build images locally instead of pulling from the registry</p></li>
-<li><p>Customize the base images before building your own</p></li>
+<li><p>Customise the base images before building your own</p></li>
 <li><p>Ensure you have the latest version of the built-in images</p></li>
 <li><p>Work in air-gapped environments</p></li>
 </ul>
@@ -1492,7 +1492,9 @@ You can modify any of them as needed to change the image source or version.</p>
 <li><a class="reference internal" href="#optional-redis-settings">(Optional) Redis Settings</a></li>
 <li><a class="reference internal" href="#optional-oss-settings">(Optional) OSS Settings</a></li>
 <li><a class="reference internal" href="#optional-k8s-settings">(Optional) K8S Settings</a></li>
-<li><a class="reference internal" href="#optional-agentrun-settings">(Optional) AgentRun Settings</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#optional-agentrun-settings">(Optional) AgentRun Settings</a><ul>
 <li><a class="reference internal" href="#optional-function-compute-fc-settings">(Optional) Function Compute (FC) Settings</a></li>
 </ul>
 </li>

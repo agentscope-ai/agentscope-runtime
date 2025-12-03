@@ -639,7 +639,7 @@ For example, if it’s deployed at <code class="docutils literal notranslate"><s
 <p>This guide also requires a <strong>Node.js</strong> environment along with <code class="docutils literal notranslate"><span class="pre">npm</span></code> or <code class="docutils literal notranslate"><span class="pre">npx</span></code>. Please make sure they are properly installed.</p>
 <section id="method-1-start-the-agent-directly-in-python-and-enable-the-webui">
 <h2>Method 1: Start the Agent Directly in Python and Enable the WebUI<a class="headerlink" href="#method-1-start-the-agent-directly-in-python-and-enable-the-webui" title="Link to this heading">¶</a></h2>
-<p>This approach is suitable for running the Agent directly in a Python environment and enabling the built‑in WebUI. You only need to ensure that the model environment required by the Agent has been deployed and the API key is properly configured.</p>
+<p>This approach is suitable for running the Agent directly in a Python environment and enabling the built‑in WebUI. You only need to ensure that the Agent’s required model environment has been deployed and that the API key is properly configured.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
 
 <span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
@@ -655,7 +655,7 @@ For example, if it’s deployed at <code class="docutils literal notranslate"><s
 </section>
 <section id="method-2-quick-start-via-npx">
 <h2>Method 2: Quick Start via <code class="docutils literal notranslate"><span class="pre">npx</span></code><a class="headerlink" href="#method-2-quick-start-via-npx" title="Link to this heading">¶</a></h2>
-<p>If you just want to try it out quickly, or don’t need to modify code, you can simply run the following command in your terminal:</p>
+<p>If you just want to try it out quickly or don’t need to modify code, you can simply run the following command in your terminal:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>npx<span class="w"> </span>@agentscope-ai/chat<span class="w"> </span>agentscope-runtime-webui<span class="w"> </span>--url<span class="w"> </span>http://localhost:8090/process
 </pre></div>
 </div>
@@ -666,7 +666,7 @@ For example, if it’s deployed at <code class="docutils literal notranslate"><s
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">5173</span>
 </pre></div>
 </div>
-<p>Open <a class="reference external" href="http://localhost:5173/">http://localhost:5173</a> in your browser and you can enter the WebUI to interact with your Agent via a chat interface.</p>
+<p>Open <a class="reference external" href="http://localhost:5173/">http://localhost:5173</a> in your browser, and you can enter the WebUI to interact with your Agent via a chat interface.</p>
 </section>
 <section id="method-3-local-installation-and-startup-for-development-and-customization">
 <h2>Method 3: Local Installation and Startup (for development and customization)<a class="headerlink" href="#method-3-local-installation-and-startup-for-development-and-customization" title="Link to this heading">¶</a></h2>

@@ -628,8 +628,7 @@ body.preview-active {
 <h1>Sandbox Service<a class="headerlink" href="#sandbox-service" title="Link to this heading">¶</a></h1>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
-<p>The <strong>Sandbox Service</strong> provides isolated <strong>tool execution environments</strong> (sandboxes) for different users and sessions, allowing agents to use tools (such as browsers, code executors, etc.) in a controlled and secure environment.
-For more on sandboxes, see <a class="reference internal" href="../sandbox/sandbox.html"><span class="doc">Sandbox</span></a>.</p>
+<p>The <strong>Sandbox Service</strong> provides isolated <strong>tool execution environments</strong> (sandboxes) for different users and sessions, allowing agents to use tools (such as browsers, code executors, etc.) in a controlled and secure environment. For more on sandboxes, see <a class="reference internal" href="../sandbox/sandbox.html"><span class="doc">Sandbox</span></a>.</p>
 <p>In the course of agent execution, typical roles of the sandbox service include:</p>
 <ul class="simple">
 <li><p><strong>Creating execution environments</strong>: Generate a sandbox instance (e.g., a browser sandbox) for a new user/session.</p></li>
@@ -642,7 +641,7 @@ For more on sandboxes, see <a class="reference internal" href="../sandbox/sandbo
 <strong>running modes</strong> (embedded/remote), <strong>supported types</strong>, <strong>management methods</strong>, and <strong>extensibility</strong>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>In business code, it is not recommended to directly implement the sandbox service and <code class="docutils literal notranslate"><span class="pre">SandboxManager</span></code>’s low-level management logic.</p>
+<p>In business code, it is not recommended to implement the sandbox service or <code class="docutils literal notranslate"><span class="pre">SandboxManager</span></code>’s low-level management logic directly.</p>
 <p>Instead, it is better to <strong>use an adapter to bind sandbox methods to the agent framework’s tool module</strong>:</p>
 <ul class="simple">
 <li><p>Hide low-level sandbox API details</p></li>
@@ -671,7 +670,7 @@ For more on sandboxes, see <a class="reference internal" href="../sandbox/sandbo
     <span class="n">sandbox_types</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;browser&quot;</span><span class="p">],</span>
 <span class="p">)</span>
 
-<span class="c1"># 3. Get tool methods and register into the Agent&#39;s Toolkit</span>
+<span class="c1"># 3. Get tool methods and register in the Agent&#39;s Toolkit</span>
 <span class="n">toolkit</span> <span class="o">=</span> <span class="n">Toolkit</span><span class="p">()</span>
 <span class="k">for</span> <span class="n">tool</span> <span class="ow">in</span> <span class="p">[</span>
     <span class="n">sandboxes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">browser_navigate</span><span class="p">,</span>
@@ -730,7 +729,7 @@ For more on sandboxes, see <a class="reference internal" href="../sandbox/sandbo
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FILESYSTEM</span></code></p></td>
 <td><p>File system sandbox</p></td>
-<td><p>Reading/writing files in a secure isolated file system</p></td>
+<td><p>Reading/writing files in a secure, isolated file system</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">GUI</span></code></p></td>
 <td><p>Graphical interface sandbox</p></td>
