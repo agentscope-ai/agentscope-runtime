@@ -957,7 +957,6 @@ def _get_ot_tracer() -> ot_trace.Tracer:
         with _otel_tracer_lock:
             if _otel_tracer is None:
                 _otel_tracer = _get_ot_tracer_inner()
-        return _otel_tracer
 
     return _otel_tracer
 
