@@ -1,0 +1,896 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Alipay Components" href="alipay.html"><link rel="prev" title="Retrieval-Augmented Generation Components (RAGs)" href="modelstudio_rag.html">
+        <link rel="prefetch" href="../../_static/logo.svg" as="image">
+
+    <link rel="shortcut icon" href="../../_static/logo.svg"><!-- Generated with Sphinx 7.4.7 and Furo 2025.09.25 -->
+        <title>Image Generation Components - AgentScope Runtime</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=580074bf" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=aadf46a8" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f0f0f0;
+  --color-code-foreground: black;
+  --color-brand-primary: #2196f3;
+  --color-brand-content: #2196f3;
+  --color-admonition-background: #f8f9fa;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #64b5f6;
+  --color-brand-content: #64b5f6;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-brand-primary: #64b5f6;
+  --color-brand-content: #64b5f6;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../intro.html"><div class="brand"><span style='font-weight: 700; color: #2196f3;'>AgentScope</span> <br><span style='font-weight: 900; color: #ff5722;'>Runtime</span></div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><div class="sidebar-scroll"><a class="sidebar-brand" href="../intro.html">
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../../_static/logo.svg" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text"><span style='font-weight: 700; color: #2196f3;'>AgentScope</span> <br><span style='font-weight: 900; color: #ff5722;'>Runtime</span></span>
+  
+</a><div class="language-switch">
+    <div class="language-selector">
+        <button class="language-button" onclick="toggleLanguageMenu()">
+            <span id="current-lang">English</span>
+            <span class="dropdown-arrow"></span>
+        </button>
+        <div class="language-menu" id="language-menu">
+            <a href="#" class="language-option" onclick="switchLanguage('en')">English</a>
+            <a href="#" class="language-option" onclick="switchLanguage('zh')">中文</a>
+        </div>
+    </div>
+
+    <div class="language-selector">
+        <button class="language-button" onclick="toggleVersionMenu()">
+            <span id="current-version">loading...</span>
+            <span class="dropdown-arrow"></span>
+        </button>
+        <div class="language-menu" id="version-menu">
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleLanguageMenu() {
+        const menu = document.getElementById('language-menu');
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function switchLanguage(lang, skipRedirect = false) {
+        // Save language preference
+        localStorage.setItem('preferred-language', lang);
+
+        // Update displayed language const
+        currentLang = document.getElementById('current-lang');
+        currentLang.textContent = lang === 'zh' ? '中文' : 'English';
+        document.body.setAttribute('data-current-lang', lang);
+        if (!skipRedirect) {
+            const currentPath = window.location.pathname;
+            let newPath = null;
+
+            if (lang === 'zh' && currentPath.includes('/en/')) {
+                newPath = currentPath.replace('/en/', '/zh/');
+            } else if (lang === 'en' && currentPath.includes('/zh/')) {
+                newPath = currentPath.replace('/zh/', '/en/');
+            }
+            if (newPath && newPath !== currentPath) {
+                window.location.href = newPath + window.location.search + window.location.hash;
+                return;
+            }
+        }
+
+        // Apply language filtering
+        filterContentByLanguage(lang);
+
+        // Close dropdown menu
+        document.getElementById('language-menu').style.display = 'none';
+    }
+
+    function filterContentByLanguage(lang) {
+        const captions = document.querySelectorAll('.caption');
+        const toctreeItems = document.querySelectorAll('.toctree-l1');
+
+        // Define which captions should be displayed based on the selected language
+        const languageMapping = {
+            'en': ['Tutorial', 'API Reference' ],
+            'zh': ['简介', '教程', 'API 参考']
+        };
+
+        const visibleCaptions = languageMapping[lang] || [];
+
+        // Filter captions based on the selected language
+        captions.forEach(caption => {
+            const text = caption.textContent.trim();
+            caption.style.display = visibleCaptions.includes(text) ? 'block' : 'none';
+        });
+
+        // Filter toctree items based on the selected language
+        toctreeItems.forEach(item => {
+            const link = item.querySelector('a');
+            if (link) {
+                const href = link.getAttribute('href') || '';
+                if (lang === 'zh') {
+                    const hasZh = href.includes('/zh/');
+                    const hasEn = href.includes('/en/');
+                    const isRelative = !href.startsWith('http') && !href.startsWith('/') && !hasEn;
+
+                    item.style.display = (hasZh || isRelative) ? 'block' : 'none';
+                } else {
+                    const hasZh = href.includes('/zh/');
+                    item.style.display = hasZh ? 'none' : 'block';
+                }
+            } else {
+                item.style.display = 'block';
+            }
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.language-selector')) {
+            document.getElementById('language-menu').style.display = 'none';
+        }
+    });
+</script><style>
+.preview-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: #fff8e7;
+    color: #333;
+    text-align: center;
+    padding: 12px 50px;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    z-index: 9999;
+    animation: slideDown 0.3s ease;
+    line-height: 1.5em;
+    border-bottom: 1px solid #f0e4d5;
+}
+.preview-banner strong {
+    color: #d9534f;
+}
+.preview-banner-close {
+    position: fixed;
+    right: 20px;
+    top: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    color: #d9534f;
+    background-color: #fff;
+    border: 1px solid #f0d9c3;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+    z-index: 10000;
+}
+
+.preview-banner-close:hover {
+    background-color: #d9534f;
+    color: #fff;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+@keyframes slideDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+}
+body.preview-active {
+    padding-top: 50px;
+}
+</style>
+
+<script>
+    const VERSIONS = ["preview", "v0.2.0"];
+    const VERSION_PATTERN = /^\/(v\d+\.\d+\.\d+)\//;
+
+    function populateVersionMenu() {
+        const menu = document.getElementById("version-menu");
+        menu.innerHTML = "";
+
+        VERSIONS.forEach(version => {
+            const anchor = document.createElement("a");
+            anchor.href = "#";
+            anchor.className = "language-option";
+            anchor.textContent = version;
+            anchor.onclick = (e) => {
+                e.preventDefault();
+                switchVersion(version);
+            };
+            menu.appendChild(anchor);
+        });
+    }
+
+    function toggleVersionMenu() {
+        const menu = document.getElementById("version-menu");
+        menu.style.display = menu.style.display === "block" ? "none" : "block";
+    }
+
+    function switchVersion(targetVersion) {
+        const currentPath = window.location.pathname;
+        let newPath = currentPath;
+
+        document.getElementById("version-menu").style.display = "none";
+
+        const langMatch = currentPath.match(/\/(en|zh)\//);
+
+        if (targetVersion === "preview") {
+            if (VERSION_PATTERN.test(currentPath)) {
+                newPath = currentPath.replace(VERSION_PATTERN, "/");
+            } else {
+                newPath = currentPath;
+            }
+        } else {
+            if (VERSION_PATTERN.test(currentPath)) {
+                newPath = currentPath.replace(VERSION_PATTERN, `/${targetVersion}/`);
+            } else {
+                newPath = currentPath.replace(/\/(en|zh)\//, `/${targetVersion}/$1/`);
+            }
+        }
+
+        const newUrl = newPath + window.location.search + window.location.hash;
+        window.location.href = newUrl;
+    }
+
+    document.addEventListener("click", function (e) {
+        if (!e.target.closest(".language-selector")) {
+            document.getElementById("version-menu").style.display = "none";
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        populateVersionMenu();
+
+        const currentPath = window.location.pathname;
+        let detectedVersion = "preview";
+
+        const match = currentPath.match(VERSION_PATTERN);
+        if (match) {
+            detectedVersion = match[1];
+        }
+
+        const versionSpan = document.getElementById("current-version");
+        if (versionSpan) {
+            versionSpan.textContent = detectedVersion;
+        }
+
+        if (detectedVersion === "preview") {
+            document.body.classList.add("preview-active");
+
+            const langMatch = currentPath.match(/\/(en|zh)\//);
+            let bannerText = "";
+
+            if (langMatch && langMatch[1] === "zh") {
+                bannerText = `
+                    您当前浏览的是 <strong>Cookbook 教程文档的 Preview 版本</strong>（对应 GitHub main 分支）。<br>
+                    内容可能会随时更新。如果需要参考 <strong>PyPI 稳定版本的文档</strong>，请使用左侧版本切换栏进行切换。
+                    <span class="preview-banner-close" title="关闭">×</span>
+                `;
+            } else {
+                bannerText = `
+                    You are viewing the <strong>Preview version of the Cookbook tutorial</strong> (GitHub main branch).<br>
+                    Content may change frequently. For the <strong>stable PyPI release documentation</strong>, please use the version switcher on the left.
+                    <span class="preview-banner-close" title="Close">×</span>
+                `;
+            }
+
+            const banner = document.createElement("div");
+            banner.className = "preview-banner";
+            banner.innerHTML = bannerText;
+            document.body.appendChild(banner);
+
+            banner.querySelector(".preview-banner-close").onclick = () => {
+                banner.remove();
+                document.body.classList.remove("preview-active");
+            };
+        }
+    });
+</script><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Tutorial</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">1. Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concept.html">2. Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">3. Quick Start</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../tool.html">4. Sandbox and Tools</a><input aria-label="Toggle navigation of 4. Sandbox and Tools" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../sandbox/sandbox.html">Sandbox</a><input aria-label="Toggle navigation of Sandbox" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../sandbox/advanced.html">Advanced Usage of Tool Sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sandbox/training_sandbox.html">Training Sandbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sandbox/troubleshooting.html">Sandbox Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current has-children"><a class="reference internal" href="tools.html">Tools</a><input aria-label="Toggle navigation of Tools" checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="modelstudio_search.html">Search Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modelstudio_rag.html">Retrieval-Augmented Generation Components (RAGs)</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Image Generation Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="alipay.html">Alipay Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="realtime_clients.html">Realtime Client Tools</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../service/service.html">5. Services and Adapters</a><input aria-label="Toggle navigation of 5. Services and Adapters" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../service/session_history.html">Session History Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../service/memory.html">Memory Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../service/sandbox.html">Sandbox Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../service/state.html">Agent State Service</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../deployment.html">6. Deployment</a><input aria-label="Toggle navigation of 6. Deployment" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../agent_app.html">Simple Deployment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced_deployment.html">Advanced Deployment Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../react_agent.html">Reference: Full Deployment Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../call.html">AgentApp API Invocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tracing.html">Tracing Method Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../protocol.html">Agent API Protocol Specification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../demohouse.html">Reference: Demo House</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../ut.html">Reference: Tests</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../contribute.html">8. How to Contribute</a><input aria-label="Toggle navigation of 8. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../README.html">Contribute to Cookbook</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../CHANGELOG.html">9. CHANGELOG</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/sandbox.html">Sandbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/engine.html">Engine</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">简介</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../zh/intro.html">0. 介绍</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">教程</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../zh/install.html">1. 安装</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../zh/concept.html">2. 概念</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../zh/quickstart.html">3. 快速开始</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../zh/tool.html">4. 沙箱与工具</a><input aria-label="Toggle navigation of 4. 沙箱与工具" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../zh/sandbox/sandbox.html">沙箱</a><input aria-label="Toggle navigation of 沙箱" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../zh/sandbox/advanced.html">工具沙箱高级用法</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../zh/sandbox/training_sandbox.html">训练用沙箱</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../zh/sandbox/troubleshooting.html">沙盒故障排除</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../zh/tools/tools.html">Tools</a><input aria-label="Toggle navigation of Tools" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../zh/tools/modelstudio_search.html">搜索组件 (Searches)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../zh/tools/modelstudio_rag.html">检索增强生成组件 (RAGs)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../zh/tools/modelstudio_generations.html">图像生成组件 (Generations)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../zh/tools/alipay.html">支付宝组件 (Alipay)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../zh/tools/realtime_clients.html">实时客户端组件 (Realtime Clients)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../zh/service/service.html">5. 服务与适配器</a><input aria-label="Toggle navigation of 5. 服务与适配器" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/service/session_history.html">会话历史服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/service/memory.html">记忆服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/service/sandbox.html">沙箱服务</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/service/state.html">智能体状态服务</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../zh/deployment.html">6. 部署</a><input aria-label="Toggle navigation of 6. 部署" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/agent_app.html">简单部署</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/advanced_deployment.html">高级部署</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/react_agent.html">参考: 完整部署样例</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/call.html">智能体应用API调用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/tracing.html">执行轨迹追踪</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/protocol.html">参考: Agent API 协议规范</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/demohouse.html">参考: Demo 展示厅</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/ut.html">参考: 测试用例</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../zh/contribute.html">8. 如何贡献</a><input aria-label="Toggle navigation of 8. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/README.html">参与贡献Cookbook</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../zh/CHANGELOG.html">9. CHANGELOG</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API 参考</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../zh/api/index.html">API 参考</a><input aria-label="Toggle navigation of API 参考" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/api/sandbox.html">Sandbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/api/engine.html">Engine</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/agentscope-ai/agentscope-runtime/blob/main/cookbook/en/tools/modelstudio_generations.md?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="image-generation-components">
+<h1>Image Generation Components<a class="headerlink" href="#image-generation-components" title="Link to this heading">¶</a></h1>
+<p>This directory contains AI image-generation components that provide text-to-image generation, image editing, and image style repainting.</p>
+<section id="component-list">
+<h2>📋 Component List<a class="headerlink" href="#component-list" title="Link to this heading">¶</a></h2>
+<section id="imagegeneration-image-generation-component">
+<h3>1. ImageGeneration - Image Generation Component<a class="headerlink" href="#imagegeneration-image-generation-component" title="Link to this heading">¶</a></h3>
+<p>An AI art service that generates images based on text descriptions.</p>
+<p><strong>Prerequisites:</strong></p>
+<ul class="simple">
+<li><p>Valid DashScope API key required</p></li>
+<li><p>Normal network connection</p></li>
+</ul>
+<p><strong>Input Parameters (ImageGenInput):</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">prompt</span></code> (str): Text description for image generation</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">size</span></code> (str, optional): Image dimensions, defaults to model default size</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n</span></code> (int, optional): Number of images to generate, defaults to 1</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ctx</span></code> (Optional[Context]): Context information</p></li>
+</ul>
+<p><strong>Output Parameters (ImageGenOutput):</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">results</span></code> (List[str]): List of generated image URLs</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">request_id</span></code> (Optional[str]): Request ID</p></li>
+</ul>
+</section>
+<section id="imageedit-image-editing-component">
+<h3>2. ImageEdit - Image Editing Component<a class="headerlink" href="#imageedit-image-editing-component" title="Link to this heading">¶</a></h3>
+<p>Provides various AI image editing capabilities, including repair, replacement, and image extension.</p>
+<p><strong>Prerequisites:</strong></p>
+<ul class="simple">
+<li><p>Valid DashScope API key required</p></li>
+<li><p>Base image and mask image (required for some functions)</p></li>
+</ul>
+<p><strong>Input Parameters (ImageGenInput):</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">function</span></code> (str): Type of editing function</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">base_image_url</span></code> (str): Base image URL</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mask_image_url</span></code> (Optional[str]): Mask image URL</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">prompt</span></code> (str): Editing instruction description</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">size</span></code> (str, optional): Output image dimensions</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n</span></code> (int, optional): Number of images to generate</p></li>
+</ul>
+<p><strong>Output Parameters (ImageGenOutput):</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">results</span></code> (List[str]): List of edited image URLs</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">request_id</span></code> (Optional[str]): Request ID</p></li>
+</ul>
+</section>
+<section id="imagestylerepaint-image-style-repainting-component">
+<h3>3. ImageStyleRepaint - Image Style Repainting Component<a class="headerlink" href="#imagestylerepaint-image-style-repainting-component" title="Link to this heading">¶</a></h3>
+<p>Specialized service for portrait-style repainting.</p>
+<p><strong>Prerequisites:</strong></p>
+<ul class="simple">
+<li><p>Valid DashScope API key required</p></li>
+<li><p>Input portrait image</p></li>
+<li><p>Style reference image</p></li>
+</ul>
+<p><strong>Input Parameters (ImageStyleRepaintInput):</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">image_url</span></code> (str): URL of portrait image to be repainted</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">style_index</span></code> (int): Style index</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">style_ref_url</span></code> (str): Style reference image URL</p></li>
+</ul>
+<p><strong>Output Parameters (ImageStyleRepaintOutput):</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">results</span></code> (List[str]): List of style-repainted image URLs</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">request_id</span></code> (Optional[str]): Request ID</p></li>
+</ul>
+</section>
+</section>
+<section id="environment-variable-configuration">
+<h2>🔧 Environment Variable Configuration<a class="headerlink" href="#environment-variable-configuration" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Environment Variable</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DASHSCOPE_API_KEY</span></code></p></td>
+<td><p>✅</p></td>
+<td><p>-</p></td>
+<td><p>DashScope service API key</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">MODEL_NAME</span></code></p></td>
+<td><p>❌</p></td>
+<td><p>wanx2.1-t2i-turbo</p></td>
+<td><p>Image generation model name</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="usage-examples">
+<h2>🚀 Usage Examples<a class="headerlink" href="#usage-examples" title="Link to this heading">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.tools.generations.image_generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">ImageGeneration</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+
+<span class="c1"># Initialize component</span>
+<span class="n">image_gen</span> <span class="o">=</span> <span class="n">ImageGeneration</span><span class="p">()</span>
+
+
+<span class="c1"># Generate image</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">generate_image</span><span class="p">():</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">image_gen</span><span class="o">.</span><span class="n">arun</span><span class="p">({</span>
+        <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;A cute kitten playing in a garden&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="s2">&quot;1024x1024&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;n&quot;</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="p">})</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Generated image URL:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+
+<span class="c1"># Run example</span>
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">generate_image</span><span class="p">())</span>
+</pre></div>
+</div>
+</section>
+<section id="dependencies">
+<h2>📦 Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dashscope</span></code>: DashScope SDK</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">aiohttp</span></code>: Async HTTP client</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">asyncio</span></code>: Async programming support</p></li>
+</ul>
+</section>
+<section id="considerations">
+<h2>⚠️ Considerations<a class="headerlink" href="#considerations" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>All components require a valid DashScope API key configuration</p></li>
+<li><p>Image generation may take some time; we recommend setting an appropriate timeout duration</p></li>
+<li><p>Generated image URLs have limited validity; recommend timely download or save</p></li>
+<li><p>Some features may have usage frequency limitations. Please control call frequency reasonably</p></li>
+</ul>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./en/tools"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="alipay.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Alipay Components</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="modelstudio_rag.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Retrieval-Augmented Generation Components (RAGs)</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2025, Tongyi Lab, Alibaba Inc.
+            </div>
+            Made with 
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            <div class="last-updated">
+              Last updated on 2025-12-03</div>
+          </div>
+          <div class="right-details">
+            <div class="icons">
+              <a class="muted-link " href="https://github.com/agentscope-ai/agentscope-runtime" aria-label="GitHub"><svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16">
+    <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+</svg>
+</a>
+              <a class="muted-link " href="https://discord.gg/eYMpfnkG8h" aria-label="Discord"><svg stroke="currentColor" fill="currentColor" stroke-width="0" t="1753331148815" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5721" width="200" height="200">
+    <path d="M723.903423 359.138018c-69.65045-52.952793-136.256577-51.476757-136.256576-51.476757l-6.088649 7.564685c83.027027 25.738378 121.127207 62.085766 121.127207 62.085766a387.459459 387.459459 0 0 0-145.297297-46.956397 418.179459 418.179459 0 0 0-98.340901 1.752793 73.801802 73.801802 0 0 1-7.564684 1.476036 357.385225 357.385225 0 0 0-110.702703 30.258739 278.786306 278.786306 0 0 0-28.782703 13.653333S353.049369 339.488288 440.873514 313.657658l-4.612613-6.088649s-66.513874-1.476036-136.164324 51.476757A654.252973 654.252973 0 0 0 230.630631 642.167928s40.867748 71.126486 148.341621 73.801802c0 0 16.697658-22.694054 31.827027-40.867748-62.085766-18.45045-84.77982-57.565405-84.77982-57.565405a130.998198 130.998198 0 0 0 13.653334 7.564684s0 1.568288 1.476036 1.568289c1.476036 1.476036 3.044324 1.476036 4.52036 3.044324a238.748829 238.748829 0 0 0 34.779099 16.605405 513.199279 513.199279 0 0 0 71.218739 21.218018 350.558559 350.558559 0 0 0 125.555315 0 329.894054 329.894054 0 0 0 69.650451-21.218018A247.328288 247.328288 0 0 0 702.685405 618.09009s-24.262342 39.391712-87.824144 57.565405c13.653333 18.45045 31.827027 39.299459 31.827027 39.29946 107.473874-2.952072 148.341622-73.801802 146.773334-72.602523a654.990991 654.990991 0 0 0-69.558199-283.214414zM421.131532 596.77982a54.705586 54.705586 0 0 1 0-109.042162 54.705586 54.705586 0 0 1 0 109.042162z m177.124324 0a54.705586 54.705586 0 1 1 49.908468-54.521081 52.491532 52.491532 0 0 1-49.908468 54.521081z" p-id="5722"></path><path d="M512 1024A512 512 0 1 1 1024 512 512.645766 512.645766 0 0 1 512 1024z m0-972.892252a461.261261 461.261261 0 1 0 461.261261 461.261261 461.261261 461.261261 0 0 0-461.261261-461.261261z" p-id="5723"></path>
+</svg>
+</a>
+              <a class="muted-link " href="https://qr.dingtalk.com/action/joingroup?code=v1,k1,OmDlBXpjW+I2vWjKDsjvI9dhcXjGZi3bQiojOq3dlDw=&_dt_no_comment=1&origin=11" aria-label="DingTalk"><svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+    <path d="M512 0C229.205333 0 0 229.205333 0 512s229.205333 512 512 512 512-229.205333 512-512S794.794667 0 512 0z m237.312 480.810667c-1.109333 4.48-3.712 11.093333-7.424 18.986666h0.128l-0.426667 0.682667c-21.504 46.037333-77.610667 136.106667-77.610666 136.106667l-0.298667-0.597334-16.384 28.501334h79.018667l-150.912 200.917333 34.304-136.533333h-62.208l21.589333-90.282667c-17.493333 4.224-38.101333 10.026667-62.592 17.92 0 0-33.109333 19.370667-95.317333-37.333333 0 0-41.984-36.992-17.578667-46.165334 10.410667-3.925333 50.304-8.917333 81.706667-13.226666 42.410667-5.674667 68.48-8.789333 68.48-8.789334s-130.773333 2.005333-161.792-2.901333c-30.976-4.906667-70.4-56.704-78.805334-102.186667 0 0-12.970667-25.002667 27.904-13.226666 40.917333 11.818667 210.005333 46.08 210.005334 46.08S321.109333 411.434667 306.517333 394.922667c-14.634667-16.469333-43.093333-89.770667-39.424-134.869334 0 0 1.621333-11.221333 13.098667-8.192 0 0 162.602667 74.282667 273.792 114.986667 111.104 40.704 207.786667 61.397333 195.328 114.005333z" opacity=".65" p-id="6077"></path>
+</svg>
+</a>
+              
+            </div>
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Image Generation Components</a><ul>
+<li><a class="reference internal" href="#component-list">📋 Component List</a><ul>
+<li><a class="reference internal" href="#imagegeneration-image-generation-component">1. ImageGeneration - Image Generation Component</a></li>
+<li><a class="reference internal" href="#imageedit-image-editing-component">2. ImageEdit - Image Editing Component</a></li>
+<li><a class="reference internal" href="#imagestylerepaint-image-style-repainting-component">3. ImageStyleRepaint - Image Style Repainting Component</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#environment-variable-configuration">🔧 Environment Variable Configuration</a></li>
+<li><a class="reference internal" href="#usage-examples">🚀 Usage Examples</a></li>
+<li><a class="reference internal" href="#dependencies">📦 Dependencies</a></li>
+<li><a class="reference internal" href="#considerations">⚠️ Considerations</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=a8e58a58"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="../../_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script src="../../_static/language.js?v=c79991d2"></script>
+    </body>
+</html>
