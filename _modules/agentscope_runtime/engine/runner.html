@@ -865,21 +865,22 @@ body.preview-active {
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
             <span class="n">request</span> <span class="o">=</span> <span class="n">AgentRequest</span><span class="p">(</span><span class="o">**</span><span class="n">request</span><span class="p">)</span>
 
+        <span class="c1"># Assign session ID</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">session_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session_id</span> <span class="ow">or</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+
+        <span class="c1"># Assign user ID</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">user_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">user_id</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">session_id</span>
+
         <span class="n">seq_gen</span> <span class="o">=</span> <span class="n">SequenceNumberGenerator</span><span class="p">()</span>
 
         <span class="c1"># Initial response</span>
         <span class="n">response</span> <span class="o">=</span> <span class="n">AgentResponse</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">session_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session_id</span>
         <span class="k">yield</span> <span class="n">seq_gen</span><span class="o">.</span><span class="n">yield_with_sequence</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
 
         <span class="c1"># Set to in-progress status</span>
         <span class="n">response</span><span class="o">.</span><span class="n">in_progress</span><span class="p">()</span>
         <span class="k">yield</span> <span class="n">seq_gen</span><span class="o">.</span><span class="n">yield_with_sequence</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
-
-        <span class="c1"># Assign session ID</span>
-        <span class="n">request</span><span class="o">.</span><span class="n">session_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session_id</span> <span class="ow">or</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
-
-        <span class="c1"># Assign user ID</span>
-        <span class="n">request</span><span class="o">.</span><span class="n">user_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session_id</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">session_id</span>
 
         <span class="n">query_kwargs</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;request&quot;</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span>
