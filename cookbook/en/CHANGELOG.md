@@ -258,8 +258,8 @@ These changes affect existing v0.x users and require manual adaptation:
 
      # v1.0
      with BaseSandbox() as sandbox():
-     		print(sandbox.run_ipython_cell(code="print('hello world')"))
-     		print(sandbox.run_shell_command(command="whoami"))
+         print(sandbox.run_ipython_cell(code="print('hello world')"))
+         print(sandbox.run_shell_command(command="whoami"))
      ```
 
      ```python
