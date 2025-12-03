@@ -7,5 +7,4 @@ The repository ships with multi-level samples inside the `tests` directory. You 
 - `tests/deploy`: Simulates deployment flows and service governance for end-to-end validation.
 - `tests/integrated`: Cross-module collaboration tests that verify the overall runtime workflow.
 
-Browse these directories and files in the codebase and run whatever suits your needs to grasp the practical details quickly.
-
+Browse these directories and files in the codebase, and run whatever suits your needs to quickly grasp the practical details.

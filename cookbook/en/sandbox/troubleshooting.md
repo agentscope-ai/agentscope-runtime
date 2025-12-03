@@ -23,7 +23,7 @@ If you encounter the following error:
 docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))
 ```
 
-This error typically indicates that the Docker Python SDK is unable to connect to the Docker service. If you are using Colima, you need to ensure that the Docker Python SDK is configured to use Colima's Docker service. You can do this by setting the `DOCKER_HOST` environment variable:
+This error typically indicates that the Docker Python SDK cannot connect to the Docker service. If you are using Colima, ensure the Docker Python SDK is configured to use Colima's Docker service. You can do this by setting the `DOCKER_HOST` environment variable:
 
 ```bash
 export DOCKER_HOST=unix://$HOME/.colima/docker.sock

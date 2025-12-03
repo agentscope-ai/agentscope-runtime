@@ -644,9 +644,9 @@ if __name__ == "__main__":
 ```
 
 **Key Points**:
-- Automatically builds and packages project as wheel file
+- Automatically builds and packages the project as a wheel file
 - Uploads artifacts to OSS
-- Creates and manages runtime in AgentRun service
+- Creates and manages runtime in the AgentRun service
 - Automatically creates public access endpoints
 - Supports updating existing deployments (via `agentrun_id` parameter)
 

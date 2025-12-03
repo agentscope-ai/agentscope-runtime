@@ -59,7 +59,7 @@ The following example shows how to reuse `session_id` across multiple requests t
 1. First call: `"My name is Alice."`
 2. Second call: `"What is my name?"`
 
-The SSE stream will mention “Alice”, confirming that session state is in effect.
+The SSE stream will mention “Alice”, confirming that the session state is in effect.
 
 ```python
 session_id = "123456"
@@ -158,5 +158,5 @@ The endpoint reuses the Responses API schema. The `test_openai_compatible_mode` 
 - **Parsing errors**: SSE frames must be processed line by line; tolerate keep-alive blank lines or partial JSON chunks.
 - **Context not retained**: Confirm every request includes the same `session_id`, and that the `state/session` services are properly started within `init_func`.
 
-With the examples above you can quickly validate and consume a deployed Agent service.
+With the examples above, you can quickly validate and consume a deployed Agent service.
 
