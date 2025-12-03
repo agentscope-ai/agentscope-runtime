@@ -702,7 +702,7 @@ class FastAPIAppFactory:
         #
         # If we decorate an async-generator handler with
         # functools.wraps(handler), FastAPI will unwrap back to the original
-        # async-generator function and # *misclassify* the endpoint as
+        # async-generator function and *misclassify* the endpoint as
         # non-coroutine. It will then call our async wrapper *without awaiting
         # it*, and later try to JSON-encode the resulting coroutine object,
         # causing errors like:
