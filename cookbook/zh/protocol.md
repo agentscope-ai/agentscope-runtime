@@ -54,7 +54,7 @@ class MessageType:
     MCP_TOOL_CALL = "mcp_call"
     MCP_APPROVAL_RESPONSE = "mcp_approval_response"
     MCP_TOOL_CALL_OUTPUT = "mcp_call_output"
-    REASONING = "reasoning"  # 新增：推理过程消息类型
+    REASONING = "reasoning"
     HEARTBEAT = "heartbeat"
     ERROR = "error"
 
