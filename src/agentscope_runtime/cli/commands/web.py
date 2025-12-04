@@ -2,6 +2,10 @@
 
 import click
 import sys
+import signal
+import atexit
+import psutil
+import os
 
 from agentscope_runtime.cli.loaders.agent_loader import UnifiedAgentLoader, AgentLoadError
 from agentscope_runtime.cli.state.manager import DeploymentStateManager
@@ -9,8 +13,52 @@ from agentscope_runtime.cli.utils.console import (
     echo_error,
     echo_info,
     echo_success,
+    echo_warning,
 )
 from agentscope_runtime.cli.utils.validators import validate_port
+
+# Global variable to track child processes and parent process
+_child_processes = []
+_parent_process = None
+
+
+def _cleanup_processes():
+    """Clean up any child processes when exiting."""
+    global _child_processes, _parent_process
+
+    # Get all current children if we have a parent process reference
+    if _parent_process:
+        try:
+            all_children = _parent_process.children(recursive=True)
+            _child_processes = list(set(_child_processes + all_children))
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+
+    for process in _child_processes:
+        try:
+            if process.is_running():
+                echo_info(f"Terminating child process {process.pid}...")
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except psutil.TimeoutExpired:
+                    echo_warning(f"Force killing process {process.pid}...")
+                    process.kill()
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+
+
+def _signal_handler(signum, frame):
+    """Handle signals - just set a flag, don't exit immediately."""
+    # The KeyboardInterrupt will be raised naturally
+    pass
+
+
+# Register cleanup function to run on exit
+atexit.register(_cleanup_processes)
+# Register signal handler that doesn't exit immediately
+signal.signal(signal.SIGINT, _signal_handler)
+signal.signal(signal.SIGTERM, _signal_handler)
 
 
 @click.command()
@@ -49,6 +97,8 @@ def web(source: str, host: str, port: int):
     # Use deployment
     $ as-runtime web local_20250101_120000_abc123
     """
+    global _child_processes, _parent_process
+
     try:
         # Validate port
         port = validate_port(port)
@@ -71,16 +121,21 @@ def web(source: str, host: str, port: int):
         echo_info(f"Starting agent service on {host}:{port} with web UI...")
         echo_info("Note: First launch may take longer as web UI dependencies are installed")
 
+        # Track parent process for cleanup
+        _parent_process = psutil.Process(os.getpid())
+
         try:
             agent_app.run(host=host, port=port, web_ui=True)
         except KeyboardInterrupt:
             echo_info("\nShutting down...")
-        except Exception as e:
-            echo_error(f"Failed to start agent service: {e}")
-            sys.exit(1)
+            # Explicitly cleanup children before exit
+            _cleanup_processes()
 
     except Exception as e:
         echo_error(f"Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        _cleanup_processes()
         sys.exit(1)
 
 

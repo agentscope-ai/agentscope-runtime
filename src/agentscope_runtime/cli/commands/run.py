@@ -3,7 +3,8 @@
 import asyncio
 import click
 import sys
-import signal
+import os
+import logging
 from typing import Optional
 
 from agentscope_runtime.cli.loaders.agent_loader import UnifiedAgentLoader, AgentLoadError
@@ -14,7 +15,12 @@ from agentscope_runtime.cli.utils.console import (
     echo_success,
     echo_warning,
 )
-from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
+from agentscope_runtime.engine.schemas.agent_schemas import (
+    AgentRequest,
+    Message,
+    TextContent,
+    Role,
+)
 import shortuuid
 
 
@@ -36,7 +42,14 @@ import shortuuid
     help="User ID for the session",
     default="default_user",
 )
-def run(source: str, query: Optional[str], session_id: Optional[str], user_id: str):
+@click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    help="Show verbose output including logs and reasoning",
+    default=False,
+)
+def run(source: str, query: Optional[str], session_id: Optional[str], user_id: str, verbose: bool):
     """
     Run agent interactively or execute a single query.
 
@@ -56,7 +69,25 @@ def run(source: str, query: Optional[str], session_id: Optional[str], user_id: s
 
     # Use deployment
     $ as-runtime run local_20250101_120000_abc123 --session-id my-session
+
+    # Verbose mode (show reasoning and logs)
+    $ as-runtime run agent.py --query "Hello" --verbose
     """
+    # Configure logging and tracing based on verbose flag
+    if not verbose:
+        # Disable console tracing output (JSON logs)
+        os.environ["TRACE_ENABLE_LOG"] = "false"
+        # Set root logger to WARNING to suppress INFO logs
+        logging.getLogger().setLevel(logging.WARNING)
+        # Also suppress specific library loggers
+        logging.getLogger("agentscope").setLevel(logging.WARNING)
+        logging.getLogger("agentscope_runtime").setLevel(logging.WARNING)
+    else:
+        # Enable console tracing output for verbose mode
+        os.environ["TRACE_ENABLE_LOG"] = "true"
+        # Set root logger to DEBUG for verbose output
+        logging.getLogger().setLevel(logging.DEBUG)
+
     try:
         # Initialize state manager
         state_manager = DeploymentStateManager()
@@ -79,77 +110,61 @@ def run(source: str, query: Optional[str], session_id: Optional[str], user_id: s
 
         # Build runner
         agent_app._build_runner()
-
-        # Initialize runner
         runner = agent_app._runner
-        if runner.init_handler:
-            echo_info("Initializing agent...")
-            asyncio.run(_call_async_or_sync(runner.init_handler))
-            echo_success("Agent initialized")
 
-        try:
-            if query:
-                # Single-shot mode
-                asyncio.run(
-                    _execute_single_query(
-                        runner,
-                        query,
-                        session_id,
-                        user_id,
-                    )
-                )
-            else:
-                # Interactive mode
-                asyncio.run(
-                    _interactive_mode(
-                        runner,
-                        session_id,
-                        user_id,
-                    )
-                )
-        finally:
-            # Shutdown
-            if runner.shutdown_handler:
-                echo_info("Shutting down agent...")
-                asyncio.run(_call_async_or_sync(runner.shutdown_handler))
-                echo_success("Agent shutdown complete")
+        # Run async operations
+        if query:
+            # Single-shot mode
+            asyncio.run(_execute_single_query(runner, query, session_id, user_id, verbose))
+        else:
+            # Interactive mode
+            asyncio.run(_interactive_mode(runner, session_id, user_id, verbose))
 
     except KeyboardInterrupt:
         echo_warning("\nInterrupted by user")
         sys.exit(0)
     except Exception as e:
         echo_error(f"Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 
-async def _call_async_or_sync(func):
-    """Call function whether it's async or sync."""
-    import inspect
-
-    if inspect.iscoroutinefunction(func):
-        return await func()
-    else:
-        return func()
-
-
-async def _execute_single_query(runner, query: str, session_id: str, user_id: str):
+async def _execute_single_query(runner, query: str, session_id: str, user_id: str, verbose: bool):
     """Execute a single query and print response."""
     echo_info(f"Query: {query}")
     echo_info("Response:")
 
+    # Create Message object for AgentRequest
+    user_message = Message(
+        role=Role.USER,
+        content=[TextContent(text=query)]
+    )
+
     request = AgentRequest(
+        input=[user_message],
         session_id=session_id,
         user_id=user_id,
-        query=query,
     )
 
     try:
-        # Execute query
-        async for msg, is_last in runner.query_handler([{"content": query, "role": "user"}], request=request):
-            if hasattr(msg, 'content'):
-                print(msg.content, end='', flush=True)
-            else:
-                print(str(msg), end='', flush=True)
+        # Start runner and execute query
+        async with runner:
+            # Use stream_query which handles framework adaptation
+            async for event in runner.stream_query(request):
+                # Handle different event types
+                if hasattr(event, 'output') and event.output:
+                    # This is a response with messages
+                    for message in event.output:
+                        # Filter out reasoning messages in non-verbose mode
+                        if not verbose and hasattr(message, 'type') and message.type == 'reasoning':
+                            continue
+
+                        if hasattr(message, 'content') and message.content:
+                            # Extract text from content
+                            for content_item in message.content:
+                                if hasattr(content_item, 'text') and content_item.text:
+                                    print(content_item.text, end='', flush=True)
 
         print()  # New line after response
         echo_success("Query completed")
@@ -159,73 +174,82 @@ async def _execute_single_query(runner, query: str, session_id: str, user_id: st
         raise
 
 
-async def _interactive_mode(runner, session_id: str, user_id: str):
+async def _interactive_mode(runner, session_id: str, user_id: str, verbose: bool):
     """Run interactive REPL mode."""
     echo_success("Entering interactive mode. Type 'exit' or 'quit' to leave, Ctrl+C to interrupt.")
     echo_info(f"Session ID: {session_id}")
     echo_info(f"User ID: {user_id}")
     print()
 
-    # Store conversation history for context
-    history = []
-
-    while True:
-        try:
-            # Read user input
-            user_input = input("> ").strip()
-
-            if not user_input:
-                continue
-
-            if user_input.lower() in ['exit', 'quit', 'q']:
-                echo_info("Exiting interactive mode...")
-                break
-
-            # Add to history
-            history.append({"content": user_input, "role": "user"})
-
-            # Create request
-            request = AgentRequest(
-                session_id=session_id,
-                user_id=user_id,
-                query=user_input,
-            )
-
-            # Execute query
-            assistant_response = ""
+    # Start runner once for the entire interactive session
+    async with runner:
+        while True:
             try:
-                async for msg, is_last in runner.query_handler(
-                    history[-1:],  # Pass last message
-                    request=request
-                ):
-                    if hasattr(msg, 'content'):
-                        content = msg.content
-                    else:
-                        content = str(msg)
+                # Read user input with error handling for encoding issues
+                try:
+                    user_input = input("> ").strip()
+                except UnicodeDecodeError as e:
+                    echo_error(f"Input encoding error: {e}")
+                    echo_warning("Please ensure your terminal supports UTF-8 encoding")
+                    continue
 
-                    print(content, end='', flush=True)
-                    assistant_response += content
+                if not user_input:
+                    continue
 
-                print()  # New line after response
+                if user_input.lower() in ['exit', 'quit', 'q']:
+                    echo_info("Exiting interactive mode...")
+                    break
 
-                # Add assistant response to history
-                if assistant_response:
-                    history.append({"content": assistant_response, "role": "assistant"})
+                # Create Message object
+                user_message = Message(
+                    role=Role.USER,
+                    content=[TextContent(text=user_input)]
+                )
 
+                # Create request
+                request = AgentRequest(
+                    input=[user_message],
+                    session_id=session_id,
+                    user_id=user_id,
+                )
+
+                # Execute query using stream_query
+                try:
+                    async for event in runner.stream_query(request):
+                        # Handle different event types
+                        if hasattr(event, 'output') and event.output:
+                            # This is a response with messages
+                            for message in event.output:
+                                # Filter out reasoning messages in non-verbose mode
+                                if not verbose and hasattr(message, 'type') and message.type == 'reasoning':
+                                    continue
+
+                                if hasattr(message, 'content') and message.content:
+                                    # Extract text from content
+                                    for content_item in message.content:
+                                        if hasattr(content_item, 'text') and content_item.text:
+                                            print(content_item.text, end='', flush=True)
+
+                    print()  # New line after response
+
+                except Exception as e:
+                    echo_error(f"\nQuery failed: {e}")
+
+            except KeyboardInterrupt:
+                print()  # New line after Ctrl+C
+                echo_warning("Interrupted. Type 'exit' to quit or continue chatting.")
+                continue
+            except EOFError:
+                print()
+                echo_info("EOF received. Exiting...")
+                break
             except Exception as e:
-                echo_error(f"\nQuery failed: {e}")
-                # Remove the failed user message from history
-                if history and history[-1]["content"] == user_input:
-                    history.pop()
-
-        except KeyboardInterrupt:
-            print()  # New line after Ctrl+C
-            echo_warning("Interrupted. Type 'exit' to quit or continue chatting.")
-            continue
-        except EOFError:
-            print()
-            echo_info("EOF received. Exiting...")
-            break
+                # Catch any other unexpected errors
+                echo_error(f"\nUnexpected error: {e}")
+                import traceback
+                if verbose:
+                    traceback.print_exc()
+                continue
 
 
 if __name__ == "__main__":

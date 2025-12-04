@@ -245,7 +245,8 @@ class Runner:
                 adapt_agentscope_message_stream,
             )
             from ..adapters.agentscope.message import message_to_agentscope_msg
-
+            from agentscope import setup_logger
+            setup_logger("ERROR")
             stream_adapter = adapt_agentscope_message_stream
             kwargs.update(
                 {"msgs": message_to_agentscope_msg(request.input)},

@@ -1,7 +1,14 @@
 """AgentScope Runtime CLI - Main entry point."""
 
+import os
 import click
 from agentscope_runtime.version import __version__
+
+# Set default environment variable for trace console output
+# This must be set BEFORE importing any runtime modules
+# Individual commands can override this for verbose mode
+if "TRACE_ENABLE_LOG" not in os.environ:
+    os.environ.setdefault("TRACE_ENABLE_LOG", "false")
 
 
 @click.group()
