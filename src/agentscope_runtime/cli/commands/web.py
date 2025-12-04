@@ -80,7 +80,13 @@ signal.signal(signal.SIGTERM, _signal_handler)
     default=8090,
     type=int,
 )
-def web(source: str, host: str, port: int):
+@click.option(
+    "--entrypoint",
+    "-e",
+    help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
+    default=None,
+)
+def web(source: str, host: str, port: int, entrypoint: str = None):
     """
     Launch agent with web UI in single process.
 
@@ -100,6 +106,9 @@ def web(source: str, host: str, port: int):
 
     # Use deployment
     $ as-runtime web local_20250101_120000_abc123
+
+    # Use custom entrypoint for directory source
+    $ as-runtime web ./my-project --entrypoint custom_app.py
     """
     global _child_processes, _parent_process
 
@@ -115,7 +124,7 @@ def web(source: str, host: str, port: int):
         loader = UnifiedAgentLoader(state_manager=state_manager)
 
         try:
-            agent_app = loader.load(source)
+            agent_app = loader.load(source, entrypoint=entrypoint)
             echo_success("Agent loaded successfully")
         except AgentLoadError as e:
             echo_error(f"Failed to load agent: {e}")

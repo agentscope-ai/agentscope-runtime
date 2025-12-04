@@ -53,12 +53,19 @@ import shortuuid
     help="Show verbose output including logs and reasoning",
     default=False,
 )
+@click.option(
+    "--entrypoint",
+    "-e",
+    help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
+    default=None,
+)
 def run(
     source: str,
     query: Optional[str],
     session_id: Optional[str],
     user_id: str,
     verbose: bool,
+    entrypoint: Optional[str],
 ):
     """
     Run agent interactively or execute a single query.
@@ -82,6 +89,9 @@ def run(
 
     # Verbose mode (show reasoning and logs)
     $ as-runtime run agent.py --query "Hello" --verbose
+
+    # Use custom entrypoint for directory source
+    $ as-runtime run ./my-project --entrypoint custom_app.py
     """
     # Configure logging and tracing based on verbose flag
     if not verbose:
@@ -107,7 +117,7 @@ def run(
         loader = UnifiedAgentLoader(state_manager=state_manager)
 
         try:
-            agent_app = loader.load(source)
+            agent_app = loader.load(source, entrypoint=entrypoint)
             echo_success("Agent loaded successfully")
         except AgentLoadError as e:
             echo_error(f"Failed to load agent: {e}")

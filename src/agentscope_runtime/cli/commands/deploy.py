@@ -31,7 +31,13 @@ def deploy():
 @deploy.command()
 @click.argument("source", required=True)
 @click.option("--name", help="Deployment name", default=None)
-def modelstudio(source: str, name: str):
+@click.option(
+    "--entrypoint",
+    "-e",
+    help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
+    default=None,
+)
+def modelstudio(source: str, name: str, entrypoint: str):
     """
     Deploy to Alibaba Cloud ModelStudio.
 
@@ -45,7 +51,13 @@ def modelstudio(source: str, name: str):
 @deploy.command()
 @click.argument("source", required=True)
 @click.option("--name", help="Deployment name", default=None)
-def agentrun(source: str, name: str):
+@click.option(
+    "--entrypoint",
+    "-e",
+    help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
+    default=None,
+)
+def agentrun(source: str, name: str, entrypoint: str):
     """
     Deploy to Alibaba Cloud AgentRun.
 
@@ -60,7 +72,13 @@ def agentrun(source: str, name: str):
 @click.argument("source", required=True)
 @click.option("--name", help="Deployment name", default=None)
 @click.option("--namespace", help="Kubernetes namespace", default="default")
-def k8s(source: str, name: str, namespace: str):
+@click.option(
+    "--entrypoint",
+    "-e",
+    help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
+    default=None,
+)
+def k8s(source: str, name: str, namespace: str, entrypoint: str):
     """
     Deploy to Kubernetes/ACK.
 
@@ -75,7 +93,13 @@ def k8s(source: str, name: str, namespace: str):
 @click.argument("source", required=True)
 @click.option("--name", help="Deployment name", default=None)
 @click.option("--port", help="Port to expose", default=8090, type=int)
-def local(source: str, name: str, port: int):
+@click.option(
+    "--entrypoint",
+    "-e",
+    help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
+    default=None,
+)
+def local(source: str, name: str, port: int, entrypoint: str):
     """
     Deploy locally (detached mode).
 

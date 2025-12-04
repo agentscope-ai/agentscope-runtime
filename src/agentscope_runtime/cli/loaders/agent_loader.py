@@ -146,12 +146,13 @@ class FileLoader:
 class ProjectLoader:
     """Load AgentApp from project directory."""
 
-    def load(self, project_dir: str) -> AgentApp:
+    def load(self, project_dir: str, entrypoint: Optional[str] = None) -> AgentApp:
         """
         Load AgentApp from project directory.
 
         Args:
             project_dir: Path to project directory
+            entrypoint: Optional entrypoint file name (e.g., "app.py", "main.py")
 
         Returns:
             AgentApp instance
@@ -161,6 +162,16 @@ class ProjectLoader:
         """
         if not os.path.isdir(project_dir):
             raise AgentLoadError(f"Directory not found: {project_dir}")
+
+        # If entrypoint is specified, use it directly
+        if entrypoint:
+            file_path = os.path.join(project_dir, entrypoint)
+            if not os.path.isfile(file_path):
+                raise AgentLoadError(
+                    f"Entrypoint file not found: {file_path}"
+                )
+            file_loader = FileLoader()
+            return file_loader.load(file_path)
 
         # Look for entry point files in order of preference
         entry_files = ["app.py", "agent.py", "main.py"]
@@ -233,12 +244,13 @@ class UnifiedAgentLoader:
         else:
             self.deployment_loader = None
 
-    def load(self, source: str) -> AgentApp:
+    def load(self, source: str, entrypoint: Optional[str] = None) -> AgentApp:
         """
         Load AgentApp from any source type.
 
         Args:
             source: Path to file/directory or deployment ID
+            entrypoint: Optional entrypoint file name for directory sources
 
         Returns:
             AgentApp instance
@@ -256,9 +268,13 @@ class UnifiedAgentLoader:
                     )
                 return self.deployment_loader.load(normalized_source)
             elif source_type == "file":
+                if entrypoint:
+                    raise AgentLoadError(
+                        "The --entrypoint option is only applicable for directory sources, not file sources"
+                    )
                 return self.file_loader.load(normalized_source)
             elif source_type == "directory":
-                return self.project_loader.load(normalized_source)
+                return self.project_loader.load(normalized_source, entrypoint=entrypoint)
             else:
                 raise AgentLoadError(f"Unknown source type: {source_type}")
 
