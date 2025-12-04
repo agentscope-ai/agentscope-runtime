@@ -233,11 +233,6 @@ class Runner:
         response.in_progress()
         yield seq_gen.yield_with_sequence(response)
 
-        # Assign session ID
-        request.session_id = request.session_id or str(uuid.uuid4())
-
-        # Assign user ID
-        request.user_id = request.user_id or request.user_id
 
         query_kwargs = {
             "request": request,
