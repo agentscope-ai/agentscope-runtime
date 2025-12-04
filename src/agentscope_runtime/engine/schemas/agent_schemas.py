@@ -311,8 +311,8 @@ class Content(Event):
 
     @staticmethod
     def from_chat_completion_chunk(
-            chunk: ChatCompletionChunk,
-            index: Optional[int] = None,
+        chunk: ChatCompletionChunk,
+        index: Optional[int] = None,
     ) -> Optional[Union["TextContent", "DataContent", "ImageContent"]]:
         if not chunk.choices:
             return None
@@ -592,8 +592,8 @@ class Message(Event):
         for item in self.content:
             if hasattr(item, "type"):
                 if item.type == "input_audio" and hasattr(
-                        item,
-                        "input_audio",
+                    item,
+                    "input_audio",
                 ):
                     if hasattr(item.input_audio, "data"):
                         audios.append(item.input_audio.data)
@@ -612,8 +612,8 @@ class Message(Event):
         return audios
 
     def add_delta_content(
-            self,
-            new_content: Union[TextContent, ImageContent, DataContent],
+        self,
+        new_content: Union[TextContent, ImageContent, DataContent],
     ):
         self.content = self.content or []
 
@@ -648,12 +648,12 @@ class Message(Event):
             if _type == ContentType.DATA:
                 for key in new_content.data:
                     if (
-                            key in pre_content.data
-                            and isinstance(pre_content.data[key], (list, str))
-                            and isinstance(
-                        new_content.data[key],
-                        type(pre_content.data[key]),
-                    )
+                        key in pre_content.data
+                        and isinstance(pre_content.data[key], (list, str))
+                        and isinstance(
+                            new_content.data[key],
+                            type(pre_content.data[key]),
+                        )
                     ):
                         if isinstance(pre_content.data[key], list):
                             pre_content.data[key].extend(new_content.data[key])
@@ -680,8 +680,8 @@ class Message(Event):
             return new_content
 
     def add_content(
-            self,
-            new_content: Union[TextContent, ImageContent, DataContent],
+        self,
+        new_content: Union[TextContent, ImageContent, DataContent],
     ):
         self.content = self.content or []
 
@@ -831,7 +831,7 @@ class AgentRequest(BaseRequest):
 class BaseResponse(Event):
     id: Optional[str] = Field(
         default_factory=lambda: "response_"
-                                + str(
+        + str(
             uuid4(),
         ),
     )
