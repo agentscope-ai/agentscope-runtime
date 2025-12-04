@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """as-runtime status command - Show deployment status."""
 
 import click

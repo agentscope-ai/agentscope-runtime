@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Console output utilities for CLI."""
 
 import click
@@ -38,7 +39,7 @@ def echo_dim(message: str, **kwargs) -> None:
 def format_table(
     headers: list[str],
     rows: list[list[Any]],
-    max_width: Optional[int] = None
+    max_width: Optional[int] = None,
 ) -> str:
     """Format data as a simple ASCII table."""
     if not rows:
@@ -59,16 +60,22 @@ def format_table(
     separator = "+" + "+".join("-" * (w + 2) for w in col_widths) + "+"
 
     # Create header
-    header_row = "|" + "|".join(
-        f" {h:<{col_widths[i]}} " for i, h in enumerate(headers)
-    ) + "|"
+    header_row = (
+        "|"
+        + "|".join(f" {h:<{col_widths[i]}} " for i, h in enumerate(headers))
+        + "|"
+    )
 
     # Create rows
     data_rows = []
     for row in rows:
-        row_str = "|" + "|".join(
-            f" {str(cell):<{col_widths[i]}} " for i, cell in enumerate(row)
-        ) + "|"
+        row_str = (
+            "|"
+            + "|".join(
+                f" {str(cell):<{col_widths[i]}} " for i, cell in enumerate(row)
+            )
+            + "|"
+        )
         data_rows.append(row_str)
 
     # Combine all parts
@@ -102,7 +109,11 @@ def format_deployment_info(deployment: dict) -> str:
         f"Agent Source: {deployment['agent_source']}",
     ]
 
-    if deployment.get('token'):
-        lines.append(f"Token: {deployment['token'][:20]}..." if len(deployment['token']) > 20 else f"Token: {deployment['token']}")
+    if deployment.get("token"):
+        lines.append(
+            f"Token: {deployment['token'][:20]}..."
+            if len(deployment["token"]) > 20
+            else f"Token: {deployment['token']}",
+        )
 
     return "\n".join(lines)

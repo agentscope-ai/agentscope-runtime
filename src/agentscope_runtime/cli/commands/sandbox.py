@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """as-runtime sandbox command - Sandbox management commands."""
 
 import click

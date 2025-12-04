@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Deployment state schema definitions."""
 
 from dataclasses import dataclass, asdict
@@ -44,7 +45,7 @@ class StateFileSchema:
         """Create empty state file structure."""
         return {
             "version": StateFileSchema.VERSION,
-            "deployments": {}
+            "deployments": {},
         }
 
     @staticmethod
@@ -83,6 +84,7 @@ class StateFileSchema:
 def generate_deployment_id(platform: str) -> str:
     """Generate unique deployment ID."""
     import shortuuid
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     short_id = shortuuid.ShortUUID().random(length=6)
     return f"{platform}_{timestamp}_{short_id}"

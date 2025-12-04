@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """as-runtime web command - Launch agent with web UI."""
 
 import click
@@ -7,7 +8,10 @@ import atexit
 import psutil
 import os
 
-from agentscope_runtime.cli.loaders.agent_loader import UnifiedAgentLoader, AgentLoadError
+from agentscope_runtime.cli.loaders.agent_loader import (
+    UnifiedAgentLoader,
+    AgentLoadError,
+)
 from agentscope_runtime.cli.state.manager import DeploymentStateManager
 from agentscope_runtime.cli.utils.console import (
     echo_error,
@@ -119,7 +123,9 @@ def web(source: str, host: str, port: int):
 
         # Launch with web UI
         echo_info(f"Starting agent service on {host}:{port} with web UI...")
-        echo_info("Note: First launch may take longer as web UI dependencies are installed")
+        echo_info(
+            "Note: First launch may take longer as web UI dependencies are installed",
+        )
 
         # Track parent process for cleanup
         _parent_process = psutil.Process(os.getpid())
@@ -134,6 +140,7 @@ def web(source: str, host: str, port: int):
     except Exception as e:
         echo_error(f"Unexpected error: {e}")
         import traceback
+
         traceback.print_exc()
         _cleanup_processes()
         sys.exit(1)

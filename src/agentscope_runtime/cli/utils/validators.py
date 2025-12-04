@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Input validation utilities for CLI."""
 
 import os
@@ -7,6 +8,7 @@ from typing import Optional
 
 class ValidationError(Exception):
     """Raised when validation fails."""
+
     pass
 
 
@@ -37,7 +39,9 @@ def validate_agent_source(source: str) -> tuple[str, str]:
     # Check if it's a file
     if os.path.isfile(source):
         if not source.endswith(".py"):
-            raise ValidationError(f"Agent source file must be a Python file: {source}")
+            raise ValidationError(
+                f"Agent source file must be a Python file: {source}",
+            )
         return ("file", os.path.abspath(source))
 
     # Check if it's a directory
@@ -50,7 +54,7 @@ def validate_agent_source(source: str) -> tuple[str, str]:
 
     raise ValidationError(
         f"Invalid agent source: {source}\n"
-        "Must be a Python file (.py), directory, or deployment ID"
+        "Must be a Python file (.py), directory, or deployment ID",
     )
 
 
@@ -73,7 +77,7 @@ def validate_platform(platform: str, supported_platforms: list[str]) -> str:
     if platform not in supported_platforms:
         raise ValidationError(
             f"Unsupported platform: {platform}\n"
-            f"Supported platforms: {', '.join(supported_platforms)}"
+            f"Supported platforms: {', '.join(supported_platforms)}",
         )
     return platform
 
@@ -98,7 +102,9 @@ def validate_url(url: str) -> str:
         raise ValidationError("URL cannot be empty")
 
     if not (url.startswith("http://") or url.startswith("https://")):
-        raise ValidationError(f"URL must start with http:// or https://: {url}")
+        raise ValidationError(
+            f"URL must start with http:// or https://: {url}",
+        )
 
     return url
 
@@ -111,7 +117,7 @@ def validate_deployment_id(deploy_id: str) -> str:
     if "_" not in deploy_id:
         raise ValidationError(
             f"Invalid deployment ID format: {deploy_id}\n"
-            "Expected format: platform_timestamp_id"
+            "Expected format: platform_timestamp_id",
         )
 
     return deploy_id

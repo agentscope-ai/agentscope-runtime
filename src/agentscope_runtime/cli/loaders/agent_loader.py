@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Base agent loader class."""
 
 import os
@@ -14,6 +15,7 @@ from agentscope_runtime.cli.utils.validators import validate_agent_source
 
 class AgentLoadError(Exception):
     """Raised when agent loading fails."""
+
     pass
 
 
@@ -45,14 +47,17 @@ class FileLoader:
         if not os.path.isfile(file_path):
             raise AgentLoadError(f"File not found: {file_path}")
 
-        if not file_path.endswith('.py'):
+        if not file_path.endswith(".py"):
             raise AgentLoadError(f"File must be a Python file: {file_path}")
 
         abs_path = os.path.abspath(file_path)
 
         try:
             # Load module from file
-            spec = importlib.util.spec_from_file_location("agent_module", abs_path)
+            spec = importlib.util.spec_from_file_location(
+                "agent_module",
+                abs_path,
+            )
             if spec is None or spec.loader is None:
                 raise AgentLoadError(f"Cannot load module from {abs_path}")
 
@@ -77,21 +82,28 @@ class FileLoader:
             return agent_app
 
         except Exception as e:
-            raise AgentLoadError(f"Failed to load agent from {abs_path}: {e}") from e
+            raise AgentLoadError(
+                f"Failed to load agent from {abs_path}: {e}",
+            ) from e
 
     def _find_agent_app(self, module: Any, file_path: str) -> AgentApp:
         """Find AgentApp instance in module."""
         candidates = []
 
         # Look for exported variables
-        for attr_name in ['agent_app', 'app']:
+        for attr_name in ["agent_app", "app"]:
             if hasattr(module, attr_name):
                 attr_value = getattr(module, attr_name)
                 if isinstance(attr_value, AgentApp):
                     candidates.append((attr_name, attr_value))
 
         # Look for factory functions
-        for attr_name in ['create_app', 'create_agent_app', 'get_app', 'get_agent_app']:
+        for attr_name in [
+            "create_app",
+            "create_agent_app",
+            "get_app",
+            "get_agent_app",
+        ]:
             if hasattr(module, attr_name):
                 attr_value = getattr(module, attr_name)
                 if callable(attr_value):
@@ -106,23 +118,25 @@ class FileLoader:
 
         # Look for any AgentApp instances as last resort
         for attr_name in dir(module):
-            if not attr_name.startswith('_'):  # Skip private attributes
+            if not attr_name.startswith("_"):  # Skip private attributes
                 attr_value = getattr(module, attr_name)
                 if isinstance(attr_value, AgentApp):
-                    if not any(attr_name == candidate[0] for candidate in candidates):
+                    if not any(
+                        attr_name == candidate[0] for candidate in candidates
+                    ):
                         candidates.append((attr_name, attr_value))
 
         if not candidates:
             raise AgentLoadError(
                 f"No AgentApp found in {file_path}.\n"
-                "Expected: 'agent_app' or 'app' variable, or 'create_app'/'create_agent_app' function"
+                "Expected: 'agent_app' or 'app' variable, or 'create_app'/'create_agent_app' function",
             )
 
         if len(candidates) > 1:
             candidate_names = [name for name, _ in candidates]
             raise AgentLoadError(
                 f"Multiple AgentApp instances found in {file_path}: {candidate_names}\n"
-                "Please ensure only one AgentApp is exported"
+                "Please ensure only one AgentApp is exported",
             )
 
         name, agent_app = candidates[0]
@@ -149,7 +163,7 @@ class ProjectLoader:
             raise AgentLoadError(f"Directory not found: {project_dir}")
 
         # Look for entry point files in order of preference
-        entry_files = ['app.py', 'agent.py', 'main.py']
+        entry_files = ["app.py", "agent.py", "main.py"]
 
         for entry_file in entry_files:
             file_path = os.path.join(project_dir, entry_file)
@@ -159,7 +173,7 @@ class ProjectLoader:
 
         raise AgentLoadError(
             f"No entry point found in {project_dir}.\n"
-            f"Expected one of: {entry_files}"
+            f"Expected one of: {entry_files}",
         )
 
 
@@ -199,7 +213,9 @@ class DeploymentLoader:
         elif source_type == "directory":
             loader = ProjectLoader()
         else:
-            raise AgentLoadError(f"Cannot load from deployment with source type: {source_type}")
+            raise AgentLoadError(
+                f"Cannot load from deployment with source type: {source_type}",
+            )
 
         return loader.load(normalized_source)
 
@@ -236,7 +252,7 @@ class UnifiedAgentLoader:
             if source_type == "deployment_id":
                 if self.deployment_loader is None:
                     raise AgentLoadError(
-                        "Cannot load from deployment ID: state manager not available"
+                        "Cannot load from deployment ID: state manager not available",
                     )
                 return self.deployment_loader.load(normalized_source)
             elif source_type == "file":
@@ -249,4 +265,6 @@ class UnifiedAgentLoader:
         except Exception as e:
             if isinstance(e, AgentLoadError):
                 raise
-            raise AgentLoadError(f"Failed to load agent from {source}: {e}") from e
+            raise AgentLoadError(
+                f"Failed to load agent from {source}: {e}",
+            ) from e

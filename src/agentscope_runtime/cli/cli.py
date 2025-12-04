@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """AgentScope Runtime CLI - Main entry point."""
 
 import os
@@ -25,7 +26,16 @@ def cli(ctx):
 
 
 # Import command groups (to be registered below)
-from agentscope_runtime.cli.commands import run, web, deploy, list_cmd, status, stop, invoke, sandbox
+from agentscope_runtime.cli.commands import (
+    run,
+    web,
+    deploy,
+    list_cmd,
+    status,
+    stop,
+    invoke,
+    sandbox,
+)
 
 
 # Register commands

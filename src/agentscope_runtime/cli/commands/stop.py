@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """as-runtime stop command - Stop a deployment."""
 
 import click
@@ -64,7 +65,7 @@ def stop(deploy_id: str, yes: bool):
 
         echo_info(
             "\nNote: This command only updates the local state. "
-            "Platform-specific cleanup may be needed separately."
+            "Platform-specific cleanup may be needed separately.",
         )
 
     except Exception as e:

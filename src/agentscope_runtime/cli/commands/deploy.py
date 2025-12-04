@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """as-runtime deploy command - Deploy agents to various platforms."""
 
 import click

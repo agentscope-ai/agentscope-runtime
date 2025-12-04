@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """as-runtime invoke command - Invoke a deployed agent."""
 
 import click

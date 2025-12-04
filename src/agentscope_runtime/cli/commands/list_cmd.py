@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """as-runtime list command - List all deployments."""
 
 import click
@@ -33,7 +34,11 @@ from agentscope_runtime.cli.utils.console import (
     type=click.Choice(["table", "json"], case_sensitive=False),
     default="table",
 )
-def list_deployments(status: Optional[str], platform: Optional[str], format: str):
+def list_deployments(
+    status: Optional[str],
+    platform: Optional[str],
+    format: str,
+):
     """
     List all deployments.
 
@@ -75,7 +80,11 @@ def list_deployments(status: Optional[str], platform: Optional[str], format: str
                 # Truncate long IDs and URLs
                 deploy_id = d.id if len(d.id) <= 30 else d.id[:27] + "..."
                 url = d.url if len(d.url) <= 40 else d.url[:37] + "..."
-                created = d.created_at[:19] if len(d.created_at) > 19 else d.created_at
+                created = (
+                    d.created_at[:19]
+                    if len(d.created_at) > 19
+                    else d.created_at
+                )
 
                 rows.append([deploy_id, d.platform, d.status, created, url])
 

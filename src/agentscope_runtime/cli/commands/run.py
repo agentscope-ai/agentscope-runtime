@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """as-runtime run command - Interactive and single-shot agent execution."""
 
 import asyncio
@@ -7,7 +8,10 @@ import os
 import logging
 from typing import Optional
 
-from agentscope_runtime.cli.loaders.agent_loader import UnifiedAgentLoader, AgentLoadError
+from agentscope_runtime.cli.loaders.agent_loader import (
+    UnifiedAgentLoader,
+    AgentLoadError,
+)
 from agentscope_runtime.cli.state.manager import DeploymentStateManager
 from agentscope_runtime.cli.utils.console import (
     echo_error,
@@ -49,7 +53,13 @@ import shortuuid
     help="Show verbose output including logs and reasoning",
     default=False,
 )
-def run(source: str, query: Optional[str], session_id: Optional[str], user_id: str, verbose: bool):
+def run(
+    source: str,
+    query: Optional[str],
+    session_id: Optional[str],
+    user_id: str,
+    verbose: bool,
+):
     """
     Run agent interactively or execute a single query.
 
@@ -115,10 +125,20 @@ def run(source: str, query: Optional[str], session_id: Optional[str], user_id: s
         # Run async operations
         if query:
             # Single-shot mode
-            asyncio.run(_execute_single_query(runner, query, session_id, user_id, verbose))
+            asyncio.run(
+                _execute_single_query(
+                    runner,
+                    query,
+                    session_id,
+                    user_id,
+                    verbose,
+                ),
+            )
         else:
             # Interactive mode
-            asyncio.run(_interactive_mode(runner, session_id, user_id, verbose))
+            asyncio.run(
+                _interactive_mode(runner, session_id, user_id, verbose),
+            )
 
     except KeyboardInterrupt:
         echo_warning("\nInterrupted by user")
@@ -126,11 +146,18 @@ def run(source: str, query: Optional[str], session_id: Optional[str], user_id: s
     except Exception as e:
         echo_error(f"Unexpected error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 
 
-async def _execute_single_query(runner, query: str, session_id: str, user_id: str, verbose: bool):
+async def _execute_single_query(
+    runner,
+    query: str,
+    session_id: str,
+    user_id: str,
+    verbose: bool,
+):
     """Execute a single query and print response."""
     echo_info(f"Query: {query}")
     echo_info("Response:")
@@ -138,7 +165,7 @@ async def _execute_single_query(runner, query: str, session_id: str, user_id: st
     # Create Message object for AgentRequest
     user_message = Message(
         role=Role.USER,
-        content=[TextContent(text=query)]
+        content=[TextContent(text=query)],
     )
 
     request = AgentRequest(
@@ -153,18 +180,29 @@ async def _execute_single_query(runner, query: str, session_id: str, user_id: st
             # Use stream_query which handles framework adaptation
             async for event in runner.stream_query(request):
                 # Handle different event types
-                if hasattr(event, 'output') and event.output:
+                if hasattr(event, "output") and event.output:
                     # This is a response with messages
                     for message in event.output:
                         # Filter out reasoning messages in non-verbose mode
-                        if not verbose and hasattr(message, 'type') and message.type == 'reasoning':
+                        if (
+                            not verbose
+                            and hasattr(message, "type")
+                            and message.type == "reasoning"
+                        ):
                             continue
 
-                        if hasattr(message, 'content') and message.content:
+                        if hasattr(message, "content") and message.content:
                             # Extract text from content
                             for content_item in message.content:
-                                if hasattr(content_item, 'text') and content_item.text:
-                                    print(content_item.text, end='', flush=True)
+                                if (
+                                    hasattr(content_item, "text")
+                                    and content_item.text
+                                ):
+                                    print(
+                                        content_item.text,
+                                        end="",
+                                        flush=True,
+                                    )
 
         print()  # New line after response
         echo_success("Query completed")
@@ -174,9 +212,16 @@ async def _execute_single_query(runner, query: str, session_id: str, user_id: st
         raise
 
 
-async def _interactive_mode(runner, session_id: str, user_id: str, verbose: bool):
+async def _interactive_mode(
+    runner,
+    session_id: str,
+    user_id: str,
+    verbose: bool,
+):
     """Run interactive REPL mode."""
-    echo_success("Entering interactive mode. Type 'exit' or 'quit' to leave, Ctrl+C to interrupt.")
+    echo_success(
+        "Entering interactive mode. Type 'exit' or 'quit' to leave, Ctrl+C to interrupt.",
+    )
     echo_info(f"Session ID: {session_id}")
     echo_info(f"User ID: {user_id}")
     print()
@@ -190,20 +235,22 @@ async def _interactive_mode(runner, session_id: str, user_id: str, verbose: bool
                     user_input = input("> ").strip()
                 except UnicodeDecodeError as e:
                     echo_error(f"Input encoding error: {e}")
-                    echo_warning("Please ensure your terminal supports UTF-8 encoding")
+                    echo_warning(
+                        "Please ensure your terminal supports UTF-8 encoding",
+                    )
                     continue
 
                 if not user_input:
                     continue
 
-                if user_input.lower() in ['exit', 'quit', 'q']:
+                if user_input.lower() in ["exit", "quit", "q"]:
                     echo_info("Exiting interactive mode...")
                     break
 
                 # Create Message object
                 user_message = Message(
                     role=Role.USER,
-                    content=[TextContent(text=user_input)]
+                    content=[TextContent(text=user_input)],
                 )
 
                 # Create request
@@ -217,18 +264,32 @@ async def _interactive_mode(runner, session_id: str, user_id: str, verbose: bool
                 try:
                     async for event in runner.stream_query(request):
                         # Handle different event types
-                        if hasattr(event, 'output') and event.output:
+                        if hasattr(event, "output") and event.output:
                             # This is a response with messages
                             for message in event.output:
                                 # Filter out reasoning messages in non-verbose mode
-                                if not verbose and hasattr(message, 'type') and message.type == 'reasoning':
+                                if (
+                                    not verbose
+                                    and hasattr(message, "type")
+                                    and message.type == "reasoning"
+                                ):
                                     continue
 
-                                if hasattr(message, 'content') and message.content:
+                                if (
+                                    hasattr(message, "content")
+                                    and message.content
+                                ):
                                     # Extract text from content
                                     for content_item in message.content:
-                                        if hasattr(content_item, 'text') and content_item.text:
-                                            print(content_item.text, end='', flush=True)
+                                        if (
+                                            hasattr(content_item, "text")
+                                            and content_item.text
+                                        ):
+                                            print(
+                                                content_item.text,
+                                                end="",
+                                                flush=True,
+                                            )
 
                     print()  # New line after response
 
@@ -237,7 +298,9 @@ async def _interactive_mode(runner, session_id: str, user_id: str, verbose: bool
 
             except KeyboardInterrupt:
                 print()  # New line after Ctrl+C
-                echo_warning("Interrupted. Type 'exit' to quit or continue chatting.")
+                echo_warning(
+                    "Interrupted. Type 'exit' to quit or continue chatting.",
+                )
                 continue
             except EOFError:
                 print()
@@ -247,6 +310,7 @@ async def _interactive_mode(runner, session_id: str, user_id: str, verbose: bool
                 # Catch any other unexpected errors
                 echo_error(f"\nUnexpected error: {e}")
                 import traceback
+
                 if verbose:
                     traceback.print_exc()
                 continue

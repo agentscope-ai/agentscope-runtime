@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Deployment state management."""
 
 import os
@@ -10,7 +11,7 @@ from datetime import datetime
 from agentscope_runtime.cli.state.schema import (
     Deployment,
     StateFileSchema,
-    format_timestamp
+    format_timestamp,
 )
 
 
@@ -38,7 +39,10 @@ class DeploymentStateManager:
     def _backup_state_file(self) -> None:
         """Create backup of state file before modifications."""
         if self.state_file.exists():
-            backup_file = self.state_dir / f"deployments.backup.{int(datetime.now().timestamp())}.json"
+            backup_file = (
+                self.state_dir
+                / f"deployments.backup.{int(datetime.now().timestamp())}.json"
+            )
             shutil.copy2(self.state_file, backup_file)
 
             # Keep only last 5 backups
@@ -67,7 +71,9 @@ class DeploymentStateManager:
         except (json.JSONDecodeError, ValueError) as e:
             # State file is corrupted, return empty state
             # Original file is kept as-is for manual recovery
-            print(f"Warning: State file is corrupted ({e}). Starting with empty state.")
+            print(
+                f"Warning: State file is corrupted ({e}). Starting with empty state.",
+            )
             return StateFileSchema.create_empty()
 
     def _write_state(self, data: Dict[str, Any]) -> None:
@@ -119,7 +125,7 @@ class DeploymentStateManager:
     def list(
         self,
         status: Optional[str] = None,
-        platform: Optional[str] = None
+        platform: Optional[str] = None,
     ) -> List[Deployment]:
         """
         List all deployments with optional filtering.
