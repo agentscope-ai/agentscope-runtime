@@ -105,7 +105,7 @@ class Tool(BaseModel):
 ```{code-cell}
 class FunctionCall(BaseModel):
     """
-    Model class for assistant prompt message tool call function.
+    Model class for the assistant prompt message tool call function.
     """
 
     call_id: Optional[str] = None
@@ -128,7 +128,7 @@ class FunctionCall(BaseModel):
 ```{code-cell}
 class FunctionCallOutput(BaseModel):
     """
-    Model class for assistant prompt message tool call function.
+    Model class for the assistant prompt message tool call function.
     """
 
     call_id: str
@@ -240,7 +240,7 @@ class Message(Event):
     """The status of the message. in_progress, completed, or incomplete"""
 
     role: Optional[str] = None
-    """The role of the messages author, should be in `user`,`system`,
+    """The role of messages author, should be in `user`,`system`,
     'assistant'."""
 
     content: Optional[
@@ -540,7 +540,7 @@ ContentBuilder supports multiple content types:
 #### Multi-Content Message Building
 
 ```python
-# Create message containing text and image
+# Create a message containing text and image
 message_builder = response_builder.create_message_builder()
 
 # Add text content
@@ -560,7 +560,7 @@ message_builder.complete()
 #### Data Content Building
 
 ```python
-# Create message containing structured data
+# Create a message containing structured data
 data_builder = message_builder.create_content_builder("data", index=0)
 
 # Set data content
@@ -602,7 +602,7 @@ from agentscope_runtime.engine.deployers.adapter.responses import ResponseAPIDef
 app = AgentApp(agent=agent)
 
 # AgentApp automatically registers built-in adapters
-# You can also customize via protocol_adapters parameter
+# You can also customize via the protocol_adapters parameter
 app = AgentApp(
     agent=agent,
     protocol_adapters=[

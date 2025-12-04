@@ -1,6 +1,6 @@
 # Tools
 
-AgentScope Runtime embraces a componentized philosophy, instead of dropping you straight into API details we start with the motivation. **Tools** give us a uniform, type-safe capsule for those accessories so they can plug into any orchestration framework without rewrites.
+AgentScope Runtime embraces a componentized philosophy; instead of dropping you straight into API details, we start with the motivation. **Tools** give us a uniform, type-safe capsule for those accessories so they can plug into any orchestration framework without rewrites.
 
 Adding a tool is the recommended path whenever you need to expose a capability to multiple agents or execution engines. A tool carries its own IO schema, throttling policy, tracing hooks, and retry defaults, so you can register it as a tool for ReAct agents, feed it into LangGraph/MCP stacks, or publish it as an MCP server function. Teams typically introduce tools to solve recurring compliance constraints, encapsulate vendor APIs, or ship the same operation across on-call bots, copilots, and workflows.
 
@@ -8,12 +8,12 @@ Once a capability is wrapped as a tool, you gain predictable behavior in a few c
 
 ## Why Tools (Key Features)
 - **Modular architecture**: enterprise-grade functions stay decoupled, making it easy to compose or swap tools without touching the agent core.
-- **Framework integration**: the same tool instances feed AgentScope Runtime, LangGraph, AutoGen, MCP, or bespoke frameworks thanks to uniform schemas.
+- **Framework integration**: the same tool instances feed AgentScope Runtime, LangGraph, AutoGen, MCP, or bespoke frameworks, thanks to uniform schemas.
 - **ModelStudio alignment**: tools wrap DashScope/ModelStudio services (Search, RAG, AIGC, Payments) with production-ready defaults, retries, and tracing.
 - **Type safety and observability**: Pydantic models, async execution, and centralized validation mirror the production focus described in the original README.
 - **Clear benefits**: consistent tool contracts, centralized governance, and faster onboarding for new agent teams because they reuse curated capabilities instead of reinventing integrations.
 
-To shorten the “first tool” journey we pre-bundle several ModelStudio tools—Search, RAG, AIGC, and Payments—so you can start experimenting immediately before authoring custom ones.
+To shorten the “first tool” journey, we pre-bundle several ModelStudio tools—Search, RAG, AIGC, and Payments—so you can start experimenting immediately before authoring custom ones.
 
 ## Tool Design Principles
 - **Single responsibility**: each tool focuses on one enterprise capability (e.g., ModelStudio Search, Alipay refund) so it can be composed with other tools without hidden side effects.
@@ -224,7 +224,7 @@ async def main():
     # Create the autogen tool adapter
     search_tool = AutogenToolAdapter(search_tool)
 
-    # Create an agents with the search tool
+    # Create agents with the search tool
     model = OpenAIChatCompletionClient(model="gpt-4")
     agents = AssistantAgent(
         "assistant",
@@ -256,7 +256,7 @@ Each family bundles a set of related ModelStudio or partner services. Refer to t
 
 ### ModelStudio Search Tools
 - **Key tools**: `ModelstudioSearch`, `ModelstudioSearchLite` (`agentscope_runtime.tools.searches`).
-- **When to use**: semantic/metasearch across web, news, academic, product, multimedia sources, with advanced routing, filtering, and caching. Lite version trades configurability for latency and resource savings.
+- **When to use**: semantic/metasearch across web, news, academic, product, multimedia sources, with advanced routing, filtering, and caching. The Lite version trades configurability for lower latency and resource savings.
 - **Usage highlights**: supply `messages` plus `search_options` dict (strategy, `max_results`, `time_range`, etc.), optionally add `search_output_rules` for citations/summaries, and read back `search_result` + `search_info`.
 - **Learn more**: see `cookbook/en/tools/modelstudio_search.md` for strategy lists, architecture diagrams, and code samples derived from `docs/zh/searches.md`.
 
@@ -298,4 +298,4 @@ For details, please see {doc}`alipay`
 **Q: Why can’t or shouldn’t these out‑of‑the‑box Tools run inside a sandbox?**
 **A:** Prebuilt Tools (like Search, RAG, AIGC, Payments) are purely API wrappers. Their logic executes on cloud services or third‑party platforms, and the local process only handles network requests. They do not alter system configurations, access local files, or spawn processes.
 Sandboxing is meant to isolate potentially risky operations (e.g., running untrusted scripts, executing system commands). Since these Tools conform to production safety requirements, we don’t recommend or support running them within a sandbox.
-If your use‑case needs to execute code that could impact the host environment, please follow sandbox integration patterns and create custom Tools designed for sandbox‑enabled engines.
+If your use case requires executing code that could impact the host environment, please follow sandbox integration patterns and create custom Tools designed for sandbox‑enabled engines.

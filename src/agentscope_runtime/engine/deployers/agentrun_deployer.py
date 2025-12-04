@@ -1022,7 +1022,7 @@ ls -lh /output/{zip_filename}
                     artifact_type="Code",
                     cpu=self.agentrun_config.cpu,
                     memory=self.agentrun_config.memory,
-                    port=8080,
+                    port=8090,
                     code_configuration=CodeConfig(
                         command=["python3", "/code/deploy_starter/main.py"],
                         oss_bucket_name=oss_bucket_name,
@@ -1159,7 +1159,7 @@ ls -lh /output/{zip_filename}
                 artifact_type="Code",
                 cpu=self.agentrun_config.cpu,
                 memory=self.agentrun_config.memory,
-                port=8080,
+                port=8090,
                 code_configuration=CodeConfig(
                     command=["python3", "/code/deploy_starter/main.py"],
                     oss_bucket_name=oss_bucket_name,

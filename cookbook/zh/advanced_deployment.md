@@ -473,7 +473,7 @@ if __name__ == "__main__":
 - 可使用 `kubectl scale deployment` 进行扩展
 
 
-## 方法4：ModelStudio部署
+## 方法4：Serverless部署：ModelStudio
 
 **最适合**：阿里云用户，需要托管云部署，具有内置监控、扩展和与阿里云生态系统集成。
 
@@ -556,7 +556,7 @@ if __name__ == "__main__":
 - 内置监控和自动扩展
 - 与 DashScope LLM 服务集成
 
-## 方法5：AgentRun 部署
+## 方法5：Serverless部署：AgentRun
 
 **最适合**：阿里云用户，需要将智能体部署到 AgentRun 服务，实现自动化的构建、上传和部署流程。
 

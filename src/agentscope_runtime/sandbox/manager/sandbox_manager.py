@@ -460,9 +460,6 @@ class SandboxManager:
 
         config = SandboxRegistry.get_config_by_type(target_sandbox_type)
 
-        print(target_sandbox_type)
-        print(config)
-
         if not config:
             logger.warning(
                 f"Not found sandbox {target_sandbox_type}, " f"using default",

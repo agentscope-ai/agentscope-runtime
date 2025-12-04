@@ -1,11 +1,11 @@
 # Image Generation Components
 
-This directory contains AI image generation related components, providing text-to-image generation, image editing, and image style repainting capabilities.
+This directory contains AI image-generation components that provide text-to-image generation, image editing, and image style repainting.
 
 ## 📋 Component List
 
 ### 1. ImageGeneration - Image Generation Component
-AI art service that generates images based on text descriptions.
+An AI art service that generates images based on text descriptions.
 
 **Prerequisites:**
 - Valid DashScope API key required
@@ -22,7 +22,7 @@ AI art service that generates images based on text descriptions.
 - `request_id` (Optional[str]): Request ID
 
 ### 2. ImageEdit - Image Editing Component
-Provides various AI image editing capabilities including repair, replacement, and image extension.
+Provides various AI image editing capabilities, including repair, replacement, and image extension.
 
 **Prerequisites:**
 - Valid DashScope API key required
@@ -41,7 +41,7 @@ Provides various AI image editing capabilities including repair, replacement, an
 - `request_id` (Optional[str]): Request ID
 
 ### 3. ImageStyleRepaint - Image Style Repainting Component
-Specialized service for portrait style repainting.
+Specialized service for portrait-style repainting.
 
 **Prerequisites:**
 - Valid DashScope API key required
@@ -94,7 +94,7 @@ asyncio.run(generate_image())
 - `asyncio`: Async programming support
 
 ## ⚠️ Considerations
-- All components require valid DashScope API key configuration
-- Image generation may take some time, recommend setting appropriate timeout duration
-- Generated image URLs have limited validity, recommend timely download or save
-- Some features may have usage frequency limitations, please control call frequency reasonably
+- All components require a valid DashScope API key configuration
+- Image generation may take some time; we recommend setting an appropriate timeout duration
+- Generated image URLs have limited validity; recommend timely download or save
+- Some features may have usage frequency limitations. Please control call frequency reasonably

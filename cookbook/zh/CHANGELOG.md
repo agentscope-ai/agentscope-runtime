@@ -249,8 +249,8 @@ AgentScope Runtime v1.0 在高效智能体部署与安全沙箱执行的坚实�
 
      # v1.0
      with BaseSandbox() as sandbox():
-     		print(sandbox.run_ipython_cell(code="print('hello world')"))
-     		print(sandbox.run_shell_command(command="whoami"))
+         print(sandbox.run_ipython_cell(code="print('hello world')"))
+         print(sandbox.run_shell_command(command="whoami"))
      ```
 
      ```python

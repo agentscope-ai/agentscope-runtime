@@ -125,7 +125,7 @@ For more service types and detailed usage, see {doc}`sandbox`.
 
 ### 4. State Service (`StateService`)
 
-Allows saving and retrieving a serializable state of an agent so that context can be preserved across multiple turns — or even across sessions.
+Allows saving and retrieving the agent's serializable state, preserving context across multiple turns—or even across sessions.
 
 #### Usage in AgentScope
 

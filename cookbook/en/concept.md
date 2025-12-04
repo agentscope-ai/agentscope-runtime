@@ -118,7 +118,7 @@ flowchart LR
 
     class Tools,Service,Sandbox,Adapter,Agent,AgentAPP,Deployer big
     class RT,ST,PT,MS,SS,STS,SBS,BS,FS,GS,CSB,MSB,ETC,TAD,MAD,SAD,STAD,SBAD,AG,AG_NOTE,RA,CT,KD,DP,LD small
-```
+  ```
 
 - **Agent**: The core AI component that processes requests and generates responses; in the runtime we recommend building agents with the AgentScope framework.
 - **AgentApp**: Serves as the application entry point. It exposes APIs, registers routes, loads configurations, and delegates incoming requests to the Runner for execution.
@@ -183,4 +183,4 @@ The runtime offers two patterns for integrating tools:
 
 #### 7. Adapter
 
-`Adapter` is categorized based on different Agent frameworks and includes tool adapters, memory adapters, session adapters, messages protocol adapters, and more.
+`Adapter` is categorized based on different Agent frameworks and includes tool adapters, memory adapters, session adapters, message protocol adapters, and more.

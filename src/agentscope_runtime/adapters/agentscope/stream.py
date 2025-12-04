@@ -252,9 +252,41 @@ async def adapt_agentscope_message_stream(
                         call_id = element.get("id")
 
                         if last:
-                            plugin_call_message = tool_use_messages_dict[
-                                call_id
-                            ]
+                            plugin_call_message = tool_use_messages_dict.get(
+                                call_id,
+                            )
+
+                            if plugin_call_message is None:
+                                # Only one tool use message yields, we fake
+                                #  Build a new tool call message
+                                plugin_call_message = Message(
+                                    type=MessageType.PLUGIN_CALL,
+                                    role="assistant",
+                                )
+
+                                data_delta_content = DataContent(
+                                    index=index,
+                                    data=FunctionCall(
+                                        call_id=element.get("id"),
+                                        name=element.get("name"),
+                                        arguments="",
+                                    ).model_dump(),
+                                    delta=True,
+                                )
+
+                                plugin_call_message = _update_obj_attrs(
+                                    plugin_call_message,
+                                    metadata=metadata,
+                                    usage=usage,
+                                )
+                                yield plugin_call_message.in_progress()
+                                data_delta_content = (
+                                    plugin_call_message.add_delta_content(
+                                        new_content=data_delta_content,
+                                    )
+                                )
+                                yield data_delta_content
+
                             json_str = json.dumps(element.get("input"))
                             data_delta_content = DataContent(
                                 index=index,

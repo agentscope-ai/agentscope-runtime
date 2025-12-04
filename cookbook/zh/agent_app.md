@@ -91,9 +91,12 @@ curl -N \
 
 ```bash
 data: {"sequence_number":0,"object":"response","status":"created", ... }
-data: {"sequence_number":2,"object":"content","status":"in_progress","text":"Hello" }
-data: {"sequence_number":3,"object":"content","status":"in_progress","text":" world!" }
-data: {"sequence_number":4,"object":"message","status":"completed","text":"Hello world!" }
+data: {"sequence_number":1,"object":"response","status":"in_progress", ... }
+data: {"sequence_number":2,"object":"message","status":"in_progress", ... }
+data: {"sequence_number":3,"object":"content","status":"in_progress","text":"Hello" }
+data: {"sequence_number":4,"object":"content","status":"in_progress","text":" World!" }
+data: {"sequence_number":5,"object":"message","status":"completed","text":"Hello World!" }
+data: {"sequence_number":6,"object":"response","status":"completed", ... }
 ```
 
 ------
@@ -513,3 +516,6 @@ await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```
 
 更多部署选项和详细说明，请参考 {doc}`advanced_deployment` 文档。
+
+AgentScope Runtime 提供了Serverless的部署方案，您可以将您的Agent部署到 ModelStudio(FC) 或 AgentRun 上。
+参考 {doc}`advanced_deployment` 文档，查看ModelStudio和AgentRun部署部分获取更多配置详情.

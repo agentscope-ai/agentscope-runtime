@@ -409,7 +409,7 @@ async def test_create_agent_runtime(
         artifact_type="oss",
         cpu=2.0,
         memory=2048,
-        port=8080,
+        port=8090,
     )
 
     assert result["success"] is True

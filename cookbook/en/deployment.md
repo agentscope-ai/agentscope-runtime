@@ -29,7 +29,7 @@ Most deployments follow these stages:
 
 ### Service
 
-The `Service` chapter explains the built-in session history, memory, sandbox, and state services plus the shared lifecycle interface. It helps you pick the right implementations (in-memory, Redis, Tablestore, and more) and shows how to manage them via `start()`, `stop()`, and `health()` so your deployment has a reliable backbone. See {doc}`service/service`.
+The `Service` chapter explains the built-in session history, memory, sandbox, and state services, as well as the shared lifecycle interface. It helps you pick the right implementations (in-memory, Redis, Tablestore, and more) and shows how to manage them via `start()`, `stop()`, and `health()` so your deployment has a reliable backbone. See {doc}`service/service`.
 
 ### Simple Deployment
 
@@ -47,7 +47,7 @@ When you need stronger availability or observability guarantees, jump to the adv
 
 - Running multi-service topologies via Docker Compose or Kubernetes.
 - Configuring multi-region/multi-model redundancy, canary releases, and autoscaling.
-- Integrating centralized logging, tracing, and alerting systems.
+- Integrating centralised logging, tracing, and alerting systems.
 
 This is aimed at production scenarios or multi-team collaboration. See {doc}`advanced_deployment` for details.
 
@@ -59,7 +59,7 @@ The reference sample demonstrates a full deployment that bundles sandbox service
 - Building the AgentApp
 - Starting all services
 
-Review {doc}`react_agent` if you want to revisit every deployment step end to end.
+Review {doc}`react_agent` if you want to revisit every deployment step end-to-end.
 
 ## Next Steps
 
