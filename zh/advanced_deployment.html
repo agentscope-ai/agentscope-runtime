@@ -1146,8 +1146,8 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
 </ul>
 </section>
 </section>
-<section id="modelstudio">
-<h2>方法4：ModelStudio部署<a class="headerlink" href="#modelstudio" title="Link to this heading">¶</a></h2>
+<section id="serverless-modelstudio">
+<h2>方法4：Serverless部署：ModelStudio<a class="headerlink" href="#serverless-modelstudio" title="Link to this heading">¶</a></h2>
 <p><strong>最适合</strong>：阿里云用户，需要托管云部署，具有内置监控、扩展和与阿里云生态系统集成。</p>
 <section id="id21">
 <h3>特性<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h3>
@@ -1160,8 +1160,8 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
 <li><p>Web控制台进行部署管理</p></li>
 </ul>
 </section>
-<section id="id22">
-<h3>ModelStudio部署前置条件<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h3>
+<section id="modelstudio">
+<h3>ModelStudio部署前置条件<a class="headerlink" href="#modelstudio" title="Link to this heading">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 确保设置环境变量</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">DASHSCOPE_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-dashscope-api-key&quot;</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_ACCESS_KEY_ID</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span>
@@ -1174,8 +1174,8 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
 </pre></div>
 </div>
 </section>
-<section id="id23">
-<h3>实现<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h3>
+<section id="id22">
+<h3>实现<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h3>
 <p>使用 <a class="reference internal" href="#zh-common-agent-setup"><span class="std std-ref">通用智能体配置</span></a> 部分定义的智能体和端点：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1236,11 +1236,11 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
 </ul>
 </section>
 </section>
-<section id="agentrun">
-<h2>方法5：AgentRun 部署<a class="headerlink" href="#agentrun" title="Link to this heading">¶</a></h2>
+<section id="serverless-agentrun">
+<h2>方法5：Serverless部署：AgentRun<a class="headerlink" href="#serverless-agentrun" title="Link to this heading">¶</a></h2>
 <p><strong>最适合</strong>：阿里云用户，需要将智能体部署到 AgentRun 服务，实现自动化的构建、上传和部署流程。</p>
-<section id="id24">
-<h3>特性<a class="headerlink" href="#id24" title="Link to this heading">¶</a></h3>
+<section id="id23">
+<h3>特性<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>阿里云 AgentRun 服务的托管部署</p></li>
 <li><p>自动构建和打包项目</p></li>
@@ -1249,8 +1249,8 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
 <li><p>自动创建和管理运行时端点</p></li>
 </ul>
 </section>
-<section id="id25">
-<h3>AgentRun 部署前置条件<a class="headerlink" href="#id25" title="Link to this heading">¶</a></h3>
+<section id="agentrun">
+<h3>AgentRun 部署前置条件<a class="headerlink" href="#agentrun" title="Link to this heading">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 确保设置环境变量</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_ACCESS_KEY_ID</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span><span class="o">=</span><span class="s2">&quot;your-access-key-secret&quot;</span>
@@ -1264,8 +1264,8 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
 </pre></div>
 </div>
 </section>
-<section id="id26">
-<h3>实现<a class="headerlink" href="#id26" title="Link to this heading">¶</a></h3>
+<section id="id24">
+<h3>实现<a class="headerlink" href="#id24" title="Link to this heading">¶</a></h3>
 <p>使用 <a class="reference internal" href="#zh-common-agent-setup"><span class="std std-ref">通用智能体配置</span></a> 部分定义的智能体和端点：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1331,8 +1331,8 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
 <li><p>支持更新现有部署（通过 <code class="docutils literal notranslate"><span class="pre">agentrun_id</span></code> 参数）</p></li>
 </ul>
 </section>
-<section id="id27">
-<h3>配置说明<a class="headerlink" href="#id27" title="Link to this heading">¶</a></h3>
+<section id="id25">
+<h3>配置说明<a class="headerlink" href="#id25" title="Link to this heading">¶</a></h3>
 <section id="ossconfig">
 <h4>OSSConfig<a class="headerlink" href="#ossconfig" title="Link to this heading">¶</a></h4>
 <p>OSS 配置用于存储构建制品：</p>
@@ -1357,8 +1357,8 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
 </div>
 </section>
 </section>
-<section id="id28">
-<h3>高级用法<a class="headerlink" href="#id28" title="Link to this heading">¶</a></h3>
+<section id="id26">
+<h3>高级用法<a class="headerlink" href="#id26" title="Link to this heading">¶</a></h3>
 <section id="wheel">
 <h4>使用预构建的 Wheel 文件<a class="headerlink" href="#wheel" title="Link to this heading">¶</a></h4>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
@@ -1370,8 +1370,8 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
 </pre></div>
 </div>
 </section>
-<section id="id29">
-<h4>更新现有部署<a class="headerlink" href="#id29" title="Link to this heading">¶</a></h4>
+<section id="id27">
+<h4>更新现有部署<a class="headerlink" href="#id27" title="Link to this heading">¶</a></h4>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
     <span class="n">deployer</span><span class="p">,</span>
     <span class="n">agentrun_id</span><span class="o">=</span><span class="s2">&quot;existing-agentrun-id&quot;</span><span class="p">,</span>  <span class="c1"># 更新现有部署</span>
@@ -1437,7 +1437,7 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-12-03</div>
+              Last updated on 2025-12-04</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -1506,24 +1506,24 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
 <li><a class="reference internal" href="#id20">实现</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#modelstudio">方法4：ModelStudio部署</a><ul>
+<li><a class="reference internal" href="#serverless-modelstudio">方法4：Serverless部署：ModelStudio</a><ul>
 <li><a class="reference internal" href="#id21">特性</a></li>
-<li><a class="reference internal" href="#id22">ModelStudio部署前置条件</a></li>
-<li><a class="reference internal" href="#id23">实现</a></li>
+<li><a class="reference internal" href="#modelstudio">ModelStudio部署前置条件</a></li>
+<li><a class="reference internal" href="#id22">实现</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#agentrun">方法5：AgentRun 部署</a><ul>
-<li><a class="reference internal" href="#id24">特性</a></li>
-<li><a class="reference internal" href="#id25">AgentRun 部署前置条件</a></li>
-<li><a class="reference internal" href="#id26">实现</a></li>
-<li><a class="reference internal" href="#id27">配置说明</a><ul>
+<li><a class="reference internal" href="#serverless-agentrun">方法5：Serverless部署：AgentRun</a><ul>
+<li><a class="reference internal" href="#id23">特性</a></li>
+<li><a class="reference internal" href="#agentrun">AgentRun 部署前置条件</a></li>
+<li><a class="reference internal" href="#id24">实现</a></li>
+<li><a class="reference internal" href="#id25">配置说明</a><ul>
 <li><a class="reference internal" href="#ossconfig">OSSConfig</a></li>
 <li><a class="reference internal" href="#agentrunconfig">AgentRunConfig</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id28">高级用法</a><ul>
+<li><a class="reference internal" href="#id26">高级用法</a><ul>
 <li><a class="reference internal" href="#wheel">使用预构建的 Wheel 文件</a></li>
-<li><a class="reference internal" href="#id29">更新现有部署</a></li>
+<li><a class="reference internal" href="#id27">更新现有部署</a></li>
 </ul>
 </li>
 </ul>
