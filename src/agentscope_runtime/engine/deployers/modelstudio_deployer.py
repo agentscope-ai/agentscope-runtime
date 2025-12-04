@@ -731,14 +731,14 @@ class ModelstudioDeployManager(DeployManager):
         resource_name (deploy_name), and workspace_id.
         """
         if not agent_id:
-            if not runner and not project_dir and not external_whl_path:
+            if not app and not runner and not project_dir and not external_whl_path:
                 raise ValueError(
-                    "Either runner, project_dir, "
+                    "Either app, runner, project_dir, "
                     "or external_whl_path must be provided.",
                 )
 
         try:
-            if runner:
+            if runner or app:
                 if "agent" in kwargs:
                     kwargs.pop("agent")
 

@@ -80,6 +80,9 @@ class LocalDeployManager(DeployManager):
         broker_url: Optional[str] = None,
         backend_url: Optional[str] = None,
         enable_embedded_worker: bool = False,
+        # New parameters for project-based deployment
+        project_dir: Optional[str] = None,
+        entrypoint: Optional[str] = None,
         **kwargs: Any,
     ) -> Dict[str, str]:
         """Deploy using unified FastAPI architecture.
@@ -100,6 +103,8 @@ class LocalDeployManager(DeployManager):
             backend_url: Celery backend URL for result storage
             enable_embedded_worker: Whether to run Celery worker
                 embedded in the app
+            project_dir: Project directory (for DETACHED_PROCESS mode)
+            entrypoint: Entrypoint specification (for DETACHED_PROCESS mode)
             **kwargs: Additional keyword arguments
 
         Returns:
@@ -152,6 +157,8 @@ class LocalDeployManager(DeployManager):
                     after_finish=after_finish,
                     custom_endpoints=custom_endpoints,
                     protocol_adapters=protocol_adapters,
+                    project_dir=project_dir,
+                    entrypoint=entrypoint,
                     **kwargs,
                 )
             else:
@@ -223,6 +230,8 @@ class LocalDeployManager(DeployManager):
         self,
         runner: Optional[Any] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
+        project_dir: Optional[str] = None,
+        entrypoint: Optional[str] = None,
         **kwargs,
     ) -> Dict[str, str]:
         """Deploy in detached process mode."""
@@ -230,23 +239,36 @@ class LocalDeployManager(DeployManager):
             "Deploying FastAPI service in detached process mode...",
         )
 
-        if runner is None and self._app is None:
-            raise ValueError(
-                "Detached process mode requires an app or runner",
+        # If project_dir or entrypoint is provided, use it directly
+        if project_dir or entrypoint:
+            # Use provided project directory or parse entrypoint
+            if entrypoint and not project_dir:
+                # Parse entrypoint to get project_dir
+                from .utils.package import parse_entrypoint
+                project_info = parse_entrypoint(entrypoint)
+                project_dir = project_info.project_dir
+
+            # project_dir is now ready to use
+            self._logger.info(f"Using provided project directory: {project_dir}")
+        else:
+            # Original behavior: require app or runner
+            if runner is None and self._app is None:
+                raise ValueError(
+                    "Detached process mode requires an app, runner, project_dir, or entrypoint",
+                )
+
+            if "agent" in kwargs:
+                kwargs.pop("agent")
+            if "app" in kwargs:
+                kwargs.pop("app")
+
+            # Create package project for detached deployment
+            project_dir = await self.create_detached_project(
+                app=self._app,
+                runner=runner,
+                protocol_adapters=protocol_adapters,
+                **kwargs,
             )
-
-        if "agent" in kwargs:
-            kwargs.pop("agent")
-        if "app" in kwargs:
-            kwargs.pop("app")
-
-        # Create package project for detached deployment
-        project_dir = await self.create_detached_project(
-            app=self._app,
-            runner=runner,
-            protocol_adapters=protocol_adapters,
-            **kwargs,
-        )
 
         try:
             entry_script = get_bundle_entry_script(project_dir)
