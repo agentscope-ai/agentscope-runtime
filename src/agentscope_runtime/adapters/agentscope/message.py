@@ -338,6 +338,16 @@ def message_to_agentscope_msg(
         A single Msg object or a list of Msg objects.
     """
 
+    def _try_loads(v, default, keep_original=False):
+        if isinstance(v, (dict, list)):
+            return v
+        if isinstance(v, str) and v.strip():
+            try:
+                return json.loads(v)
+            except Exception:
+                return v if keep_original else default
+        return default
+
     def _convert_one(message: Message) -> Msg:
         # Normalize role
         if message.role == "tool":
@@ -365,12 +375,23 @@ def message_to_agentscope_msg(
             MessageType.FUNCTION_CALL,
         ):
             # convert PLUGIN_CALL, FUNCTION_CALL to ToolUseBlock
+            tool_args = None
+            for cnt in reversed(message.content):
+                if hasattr(cnt, "data"):
+                    v = cnt.data.get("arguments")
+                    if isinstance(v, (dict, list)) or (
+                        isinstance(v, str) and v.strip()
+                    ):
+                        tool_args = _try_loads(v, {}, keep_original=False)
+                        break
+            if tool_args is None:
+                tool_args = {}
             result["content"] = [
                 ToolUseBlock(
                     type="tool_use",
                     id=message.content[0].data["call_id"],
                     name=message.content[0].data.get("name"),
-                    input=json.loads(message.content[0].data["arguments"]),
+                    input=tool_args,
                 ),
             ]
         elif message.type in (
@@ -379,7 +400,18 @@ def message_to_agentscope_msg(
         ):
             # convert PLUGIN_CALL_OUTPUT, FUNCTION_CALL_OUTPUT to
             # ToolResultBlock
-            blk = json.loads(message.content[0].data["output"])
+            out = None
+            for cnt in reversed(message.content):
+                if hasattr(cnt, "data"):
+                    v = cnt.data.get("output")
+                    if isinstance(v, (dict, list)) or (
+                        isinstance(v, str) and v.strip()
+                    ):
+                        out = _try_loads(v, "", keep_original=True)
+                        break
+            if out is None:
+                out = ""
+            blk = out
 
             def is_valid_block(obj):
                 return any(
@@ -389,12 +421,12 @@ def message_to_agentscope_msg(
 
             if isinstance(blk, list):
                 if not all(is_valid_block(item) for item in blk):
-                    blk = message.content[0].data["output"]
+                    blk = out
             elif isinstance(blk, dict):
                 if not is_valid_block(blk):
-                    blk = message.content[0].data["output"]
+                    blk = out
             else:
-                blk = message.content[0].data["output"]
+                blk = out
 
             result["content"] = [
                 ToolResultBlock(
