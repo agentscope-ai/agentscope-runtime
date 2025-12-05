@@ -890,7 +890,7 @@ def _get_tracer() -> Tracer:
         handlers.append(
             LocalLogHandler(
                 enable_console=_str_to_bool(
-                    os.getenv("TRACE_ENABLE_CONSOLE_LOG", "true")
+                    os.getenv("TRACE_ENABLE_CONSOLE_LOG", "false")
                 )
             )
         )
