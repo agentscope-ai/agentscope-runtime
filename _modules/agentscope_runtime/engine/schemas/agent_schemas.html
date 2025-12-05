@@ -650,6 +650,7 @@ body.preview-active {
     <span class="n">MCP_APPROVAL_REQUEST</span> <span class="o">=</span> <span class="s2">&quot;mcp_approval_request&quot;</span>
     <span class="n">MCP_TOOL_CALL</span> <span class="o">=</span> <span class="s2">&quot;mcp_call&quot;</span>
     <span class="n">MCP_APPROVAL_RESPONSE</span> <span class="o">=</span> <span class="s2">&quot;mcp_approval_response&quot;</span>
+    <span class="n">MCP_TOOL_CALL_OUTPUT</span> <span class="o">=</span> <span class="s2">&quot;mcp_call_output&quot;</span>
     <span class="n">REASONING</span> <span class="o">=</span> <span class="s2">&quot;reasoning&quot;</span>
     <span class="n">HEARTBEAT</span> <span class="o">=</span> <span class="s2">&quot;heartbeat&quot;</span>
     <span class="n">ERROR</span> <span class="o">=</span> <span class="s2">&quot;error&quot;</span>
@@ -805,22 +806,35 @@ body.preview-active {
 <div class="viewcode-block" id="McpCall">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.McpCall">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">McpCall</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    MCP TOOL CALL MESSAGE BODY</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">call_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The unique ID of the tool call.&quot;&quot;&quot;</span>
 
-    <span class="n">arguments</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">arguments</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A JSON string of the arguments passed to the tool.&quot;&quot;&quot;</span>
 
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The name of the tool that was run.&quot;&quot;&quot;</span>
 
-    <span class="n">server_label</span><span class="p">:</span> <span class="nb">str</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The label of the MCP server running the tool.&quot;&quot;&quot;</span>
+    <span class="n">server_label</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The label of the MCP server running the tool.&quot;&quot;&quot;</span></div>
 
-    <span class="n">error</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The error from the tool call, if any.&quot;&quot;&quot;</span>
 
-    <span class="n">output</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="McpCallOutput">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.McpCallOutput">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">McpCallOutput</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    MCP TOOL CALL OUTPUT MESSAGE BODY</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">call_id</span><span class="p">:</span> <span class="nb">str</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The unique ID of the tool call.&quot;&quot;&quot;</span>
+
+    <span class="n">output</span><span class="p">:</span> <span class="nb">str</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The output from the tool call.&quot;&quot;&quot;</span></div>
 
 
@@ -1762,7 +1776,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-12-04</div>
+              Last updated on 2025-12-05</div>
           </div>
           <div class="right-details">
             <div class="icons">
