@@ -145,9 +145,7 @@ def trace(  # pylint: disable=too-many-statements
                 attach(trace_context)
 
             parent_ctx = (
-                trace_context
-                if trace_context
-                else _parent_span_context.get(None)
+                trace_context if trace_context else _parent_span_context.get(None)
             )
 
             (
@@ -248,9 +246,7 @@ def trace(  # pylint: disable=too-many-statements
                 attach(trace_context)
 
             parent_ctx = (
-                trace_context
-                if trace_context
-                else _parent_span_context.get(None)
+                trace_context if trace_context else _parent_span_context.get(None)
             )
 
             (
@@ -353,9 +349,7 @@ def trace(  # pylint: disable=too-many-statements
                 attach(trace_context)
 
             parent_ctx = (
-                trace_context
-                if trace_context
-                else _parent_span_context.get(None)
+                trace_context if trace_context else _parent_span_context.get(None)
             )
 
             (
@@ -486,9 +480,7 @@ def trace(  # pylint: disable=too-many-statements
                 attach(trace_context)
 
             parent_ctx = (
-                trace_context
-                if trace_context
-                else _parent_span_context.get(None)
+                trace_context if trace_context else _parent_span_context.get(None)
             )
 
             (
@@ -653,9 +645,7 @@ def _get_start_payload(args: Any, kwargs: Any, func: Any = None) -> Dict:
     # 处理关键字参数
     dict_kwargs = _obj_to_dict(kwargs)
     dict_kwargs = {
-        key: value
-        for key, value in dict_kwargs.items()
-        if not key.startswith("trace_")
+        key: value for key, value in dict_kwargs.items() if not key.startswith("trace_")
     }
 
     if dict_kwargs:
@@ -801,9 +791,7 @@ def _validate_trace_options(
     parent_ctx: Optional[Any] = None,
 ) -> tuple[str, str | None, bool | None]:
     out_is_root_span = (
-        is_root_span
-        and parent_ctx is None
-        and not _parent_span_context.get(None)
+        is_root_span and parent_ctx is None and not _parent_span_context.get(None)
     )
 
     if out_is_root_span:
@@ -899,7 +887,13 @@ def _get_service_name() -> str:
 def _get_tracer() -> Tracer:
     handlers: list[TracerHandler] = []
     if _str_to_bool(os.getenv("TRACE_ENABLE_LOG", "false")):
-        handlers.append(LocalLogHandler(enable_console=_str_to_bool(os.getenv("TRACE_ENABLE_CONSOLE_LOG", "true")))
+        handlers.append(
+            LocalLogHandler(
+                enable_console=_str_to_bool(
+                    os.getenv("TRACE_ENABLE_CONSOLE_LOG", "true")
+                )
+            )
+        )
 
     tracer = Tracer(handlers=handlers)
     return tracer
