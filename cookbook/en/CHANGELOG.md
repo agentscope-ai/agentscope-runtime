@@ -302,9 +302,9 @@ These changes affect existing v0.x users and require manual adaptation:
      ```
 
 ### Removed
-- `ContextManager`和`EnvironmentManager`已被移除，现在由Agent进行上下文管理
-- `AgentScopeAgent`、`AutoGenAgent`、`LangGraphAgent`、`AgnoAgent` 已被移除，相关逻辑迁移到 `AgentApp` 内的`query`、`init`、`shutdown`装饰器中以供用户白盒化开发。
-- `SandboxTool`和`MCPTool`抽象已被移除，现在通过`sandbox_tool_adapter`适配不同框架
+- `ContextManager` and `EnvironmentManager` have been removed, and context management is now handled by the Agent.
+- `AgentScopeAgent`, `AutoGenAgent`, `LangGraphAgent`, and `AgnoAgent` have been removed, with the related logic migrated into the `query`, `init`, and `shutdown` decorators within `AgentApp` for user white-box development.
+- The `SandboxTool` and `MCPTool` abstractions have been removed, and different frameworks are now adapted via `sandbox_tool_adapter`.
 
 ------
 

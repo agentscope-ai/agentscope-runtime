@@ -180,3 +180,63 @@ async def main():
 
     await memory_service.stop()
 ```
+
+## ServiceFactory：Unified Service Creation Pattern
+
+In practice, the same type of service (such as `SessionHistory`, `Memory`, `Sandbox`, `State`) may have multiple backend implementations — for example, in-memory, Redis, or database-based.
+
+To make service creation more flexible and configurable, **AgentScope Runtime** provides a general **service factory base class** `ServiceFactory` which supports:
+
+- **Unified registration** of multiple backend constructors (`register_backend`)
+- **Environment variable configuration** of service parameters, with `<PREFIX>BACKEND` determining which backend to use
+- **`kwargs` overriding** of environment variable configurations (priority: `kwargs` > environment variables)
+- **Automatic filtering of invalid parameters** (only parameters accepted by the constructor are passed)
+- **Asynchronous instance creation**, suited for services requiring asynchronous initialization via `start()`
+- **Image reuse benefit**: within the same runtime image, you can switch backend implementations simply by changing environment variables, without rebuilding the image — making deployment and testing easier
+
+### Example Creation Process
+
+```{code-cell}
+# Example: State Service
+from agentscope_runtime.engine.services.agent_state import StateServiceFactory
+
+# Use environment variable configuration
+# export STATE_BACKEND=redis
+# export STATE_REDIS_REDIS_URL="redis://localhost:6379/5"
+service = await StateServiceFactory.create()
+
+# Use kwargs to override environment variables
+service = await StateServiceFactory.create(
+    backend_type="redis",
+    redis_url="redis://otherhost:6379/1"
+)
+
+# Register a custom backend
+from my_backend import PostgresStateService
+StateServiceFactory.register_backend("postgres", PostgresStateService)
+service = await StateServiceFactory.create(backend_type="postgres")
+```
+
+### Common `ServiceFactory` and Default Backends
+
+| ServiceFactory Subclass        | Managed Service Type    | Environment Variable Prefix | Default Backend | Registered Default Backend Types                             |
+| ------------------------------ | ----------------------- | --------------------------- | --------------- | ------------------------------------------------------------ |
+| `StateServiceFactory`          | `StateService`          | `STATE_`                    | `in_memory`     | `in_memory`, `redis`                                         |
+| `MemoryServiceFactory`         | `MemoryService`         | `MEMORY_`                   | `in_memory`     | `in_memory`, `redis`, `mem0`, `reme_personal`, `reme_task`, `tablestore` (optional) |
+| `SandboxServiceFactory`        | `SandboxService`        | `SANDBOX_`                  | `default`       | `default`                                                    |
+| `SessionHistoryServiceFactory` | `SessionHistoryService` | `SESSION_HISTORY_`          | `in_memory`     | `in_memory`, `redis`, `tablestore` (optional)                |
+
+### Usage Tips
+
+- **Choosing a backend**: Set the `<PREFIX>BACKEND` environment variable to select the implementation
+
+  Example:
+
+  ```bash
+  export MEMORY_BACKEND=redis
+  export MEMORY_REDIS_REDIS_URL="redis://localhost:6379/5"
+  ```
+
+- **Parameter priority**: `kwargs` > environment variables
+
+- **Custom backend**: Use `.register_backend("name", constructor)` to register a new implementation
