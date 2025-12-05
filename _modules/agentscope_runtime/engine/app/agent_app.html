@@ -622,6 +622,7 @@ body.preview-active {
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">types</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">shlex</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span>
@@ -840,7 +841,13 @@ body.preview-active {
                     <span class="s2">&quot;[AgentApp] Note: First WebUI launch may take extra time &quot;</span>
                     <span class="s2">&quot;as dependencies are installed.&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
-                <span class="k">with</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">cmd</span><span class="p">)):</span>
+
+                <span class="n">cmd_kwarg</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">if</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;Windows&quot;</span><span class="p">:</span>
+                    <span class="n">cmd_kwarg</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;shell&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cmd</span> <span class="o">=</span> <span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+                <span class="k">with</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="o">**</span><span class="n">cmd_kwarg</span><span class="p">):</span>
                     <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
                         <span class="n">fastapi_app</span><span class="p">,</span>
                         <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span>

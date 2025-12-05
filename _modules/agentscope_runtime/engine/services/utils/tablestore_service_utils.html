@@ -683,6 +683,38 @@ body.preview-active {
 
 
 
+<div class="viewcode-block" id="stringify_values">
+<a class="viewcode-back" href="../../../../../zh/api/engine.html#agentscope_runtime.engine.services.utils.tablestore_service_utils.stringify_values">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">stringify_values</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+            <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_json_loads_if_str</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">v</span>
+    <span class="k">return</span> <span class="n">v</span>
+
+
+<div class="viewcode-block" id="restore_json_strings">
+<a class="viewcode-back" href="../../../../../zh/api/engine.html#agentscope_runtime.engine.services.utils.tablestore_service_utils.restore_json_strings">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">restore_json_strings</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">_json_loads_if_str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d</span></div>
+
+
+
 <div class="viewcode-block" id="tablestore_log">
 <a class="viewcode-back" href="../../../../../zh/api/engine.html#agentscope_runtime.engine.services.utils.tablestore_service_utils.tablestore_log">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">tablestore_log</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
@@ -752,6 +784,7 @@ body.preview-active {
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert Message to TablestoreMessage&quot;&quot;&quot;</span>
     <span class="n">content</span><span class="p">,</span> <span class="n">content_list</span> <span class="o">=</span> <span class="n">_generate_tablestore_content_from_message</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
     <span class="n">tablestore_message_metadata</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">exclude</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;content&quot;</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">})</span>
+    <span class="n">tablestore_message_metadata</span> <span class="o">=</span> <span class="n">stringify_values</span><span class="p">(</span><span class="n">tablestore_message_metadata</span><span class="p">)</span>
     <span class="n">tablestore_message_metadata</span><span class="p">[</span><span class="n">content_list_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
         <span class="n">content_list</span><span class="p">,</span>
         <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -892,6 +925,9 @@ body.preview-active {
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate initialization JSON from TablestoreMessage&quot;&quot;&quot;</span>
     <span class="n">tablestore_message</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">tablestore_message</span><span class="p">)</span>
+    <span class="n">tablestore_message</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">restore_json_strings</span><span class="p">(</span>
+        <span class="n">tablestore_message</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="n">tablestore_message_content_list</span> <span class="o">=</span> <span class="n">tablestore_message</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span>
         <span class="n">content_list_name</span><span class="p">,</span>
         <span class="kc">None</span><span class="p">,</span>
@@ -900,11 +936,7 @@ body.preview-active {
         <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">tablestore_message</span><span class="o">.</span><span class="n">message_id</span><span class="p">,</span>
         <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">_generate_content_from_tablestore_content</span><span class="p">(</span>
             <span class="n">text</span><span class="o">=</span><span class="n">tablestore_message</span><span class="o">.</span><span class="n">content</span><span class="p">,</span>
-            <span class="n">content_list</span><span class="o">=</span><span class="p">(</span>
-                <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">tablestore_message_content_list</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">tablestore_message_content_list</span>
-                <span class="k">else</span> <span class="kc">None</span>
-            <span class="p">),</span>
+            <span class="n">content_list</span><span class="o">=</span><span class="n">tablestore_message_content_list</span><span class="p">,</span>
         <span class="p">),</span>
     <span class="p">}</span>
     <span class="n">init_json</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">tablestore_message</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
@@ -916,6 +948,9 @@ body.preview-active {
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate initialization JSON from TablestoreDocument&quot;&quot;&quot;</span>
     <span class="n">tablestore_document</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">tablestore_document</span><span class="p">)</span>
+    <span class="n">tablestore_document</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">restore_json_strings</span><span class="p">(</span>
+        <span class="n">tablestore_document</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="n">tablestore_document_content_list</span> <span class="o">=</span> <span class="n">tablestore_document</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span>
         <span class="n">content_list_name</span><span class="p">,</span>
         <span class="kc">None</span><span class="p">,</span>
@@ -924,11 +959,7 @@ body.preview-active {
         <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">tablestore_document</span><span class="o">.</span><span class="n">document_id</span><span class="p">,</span>
         <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">_generate_content_from_tablestore_content</span><span class="p">(</span>
             <span class="n">text</span><span class="o">=</span><span class="n">tablestore_document</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
-            <span class="n">content_list</span><span class="o">=</span><span class="p">(</span>
-                <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">tablestore_document_content_list</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">tablestore_document_content_list</span>
-                <span class="k">else</span> <span class="kc">None</span>
-            <span class="p">),</span>
+            <span class="n">content_list</span><span class="o">=</span><span class="n">tablestore_document_content_list</span><span class="p">,</span>
         <span class="p">),</span>
     <span class="p">}</span>
     <span class="n">init_json</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">tablestore_document</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
