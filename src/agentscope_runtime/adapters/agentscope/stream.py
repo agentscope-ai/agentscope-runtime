@@ -14,6 +14,8 @@ from ...engine.schemas.agent_schemas import (
     ImageContent,
     AudioContent,
     DataContent,
+    McpCall,
+    McpCallOutput,
     FunctionCall,
     FunctionCallOutput,
     MessageType,
@@ -77,8 +79,6 @@ async def adapt_agentscope_message_stream(
 
             # Note: Tool use content only happens in the last of messages
             tool_start = False
-
-            tool_use_messages_dict = {}
 
             # Cache msg id
             msg_id = msg.id
@@ -251,6 +251,17 @@ async def adapt_agentscope_message_stream(
                     elif element.get("type") == "tool_use":  # Tool use
                         call_id = element.get("id")
 
+                        if element.get("tool_type", "plugin") == "mcp":
+                            msg_type = MessageType.MCP_TOOL_CALL
+                            fc_cls = McpCall
+                            fc_kwargs = {
+                                "server_label": element.get("server_label"),
+                            }
+                        else:
+                            msg_type = MessageType.PLUGIN_CALL
+                            fc_cls = FunctionCall
+                            fc_kwargs = {}
+
                         if last:
                             plugin_call_message = tool_use_messages_dict.get(
                                 call_id,
@@ -260,16 +271,17 @@ async def adapt_agentscope_message_stream(
                                 # Only one tool use message yields, we fake
                                 #  Build a new tool call message
                                 plugin_call_message = Message(
-                                    type=MessageType.PLUGIN_CALL,
+                                    type=msg_type,
                                     role="assistant",
                                 )
 
                                 data_delta_content = DataContent(
                                     index=index,
-                                    data=FunctionCall(
+                                    data=fc_cls(
                                         call_id=element.get("id"),
                                         name=element.get("name"),
                                         arguments="",
+                                        **fc_kwargs,
                                     ).model_dump(),
                                     delta=True,
                                 )
@@ -290,10 +302,11 @@ async def adapt_agentscope_message_stream(
                             json_str = json.dumps(element.get("input"))
                             data_delta_content = DataContent(
                                 index=index,
-                                data=FunctionCall(
+                                data=fc_cls(
                                     call_id=element.get("id"),
                                     name=element.get("name"),
                                     arguments=json_str,
+                                    **fc_kwargs,
                                 ).model_dump(),
                                 delta=True,
                             )
@@ -316,16 +329,17 @@ async def adapt_agentscope_message_stream(
                             else:
                                 # Build a new tool call message
                                 plugin_call_message = Message(
-                                    type=MessageType.PLUGIN_CALL,
+                                    type=msg_type,
                                     role="assistant",
                                 )
 
                                 data_delta_content = DataContent(
                                     index=index,
-                                    data=FunctionCall(
+                                    data=fc_cls(
                                         call_id=element.get("id"),
                                         name=element.get("name"),
                                         arguments="",
+                                        **fc_kwargs,
                                     ).model_dump(),
                                     delta=True,
                                 )
@@ -348,20 +362,39 @@ async def adapt_agentscope_message_stream(
                                 ] = plugin_call_message
 
                     elif element.get("type") == "tool_result":  # Tool result
+                        call_id = element.get("id")
+
+                        plugin_call_message = tool_use_messages_dict.get(
+                            call_id,
+                        )
+                        # Determine the output message type and class to use
+                        # for the tool result message based on the type of
+                        # the original tool call message.
+                        msg_type = MessageType.PLUGIN_CALL_OUTPUT
+                        fc_cls = FunctionCallOutput
+
+                        if plugin_call_message:
+                            if (
+                                plugin_call_message.type
+                                == MessageType.MCP_TOOL_CALL
+                            ):
+                                msg_type = MessageType.MCP_TOOL_CALL_OUTPUT
+                                fc_cls = McpCallOutput
+
                         json_str = json.dumps(
                             element.get("output"),
                             ensure_ascii=False,
                         )
                         data_delta_content = DataContent(
                             index=index,
-                            data=FunctionCallOutput(
+                            data=fc_cls(
                                 call_id=element.get("id"),
                                 name=element.get("name"),
                                 output=json_str,
                             ).model_dump(),
                         )
                         plugin_output_message = Message(
-                            type=MessageType.PLUGIN_CALL_OUTPUT,
+                            type=msg_type,
                             role="tool",
                             content=[data_delta_content],
                         )

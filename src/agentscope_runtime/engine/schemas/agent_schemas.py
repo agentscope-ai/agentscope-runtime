@@ -178,6 +178,9 @@ class McpCallOutput(BaseModel):
     call_id: str
     """The unique ID of the tool call."""
 
+    name: Optional[str] = None
+    """The name of the tool call."""
+
     output: str
     """The output from the tool call."""
 
