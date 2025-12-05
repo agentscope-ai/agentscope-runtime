@@ -233,6 +233,7 @@ class Runner:
         response.in_progress()
         yield seq_gen.yield_with_sequence(response)
 
+
         query_kwargs = {
             "request": request,
         }
@@ -250,6 +251,16 @@ class Runner:
             stream_adapter = adapt_agentscope_message_stream
             kwargs.update(
                 {"msgs": message_to_agentscope_msg(request.input)},
+            )
+        elif self.framework_type == "langgraph":
+            from ..adapters.langgraph.stream import (
+                adapt_langgraph_message_stream,
+            )
+            from ..adapters.langgraph.message import message_to_langgraph_msg
+
+            stream_adapter = adapt_langgraph_message_stream
+            kwargs.update(
+                {"msgs": message_to_langgraph_msg(request.input)},
             )
         # TODO: support other frameworks
         else:
