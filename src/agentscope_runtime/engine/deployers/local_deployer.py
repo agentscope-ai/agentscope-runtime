@@ -332,6 +332,7 @@ class LocalDeployManager(DeployManager):
         broker_url: Optional[str] = None,
         backend_url: Optional[str] = None,
         enable_embedded_worker: bool = False,
+        platform: str = "local",
         **kwargs,
     ) -> str:
         project_dir, _ = build_detached_app(
@@ -339,7 +340,7 @@ class LocalDeployManager(DeployManager):
             runner=runner,
             requirements=requirements,
             extra_packages=extra_packages,
-            platform="local",
+            platform=platform,
             **kwargs,
         )
 

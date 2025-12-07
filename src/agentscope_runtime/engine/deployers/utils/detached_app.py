@@ -14,9 +14,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from .app_runner_utils import ensure_runner_from_app
-from .package import package, ProjectInfo, DEFAULT_ENTRYPOINT_FILE
+from .package import (
+    package,
+    ProjectInfo,
+    DEFAULT_ENTRYPOINT_FILE,
+    DEPLOYMENT_ZIP,
+    generate_build_directory,
+)
 from ..adapter.protocol_adapter import ProtocolAdapter
-from .package import DEPLOYMENT_ZIP
 
 try:
     import tomllib  # Python 3.11+
@@ -79,11 +84,9 @@ def build_detached_app(
             shutil.rmtree(build_root)
         build_root.mkdir(parents=True, exist_ok=True)
     else:
-        build_root = Path(
-            tempfile.mkdtemp(
-                prefix="agentscope_runtime_detached_",
-            ),
-        )
+        # Use generate_build_directory for consistent naming
+        build_root = generate_build_directory(platform)
+        build_root.mkdir(parents=True, exist_ok=True)
 
     package_path, project_info = package(
         app=app,

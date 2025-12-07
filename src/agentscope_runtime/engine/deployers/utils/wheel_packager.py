@@ -32,6 +32,10 @@ except ImportError:  # pragma: no cover - fallback on older Pythons
     tomllib = None  # type: ignore
 
 
+def get_user_bundle_appdir(build_root:Path, user_project_dir: Path) -> Path:
+    return build_root/ "deploy_starter"/"user_bundle"/user_project_dir.name
+
+
 def _read_text_file_lines(file_path: Path) -> List[str]:
     if not file_path.is_file():
         return []
@@ -158,9 +162,8 @@ def generate_wrapper_project(
     # 1) Copy user project into wrapper under deploy_starter/user_bundle/<project_basename>
     # Put user code inside the deploy_starter package so wheel includes it and preserves project folder name
     project_basename = user_project_dir.name
-    bundle_app_dir = (
-        wrapper_dir / "deploy_starter" / "user_bundle" / project_basename
-    )
+    bundle_app_dir = get_user_bundle_appdir(wrapper_dir, user_project_dir)
+
     ignore = shutil.ignore_patterns(
         ".git",
         ".venv",

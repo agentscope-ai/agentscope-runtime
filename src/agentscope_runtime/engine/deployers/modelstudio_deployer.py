@@ -18,10 +18,13 @@ from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .local_deployer import LocalDeployManager
 from .utils.detached_app import get_bundle_entry_script
+from .utils.package import generate_build_directory
+
 from .utils.wheel_packager import (
     generate_wrapper_project,
     build_wheel,
     default_deploy_name,
+    get_user_bundle_appdir
 )
 
 logger = logging.getLogger(__name__)
@@ -578,16 +581,8 @@ class ModelstudioDeployManager(DeployManager):
             if self.build_root:
                 effective_build_root = Path(self.build_root).resolve()
             else:
-                # Use workspace with platform-aware naming
-                workspace = Path(os.getcwd()) / ".agentscope_runtime" / "builds"
-
-                # Generate timestamp-based name with random suffix
-                timestamp = time.strftime("%Y%m%d_%H%M%S")
-                import random
-                random_suffix = ''.join(random.choices('0123456789abcdef', k=6))
-                build_name = f"modelstudio_{timestamp}_{random_suffix}"
-
-                effective_build_root = workspace / build_name
+                # Use centralized directory generation function
+                effective_build_root = generate_build_directory("modelstudio")
 
         build_dir = effective_build_root
         build_dir.mkdir(parents=True, exist_ok=True)
@@ -603,16 +598,13 @@ class ModelstudioDeployManager(DeployManager):
         )
 
         # pass environments to the project from user setting
-        user_bundle_app_dir = self.get_user_bundle_appdir(build_dir, project_dir)
+        user_bundle_app_dir = get_user_bundle_appdir(build_dir, project_dir)
         self._generate_env_file(user_bundle_app_dir, environment)
         logger.info("Building wheel under %s", wrapper_project_dir)
         wheel_path = build_wheel(wrapper_project_dir)
 
         return wheel_path, name
 
-    @staticmethod
-    def get_user_bundle_appdir(build_root:Path, user_project_dir: Path) -> Path:
-        return build_root/ "deploy_starter"/"user_bundle"/user_project_dir.name
 
     def _generate_env_file(
         self,
@@ -771,6 +763,7 @@ class ModelstudioDeployManager(DeployManager):
                     requirements=requirements,
                     extra_packages=extra_packages,
                     port=8080,
+                    platform="modelstudio",
                     **kwargs,
                 )
                 if project_dir:

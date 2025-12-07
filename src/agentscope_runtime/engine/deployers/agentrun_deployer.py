@@ -35,6 +35,7 @@ from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .local_deployer import LocalDeployManager
 from .utils.detached_app import get_bundle_entry_script
+from .utils.package import generate_build_directory
 from .utils.wheel_packager import (
     default_deploy_name,
     generate_wrapper_project,
@@ -394,8 +395,6 @@ class AgentRunDeployManager(DeployManager):
             cmd: Command to start the agent application.
             deploy_name: Name for the deployment. If None, generates default name.
             telemetry_enabled: Whether to enable telemetry in the wrapper.
-            workspace: Workspace for cache (default: cwd or env var)
-            use_cache: Enable build cache (default: True)
 
         Returns:
             Tuple containing:
@@ -427,16 +426,8 @@ class AgentRunDeployManager(DeployManager):
             if self.build_root:
                 effective_build_root = Path(self.build_root).resolve()
             else:
-                # Use workspace with platform-aware naming
-                workspace = Path(os.getcwd()) / ".agentscope_runtime" / "builds"
-
-                # Generate timestamp-based name with random suffix
-                timestamp = time.strftime("%Y%m%d_%H%M%S")
-                import random
-                random_suffix = ''.join(random.choices('0123456789abcdef', k=6))
-                build_name = f"agentrun_{timestamp}_{random_suffix}"
-
-                effective_build_root = workspace / build_name
+                # Use centralized directory generation function
+                effective_build_root = generate_build_directory("agentrun")
 
         build_dir = effective_build_root
         build_dir.mkdir(parents=True, exist_ok=True)
@@ -591,6 +582,7 @@ class AgentRunDeployManager(DeployManager):
                     protocol_adapters=protocol_adapters,
                     requirements=requirements,
                     extra_packages=extra_packages,
+                    platform="agentrun",
                     **kwargs,
                 )
                 if project_dir:

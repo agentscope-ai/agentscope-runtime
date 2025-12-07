@@ -31,6 +31,43 @@ DEPLOYMENT_ZIP = "deployment.zip"
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 DEFAULT_ENTRYPOINT_FILE = "runtime_main.py"
 
+# Default workspace for build artifacts
+DEFAULT_BUILD_WORKSPACE = Path(os.getcwd()) / ".agentscope_runtime" / "builds"
+
+
+def generate_build_directory(
+    platform: str = "unknown",
+    workspace: Optional[Path] = None,
+) -> Path:
+    """
+    Generate a platform-aware build directory with timestamp and random suffix.
+
+    Args:
+        platform: Deployment platform (k8s, modelstudio, agentrun, local, etc.)
+        workspace: Custom workspace directory (defaults to DEFAULT_BUILD_WORKSPACE)
+
+    Returns:
+        Path: Generated build directory path
+
+    Example:
+        >>> build_dir = generate_build_directory("modelstudio")
+        >>> # Returns: .agentscope_runtime/builds/modelstudio_20251207_143025_a3f9e2
+    """
+    import random
+    import time
+
+    if workspace is None:
+        workspace = DEFAULT_BUILD_WORKSPACE
+
+    workspace.mkdir(parents=True, exist_ok=True)
+
+    # Generate timestamp-based name with random suffix
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    random_suffix = ''.join(random.choices('0123456789abcdef', k=6))
+    build_name = f"{platform}_{timestamp}_{random_suffix}"
+
+    return workspace / build_name
+
 
 def _get_template_env() -> Environment:
     """
@@ -433,6 +470,7 @@ def _get_default_ignore_patterns() -> List[str]:
         ".vscode",
         "*.log",
         "logs",
+        ".agentscope_runtime",  # Ignore build workspace to prevent infinite recursion
     ]
 
 
@@ -629,17 +667,7 @@ def package(
 
     # Create output directory with platform-aware naming
     if output_dir is None:
-        # Use workspace with platform-aware naming
-        workspace = Path(os.getcwd()) / ".agentscope_runtime" / "builds"
-        workspace.mkdir(parents=True, exist_ok=True)
-
-        # Generate timestamp-based name with random suffix
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        import random
-        random_suffix = ''.join(random.choices('0123456789abcdef', k=6))
-        build_name = f"{platform}_{timestamp}_{random_suffix}"
-
-        output_dir = str(workspace / build_name)
+        output_dir = str(generate_build_directory(platform))
         os.makedirs(output_dir, exist_ok=True)
     else:
         os.makedirs(output_dir, exist_ok=True)
