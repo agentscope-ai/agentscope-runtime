@@ -386,7 +386,6 @@ class AgentRunDeployManager(DeployManager):
         cmd: Optional[str] = None,
         deploy_name: Optional[str] = None,
         telemetry_enabled: bool = True,
-        use_cache: bool = True,
     ) -> Tuple[Path, str]:
         """Generate wrapper project and build wheel package.
 
@@ -420,32 +419,7 @@ class AgentRunDeployManager(DeployManager):
 
         name = deploy_name or default_deploy_name()
 
-        # Try cache lookup if enabled
-        if use_cache:
-            from .utils.build_cache import BuildCache
-
-            try:
-                cache = BuildCache()
-
-                cached_path = cache.lookup_wrapper(
-                    str(project_dir),
-                    cmd,
-                    platform="agentrun",
-                )
-
-                if cached_path:
-                    logger.info(f"Reusing cached wrapper build: {cached_path}")
-                    # Find wheel file in cache
-                    wheel_files = list(cached_path.glob("*.whl"))
-                    if wheel_files:
-                        return wheel_files[0], name
-
-                logger.info("Wrapper cache miss, building from scratch...")
-
-            except Exception as e:
-                logger.warning(f"Wrapper cache lookup failed: {e}, building from scratch")
-
-        # Cache miss or disabled - build from scratch
+        # Generate build directory with platform-aware naming
         proj_root = project_dir.resolve()
         if isinstance(self.build_root, Path):
             effective_build_root = self.build_root.resolve()
@@ -453,17 +427,16 @@ class AgentRunDeployManager(DeployManager):
             if self.build_root:
                 effective_build_root = Path(self.build_root).resolve()
             else:
-                if use_cache:
-                    # Use cache workspace with new naming format
-                    cache = BuildCache()
-                    build_hash = cache._calculate_wrapper_hash(str(project_dir), cmd)
-                    build_name = cache._generate_build_name("agentrun", build_hash)
-                    effective_build_root = cache.cache_root / build_name
-                else:
-                    # Legacy behavior
-                    effective_build_root = (
-                        proj_root.parent / ".agentscope_runtime_builds"
-                    ).resolve()
+                # Use workspace with platform-aware naming
+                workspace = Path(os.getcwd()) / ".agentscope_runtime" / "builds"
+
+                # Generate timestamp-based name with random suffix
+                timestamp = time.strftime("%Y%m%d_%H%M%S")
+                import random
+                random_suffix = ''.join(random.choices('0123456789abcdef', k=6))
+                build_name = f"agentrun_{timestamp}_{random_suffix}"
+
+                effective_build_root = workspace / build_name
 
         build_dir = effective_build_root
         build_dir.mkdir(parents=True, exist_ok=True)
@@ -480,19 +453,6 @@ class AgentRunDeployManager(DeployManager):
         logger.info("Building wheel package from: %s", wrapper_project_dir)
         wheel_path = build_wheel(wrapper_project_dir)
         logger.info("Wheel package created: %s", wheel_path)
-
-        # Store in cache with metadata
-        if use_cache:
-            try:
-                cache = BuildCache()
-                cache.store_wrapper(
-                    str(project_dir),
-                    cmd,
-                    build_dir,
-                    platform="agentrun",
-                )
-            except Exception as e:
-                logger.warning(f"Failed to store wrapper in cache: {e}")
 
         return wheel_path, name
 

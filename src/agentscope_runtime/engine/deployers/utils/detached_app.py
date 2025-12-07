@@ -41,7 +41,6 @@ def build_detached_app(
     output_dir: Optional[str] = None,
     dockerfile_path: Optional[str] = None,
     use_local_runtime: Optional[bool] = None,
-    use_cache: bool = True,
     platform: str = "unknown",
     **kwargs,
 ) -> Tuple[str, ProjectInfo]:
@@ -61,7 +60,6 @@ def build_detached_app(
         use_local_runtime: If True, build and include local runtime wheel.
                           If None (default), auto-detect based on version.
                           Useful for development when runtime is not released.
-        use_cache: Enable build cache (default: True)
 
     Returns:
         Tuple of (project_root_path, project_info)
@@ -94,7 +92,6 @@ def build_detached_app(
         output_dir=str(build_root),
         extra_packages=extra_packages,
         requirements=normalized_requirements,
-        use_cache=use_cache,
         platform=platform,
         **kwargs,
     )
