@@ -17,7 +17,6 @@ from .app_runner_utils import ensure_runner_from_app
 from .package import package, ProjectInfo, DEFAULT_ENTRYPOINT_FILE
 from ..adapter.protocol_adapter import ProtocolAdapter
 from .package import DEPLOYMENT_ZIP
-from .wheel_packager import _parse_pyproject_toml
 
 try:
     import tomllib  # Python 3.11+
@@ -36,19 +35,25 @@ def build_detached_app(
     *,
     app=None,
     runner=None,
+    entrypoint: Optional[str] = None,
     requirements: Optional[Union[str, List[str]]] = None,
     extra_packages: Optional[List[str]] = None,
     output_dir: Optional[str] = None,
     dockerfile_path: Optional[str] = None,
     use_local_runtime: Optional[bool] = None,
+    use_cache: bool = True,
+    platform: str = "unknown",
     **kwargs,
 ) -> Tuple[str, ProjectInfo]:
     """
     Create a detached bundle directory ready for execution.
 
+    All temporary files are created in cwd/.agentscope_runtime/ by default.
+
     Args:
         app: AgentApp instance to deploy
         runner: Runner instance to deploy
+        entrypoint: Entrypoint specification (e.g., "app.py" or "app.py:handler")
         requirements: Additional pip requirements (string or list)
         extra_packages: Additional Python packages to include
         output_dir: Output directory (creates temp dir if None)
@@ -56,6 +61,7 @@ def build_detached_app(
         use_local_runtime: If True, build and include local runtime wheel.
                           If None (default), auto-detect based on version.
                           Useful for development when runtime is not released.
+        use_cache: Enable build cache (default: True)
 
     Returns:
         Tuple of (project_root_path, project_info)
@@ -84,8 +90,12 @@ def build_detached_app(
     package_path, project_info = package(
         app=app,
         runner=None if app is not None else runner,
+        entrypoint=entrypoint,
         output_dir=str(build_root),
         extra_packages=extra_packages,
+        requirements=normalized_requirements,
+        use_cache=use_cache,
+        platform=platform,
         **kwargs,
     )
 
@@ -102,12 +112,7 @@ def build_detached_app(
     with zipfile.ZipFile(deployment_zip, "r") as archive:
         archive.extractall(project_root)
 
-    # Auto-detect if not specified
-    if use_local_runtime is None:
-        package_version = _get_package_version()
-        use_local_runtime = _is_dev_version(package_version)
-
-    _append_additional_requirements(
+    append_project_requirements(
         project_root,
         normalized_requirements,
         use_local_runtime=use_local_runtime,
@@ -146,7 +151,7 @@ def _normalize_requirements(
     return [str(item) for item in requirements]
 
 
-def _append_additional_requirements(
+def append_project_requirements(
     extraction_dir: Path,
     additional_requirements: List[str],
     use_local_runtime: bool = False,
@@ -163,6 +168,11 @@ def _append_additional_requirements(
         use_local_runtime: If True, build and use local runtime wheel.
                           Useful for development when runtime is not released.
     """
+    # Auto-detect if not specified
+    if use_local_runtime is None:
+        package_version = _get_package_version()
+        use_local_runtime = _is_dev_version(package_version)
+
     req_path = extraction_dir / "requirements.txt"
     package_version = _get_package_version()
 
@@ -228,6 +238,72 @@ def _append_additional_requirements(
         )
         for req in all_requirements:
             f.write(f"{req}\n")
+
+
+def _parse_pyproject_toml(pyproject_path: Path) -> List[str]:
+    deps: List[str] = []
+    if not pyproject_path.is_file():
+        return deps
+    text = pyproject_path.read_text(encoding="utf-8")
+
+    try:
+        # Prefer stdlib tomllib (Python 3.11+)
+        if tomllib is None:
+            raise RuntimeError("tomllib not available")
+        data = tomllib.loads(text)
+        # PEP 621
+        proj = data.get("project") or {}
+        deps.extend(proj.get("dependencies") or [])
+        # Poetry fallback
+        poetry = (data.get("tool") or {}).get("poetry") or {}
+        poetry_deps = poetry.get("dependencies") or {}
+        for name, spec in poetry_deps.items():
+            if name.lower() == "python":
+                continue
+            if isinstance(spec, str):
+                deps.append(f"{name}{spec if spec.strip() else ''}")
+            elif isinstance(spec, dict):
+                version = spec.get("version")
+                if version:
+                    deps.append(f"{name}{version}")
+                else:
+                    deps.append(name)
+    except Exception:
+        # Minimal non-toml parser fallback: try to extract a dependencies = [ ... ] list
+        block_match = re.search(
+            r"dependencies\s*=\s*\[(.*?)\]",
+            text,
+            re.S | re.I,
+        )
+        if block_match:
+            block = block_match.group(1)
+            for m in re.finditer(r"['\"]([^'\"]+)['\"]", block):
+                deps.append(m.group(1))
+        # Poetry fallback: very limited, heuristic
+        poetry_block = re.search(
+            r"\[tool\.poetry\.dependencies\](.*?)\n\[",
+            text,
+            re.S,
+        )
+        if poetry_block:
+            for line in poetry_block.group(1).splitlines():
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if ":" in line:
+                    # name = "^1.2.3"
+                    m = re.match(
+                        r"([A-Za-z0-9_.-]+)\s*=\s*['\"]([^'\"]+)['\"]",
+                        line,
+                    )
+                    if m and m.group(1).lower() != "python":
+                        deps.append(f"{m.group(1)}{m.group(2)}")
+                else:
+                    # name without version
+                    name = line.split("#")[0].strip()
+                    if name and name.lower() != "python":
+                        deps.append(name)
+    return deps
 
 
 def _get_package_version() -> str:

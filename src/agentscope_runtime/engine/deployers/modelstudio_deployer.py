@@ -552,11 +552,12 @@ class ModelstudioDeployManager(DeployManager):
         cmd: Optional[str] = None,
         deploy_name: Optional[str] = None,
         telemetry_enabled: bool = True,
+        use_cache: bool = True,
+        environment: Optional[Dict[str, str]] = None,
+        requirements: Optional[Union[str, List[str]]] = None,
     ) -> Tuple[Path, str]:
         """
-        校验参数、生成 wrapper 项目并构建 wheel。
-
-        返回: (wheel_path, wrapper_project_dir, name)
+        generate temp project path and build wheel.
         """
         if not project_dir or not cmd:
             raise ValueError(
@@ -569,6 +570,33 @@ class ModelstudioDeployManager(DeployManager):
             raise FileNotFoundError(f"Project dir not found: {project_dir}")
 
         name = deploy_name or default_deploy_name()
+
+        # Try cache lookup if enabled
+        if use_cache:
+            from .utils.build_cache import BuildCache
+
+            try:
+                cache = BuildCache()
+
+                cached_path = cache.lookup_wrapper(
+                    str(project_dir),
+                    cmd,
+                    platform="modelstudio",
+                )
+
+                if cached_path:
+                    logger.info(f"Reusing cached wrapper build: {cached_path}")
+                    # Find wheel file in cache
+                    wheel_files = list(cached_path.glob("*.whl"))
+                    if wheel_files:
+                        return wheel_files[0], name
+
+                logger.info("Wrapper cache miss, building from scratch...")
+
+            except Exception as e:
+                logger.warning(f"Wrapper cache lookup failed: {e}, building from scratch")
+
+        # Cache miss or disabled - build from scratch
         proj_root = project_dir.resolve()
         if isinstance(self.build_root, Path):
             effective_build_root = self.build_root.resolve()
@@ -576,11 +604,19 @@ class ModelstudioDeployManager(DeployManager):
             if self.build_root:
                 effective_build_root = Path(self.build_root).resolve()
             else:
-                effective_build_root = (
-                    proj_root.parent / ".agentscope_runtime_builds"
-                ).resolve()
+                if use_cache:
+                    # Use cache workspace with new naming format
+                    cache = BuildCache()
+                    build_hash = cache._calculate_wrapper_hash(str(project_dir), cmd)
+                    build_name = cache._generate_build_name("modelstudio", build_hash)
+                    effective_build_root = cache.cache_root / build_name
+                else:
+                    # Legacy behavior
+                    effective_build_root = (
+                        proj_root.parent / ".agentscope_runtime_builds"
+                    ).resolve()
 
-        build_dir = effective_build_root / f"build-{int(time.time())}"
+        build_dir = effective_build_root
         build_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info("Generating wrapper project for %s", name)
@@ -590,10 +626,26 @@ class ModelstudioDeployManager(DeployManager):
             start_cmd=cmd,
             deploy_name=name,
             telemetry_enabled=telemetry_enabled,
+            requirements=requirements,
         )
 
+        self._generate_env_file(wrapper_project_dir/ "deploy_starter", environment)
         logger.info("Building wheel under %s", wrapper_project_dir)
         wheel_path = build_wheel(wrapper_project_dir)
+
+        # Store in cache with metadata
+        if use_cache:
+            try:
+                cache = BuildCache()
+                cache.store_wrapper(
+                    str(project_dir),
+                    cmd,
+                    build_dir,
+                    platform="modelstudio",
+                )
+            except Exception as e:
+                logger.warning(f"Failed to store wrapper in cache: {e}")
+
         return wheel_path, name
 
     def _generate_env_file(
@@ -616,7 +668,9 @@ class ModelstudioDeployManager(DeployManager):
             variables provided
         """
         if not environment:
-            return None
+            environment = {}
+        environment["HOST"] = os.environ.get("HOST", "0.0.0.0")
+        environment["PORT"] = int(os.environ.get("PORT", "8080"))
 
         project_path = Path(project_dir).resolve()
         if not project_path.exists():
@@ -793,6 +847,8 @@ class ModelstudioDeployManager(DeployManager):
                     cmd=cmd,
                     deploy_name=deploy_name,
                     telemetry_enabled=telemetry_enabled,
+                    environment=environment,
+                    requirements=requirements,
                 )
 
             console_url = ""

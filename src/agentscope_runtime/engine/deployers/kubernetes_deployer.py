@@ -36,7 +36,7 @@ class K8sConfig(BaseModel):
 class BuildConfig(BaseModel):
     """Build configuration"""
 
-    build_context_dir: str = "/tmp/k8s_build"
+    build_context_dir: str = None  # None allows caching
     dockerfile_template: str = None
     build_timeout: int = 600  # 10 minutes
     push_timeout: int = 300  # 5 minutes
@@ -51,7 +51,7 @@ class KubernetesDeployManager(DeployManager):
         kube_config: K8sConfig = None,
         registry_config: RegistryConfig = RegistryConfig(),
         use_deployment: bool = True,
-        build_context_dir: str = "/tmp/k8s_build",
+        build_context_dir: str = None,
     ):
         super().__init__()
         self.kubeconfig = kube_config
@@ -71,6 +71,7 @@ class KubernetesDeployManager(DeployManager):
         self,
         app=None,
         runner=None,
+        entrypoint: Optional[str] = None,
         endpoint_path: str = "/process",
         stream: bool = True,
         custom_endpoints: Optional[List[Dict]] = None,
@@ -86,15 +87,19 @@ class KubernetesDeployManager(DeployManager):
         image_name: str = "agent_llm",
         image_tag: str = "latest",
         push_to_registry: bool = False,
+        use_cache: bool = True,
         **kwargs,
     ) -> Dict[str, Any]:
         """
         Deploy runner to Kubernetes.
 
+        All temporary files are created in cwd/.agentscope_runtime/ by default.
+
         Args:
             app: Agent app to be deployed
             runner: Complete Runner object with agent, environment_manager,
                 context_manager
+            entrypoint: Entrypoint specification (e.g., "app.py" or "app.py:handler")
             endpoint_path: API endpoint path
             stream: Enable streaming responses
             custom_endpoints: Custom endpoints from agent app
@@ -108,6 +113,7 @@ class KubernetesDeployManager(DeployManager):
             environment: Environment variables dict
             mount_dir: Mount directory
             runtime_config: K8s runtime configuration
+            use_cache: Enable build cache (default: True)
             # Backward compatibility
             image_name: Image name
             image_tag: Image tag
@@ -132,6 +138,7 @@ class KubernetesDeployManager(DeployManager):
                 built_image_name = self.image_factory.build_image(
                     app=app,
                     runner=runner,
+                    entrypoint=entrypoint,
                     requirements=requirements,
                     extra_packages=extra_packages or [],
                     base_image=base_image,
@@ -145,6 +152,7 @@ class KubernetesDeployManager(DeployManager):
                     port=port,
                     protocol_adapters=protocol_adapters,
                     custom_endpoints=custom_endpoints,
+                    use_cache=use_cache,
                     **kwargs,
                 )
                 if not built_image_name:

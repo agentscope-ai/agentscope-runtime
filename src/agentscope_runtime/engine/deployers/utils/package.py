@@ -18,6 +18,7 @@ import os
 import shutil
 import tempfile
 import zipfile
+from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Tuple, Union
 
@@ -547,10 +548,13 @@ def package(
     host: str = "0.0.0.0",
     port: int = 8090,
     extra_parameters: Optional[List[RuntimeParameter]] = None,
+    requirements: Optional[List[str]] = None,
+    use_cache: bool = True,
+    platform: str = "unknown",
     **kwargs,
 ) -> Tuple[str, ProjectInfo]:
     """
-    Package an AgentApp or Runner for deployment.
+    Package an AgentApp or Runner for deployment with smart caching.
 
     This function supports two deployment patterns:
     1. Object-style: package(app=my_app) or package(runner=my_runner)
@@ -562,14 +566,23 @@ def package(
     2. Generate a new main.py that imports and runs the app/runner
     3. Package the project with the generated main.py as entrypoint
 
+    Build caching:
+    - When output_dir=None (default), uses workspace-based build cache
+    - Cache location: cwd/.agentscope_runtime/builds/<platform>_<timestamp>_<code>/
+    - Set use_cache=False to disable caching
+    - Explicit output_dir bypasses cache (legacy mode)
+
     Args:
         app: AgentApp instance (for object-style deployment)
         runner: Runner instance (for object-style deployment)
         entrypoint: Entrypoint specification (for CLI-style deployment)
-        output_dir: Output directory (creates temp dir if None)
+        output_dir: Output directory (creates temp dir if None, bypasses cache)
         host: Default host for the service (default: "0.0.0.0")
         port: Default port for the service (default: 8090)
         extra_parameters: Additional runtime parameters to expose via CLI
+        requirements: Additional pip requirements
+        use_cache: Enable build cache (default: True, ignored if output_dir set)
+        platform: Deployment platform (k8s, modelstudio, agentrun, local)
         **kwargs: Additional keyword arguments (ignored)
 
     Returns:
@@ -597,7 +610,7 @@ def package(
         ...         help="Number of worker threads"
         ...     ),
         ... ]
-        >>> package(app=my_app, extra_parameters=extra_params)
+        >>> package(app=my_app, extra_parameters=extra_params, platform="k8s")
     """
     # Determine project info and target object
     target_obj = None
@@ -613,7 +626,60 @@ def package(
 
     logger.info(f"Packaging project from: {project_info.project_dir}")
 
-    # Create output directory
+    # Normalize requirements
+    if requirements is None:
+        requirements = []
+
+    # Legacy mode: explicit output_dir bypasses cache
+    if output_dir is not None:
+        logger.debug("Using explicit output_dir, bypassing cache")
+        use_cache = False
+
+    # Try cache lookup if enabled
+    if use_cache and output_dir is None:
+        from .build_cache import BuildCache
+        from .detached_app import _get_package_version, _is_dev_version
+
+        try:
+            # BuildCache automatically uses cwd/.agentscope_runtime
+            cache = BuildCache()
+
+            # Determine if using local runtime
+            package_version = _get_package_version()
+            use_local_runtime = _is_dev_version(package_version)
+
+            cached_path = cache.lookup(
+                project_info.project_dir,
+                project_info.entrypoint_file,
+                requirements,
+                use_local_runtime,
+                platform,
+            )
+
+            if cached_path:
+                logger.info(f"Reusing cached build: {cached_path}")
+                return str(cached_path), project_info
+
+            logger.info("Cache miss, building from scratch...")
+
+            # Calculate hash for new build
+            build_hash = cache._calculate_build_hash(
+                project_info.project_dir,
+                project_info.entrypoint_file,
+                requirements,
+                use_local_runtime,
+            )
+
+            # Generate build name for output directory
+            build_name = cache._generate_build_name(platform, build_hash)
+            output_dir = str(cache.cache_root / build_name)
+            os.makedirs(output_dir, exist_ok=True)
+
+        except Exception as e:
+            logger.warning(f"Cache lookup failed: {e}, falling back to temp dir")
+            use_cache = False
+
+    # Create output directory if not set by cache
     if output_dir is None:
         output_dir = tempfile.mkdtemp(prefix="agentscope_package_")
     else:
@@ -689,5 +755,29 @@ def package(
     # Report size
     size_mb = deployment_zip.stat().st_size / (1024 * 1024)
     logger.info(f"Deployment package ready: {size_mb:.2f} MB")
+
+    # Update cache metadata if we're using cache
+    if use_cache and output_dir and "cache_root" in str(output_dir):
+        try:
+            from .build_cache import BuildCache
+            cache = BuildCache()
+            metadata = cache._load_metadata()
+
+            # Extract build name from output_dir
+            build_name = Path(output_dir).name
+
+            # Save metadata
+            metadata[build_name] = {
+                "content_hash": build_hash if 'build_hash' in locals() else "unknown",
+                "platform": platform,
+                "project_dir": project_info.project_dir,
+                "entrypoint": project_info.entrypoint_file,
+                "created_at": datetime.now().isoformat(),
+                "requirements": requirements if requirements else [],
+            }
+            cache._save_metadata(metadata)
+            logger.debug(f"Cache metadata updated for: {build_name}")
+        except Exception as e:
+            logger.warning(f"Failed to update cache metadata: {e}")
 
     return str(output_path), project_info

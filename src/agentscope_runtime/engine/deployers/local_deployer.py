@@ -339,6 +339,7 @@ class LocalDeployManager(DeployManager):
             runner=runner,
             requirements=requirements,
             extra_packages=extra_packages,
+            platform="local",
             **kwargs,
         )
 

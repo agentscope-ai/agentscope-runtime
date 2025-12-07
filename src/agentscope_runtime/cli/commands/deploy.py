@@ -13,6 +13,7 @@ from agentscope_runtime.cli.utils.console import (
     echo_warning,
 )
 from agentscope_runtime.cli.state.manager import DeploymentStateManager
+from agentscope_runtime.cli.state.schema import Deployment, format_timestamp
 from agentscope_runtime.engine.deployers.utils.deployment_modes import (
     DeploymentMode,
 )
@@ -101,6 +102,65 @@ def _find_entrypoint(project_dir: str, entrypoint: str = None) -> str:
     )
 
 
+def _parse_environment(env_tuples: tuple, env_file: str = None) -> dict:
+    """
+    Parse environment variables from --env options and --env-file.
+
+    Args:
+        env_tuples: Tuple of KEY=VALUE strings from --env options
+        env_file: Optional path to .env file
+
+    Returns:
+        Dictionary of environment variables
+
+    Raises:
+        ValueError: If env format is invalid
+    """
+    environment = {}
+
+    # 1. Load from env file first (if provided)
+    if env_file:
+        if not os.path.isfile(env_file):
+            raise ValueError(f"Environment file not found: {env_file}")
+
+        with open(env_file, 'r', encoding='utf-8') as f:
+            for line_num, line in enumerate(f, 1):
+                line = line.strip()
+                # Skip empty lines and comments
+                if not line or line.startswith('#'):
+                    continue
+
+                if '=' not in line:
+                    echo_warning(
+                        f"Skipping invalid line {line_num} in {env_file}: {line}"
+                    )
+                    continue
+
+                key, value = line.split('=', 1)
+                key = key.strip()
+                value = value.strip()
+
+                # Remove quotes if present
+                if value.startswith('"') and value.endswith('"'):
+                    value = value[1:-1]
+                elif value.startswith("'") and value.endswith("'"):
+                    value = value[1:-1]
+
+                environment[key] = value
+
+    # 2. Override with --env options (command line takes precedence)
+    for env_pair in env_tuples:
+        if '=' not in env_pair:
+            raise ValueError(
+                f"Invalid env format: '{env_pair}'. Use KEY=VALUE format"
+            )
+
+        key, value = env_pair.split('=', 1)
+        environment[key.strip()] = value.strip()
+
+    return environment
+
+
 @click.group()
 def deploy():
     """
@@ -129,7 +189,26 @@ def deploy():
     help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
     default=None,
 )
-def local(source: str, name: str, host: str, port: int, entrypoint: str):
+@click.option(
+    "--env",
+    "-E",
+    multiple=True,
+    help="Environment variable in KEY=VALUE format (can be repeated)",
+)
+@click.option(
+    "--env-file",
+    type=click.Path(exists=True),
+    help="Path to .env file with environment variables",
+)
+def local(
+    source: str,
+    name: str,
+    host: str,
+    port: int,
+    entrypoint: str,
+    env: tuple,
+    env_file: str,
+):
     """
     Deploy locally in detached mode.
 
@@ -141,62 +220,60 @@ def local(source: str, name: str, host: str, port: int, entrypoint: str):
         # Validate source
         abs_source, source_type = _validate_source(source)
 
+        # Parse environment variables
+        environment = _parse_environment(env, env_file)
+        if environment:
+            echo_info(f"Using {len(environment)} environment variable(s)")
+
         # Initialize state manager
         state_manager = DeploymentStateManager()
 
         # Create deployer
         deployer = LocalDeployManager(host=host, port=port)
 
-        # Prepare deployment parameters based on source type
+        # Prepare entrypoint specification
         if source_type == "directory":
-            # For directory: pass project_dir to deployer
+            # For directory: find entrypoint and create path
             project_dir = abs_source
             entry_script = _find_entrypoint(project_dir, entrypoint)
+            entrypoint_spec = os.path.join(project_dir, entry_script)
 
             echo_info(f"Using project directory: {project_dir}")
             echo_info(f"Entry script: {entry_script}")
-
-            # Deploy locally from project directory
-            echo_info(f"Deploying agent to {host}:{port} in detached mode...")
-            result = asyncio.run(
-                deployer.deploy(
-                    project_dir=project_dir,
-                    mode=DeploymentMode.DETACHED_PROCESS,
-                )
-            )
         else:
-            # For single file: pass as entrypoint specification
+            # For single file: use file path directly
             entrypoint_spec = abs_source
-            if entrypoint:
-                entrypoint_spec = f"{abs_source}:{entrypoint}"
 
             echo_info(f"Using file: {abs_source}")
 
-            # Deploy locally from file
-            echo_info(f"Deploying agent to {host}:{port} in detached mode...")
-            result = asyncio.run(
-                deployer.deploy(
-                    entrypoint=entrypoint_spec,
-                    mode=DeploymentMode.DETACHED_PROCESS,
-                )
+        # Deploy locally using entrypoint
+        echo_info(f"Deploying agent to {host}:{port} in detached mode...")
+        result = asyncio.run(
+            deployer.deploy(
+                entrypoint=entrypoint_spec,
+                mode=DeploymentMode.DETACHED_PROCESS,
+                environment=environment if environment else None,
             )
+        )
 
         deploy_id = result.get("deploy_id")
         url = result.get("url")
 
         # Save deployment metadata
-        state_manager.save({
-            "id": deploy_id,
-            "platform": "local",
-            "url": url,
-            "agent_source": abs_source,
-            "status": "running",
-            "config": {
+        deployment = Deployment(
+            id=deploy_id,
+            platform="local",
+            url=url,
+            agent_source=abs_source,
+            created_at=format_timestamp(),
+            status="running",
+            config={
                 "host": host,
                 "port": port,
                 "entrypoint": entrypoint,
             },
-        })
+        )
+        state_manager.save(deployment)
 
         echo_success(f"Deployment successful!")
         echo_info(f"Deployment ID: {deploy_id}")
@@ -220,7 +297,25 @@ def local(source: str, name: str, host: str, port: int, entrypoint: str):
     default=None,
 )
 @click.option("--skip-upload", is_flag=True, help="Build package without uploading")
-def modelstudio(source: str, name: str, entrypoint: str, skip_upload: bool):
+@click.option(
+    "--env",
+    "-E",
+    multiple=True,
+    help="Environment variable in KEY=VALUE format (can be repeated)",
+)
+@click.option(
+    "--env-file",
+    type=click.Path(exists=True),
+    help="Path to .env file with environment variables",
+)
+def modelstudio(
+    source: str,
+    name: str,
+    entrypoint: str,
+    skip_upload: bool,
+    env: tuple,
+    env_file: str,
+):
     """
     Deploy to Alibaba Cloud ModelStudio.
 
@@ -242,50 +337,47 @@ def modelstudio(source: str, name: str, entrypoint: str, skip_upload: bool):
         # Validate source
         abs_source, source_type = _validate_source(source)
 
+        # Parse environment variables
+        environment = _parse_environment(env, env_file)
+        if environment:
+            echo_info(f"Using {len(environment)} environment variable(s)")
+
         # Initialize state manager
         state_manager = DeploymentStateManager()
 
         # Create deployer
         deployer = ModelstudioDeployManager()
 
-        # Prepare deployment parameters based on source type
+        # Prepare deployment parameters - ModelStudio always needs project_dir + cmd
         if source_type == "directory":
-            # For directory: pass project_dir and cmd to deployer
+            # For directory: use directory as project_dir
             project_dir = abs_source
             entry_script = _find_entrypoint(project_dir, entrypoint)
             cmd = f"python {entry_script}"
 
             echo_info(f"Using project directory: {project_dir}")
             echo_info(f"Entry script: {entry_script}")
-
-            # Deploy to ModelStudio from project directory
-            echo_info("Deploying to ModelStudio...")
-            result = asyncio.run(
-                deployer.deploy(
-                    project_dir=project_dir,
-                    cmd=cmd,
-                    deploy_name=name,
-                    skip_upload=skip_upload,
-                )
-            )
         else:
-            # For single file: pass as entrypoint specification
-            # Let deployer's package utility handle it
-            entrypoint_spec = abs_source
-            if entrypoint:
-                entrypoint_spec = f"{abs_source}:{entrypoint}"
+            # For single file: use parent directory as project_dir
+            file_path = abs_source
+            project_dir = os.path.dirname(file_path)
+            entry_filename = os.path.basename(file_path)
+            cmd = f"python {entry_filename}"
 
-            echo_info(f"Using file: {abs_source}")
+            echo_info(f"Using file: {file_path}")
+            echo_info(f"Project directory: {project_dir}")
 
-            # Deploy to ModelStudio from file
-            echo_info("Deploying to ModelStudio...")
-            result = asyncio.run(
-                deployer.deploy(
-                    entrypoint=entrypoint_spec,
-                    deploy_name=name,
-                    skip_upload=skip_upload,
-                )
+        # Deploy to ModelStudio using project_dir + cmd
+        echo_info("Deploying to ModelStudio...")
+        result = asyncio.run(
+            deployer.deploy(
+                project_dir=project_dir,
+                cmd=cmd,
+                deploy_name=name,
+                skip_upload=skip_upload,
+                environment=environment if environment else None,
             )
+        )
 
         if skip_upload:
             echo_success("Package built successfully")
@@ -296,18 +388,20 @@ def modelstudio(source: str, name: str, entrypoint: str, skip_upload: bool):
             workspace_id = result.get("workspace_id")
 
             # Save deployment metadata
-            state_manager.save({
-                "id": deploy_id,
-                "platform": "modelstudio",
-                "url": url,
-                "agent_source": abs_source,
-                "status": "deployed",
-                "config": {
+            deployment = Deployment(
+                id=deploy_id,
+                platform="modelstudio",
+                url=url,
+                agent_source=abs_source,
+                created_at=format_timestamp(),
+                status="deployed",
+                config={
                     "name": name,
                     "workspace_id": workspace_id,
                     "entrypoint": entrypoint,
                 },
-            })
+            )
+            state_manager.save(deployment)
 
             echo_success(f"Deployment successful!")
             echo_info(f"Deployment ID: {deploy_id}")
@@ -334,6 +428,17 @@ def modelstudio(source: str, name: str, entrypoint: str, skip_upload: bool):
 @click.option("--region", help="Alibaba Cloud region", default="cn-hangzhou")
 @click.option("--cpu", help="CPU allocation (cores)", type=float, default=2.0)
 @click.option("--memory", help="Memory allocation (MB)", type=int, default=2048)
+@click.option(
+    "--env",
+    "-E",
+    multiple=True,
+    help="Environment variable in KEY=VALUE format (can be repeated)",
+)
+@click.option(
+    "--env-file",
+    type=click.Path(exists=True),
+    help="Path to .env file with environment variables",
+)
 def agentrun(
     source: str,
     name: str,
@@ -342,6 +447,8 @@ def agentrun(
     region: str,
     cpu: float,
     memory: int,
+    env: tuple,
+    env_file: str,
 ):
     """
     Deploy to Alibaba Cloud AgentRun.
@@ -363,6 +470,11 @@ def agentrun(
         # Validate source
         abs_source, source_type = _validate_source(source)
 
+        # Parse environment variables
+        environment = _parse_environment(env, env_file)
+        if environment:
+            echo_info(f"Using {len(environment)} environment variable(s)")
+
         # Set region and resource config
         if region:
             os.environ["AGENT_RUN_REGION_ID"] = region
@@ -377,43 +489,36 @@ def agentrun(
         # Create deployer
         deployer = AgentRunDeployManager()
 
-        # Prepare deployment parameters based on source type
+        # Prepare deployment parameters - AgentRun always needs project_dir + cmd
         if source_type == "directory":
-            # For directory: pass project_dir and cmd to deployer
+            # For directory: use directory as project_dir
             project_dir = abs_source
             entry_script = _find_entrypoint(project_dir, entrypoint)
             cmd = f"python {entry_script}"
 
             echo_info(f"Using project directory: {project_dir}")
             echo_info(f"Entry script: {entry_script}")
-
-            # Deploy to AgentRun from project directory
-            echo_info("Deploying to AgentRun...")
-            result = asyncio.run(
-                deployer.deploy(
-                    project_dir=project_dir,
-                    cmd=cmd,
-                    deploy_name=name,
-                    skip_upload=skip_upload,
-                )
-            )
         else:
-            # For single file: pass as entrypoint specification
-            entrypoint_spec = abs_source
-            if entrypoint:
-                entrypoint_spec = f"{abs_source}:{entrypoint}"
+            # For single file: use parent directory as project_dir
+            file_path = abs_source
+            project_dir = os.path.dirname(file_path)
+            entry_filename = os.path.basename(file_path)
+            cmd = f"python {entry_filename}"
 
-            echo_info(f"Using file: {abs_source}")
+            echo_info(f"Using file: {file_path}")
+            echo_info(f"Project directory: {project_dir}")
 
-            # Deploy to AgentRun from file
-            echo_info("Deploying to AgentRun...")
-            result = asyncio.run(
-                deployer.deploy(
-                    entrypoint=entrypoint_spec,
-                    deploy_name=name,
-                    skip_upload=skip_upload,
-                )
+        # Deploy to AgentRun using project_dir + cmd
+        echo_info("Deploying to AgentRun...")
+        result = asyncio.run(
+            deployer.deploy(
+                project_dir=project_dir,
+                cmd=cmd,
+                deploy_name=name,
+                skip_upload=skip_upload,
+                environment=environment if environment else None,
             )
+        )
 
         if skip_upload:
             echo_success("Package built successfully")
@@ -424,20 +529,22 @@ def agentrun(
             endpoint_url = result.get("agentrun_endpoint_url")
 
             # Save deployment metadata
-            state_manager.save({
-                "id": deploy_id,
-                "platform": "agentrun",
-                "url": endpoint_url or url,
-                "agent_source": abs_source,
-                "status": "running",
-                "config": {
+            deployment = Deployment(
+                id=deploy_id,
+                platform="agentrun",
+                url=endpoint_url or url,
+                agent_source=abs_source,
+                created_at=format_timestamp(),
+                status="running",
+                config={
                     "name": name,
                     "region": region,
                     "cpu": cpu,
                     "memory": memory,
                     "entrypoint": entrypoint,
                 },
-            })
+            )
+            state_manager.save(deployment)
 
             echo_success(f"Deployment successful!")
             echo_info(f"Deployment ID: {deploy_id}")
@@ -466,6 +573,17 @@ def agentrun(
     help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
     default=None,
 )
+@click.option(
+    "--env",
+    "-E",
+    multiple=True,
+    help="Environment variable in KEY=VALUE format (can be repeated)",
+)
+@click.option(
+    "--env-file",
+    type=click.Path(exists=True),
+    help="Path to .env file with environment variables",
+)
 def k8s(
     source: str,
     name: str,
@@ -476,6 +594,8 @@ def k8s(
     image_tag: str,
     push: bool,
     entrypoint: str,
+    env: tuple,
+    env_file: str,
 ):
     """
     Deploy to Kubernetes/ACK.
@@ -490,36 +610,48 @@ def k8s(
         sys.exit(1)
 
     try:
-        # K8s deployer currently requires app object, so we need to load it
-        # In the future, K8s deployer should be refactored to accept entrypoint like others
-        from agentscope_runtime.cli.loaders.agent_loader import UnifiedAgentLoader
-
         echo_info(f"Preparing deployment from {source}...")
 
         # Validate source
         abs_source, source_type = _validate_source(source)
 
+        # Parse environment variables
+        environment = _parse_environment(env, env_file)
+        if environment:
+            echo_info(f"Using {len(environment)} environment variable(s)")
+
         # Initialize state manager
         state_manager = DeploymentStateManager()
-
-        # Load the agent (K8s deployer needs app object)
-        loader = UnifiedAgentLoader(state_manager)
-        agent_app = loader.load(source, entrypoint=entrypoint)
-        echo_success(f"Agent loaded successfully")
 
         # Create deployer
         deployer = KubernetesDeployManager()
 
-        # Deploy to Kubernetes
+        # Prepare entrypoint specification
+        if source_type == "directory":
+            # For directory: find entrypoint and create path
+            project_dir = abs_source
+            entry_script = _find_entrypoint(project_dir, entrypoint)
+            entrypoint_spec = os.path.join(project_dir, entry_script)
+
+            echo_info(f"Using project directory: {project_dir}")
+            echo_info(f"Entry script: {entry_script}")
+        else:
+            # For single file: use file path directly
+            entrypoint_spec = abs_source
+
+            echo_info(f"Using file: {abs_source}")
+
+        # Deploy to Kubernetes using entrypoint
         echo_info("Deploying to Kubernetes...")
         result = asyncio.run(
             deployer.deploy(
-                app=agent_app,
+                entrypoint=entrypoint_spec,
                 port=port,
                 replicas=replicas,
                 image_name=image_name,
                 image_tag=image_tag,
                 push_to_registry=push,
+                environment=environment if environment else None,
             )
         )
 
@@ -528,13 +660,14 @@ def k8s(
         resource_name = result.get("resource_name")
 
         # Save deployment metadata
-        state_manager.save({
-            "id": deploy_id,
-            "platform": "k8s",
-            "url": url,
-            "agent_source": abs_source,
-            "status": "running",
-            "config": {
+        deployment = Deployment(
+            id=deploy_id,
+            platform="k8s",
+            url=url,
+            agent_source=abs_source,
+            created_at=format_timestamp(),
+            status="running",
+            config={
                 "name": name,
                 "namespace": namespace,
                 "replicas": replicas,
@@ -544,7 +677,8 @@ def k8s(
                 "resource_name": resource_name,
                 "entrypoint": entrypoint,
             },
-        })
+        )
+        state_manager.save(deployment)
 
         echo_success(f"Deployment successful!")
         echo_info(f"Deployment ID: {deploy_id}")
