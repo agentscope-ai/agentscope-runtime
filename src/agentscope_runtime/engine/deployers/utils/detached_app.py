@@ -73,8 +73,8 @@ def build_detached_app(
     if app is not None and runner is None:
         runner = ensure_runner_from_app(app)
 
-    if runner is None and app is None:
-        raise ValueError("Either app or runner must be provided")
+    if runner is None and app is None and entrypoint is None:
+        raise ValueError("Either app or runner or entrypoint must be provided")
 
     normalized_requirements = _normalize_requirements(requirements)
 

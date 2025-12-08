@@ -271,6 +271,15 @@ class ImageFactory:
                     config=build_config,
                     source_updated=is_updated,
                 )
+                logger.info(f"Image built: {full_image_name}")
+
+                # make sure tag the image if not push
+                registry_full_name = self.image_builder.tag_image(
+                    full_image_name,
+                    config.registry_config,
+                )
+                logger.info(f"Image tag to: {registry_full_name}")
+
                 logger.info(f"Image built locally: {full_image_name}")
 
             return full_image_name
