@@ -807,6 +807,101 @@ body.preview-active {
 </div>
 </div>
 </section>
+<section id="servicefactory">
+<h2>ServiceFactory：统一的服务创建模式<a class="headerlink" href="#servicefactory" title="Link to this heading">¶</a></h2>
+<p>在实际使用中，同一种服务（如 SessionHistory、Memory、Sandbox、State）可能会有多种实现后端，例如内存版、Redis、数据库版等。
+为了让服务的创建更灵活、可配置，AgentScope Runtime 提供了一个通用的 <strong>服务工厂基类</strong> <code class="docutils literal notranslate"><span class="pre">ServiceFactory</span></code>：</p>
+<ul class="simple">
+<li><p><strong>统一注册</strong>多种后端构造方法（<code class="docutils literal notranslate"><span class="pre">register_backend</span></code>）</p></li>
+<li><p><strong>支持环境变量配置服务参数</strong>，通过 <code class="docutils literal notranslate"><span class="pre">&lt;PREFIX&gt;BACKEND</span></code> 决定使用哪个后端</p></li>
+<li><p><strong>支持 <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> 覆盖环境变量配置</strong>（优先级：kwargs &gt; 环境变量）</p></li>
+<li><p><strong>自动过滤无效参数</strong>（仅传递构造函数能接收的参数）</p></li>
+<li><p><strong>异步创建实例</strong>，适合需要 <code class="docutils literal notranslate"><span class="pre">start()</span></code> 异步初始化的服务</p></li>
+<li><p><strong>镜像复用优势</strong>：同一运行镜像下，可通过改变环境变量快速切换不同后端实现，无需重新构建镜像，从而便于部署和测试</p></li>
+</ul>
+<section id="id9">
+<h3>创建流程示例<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 以状态服务为例</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.agent_state</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateServiceFactory</span>
+
+<span class="c1"># 使用环境变量配置</span>
+<span class="c1"># export STATE_BACKEND=redis</span>
+<span class="c1"># export STATE_REDIS_REDIS_URL=&quot;redis://localhost:6379/5&quot;</span>
+<span class="n">service</span> <span class="o">=</span> <span class="k">await</span> <span class="n">StateServiceFactory</span><span class="o">.</span><span class="n">create</span><span class="p">()</span>
+
+<span class="c1"># 使用 kwargs 覆盖环境变量</span>
+<span class="n">service</span> <span class="o">=</span> <span class="k">await</span> <span class="n">StateServiceFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">backend_type</span><span class="o">=</span><span class="s2">&quot;redis&quot;</span><span class="p">,</span>
+    <span class="n">redis_url</span><span class="o">=</span><span class="s2">&quot;redis://otherhost:6379/1&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># 注册自定义后端</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">my_backend</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresStateService</span>
+<span class="n">StateServiceFactory</span><span class="o">.</span><span class="n">register_backend</span><span class="p">(</span><span class="s2">&quot;postgres&quot;</span><span class="p">,</span> <span class="n">PostgresStateService</span><span class="p">)</span>
+<span class="n">service</span> <span class="o">=</span> <span class="k">await</span> <span class="n">StateServiceFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">backend_type</span><span class="o">=</span><span class="s2">&quot;postgres&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="id10">
+<h3>常用<code class="docutils literal notranslate"><span class="pre">ServiceFactory</span></code>与默认后端<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>ServiceFactory 子类</p></th>
+<th class="head"><p>管理的 Service 类型</p></th>
+<th class="head"><p>环境变量前缀</p></th>
+<th class="head"><p>默认后端</p></th>
+<th class="head"><p>已注册的默认后端类型</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">StateServiceFactory</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">StateService</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">STATE_</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code>、<code class="docutils literal notranslate"><span class="pre">redis</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">MemoryServiceFactory</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MemoryService</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MEMORY_</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code>、<code class="docutils literal notranslate"><span class="pre">redis</span></code>、<code class="docutils literal notranslate"><span class="pre">mem0</span></code>、<code class="docutils literal notranslate"><span class="pre">reme_personal</span></code>、<code class="docutils literal notranslate"><span class="pre">reme_task</span></code>、<code class="docutils literal notranslate"><span class="pre">tablestore</span></code>(可选)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SandboxServiceFactory</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SandboxService</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SANDBOX_</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">default</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">default</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SessionHistoryServiceFactory</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SessionHistoryService</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SESSION_HISTORY_</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code>、<code class="docutils literal notranslate"><span class="pre">redis</span></code>、<code class="docutils literal notranslate"><span class="pre">tablestore</span></code>(可选)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="id11">
+<h3>使用提示<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
+<ul>
+<li><p>选择后端：通过设置<code class="docutils literal notranslate"><span class="pre">&lt;PREFIX&gt;BACKEND</span></code>环境变量选择实现</p>
+<p>例如：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">MEMORY_BACKEND</span><span class="o">=</span>redis
+<span class="nb">export</span><span class="w"> </span><span class="nv">MEMORY_REDIS_REDIS_URL</span><span class="o">=</span><span class="s2">&quot;redis://localhost:6379/5&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>参数优先级</strong>：<code class="docutils literal notranslate"><span class="pre">kwargs</span></code> &gt; 环境变量</p></li>
+<li><p><strong>自定义后端</strong>：使用 <code class="docutils literal notranslate"><span class="pre">.register_backend(&quot;name&quot;,</span> <span class="pre">constructor)</span></code> 注册新实现</p></li>
+</ul>
+</section>
+</section>
 <div class="toctree-wrapper compound">
 </div>
 </section>
@@ -922,6 +1017,12 @@ body.preview-active {
 </ul>
 </li>
 <li><a class="reference internal" href="#id8">服务的接口</a></li>
+<li><a class="reference internal" href="#servicefactory">ServiceFactory：统一的服务创建模式</a><ul>
+<li><a class="reference internal" href="#id9">创建流程示例</a></li>
+<li><a class="reference internal" href="#id10">常用<code class="docutils literal notranslate"><span class="pre">ServiceFactory</span></code>与默认后端</a></li>
+<li><a class="reference internal" href="#id11">使用提示</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

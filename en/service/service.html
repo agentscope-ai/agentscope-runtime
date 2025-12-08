@@ -811,6 +811,101 @@ Sandboxes are organized using a composite key of session ID and user ID, giving 
 </div>
 </div>
 </section>
+<section id="servicefactory-unified-service-creation-pattern">
+<h2>ServiceFactory：Unified Service Creation Pattern<a class="headerlink" href="#servicefactory-unified-service-creation-pattern" title="Link to this heading">¶</a></h2>
+<p>In practice, the same type of service (such as <code class="docutils literal notranslate"><span class="pre">SessionHistory</span></code>, <code class="docutils literal notranslate"><span class="pre">Memory</span></code>, <code class="docutils literal notranslate"><span class="pre">Sandbox</span></code>, <code class="docutils literal notranslate"><span class="pre">State</span></code>) may have multiple backend implementations — for example, in-memory, Redis, or database-based.</p>
+<p>To make service creation more flexible and configurable, <strong>AgentScope Runtime</strong> provides a general <strong>service factory base class</strong> <code class="docutils literal notranslate"><span class="pre">ServiceFactory</span></code> which supports:</p>
+<ul class="simple">
+<li><p><strong>Unified registration</strong> of multiple backend constructors (<code class="docutils literal notranslate"><span class="pre">register_backend</span></code>)</p></li>
+<li><p><strong>Environment variable configuration</strong> of service parameters, with <code class="docutils literal notranslate"><span class="pre">&lt;PREFIX&gt;BACKEND</span></code> determining which backend to use</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">kwargs</span></code> overriding</strong> of environment variable configurations (priority: <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> &gt; environment variables)</p></li>
+<li><p><strong>Automatic filtering of invalid parameters</strong> (only parameters accepted by the constructor are passed)</p></li>
+<li><p><strong>Asynchronous instance creation</strong>, suited for services requiring asynchronous initialization via <code class="docutils literal notranslate"><span class="pre">start()</span></code></p></li>
+<li><p><strong>Image reuse benefit</strong>: within the same runtime image, you can switch backend implementations simply by changing environment variables, without rebuilding the image — making deployment and testing easier</p></li>
+</ul>
+<section id="example-creation-process">
+<h3>Example Creation Process<a class="headerlink" href="#example-creation-process" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example: State Service</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.agent_state</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateServiceFactory</span>
+
+<span class="c1"># Use environment variable configuration</span>
+<span class="c1"># export STATE_BACKEND=redis</span>
+<span class="c1"># export STATE_REDIS_REDIS_URL=&quot;redis://localhost:6379/5&quot;</span>
+<span class="n">service</span> <span class="o">=</span> <span class="k">await</span> <span class="n">StateServiceFactory</span><span class="o">.</span><span class="n">create</span><span class="p">()</span>
+
+<span class="c1"># Use kwargs to override environment variables</span>
+<span class="n">service</span> <span class="o">=</span> <span class="k">await</span> <span class="n">StateServiceFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">backend_type</span><span class="o">=</span><span class="s2">&quot;redis&quot;</span><span class="p">,</span>
+    <span class="n">redis_url</span><span class="o">=</span><span class="s2">&quot;redis://otherhost:6379/1&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># Register a custom backend</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">my_backend</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresStateService</span>
+<span class="n">StateServiceFactory</span><span class="o">.</span><span class="n">register_backend</span><span class="p">(</span><span class="s2">&quot;postgres&quot;</span><span class="p">,</span> <span class="n">PostgresStateService</span><span class="p">)</span>
+<span class="n">service</span> <span class="o">=</span> <span class="k">await</span> <span class="n">StateServiceFactory</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">backend_type</span><span class="o">=</span><span class="s2">&quot;postgres&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="common-servicefactory-and-default-backends">
+<h3>Common <code class="docutils literal notranslate"><span class="pre">ServiceFactory</span></code> and Default Backends<a class="headerlink" href="#common-servicefactory-and-default-backends" title="Link to this heading">¶</a></h3>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>ServiceFactory Subclass</p></th>
+<th class="head"><p>Managed Service Type</p></th>
+<th class="head"><p>Environment Variable Prefix</p></th>
+<th class="head"><p>Default Backend</p></th>
+<th class="head"><p>Registered Default Backend Types</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">StateServiceFactory</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">StateService</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">STATE_</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code>, <code class="docutils literal notranslate"><span class="pre">redis</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">MemoryServiceFactory</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MemoryService</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MEMORY_</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code>, <code class="docutils literal notranslate"><span class="pre">redis</span></code>, <code class="docutils literal notranslate"><span class="pre">mem0</span></code>, <code class="docutils literal notranslate"><span class="pre">reme_personal</span></code>, <code class="docutils literal notranslate"><span class="pre">reme_task</span></code>, <code class="docutils literal notranslate"><span class="pre">tablestore</span></code> (optional)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SandboxServiceFactory</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SandboxService</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SANDBOX_</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">default</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">default</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SessionHistoryServiceFactory</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SessionHistoryService</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SESSION_HISTORY_</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code>, <code class="docutils literal notranslate"><span class="pre">redis</span></code>, <code class="docutils literal notranslate"><span class="pre">tablestore</span></code> (optional)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="usage-tips">
+<h3>Usage Tips<a class="headerlink" href="#usage-tips" title="Link to this heading">¶</a></h3>
+<ul>
+<li><p><strong>Choosing a backend</strong>: Set the <code class="docutils literal notranslate"><span class="pre">&lt;PREFIX&gt;BACKEND</span></code> environment variable to select the implementation</p>
+<p>Example:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">MEMORY_BACKEND</span><span class="o">=</span>redis
+<span class="nb">export</span><span class="w"> </span><span class="nv">MEMORY_REDIS_REDIS_URL</span><span class="o">=</span><span class="s2">&quot;redis://localhost:6379/5&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Parameter priority</strong>: <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> &gt; environment variables</p></li>
+<li><p><strong>Custom backend</strong>: Use <code class="docutils literal notranslate"><span class="pre">.register_backend(&quot;name&quot;,</span> <span class="pre">constructor)</span></code> to register a new implementation</p></li>
+</ul>
+</section>
+</section>
 <div class="toctree-wrapper compound">
 </div>
 </section>
@@ -926,6 +1021,12 @@ Sandboxes are organized using a composite key of session ID and user ID, giving 
 </ul>
 </li>
 <li><a class="reference internal" href="#service-interface">Service Interface</a></li>
+<li><a class="reference internal" href="#servicefactory-unified-service-creation-pattern">ServiceFactory：Unified Service Creation Pattern</a><ul>
+<li><a class="reference internal" href="#example-creation-process">Example Creation Process</a></li>
+<li><a class="reference internal" href="#common-servicefactory-and-default-backends">Common <code class="docutils literal notranslate"><span class="pre">ServiceFactory</span></code> and Default Backends</a></li>
+<li><a class="reference internal" href="#usage-tips">Usage Tips</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
