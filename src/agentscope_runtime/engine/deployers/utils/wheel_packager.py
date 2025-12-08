@@ -32,8 +32,10 @@ except ImportError:  # pragma: no cover - fallback on older Pythons
     tomllib = None  # type: ignore
 
 
-def get_user_bundle_appdir(build_root:Path, user_project_dir: Path) -> Path:
-    return build_root/ "deploy_starter"/"user_bundle"/user_project_dir.name
+def get_user_bundle_appdir(build_root: Path, user_project_dir: Path) -> Path:
+    return (
+        build_root / "deploy_starter" / "user_bundle" / user_project_dir.name
+    )
 
 
 def _read_text_file_lines(file_path: Path) -> List[str]:
@@ -200,7 +202,7 @@ def generate_wrapper_project(
 
     _, local_wheels = _gather_user_dependencies(user_project_dir)
 
-    #gather
+    # gather
     append_project_requirements(
         build_root,
         additional_requirements=requirements,
@@ -233,7 +235,6 @@ def generate_wrapper_project(
         if key and key not in seen:
             seen.add(key)
             install_requires.append(pkg)
-
 
     # 3) Packaging metadata
     unique_suffix = uuid.uuid4().hex[:8]

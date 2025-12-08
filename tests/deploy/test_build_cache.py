@@ -39,17 +39,27 @@ class TestBuildCache:
         cache = BuildCache(workspace=temp_workspace)
 
         assert cache.workspace.resolve() == temp_workspace.resolve()
-        assert cache.cache_root == cache.workspace / ".agentscope_runtime" / "builds"
+        assert (
+            cache.cache_root
+            == cache.workspace / ".agentscope_runtime" / "builds"
+        )
         assert cache.cache_root.exists()
 
-    def test_cache_initialization_with_env_var(self, temp_workspace, monkeypatch):
+    def test_cache_initialization_with_env_var(
+        self,
+        temp_workspace,
+        monkeypatch,
+    ):
         """Test cache initialization with environment variable."""
         monkeypatch.setenv("AGENTSCOPE_RUNTIME_WORKSPACE", str(temp_workspace))
 
         cache = BuildCache()
 
         assert cache.workspace.resolve() == temp_workspace.resolve()
-        assert cache.cache_root == cache.workspace / ".agentscope_runtime" / "builds"
+        assert (
+            cache.cache_root
+            == cache.workspace / ".agentscope_runtime" / "builds"
+        )
 
     def test_cache_miss(self, temp_workspace, temp_project):
         """Test cache miss returns None."""
@@ -165,7 +175,11 @@ class TestBuildCache:
 
         assert hash1 != hash2
 
-    def test_hash_changes_with_requirements(self, temp_workspace, temp_project):
+    def test_hash_changes_with_requirements(
+        self,
+        temp_workspace,
+        temp_project,
+    ):
         """Test that hash changes when requirements change."""
         cache = BuildCache(workspace=temp_workspace)
 

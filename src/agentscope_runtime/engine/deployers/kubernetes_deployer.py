@@ -12,6 +12,7 @@ from .utils.docker_image_utils import (
     ImageFactory,
     RegistryConfig,
 )
+from .utils.k8s_utils import isLocalK8sEnvironment
 from ...common.container_clients.kubernetes_client import (
     KubernetesClient,
 )
@@ -36,7 +37,7 @@ class K8sConfig(BaseModel):
 class BuildConfig(BaseModel):
     """Build configuration"""
 
-    build_context_dir: str = None  # None allows caching
+    build_context_dir: Optional[str] = None  # None allows caching
     dockerfile_template: str = None
     build_timeout: int = 600  # 10 minutes
     push_timeout: int = 300  # 5 minutes
@@ -51,7 +52,7 @@ class KubernetesDeployManager(DeployManager):
         kube_config: K8sConfig = None,
         registry_config: RegistryConfig = RegistryConfig(),
         use_deployment: bool = True,
-        build_context_dir: str = None,
+        build_context_dir: Optional[str] = None,
     ):
         super().__init__()
         self.kubeconfig = kube_config
@@ -66,6 +67,45 @@ class KubernetesDeployManager(DeployManager):
             config=self.kubeconfig,
             image_registry=self.registry_config.get_full_url(),
         )
+
+    @staticmethod
+    def get_service_endpoint(
+        service_external_ip: str,
+        service_port: int,
+        fallback_host: str = "127.0.0.1",
+    ) -> str:
+        """
+        Auto-select appropriate service endpoint based on detected environment.
+
+        Solves the common issue where Kubernetes LoadBalancer/ExternalIP is not
+        reachable from localhost in local clusters (e.g., Minikube/Kind).
+
+        Args:
+            service_external_ip: ExternalIP or LoadBalancer IP from Service spec
+            service_port: Target port
+            fallback_host: Host to use in local environments (default: 127.0.0.1)
+
+        Returns:
+            str: Full HTTP endpoint URL: http://<host>:<port>
+
+        Example:
+            >>> endpoint = get_service_endpoint('192.168.5.1', 8080)
+            >>> # In local env → 'http://127.0.0.1:8080'
+            >>> # In cloud env → 'http://192.168.5.1:8080'
+        """
+
+        if isLocalK8sEnvironment():
+            host = fallback_host
+            logger.info(
+                f"Local K8s environment detected; using {host} instead of {service_external_ip}"
+            )
+        else:
+            host = service_external_ip
+            logger.info(
+                f"Cloud/remote environment detected; using External IP: {host}"
+            )
+
+        return f"http://{host}:{service_port}"
 
     async def deploy(
         self,
@@ -205,9 +245,9 @@ class KubernetesDeployManager(DeployManager):
                 )
 
             if ports:
-                url = f"http://{ip}:{ports[0]}"
+                url = self.get_service_endpoint(ip, ports[0])
             else:
-                url = f"http://{ip}:8080"
+                url = self.get_service_endpoint(ip, port)
 
             logger.info(f"Deployment {deploy_id} successful: {url}")
 

@@ -24,7 +24,7 @@ from .utils.wheel_packager import (
     generate_wrapper_project,
     build_wheel,
     default_deploy_name,
-    get_user_bundle_appdir
+    get_user_bundle_appdir,
 )
 
 logger = logging.getLogger(__name__)
@@ -605,7 +605,6 @@ class ModelstudioDeployManager(DeployManager):
 
         return wheel_path, name
 
-
     def _generate_env_file(
         self,
         project_dir: Union[str, Path],
@@ -743,7 +742,12 @@ class ModelstudioDeployManager(DeployManager):
         resource_name (deploy_name), and workspace_id.
         """
         if not agent_id:
-            if not app and not runner and not project_dir and not external_whl_path:
+            if (
+                not app
+                and not runner
+                and not project_dir
+                and not external_whl_path
+            ):
                 raise ValueError(
                     "Either app, runner, project_dir, "
                     "or external_whl_path must be provided.",

@@ -28,7 +28,7 @@ class ImageConfig(BaseModel):
     # Package configuration
     requirements: Optional[List[str]] = None
     extra_packages: Optional[List[str]] = None
-    build_context_dir: str = None  # None allows caching
+    build_context_dir: Optional[str] = None
     endpoint_path: str = "/process"
     protocol_adapters: Optional[List] = None  # New: protocol adapters
     custom_endpoints: Optional[
@@ -216,6 +216,7 @@ class ImageFactory:
                 port=config.port,
                 env_vars=config.env_vars,
                 startup_command=startup_command,
+                platform=config.platform,
             )
 
             dockerfile_path = self.dockerfile_generator.create_dockerfile(

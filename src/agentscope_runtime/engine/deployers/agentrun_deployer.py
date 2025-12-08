@@ -563,7 +563,12 @@ class AgentRunDeployManager(DeployManager):
             FileNotFoundError: If specified files/directories don't exist.
         """
         if not agentrun_id:
-            if not app and not runner and not project_dir and not external_whl_path:
+            if (
+                not app
+                and not runner
+                and not project_dir
+                and not external_whl_path
+            ):
                 raise ValueError(
                     "Must provide either app, runner, project_dir, or external_whl_path",
                 )

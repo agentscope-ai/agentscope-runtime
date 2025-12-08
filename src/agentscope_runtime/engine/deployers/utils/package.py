@@ -63,7 +63,7 @@ def generate_build_directory(
 
     # Generate timestamp-based name with random suffix
     timestamp = time.strftime("%Y%m%d_%H%M%S")
-    random_suffix = ''.join(random.choices('0123456789abcdef', k=6))
+    random_suffix = "".join(random.choices("0123456789abcdef", k=6))
     build_name = f"{platform}_{timestamp}_{random_suffix}"
 
     return workspace / build_name

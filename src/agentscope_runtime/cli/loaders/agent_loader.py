@@ -146,7 +146,11 @@ class FileLoader:
 class ProjectLoader:
     """Load AgentApp from project directory."""
 
-    def load(self, project_dir: str, entrypoint: Optional[str] = None) -> AgentApp:
+    def load(
+        self,
+        project_dir: str,
+        entrypoint: Optional[str] = None,
+    ) -> AgentApp:
         """
         Load AgentApp from project directory.
 
@@ -168,7 +172,7 @@ class ProjectLoader:
             file_path = os.path.join(project_dir, entrypoint)
             if not os.path.isfile(file_path):
                 raise AgentLoadError(
-                    f"Entrypoint file not found: {file_path}"
+                    f"Entrypoint file not found: {file_path}",
                 )
             file_loader = FileLoader()
             return file_loader.load(file_path)
@@ -270,11 +274,14 @@ class UnifiedAgentLoader:
             elif source_type == "file":
                 if entrypoint:
                     raise AgentLoadError(
-                        "The --entrypoint option is only applicable for directory sources, not file sources"
+                        "The --entrypoint option is only applicable for directory sources, not file sources",
                     )
                 return self.file_loader.load(normalized_source)
             elif source_type == "directory":
-                return self.project_loader.load(normalized_source, entrypoint=entrypoint)
+                return self.project_loader.load(
+                    normalized_source,
+                    entrypoint=entrypoint,
+                )
             else:
                 raise AgentLoadError(f"Unknown source type: {source_type}")
 

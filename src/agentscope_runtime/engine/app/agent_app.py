@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8080"))
 
+
 class AgentApp(BaseApp):
     """
     The AgentApp class represents an application that runs as an agent.

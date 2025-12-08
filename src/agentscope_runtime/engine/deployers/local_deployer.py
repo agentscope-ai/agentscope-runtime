@@ -245,11 +245,14 @@ class LocalDeployManager(DeployManager):
             if entrypoint and not project_dir:
                 # Parse entrypoint to get project_dir
                 from .utils.package import parse_entrypoint
+
                 project_info = parse_entrypoint(entrypoint)
                 project_dir = project_info.project_dir
 
             # project_dir is now ready to use
-            self._logger.info(f"Using provided project directory: {project_dir}")
+            self._logger.info(
+                f"Using provided project directory: {project_dir}",
+            )
         else:
             # Original behavior: require app or runner
             if runner is None and self._app is None:

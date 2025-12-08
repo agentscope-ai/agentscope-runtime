@@ -52,7 +52,10 @@ class BuildCache:
                       AGENTSCOPE_RUNTIME_WORKSPACE env var)
         """
         if workspace is None:
-            workspace_str = os.getenv("AGENTSCOPE_RUNTIME_WORKSPACE", os.getcwd())
+            workspace_str = os.getenv(
+                "AGENTSCOPE_RUNTIME_WORKSPACE",
+                os.getcwd(),
+            )
             workspace = Path(workspace_str)
 
         self.workspace = Path(workspace).resolve()
@@ -60,7 +63,9 @@ class BuildCache:
         self.cache_root.mkdir(parents=True, exist_ok=True)
 
         # Deployment metadata file for tracking cache mappings
-        self.metadata_file = self.workspace / ".agentscope_runtime" / "deployments.json"
+        self.metadata_file = (
+            self.workspace / ".agentscope_runtime" / "deployments.json"
+        )
 
         logger.debug(f"BuildCache initialized at: {self.cache_root}")
 
@@ -145,7 +150,9 @@ class BuildCache:
                 cache_dir = self.cache_root / build_name
 
                 if not cache_dir.exists():
-                    logger.warning(f"Cached build referenced in metadata but not found: {build_name}")
+                    logger.warning(
+                        f"Cached build referenced in metadata but not found: {build_name}",
+                    )
                     continue
 
                 # Validate cache integrity
@@ -375,7 +382,8 @@ class BuildCache:
             for root, dirs, files in sorted(os.walk(path)):
                 # Filter ignored directories (in-place)
                 dirs[:] = [
-                    d for d in sorted(dirs)
+                    d
+                    for d in sorted(dirs)
                     if not self._should_ignore(d, ignore_patterns)
                 ]
 
@@ -402,7 +410,9 @@ class BuildCache:
                             hasher.update(f.read())
                     except (OSError, IOError) as e:
                         # Skip files that can't be read
-                        logger.debug(f"Skipping unreadable file {filepath}: {e}")
+                        logger.debug(
+                            f"Skipping unreadable file {filepath}: {e}",
+                        )
                         continue
 
         except Exception as e:
@@ -432,6 +442,7 @@ class BuildCache:
             # Check wildcard patterns
             if "*" in pattern:
                 import fnmatch
+
                 if fnmatch.fnmatch(path, pattern):
                     return True
                 # Also check each part
@@ -502,12 +513,16 @@ class BuildCache:
 
         # Look for existing wrapper build with matching hash
         for build_name, build_info in metadata.items():
-            if (build_info.get("content_hash") == build_hash and
-                build_info.get("type") == "wrapper"):
+            if (
+                build_info.get("content_hash") == build_hash
+                and build_info.get("type") == "wrapper"
+            ):
                 cache_dir = self.cache_root / build_name
 
                 if not cache_dir.exists():
-                    logger.warning(f"Cached wrapper referenced in metadata but not found: {build_name}")
+                    logger.warning(
+                        f"Cached wrapper referenced in metadata but not found: {build_name}",
+                    )
                     continue
 
                 # Validate cache integrity for wrapper (check for wheel file)
@@ -516,13 +531,17 @@ class BuildCache:
                     try:
                         shutil.rmtree(cache_dir)
                     except Exception as e:
-                        logger.warning(f"Failed to clean corrupted wrapper cache: {e}")
+                        logger.warning(
+                            f"Failed to clean corrupted wrapper cache: {e}",
+                        )
                     continue
 
                 logger.info(f"✓ Wrapper cache hit: {build_name}")
                 return cache_dir
 
-        logger.info(f"Wrapper cache miss: {build_hash[:8]} (platform: {platform})")
+        logger.info(
+            f"Wrapper cache miss: {build_hash[:8]} (platform: {platform})",
+        )
         return None
 
     def store_wrapper(
@@ -662,13 +681,17 @@ class BuildCache:
         wheel_files = list(cache_dir.glob("*.whl"))
 
         if not wheel_files:
-            logger.warning("Wrapper cache validation failed: no wheel file found")
+            logger.warning(
+                "Wrapper cache validation failed: no wheel file found",
+            )
             return False
 
         # Check wheel file is not empty
         for wheel_file in wheel_files:
             if wheel_file.stat().st_size == 0:
-                logger.warning(f"Wrapper cache validation failed: {wheel_file.name} is empty")
+                logger.warning(
+                    f"Wrapper cache validation failed: {wheel_file.name} is empty",
+                )
                 return False
 
         return True
@@ -689,12 +712,16 @@ class BuildCache:
         for required_file in required_files:
             file_path = cache_dir / required_file
             if not file_path.exists():
-                logger.warning(f"Cache validation failed: missing {required_file}")
+                logger.warning(
+                    f"Cache validation failed: missing {required_file}",
+                )
                 return False
 
             # Check file is not empty
             if file_path.stat().st_size == 0:
-                logger.warning(f"Cache validation failed: {required_file} is empty")
+                logger.warning(
+                    f"Cache validation failed: {required_file} is empty",
+                )
                 return False
 
         return True

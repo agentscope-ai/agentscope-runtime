@@ -19,13 +19,16 @@ from agentscope_runtime.engine.deployers.utils.deployment_modes import (
 )
 
 # Only import LocalDeployManager directly (needs app object, will use loader internally)
-from agentscope_runtime.engine.deployers.local_deployer import LocalDeployManager
+from agentscope_runtime.engine.deployers.local_deployer import (
+    LocalDeployManager,
+)
 
 # Optional imports for cloud deployers
 try:
     from agentscope_runtime.engine.deployers.modelstudio_deployer import (
         ModelstudioDeployManager,
     )
+
     MODELSTUDIO_AVAILABLE = True
 except ImportError:
     MODELSTUDIO_AVAILABLE = False
@@ -34,6 +37,7 @@ try:
     from agentscope_runtime.engine.deployers.agentrun_deployer import (
         AgentRunDeployManager,
     )
+
     AGENTRUN_AVAILABLE = True
 except ImportError:
     AGENTRUN_AVAILABLE = False
@@ -42,6 +46,7 @@ try:
     from agentscope_runtime.engine.deployers.kubernetes_deployer import (
         KubernetesDeployManager,
     )
+
     K8S_AVAILABLE = True
 except ImportError:
     K8S_AVAILABLE = False
@@ -98,7 +103,7 @@ def _find_entrypoint(project_dir: str, entrypoint: str = None) -> str:
 
     raise ValueError(
         f"No entry point found in {project_dir}. "
-        f"Use --entrypoint to specify one."
+        f"Use --entrypoint to specify one.",
     )
 
 
@@ -123,20 +128,20 @@ def _parse_environment(env_tuples: tuple, env_file: str = None) -> dict:
         if not os.path.isfile(env_file):
             raise ValueError(f"Environment file not found: {env_file}")
 
-        with open(env_file, 'r', encoding='utf-8') as f:
+        with open(env_file, "r", encoding="utf-8") as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
                 # Skip empty lines and comments
-                if not line or line.startswith('#'):
+                if not line or line.startswith("#"):
                     continue
 
-                if '=' not in line:
+                if "=" not in line:
                     echo_warning(
-                        f"Skipping invalid line {line_num} in {env_file}: {line}"
+                        f"Skipping invalid line {line_num} in {env_file}: {line}",
                     )
                     continue
 
-                key, value = line.split('=', 1)
+                key, value = line.split("=", 1)
                 key = key.strip()
                 value = value.strip()
 
@@ -150,12 +155,12 @@ def _parse_environment(env_tuples: tuple, env_file: str = None) -> dict:
 
     # 2. Override with --env options (command line takes precedence)
     for env_pair in env_tuples:
-        if '=' not in env_pair:
+        if "=" not in env_pair:
             raise ValueError(
-                f"Invalid env format: '{env_pair}'. Use KEY=VALUE format"
+                f"Invalid env format: '{env_pair}'. Use KEY=VALUE format",
             )
 
-        key, value = env_pair.split('=', 1)
+        key, value = env_pair.split("=", 1)
         environment[key.strip()] = value.strip()
 
     return environment
@@ -253,7 +258,7 @@ def local(
                 entrypoint=entrypoint_spec,
                 mode=DeploymentMode.DETACHED_PROCESS,
                 environment=environment if environment else None,
-            )
+            ),
         )
 
         deploy_id = result.get("deploy_id")
@@ -283,6 +288,7 @@ def local(
     except Exception as e:
         echo_error(f"Deployment failed: {e}")
         import traceback
+
         echo_error(traceback.format_exc())
         sys.exit(1)
 
@@ -296,7 +302,11 @@ def local(
     help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
     default=None,
 )
-@click.option("--skip-upload", is_flag=True, help="Build package without uploading")
+@click.option(
+    "--skip-upload",
+    is_flag=True,
+    help="Build package without uploading",
+)
 @click.option(
     "--env",
     "-E",
@@ -328,7 +338,9 @@ def modelstudio(
     """
     if not MODELSTUDIO_AVAILABLE:
         echo_error("ModelStudio deployer is not available")
-        echo_info("Please install required dependencies: alibabacloud-oss-v2 alibabacloud-bailian20231229")
+        echo_info(
+            "Please install required dependencies: alibabacloud-oss-v2 alibabacloud-bailian20231229",
+        )
         sys.exit(1)
 
     try:
@@ -376,7 +388,7 @@ def modelstudio(
                 deploy_name=name,
                 skip_upload=skip_upload,
                 environment=environment if environment else None,
-            )
+            ),
         )
 
         if skip_upload:
@@ -411,6 +423,7 @@ def modelstudio(
     except Exception as e:
         echo_error(f"Deployment failed: {e}")
         import traceback
+
         echo_error(traceback.format_exc())
         sys.exit(1)
 
@@ -424,10 +437,19 @@ def modelstudio(
     help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
     default=None,
 )
-@click.option("--skip-upload", is_flag=True, help="Build package without uploading")
+@click.option(
+    "--skip-upload",
+    is_flag=True,
+    help="Build package without uploading",
+)
 @click.option("--region", help="Alibaba Cloud region", default="cn-hangzhou")
 @click.option("--cpu", help="CPU allocation (cores)", type=float, default=2.0)
-@click.option("--memory", help="Memory allocation (MB)", type=int, default=2048)
+@click.option(
+    "--memory",
+    help="Memory allocation (MB)",
+    type=int,
+    default=2048,
+)
 @click.option(
     "--env",
     "-E",
@@ -461,7 +483,9 @@ def agentrun(
     """
     if not AGENTRUN_AVAILABLE:
         echo_error("AgentRun deployer is not available")
-        echo_info("Please install required dependencies: alibabacloud-agentrun20250910")
+        echo_info(
+            "Please install required dependencies: alibabacloud-agentrun20250910",
+        )
         sys.exit(1)
 
     try:
@@ -517,7 +541,7 @@ def agentrun(
                 deploy_name=name,
                 skip_upload=skip_upload,
                 environment=environment if environment else None,
-            )
+            ),
         )
 
         if skip_upload:
@@ -554,6 +578,7 @@ def agentrun(
     except Exception as e:
         echo_error(f"Deployment failed: {e}")
         import traceback
+
         echo_error(traceback.format_exc())
         sys.exit(1)
 
@@ -561,7 +586,11 @@ def agentrun(
 @deploy.command()
 @click.argument("source", required=True)
 @click.option("--name", help="Deployment name", default=None)
-@click.option("--namespace", help="Kubernetes namespace", default="agentscope-runtime")
+@click.option(
+    "--namespace",
+    help="Kubernetes namespace",
+    default="agentscope-runtime",
+)
 @click.option("--replicas", help="Number of replicas", type=int, default=1)
 @click.option("--port", help="Container port", type=int, default=8090)
 @click.option("--image-name", help="Docker image name", default="agent_llm")
@@ -652,7 +681,7 @@ def k8s(
                 image_tag=image_tag,
                 push_to_registry=push,
                 environment=environment if environment else None,
-            )
+            ),
         )
 
         deploy_id = result.get("deploy_id")
@@ -690,6 +719,7 @@ def k8s(
     except Exception as e:
         echo_error(f"Deployment failed: {e}")
         import traceback
+
         echo_error(traceback.format_exc())
         sys.exit(1)
 
