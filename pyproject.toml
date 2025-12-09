@@ -61,6 +61,7 @@ dev = [
 ]
 
 ext = [
+    "langchain>=1.1.3",
     "langgraph>=1.0.4",
     "autogen-agentchat>=0.7.0",
     "reme-ai>=0.2.0.2",
