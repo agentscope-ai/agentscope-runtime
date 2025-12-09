@@ -233,7 +233,6 @@ class Runner:
         response.in_progress()
         yield seq_gen.yield_with_sequence(response)
 
-
         query_kwargs = {
             "request": request,
         }
