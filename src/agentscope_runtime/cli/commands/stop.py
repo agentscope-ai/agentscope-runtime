@@ -9,7 +9,7 @@ from typing import Optional
 
 import click
 
-from agentscope_runtime.cli.state.manager import DeploymentStateManager
+from agentscope_runtime.engine.deployers.state import DeploymentStateManager
 from agentscope_runtime.cli.utils.console import (
     echo_error,
     echo_info,
@@ -125,7 +125,6 @@ def stop(deploy_id: str, yes: bool, force: bool):
 
         # Get deployment info
         platform = getattr(deployment, "platform", "unknown")
-        url = getattr(deployment, "url", None)
 
         # Confirm
         if not yes:
@@ -148,19 +147,9 @@ def stop(deploy_id: str, yes: bool, force: bool):
 
             if deployer:
                 try:
-                    # Prepare kwargs for stop method
-                    stop_kwargs = {}
-                    if url:
-                        stop_kwargs["url"] = url
-
-                    # Get namespace for k8s if available
-                    if platform == "k8s" and hasattr(deployment, "namespace"):
-                        stop_kwargs["namespace"] = deployment.namespace
-
-                    # Call stop method
-                    result = asyncio.run(
-                        deployer.stop(deploy_id, **stop_kwargs),
-                    )
+                    # Call stop method - deployer will fetch all needed info
+                    # from state
+                    result = asyncio.run(deployer.stop(deploy_id))
 
                     if result.get("success"):
                         echo_success(

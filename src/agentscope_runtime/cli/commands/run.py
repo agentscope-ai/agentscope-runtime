@@ -15,7 +15,7 @@ from agentscope_runtime.cli.loaders.agent_loader import (
     UnifiedAgentLoader,
     AgentLoadError,
 )
-from agentscope_runtime.cli.state.manager import DeploymentStateManager
+from agentscope_runtime.engine.deployers.state import DeploymentStateManager
 from agentscope_runtime.cli.utils.console import (
     echo_error,
     echo_info,

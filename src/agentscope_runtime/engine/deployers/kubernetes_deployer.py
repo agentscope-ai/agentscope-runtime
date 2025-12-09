@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import logging
 import os
-import time
+from datetime import datetime
 from typing import Optional, Dict, List, Union, Any
 
 from pydantic import BaseModel, Field
 
+from agentscope_runtime.engine.deployers.state import Deployment
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .utils.docker_image_utils import (
@@ -53,14 +54,14 @@ class KubernetesDeployManager(DeployManager):
         registry_config: RegistryConfig = RegistryConfig(),
         use_deployment: bool = True,
         build_context_dir: Optional[str] = None,
+        state_manager=None,
     ):
-        super().__init__()
+        super().__init__(state_manager=state_manager)
         self.kubeconfig = kube_config
         self.registry_config = registry_config
         self.image_factory = ImageFactory()
         self.use_deployment = use_deployment
         self.build_context_dir = build_context_dir
-        self._deployed_resources = {}
         self._built_images = {}
 
         self.k8s_client = KubernetesClient(
@@ -117,6 +118,10 @@ class KubernetesDeployManager(DeployManager):
             )
 
         return f"http://{host}:{service_port}"
+
+    @staticmethod
+    def get_resource_name(deploy_id: str) -> str:
+        return f"agent-{deploy_id[:8]}"
 
     async def deploy(
         self,
@@ -232,7 +237,7 @@ class KubernetesDeployManager(DeployManager):
             else:
                 volume_bindings = {}
 
-            resource_name = f"agent-{deploy_id[:8]}"
+            resource_name = self.get_resource_name(deploy_id)
 
             logger.info(f"Building kubernetes deployment for {deploy_id}")
 
@@ -262,27 +267,30 @@ class KubernetesDeployManager(DeployManager):
 
             logger.info(f"Deployment {deploy_id} successful: {url}")
 
-            self._deployed_resources[deploy_id] = {
-                "resource_name": resource_name,
-                "service_name": _id,
-                "image": built_image_name,
-                "created_at": time.time(),
-                "replicas": replicas if self.use_deployment else 1,
-                "config": {
-                    "runner": runner.__class__.__name__,
+            deployment = Deployment(
+                id=deploy_id,
+                platform="k8s",
+                url=url,
+                status="running",
+                created_at=datetime.now().isoformat(),
+                agent_source=kwargs.get("agent_source"),
+                config={
+                    "service_name": _id,
+                    "image": built_image_name,
+                    "replicas": replicas if self.use_deployment else 1,
+                    "runner": runner.__class__.__name__ if runner else None,
                     "extra_packages": extra_packages,
-                    "requirements": requirements,  # New format
+                    "requirements": requirements,
                     "base_image": base_image,
                     "port": port,
-                    "replicas": replicas,
                     "environment": environment,
                     "runtime_config": runtime_config,
                     "endpoint_path": endpoint_path,
                     "stream": stream,
-                    "protocol_adapters": protocol_adapters,
-                    **kwargs,
                 },
-            }
+            )
+            self.state_manager.save(deployment)
+
             return {
                 "deploy_id": deploy_id,
                 "url": url,
@@ -302,37 +310,33 @@ class KubernetesDeployManager(DeployManager):
     async def stop(
         self,
         deploy_id: str,
-        namespace: str = None,
         **kwargs,
     ) -> Dict[str, Any]:
         """Stop Kubernetes deployment.
 
         Args:
             deploy_id: Deployment identifier
-            namespace: K8s namespace (optional, use default if not provided)
             **kwargs: Additional parameters
 
         Returns:
             Dict with success status, message, and details
         """
-        # Use provided namespace or fall back to configured namespace
-        namespace = namespace or (
-            self.kubeconfig.k8s_namespace
-            if self.kubeconfig
-            else "agentscope-runtime"
-        )
-
         # Derive resource name from deploy_id
-        resource_name = f"agent-{deploy_id[:8]}"
+        resource_name = self.get_resource_name(deploy_id)
 
         try:
             # Try to remove the deployment
             success = self.k8s_client.remove_deployment(resource_name)
 
             if success:
-                # Clean up internal tracking if present
-                if deploy_id in self._deployed_resources:
-                    del self._deployed_resources[deploy_id]
+                # Remove from state manager
+                try:
+                    self.state_manager.remove(deploy_id)
+                except KeyError:
+                    logger.debug(
+                        f"Deployment {deploy_id} not found "
+                        f"in state (already removed)",
+                    )
 
                 return {
                     "success": True,
@@ -340,19 +344,23 @@ class KubernetesDeployManager(DeployManager):
                     f"removed",
                     "details": {
                         "deploy_id": deploy_id,
-                        "namespace": namespace,
                         "resource_name": resource_name,
                     },
                 }
             else:
                 # Deployment not found or already deleted (idempotent)
+                # Still try to clean up state
+                try:
+                    self.state_manager.remove(deploy_id)
+                except KeyError:
+                    pass
+
                 return {
                     "success": True,
                     "message": f"Kubernetes deployment {resource_name} not "
                     f"found (may already be deleted)",
                     "details": {
                         "deploy_id": deploy_id,
-                        "namespace": namespace,
                         "resource_name": resource_name,
                     },
                 }
@@ -365,7 +373,6 @@ class KubernetesDeployManager(DeployManager):
                 "message": f"Failed to remove K8s deployment: {e}",
                 "details": {
                     "deploy_id": deploy_id,
-                    "namespace": namespace,
                     "resource_name": resource_name,
                     "error": str(e),
                 },
@@ -373,10 +380,14 @@ class KubernetesDeployManager(DeployManager):
 
     def get_status(self) -> str:
         """Get deployment status"""
-        if self.deploy_id not in self._deployed_resources:
+        deployment = self.state_manager.get(self.deploy_id)
+        if not deployment:
             return "not_found"
 
-        resources = self._deployed_resources[self.deploy_id]
-        service_name = resources["service_name"]
+        # Get service_name from config
+        config = getattr(deployment, "config", {})
+        service_name = config.get("service_name")
+        if not service_name:
+            return "unknown"
 
         return self.k8s_client.get_deployment_status(service_name)

@@ -279,6 +279,7 @@ class AgentRunDeployManager(DeployManager):
         oss_config: Optional[OSSConfig] = None,
         agentrun_config: Optional[AgentRunConfig] = None,
         build_root: Optional[Union[str, Path]] = None,
+        state_manager=None,
     ):
         """Initialize AgentRun deployment manager.
 
@@ -286,8 +287,9 @@ class AgentRunDeployManager(DeployManager):
             oss_config: OSS configuration for artifact storage. If None, loads from environment.
             agentrun_config: AgentRun service configuration. If None, loads from environment.
             build_root: Root directory for build artifacts. If None, uses parent directory of current working directory.
+            state_manager: Deployment state manager. If None, creates a new instance.
         """
-        super().__init__()
+        super().__init__(state_manager=state_manager)
         self.oss_config = oss_config or OSSConfig.from_env()
         self.agentrun_config = agentrun_config or AgentRunConfig.from_env()
         self.build_root = (
@@ -2560,12 +2562,43 @@ ls -lh /output/{zip_filename}
             Dict with success status, message, and details
         """
         try:
+            # Try to get deployment info from state for context
+            deployment_info = None
+            try:
+                deployment = self.state_manager.get(deploy_id)
+                if deployment:
+                    deployment_info = {
+                        "url": deployment.url
+                        if hasattr(deployment, "url")
+                        else None,
+                        "resource_name": getattr(
+                            deployment,
+                            "resource_name",
+                            None,
+                        ),
+                    }
+                    logger.debug(
+                        f"Fetched deployment info from state: {deployment_info}",
+                    )
+            except Exception as e:
+                logger.debug(
+                    f"Could not fetch deployment info from state: {e}",
+                )
+
             logger.info(f"Stopping AgentRun deployment: {deploy_id}")
 
             # Use the existing delete method
             result = await self.delete(deploy_id)
 
             if result.get("success"):
+                # Remove from state manager on successful deletion
+                try:
+                    self.state_manager.remove(deploy_id)
+                except KeyError:
+                    logger.debug(
+                        f"Deployment {deploy_id} not found in state (already removed)",
+                    )
+
                 return {
                     "success": True,
                     "message": f"AgentRun deployment {deploy_id} deleted successfully",

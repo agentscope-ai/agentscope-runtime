@@ -7,7 +7,7 @@ from typing import Optional
 
 import click
 
-from agentscope_runtime.cli.state.manager import DeploymentStateManager
+from agentscope_runtime.engine.deployers.state import DeploymentStateManager
 from agentscope_runtime.cli.utils.console import (
     echo_error,
     echo_info,

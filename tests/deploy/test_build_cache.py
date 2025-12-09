@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tests for build cache functionality."""
+# pylint:disable=protected-access, redefined-outer-name
 
-import hashlib
-import os
 import tempfile
 from pathlib import Path
 
@@ -92,6 +91,15 @@ class TestBuildCache:
         # Create required files
         (cache_dir / "deployment.zip").write_text("fake zip content")
 
+        # Add metadata entry
+        metadata = cache._load_metadata()
+        metadata[build_hash] = {
+            "content_hash": build_hash,
+            "type": "build",
+            "timestamp": "2024-01-01T00:00:00",
+        }
+        cache._save_metadata(metadata)
+
         # Lookup should find the cache
         result = cache.lookup(
             str(temp_project),
@@ -119,6 +127,15 @@ class TestBuildCache:
         cache_dir.mkdir(parents=True)
 
         # Don't create deployment.zip - cache is corrupted
+
+        # Add metadata entry
+        metadata = cache._load_metadata()
+        metadata[build_hash] = {
+            "content_hash": build_hash,
+            "type": "build",
+            "timestamp": "2024-01-01T00:00:00",
+        }
+        cache._save_metadata(metadata)
 
         # Lookup should detect corruption and return None
         result = cache.lookup(
@@ -276,7 +293,7 @@ class TestBuildCache:
             assert (cache_dir / "deployment.zip").exists()
             assert (cache_dir / "requirements.txt").exists()
 
-    def test_invalidate_all(self, temp_workspace, temp_project):
+    def test_invalidate_all(self, temp_workspace):
         """Test invalidating all caches."""
         cache = BuildCache(workspace=temp_workspace)
 

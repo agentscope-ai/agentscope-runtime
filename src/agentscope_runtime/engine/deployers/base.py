@@ -7,9 +7,18 @@ from typing import Dict, Any
 # there is not many attributes in it, consider it as interface, instead of
 # pydantic BaseModel
 class DeployManager(ABC):
-    def __init__(self):
+    def __init__(self, state_manager=None):
         self.deploy_id = str(uuid.uuid4())
         self._app = None
+
+        # Initialize state manager - shared across all deployers
+        if state_manager is None:
+            from agentscope_runtime.engine.deployers.state import (
+                DeploymentStateManager,
+            )
+
+            state_manager = DeploymentStateManager()
+        self.state_manager = state_manager
 
     @abstractmethod
     async def deploy(self, *args, **kwargs) -> Dict[str, str]:

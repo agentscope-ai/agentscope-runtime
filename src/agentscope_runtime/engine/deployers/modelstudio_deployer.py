@@ -539,8 +539,9 @@ class ModelstudioDeployManager(DeployManager):
         oss_config: Optional[OSSConfig] = None,
         modelstudio_config: Optional[ModelstudioConfig] = None,
         build_root: Optional[Union[str, Path]] = None,
+        state_manager=None,
     ) -> None:
-        super().__init__()
+        super().__init__(state_manager=state_manager)
         self.oss_config = oss_config or OSSConfig.from_env()
         self.modelstudio_config = (
             modelstudio_config or ModelstudioConfig.from_env()
@@ -863,17 +864,42 @@ class ModelstudioDeployManager(DeployManager):
         Returns:
             Dict with success status and message
         """
+        # Try to get deployment info from state for context
+        deployment_info = None
+        try:
+            deployment = self.state_manager.get(deploy_id)
+            if deployment:
+                deployment_info = {
+                    "url": deployment.url
+                    if hasattr(deployment, "url")
+                    else None,
+                    "workspace_id": getattr(deployment, "workspace_id", None),
+                }
+                logger.debug(
+                    f"Fetched deployment info from state: {deployment_info}",
+                )
+        except Exception as e:
+            logger.debug(f"Could not fetch deployment info from state: {e}")
+
         # TODO: Implement when ModelStudio provides stop/delete API
+        # When API is available, call it here and then remove from state:
+        # self.state_manager.remove(deploy_id)
+
         logger.warning(
             f"ModelStudio stop not implemented for deploy_id={deploy_id} - API not yet available",
         )
+
+        details = {
+            "deploy_id": deploy_id,
+            "note": "Manual cleanup required via ModelStudio console",
+        }
+        if deployment_info:
+            details.update(deployment_info)
+
         return {
             "success": False,
             "message": "ModelStudio stop not implemented - API not yet available",
-            "details": {
-                "deploy_id": deploy_id,
-                "note": "Manual cleanup required via ModelStudio console",
-            },
+            "details": details,
         }
 
     def get_status(self) -> str:  # pragma: no cover - not supported yet

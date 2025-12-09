@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
-from agentscope_runtime.cli.state.schema import (
+from agentscope_runtime.engine.deployers.state.schema import (
     Deployment,
     StateFileSchema,
 )

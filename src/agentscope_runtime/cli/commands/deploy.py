@@ -10,8 +10,6 @@ import sys
 import click
 import yaml
 
-from agentscope_runtime.cli.state.manager import DeploymentStateManager
-from agentscope_runtime.cli.state.schema import Deployment, format_timestamp
 from agentscope_runtime.cli.utils.console import (
     echo_error,
     echo_info,
@@ -337,9 +335,6 @@ def local(
         if environment:
             echo_info(f"Using {len(environment)} environment variable(s)")
 
-        # Initialize state manager
-        state_manager = DeploymentStateManager()
-
         # Create deployer
         deployer = LocalDeployManager(host=host, port=port)
 
@@ -365,27 +360,12 @@ def local(
                 entrypoint=entrypoint_spec,
                 mode=DeploymentMode.DETACHED_PROCESS,
                 environment=environment if environment else None,
+                agent_source=abs_source,  # Pass source for state saving
             ),
         )
 
         deploy_id = result.get("deploy_id")
         url = result.get("url")
-
-        # Save deployment metadata
-        deployment = Deployment(
-            id=deploy_id,
-            platform="local",
-            url=url,
-            agent_source=abs_source,
-            created_at=format_timestamp(),
-            status="running",
-            config={
-                "host": host,
-                "port": port,
-                "entrypoint": entrypoint,
-            },
-        )
-        state_manager.save(deployment)
 
         echo_success("Deployment successful!")
         echo_info(f"Deployment ID: {deploy_id}")
@@ -492,9 +472,6 @@ def modelstudio(
         if environment:
             echo_info(f"Using {len(environment)} environment variable(s)")
 
-        # Initialize state manager
-        state_manager = DeploymentStateManager()
-
         # Create deployer
         deployer = ModelstudioDeployManager()
 
@@ -527,6 +504,7 @@ def modelstudio(
                 deploy_name=name,
                 skip_upload=skip_upload,
                 environment=environment if environment else None,
+                agent_source=abs_source,  # Pass source for state saving
             ),
         )
 
@@ -537,22 +515,6 @@ def modelstudio(
             deploy_id = result.get("deploy_id")
             url = result.get("url")
             workspace_id = result.get("workspace_id")
-
-            # Save deployment metadata
-            deployment = Deployment(
-                id=deploy_id,
-                platform="modelstudio",
-                url=url,
-                agent_source=abs_source,
-                created_at=format_timestamp(),
-                status="deployed",
-                config={
-                    "name": name,
-                    "workspace_id": workspace_id,
-                    "entrypoint": entrypoint,
-                },
-            )
-            state_manager.save(deployment)
 
             echo_success("Deployment successful!")
             echo_info(f"Deployment ID: {deploy_id}")
@@ -683,9 +645,6 @@ def agentrun(
         if memory:
             os.environ["AGENT_RUN_MEMORY"] = str(memory)
 
-        # Initialize state manager
-        state_manager = DeploymentStateManager()
-
         # Create deployer
         deployer = AgentRunDeployManager()
 
@@ -717,6 +676,7 @@ def agentrun(
                 deploy_name=name,
                 skip_upload=skip_upload,
                 environment=environment if environment else None,
+                agent_source=abs_source,  # Pass source for state saving
             ),
         )
 
@@ -727,24 +687,6 @@ def agentrun(
             deploy_id = result.get("agentrun_id") or result.get("deploy_id")
             url = result.get("url")
             endpoint_url = result.get("agentrun_endpoint_url")
-
-            # Save deployment metadata
-            deployment = Deployment(
-                id=deploy_id,
-                platform="agentrun",
-                url=endpoint_url or url,
-                agent_source=abs_source,
-                created_at=format_timestamp(),
-                status="running",
-                config={
-                    "name": name,
-                    "region": region,
-                    "cpu": cpu,
-                    "memory": memory,
-                    "entrypoint": entrypoint,
-                },
-            )
-            state_manager.save(deployment)
 
             echo_success("Deployment successful!")
             echo_info(f"Deployment ID: {deploy_id}")
@@ -1033,11 +975,7 @@ def k8s(
         if environment:
             echo_info(f"Using {len(environment)} environment variable(s)")
 
-        # Initialize state manager
-        state_manager = DeploymentStateManager()
-
         # Create deployer
-
         k8s_config = K8sConfig(
             k8s_namespace=namespace,
             kubeconfig_path=kube_config_path,
@@ -1096,32 +1034,14 @@ def k8s(
         if platform:
             deploy_params["platform"] = platform
 
+        # Add agent_source for state saving
+        deploy_params["agent_source"] = abs_source
+
         result = asyncio.run(deployer.deploy(**deploy_params))
 
         deploy_id = result.get("deploy_id")
         url = result.get("url")
         resource_name = result.get("resource_name")
-
-        # Save deployment metadata
-        deployment = Deployment(
-            id=deploy_id,
-            platform="k8s",
-            url=url,
-            agent_source=abs_source,
-            created_at=format_timestamp(),
-            status="running",
-            config={
-                "name": name,
-                "namespace": namespace,
-                "replicas": replicas,
-                "port": port,
-                "image_name": image_name,
-                "image_tag": image_tag,
-                "resource_name": resource_name,
-                "entrypoint": entrypoint,
-            },
-        )
-        state_manager.save(deployment)
 
         echo_success("Deployment successful!")
         echo_info(f"Deployment ID: {deploy_id}")

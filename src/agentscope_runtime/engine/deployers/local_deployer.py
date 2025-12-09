@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=protected-access, unused-argument
+# pylint:disable=protected-access, unused-argument, too-many-branches
 
 import asyncio
 import logging
 import os
 import socket
 import threading
+from datetime import datetime
 from typing import Callable, Optional, Type, Any, Dict, Union, List
 
 import uvicorn
 
+from agentscope_runtime.engine.deployers.state import Deployment
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .utils.deployment_modes import DeploymentMode
@@ -178,6 +180,7 @@ class LocalDeployManager(DeployManager):
         broker_url: Optional[str] = None,
         backend_url: Optional[str] = None,
         enable_embedded_worker: bool = False,
+        agent_source: Optional[str] = None,
         **kwargs,
     ) -> Dict[str, str]:
         """Deploy in daemon thread mode."""
@@ -216,14 +219,33 @@ class LocalDeployManager(DeployManager):
 
         self.is_running = True
         self.deploy_id = f"daemon_{self.host}_{self.port}"
+        url = f"http://{self.host}:{self.port}"
 
         self._logger.info(
-            f"FastAPI service started at http://{self.host}:{self.port}",
+            f"FastAPI service started at {url}",
         )
+
+        deployment = Deployment(
+            id=self.deploy_id,
+            platform="local",
+            url=url,
+            status="running",
+            created_at=datetime.now().isoformat(),
+            agent_source=agent_source,
+            config={
+                "mode": "daemon_thread",
+                "host": self.host,
+                "port": self.port,
+                "broker_url": broker_url,
+                "backend_url": backend_url,
+                "enable_embedded_worker": enable_embedded_worker,
+            },
+        )
+        self.state_manager.save(deployment)
 
         return {
             "deploy_id": self.deploy_id,
-            "url": f"http://{self.host}:{self.port}",
+            "url": url,
         }
 
     async def _deploy_detached_process(
@@ -232,6 +254,7 @@ class LocalDeployManager(DeployManager):
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         project_dir: Optional[str] = None,
         entrypoint: Optional[str] = None,
+        agent_source: Optional[str] = None,
         **kwargs,
     ) -> Dict[str, str]:
         """Deploy in detached process mode."""
@@ -306,14 +329,33 @@ class LocalDeployManager(DeployManager):
 
             self.is_running = True
             self.deploy_id = f"detached_{pid}"
+            url = f"http://{self.host}:{self.port}"
 
             self._logger.info(
                 f"FastAPI service started in detached process (PID: {pid})",
             )
 
+            deployment = Deployment(
+                id=self.deploy_id,
+                platform="local",
+                url=url,
+                status="running",
+                created_at=datetime.now().isoformat(),
+                agent_source=agent_source,
+                config={
+                    "mode": "detached_process",
+                    "host": self.host,
+                    "port": self.port,
+                    "pid": pid,
+                    "pid_file": self._detached_pid_file,
+                    "project_dir": project_dir,
+                },
+            )
+            self.state_manager.save(deployment)
+
             return {
                 "deploy_id": self.deploy_id,
-                "url": f"http://{self.host}:{self.port}",
+                "url": url,
             }
 
         except Exception as e:
@@ -356,38 +398,58 @@ class LocalDeployManager(DeployManager):
     async def stop(
         self,
         deploy_id: str,
-        url: str = None,
         **kwargs,
     ) -> Dict[str, Any]:
         """Stop the FastAPI service.
 
         Args:
             deploy_id: Deployment identifier
-            url: Service URL (for detached process HTTP shutdown)
             **kwargs: Additional parameters
 
         Returns:
             Dict with success status, message, and details
         """
-        # If URL is provided, attempt HTTP shutdown for detached process
+        # If URL not provided, try to get it from state manager
+        try:
+            deployment = self.state_manager.get(deploy_id)
+            if deployment:
+                url = deployment.url
+                self._logger.debug(f"Fetched URL from state: {url}")
+        except Exception as e:
+            self._logger.debug(f"Could not fetch URL from state: {e}")
+
+        if not deployment:
+            return {
+                "success": False,
+                "message": "Deploy id not found",
+                "details": {
+                    "deploy_id": deploy_id,
+                    "error": "Deploy id not found",
+                },
+            }
+
+        # If URL is available, attempt HTTP shutdown for detached process
         if url:
             try:
                 import requests
 
                 response = requests.post(f"{url}/shutdown", timeout=5)
                 if response.status_code == 200:
+                    # Remove from state manager on successful shutdown
+                    try:
+                        self.state_manager.remove(deploy_id)
+                    except KeyError:
+                        self._logger.debug(
+                            f"Deployment {deploy_id} not found "
+                            f"in state (already removed)",
+                        )
+                    self.is_running = False
                     return {
                         "success": True,
                         "message": "Shutdown signal sent to detached process",
                         "details": {"url": url, "deploy_id": deploy_id},
                     }
-                else:
-                    return {
-                        "success": False,
-                        "message": f"Shutdown endpoint returned status "
-                        f"{response.status_code}",
-                        "details": {"url": url},
-                    }
+
             except requests.exceptions.RequestException as e:
                 return {
                     "success": False,
@@ -397,6 +459,12 @@ class LocalDeployManager(DeployManager):
 
         # Fallback: use existing in-process cleanup for daemon mode
         if not self.is_running:
+            # Still try to clean up state
+            try:
+                self.state_manager.remove(deploy_id)
+            except KeyError:
+                pass
+
             return {
                 "success": True,
                 "message": "Service is not running (already stopped)",
@@ -404,12 +472,22 @@ class LocalDeployManager(DeployManager):
             }
 
         try:
+            # when run in from main process instead of cli, make sure close
             if self._detached_process_pid:
                 # Detached process mode
                 await self._stop_detached_process()
             else:
                 # Daemon thread mode
                 await self._stop_daemon_thread()
+
+            # Remove from state manager on successful stop
+            try:
+                self.state_manager.remove(deploy_id)
+            except KeyError:
+                self._logger.debug(
+                    f"Deployment {deploy_id} not found in state (already "
+                    f"removed)",
+                )
 
             return {
                 "success": True,
