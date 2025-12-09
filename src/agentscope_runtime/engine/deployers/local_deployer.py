@@ -62,6 +62,7 @@ class LocalDeployManager(DeployManager):
         # Detached process mode attributes
         self._detached_process_pid: Optional[int] = None
         self._detached_pid_file: Optional[str] = None
+        self._detached_stderr_file: Optional[str] = None
         self.process_manager = ProcessManager(
             shutdown_timeout=shutdown_timeout,
         )
@@ -262,40 +263,26 @@ class LocalDeployManager(DeployManager):
             "Deploying FastAPI service in detached process mode...",
         )
 
-        # If project_dir or entrypoint is provided, use it directly
-        if project_dir or entrypoint:
-            # Use provided project directory or parse entrypoint
-            if entrypoint and not project_dir:
-                # Parse entrypoint to get project_dir
-                from .utils.package import parse_entrypoint
-
-                project_info = parse_entrypoint(entrypoint)
-                project_dir = project_info.project_dir
-
-            # project_dir is now ready to use
-            self._logger.info(
-                f"Using provided project directory: {project_dir}",
+        # Original behavior: require app or runner or entrypoint
+        if runner is None and self._app is None and entrypoint is None:
+            raise ValueError(
+                "Detached process mode requires an app, runner, "
+                "project_dir, or entrypoint",
             )
-        else:
-            # Original behavior: require app or runner
-            if runner is None and self._app is None:
-                raise ValueError(
-                    "Detached process mode requires an app, runner, "
-                    "project_dir, or entrypoint",
-                )
 
-            if "agent" in kwargs:
-                kwargs.pop("agent")
-            if "app" in kwargs:
-                kwargs.pop("app")
+        if "agent" in kwargs:
+            kwargs.pop("agent")
+        if "app" in kwargs:
+            kwargs.pop("app")
 
-            # Create package project for detached deployment
-            project_dir = await self.create_detached_project(
-                app=self._app,
-                runner=runner,
-                protocol_adapters=protocol_adapters,
-                **kwargs,
-            )
+        # Create package project for detached deployment
+        project_dir = await self.create_detached_project(
+            app=self._app,
+            runner=runner,
+            protocol_adapters=protocol_adapters,
+            entrypoint=entrypoint,
+            **kwargs,
+        )
 
         if not project_dir:
             raise RuntimeError("Failed to parse project directory")
@@ -359,20 +346,13 @@ class LocalDeployManager(DeployManager):
             }
 
         except Exception as e:
-            # Cleanup on failure
-            if os.path.exists(project_dir):
-                try:
-                    import shutil
-
-                    shutil.rmtree(project_dir)
-                except OSError:
-                    pass
             raise e
 
     @staticmethod
     async def create_detached_project(
         app=None,
         runner: Optional[Any] = None,
+        entrypoint: Optional[str] = None,
         endpoint_path: str = "/process",
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
@@ -390,6 +370,7 @@ class LocalDeployManager(DeployManager):
             requirements=requirements,
             extra_packages=extra_packages,
             platform=platform,
+            entrypoint=entrypoint,
             **kwargs,
         )
 
@@ -535,9 +516,16 @@ class LocalDeployManager(DeployManager):
         if self._detached_pid_file:
             self.process_manager.cleanup_pid_file(self._detached_pid_file)
 
+        # Cleanup stderr file
+        if self._detached_stderr_file:
+            self.process_manager.cleanup_stderr_file(
+                self._detached_stderr_file,
+            )
+
         # Reset state
         self._detached_process_pid = None
         self._detached_pid_file = None
+        self._detached_stderr_file = None
 
     def _is_server_ready(self) -> bool:
         """Check if the server is ready to accept connections."""

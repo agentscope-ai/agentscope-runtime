@@ -470,8 +470,7 @@ class FastAPIAppFactory:
             }
 
         # Mode-specific endpoints
-        if mode == DeploymentMode.DETACHED_PROCESS:
-            FastAPIAppFactory._add_process_control_endpoints(app)
+        FastAPIAppFactory._add_process_control_endpoints(app)
 
     @staticmethod
     def _add_process_control_endpoints(app: FastAPI):
