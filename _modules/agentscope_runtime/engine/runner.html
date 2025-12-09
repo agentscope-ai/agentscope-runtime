@@ -510,6 +510,7 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../../../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../en/demohouse.html">Reference: Demo House</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../en/ut.html">Reference: Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../en/langgraph_guidelines.html">🔄 LangGraph Integration Guide</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../en/contribute.html">8. How to Contribute</a><input aria-label="Toggle navigation of 8. How to Contribute" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
@@ -572,6 +573,7 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../zh/ut.html">参考: 测试用例</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../zh/langgraph_guidelines.html">🔄 LangGraph 集成指南</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../zh/contribute.html">8. 如何贡献</a><input aria-label="Toggle navigation of 8. 如何贡献" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
@@ -900,6 +902,16 @@ body.preview-active {
             <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
                 <span class="p">{</span><span class="s2">&quot;msgs&quot;</span><span class="p">:</span> <span class="n">message_to_agentscope_msg</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">input</span><span class="p">)},</span>
             <span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">framework_type</span> <span class="o">==</span> <span class="s2">&quot;langgraph&quot;</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..adapters.langgraph.stream</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+                <span class="n">adapt_langgraph_message_stream</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..adapters.langgraph.message</span><span class="w"> </span><span class="kn">import</span> <span class="n">message_to_langgraph_msg</span>
+
+            <span class="n">stream_adapter</span> <span class="o">=</span> <span class="n">adapt_langgraph_message_stream</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span><span class="s2">&quot;msgs&quot;</span><span class="p">:</span> <span class="n">message_to_langgraph_msg</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">input</span><span class="p">)},</span>
+            <span class="p">)</span>
         <span class="c1"># TODO: support other frameworks</span>
         <span class="k">else</span><span class="p">:</span>
 
@@ -962,7 +974,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-12-08</div>
+              Last updated on 2025-12-09</div>
           </div>
           <div class="right-details">
             <div class="icons">
