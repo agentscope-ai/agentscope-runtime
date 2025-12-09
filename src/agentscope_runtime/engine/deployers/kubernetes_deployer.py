@@ -331,7 +331,7 @@ class KubernetesDeployManager(DeployManager):
             if success:
                 # Remove from state manager
                 try:
-                    self.state_manager.remove(deploy_id)
+                    self.state_manager.update_status(deploy_id, "stopped")
                 except KeyError:
                     logger.debug(
                         f"Deployment {deploy_id} not found "
@@ -348,17 +348,11 @@ class KubernetesDeployManager(DeployManager):
                     },
                 }
             else:
-                # Deployment not found or already deleted (idempotent)
-                # Still try to clean up state
-                try:
-                    self.state_manager.remove(deploy_id)
-                except KeyError:
-                    pass
-
                 return {
-                    "success": True,
+                    "success": False,
                     "message": f"Kubernetes deployment {resource_name} not "
-                    f"found (may already be deleted)",
+                    f"found (may already be deleted), Please check the "
+                    f"detail in cluster",
                     "details": {
                         "deploy_id": deploy_id,
                         "resource_name": resource_name,

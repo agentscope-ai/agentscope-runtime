@@ -80,13 +80,7 @@ def _create_deployer(
     is_flag=True,
     help="Skip confirmation prompt",
 )
-@click.option(
-    "--force",
-    "-f",
-    is_flag=True,
-    help="Force stop (skip deployer cleanup, only update local state)",
-)
-def stop(deploy_id: str, yes: bool, force: bool):
+def stop(deploy_id: str, yes: bool):
     """
     Stop a deployment and clean up resources.
 
@@ -104,8 +98,6 @@ def stop(deploy_id: str, yes: bool, force: bool):
     # Skip confirmation
     $ as-runtime stop local_20250101_120000_abc123 --yes
 
-    # Force stop (skip platform cleanup)
-    $ as-runtime stop local_20250101_120000_abc123 --force
     """
     try:
         # Initialize state manager
@@ -135,74 +127,55 @@ def stop(deploy_id: str, yes: bool, force: bool):
                 return
 
         # Call deployer stop (unless --force)
-        cleanup_success = False
 
-        if not force:
-            echo_info(f"Calling platform cleanup for {platform}...")
+        echo_info(f"Calling platform cleanup for {platform}...")
 
-            deployer = _create_deployer(
-                platform,
-                deployment.__dict__ if hasattr(deployment, "__dict__") else {},
-            )
+        deployer = _create_deployer(
+            platform,
+            deployment.__dict__ if hasattr(deployment, "__dict__") else {},
+        )
 
-            if deployer:
-                try:
-                    # Call stop method - deployer will fetch all needed info
-                    # from state
-                    result = asyncio.run(deployer.stop(deploy_id))
+        if deployer:
+            try:
+                # Call stop method - deployer will fetch all needed info
+                # from state
+                result = asyncio.run(deployer.stop(deploy_id))
 
-                    if result.get("success"):
-                        echo_success(
-                            f"Platform cleanup: "
-                            f"{result.get('message', 'Success')}",
-                        )
-                        cleanup_success = True
-                    else:
-                        echo_error(
-                            f"Platform cleanup failed: "
-                            f"{result.get('message', 'Unknown error')}",
-                        )
-                        echo_error(
-                            "Cannot mark deployment as stopped - platform "
-                            "cleanup failed",
-                        )
-                        sys.exit(1)
-                except Exception as e:
-                    echo_error(f"Error during platform cleanup: {e}")
+                if result.get("success"):
+                    echo_success(
+                        f"Platform cleanup: "
+                        f"{result.get('message', 'Success')}",
+                    )
+                else:
+                    echo_error(
+                        f"Platform cleanup failed: "
+                        f"{result.get('message', 'Unknown error')}",
+                    )
                     echo_error(
                         "Cannot mark deployment as stopped - platform "
                         "cleanup failed",
                     )
                     sys.exit(1)
-            else:
+            except Exception as e:
+                echo_error(f"Error during platform cleanup: {e}")
                 echo_error(
-                    f"Could not create deployer for platform: {platform}",
-                )
-                echo_error(
-                    "Cannot mark deployment as stopped - deployer creation "
-                    "failed",
-                )
-                echo_info(
-                    "\nTip: Use --force flag to skip platform cleanup and "
-                    "only update local state",
+                    "Cannot mark deployment as stopped - platform "
+                    "cleanup failed",
                 )
                 sys.exit(1)
         else:
-            echo_info("Skipping platform cleanup (--force flag)")
-            cleanup_success = True  # Force mode always succeeds
-
-        # Update status only if cleanup succeeded or force flag was used
-        if cleanup_success or force:
-            state_manager.update_status(deploy_id, "stopped")
-            echo_success(f"Deployment {deploy_id} marked as stopped")
-
-            # Final message
-            if force:
-                echo_warning(
-                    "\nWarning: Platform cleanup was skipped (--force flag). "
-                    "You may need to manually clean up deployed resources.",
-                )
-
+            echo_error(
+                f"Could not create deployer for platform: {platform}",
+            )
+            echo_error(
+                "Cannot mark deployment as stopped - deployer creation "
+                "failed",
+            )
+            echo_info(
+                "\nTip: Use --force flag to skip platform cleanup and "
+                "only update local state",
+            )
+            sys.exit(1)
     except Exception as e:
         echo_error(f"Failed to stop deployment: {e}")
         sys.exit(1)

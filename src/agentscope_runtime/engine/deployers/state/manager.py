@@ -36,19 +36,54 @@ class DeploymentStateManager:
         self.state_dir.mkdir(parents=True, exist_ok=True)
 
     def _backup_state_file(self) -> None:
-        """Create backup of state file before modifications."""
+        """Create backup of state file before modifications.
+
+        Maintains one backup per day. If a backup for today already exists,
+        it will be overwritten. Old backups (older than 30 days) are cleaned up
+        """
         if self.state_file.exists():
-            backup_file = (
-                self.state_dir
-                / f"deployments.backup.{int(datetime.now().timestamp())}.json"
-            )
+            # Use date-based filename: deployments.backup.YYYYMMDD.json
+            today = datetime.now().strftime("%Y%m%d")
+            backup_file = self.state_dir / f"deployments.backup.{today}.json"
+
+            # Overwrite today's backup if it exists (one backup per day)
             shutil.copy2(self.state_file, backup_file)
 
-            # Keep only last 5 backups
-            backups = sorted(self.state_dir.glob("deployments.backup.*.json"))
-            if len(backups) > 5:
-                for old_backup in backups[:-5]:
-                    old_backup.unlink()
+            # Clean up old backups (older than 30 days)
+            self._cleanup_old_backups(days_to_keep=30)
+
+    def _cleanup_old_backups(self, days_to_keep: int = 30) -> None:
+        """Clean up backup files older than specified days.
+
+        Args:
+            days_to_keep: Number of days to keep backups (default: 30)
+        """
+        from datetime import timedelta
+
+        cutoff_date = datetime.now() - timedelta(days=days_to_keep)
+        cutoff_date_str = cutoff_date.strftime("%Y%m%d")
+
+        # Find all backup files with date format
+        backups = list(self.state_dir.glob("deployments.backup.*.json"))
+
+        for backup_file in backups:
+            # Extract date from filename: deployments.backup.YYYYMMDD.json
+            try:
+                # Get the date part (between "backup." and ".json")
+                date_str = backup_file.stem.split("backup.")[-1]
+
+                # Validate date format (8 digits: YYYYMMDD)
+                if len(date_str) == 8 and date_str.isdigit():
+                    backup_date_str = date_str
+
+                    # Compare dates as strings (YYYYMMDD format allows
+                    # string comparison)
+                    if backup_date_str < cutoff_date_str:
+                        backup_file.unlink()
+            except (ValueError, IndexError):
+                # If filename doesn't match expected format, skip it
+                # (might be old format backups)
+                continue
 
     def _read_state(self) -> Dict[str, Any]:
         """Read state file with validation."""
@@ -63,6 +98,37 @@ class DeploymentStateManager:
             data = StateFileSchema.migrate_if_needed(data)
 
             if not StateFileSchema.validate(data):
+                # If validation fails, try to preserve existing deployments
+                # by only validating the structure, not individual deployments
+                if isinstance(data, dict) and "deployments" in data:
+                    # Keep the deployments dict even if some entries are
+                    # invalid. This prevents data loss when only some
+                    # entries are corrupted
+                    valid_deployments = {}
+                    for deploy_id, deploy_data in data.get(
+                        "deployments",
+                        {},
+                    ).items():
+                        try:
+                            # Try to validate individual deployment
+                            Deployment.from_dict(deploy_data)
+                            valid_deployments[deploy_id] = deploy_data
+                        except (TypeError, KeyError) as e:
+                            # Skip invalid deployments but keep valid ones
+                            print(
+                                f"Warning: Skipping invalid deployment "
+                                f"{deploy_id} in state file: {e}",
+                            )
+                    # Return state with only valid deployments
+                    # IMPORTANT: Only return empty if ALL deployments are
+                    # invalid. This prevents accidental data loss
+                    return {
+                        "version": data.get(
+                            "version",
+                            StateFileSchema.VERSION,
+                        ),
+                        "deployments": valid_deployments,
+                    }
                 raise ValueError("Invalid state file format")
 
             return data
@@ -76,14 +142,83 @@ class DeploymentStateManager:
             )
             return StateFileSchema.create_empty()
 
-    def _write_state(self, data: Dict[str, Any]) -> None:
-        """Write state file atomically."""
+    def _write_state(
+        self,
+        data: Dict[str, Any],
+        allow_empty: bool = False,
+    ) -> None:
+        """
+        Write state file atomically.
+
+        Args:
+            data: State data to write
+            allow_empty: If True, allow writing empty state even when file
+                        has data.
+                        Used for explicit operations like clear() or remove().
+        """
+        # Safety check: prevent writing empty state if file already exists
+        # with data. This prevents accidental data loss, unless explicitly
+        # allowed
+        if not allow_empty and self.state_file.exists():
+            try:
+                existing_state = self._read_state()
+                existing_count = len(existing_state.get("deployments", {}))
+                new_count = len(data.get("deployments", {}))
+
+                # If we're writing empty state but file had data, this is
+                # suspicious unless explicitly allowed  (e.g., from clear()
+                # or remove())
+                if existing_count > 0 and new_count == 0:
+                    raise ValueError(
+                        f"Attempted to write empty state when {existing_count}"
+                        f" deployments exist. This may indicate data loss. "
+                        f"Aborting write to prevent data loss.",
+                    )
+            except ValueError as e:
+                # Re-raise ValueError from safety check (data loss prevention)
+                raise ValueError(
+                    f"Attempted to write empty state when {existing_count}",
+                ) from e
+            except Exception:
+                # If we can't read existing state due to file errors,
+                # proceed with caution but still validate the new data
+                pass
+
         # Validate before writing
         if not StateFileSchema.validate(data):
             raise ValueError("Invalid state data")
 
-        # Backup existing state
-        self._backup_state_file()
+        # Serialize new data to compare with existing file
+        new_content = json.dumps(data, indent=2, sort_keys=True)
+
+        # Check if content actually changed before backing up
+        # Use the same read logic as _read_state to ensure consistency
+        if self.state_file.exists():
+            try:
+                # Read existing file using the same method as _read_state
+                # to ensure we're comparing apples to apples
+                with open(self.state_file, "r", encoding="utf-8") as f:
+                    existing_data = json.load(f)
+
+                # Normalize the existing data the same way _read_state does
+                existing_data = StateFileSchema.migrate_if_needed(
+                    existing_data,
+                )
+
+                # Serialize for comparison
+                existing_content = json.dumps(
+                    existing_data,
+                    indent=2,
+                    sort_keys=True,
+                )
+
+                # Only backup if content changed
+                if existing_content != new_content:
+                    self._backup_state_file()
+            except (json.JSONDecodeError, IOError, ValueError):
+                # If file is corrupted or unreadable, backup anyway
+                # This ensures we don't lose data if file is corrupted
+                self._backup_state_file()
 
         # Write to temporary file first
         temp_file = self.state_file.with_suffix(".tmp")
@@ -168,10 +303,22 @@ class DeploymentStateManager:
         """
         state = self._read_state()
 
+        # Safety check: if state is empty, don't proceed
+        # This prevents accidentally writing empty state
+        if not state.get("deployments"):
+            raise KeyError(
+                f"Deployment not found: {deploy_id} "
+                f"(state file is empty or corrupted)",
+            )
+
         if deploy_id not in state["deployments"]:
             raise KeyError(f"Deployment not found: {deploy_id}")
 
+        # Make a copy to avoid modifying the original dict in place
+        # This ensures we don't accidentally lose data
+        state["deployments"][deploy_id] = dict(state["deployments"][deploy_id])
         state["deployments"][deploy_id]["status"] = status
+
         self._write_state(state)
 
     def remove(self, deploy_id: str) -> None:
@@ -190,7 +337,11 @@ class DeploymentStateManager:
             raise KeyError(f"Deployment not found: {deploy_id}")
 
         del state["deployments"][deploy_id]
-        self._write_state(state)
+
+        # Allow empty state if this was the last deployment (legitimate
+        # removal)
+        allow_empty = len(state["deployments"]) == 0
+        self._write_state(state, allow_empty=allow_empty)
 
     def exists(self, deploy_id: str) -> bool:
         """Check if deployment exists."""
@@ -199,8 +350,10 @@ class DeploymentStateManager:
 
     def clear(self) -> None:
         """Clear all deployments (use with caution)."""
-        self._backup_state_file()
-        self._write_state(StateFileSchema.create_empty())
+        # Allow empty state for explicit clear operation
+        # Backup will be created automatically by _write_state() if content
+        # changes
+        self._write_state(StateFileSchema.create_empty(), allow_empty=True)
 
     def export_to_file(self, output_file: str) -> None:
         """Export state to a file."""

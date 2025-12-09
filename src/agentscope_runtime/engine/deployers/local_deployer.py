@@ -437,7 +437,7 @@ class LocalDeployManager(DeployManager):
                 if response.status_code == 200:
                     # Remove from state manager on successful shutdown
                     try:
-                        self.state_manager.remove(deploy_id)
+                        self.state_manager.update_status(deploy_id, "stopped")
                     except KeyError:
                         self._logger.debug(
                             f"Deployment {deploy_id} not found "
@@ -457,20 +457,6 @@ class LocalDeployManager(DeployManager):
                     "details": {"url": url, "error": str(e)},
                 }
 
-        # Fallback: use existing in-process cleanup for daemon mode
-        if not self.is_running:
-            # Still try to clean up state
-            try:
-                self.state_manager.remove(deploy_id)
-            except KeyError:
-                pass
-
-            return {
-                "success": True,
-                "message": "Service is not running (already stopped)",
-                "details": {"deploy_id": deploy_id},
-            }
-
         try:
             # when run in from main process instead of cli, make sure close
             if self._detached_process_pid:
@@ -482,7 +468,7 @@ class LocalDeployManager(DeployManager):
 
             # Remove from state manager on successful stop
             try:
-                self.state_manager.remove(deploy_id)
+                self.state_manager.update_status(deploy_id, "stopped")
             except KeyError:
                 self._logger.debug(
                     f"Deployment {deploy_id} not found in state (already "

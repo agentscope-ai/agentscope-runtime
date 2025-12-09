@@ -2593,7 +2593,7 @@ ls -lh /output/{zip_filename}
             if result.get("success"):
                 # Remove from state manager on successful deletion
                 try:
-                    self.state_manager.remove(deploy_id)
+                    self.state_manager.update_status(deploy_id, "stopped")
                 except KeyError:
                     logger.debug(
                         f"Deployment {deploy_id} not found in state (already removed)",
