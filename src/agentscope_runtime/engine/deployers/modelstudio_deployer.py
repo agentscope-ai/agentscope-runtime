@@ -7,7 +7,6 @@
 import json
 import logging
 import os
-import time
 from pathlib import Path
 from typing import Dict, Optional, List, Union, Tuple, Any
 
@@ -19,7 +18,6 @@ from .base import DeployManager
 from .local_deployer import LocalDeployManager
 from .utils.detached_app import get_bundle_entry_script
 from .utils.package import generate_build_directory
-
 from .utils.wheel_packager import (
     generate_wrapper_project,
     build_wheel,
@@ -574,7 +572,6 @@ class ModelstudioDeployManager(DeployManager):
         name = deploy_name or default_deploy_name()
 
         # Generate build directory with platform-aware naming
-        proj_root = project_dir.resolve()
         if isinstance(self.build_root, Path):
             effective_build_root = self.build_root.resolve()
         else:

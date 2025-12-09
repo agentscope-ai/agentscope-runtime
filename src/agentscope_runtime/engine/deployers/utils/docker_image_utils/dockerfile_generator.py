@@ -54,7 +54,8 @@ RUN echo "deb https://mirrors.aliyun.com/debian/ bookworm main contrib " \
          "non-free-firmware" >> /etc/apt/sources.list
 
 # replace debian to aliyun
-RUN mkdir -p /etc/apt/sources.list.d &&     cat > /etc/apt/sources.list.d/debian.sources <<'EOF'
+RUN mkdir -p /etc/apt/sources.list.d && \
+    cat > /etc/apt/sources.list.d/debian.sources <<'EOF'
 EOF
 
 # Clean up package lists

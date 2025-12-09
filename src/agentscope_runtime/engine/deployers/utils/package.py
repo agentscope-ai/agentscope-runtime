@@ -16,9 +16,7 @@ import inspect
 import logging
 import os
 import shutil
-import tempfile
 import zipfile
-from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Tuple, Union
 
@@ -44,14 +42,15 @@ def generate_build_directory(
 
     Args:
         platform: Deployment platform (k8s, modelstudio, agentrun, local, etc.)
-        workspace: Custom workspace directory (defaults to DEFAULT_BUILD_WORKSPACE)
+        workspace: Custom workspace directory (defaults to
+                DEFAULT_BUILD_WORKSPACE)
 
     Returns:
         Path: Generated build directory path
 
     Example:
         >>> build_dir = generate_build_directory("modelstudio")
-        >>> # Returns: .agentscope_runtime/builds/modelstudio_20251207_143025_a3f9e2
+        >>> # Returns: .agentscope_runtime/builds/modelstudio_20251207_xxx
     """
     import random
     import time
@@ -470,7 +469,7 @@ def _get_default_ignore_patterns() -> List[str]:
         ".vscode",
         "*.log",
         "logs",
-        ".agentscope_runtime",  # Ignore build workspace to prevent infinite recursion
+        ".agentscope_runtime",  # Ignore build workspace
     ]
 
 
@@ -604,8 +603,10 @@ def package(
     3. Package the project with the generated main.py as entrypoint
 
     Build directory naming:
-    - When output_dir=None (default), creates workspace directory with platform-aware naming
-    - Directory format: cwd/.agentscope_runtime/builds/<platform>_<timestamp>_<code>/
+    - When output_dir=None (default), creates workspace directory with
+                platform-aware naming
+    - Directory format: cwd/.agentscope_runtime/builds/<platform>_
+                 <timestamp>_<code>/
     - Explicit output_dir uses the provided path
 
     Args:

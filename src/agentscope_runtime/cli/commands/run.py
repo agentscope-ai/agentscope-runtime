@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 """as-runtime run command - Interactive and single-shot agent execution."""
+# pylint: disable=no-value-for-parameter, too-many-branches, protected-access
 
 import asyncio
-import click
-import sys
-import os
 import logging
+import os
+import sys
 from typing import Optional
+
+import click
+import shortuuid
 
 from agentscope_runtime.cli.loaders.agent_loader import (
     UnifiedAgentLoader,
@@ -25,7 +28,6 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
     TextContent,
     Role,
 )
-import shortuuid
 
 
 @click.command()
@@ -56,7 +58,8 @@ import shortuuid
 @click.option(
     "--entrypoint",
     "-e",
-    help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
+    help="Entrypoint file name for directory sources (e.g., 'app.py', "
+    "'main.py')",
     default=None,
 )
 def run(
@@ -230,7 +233,8 @@ async def _interactive_mode(
 ):
     """Run interactive REPL mode."""
     echo_success(
-        "Entering interactive mode. Type 'exit' or 'quit' to leave, Ctrl+C to interrupt.",
+        "Entering interactive mode. Type 'exit' or 'quit' to leave, Ctrl+C "
+        "to interrupt.",
     )
     echo_info(f"Session ID: {session_id}")
     echo_info(f"User ID: {user_id}")
@@ -277,7 +281,7 @@ async def _interactive_mode(
                         if hasattr(event, "output") and event.output:
                             # This is a response with messages
                             for message in event.output:
-                                # Filter out reasoning messages in non-verbose mode
+                                # Filter out reasoning in non-verbose mode
                                 if (
                                     not verbose
                                     and hasattr(message, "type")

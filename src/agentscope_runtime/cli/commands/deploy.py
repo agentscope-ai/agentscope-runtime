@@ -1,28 +1,31 @@
 # -*- coding: utf-8 -*-
 """as-runtime deploy command - Deploy agents to various platforms."""
+# pylint: disable=too-many-statements, too-many-branches
 
 import asyncio
-import click
-import sys
-import os
 import json
+import os
+import sys
+
+import click
 import yaml
 
+from agentscope_runtime.cli.state.manager import DeploymentStateManager
+from agentscope_runtime.cli.state.schema import Deployment, format_timestamp
 from agentscope_runtime.cli.utils.console import (
     echo_error,
     echo_info,
     echo_success,
     echo_warning,
 )
-from agentscope_runtime.cli.state.manager import DeploymentStateManager
-from agentscope_runtime.cli.state.schema import Deployment, format_timestamp
-from agentscope_runtime.engine.deployers.utils.deployment_modes import (
-    DeploymentMode,
-)
 
-# Only import LocalDeployManager directly (needs app object, will use loader internally)
+# Only import LocalDeployManager directly (needs app object, will use loader
+# internally)
 from agentscope_runtime.engine.deployers.local_deployer import (
     LocalDeployManager,
+)
+from agentscope_runtime.engine.deployers.utils.deployment_modes import (
+    DeploymentMode,
 )
 
 # Optional imports for cloud deployers
@@ -61,7 +64,8 @@ def _validate_source(source: str) -> tuple[str, str]:
     Validate source path and determine its type.
 
     Returns:
-        Tuple of (absolute_path, source_type) where source_type is 'file' or 'directory'
+        Tuple of (absolute_path, source_type) where source_type
+         is 'file' or 'directory'
 
     Raises:
         ValueError: If source doesn't exist
@@ -141,7 +145,9 @@ def _load_config_file(config_path: str) -> dict:
                     f"Use .json, .yaml, or .yml",
                 )
     except (json.JSONDecodeError, yaml.YAMLError) as e:
-        raise ValueError(f"Failed to parse config file {config_path}: {e}")
+        raise ValueError(
+            f"Failed to parse config file {config_path}: {e}",
+        ) from e
 
 
 def _merge_config(config_dict: dict, cli_params: dict) -> dict:
@@ -167,8 +173,7 @@ def _merge_config(config_dict: dict, cli_params: dict) -> dict:
                     merged["environment"] = {}
                 # CLI env overrides config environment
                 continue  # Will be handled by _parse_environment
-            else:
-                merged[key] = value
+            merged[key] = value
 
     return merged
 
@@ -203,7 +208,8 @@ def _parse_environment(env_tuples: tuple, env_file: str = None) -> dict:
 
                 if "=" not in line:
                     echo_warning(
-                        f"Skipping invalid line {line_num} in {env_file}: {line}",
+                        f"Skipping invalid line {line_num} in {env_file}: "
+                        f"{line}",
                     )
                     continue
 
@@ -246,18 +252,23 @@ def deploy():
 
     Use 'as-runtime deploy <platform> --help' for platform-specific options.
     """
-    pass
 
 
 @deploy.command()
 @click.argument("source", required=True)
 @click.option("--name", help="Deployment name", default=None)
 @click.option("--host", help="Host to bind to", default=None)
-@click.option("--port", help="Port to expose", default=None, type=int)
+@click.option(
+    "--port",
+    help="Port to expose",
+    default=None,
+    type=int,
+)
 @click.option(
     "--entrypoint",
     "-e",
-    help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
+    help="Entrypoint file name for directory sources (e.g., 'app.py', "
+    "'main.py')",
     default=None,
 )
 @click.option(
@@ -376,7 +387,7 @@ def local(
         )
         state_manager.save(deployment)
 
-        echo_success(f"Deployment successful!")
+        echo_success("Deployment successful!")
         echo_info(f"Deployment ID: {deploy_id}")
         echo_info(f"URL: {url}")
         echo_info(f"Use 'as-runtime stop {deploy_id}' to stop the deployment")
@@ -395,7 +406,8 @@ def local(
 @click.option(
     "--entrypoint",
     "-e",
-    help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
+    help="Entrypoint file name for directory sources (e.g., 'app.py', "
+    "'main.py')",
     default=None,
 )
 @click.option(
@@ -442,7 +454,8 @@ def modelstudio(
     if not MODELSTUDIO_AVAILABLE:
         echo_error("ModelStudio deployer is not available")
         echo_info(
-            "Please install required dependencies: alibabacloud-oss-v2 alibabacloud-bailian20231229",
+            "Please install required dependencies: alibabacloud-oss-v2 "
+            "alibabacloud-bailian20231229",
         )
         sys.exit(1)
 
@@ -485,7 +498,8 @@ def modelstudio(
         # Create deployer
         deployer = ModelstudioDeployManager()
 
-        # Prepare deployment parameters - ModelStudio always needs project_dir + cmd
+        # Prepare deployment parameters - ModelStudio always needs
+        # project_dir + cmd
         if source_type == "directory":
             # For directory: use directory as project_dir
             project_dir = abs_source
@@ -540,7 +554,7 @@ def modelstudio(
             )
             state_manager.save(deployment)
 
-            echo_success(f"Deployment successful!")
+            echo_success("Deployment successful!")
             echo_info(f"Deployment ID: {deploy_id}")
             echo_info(f"Console URL: {url}")
             echo_info(f"Workspace ID: {workspace_id}")
@@ -559,7 +573,8 @@ def modelstudio(
 @click.option(
     "--entrypoint",
     "-e",
-    help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
+    help="Entrypoint file name for directory sources (e.g., 'app.py', "
+    "'main.py')",
     default=None,
 )
 @click.option(
@@ -616,7 +631,8 @@ def agentrun(
     if not AGENTRUN_AVAILABLE:
         echo_error("AgentRun deployer is not available")
         echo_info(
-            "Please install required dependencies: alibabacloud-agentrun20250910",
+            "Please install required dependencies: "
+            "alibabacloud-agentrun20250910",
         )
         sys.exit(1)
 
@@ -673,7 +689,7 @@ def agentrun(
         # Create deployer
         deployer = AgentRunDeployManager()
 
-        # Prepare deployment parameters - AgentRun always needs project_dir + cmd
+        # Prepare deployment - AgentRun always needs project_dir + cmd
         if source_type == "directory":
             # For directory: use directory as project_dir
             project_dir = abs_source
@@ -730,7 +746,7 @@ def agentrun(
             )
             state_manager.save(deployment)
 
-            echo_success(f"Deployment successful!")
+            echo_success("Deployment successful!")
             echo_info(f"Deployment ID: {deploy_id}")
             echo_info(f"Endpoint URL: {endpoint_url}")
             echo_info(f"Console URL: {url}")
@@ -757,10 +773,28 @@ def agentrun(
     type=click.Path(exists=True),
     help="Path to deployment config file (.json, .yaml, or .yml)",
 )
-@click.option("--replicas", help="Number of replicas", type=int, default=1)
-@click.option("--port", help="Container port", type=int, default=8080)
-@click.option("--image-name", help="Docker image name", default="agent_app")
-@click.option("--image-tag", help="Docker image tag", default="linux-amd64")
+@click.option(
+    "--replicas",
+    help="Number of replicas",
+    type=int,
+    default=1,
+)
+@click.option(
+    "--port",
+    help="Container port",
+    type=int,
+    default=8080,
+)
+@click.option(
+    "--image-name",
+    help="Docker image name",
+    default="agent_app",
+)
+@click.option(
+    "--image-tag",
+    help="Docker image tag",
+    default="linux-amd64",
+)
 @click.option(
     "--registry-url",
     help="Remote registry url",
@@ -771,11 +805,16 @@ def agentrun(
     help="Remote registry namespace",
     default="agentscope-runtime",
 )
-@click.option("--push", is_flag=True, help="Push image to registry")
+@click.option(
+    "--push",
+    is_flag=True,
+    help="Push image to registry",
+)
 @click.option(
     "--entrypoint",
     "-e",
-    help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
+    help="Entrypoint file name for directory sources (e.g., 'app.py', "
+    "'main.py')",
     default=None,
 )
 @click.option(
@@ -938,13 +977,14 @@ def k8s(
         health_check = merged_config.get("health_check", True)
         platform = merged_config.get("platform")
 
-        # Handle requirements (can be comma-separated string, list, or file path)
+        # Handle requirements (can be comma-separated string, list, or file
+        # path)
         requirements = merged_config.get("requirements")
         if requirements:
             if isinstance(requirements, str):
                 # Check if it's a file path
                 if os.path.isfile(requirements):
-                    with open(requirements, "r") as f:
+                    with open(requirements, "r", encoding="utf-8") as f:
                         requirements = [
                             line.strip()
                             for line in f
@@ -1083,7 +1123,7 @@ def k8s(
         )
         state_manager.save(deployment)
 
-        echo_success(f"Deployment successful!")
+        echo_success("Deployment successful!")
         echo_info(f"Deployment ID: {deploy_id}")
         echo_info(f"Resource Name: {resource_name}")
         echo_info(f"URL: {url}")

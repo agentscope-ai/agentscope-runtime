@@ -26,11 +26,6 @@ import os
 from typing import List, Tuple, Optional, Union
 from .detached_app import _parse_pyproject_toml, append_project_requirements
 
-try:
-    import tomllib  # Python 3.11+
-except ImportError:  # pragma: no cover - fallback on older Pythons
-    tomllib = None  # type: ignore
-
 
 def get_user_bundle_appdir(build_root: Path, user_project_dir: Path) -> Path:
     return (

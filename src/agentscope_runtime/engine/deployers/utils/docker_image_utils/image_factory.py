@@ -189,7 +189,8 @@ class ImageFactory:
             app: Agent app object
             runner: Runner object containing agent and managers
             config: Configuration for the image building process
-            entrypoint: Entrypoint specification (e.g., "app.py" or "app.py:handler")
+            entrypoint: Entrypoint specification (e.g., "app.py" or
+                "app.py:handler")
             use_cache: Enable build cache (default: True)
 
         Returns:
@@ -323,7 +324,8 @@ class ImageFactory:
         Args:
             app: agent app object
             runner: Runner object
-            entrypoint: Entrypoint specification (e.g., "app.py" or "app.py:handler")
+            entrypoint: Entrypoint specification (e.g., "app.py" or
+                    "app.py:handler")
             requirements: Python requirements
             extra_packages: Additional files to include
             base_image: Docker base image

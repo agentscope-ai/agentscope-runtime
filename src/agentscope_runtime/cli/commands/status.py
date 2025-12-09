@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """as-runtime status command - Show deployment status."""
+# pylint: disable=no-value-for-parameter
+
+import sys
 
 import click
-import sys
 
 from agentscope_runtime.cli.state.manager import DeploymentStateManager
 from agentscope_runtime.cli.utils.console import (
     echo_error,
-    echo_info,
     format_deployment_info,
     format_json,
 )
@@ -16,13 +17,13 @@ from agentscope_runtime.cli.utils.console import (
 @click.command()
 @click.argument("deploy_id", required=True)
 @click.option(
-    "--format",
+    "--output-format",
     "-f",
     help="Output format: text or json",
     type=click.Choice(["text", "json"], case_sensitive=False),
     default="text",
 )
-def status(deploy_id: str, format: str):
+def status(deploy_id: str, output_format: str):
     """
     Show detailed deployment status.
 
@@ -32,7 +33,7 @@ def status(deploy_id: str, format: str):
     $ as-runtime status local_20250101_120000_abc123
 
     # JSON output
-    $ as-runtime status local_20250101_120000_abc123 --format json
+    $ as-runtime status local_20250101_120000_abc123 --output-format json
     """
     try:
         # Initialize state manager
@@ -45,7 +46,7 @@ def status(deploy_id: str, format: str):
             echo_error(f"Deployment not found: {deploy_id}")
             sys.exit(1)
 
-        if format == "json":
+        if output_format == "json":
             print(format_json(deployment.to_dict()))
         else:
             print(format_deployment_info(deployment.to_dict()))

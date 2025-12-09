@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """as-runtime invoke command - Invoke a deployed agent."""
+# pylint: disable=no-value-for-parameter
 
 import click
-import sys
 
 from agentscope_runtime.cli.commands.run import run
 from agentscope_runtime.cli.utils.console import echo_info

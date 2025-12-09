@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-nested-blocks,too-many-return-statements
 
-import os
-import socket
-from typing import Optional, Dict, Any
 import logging
+import os
+from typing import Optional
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -21,7 +21,8 @@ def isLocalK8sEnvironment() -> bool:
     5. Analyze network characteristics
 
     Returns:
-        bool: True if running in a local cluster, False otherwise (cloud/production)
+        bool: True if running in a local cluster, False otherwise (
+        cloud/production)
     """
 
     # Results from various detection methods
@@ -33,7 +34,7 @@ def isLocalK8sEnvironment() -> bool:
     # Log detection results
     logger.info(f"K8s environment detection results: {detection_results}")
 
-    # Voting mechanism: if majority of applicable checks indicate 'local', return True
+    # Voting: if majority of applicable checks indicate 'local', return True
     local_votes = sum(
         1 for result in detection_results.values() if result is True
     )
@@ -43,13 +44,15 @@ def isLocalK8sEnvironment() -> bool:
 
     if total_votes == 0:
         logger.warning(
-            "Unable to determine K8s environment type; defaulting to cloud/remote",
+            "Unable to determine K8s environment type; defaulting to "
+            "cloud/remote",
         )
         return False
 
     is_local = local_votes > (total_votes / 2)
     logger.info(
-        f"Final verdict: {'Local environment' if is_local else 'Cloud/remote environment'} "
+        f"Final verdict: "
+        f"{'Local environment' if is_local else 'Cloud/remote environment'} "
         f"(votes: {local_votes}/{total_votes})",
     )
 
@@ -74,7 +77,7 @@ def _check_kubeconfig_context() -> Optional[bool]:
             logger.debug("kubeconfig file not found")
             return None
 
-        with open(kubeconfig_path, "r") as f:
+        with open(kubeconfig_path, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
 
         if not config or "current-context" not in config:
@@ -141,14 +144,16 @@ def _check_kubeconfig_context() -> Optional[bool]:
                             ]
                         ):
                             logger.debug(
-                                f"Cluster server '{server}' points to localhost",
+                                f"Cluster server '{server}' points to "
+                                f"localhost",
                             )
                             return True
         return None
 
     except ImportError:
         logger.warning(
-            "PyYAML not installed; cannot parse kubeconfig. Install via: pip install pyyaml",
+            "PyYAML not installed; cannot parse kubeconfig. "
+            "Install via: pip install pyyaml",
         )
         return None
     except Exception as e:
@@ -169,10 +174,10 @@ def _check_kubernetes_api() -> Optional[bool]:
         # Load config — in-cluster first, then kubeconfig
         try:
             config.load_incluster_config()
-        except:
+        except Exception:
             try:
                 config.load_kube_config()
-            except:
+            except Exception:
                 logger.debug("Failed to load Kubernetes configuration")
                 return None
 
@@ -223,19 +228,12 @@ def _check_kubernetes_api() -> Optional[bool]:
             logger.debug("Detected local-environment namespace")
             return True
 
-        # Optional: check kube-system ConfigMaps
-        try:
-            configmaps = v1.list_namespaced_config_map("kube-system")
-            configmap_names = [cm.metadata.name for cm in configmaps.items]
-            # 'kubeadm-config' implies kubeadm — not decisive alone
-        except:
-            pass
-
         return None
 
     except ImportError:
         logger.warning(
-            "kubernetes client not installed; API detection disabled. Install via: pip install kubernetes",
+            "kubernetes client not installed; API detection disabled. "
+            "Install via: pip install kubernetes",
         )
         return None
     except Exception as e:

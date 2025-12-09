@@ -11,10 +11,7 @@ import hashlib
 import json
 import logging
 import os
-import random
 import shutil
-import string
-import time
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -131,7 +128,7 @@ class BuildCache:
             platform: Deployment platform (k8s, modelstudio, agentrun, local)
 
         Returns:
-            Path to cached build directory if valid cache exists, None otherwise
+            Path to cached build directory if valid cache exists, No otherwise
         """
         # Calculate content hash
         build_hash = self._calculate_build_hash(
@@ -151,7 +148,8 @@ class BuildCache:
 
                 if not cache_dir.exists():
                     logger.warning(
-                        f"Cached build referenced in metadata but not found: {build_name}",
+                        f"Cached build referenced in metadata"
+                        f" but not found: {build_name}",
                     )
                     continue
 
@@ -503,7 +501,7 @@ class BuildCache:
             platform: Deployment platform (modelstudio, agentrun)
 
         Returns:
-            Path to cached wrapper directory if valid cache exists, None otherwise
+            Path to cached directory if valid cache exists, No otherwise
         """
         # Calculate content hash for wrapper
         build_hash = self._calculate_wrapper_hash(project_dir, cmd)
@@ -521,7 +519,8 @@ class BuildCache:
 
                 if not cache_dir.exists():
                     logger.warning(
-                        f"Cached wrapper referenced in metadata but not found: {build_name}",
+                        f"Cached wrapper referenced in metadata but not "
+                        f"found: {build_name}",
                     )
                     continue
 
@@ -690,7 +689,8 @@ class BuildCache:
         for wheel_file in wheel_files:
             if wheel_file.stat().st_size == 0:
                 logger.warning(
-                    f"Wrapper cache validation failed: {wheel_file.name} is empty",
+                    f"Wrapper cache validation failed: {wheel_file.name} is "
+                    f"empty",
                 )
                 return False
 

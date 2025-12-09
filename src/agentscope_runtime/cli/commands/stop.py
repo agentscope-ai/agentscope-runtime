@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 """as-runtime stop command - Stop a deployment."""
+# pylint: disable=too-many-return-statements, too-many-branches
+# pylint: disable=no-value-for-parameter, too-many-statements, unused-argument
 
 import asyncio
-import click
 import sys
 from typing import Optional
+
+import click
 
 from agentscope_runtime.cli.state.manager import DeploymentStateManager
 from agentscope_runtime.cli.utils.console import (
@@ -32,13 +35,13 @@ def _create_deployer(
     """
     try:
         if platform == "local":
-            from agentscope_runtime.engine.deployers.local_deployer import (
+            from agentscope_runtime.engine.deployers import (
                 LocalDeployManager,
             )
 
             return LocalDeployManager()
         elif platform == "k8s":
-            from agentscope_runtime.engine.deployers.kubernetes_deployer import (
+            from agentscope_runtime.engine.deployers import (
                 KubernetesDeployManager,
                 K8sConfig,
             )
@@ -47,7 +50,7 @@ def _create_deployer(
             k8s_config = K8sConfig(k8s_namespace="agentscope-runtime")
             return KubernetesDeployManager(kube_config=k8s_config)
         elif platform == "modelstudio":
-            from agentscope_runtime.engine.deployers.modelstudio_deployer import (
+            from agentscope_runtime.engine.deployers import (
                 ModelstudioDeployManager,
             )
 
@@ -134,7 +137,6 @@ def stop(deploy_id: str, yes: bool, force: bool):
 
         # Call deployer stop (unless --force)
         cleanup_success = False
-        cleanup_attempted = False
 
         if not force:
             echo_info(f"Calling platform cleanup for {platform}...")
@@ -145,7 +147,6 @@ def stop(deploy_id: str, yes: bool, force: bool):
             )
 
             if deployer:
-                cleanup_attempted = True
                 try:
                     # Prepare kwargs for stop method
                     stop_kwargs = {}
@@ -163,21 +164,25 @@ def stop(deploy_id: str, yes: bool, force: bool):
 
                     if result.get("success"):
                         echo_success(
-                            f"Platform cleanup: {result.get('message', 'Success')}",
+                            f"Platform cleanup: "
+                            f"{result.get('message', 'Success')}",
                         )
                         cleanup_success = True
                     else:
                         echo_error(
-                            f"Platform cleanup failed: {result.get('message', 'Unknown error')}",
+                            f"Platform cleanup failed: "
+                            f"{result.get('message', 'Unknown error')}",
                         )
                         echo_error(
-                            "Cannot mark deployment as stopped - platform cleanup failed",
+                            "Cannot mark deployment as stopped - platform "
+                            "cleanup failed",
                         )
                         sys.exit(1)
                 except Exception as e:
                     echo_error(f"Error during platform cleanup: {e}")
                     echo_error(
-                        "Cannot mark deployment as stopped - platform cleanup failed",
+                        "Cannot mark deployment as stopped - platform "
+                        "cleanup failed",
                     )
                     sys.exit(1)
             else:
@@ -185,10 +190,12 @@ def stop(deploy_id: str, yes: bool, force: bool):
                     f"Could not create deployer for platform: {platform}",
                 )
                 echo_error(
-                    "Cannot mark deployment as stopped - deployer creation failed",
+                    "Cannot mark deployment as stopped - deployer creation "
+                    "failed",
                 )
                 echo_info(
-                    "\nTip: Use --force flag to skip platform cleanup and only update local state",
+                    "\nTip: Use --force flag to skip platform cleanup and "
+                    "only update local state",
                 )
                 sys.exit(1)
         else:

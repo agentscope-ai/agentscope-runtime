@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 """as-runtime sandbox command - Sandbox management commands."""
+# pylint: disable=subprocess-run-check
+
+import subprocess
+import sys
 
 import click
-import sys
-import subprocess
 
 from agentscope_runtime.cli.utils.console import (
     echo_error,
     echo_info,
-    echo_warning,
 )
 
 
@@ -25,7 +26,6 @@ def sandbox():
     - server: Start sandbox manager server
     - build: Build sandbox environments
     """
-    pass
 
 
 @sandbox.command()

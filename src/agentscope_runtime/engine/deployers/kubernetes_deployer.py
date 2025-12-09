@@ -70,8 +70,8 @@ class KubernetesDeployManager(DeployManager):
 
     @staticmethod
     def get_service_endpoint(
-        service_external_ip: str,
-        service_port: int,
+        service_external_ip: Optional[str],
+        service_port: Optional[Union[int, list]],
         fallback_host: str = "127.0.0.1",
     ) -> str:
         """
@@ -81,9 +81,10 @@ class KubernetesDeployManager(DeployManager):
         reachable from localhost in local clusters (e.g., Minikube/Kind).
 
         Args:
-            service_external_ip: ExternalIP or LoadBalancer IP from Service spec
+            service_external_ip: ExternalIP or LoadBalancer IP from Service
             service_port: Target port
-            fallback_host: Host to use in local environments (default: 127.0.0.1)
+            fallback_host: Host to use in local environments (default:
+            127.0.0.1)
 
         Returns:
             str: Full HTTP endpoint URL: http://<host>:<port>
@@ -93,16 +94,26 @@ class KubernetesDeployManager(DeployManager):
             >>> # In local env → 'http://127.0.0.1:8080'
             >>> # In cloud env → 'http://192.168.5.1:8080'
         """
+        if not service_external_ip:
+            service_external_ip = "127.0.0.1"
+
+        if not service_port:
+            service_port = 8080
+
+        if isinstance(service_port, list):
+            service_port = service_port[0]
 
         if isLocalK8sEnvironment():
             host = fallback_host
             logger.info(
-                f"Local K8s environment detected; using {host} instead of {service_external_ip}",
+                f"Local K8s environment detected; using {host} instead of "
+                f"{service_external_ip}",
             )
         else:
             host = service_external_ip
             logger.info(
-                f"Cloud/remote environment detected; using External IP: {host}",
+                f"Cloud/remote environment detected; using External IP: "
+                f"{host}",
             )
 
         return f"http://{host}:{service_port}"
@@ -139,7 +150,7 @@ class KubernetesDeployManager(DeployManager):
             app: Agent app to be deployed
             runner: Complete Runner object with agent, environment_manager,
                 context_manager
-            entrypoint: Entrypoint specification (e.g., "app.py" or "app.py:handler")
+            entrypoint: Entrypoint spec (e.g., "app.py" or "app.py:handler")
             endpoint_path: API endpoint path
             stream: Enable streaming responses
             custom_endpoints: Custom endpoints from agent app
@@ -245,7 +256,7 @@ class KubernetesDeployManager(DeployManager):
                 )
 
             if ports:
-                url = self.get_service_endpoint(ip, ports[0])
+                url = self.get_service_endpoint(ip, ports)
             else:
                 url = self.get_service_endpoint(ip, port)
 
@@ -325,7 +336,8 @@ class KubernetesDeployManager(DeployManager):
 
                 return {
                     "success": True,
-                    "message": f"Kubernetes deployment {resource_name} removed",
+                    "message": f"Kubernetes deployment {resource_name} "
+                    f"removed",
                     "details": {
                         "deploy_id": deploy_id,
                         "namespace": namespace,
@@ -336,7 +348,8 @@ class KubernetesDeployManager(DeployManager):
                 # Deployment not found or already deleted (idempotent)
                 return {
                     "success": True,
-                    "message": f"Kubernetes deployment {resource_name} not found (may already be deleted)",
+                    "message": f"Kubernetes deployment {resource_name} not "
+                    f"found (may already be deleted)",
                     "details": {
                         "deploy_id": deploy_id,
                         "namespace": namespace,

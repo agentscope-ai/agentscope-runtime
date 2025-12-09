@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 """as-runtime web command - Launch agent with web UI."""
+# pylint: disable=no-value-for-parameter, unused-argument, unnecessary-pass
+
+import atexit
+import os
+import signal
+import sys
 
 import click
-import sys
-import signal
-import atexit
 import psutil
-import os
 
 from agentscope_runtime.cli.loaders.agent_loader import (
     UnifiedAgentLoader,
@@ -83,7 +85,8 @@ signal.signal(signal.SIGTERM, _signal_handler)
 @click.option(
     "--entrypoint",
     "-e",
-    help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
+    help="Entrypoint file name for directory sources (e.g., 'app.py', "
+    "'main.py')",
     default=None,
 )
 def web(source: str, host: str, port: int, entrypoint: str = None):
@@ -133,7 +136,8 @@ def web(source: str, host: str, port: int, entrypoint: str = None):
         # Launch with web UI
         echo_info(f"Starting agent service on {host}:{port} with web UI...")
         echo_info(
-            "Note: First launch may take longer as web UI dependencies are installed",
+            "Note: First launch may take longer as web UI dependencies are "
+            "installed",
         )
 
         # Track parent process for cleanup

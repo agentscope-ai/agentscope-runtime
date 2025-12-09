@@ -1,22 +1,20 @@
 # -*- coding: utf-8 -*-
 """Base agent loader class."""
+# pylint: disable=too-many-branches
 
+import importlib.util
 import os
 import sys
-import importlib.util
-import inspect
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Optional
 
-from agentscope_runtime.engine.app.agent_app import AgentApp
 from agentscope_runtime.cli.utils.validators import validate_agent_source
+from agentscope_runtime.engine.app.agent_app import AgentApp
 
 
 class AgentLoadError(Exception):
     """Raised when agent loading fails."""
-
-    pass
 
 
 class AgentLoader(ABC):
@@ -25,7 +23,6 @@ class AgentLoader(ABC):
     @abstractmethod
     def load(self, source: str) -> AgentApp:
         """Load AgentApp from source."""
-        pass
 
 
 class FileLoader:
@@ -129,13 +126,15 @@ class FileLoader:
         if not candidates:
             raise AgentLoadError(
                 f"No AgentApp found in {file_path}.\n"
-                "Expected: 'agent_app' or 'app' variable, or 'create_app'/'create_agent_app' function",
+                "Expected: 'agent_app' or 'app' variable, "
+                "or 'create_app'/'create_agent_app' function",
             )
 
         if len(candidates) > 1:
             candidate_names = [name for name, _ in candidates]
             raise AgentLoadError(
-                f"Multiple AgentApp instances found in {file_path}: {candidate_names}\n"
+                f"Multiple AgentApp instances found in {file_path}: "
+                f"{candidate_names}\n"
                 "Please ensure only one AgentApp is exported",
             )
 
@@ -156,7 +155,8 @@ class ProjectLoader:
 
         Args:
             project_dir: Path to project directory
-            entrypoint: Optional entrypoint file name (e.g., "app.py", "main.py")
+            entrypoint: Optional entrypoint file name (e.g., "app.py",
+            "main.py")
 
         Returns:
             AgentApp instance
@@ -268,13 +268,15 @@ class UnifiedAgentLoader:
             if source_type == "deployment_id":
                 if self.deployment_loader is None:
                     raise AgentLoadError(
-                        "Cannot load from deployment ID: state manager not available",
+                        "Cannot load from deployment ID: state manager not "
+                        "available",
                     )
                 return self.deployment_loader.load(normalized_source)
             elif source_type == "file":
                 if entrypoint:
                     raise AgentLoadError(
-                        "The --entrypoint option is only applicable for directory sources, not file sources",
+                        "The --entrypoint option is only applicable for "
+                        "directory sources, not file sources",
                     )
                 return self.file_loader.load(normalized_source)
             elif source_type == "directory":

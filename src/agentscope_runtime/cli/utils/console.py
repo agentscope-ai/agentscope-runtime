@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """Console output utilities for CLI."""
 
-import click
-from typing import Optional, Any
 import json
+from typing import Optional, Any
+
+import click
 
 
 def echo_success(message: str, **kwargs) -> None:

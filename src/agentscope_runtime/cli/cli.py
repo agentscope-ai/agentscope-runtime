@@ -1,8 +1,22 @@
 # -*- coding: utf-8 -*-
 """AgentScope Runtime CLI - Main entry point."""
+# pylint: disable=no-value-for-parameter
 
 import os
+
 import click
+
+# Import command groups (to be registered below)
+from agentscope_runtime.cli.commands import (
+    run,
+    web,
+    deploy,
+    list_cmd,
+    status,
+    stop,
+    invoke,
+    sandbox,
+)
 from agentscope_runtime.version import __version__
 
 # Set default environment variable for trace console output
@@ -19,23 +33,12 @@ def cli(ctx):
     """
     AgentScope Runtime - Unified CLI for agent lifecycle management.
 
-    Manage your agent development, deployment, and runtime operations from a single command.
+    Manage your agent development, deployment, and runtime operations
+    from a single command.
+
     """
     # Ensure context object exists
     ctx.ensure_object(dict)
-
-
-# Import command groups (to be registered below)
-from agentscope_runtime.cli.commands import (
-    run,
-    web,
-    deploy,
-    list_cmd,
-    status,
-    stop,
-    invoke,
-    sandbox,
-)
 
 
 # Register commands

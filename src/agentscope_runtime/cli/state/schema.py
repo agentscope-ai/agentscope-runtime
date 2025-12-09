@@ -3,8 +3,7 @@
 
 from dataclasses import dataclass, asdict
 from datetime import datetime
-from typing import Dict, Any, Optional, List
-import json
+from typing import Dict, Any, Optional
 
 
 @dataclass
@@ -59,7 +58,7 @@ class StateFileSchema:
             return False
 
         # Validate each deployment record
-        for deploy_id, deploy_data in data["deployments"].items():
+        for _, deploy_data in data["deployments"].items():
             try:
                 Deployment.from_dict(deploy_data)
             except (TypeError, KeyError):

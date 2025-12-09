@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
 """Deployment state management."""
 
-import os
 import json
+import os
 import shutil
+from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
-from datetime import datetime
 
 from agentscope_runtime.cli.state.schema import (
     Deployment,
     StateFileSchema,
-    format_timestamp,
 )
 
 
@@ -72,7 +71,8 @@ class DeploymentStateManager:
             # State file is corrupted, return empty state
             # Original file is kept as-is for manual recovery
             print(
-                f"Warning: State file is corrupted ({e}). Starting with empty state.",
+                f"Warning: State file is corrupted ({e}). Starting with "
+                f"empty state.",
             )
             return StateFileSchema.create_empty()
 

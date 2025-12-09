@@ -2,14 +2,10 @@
 """Input validation utilities for CLI."""
 
 import os
-from pathlib import Path
-from typing import Optional
 
 
 class ValidationError(Exception):
     """Raised when validation fails."""
-
-    pass
 
 
 def validate_agent_source(source: str) -> tuple[str, str]:
@@ -63,8 +59,8 @@ def validate_port(port: int) -> int:
     if not isinstance(port, int):
         try:
             port = int(port)
-        except (ValueError, TypeError):
-            raise ValidationError(f"Port must be an integer: {port}")
+        except (ValueError, TypeError) as e:
+            raise ValidationError(f"Port must be an integer: {port}") from e
 
     if port < 1 or port > 65535:
         raise ValidationError(f"Port must be between 1 and 65535: {port}")

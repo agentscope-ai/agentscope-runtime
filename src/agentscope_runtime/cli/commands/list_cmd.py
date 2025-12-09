@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """as-runtime list command - List all deployments."""
+# pylint: disable=no-value-for-parameter, too-many-branches, protected-access
 
-import click
 import sys
 from typing import Optional
+
+import click
 
 from agentscope_runtime.cli.state.manager import DeploymentStateManager
 from agentscope_runtime.cli.utils.console import (
@@ -28,7 +30,7 @@ from agentscope_runtime.cli.utils.console import (
     default=None,
 )
 @click.option(
-    "--format",
+    "--output-format",
     "-f",
     help="Output format: table or json",
     type=click.Choice(["table", "json"], case_sensitive=False),
@@ -37,7 +39,7 @@ from agentscope_runtime.cli.utils.console import (
 def list_deployments(
     status: Optional[str],
     platform: Optional[str],
-    format: str,
+    output_format: str,
 ):
     """
     List all deployments.
@@ -54,7 +56,7 @@ def list_deployments(
     $ as-runtime list --platform k8s
 
     # JSON output
-    $ as-runtime list --format json
+    $ as-runtime list --output-format json
     """
     try:
         # Initialize state manager
@@ -67,7 +69,7 @@ def list_deployments(
             echo_info("No deployments found")
             return
 
-        if format == "json":
+        if output_format == "json":
             # JSON output
             output = [d.to_dict() for d in deployments]
             print(format_json(output))

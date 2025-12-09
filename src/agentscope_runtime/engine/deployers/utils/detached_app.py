@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=too-many-return-statements
+# pylint:disable=too-many-return-statements, too-many-branches
 
 """Shared helpers for building detached deployment bundles."""
 
@@ -58,7 +58,8 @@ def build_detached_app(
     Args:
         app: AgentApp instance to deploy
         runner: Runner instance to deploy
-        entrypoint: Entrypoint specification (e.g., "app.py" or "app.py:handler")
+        entrypoint: Entrypoint specification (e.g., "app.py" or
+                 "app.py:handler")
         requirements: Additional pip requirements (string or list)
         extra_packages: Additional Python packages to include
         output_dir: Output directory (creates temp dir if None)
@@ -154,8 +155,8 @@ def _normalize_requirements(
 
 def append_project_requirements(
     extraction_dir: Path,
-    additional_requirements: List[str],
-    use_local_runtime: bool = False,
+    additional_requirements: Optional[Union[str, list]],
+    use_local_runtime: Optional[bool] = False,
 ) -> None:
     """
     Append requirements to requirements.txt.
@@ -171,19 +172,13 @@ def append_project_requirements(
     """
     # Auto-detect if not specified
     if use_local_runtime is None:
-        package_version = _get_package_version()
-        use_local_runtime = _is_dev_version(package_version)
+        use_local_runtime = os.getenv("USE_LOCAL_RUNTIME", "False") == "True"
 
     req_path = extraction_dir / "requirements.txt"
     package_version = _get_package_version()
 
-    # Auto-detect if we should use local runtime
-    should_use_local = use_local_runtime or (
-        package_version and _is_dev_version(package_version)
-    )
-
     with open(str(req_path), "w", encoding="utf-8") as f:
-        if should_use_local:
+        if use_local_runtime:
             # Create wheels subdirectory
             # Get base requirements from pyproject.toml
             runtime_source = _get_runtime_source_path()
@@ -214,8 +209,6 @@ def append_project_requirements(
                 "fastapi",
                 "uvicorn",
                 f"agentscope-runtime=={package_version}",
-                f"agentscope-runtime[sandbox]=={package_version}",
-                f"agentscope-runtime[deployment]=={package_version}",
                 "pydantic",
                 "jinja2",  # For template rendering
                 "psutil",  # For process management
@@ -228,6 +221,9 @@ def append_project_requirements(
 
         if not additional_requirements:
             additional_requirements = []
+
+        if isinstance(additional_requirements, str):
+            additional_requirements = additional_requirements.split(",")
 
         # Combine base requirements with user requirements
         all_requirements = sorted(
@@ -270,7 +266,7 @@ def _parse_pyproject_toml(pyproject_path: Path) -> List[str]:
                 else:
                     deps.append(name)
     except Exception:
-        # Minimal non-toml parser fallback: try to extract a dependencies = [ ... ] list
+        # Minimal non-toml parser fallback
         block_match = re.search(
             r"dependencies\s*=\s*\[(.*?)\]",
             text,
@@ -573,7 +569,9 @@ def _write_bundle_meta(bundle_dir: Path, entry_script: str) -> None:
     meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
 
-def get_bundle_entry_script(bundle_dir: Union[str, Path]) -> str:
+def get_bundle_entry_script(bundle_dir: Optional[Union[str, Path]]) -> str:
+    if bundle_dir is None:
+        return DEFAULT_ENTRYPOINT_FILE
     meta_path = Path(bundle_dir) / META_FILENAME
     if meta_path.exists():
         try:

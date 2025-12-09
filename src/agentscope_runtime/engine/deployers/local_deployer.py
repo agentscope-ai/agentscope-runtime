@@ -257,7 +257,8 @@ class LocalDeployManager(DeployManager):
             # Original behavior: require app or runner
             if runner is None and self._app is None:
                 raise ValueError(
-                    "Detached process mode requires an app, runner, project_dir, or entrypoint",
+                    "Detached process mode requires an app, runner, "
+                    "project_dir, or entrypoint",
                 )
 
             if "agent" in kwargs:
@@ -272,6 +273,9 @@ class LocalDeployManager(DeployManager):
                 protocol_adapters=protocol_adapters,
                 **kwargs,
             )
+
+        if not project_dir:
+            raise RuntimeError("Failed to parse project directory")
 
         try:
             entry_script = get_bundle_entry_script(project_dir)
@@ -380,7 +384,8 @@ class LocalDeployManager(DeployManager):
                 else:
                     return {
                         "success": False,
-                        "message": f"Shutdown endpoint returned status {response.status_code}",
+                        "message": f"Shutdown endpoint returned status "
+                        f"{response.status_code}",
                         "details": {"url": url},
                     }
             except requests.exceptions.RequestException as e:
