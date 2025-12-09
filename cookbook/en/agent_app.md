@@ -92,9 +92,12 @@ curl -N \
 
 ```bash
 data: {"sequence_number":0,"object":"response","status":"created", ... }
-data: {"sequence_number":2,"object":"content","status":"in_progress","text":"Hello" }
-data: {"sequence_number":3,"object":"content","status":"in_progress","text":" world!" }
-data: {"sequence_number":4,"object":"message","status":"completed","text":"Hello world!" }
+data: {"sequence_number":1,"object":"response","status":"in_progress", ... }
+data: {"sequence_number":2,"object":"message","status":"in_progress", ... }
+data: {"sequence_number":3,"object":"content","status":"in_progress","text":"Hello" }
+data: {"sequence_number":4,"object":"content","status":"in_progress","text":" World!" }
+data: {"sequence_number":5,"object":"message","status":"completed","text":"Hello World!" }
+data: {"sequence_number":6,"object":"response","status":"completed", ... }
 ```
 
 ------
@@ -507,3 +510,6 @@ await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```
 
 See {doc}`advanced_deployment` for additional deployers (Kubernetes, ModelStudio, AgentRun, etc.) and more configuration tips.
+
+AgentScope Runtime provides serverless deployment options, including deploying agents to ModelStudio(FC) and AgentRun.
+See {doc}`advanced_deployment` for more configuration details about ModelStudio and AgentRun.

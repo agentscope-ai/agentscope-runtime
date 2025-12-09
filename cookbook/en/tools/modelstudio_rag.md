@@ -1,6 +1,6 @@
 # Retrieval-Augmented Generation Components (RAGs)
 
-This directory contains RAG (Retrieval-Augmented Generation) related components, providing knowledge base retrieval and enhanced generation capabilities.
+This directory contains RAG (Retrieval-Augmented Generation)-related components that provide knowledge-base retrieval and enhanced generation capabilities.
 
 ## 📋 Component List
 
@@ -10,7 +10,7 @@ Core retrieval-augmented generation service that can retrieve user knowledge bas
 **Prerequisites:**
 - Valid DashScope API key
 - Configured DashScope HTTP base URL
-- User has created knowledge base on DashScope platform
+- User has created a knowledge base on the DashScope platform
 - Knowledge base contains relevant document content
 
 **Input Parameters (RagInput):**
@@ -44,7 +44,7 @@ Provides lightweight RAG functionality, suitable for resource-constrained or fas
 
 **Prerequisites:**
 - Basic DashScope service configuration
-- Smaller scale knowledge base
+- Smaller-scale knowledge base
 
 **Key Features:**
 - Faster response speed
@@ -96,6 +96,7 @@ asyncio.run(rag_query_example())
 ```
 
 ### Multi-turn Conversation RAG Example
+
 ```python
 async def multi_turn_rag_example():
     conversation_history = [
@@ -120,6 +121,7 @@ asyncio.run(multi_turn_rag_example())
 ```
 
 ### Multimodal RAG Example
+
 ```python
 async def multimodal_rag_example():
     result = await rag.arun({
@@ -145,12 +147,14 @@ asyncio.run(multimodal_rag_example())
 ## 🏗️ RAG Architecture Features
 
 ### Retrieval Strategies
+
 - **Dense Retrieval**: Semantic retrieval based on vector similarity
 - **Sparse Retrieval**: Exact retrieval based on keyword matching
 - **Hybrid Retrieval**: Combines advantages of dense and sparse retrieval
 - **Re-ranking**: Re-ranks retrieval results by relevance
 
 ### Generation Strategies
+
 - **Context Injection**: Injects retrieval content into generation model
 - **Answer Synthesis**: Synthesizes answers from multiple document fragments
 - **Citation Generation**: Automatically generates document citations for answers
@@ -159,6 +163,7 @@ asyncio.run(multimodal_rag_example())
 ## 📊 Performance Optimization
 
 ### Retrieval Optimization
+
 - Use vector indexing to accelerate retrieval (e.g., FAISS, Milvus)
 - Implement retrieval result caching
 - Optimize document chunking and embedding strategies
@@ -199,6 +204,6 @@ asyncio.run(multimodal_rag_example())
 
 ## 🔗 Related Components
 - Can be combined with search components to expand knowledge sources
-- Supports integration with memory components to provide personalized RAG experience
+- Supports integration with memory components to provide a personalized RAG experience
 - Can work with intent recognition components for intelligent knowledge Q&A
-- Supports integration with plugin systems to extend RAG functionality scope
+- Supports integration with plugin systems to extend the RAG functionality scope

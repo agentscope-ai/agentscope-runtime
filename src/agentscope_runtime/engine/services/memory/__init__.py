@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from .reme_personal_memory_service import ReMePersonalMemoryService
     from .mem0_memory_service import Mem0MemoryService
     from .tablestore_memory_service import TablestoreMemoryService
+    from .memory_service_factory import MemoryServiceFactory
 
 install_lazy_loader(
     globals(),
@@ -20,5 +21,6 @@ install_lazy_loader(
         "ReMePersonalMemoryService": ".reme_personal_memory_service",
         "Mem0MemoryService": ".mem0_memory_service",
         "TablestoreMemoryService": ".tablestore_memory_service",
+        "MemoryServiceFactory": ".memory_service_factory",
     },
 )

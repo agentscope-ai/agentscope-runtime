@@ -20,12 +20,10 @@ This section introduces the usage of the Training Sandbox. We strongly recommend
 
 ## Background
 
-The Training Sandbox of AgentScope Runtime is primarily designed for training and evaluation functions. The sandbox's
-data is mainly based on public datasets (such as Appworld, Webshop, BFCL, etc.), providing data supply for Agent
+The Training Sandbox of the AgentScope Runtime is primarily designed for training and evaluation. The sandbox's data is mainly based on public datasets (such as Appworld, Webshop, BFCL, etc.), providing data supply for Agent.
 training, tools for dataset calling, and real-time Reward verification.
 
-The Training Sandbox primarily implements high-concurrency data calling through Ray, supporting external Agents to
-create, execute, and evaluate instances for different samples after sandbox creation.
+The Training Sandbox primarily implements high-concurrency data access using Ray, enabling external Agents to create, execute, and evaluate instances for different samples after sandbox creation.
 
 + [APPWorld](https://github.com/StonyBrookNLP/appworld): APPWorld is an advanced, high-fidelity environment designed to test and evaluate autonomous AI agents' ability to perform complex, multi-step tasks using realistic APIs and user
 scenarios. It serves as a crucial testing ground for the AI agents, allowing them to learn and adapt to real-world scenarios.
@@ -48,7 +46,7 @@ pip install agentscope-runtime
 Pull the image from DockerHub. Suppose you failed to pull the Docker image from DockerHub. In that case, we also provide
 a script for building the Docker image locally.
 
-To ensure a complete sandbox experience with all features enabled, follow the steps below to pull and tag the necessary
+To ensure a complete sandbox experience with all features enabled, follow the steps below to pull and tag the necessary.
 Docker images from our repository:
 
 ```{note}
@@ -67,7 +65,7 @@ docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtim
 
 #### Verify Installation
 
-You can verify that everything is set up correctly by calling `get_env_profile`. If success, you can get a training ID:
+You can verify that everything is set up correctly by calling `get_env_profile`. If successful, you can get a training ID:
 
 ```python
 from agentscope_runtime.sandbox.box.training_box.training_box import APPWorldSandbox
@@ -80,7 +78,7 @@ print(profile_list[0])
 
 #### (Optional) Build the Docker Image from Scratch
 
-f you prefer to build images locally via `Dockerfile` or need custom modifications, you can build them from scratch.
+If you prefer to build images locally via `Dockerfile` or need custom modifications, you can build them from scratch.
 Please refer to {doc}`advanced` for detailed instructions.
 
 For training sandboxes, different datasets use different Dockerfiles, located at
@@ -112,10 +110,10 @@ print(profile_list)
 
 #### Get Training Sample Query
 
-We can select one task from the training set as an example and display its query along with the system prompt using
+We can select one task from the training set as an example and display its query along with the system prompt.
 the `create_instance` method.
 
-The initial state will include a unique ID for the newly created instance of the query, and we can generate additional
+The initial state will include a unique ID for the newly created instance of the query, and we can generate additional.
 instances for parallel training.
 
 The prompt (`system prompt`) and actual question (`user prompt`) provided by the training set will be returned as a
@@ -136,8 +134,7 @@ print(f"Created instance {instance_id} with query: {query}")
 
 #### Agent Action Step
 
-We first feed the initial state information to the LLM agent and then load the response back to the Sandbox. This form
-of transmission can be repeated using the step method. Instance_id is required to identify different sessions during the
+We first feed the initial state information to the LLM agent, then load the response back into the Sandbox. This form of transmission can be repeated using the step method. Instance_id is required to identify different sessions during the
 training or inference processing. A basic reward is provided after each step.
 
 This method currently only supports input in `Message` format, recommended to input with `"role": "assistant"`.
@@ -168,7 +165,7 @@ print(f"Evaluation score: {score}")
 
 #### Release Sample
 
-You are also allowed to release the cases manually using the release method if needed.
+You can also release the cases manually using the release method if needed.
 Instances will be auto-released in 5 minutes.
 
 ```python
@@ -180,7 +177,7 @@ print(f"Instance released: {success}")
 Pull the image from DockerHub. Suppose you failed to pull the Docker image from DockerHub. In that case, we also provide
 a script for building the Docker image locally.
 
-To ensure a complete sandbox experience with all features enabled, follow the steps below to pull and tag the necessary
+To ensure a complete sandbox experience with all features enabled, follow the steps below to pull and tag the necessary.
 Docker images from our repository:
 
 ```{note}
@@ -208,20 +205,20 @@ docker build -f src/agentscope_runtime/sandbox/box/training_box/environments/bfc
 
 #### Initialize
 BFCL has multiple sub-dataset *all, all_scoring, multi_turn, single_turn, live， non_live, non_python, python*.
-Please determine which subset to test before initializing the sandbox where OPENAPI_API_KEY is required for the evaluaton process.
+Please determine which subset to test before initialising the sandbox, where OPENAPI_API_KEY is required for the evaluation process.
 
 
 ```python
 
-#determined the subset and pass the openaikey if you need to step and evalaute samples.
+#determined the subset and passed the OpenAI key if you need to step and evaluate samples.
 import os
 os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY")
 os.environ["DATASET_SUB_TYPE"] = "multi_turn"
-# os.environ["DATASET_SUB_TYPE"] can be one of the following: "all","all_scoring","multi_turn","single_turn","live","non_live","non_python","python"
+# os. environ["DATASET_SUB_TYPE"] can be one of the following: "all","all_scoring","multi_turn","single_turn","live","non_live","non_python","python"
 
 from agentscope_runtime.sandbox.box.training_box.training_box import BFCLSandbox
 
-#initialize sandbox
+# initialise sandbox
 box = BFCLSandbox()
 profile_list = box.get_env_profile(env_type="bfcl")
 init_response = box.create_instance(

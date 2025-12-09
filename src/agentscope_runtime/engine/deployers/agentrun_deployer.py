@@ -419,7 +419,7 @@ class AgentRunDeployManager(DeployManager):
         name = deploy_name or default_deploy_name()
 
         # Generate build directory with platform-aware naming
-        proj_root = project_dir.resolve()
+        # proj_root = project_dir.resolve()
         if isinstance(self.build_root, Path):
             effective_build_root = self.build_root.resolve()
         else:
@@ -1031,7 +1031,7 @@ ls -lh /output/{zip_filename}
                     artifact_type="Code",
                     cpu=self.agentrun_config.cpu,
                     memory=self.agentrun_config.memory,
-                    port=8080,
+                    port=8090,
                     code_configuration=CodeConfig(
                         command=["python3", "/code/deploy_starter/main.py"],
                         oss_bucket_name=oss_bucket_name,
@@ -1168,7 +1168,7 @@ ls -lh /output/{zip_filename}
                 artifact_type="Code",
                 cpu=self.agentrun_config.cpu,
                 memory=self.agentrun_config.memory,
-                port=8080,
+                port=8090,
                 code_configuration=CodeConfig(
                     command=["python3", "/code/deploy_starter/main.py"],
                     oss_bucket_name=oss_bucket_name,

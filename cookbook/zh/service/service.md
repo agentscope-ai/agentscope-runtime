@@ -30,7 +30,7 @@ AgentScope Runtime 中的服务（`Service`）为智能体运行环境提供核�
 - `health()`：检查服务健康状态
 
 ```{note}
-在实际编写智能体应用时，我们通常**不会直接操作这些服务的各种底层方法**，而是通过**框架适配器（Adapters）**来使用。适配器会：
+在实际编写智能体应用时，我们通常**不会直接操作这些服务的各种底层方法**，而是通过**框架适配器Adapters**来使用。适配器会：
 
 1. 负责把 Runtime 的服务对象注入到智能体框架的兼容模块中
 2. 让框架内的 agent 能无缝调用 Runtime 提供的功能（如会话记忆、工具沙箱等）
@@ -176,3 +176,62 @@ async def main():
 
     await memory_service.stop()
 ```
+
+## ServiceFactory：统一的服务创建模式
+
+在实际使用中，同一种服务（如 SessionHistory、Memory、Sandbox、State）可能会有多种实现后端，例如内存版、Redis、数据库版等。
+为了让服务的创建更灵活、可配置，AgentScope Runtime 提供了一个通用的 **服务工厂基类** `ServiceFactory`：
+
+- **统一注册**多种后端构造方法（`register_backend`）
+- **支持环境变量配置服务参数**，通过 `<PREFIX>BACKEND` 决定使用哪个后端
+- **支持 `kwargs` 覆盖环境变量配置**（优先级：kwargs > 环境变量）
+- **自动过滤无效参数**（仅传递构造函数能接收的参数）
+- **异步创建实例**，适合需要 `start()` 异步初始化的服务
+- **镜像复用优势**：同一运行镜像下，可通过改变环境变量快速切换不同后端实现，无需重新构建镜像，从而便于部署和测试
+
+### 创建流程示例
+
+```{code-cell}
+# 以状态服务为例
+from agentscope_runtime.engine.services.agent_state import StateServiceFactory
+
+# 使用环境变量配置
+# export STATE_BACKEND=redis
+# export STATE_REDIS_REDIS_URL="redis://localhost:6379/5"
+service = await StateServiceFactory.create()
+
+# 使用 kwargs 覆盖环境变量
+service = await StateServiceFactory.create(
+    backend_type="redis",
+    redis_url="redis://otherhost:6379/1"
+)
+
+# 注册自定义后端
+from my_backend import PostgresStateService
+StateServiceFactory.register_backend("postgres", PostgresStateService)
+service = await StateServiceFactory.create(backend_type="postgres")
+```
+
+### 常用`ServiceFactory`与默认后端
+
+| ServiceFactory 子类            | 管理的 Service 类型     | 环境变量前缀       | 默认后端    | 已注册的默认后端类型                                         |
+| ------------------------------ | ----------------------- | ------------------ | ----------- | ------------------------------------------------------------ |
+| `StateServiceFactory`          | `StateService`          | `STATE_`           | `in_memory` | `in_memory`、`redis`                                         |
+| `MemoryServiceFactory`         | `MemoryService`         | `MEMORY_`          | `in_memory` | `in_memory`、`redis`、`mem0`、`reme_personal`、`reme_task`、`tablestore`(可选) |
+| `SandboxServiceFactory`        | `SandboxService`        | `SANDBOX_`         | `default`   | `default`                                                    |
+| `SessionHistoryServiceFactory` | `SessionHistoryService` | `SESSION_HISTORY_` | `in_memory` | `in_memory`、`redis`、`tablestore`(可选)                     |
+
+### 使用提示
+
+- 选择后端：通过设置`<PREFIX>BACKEND`环境变量选择实现
+
+  例如：
+
+  ```bash
+  export MEMORY_BACKEND=redis
+  export MEMORY_REDIS_REDIS_URL="redis://localhost:6379/5"
+  ```
+
+- **参数优先级**：`kwargs` > 环境变量
+
+- **自定义后端**：使用 `.register_backend("name", constructor)` 注册新实现

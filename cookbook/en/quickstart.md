@@ -67,7 +67,7 @@ print("✅ Dependencies imported successfully")
 
 ### Step 2: Create the Agent App
 
-`AgentApp` is the lifecycle and request hub of the agent application. All initialization, query handling, and shutdown routines are registered on it:
+`AgentApp` is the lifecycle and request hub of the agent application. All initialisation, query handling, and shutdown routines are registered on it:
 
 ```{code-cell}
 agent_app = AgentApp(
@@ -170,7 +170,7 @@ async def query_func(
 
 ### Step 5: Run the Agent App
 
-Start the Agent API server. After launch it listens on `http://localhost:8090/process`:
+Start the Agent API server. After launch, it listens on `http://localhost:8090/process`:
 
 ```{code-cell}
 # Start the service (listen on port 8090)
@@ -205,9 +205,11 @@ The response is streamed as **Server-Sent Events (SSE)**:
 ```bash
 data: {"sequence_number":0,"object":"response","status":"created", ... }
 data: {"sequence_number":1,"object":"response","status":"in_progress", ... }
-data: {"sequence_number":2,"object":"content","status":"in_progress","text":"The" }
-data: {"sequence_number":3,"object":"content","status":"in_progress","text":" capital of France is Paris." }
-data: {"sequence_number":4,"object":"message","status":"completed","text":"The capital of France is Paris." }
+data: {"sequence_number":2,"object":"message","status":"in_progress", ... }
+data: {"sequence_number":3,"object":"content","status":"in_progress","text":"The" }
+data: {"sequence_number":4,"object":"content","status":"in_progress","text":" capital of France is Paris." }
+data: {"sequence_number":5,"object":"message","status":"completed","text":"The capital of France is Paris." }
+data: {"sequence_number":6,"object":"response","status":"completed", ... }
 ```
 
 ### Step 7: Deploy with `DeployManager`
@@ -219,7 +221,7 @@ async def main():
     await agent_app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```
 
-This spins up the agent server on the specified port so external clients can call it. Beyond the basic HTTP API, you can also interact with the deployment through protocols like A2A, Response API, and Agent API—see {doc}`protocol` for details.
+This spins up the agent server on the specified port so external clients can call it. Beyond the basic HTTP API, you can also interact with the deployment via protocols such as A2A, Response API, and Agent API—see {doc}`protocol` for details.
 
 Clients can even call the service through the OpenAI SDK:
 

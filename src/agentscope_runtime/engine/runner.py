@@ -216,21 +216,22 @@ class Runner:
         if isinstance(request, dict):
             request = AgentRequest(**request)
 
+        # Assign session ID
+        request.session_id = request.session_id or str(uuid.uuid4())
+
+        # Assign user ID
+        request.user_id = request.user_id or request.session_id
+
         seq_gen = SequenceNumberGenerator()
 
         # Initial response
         response = AgentResponse(id=request.id)
+        response.session_id = request.session_id
         yield seq_gen.yield_with_sequence(response)
 
         # Set to in-progress status
         response.in_progress()
         yield seq_gen.yield_with_sequence(response)
-
-        # Assign session ID
-        request.session_id = request.session_id or str(uuid.uuid4())
-
-        # Assign user ID
-        request.user_id = request.session_id or request.session_id
 
         query_kwargs = {
             "request": request,

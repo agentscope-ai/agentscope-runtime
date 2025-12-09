@@ -237,9 +237,11 @@ curl -N \
 ```bash
 data: {"sequence_number":0,"object":"response","status":"created", ... }
 data: {"sequence_number":1,"object":"response","status":"in_progress", ... }
-data: {"sequence_number":2,"object":"content","status":"in_progress","text":"The" }
-data: {"sequence_number":3,"object":"content","status":"in_progress","text":" capital of France is Paris." }
-data: {"sequence_number":4,"object":"message","status":"completed","text":"The capital of France is Paris." }
+data: {"sequence_number":2,"object":"message","status":"in_progress", ... }
+data: {"sequence_number":3,"object":"content","status":"in_progress","text":"The" }
+data: {"sequence_number":4,"object":"content","status":"in_progress","text":" capital of France is Paris." }
+data: {"sequence_number":5,"object":"message","status":"completed","text":"The capital of France is Paris." }
+data: {"sequence_number":6,"object":"response","status":"completed", ... }
 ```
 
 ### 沙盒示例
@@ -420,7 +422,22 @@ export RUNTIME_SANDBOX_IMAGE_TAG="preview"
 agentscope-registry.ap-southeast-1.cr.aliyuncs.com/myteam/runtime-sandbox-base:preview
 ```
 
+---
 
+#### Serverless 沙箱部署
+
+AgentScope Runtime 同样支持 serverless 部署，适用于在无服务器环境中运行沙箱，例如 [阿里云函数计算（FC）](https://help.aliyun.com/zh/functioncompute/fc/)或[阿里云 AgentRun](https://docs.agent.run/)。
+
+首先，请参考[文档](https://runtime.agentscope.io/zh/sandbox/advanced.html#optional-function-compute-fc-settings)配置 serverless 环境变量。
+将 `CONTAINER_DEPLOYMENT` 设置为 `fc` 或 `agentrun` 以启用 serverless 部署。
+
+然后，启动沙箱服务器，使用 `--config` 选项指定 serverless 环境配置：
+
+```bash
+# 此命令将加载 `fc.env` 文件中定义的设置
+runtime-sandbox-server --config fc.env
+```
+服务器启动后，您可以通过URL `http://localhost:8000` 访问沙箱服务器，并调用上述描述的沙箱工具。
 
 ---
 
@@ -475,6 +492,41 @@ response = client.responses.create(
 print(response)
 ```
 
+此外，`DeployManager` 也支持 Serverless 部署，例如将您的 agent 应用部署到
+[ModelStudio](https://bailian.console.aliyun.com/?admin=1&tab=doc#/doc/?type=app&url=2983030)
+或 [AgentRun](https://docs.agent.run/)。
+
+```python
+from agentscope_runtime.engine.deployers import ModelStudioDeployManager
+# 创建部署管理器
+deployer = ModelstudioDeployManager(
+    oss_config=OSSConfig(
+        access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+        access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+    ),
+    modelstudio_config=ModelstudioConfig(
+        workspace_id=os.environ.get("MODELSTUDIO_WORKSPACE_ID"),
+        access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+        access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+        dashscope_api_key=os.environ.get("DASHSCOPE_API_KEY"),
+    ),
+)
+
+# 部署到 ModelStudio
+result = await app.deploy(
+    deployer,
+    deploy_name="agent-app-example",
+    telemetry_enabled=True,
+    requirements=["agentscope", "fastapi", "uvicorn"],
+    environment={
+        "PYTHONPATH": "/app",
+        "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+    },
+)
+```
+
+有关更高级的 serverless 部署指南，请参考[文档](https://runtime.agentscope.io/zh/advanced_deployment.html#method-4-modelstudio-deployment)。
+
 ---
 
 ## 🤝 贡献
@@ -527,7 +579,7 @@ limitations under the License.
 
 ## 贡献者 ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-23-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-25-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 
@@ -568,6 +620,8 @@ limitations under the License.
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/iSample"><img src="https://avatars.githubusercontent.com/u/12894421?v=4?s=100" width="100px;" alt="iSample"/><br /><sub><b>iSample</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=iSample" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=iSample" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/XiuShenAl"><img src="https://avatars.githubusercontent.com/u/242360128?v=4?s=100" width="100px;" alt="XiuShenAl"/><br /><sub><b>XiuShenAl</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=XiuShenAl" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=XiuShenAl" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/k-farruh"><img src="https://avatars.githubusercontent.com/u/33511681?v=4?s=100" width="100px;" alt="Farruh Kushnazarov"/><br /><sub><b>Farruh Kushnazarov</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=k-farruh" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/fengxsong"><img src="https://avatars.githubusercontent.com/u/7008971?v=4?s=100" width="100px;" alt="fengxsong"/><br /><sub><b>fengxsong</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Afengxsong" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
   <tfoot>
