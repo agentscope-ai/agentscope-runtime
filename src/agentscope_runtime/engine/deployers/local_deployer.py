@@ -62,7 +62,6 @@ class LocalDeployManager(DeployManager):
         # Detached process mode attributes
         self._detached_process_pid: Optional[int] = None
         self._detached_pid_file: Optional[str] = None
-        self._detached_stderr_file: Optional[str] = None
         self.process_manager = ProcessManager(
             shutdown_timeout=shutdown_timeout,
         )
@@ -523,16 +522,9 @@ class LocalDeployManager(DeployManager):
         if self._detached_pid_file:
             self.process_manager.cleanup_pid_file(self._detached_pid_file)
 
-        # Cleanup stderr file
-        if self._detached_stderr_file:
-            self.process_manager.cleanup_stderr_file(
-                self._detached_stderr_file,
-            )
-
         # Reset state
         self._detached_process_pid = None
         self._detached_pid_file = None
-        self._detached_stderr_file = None
 
     def _is_server_ready(self) -> bool:
         """Check if the server is ready to accept connections."""
