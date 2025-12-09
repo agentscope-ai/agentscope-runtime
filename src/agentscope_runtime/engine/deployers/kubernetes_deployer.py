@@ -97,12 +97,12 @@ class KubernetesDeployManager(DeployManager):
         if isLocalK8sEnvironment():
             host = fallback_host
             logger.info(
-                f"Local K8s environment detected; using {host} instead of {service_external_ip}"
+                f"Local K8s environment detected; using {host} instead of {service_external_ip}",
             )
         else:
             host = service_external_ip
             logger.info(
-                f"Cloud/remote environment detected; using External IP: {host}"
+                f"Cloud/remote environment detected; using External IP: {host}",
             )
 
         return f"http://{host}:{service_port}"
@@ -288,14 +288,75 @@ class KubernetesDeployManager(DeployManager):
                 f"Deployment failed: {e}, {traceback.format_exc()}",
             ) from e
 
-    async def stop(self) -> bool:
-        """Stop service"""
-        if self.deploy_id not in self._deployed_resources:
-            return False
+    async def stop(
+        self,
+        deploy_id: str,
+        namespace: str = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """Stop Kubernetes deployment.
 
-        resources = self._deployed_resources[self.deploy_id]
-        service_name = resources["service_name"]
-        return self.k8s_client.remove_deployment(service_name)
+        Args:
+            deploy_id: Deployment identifier
+            namespace: K8s namespace (optional, use default if not provided)
+            **kwargs: Additional parameters
+
+        Returns:
+            Dict with success status, message, and details
+        """
+        # Use provided namespace or fall back to configured namespace
+        namespace = namespace or (
+            self.kubeconfig.k8s_namespace
+            if self.kubeconfig
+            else "agentscope-runtime"
+        )
+
+        # Derive resource name from deploy_id
+        resource_name = f"agent-{deploy_id[:8]}"
+
+        try:
+            # Try to remove the deployment
+            success = self.k8s_client.remove_deployment(resource_name)
+
+            if success:
+                # Clean up internal tracking if present
+                if deploy_id in self._deployed_resources:
+                    del self._deployed_resources[deploy_id]
+
+                return {
+                    "success": True,
+                    "message": f"Kubernetes deployment {resource_name} removed",
+                    "details": {
+                        "deploy_id": deploy_id,
+                        "namespace": namespace,
+                        "resource_name": resource_name,
+                    },
+                }
+            else:
+                # Deployment not found or already deleted (idempotent)
+                return {
+                    "success": True,
+                    "message": f"Kubernetes deployment {resource_name} not found (may already be deleted)",
+                    "details": {
+                        "deploy_id": deploy_id,
+                        "namespace": namespace,
+                        "resource_name": resource_name,
+                    },
+                }
+        except Exception as e:
+            logger.error(
+                f"Failed to remove K8s deployment {resource_name}: {e}",
+            )
+            return {
+                "success": False,
+                "message": f"Failed to remove K8s deployment: {e}",
+                "details": {
+                    "deploy_id": deploy_id,
+                    "namespace": namespace,
+                    "resource_name": resource_name,
+                    "error": str(e),
+                },
+            }
 
     def get_status(self) -> str:
         """Get deployment status"""

@@ -349,11 +349,54 @@ class LocalDeployManager(DeployManager):
 
         return project_dir
 
-    async def stop(self) -> None:
-        """Stop the FastAPI service (unified method for all modes)."""
+    async def stop(
+        self,
+        deploy_id: str,
+        url: str = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """Stop the FastAPI service.
+
+        Args:
+            deploy_id: Deployment identifier
+            url: Service URL (for detached process HTTP shutdown)
+            **kwargs: Additional parameters
+
+        Returns:
+            Dict with success status, message, and details
+        """
+        # If URL is provided, attempt HTTP shutdown for detached process
+        if url:
+            try:
+                import requests
+
+                response = requests.post(f"{url}/shutdown", timeout=5)
+                if response.status_code == 200:
+                    return {
+                        "success": True,
+                        "message": "Shutdown signal sent to detached process",
+                        "details": {"url": url, "deploy_id": deploy_id},
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "message": f"Shutdown endpoint returned status {response.status_code}",
+                        "details": {"url": url},
+                    }
+            except requests.exceptions.RequestException as e:
+                return {
+                    "success": False,
+                    "message": f"Failed to call shutdown endpoint: {e}",
+                    "details": {"url": url, "error": str(e)},
+                }
+
+        # Fallback: use existing in-process cleanup for daemon mode
         if not self.is_running:
-            self._logger.warning("Service is not running")
-            return
+            return {
+                "success": True,
+                "message": "Service is not running (already stopped)",
+                "details": {"deploy_id": deploy_id},
+            }
 
         try:
             if self._detached_process_pid:
@@ -363,9 +406,18 @@ class LocalDeployManager(DeployManager):
                 # Daemon thread mode
                 await self._stop_daemon_thread()
 
+            return {
+                "success": True,
+                "message": "Service stopped successfully",
+                "details": {"deploy_id": deploy_id},
+            }
         except Exception as e:
             self._logger.error(f"Failed to stop service: {e}")
-            raise RuntimeError(f"Failed to stop FastAPI service: {e}") from e
+            return {
+                "success": False,
+                "message": f"Failed to stop service: {e}",
+                "details": {"deploy_id": deploy_id, "error": str(e)},
+            }
 
     async def _stop_daemon_thread(self):
         """Stop daemon thread mode service."""

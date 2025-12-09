@@ -9,7 +9,7 @@ import logging
 import os
 import time
 from pathlib import Path
-from typing import Dict, Optional, List, Union, Tuple
+from typing import Dict, Optional, List, Union, Tuple, Any
 
 import requests
 from pydantic import BaseModel, Field
@@ -854,8 +854,30 @@ class ModelstudioDeployManager(DeployManager):
             )
             raise
 
-    async def stop(self) -> None:  # pragma: no cover - not supported yet
-        pass
+    async def stop(self, deploy_id: str, **kwargs) -> Dict[str, Any]:
+        """Stop ModelStudio deployment.
+
+        Note: ModelStudio stop API not yet available.
+
+        Args:
+            deploy_id: Deployment identifier
+            **kwargs: Additional parameters
+
+        Returns:
+            Dict with success status and message
+        """
+        # TODO: Implement when ModelStudio provides stop/delete API
+        logger.warning(
+            f"ModelStudio stop not implemented for deploy_id={deploy_id} - API not yet available",
+        )
+        return {
+            "success": False,
+            "message": "ModelStudio stop not implemented - API not yet available",
+            "details": {
+                "deploy_id": deploy_id,
+                "note": "Manual cleanup required via ModelStudio console",
+            },
+        }
 
     def get_status(self) -> str:  # pragma: no cover - not supported yet
         return "unknown"

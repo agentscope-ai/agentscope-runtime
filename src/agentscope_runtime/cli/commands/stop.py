@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """as-runtime stop command - Stop a deployment."""
 
+import asyncio
 import click
 import sys
+from typing import Optional
 
 from agentscope_runtime.cli.state.manager import DeploymentStateManager
 from agentscope_runtime.cli.utils.console import (
@@ -12,6 +14,59 @@ from agentscope_runtime.cli.utils.console import (
     echo_warning,
     confirm,
 )
+from agentscope_runtime.engine.deployers.base import DeployManager
+
+
+def _create_deployer(
+    platform: str,
+    deployment_state: dict,
+) -> Optional[DeployManager]:
+    """Create deployer instance for platform.
+
+    Args:
+        platform: Platform name (local, k8s, modelstudio, agentrun)
+        deployment_state: Deployment state dictionary
+
+    Returns:
+        DeployManager instance or None if creation fails
+    """
+    try:
+        if platform == "local":
+            from agentscope_runtime.engine.deployers.local_deployer import (
+                LocalDeployManager,
+            )
+
+            return LocalDeployManager()
+        elif platform == "k8s":
+            from agentscope_runtime.engine.deployers.kubernetes_deployer import (
+                KubernetesDeployManager,
+                K8sConfig,
+            )
+
+            # Create K8sConfig with default namespace
+            k8s_config = K8sConfig(k8s_namespace="agentscope-runtime")
+            return KubernetesDeployManager(kube_config=k8s_config)
+        elif platform == "modelstudio":
+            from agentscope_runtime.engine.deployers.modelstudio_deployer import (
+                ModelstudioDeployManager,
+            )
+
+            return ModelstudioDeployManager()
+        elif platform == "agentrun":
+            from agentscope_runtime.engine.deployers.agentrun_deployer import (
+                AgentRunDeployManager,
+            )
+
+            return AgentRunDeployManager()
+        else:
+            echo_warning(f"Unknown platform: {platform}")
+            return None
+    except ImportError as e:
+        echo_warning(f"Failed to import deployer for platform {platform}: {e}")
+        return None
+    except Exception as e:
+        echo_warning(f"Failed to create deployer for platform {platform}: {e}")
+        return None
 
 
 @click.command()
@@ -22,12 +77,21 @@ from agentscope_runtime.cli.utils.console import (
     is_flag=True,
     help="Skip confirmation prompt",
 )
-def stop(deploy_id: str, yes: bool):
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    help="Force stop (skip deployer cleanup, only update local state)",
+)
+def stop(deploy_id: str, yes: bool, force: bool):
     """
-    Stop a deployment.
+    Stop a deployment and clean up resources.
 
-    Note: This command updates the deployment status to 'stopped' in the local state.
-    Platform-specific shutdown operations (if needed) should be performed manually.
+    This command will:
+    1. Call the platform-specific stop method to clean up deployed resources
+    2. Update the local deployment status to 'stopped'
+
+    Use --force to skip platform cleanup and only update local state.
 
     Examples:
     \b
@@ -36,6 +100,9 @@ def stop(deploy_id: str, yes: bool):
 
     # Skip confirmation
     $ as-runtime stop local_20250101_120000_abc123 --yes
+
+    # Force stop (skip platform cleanup)
+    $ as-runtime stop local_20250101_120000_abc123 --force
     """
     try:
         # Initialize state manager
@@ -53,20 +120,92 @@ def stop(deploy_id: str, yes: bool):
             echo_warning(f"Deployment {deploy_id} is already stopped")
             return
 
+        # Get deployment info
+        platform = getattr(deployment, "platform", "unknown")
+        url = getattr(deployment, "url", None)
+
         # Confirm
         if not yes:
-            if not confirm(f"Stop deployment {deploy_id}?"):
+            if not confirm(
+                f"Stop deployment {deploy_id} (platform: {platform})?",
+            ):
                 echo_info("Cancelled")
                 return
 
-        # Update status
-        state_manager.update_status(deploy_id, "stopped")
-        echo_success(f"Deployment {deploy_id} marked as stopped")
+        # Call deployer stop (unless --force)
+        cleanup_success = False
+        cleanup_attempted = False
 
-        echo_info(
-            "\nNote: This command only updates the local state. "
-            "Platform-specific cleanup may be needed separately.",
-        )
+        if not force:
+            echo_info(f"Calling platform cleanup for {platform}...")
+
+            deployer = _create_deployer(
+                platform,
+                deployment.__dict__ if hasattr(deployment, "__dict__") else {},
+            )
+
+            if deployer:
+                cleanup_attempted = True
+                try:
+                    # Prepare kwargs for stop method
+                    stop_kwargs = {}
+                    if url:
+                        stop_kwargs["url"] = url
+
+                    # Get namespace for k8s if available
+                    if platform == "k8s" and hasattr(deployment, "namespace"):
+                        stop_kwargs["namespace"] = deployment.namespace
+
+                    # Call stop method
+                    result = asyncio.run(
+                        deployer.stop(deploy_id, **stop_kwargs),
+                    )
+
+                    if result.get("success"):
+                        echo_success(
+                            f"Platform cleanup: {result.get('message', 'Success')}",
+                        )
+                        cleanup_success = True
+                    else:
+                        echo_error(
+                            f"Platform cleanup failed: {result.get('message', 'Unknown error')}",
+                        )
+                        echo_error(
+                            "Cannot mark deployment as stopped - platform cleanup failed",
+                        )
+                        sys.exit(1)
+                except Exception as e:
+                    echo_error(f"Error during platform cleanup: {e}")
+                    echo_error(
+                        "Cannot mark deployment as stopped - platform cleanup failed",
+                    )
+                    sys.exit(1)
+            else:
+                echo_error(
+                    f"Could not create deployer for platform: {platform}",
+                )
+                echo_error(
+                    "Cannot mark deployment as stopped - deployer creation failed",
+                )
+                echo_info(
+                    "\nTip: Use --force flag to skip platform cleanup and only update local state",
+                )
+                sys.exit(1)
+        else:
+            echo_info("Skipping platform cleanup (--force flag)")
+            cleanup_success = True  # Force mode always succeeds
+
+        # Update status only if cleanup succeeded or force flag was used
+        if cleanup_success or force:
+            state_manager.update_status(deploy_id, "stopped")
+            echo_success(f"Deployment {deploy_id} marked as stopped")
+
+            # Final message
+            if force:
+                echo_warning(
+                    "\nWarning: Platform cleanup was skipped (--force flag). "
+                    "You may need to manually clean up deployed resources.",
+                )
 
     except Exception as e:
         echo_error(f"Failed to stop deployment: {e}")

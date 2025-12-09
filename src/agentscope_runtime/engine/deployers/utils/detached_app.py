@@ -4,9 +4,10 @@
 """Shared helpers for building detached deployment bundles."""
 
 from __future__ import annotations
-import os
 
 import json
+import os
+import re
 import shutil
 import tempfile
 import zipfile

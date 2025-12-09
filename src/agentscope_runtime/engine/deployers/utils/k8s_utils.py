@@ -43,7 +43,7 @@ def isLocalK8sEnvironment() -> bool:
 
     if total_votes == 0:
         logger.warning(
-            "Unable to determine K8s environment type; defaulting to cloud/remote"
+            "Unable to determine K8s environment type; defaulting to cloud/remote",
         )
         return False
 
@@ -67,7 +67,7 @@ def _check_kubeconfig_context() -> Optional[bool]:
         import yaml
 
         kubeconfig_path = os.path.expanduser(
-            os.getenv("KUBECONFIG", "~/.kube/config")
+            os.getenv("KUBECONFIG", "~/.kube/config"),
         )
 
         if not os.path.exists(kubeconfig_path):
@@ -141,14 +141,14 @@ def _check_kubeconfig_context() -> Optional[bool]:
                             ]
                         ):
                             logger.debug(
-                                f"Cluster server '{server}' points to localhost"
+                                f"Cluster server '{server}' points to localhost",
                             )
                             return True
         return None
 
     except ImportError:
         logger.warning(
-            "PyYAML not installed; cannot parse kubeconfig. Install via: pip install pyyaml"
+            "PyYAML not installed; cannot parse kubeconfig. Install via: pip install pyyaml",
         )
         return None
     except Exception as e:
@@ -235,7 +235,7 @@ def _check_kubernetes_api() -> Optional[bool]:
 
     except ImportError:
         logger.warning(
-            "kubernetes client not installed; API detection disabled. Install via: pip install kubernetes"
+            "kubernetes client not installed; API detection disabled. Install via: pip install kubernetes",
         )
         return None
     except Exception as e:

@@ -2548,3 +2548,41 @@ ls -lh /output/{zip_filename}
                 "error": str(e),
                 "message": f"Exception occurred while publishing agent runtime version: {str(e)}",
             }
+
+    async def stop(self, deploy_id: str, **kwargs) -> Dict[str, Any]:
+        """Stop AgentRun deployment by deleting it.
+
+        Args:
+            deploy_id: AgentRun runtime ID (agent_runtime_id)
+            **kwargs: Additional parameters
+
+        Returns:
+            Dict with success status, message, and details
+        """
+        try:
+            logger.info(f"Stopping AgentRun deployment: {deploy_id}")
+
+            # Use the existing delete method
+            result = await self.delete(deploy_id)
+
+            if result.get("success"):
+                return {
+                    "success": True,
+                    "message": f"AgentRun deployment {deploy_id} deleted successfully",
+                    "details": result,
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": f"Failed to delete AgentRun deployment: {result.get('message', 'Unknown error')}",
+                    "details": result,
+                }
+        except Exception as e:
+            logger.error(
+                f"Failed to stop AgentRun deployment {deploy_id}: {e}",
+            )
+            return {
+                "success": False,
+                "message": f"Failed to stop AgentRun deployment: {e}",
+                "details": {"deploy_id": deploy_id, "error": str(e)},
+            }

@@ -762,7 +762,9 @@ def agentrun(
 @click.option("--image-name", help="Docker image name", default="agent_app")
 @click.option("--image-tag", help="Docker image tag", default="linux-amd64")
 @click.option(
-    "--registry-url", help="Remote registry url", default="localhost"
+    "--registry-url",
+    help="Remote registry url",
+    default="localhost",
 )
 @click.option(
     "--registry-namespace",
@@ -926,7 +928,8 @@ def k8s(
         image_tag = merged_config.get("image_tag", "latest")
         registry_url = merged_config.get("registry_url", "localhost")
         registry_namespace = merged_config.get(
-            "registry_namespace", "agentscope-runtime"
+            "registry_namespace",
+            "agentscope-runtime",
         )
         push_to_registry = merged_config.get("push_to_registry", False)
         entrypoint = merged_config.get("entrypoint")
