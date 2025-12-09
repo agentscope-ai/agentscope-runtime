@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """as-runtime sandbox command - Sandbox management commands."""
-# pylint: disable=subprocess-run-check
 
-import subprocess
 import sys
 
 import click
@@ -40,12 +38,19 @@ def mcp(args):
     $ as-runtime sandbox mcp --help
     """
     try:
-        # Delegate to existing command
-        cmd = ["runtime-sandbox-mcp"] + list(args)
-        result = subprocess.run(cmd)
-        sys.exit(result.returncode)
-    except FileNotFoundError:
-        echo_error("runtime-sandbox-mcp command not found")
+        from agentscope_runtime.sandbox.mcp_server import main as mcp_main
+
+        # Set sys.argv to simulate command line arguments
+        original_argv = sys.argv
+        sys.argv = ["runtime-sandbox-mcp"] + list(args)
+
+        try:
+            mcp_main()
+        finally:
+            # Restore original sys.argv
+            sys.argv = original_argv
+    except ImportError as e:
+        echo_error(f"Failed to import MCP server module: {e}")
         echo_info("Make sure agentscope-runtime is properly installed")
         sys.exit(1)
     except Exception as e:
@@ -65,12 +70,21 @@ def server(args):
     $ as-runtime sandbox server --help
     """
     try:
-        # Delegate to existing command
-        cmd = ["runtime-sandbox-server"] + list(args)
-        result = subprocess.run(cmd)
-        sys.exit(result.returncode)
-    except FileNotFoundError:
-        echo_error("runtime-sandbox-server command not found")
+        from agentscope_runtime.sandbox.manager.server.app import (
+            main as server_main,
+        )
+
+        # Set sys.argv to simulate command line arguments
+        original_argv = sys.argv
+        sys.argv = ["runtime-sandbox-server"] + list(args)
+
+        try:
+            server_main()
+        finally:
+            # Restore original sys.argv
+            sys.argv = original_argv
+    except ImportError as e:
+        echo_error(f"Failed to import sandbox server module: {e}")
         echo_info("Make sure agentscope-runtime is properly installed")
         sys.exit(1)
     except Exception as e:
@@ -90,12 +104,19 @@ def build(args):
     $ as-runtime sandbox build --help
     """
     try:
-        # Delegate to existing command
-        cmd = ["runtime-sandbox-builder"] + list(args)
-        result = subprocess.run(cmd)
-        sys.exit(result.returncode)
-    except FileNotFoundError:
-        echo_error("runtime-sandbox-builder command not found")
+        from agentscope_runtime.sandbox.build import main as builder_main
+
+        # Set sys.argv to simulate command line arguments
+        original_argv = sys.argv
+        sys.argv = ["runtime-sandbox-builder"] + list(args)
+
+        try:
+            builder_main()
+        finally:
+            # Restore original sys.argv
+            sys.argv = original_argv
+    except ImportError as e:
+        echo_error(f"Failed to import sandbox builder module: {e}")
         echo_info("Make sure agentscope-runtime is properly installed")
         sys.exit(1)
     except Exception as e:
