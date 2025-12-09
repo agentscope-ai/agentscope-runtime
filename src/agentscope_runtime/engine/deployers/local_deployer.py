@@ -31,7 +31,7 @@ class LocalDeployManager(DeployManager):
     def __init__(
         self,
         host: str = "127.0.0.1",
-        port: int = 8000,
+        port: int = 8090,
         shutdown_timeout: int = 30,
         startup_timeout: int = 30,
         logger: Optional[logging.Logger] = None,
@@ -290,12 +290,19 @@ class LocalDeployManager(DeployManager):
         try:
             entry_script = get_bundle_entry_script(project_dir)
             script_path = os.path.join(project_dir, entry_script)
-
+            env = kwargs.get("environment", {})
+            env.update(
+                {
+                    "HOST": self.host,
+                    "PORT": str(self.port),
+                },
+            )
             # Start detached process using the packaged project
             pid = await self.process_manager.start_detached_process(
                 script_path=script_path,
                 host=self.host,
                 port=self.port,
+                env=env,
             )
 
             self._detached_process_pid = pid
