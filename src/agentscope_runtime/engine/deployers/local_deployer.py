@@ -219,7 +219,7 @@ class LocalDeployManager(DeployManager):
         await self._wait_for_server_ready(self._startup_timeout)
 
         self.is_running = True
-        self.deploy_id = f"daemon_{self.host}_{self.port}"
+
         url = f"http://{self.host}:{self.port}"
 
         self._logger.info(
@@ -322,7 +322,7 @@ class LocalDeployManager(DeployManager):
                 raise RuntimeError("Service did not start within timeout")
 
             self.is_running = True
-            self.deploy_id = f"detached_{pid}"
+
             url = f"http://{self.host}:{self.port}"
 
             self._logger.info(

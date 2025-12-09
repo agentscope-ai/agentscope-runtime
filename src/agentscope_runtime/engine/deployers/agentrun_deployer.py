@@ -7,6 +7,7 @@ import logging
 import os
 import time
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, List, Any, Union, Tuple
 
@@ -34,6 +35,7 @@ from pydantic import BaseModel, Field
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .local_deployer import LocalDeployManager
+from .state import Deployment
 from .utils.detached_app import get_bundle_entry_script
 from .utils.package import generate_build_directory
 from .utils.wheel_packager import (
@@ -672,21 +674,50 @@ class AgentRunDeployManager(DeployManager):
                 environment=environment,
             )
 
+            # Use base class UUID deploy_id (already set in __init__)
+            deploy_id = self.deploy_id
+            agent_runtime_id = agentrun_deploy_result["agent_runtime_id"]
+            endpoint_url = agentrun_deploy_result.get(
+                "agent_runtime_public_endpoint_url",
+                "",
+            )
+            console_url = (
+                f"https://functionai.console.aliyun.com/{self.agentrun_config.region_id}/"
+                f"agent/infra/agent-runtime/agent-detail?id={agent_runtime_id}"
+            )
+
+            # Save deployment to state manager
+            deployment = Deployment(
+                id=deploy_id,
+                platform="agentrun",
+                url=console_url,
+                status="running",
+                created_at=datetime.now().isoformat(),
+                agent_source=kwargs.get("agent_source"),
+                config={
+                    "agent_runtime_id": agent_runtime_id,
+                    "agent_runtime_endpoint_url": endpoint_url,
+                    "resource_name": name,
+                    "wheel_path": str(wheel_path),
+                    "artifact_url": oss_result.get("presigned_url", ""),
+                    "region_id": self.agentrun_config.region_id,
+                },
+            )
+            self.state_manager.save(deployment)
+
             # Return deployment results
             logger.info(
                 "Deployment completed successfully. Agent runtime ID: %s",
-                agentrun_deploy_result["agent_runtime_id"],
+                agent_runtime_id,
             )
             return {
                 "message": "Agent deployed successfully to AgentRun",
-                "agentrun_id": agentrun_deploy_result["agent_runtime_id"],
-                "agentrun_endpoint_url": agentrun_deploy_result[
-                    "agent_runtime_public_endpoint_url"
-                ],
+                "agentrun_id": agent_runtime_id,
+                "agentrun_endpoint_url": endpoint_url,
                 "wheel_path": str(wheel_path),
-                "artifact_url": oss_result["presigned_url"],
-                "url": f'https://functionai.console.aliyun.com/{self.agentrun_config.region_id}/agent/infra/agent-runtime/agent-detail?id={agentrun_deploy_result["agent_runtime_id"]}',
-                "deploy_id": agentrun_deploy_result["agent_runtime_id"],
+                "artifact_url": oss_result.get("presigned_url", ""),
+                "url": console_url,
+                "deploy_id": deploy_id,
                 "resource_name": name,
             }
 
@@ -872,7 +903,6 @@ ls -lh /output/{zip_filename}
             from alibabacloud_oss_v2.credentials import (
                 StaticCredentialsProvider,
             )
-            import datetime
         except ImportError as e:
             logger.error(
                 "OSS SDK not available. Install with: pip install alibabacloud-oss-v2",
@@ -2564,6 +2594,7 @@ ls -lh /output/{zip_filename}
         try:
             # Try to get deployment info from state for context
             deployment_info = None
+            deployment = None
             try:
                 deployment = self.state_manager.get(deploy_id)
                 if deployment:
@@ -2587,8 +2618,21 @@ ls -lh /output/{zip_filename}
 
             logger.info(f"Stopping AgentRun deployment: {deploy_id}")
 
-            # Use the existing delete method
-            result = await self.delete(deploy_id)
+            # Get agent_runtime_id from deployment config
+            agent_runtime_id = None
+            if deployment and deployment.config:
+                agent_runtime_id = deployment.config.get("agent_runtime_id")
+
+            if not agent_runtime_id:
+                # Fallback: try using deploy_id as agent_runtime_id for backward compatibility
+                agent_runtime_id = deploy_id
+                logger.warning(
+                    f"Could not find agent_runtime_id in deployment config, "
+                    f"using deploy_id as fallback: {deploy_id}",
+                )
+
+            # Use the existing delete method with agent_runtime_id
+            result = await self.delete(agent_runtime_id)
 
             if result.get("success"):
                 # Remove from state manager on successful deletion

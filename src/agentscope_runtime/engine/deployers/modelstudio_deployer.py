@@ -7,6 +7,7 @@
 import json
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, List, Union, Tuple, Any
 
@@ -16,6 +17,7 @@ from pydantic import BaseModel, Field
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .local_deployer import LocalDeployManager
+from .state import Deployment
 from .utils.detached_app import get_bundle_entry_script
 from .utils.package import generate_build_directory
 from .utils.wheel_packager import (
@@ -831,16 +833,41 @@ class ModelstudioDeployManager(DeployManager):
                     telemetry_enabled,
                 )
 
+            # Use base class UUID deploy_id (already set in __init__)
+            deploy_id = self.deploy_id
+
+            # Save deployment to state manager
+            if deploy_identifier:
+                deployment = Deployment(
+                    id=deploy_id,
+                    platform="modelstudio",
+                    url=console_url,
+                    status="running",
+                    created_at=datetime.now().isoformat(),
+                    agent_source=kwargs.get("agent_source"),
+                    config={
+                        "modelstudio_deploy_id": deploy_identifier,
+                        "resource_name": name,
+                        "workspace_id": os.environ.get(
+                            "MODELSTUDIO_WORKSPACE_ID",
+                            "",
+                        ).strip(),
+                        "wheel_path": str(wheel_path),
+                    },
+                )
+                self.state_manager.save(deployment)
+
             result: Dict[str, str] = {
                 "wheel_path": str(wheel_path),
                 "resource_name": name,
                 "url": console_url,
+                "deploy_id": deploy_id,
             }
             env_ws = os.environ.get("MODELSTUDIO_WORKSPACE_ID")
             if env_ws and env_ws.strip():
                 result["workspace_id"] = env_ws.strip()
             if deploy_identifier:
-                result["deploy_id"] = deploy_identifier
+                result["modelstudio_deploy_id"] = deploy_identifier
 
             return result
         except Exception as e:
