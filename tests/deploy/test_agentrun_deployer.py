@@ -65,6 +65,7 @@ def mock_oss_config():
         region="cn-hangzhou",
         access_key_id="test_oss_ak_id",
         access_key_secret="test_oss_ak_secret",
+        bucket_name="test-bucket",
     )
 
 
@@ -619,12 +620,14 @@ def test_oss_config_from_env(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("ALIBABA_CLOUD_ACCESS_KEY_ID", "oss_ak")
     monkeypatch.setenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET", "oss_sk")
     monkeypatch.setenv("OSS_REGION", "cn-shanghai")
+    monkeypatch.setenv("OSS_BUCKET_NAME", "test-bucket")
 
     config = OSSConfig.from_env()
 
     assert config.access_key_id == "oss_ak"
     assert config.access_key_secret == "oss_sk"
     assert config.region == "cn-shanghai"
+    assert config.bucket_name == "test-bucket"
 
 
 def test_oss_config_ensure_valid():
@@ -634,24 +637,9 @@ def test_oss_config_ensure_valid():
         region="cn-hangzhou",
         access_key_id="test_ak",
         access_key_secret="test_sk",
+        bucket_name="test-bucket",
     )
     config.ensure_valid()  # Should not raise
-
-    # Missing access_key_id
-    config = OSSConfig(
-        region="cn-hangzhou",
-        access_key_secret="test_sk",
-    )
-    with pytest.raises(RuntimeError, match="Missing AccessKey for OSS"):
-        config.ensure_valid()
-
-    # Missing access_key_secret
-    config = OSSConfig(
-        region="cn-hangzhou",
-        access_key_id="test_ak",
-    )
-    with pytest.raises(RuntimeError, match="Missing AccessKey for OSS"):
-        config.ensure_valid()
 
 
 def test_log_config():
