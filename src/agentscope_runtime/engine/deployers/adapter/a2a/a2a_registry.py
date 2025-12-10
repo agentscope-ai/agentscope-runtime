@@ -35,7 +35,7 @@ class DeployProperties:
         port: Server port number
         root_path: Application root path (e.g., from FastAPI app.root_path)
         base_url: Base URL for the service
-        **kwargs: Additional deployment properties
+        extra: Additional deployment properties provided as dict
     """
 
     host: Optional[str] = None
@@ -66,7 +66,7 @@ class A2aTransportsProperties:
         root_path: Transport root path (optional)
         sub_path: Transport sub path (optional)
         tls: TLS configuration (optional)
-        **kwargs: Additional transport-specific properties
+        extra: Additional transport-specific properties
     """
 
     transport_type: str
@@ -106,7 +106,7 @@ class A2ARegistry(ABC):
         Returns:
             Registry name (e.g., "nacos", "consul")
         """
-        pass
+        raise NotImplementedError("Subclasses must implement registry_name()")
 
     @abstractmethod
     def register(
@@ -142,4 +142,4 @@ class A2ARegistry(ABC):
                 but will be caught and logged by the caller, not blocking
                 the startup process.
         """
-        pass
+        raise NotImplementedError("Subclasses must implement register()")

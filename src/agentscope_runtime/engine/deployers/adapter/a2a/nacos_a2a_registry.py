@@ -115,7 +115,20 @@ class NacosRegistry(A2ARegistry):
     ) -> None:
         """Start background Nacos registration task."""
         try:
-            loop = asyncio.get_running_loop()
+            loop = None
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                # No running loop in this thread; try to get the default event loop
+                try:
+                    loop = asyncio.get_event_loop()
+                except Exception:
+                    loop = None
+
+            if loop is None:
+                logger.warning("[NacosRegistry] No available event loop, skipping registration.")
+                return
+
             self._register_task = loop.create_task(
                 self._register_to_nacos(
                     agent_card=agent_card,
@@ -125,9 +138,10 @@ class NacosRegistry(A2ARegistry):
                 )
             )
             logger.info("[NacosRegistry] Registration task started in background")
-        except RuntimeError:
+        except Exception:
             logger.warning(
-                "[NacosRegistry] No running event loop, skipping registration."
+                "[NacosRegistry] Error starting registration task",
+                exc_info=True,
             )
 
     def _get_client_config(self) -> ClientConfig:
@@ -175,20 +189,15 @@ class NacosRegistry(A2ARegistry):
         Raises:
             Exception: If registration fails
         """
+        client_config = self._get_client_config()
         try:
-            client_config = self._get_client_config()
-            self._nacos_ai_service = await NacosAIService.create_ai_service(
-                client_config
-            )
+            self._nacos_ai_service = await NacosAIService.create_ai_service(client_config)
 
             # Publish agent card
             await self._nacos_ai_service.release_agent_card(
                 ReleaseAgentCardParam(agent_card=agent_card)
             )
-            logger.info(
-                "[NacosRegistry] Agent card published: agent=%s",
-                agent_card.name,
-            )
+            logger.info("[NacosRegistry] Agent card published: agent=%s", agent_card.name)
 
             # Register agent endpoint
             await self._nacos_ai_service.register_agent_endpoint(
@@ -201,8 +210,7 @@ class NacosRegistry(A2ARegistry):
                 )
             )
             logger.info(
-                "[NacosRegistry] Agent endpoint registered: agent=%s, "
-                "address=%s:%s, path=%s",
+                "[NacosRegistry] Agent endpoint registered: agent=%s, address=%s:%s, path=%s",
                 agent_card.name,
                 host,
                 port,
@@ -210,10 +218,25 @@ class NacosRegistry(A2ARegistry):
             )
 
         except Exception as e:
+            # Log errors but don't re-raise; background tasks should not crash the host
             logger.error(
                 "[NacosRegistry] Failed to register agent=%s: %s",
                 agent_card.name,
                 str(e),
                 exc_info=True,
             )
-            raise
+
+        finally:
+            # Attempt to gracefully close the service if supported
+            try:
+                svc = self._nacos_ai_service
+                if svc is not None:
+                    close_coro = getattr(svc, "close", None) or getattr(svc, "shutdown", None)
+                    if close_coro is not None:
+                        if asyncio.iscoroutinefunction(close_coro):
+                            await close_coro()
+                        else:
+                            close_coro()
+                        logger.debug("[NacosRegistry] NacosAIService closed")
+            except Exception:
+                logger.debug("[NacosRegistry] Failed to close NacosAIService cleanly", exc_info=True)

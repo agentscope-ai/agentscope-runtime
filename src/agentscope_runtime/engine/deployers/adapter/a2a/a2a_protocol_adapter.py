@@ -8,9 +8,8 @@ wellknown endpoint setup, and task management.
 """
 import json
 import logging
-import posixpath
 from typing import Any, Callable, Dict, List, Optional, Union
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 from a2a.server.apps import A2AFastAPIApplication
 from a2a.server.request_handlers import DefaultRequestHandler
@@ -286,12 +285,16 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             if transport_props:
                 transports_properties.append(transport_props)
 
-        # Add additional interfaces
-        additional_interfaces = getattr(agent_card, "additional_interfaces", None)
+        # Add additional interfaces (support dict or object style)
+        additional_interfaces = getattr(agent_card, "additional_interfaces", None) or getattr(agent_card, "additionalInterfaces", None)
         if additional_interfaces:
             for interface in additional_interfaces:
-                interface_url = getattr(interface, "url", "") or ""
-                transport_type = getattr(interface, "transport", DEFAULT_TRANSPORT) or DEFAULT_TRANSPORT
+                if isinstance(interface, dict):
+                    interface_url = interface.get("url", "") or ""
+                    transport_type = interface.get("transport", DEFAULT_TRANSPORT) or DEFAULT_TRANSPORT
+                else:
+                    interface_url = getattr(interface, "url", "") or ""
+                    transport_type = getattr(interface, "transport", DEFAULT_TRANSPORT) or DEFAULT_TRANSPORT
 
                 transport_props = self._parse_transport_url(
                     interface_url, transport_type, deploy_properties
@@ -320,26 +323,34 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         if not url:
             return None
 
-        parsed = urlparse(url)
+        # If scheme missing, add http:// so urlparse extracts hostname/port
+        normalized = url
+        if '://' not in url:
+            normalized = 'http://' + url
+
+        parsed = urlparse(normalized)
+
+        host = parsed.hostname or deploy_properties.host
+        port = parsed.port or deploy_properties.port
+        path = parsed.path or ""
+
+        if not host:
+            logger.warning("[A2A] Invalid transport URL (no host) provided: %s", url)
+            return None
+
         return A2aTransportsProperties(
             transport_type=transport_type,
             url=url,
-            host=parsed.hostname or deploy_properties.host,
-            port=parsed.port or deploy_properties.port,
-            path=parsed.path or "",
+            host=host,
+            port=port,
+            path=path,
         )
 
     def _get_json_rpc_url(self) -> str:
-        """Get JSON-RPC URL for agent card.
-
-        Returns:
-            Complete URL string for JSON-RPC endpoint
-        """
+        """Return the full JSON-RPC endpoint URL for this adapter."""
         base = self._base_url or "http://127.0.0.1:8000"
-        return posixpath.join(
-            base.rstrip("/"),
-            self._json_rpc_path.lstrip("/"),
-        )
+        base_with_slash = base.rstrip("/") + "/"
+        return urljoin(base_with_slash, self._json_rpc_path.lstrip("/"))
 
     def _add_wellknown_route(
         self,
@@ -353,21 +364,61 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             agent_card: Agent card to expose
         """
 
+        def _serialize_card(card: AgentCard) -> Dict[str, Any]:
+            """Serialize AgentCard to a plain dict in a robust way.
+
+            Tries pydantic v2's model_dump, then pydantic v1's dict(), and
+            finally falls back to json() -> loads. Any serialization error
+            is logged at debug level and an empty dict is returned.
+            """
+            # Prefer pydantic v2 model_dump, then model_dump_json, then fall back to
+            # pydantic v1 style dict/json. Use getattr to avoid static deprecation
+            # warnings about direct attribute usage.
+            serializer = getattr(card, "model_dump", None)
+            if callable(serializer):
+                try:
+                    return serializer(exclude_none=True)  # type: ignore[call-arg]
+                except Exception as e:
+                    logger.debug("[A2A] model_dump failed: %s", e, exc_info=True)
+                    return {}
+
+            serializer_json = getattr(card, "model_dump_json", None)
+            if callable(serializer_json):
+                try:
+                    # model_dump_json returns a JSON string
+                    return json.loads(serializer_json(exclude_none=True))  # type: ignore[call-arg]
+                except Exception as e:
+                    logger.debug("[A2A] model_dump_json failed: %s", e, exc_info=True)
+                    return {}
+
+            # Fallback to pydantic v1 compatibility methods if present
+            dict_serializer = getattr(card, "dict", None)
+            if callable(dict_serializer):
+                try:
+                    return dict_serializer(exclude_none=True)  # type: ignore[call-arg]
+                except Exception as e:
+                    logger.debug("[A2A] dict() serialization failed: %s", e, exc_info=True)
+                    return {}
+
+            json_serializer = getattr(card, "json", None)
+            if callable(json_serializer):
+                try:
+                    return json.loads(json_serializer())
+                except Exception as e:
+                    logger.debug("[A2A] json() serialization failed: %s", e, exc_info=True)
+                    return {}
+
+            logger.debug("[A2A] AgentCard has no known serializer, returning empty dict")
+            return {}
+
         @app.get(self._wellknown_path)
         async def get_agent_card() -> JSONResponse:
             """Return agent card as JSON response."""
-            # Support both Pydantic v1 and v2
-            if hasattr(agent_card, "model_dump"):
-                content = agent_card.model_dump(exclude_none=True)
-            elif hasattr(agent_card, "dict"):
-                content = agent_card.dict(exclude_none=True)
-            else:
-                content = json.loads(agent_card.json())
-
+            content = _serialize_card(agent_card)
             return JSONResponse(content=content)
 
     def _normalize_provider(
-        self, provider: Union[str, Dict[str, Any], Any]
+        self, provider: Optional[Union[str, Dict[str, Any], Any]]
     ) -> Dict[str, Any]:
         """Normalize provider to dict format with organization and url.
 
@@ -377,8 +428,12 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         Returns:
             Normalized provider dict
         """
+        if provider is None:
+            return {"organization": "", "url": ""}
+
         if isinstance(provider, str):
             return {"organization": provider, "url": ""}
+
         if isinstance(provider, dict):
             provider_dict = dict(provider)
             if "organization" not in provider_dict:
@@ -386,6 +441,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             if "url" not in provider_dict:
                 provider_dict["url"] = ""
             return provider_dict
+
         return provider
 
     def _build_additional_interfaces(
