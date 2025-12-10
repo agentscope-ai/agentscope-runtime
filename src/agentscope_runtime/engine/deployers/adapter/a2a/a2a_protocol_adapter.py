@@ -26,7 +26,10 @@ from .a2a_registry import (
     DeployProperties,
     A2aTransportsProperties,
 )
-from .nacos_a2a_registry import NacosRegistry
+# NOTE: Do NOT import NacosRegistry at module import time to avoid forcing
+# an optional dependency on environments that don't have nacos SDK installed.
+# The default registry (NacosRegistry) will be imported lazily in __init__.
+# from .nacos_a2a_registry import NacosRegistry
 from ..protocol_adapter import ProtocolAdapter
 
 logger = logging.getLogger(__name__)
@@ -112,12 +115,39 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         # Convert registry to list for uniform handling
         # Default to NacosRegistry if no registry is provided
         if registry is None:
-            # Use NacosRegistry as the default registry implementation
-            self._registries: List[A2ARegistry] = [NacosRegistry()]
+            # Use NacosRegistry as the default registry implementation if available.
+            try:
+                from .nacos_a2a_registry import NacosRegistry  # local import
+
+                self._registries: List[A2ARegistry] = [NacosRegistry()]
+            except Exception:
+                # Optional dependency missing or instantiation failed: continue with empty list
+                logger.debug(
+                    "[A2A] NacosRegistry not available as default registry (optional dependency missing)",
+                    exc_info=True,
+                )
+                self._registries = []
         elif isinstance(registry, A2ARegistry):
             self._registries = [registry]
         else:
-            self._registries = list(registry)
+            # Accept any iterable; validate members for duck-typed registry interface
+            try:
+                regs = list(registry)
+            except Exception:
+                logger.warning("[A2A] Provided registry is not iterable; ignoring")
+                self._registries = []
+            else:
+                valid_regs: List[A2ARegistry] = []
+                for r in regs:
+                    # Accept objects that implement required methods (duck typing)
+                    if hasattr(r, "register") and hasattr(r, "registry_name"):
+                        valid_regs.append(r)
+                    else:
+                        logger.warning(
+                            "[A2A] Ignoring invalid registry entry (missing register/registry_name): %s",
+                            type(r),
+                        )
+                self._registries = valid_regs
 
         # AgentCard configuration
         self._card_name = card_name
@@ -403,7 +433,14 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             json_serializer = getattr(card, "json", None)
             if callable(json_serializer):
                 try:
-                    return json.loads(json_serializer())
+                    result = json_serializer()
+                    # json() may return a JSON string or a dict depending on implementation.
+                    if isinstance(result, (str, bytes, bytearray)):
+                        return json.loads(result)
+                    if isinstance(result, dict):
+                        return result
+                    # Fallback: try to parse string representation
+                    return json.loads(str(result))
                 except Exception as e:
                     logger.debug("[A2A] json() serialization failed: %s", e, exc_info=True)
                     return {}
@@ -442,7 +479,14 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                 provider_dict["url"] = ""
             return provider_dict
 
-        return provider
+        # Try to coerce object-like provider to dict
+        try:
+            organization = getattr(provider, "organization", None) or getattr(provider, "name", "")
+            url = getattr(provider, "url", "")
+            return {"organization": organization, "url": url}
+        except Exception:
+            logger.debug("[A2A] Unable to normalize provider of type %s", type(provider), exc_info=True)
+            return {"organization": "", "url": ""}
 
     def _build_additional_interfaces(
         self,

@@ -10,14 +10,23 @@ import asyncio
 import logging
 import os
 from typing import List, Optional
+import threading
 
 from a2a.types import AgentCard
-from v2.nacos import ClientConfig, ClientConfigBuilder
-from v2.nacos.ai.model.ai_param import (
-    RegisterAgentEndpointParam,
-    ReleaseAgentCardParam,
-)
-from v2.nacos.ai.nacos_ai_service import NacosAIService
+# Make the v2.nacos imports optional to avoid hard dependency at module import time.
+try:
+    from v2.nacos import ClientConfig, ClientConfigBuilder
+    from v2.nacos.ai.model.ai_param import (
+        RegisterAgentEndpointParam,
+        ReleaseAgentCardParam,
+    )
+    from v2.nacos.ai.nacos_ai_service import NacosAIService
+except Exception:
+    ClientConfig = None  # type: ignore
+    ClientConfigBuilder = None  # type: ignore
+    RegisterAgentEndpointParam = None  # type: ignore
+    ReleaseAgentCardParam = None  # type: ignore
+    NacosAIService = None  # type: ignore
 
 from .a2a_registry import (
     A2ARegistry,
@@ -74,6 +83,11 @@ class NacosRegistry(A2ARegistry):
         Raises:
             Exception: If registration fails
         """
+        # If Nacos SDK is not available, log and return
+        if NacosAIService is None:
+            logger.debug("[NacosRegistry] Nacos SDK is not available; skipping registration")
+            return
+
         host = deploy_properties.host or "127.0.0.1"
         port = deploy_properties.port
         root_path = deploy_properties.root_path or ""
@@ -113,31 +127,52 @@ class NacosRegistry(A2ARegistry):
         port: int,
         root_path: str,
     ) -> None:
-        """Start background Nacos registration task."""
+        """Start background Nacos registration task.
+
+        If there is an active asyncio event loop, schedule the registration as a
+        task on that loop. Otherwise, spawn a daemon thread and run the
+        registration using asyncio.run so registration still occurs in
+        synchronous contexts.
+        """
         try:
             loop = None
             try:
                 loop = asyncio.get_running_loop()
             except RuntimeError:
-                # No running loop in this thread; try to get the default event loop
-                try:
-                    loop = asyncio.get_event_loop()
-                except Exception:
-                    loop = None
+                # No running loop in this thread; we'll fall back to a background thread
+                loop = None
 
-            if loop is None:
-                logger.warning("[NacosRegistry] No available event loop, skipping registration.")
+            if loop is not None:
+                self._register_task = loop.create_task(
+                    self._register_to_nacos(
+                        agent_card=agent_card,
+                        host=host,
+                        port=port,
+                        root_path=root_path,
+                    )
+                )
+                logger.info("[NacosRegistry] Registration task scheduled on running event loop")
                 return
 
-            self._register_task = loop.create_task(
-                self._register_to_nacos(
-                    agent_card=agent_card,
-                    host=host,
-                    port=port,
-                    root_path=root_path,
-                )
+            # No running loop: use a background thread to run asyncio.run
+            def _thread_runner():
+                try:
+                    asyncio.run(
+                        self._register_to_nacos(
+                            agent_card=agent_card,
+                            host=host,
+                            port=port,
+                            root_path=root_path,
+                        )
+                    )
+                except Exception:
+                    logger.error("[NacosRegistry] Registration failed in background thread", exc_info=True)
+
+            thread = threading.Thread(
+                target=_thread_runner, name="nacos-registry-register", daemon=True
             )
-            logger.info("[NacosRegistry] Registration task started in background")
+            thread.start()
+            logger.info("[NacosRegistry] Registration task started in background thread")
         except Exception:
             logger.warning(
                 "[NacosRegistry] Error starting registration task",
@@ -232,11 +267,21 @@ class NacosRegistry(A2ARegistry):
                 svc = self._nacos_ai_service
                 if svc is not None:
                     close_coro = getattr(svc, "close", None) or getattr(svc, "shutdown", None)
-                    if close_coro is not None:
-                        if asyncio.iscoroutinefunction(close_coro):
-                            await close_coro()
+                    if close_coro is not None and callable(close_coro):
+                        try:
+                            result = close_coro()
+                            # If the call returned a coroutine, await it
+                            if asyncio.iscoroutine(result):
+                                await result
+                        except TypeError:
+                            # close_coro might be a coroutine function; call and await
+                            try:
+                                await close_coro()
+                            except Exception:
+                                logger.debug("[NacosRegistry] Error awaiting close coroutine", exc_info=True)
+                        except Exception:
+                            logger.debug("[NacosRegistry] Error closing NacosAIService", exc_info=True)
                         else:
-                            close_coro()
-                        logger.debug("[NacosRegistry] NacosAIService closed")
+                            logger.debug("[NacosRegistry] NacosAIService closed")
             except Exception:
                 logger.debug("[NacosRegistry] Failed to close NacosAIService cleanly", exc_info=True)

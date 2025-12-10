@@ -8,7 +8,7 @@ agent services to service discovery systems (e.g., Nacos, Consul, etc.).
 """
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
 
 from a2a.types import AgentCard
@@ -42,12 +42,7 @@ class DeployProperties:
     port: Optional[int] = None
     root_path: str = ""
     base_url: Optional[str] = None
-    extra: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        """Initialize extra dict if not provided."""
-        if self.extra is None:
-            self.extra = {}
+    extra: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -77,12 +72,7 @@ class A2aTransportsProperties:
     root_path: Optional[str] = None
     sub_path: Optional[str] = None
     tls: Optional[Dict[str, Any]] = None
-    extra: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        """Initialize extra dict if not provided."""
-        if self.extra is None:
-            self.extra = {}
+    extra: Dict[str, Any] = field(default_factory=dict)
 
 
 class A2ARegistry(ABC):
