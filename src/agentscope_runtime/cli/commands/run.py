@@ -1,20 +1,27 @@
 # -*- coding: utf-8 -*-
 """as-runtime run command - Interactive and single-shot agent execution."""
 # pylint: disable=no-value-for-parameter, too-many-branches, protected-access
+# pylint: disable=too-many-statements, too-many-nested-blocks
+# pylint: disable=too-many-nested-blocks, unused-argument
+
 
 import asyncio
+import json
 import logging
 import os
 import sys
 from typing import Optional
+from urllib.parse import urljoin
 
 import click
+import requests
 import shortuuid
 
 from agentscope_runtime.cli.loaders.agent_loader import (
     UnifiedAgentLoader,
     AgentLoadError,
 )
+from agentscope_runtime.cli.utils.validators import validate_agent_source
 from agentscope_runtime.engine.deployers.state import DeploymentStateManager
 from agentscope_runtime.cli.utils.console import (
     echo_error,
@@ -114,44 +121,115 @@ def run(
     try:
         # Initialize state manager
         state_manager = DeploymentStateManager()
-
-        # Load agent
-        echo_info(f"Loading agent from: {source}")
-        loader = UnifiedAgentLoader(state_manager=state_manager)
-
+        # Check if source is a deployment ID
         try:
-            agent_app = loader.load(source, entrypoint=entrypoint)
-            echo_success("Agent loaded successfully")
-        except AgentLoadError as e:
-            echo_error(f"Failed to load agent: {e}")
-            sys.exit(1)
+            source_type, normalized_source = validate_agent_source(source)
+        except Exception:
+            # If validation fails, treat as file/directory
+            source_type = None
 
-        # Generate session ID if not provided
-        if session_id is None:
-            session_id = f"session_{shortuuid.ShortUUID().random(length=8)}"
-            echo_info(f"Generated session ID: {session_id}")
+        if source_type == "deployment_id":
+            # Handle deployment ID - use HTTP request
+            deployment = state_manager.get(normalized_source)
+            if deployment is None:
+                echo_error(f"Deployment not found: {normalized_source}")
+                sys.exit(1)
 
-        # Build runner
-        agent_app._build_runner()
-        runner = agent_app._runner
+            # Check if platform is modelstudio
+            if deployment.platform == "modelstudio":
+                echo_warning(
+                    "ModelStudio deployments do not support query the url. "
+                    "Please goto the ModelStudio console URL to interact with "
+                    "the deployment: {deployment.url}",
+                )
+                sys.exit(1)
 
-        # Run async operations
-        if query:
-            # Single-shot mode
-            asyncio.run(
-                _execute_single_query(
-                    runner,
+            # Get URL and token
+            base_url = deployment.url
+            token = deployment.token
+
+            if not base_url:
+                echo_error(
+                    f"Deployment {normalized_source} does not have a URL "
+                    f"configured",
+                )
+                sys.exit(1)
+
+            # Build process endpoint URL
+            # Ensure base_url ends with / for proper urljoin behavior
+            base_url_normalized = base_url.rstrip("/") + "/"
+            process_url = urljoin(base_url_normalized, "process")
+
+            # Generate session ID if not provided
+            if session_id is None:
+                session_id = (
+                    f"session_{shortuuid.ShortUUID().random(length=8)}"
+                )
+                echo_info(f"Generated session ID: {session_id}")
+
+            echo_info(f"Using deployment: {normalized_source}")
+            echo_info(f"Endpoint: {process_url}")
+
+            # Run HTTP-based operations
+            if query:
+                # Single-shot mode
+                _execute_single_query_http(
+                    process_url,
+                    token,
                     query,
                     session_id,
                     user_id,
                     verbose,
-                ),
-            )
+                )
+            else:
+                # Interactive mode
+                _interactive_mode_http(
+                    process_url,
+                    token,
+                    session_id,
+                    user_id,
+                    verbose,
+                )
         else:
-            # Interactive mode
-            asyncio.run(
-                _interactive_mode(runner, session_id, user_id, verbose),
-            )
+            # Handle file/directory source - use local agent loading
+            echo_info(f"Loading agent from: {source}")
+            loader = UnifiedAgentLoader(state_manager=state_manager)
+
+            try:
+                agent_app = loader.load(source, entrypoint=entrypoint)
+                echo_success("Agent loaded successfully")
+            except AgentLoadError as e:
+                echo_error(f"Failed to load agent: {e}")
+                sys.exit(1)
+
+            # Generate session ID if not provided
+            if session_id is None:
+                session_id = (
+                    f"session_{shortuuid.ShortUUID().random(length=8)}"
+                )
+                echo_info(f"Generated session ID: {session_id}")
+
+            # Build runner
+            agent_app._build_runner()
+            runner = agent_app._runner
+
+            # Run async operations
+            if query:
+                # Single-shot mode
+                asyncio.run(
+                    _execute_single_query(
+                        runner,
+                        query,
+                        session_id,
+                        user_id,
+                        verbose,
+                    ),
+                )
+            else:
+                # Interactive mode
+                asyncio.run(
+                    _interactive_mode(runner, session_id, user_id, verbose),
+                )
 
     except KeyboardInterrupt:
         echo_warning("\nInterrupted by user")
@@ -328,6 +406,286 @@ async def _interactive_mode(
                 if verbose:
                     traceback.print_exc()
                 continue
+
+
+def _parse_sse_line(line: bytes) -> tuple[Optional[str], Optional[str]]:
+    """Parse a single SSE line."""
+    line_str = line.decode("utf-8").strip()
+    if line_str.startswith("data: "):
+        return "data", line_str[6:]
+    elif line_str.startswith("event:"):
+        return "event", line_str[7:].strip()
+    elif line_str.startswith("id: "):
+        return "id", line_str[4:].strip()
+    elif line_str.startswith("retry:"):
+        return "retry", line_str[7:].strip()
+    return None, None
+
+
+def _execute_single_query_http(
+    url: str,
+    token: Optional[str],
+    query: str,
+    session_id: str,
+    user_id: str,
+    verbose: bool,
+):
+    """Execute a single query via HTTP and print response."""
+    echo_info(f"Query: {query}")
+    echo_info("Response:")
+
+    # Prepare request payload
+    payload = {
+        "input": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": query,
+                    },
+                ],
+            },
+        ],
+        "session_id": session_id,
+    }
+
+    # Prepare headers
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream",
+        "Cache-Control": "no-cache",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    try:
+        # Send POST request with streaming
+        response = requests.post(
+            url,
+            json=payload,
+            headers=headers,
+            stream=True,
+        )
+        response.raise_for_status()
+
+        # Parse SSE stream
+        for line in response.iter_lines():
+            if line:
+                field, value = _parse_sse_line(line)
+                if field == "data" and value:
+                    try:
+                        data = json.loads(value)
+                        # Handle different object types
+                        obj_type = data.get("object")
+                        status = data.get("status")
+
+                        # Skip reasoning messages in non-verbose mode
+                        if (
+                            not verbose
+                            and obj_type == "message"
+                            and data.get("type") == "reasoning"
+                        ):
+                            continue
+
+                        # Handle content deltas (streaming text)
+                        if (
+                            obj_type == "content"
+                            and data.get("delta") is True
+                            and data.get("type") == "text"
+                            and data.get("text")
+                        ):
+                            print(data["text"], end="", flush=True)
+
+                        # Handle completed messages (for non-streaming
+                        # responses)
+                        # Note: We mainly rely on delta content for streaming,
+                        # but handle completed messages as fallback
+                        if (
+                            obj_type == "message"
+                            and status == "completed"
+                            and data.get("type") != "reasoning"
+                            and data.get("content")
+                        ):
+                            for content_item in data["content"]:
+                                if (
+                                    isinstance(content_item, dict)
+                                    and content_item.get("type") == "text"
+                                    and content_item.get("text")
+                                    # Only print if this is not a delta (
+                                    # already printed)
+                                    and not content_item.get("delta")
+                                ):
+                                    print(
+                                        content_item["text"],
+                                        end="",
+                                        flush=True,
+                                    )
+
+                    except json.JSONDecodeError:
+                        # Skip invalid JSON lines
+                        pass
+
+        print()  # New line after response
+        echo_success("Query completed")
+
+    except requests.exceptions.RequestException as e:
+        echo_error(f"HTTP request failed: {e}")
+        raise
+
+
+def _interactive_mode_http(
+    url: str,
+    token: Optional[str],
+    session_id: str,
+    user_id: str,
+    verbose: bool,
+):
+    """Run interactive REPL mode via HTTP."""
+    echo_success(
+        "Entering interactive mode. Type 'exit' or 'quit' to leave, Ctrl+C "
+        "to interrupt.",
+    )
+    echo_info(f"Session ID: {session_id}")
+    echo_info(f"User ID: {user_id}")
+    print()
+
+    while True:
+        try:
+            # Read user input with error handling for encoding issues
+            try:
+                user_input = input("> ").strip()
+            except UnicodeDecodeError as e:
+                echo_error(f"Input encoding error: {e}")
+                echo_warning(
+                    "Please ensure your terminal supports UTF-8 encoding",
+                )
+                continue
+
+            if not user_input:
+                continue
+
+            if user_input.lower() in ["exit", "quit", "q"]:
+                echo_info("Exiting interactive mode...")
+                break
+
+            # Prepare request payload
+            payload = {
+                "input": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": user_input,
+                            },
+                        ],
+                    },
+                ],
+                "session_id": session_id,
+            }
+
+            # Prepare headers
+            headers = {
+                "Content-Type": "application/json",
+                "Accept": "text/event-stream",
+                "Cache-Control": "no-cache",
+            }
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
+
+            # Execute query via HTTP
+            try:
+                response = requests.post(
+                    url,
+                    json=payload,
+                    headers=headers,
+                    stream=True,
+                )
+                response.raise_for_status()
+
+                # Parse SSE stream
+                for line in response.iter_lines():
+                    if line:
+                        field, value = _parse_sse_line(line)
+                        if field == "data" and value:
+                            try:
+                                data = json.loads(value)
+                                # Handle different object types
+                                obj_type = data.get("object")
+                                status = data.get("status")
+
+                                # Skip reasoning messages in non-verbose mode
+                                if (
+                                    not verbose
+                                    and obj_type == "message"
+                                    and data.get("type") == "reasoning"
+                                ):
+                                    continue
+
+                                # Handle content deltas (streaming text)
+                                if (
+                                    obj_type == "content"
+                                    and data.get("delta") is True
+                                    and data.get("type") == "text"
+                                    and data.get("text")
+                                ):
+                                    print(data["text"], end="", flush=True)
+
+                                # Handle completed messages (for
+                                # non-streaming responses)
+                                # Note: We mainly rely on delta content for
+                                # streaming,
+                                # but handle completed messages as fallback
+                                if (
+                                    obj_type == "message"
+                                    and status == "completed"
+                                    and data.get("type") != "reasoning"
+                                    and data.get("content")
+                                ):
+                                    for content_item in data["content"]:
+                                        if (
+                                            isinstance(content_item, dict)
+                                            and content_item.get("type")
+                                            == "text"
+                                            and content_item.get("text")
+                                            # Only print if this is not a
+                                            # delta (already printed)
+                                            and not content_item.get("delta")
+                                        ):
+                                            print(
+                                                content_item["text"],
+                                                end="",
+                                                flush=True,
+                                            )
+
+                            except json.JSONDecodeError:
+                                # Skip invalid JSON lines
+                                pass
+
+                print()  # New line after response
+
+            except requests.exceptions.RequestException as e:
+                echo_error(f"\nQuery failed: {e}")
+
+        except KeyboardInterrupt:
+            print()  # New line after Ctrl+C
+            echo_warning(
+                "Interrupted. Type 'exit' to quit or continue chatting.",
+            )
+            continue
+        except EOFError:
+            print()
+            echo_info("EOF received. Exiting...")
+            break
+        except Exception as e:
+            # Catch any other unexpected errors
+            echo_error(f"\nUnexpected error: {e}")
+            import traceback
+
+            if verbose:
+                traceback.print_exc()
+            continue
 
 
 if __name__ == "__main__":

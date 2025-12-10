@@ -3,6 +3,8 @@
 
 import os
 
+from agentscope_runtime.engine.deployers.state import DeploymentStateManager
+
 
 class ValidationError(Exception):
     """Raised when validation fails."""
@@ -25,13 +27,6 @@ def validate_agent_source(source: str) -> tuple[str, str]:
     if not source:
         raise ValidationError("Agent source cannot be empty")
 
-    # Check if it's a deployment ID (format: platform_timestamp_id)
-    if "_" in source and not os.path.exists(source):
-        # Likely a deployment ID
-        parts = source.split("_")
-        if len(parts) >= 3:
-            return ("deployment_id", source)
-
     # Check if it's a file
     if os.path.isfile(source):
         if not source.endswith(".py"):
@@ -44,8 +39,12 @@ def validate_agent_source(source: str) -> tuple[str, str]:
     if os.path.isdir(source):
         return ("directory", os.path.abspath(source))
 
-    # If nothing matches and it looks like a deployment ID
-    if "_" in source:
+    # Check if it's a deployment ID by querying state manager
+    # This ensures we only accept deployment IDs that actually exist
+    # Support both formats: platform_timestamp_id (with underscore) and UUID
+    # format
+    state_manager = DeploymentStateManager()
+    if state_manager.exists(source):
         return ("deployment_id", source)
 
     raise ValidationError(

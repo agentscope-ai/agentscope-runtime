@@ -289,7 +289,7 @@ class LocalDeployManager(DeployManager):
         try:
             entry_script = get_bundle_entry_script(project_dir)
             script_path = os.path.join(project_dir, entry_script)
-            env = kwargs.get("environment", {})
+            env = kwargs.get("environment", {}) or {}
             env.update(
                 {
                     "HOST": self.host,
