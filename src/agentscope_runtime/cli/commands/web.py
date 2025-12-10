@@ -3,6 +3,7 @@
 # pylint: disable=no-value-for-parameter, unused-argument, unnecessary-pass
 
 import atexit
+import logging
 import os
 import signal
 import sys
@@ -14,7 +15,6 @@ from agentscope_runtime.cli.loaders.agent_loader import (
     UnifiedAgentLoader,
     AgentLoadError,
 )
-from agentscope_runtime.engine.deployers.state import DeploymentStateManager
 from agentscope_runtime.cli.utils.console import (
     echo_error,
     echo_info,
@@ -22,6 +22,9 @@ from agentscope_runtime.cli.utils.console import (
     echo_warning,
 )
 from agentscope_runtime.cli.utils.validators import validate_port
+from agentscope_runtime.engine.deployers.state import DeploymentStateManager
+
+logger = logging.getLogger(__name__)
 
 # Global variable to track child processes and parent process
 _child_processes = []
@@ -37,8 +40,8 @@ def _cleanup_processes():
         try:
             all_children = _parent_process.children(recursive=True)
             _child_processes = list(set(_child_processes + all_children))
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
+        except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+            logger.error(f"clean up child processes failed with error: {e}")
 
     for process in _child_processes:
         try:
@@ -50,8 +53,8 @@ def _cleanup_processes():
                 except psutil.TimeoutExpired:
                     echo_warning(f"Force killing process {process.pid}...")
                     process.kill()
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
+        except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+            logger.error(f"process runtime error: {e}")
 
 
 def _signal_handler(signum, frame):

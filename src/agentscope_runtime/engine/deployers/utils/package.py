@@ -662,10 +662,6 @@ def package(
 
     logger.info(f"Packaging project from: {project_info.project_dir}")
 
-    # Normalize requirements
-    if requirements is None:
-        requirements = []
-
     # Create output directory with platform-aware naming
     if output_dir is None:
         output_dir = str(generate_build_directory(platform))

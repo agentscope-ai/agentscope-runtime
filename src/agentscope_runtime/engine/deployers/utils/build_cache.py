@@ -254,7 +254,10 @@ class BuildCache:
                 try:
                     shutil.rmtree(cache_dir)
                 except Exception:
-                    pass
+                    logger.warning(
+                        f"Failed to remove cache build, {cache_dir} with error"
+                        f" {e}",
+                    )
             raise
 
         return build_name
@@ -620,8 +623,14 @@ class BuildCache:
                 try:
                     shutil.rmtree(cache_dir)
                 except Exception:
-                    pass
-            raise
+                    logger.warning(
+                        f"Failed to remove cache directory "
+                        f"{cache_dir} with error: {e}",
+                    )
+
+            raise RuntimeError(
+                f"Failed to store cache directory {cache_dir}:" f" {e}",
+            ) from e
 
         return build_name
 
