@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@agentscope-ai/icons": "^1.0.46",
-    "@agentscope-ai/chat": "^1.1.37",
+    "@agentscope-ai/chat": "^1",
     "@agentscope-ai/design": "^1.0.14",
     "antd": "^5.29.1",
     "antd-style": "^3.7.1",
