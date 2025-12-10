@@ -3,6 +3,7 @@
 # pylint: disable=no-value-for-parameter, too-many-branches, protected-access
 # pylint: disable=too-many-statements, too-many-nested-blocks
 # pylint: disable=too-many-nested-blocks, unused-argument
+# pylint: disable=too-many-boolean-expressions
 
 
 import asyncio
@@ -34,6 +35,8 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
     Message,
     TextContent,
     Role,
+    ContentType,
+    MessageType,
 )
 
 
@@ -268,9 +271,48 @@ async def _execute_single_query(
     try:
         # Start runner and execute query
         async with runner:
+            # Track reasoning message IDs to filter out their content
+            reasoning_msg_ids = set()
+
             # Use stream_query which handles framework adaptation
             async for event in runner.stream_query(request):
-                # Handle different event types
+                # Track reasoning messages
+                if (
+                    hasattr(event, "object")
+                    and event.object == "message"
+                    and hasattr(event, "type")
+                    and event.type == MessageType.REASONING
+                    and hasattr(event, "id")
+                ):
+                    reasoning_msg_ids.add(event.id)
+                    # Skip reasoning messages in non-verbose mode
+                    if not verbose:
+                        continue
+
+                # Handle streaming content deltas (primary method for
+                # streaming)
+                if (
+                    hasattr(event, "object")
+                    and event.object == "content"
+                    and hasattr(event, "delta")
+                    and event.delta is True
+                    and hasattr(event, "type")
+                    and event.type == ContentType.TEXT
+                    and hasattr(event, "text")
+                    and event.text
+                ):
+                    # Skip content from reasoning messages in non-verbose mode
+                    if (
+                        not verbose
+                        and hasattr(event, "msg_id")
+                        and event.msg_id in reasoning_msg_ids
+                    ):
+                        continue
+                    print(event.text, end="", flush=True)
+                    continue
+
+                # Handle completed messages (fallback for non-streaming
+                # responses)
                 if hasattr(event, "output") and event.output:
                     # This is a response with messages
                     for message in event.output:
@@ -288,6 +330,12 @@ async def _execute_single_query(
                                 if (
                                     hasattr(content_item, "text")
                                     and content_item.text
+                                    # Only print if this is not a delta (
+                                    # already printed)
+                                    and not (
+                                        hasattr(content_item, "delta")
+                                        and content_item.delta
+                                    )
                                 ):
                                     print(
                                         content_item.text,
@@ -354,8 +402,48 @@ async def _interactive_mode(
 
                 # Execute query using stream_query
                 try:
+                    # Track reasoning message IDs to filter out their content
+                    reasoning_msg_ids = set()
+
                     async for event in runner.stream_query(request):
-                        # Handle different event types
+                        # Track reasoning messages
+                        if (
+                            hasattr(event, "object")
+                            and event.object == "message"
+                            and hasattr(event, "type")
+                            and event.type == MessageType.REASONING
+                            and hasattr(event, "id")
+                        ):
+                            reasoning_msg_ids.add(event.id)
+                            # Skip reasoning messages in non-verbose mode
+                            if not verbose:
+                                continue
+
+                        # Handle streaming content deltas (primary method
+                        # for streaming)
+                        if (
+                            hasattr(event, "object")
+                            and event.object == "content"
+                            and hasattr(event, "delta")
+                            and event.delta is True
+                            and hasattr(event, "type")
+                            and event.type == ContentType.TEXT
+                            and hasattr(event, "text")
+                            and event.text
+                        ):
+                            # Skip content from reasoning messages in
+                            # non-verbose mode
+                            if (
+                                not verbose
+                                and hasattr(event, "msg_id")
+                                and event.msg_id in reasoning_msg_ids
+                            ):
+                                continue
+                            print(event.text, end="", flush=True)
+                            continue
+
+                        # Handle completed messages (fallback for
+                        # non-streaming responses)
                         if hasattr(event, "output") and event.output:
                             # This is a response with messages
                             for message in event.output:
@@ -376,6 +464,12 @@ async def _interactive_mode(
                                         if (
                                             hasattr(content_item, "text")
                                             and content_item.text
+                                            # Only print if this is not a
+                                            # delta (already printed)
+                                            and not (
+                                                hasattr(content_item, "delta")
+                                                and content_item.delta
+                                            )
                                         ):
                                             print(
                                                 content_item.text,
