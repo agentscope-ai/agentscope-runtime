@@ -233,7 +233,7 @@ class LocalDeployManager(DeployManager):
             created_at=datetime.now().isoformat(),
             agent_source=agent_source,
             config={
-                "mode": "daemon_thread",
+                "mode": DeploymentMode.DAEMON_THREAD,
                 "host": self.host,
                 "port": self.port,
                 "broker_url": broker_url,
@@ -336,7 +336,7 @@ class LocalDeployManager(DeployManager):
                 created_at=datetime.now().isoformat(),
                 agent_source=agent_source,
                 config={
-                    "mode": "detached_process",
+                    "mode": DeploymentMode.DETACHED_PROCESS,
                     "host": self.host,
                     "port": self.port,
                     "pid": pid,
@@ -415,8 +415,13 @@ class LocalDeployManager(DeployManager):
                 },
             }
 
-        # If URL is available, attempt HTTP shutdown for detached process
-        if url:
+        # Only attempt HTTP shutdown for detached process mode
+        # In daemon thread mode, HTTP shutdown would kill the entire process
+        # (including pytest), so we skip it and use direct stop methods instead
+        if (
+            url
+            and deployment.config["mode"] == DeploymentMode.DETACHED_PROCESS
+        ):
             try:
                 import requests
 
@@ -438,11 +443,10 @@ class LocalDeployManager(DeployManager):
                     }
 
             except requests.exceptions.RequestException as e:
-                return {
-                    "success": False,
-                    "message": f"Failed to call shutdown endpoint: {e}",
-                    "details": {"url": url, "error": str(e)},
-                }
+                # If HTTP shutdown fails, continue with direct stop methods
+                self._logger.debug(
+                    f"HTTP shutdown failed, falling back to direct stop: {e}",
+                )
 
         try:
             # when run in from main process instead of cli, make sure close
