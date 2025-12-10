@@ -27,6 +27,7 @@ from .a2a_registry import (
     DeployProperties,
     A2aTransportsProperties,
 )
+from .nacos_a2a_registry import NacosRegistry
 from ..protocol_adapter import ProtocolAdapter
 
 logger = logging.getLogger(__name__)
@@ -110,8 +111,10 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         self._base_url = kwargs.get("base_url")
 
         # Convert registry to list for uniform handling
+        # Default to NacosRegistry if no registry is provided
         if registry is None:
-            self._registries: List[A2ARegistry] = []
+            # Use NacosRegistry as the default registry implementation
+            self._registries: List[A2ARegistry] = [NacosRegistry()]
         elif isinstance(registry, A2ARegistry):
             self._registries = [registry]
         else:

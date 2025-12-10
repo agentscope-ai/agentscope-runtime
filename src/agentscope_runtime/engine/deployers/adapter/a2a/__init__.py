@@ -5,10 +5,12 @@ from .a2a_registry import (
     DeployProperties,
     A2aTransportsProperties,
 )
+from .nacos_a2a_registry import NacosRegistry
 
 __all__ = [
     "A2AFastAPIDefaultAdapter",
     "A2ARegistry",
     "DeployProperties",
     "A2aTransportsProperties",
+    "NacosRegistry",
 ]
