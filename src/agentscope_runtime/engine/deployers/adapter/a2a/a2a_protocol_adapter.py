@@ -455,7 +455,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             port=port,
             root_path=root_path,
             base_url=self._base_url,
-            extra=extra if extra else None,
+            extra=extra,
         )
 
     def _build_transports_properties(
@@ -566,9 +566,10 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         def _serialize_card(card: AgentCard) -> Dict[str, Any]:
             """Serialize AgentCard to a plain dict in a robust way.
 
-            Tries pydantic v2's model_dump, then pydantic v1's dict(), and
-            finally falls back to json() -> loads. Any serialization error
-            is logged at debug level and an empty dict is returned.
+            Tries pydantic v2's model_dump, then model_dump_json, then pydantic v1's dict(),
+            and finally falls back to json() -> loads. If any method fails, continues to
+            try the next method. Only returns an empty dict if all methods fail or are unavailable.
+            Any serialization error is logged at debug level.
             """
             # Prefer pydantic v2 model_dump, then model_dump_json, then fall back to
             # pydantic v1 style dict/json. Use getattr to avoid static deprecation
@@ -579,7 +580,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                     return serializer(exclude_none=True)  # type: ignore[call-arg]
                 except Exception as e:
                     logger.debug("[A2A] model_dump failed: %s", e, exc_info=True)
-                    return {}
+                    # Continue to next method instead of returning
 
             serializer_json = getattr(card, "model_dump_json", None)
             if callable(serializer_json):
@@ -588,7 +589,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                     return json.loads(serializer_json(exclude_none=True))  # type: ignore[call-arg]
                 except Exception as e:
                     logger.debug("[A2A] model_dump_json failed: %s", e, exc_info=True)
-                    return {}
+                    # Continue to next method instead of returning
 
             # Fallback to pydantic v1 compatibility methods if present
             dict_serializer = getattr(card, "dict", None)
@@ -597,7 +598,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                     return dict_serializer(exclude_none=True)  # type: ignore[call-arg]
                 except Exception as e:
                     logger.debug("[A2A] dict() serialization failed: %s", e, exc_info=True)
-                    return {}
+                    # Continue to next method instead of returning
 
             json_serializer = getattr(card, "json", None)
             if callable(json_serializer):
@@ -612,9 +613,9 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                     return json.loads(str(result))
                 except Exception as e:
                     logger.debug("[A2A] json() serialization failed: %s", e, exc_info=True)
-                    return {}
+                    # Continue to next method (but this is the last one)
 
-            logger.debug("[A2A] AgentCard has no known serializer, returning empty dict")
+            logger.debug("[A2A] AgentCard has no known serializer or all serialization methods failed, returning empty dict")
             return {}
 
         @app.get(self._wellknown_path)

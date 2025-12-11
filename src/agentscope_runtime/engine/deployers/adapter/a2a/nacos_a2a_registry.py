@@ -8,6 +8,7 @@ for A2A protocol adapters.
 """
 import asyncio
 import logging
+from enum import Enum
 from typing import List, Optional
 import threading
 
@@ -36,6 +37,16 @@ from .a2a_registry import (
 logger = logging.getLogger(__name__)
 
 
+class RegistrationStatus(Enum):
+    """Registration task status."""
+
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
 class NacosRegistry(A2ARegistry):
     """Nacos-based registry implementation for A2A protocol.
 
@@ -56,6 +67,10 @@ class NacosRegistry(A2ARegistry):
         self._nacos_client_config = nacos_client_config
         self._nacos_ai_service: Optional[NacosAIService] = None
         self._register_task: Optional[asyncio.Task] = None
+        self._register_thread: Optional[threading.Thread] = None
+        self._registration_status: RegistrationStatus = RegistrationStatus.PENDING
+        self._registration_lock = threading.Lock()
+        self._shutdown_event = threading.Event()
 
     def registry_name(self) -> str:
         """Get the name of this registry implementation.
@@ -133,6 +148,21 @@ class NacosRegistry(A2ARegistry):
         registration using asyncio.run so registration still occurs in
         synchronous contexts.
         """
+        # Check if shutdown was already requested
+        if self._shutdown_event.is_set():
+            logger.info("[NacosRegistry] Shutdown already requested, skipping registration")
+            with self._registration_lock:
+                self._registration_status = RegistrationStatus.CANCELLED
+            return
+
+        with self._registration_lock:
+            if self._registration_status in (RegistrationStatus.IN_PROGRESS, RegistrationStatus.COMPLETED):
+                logger.warning(
+                    "[NacosRegistry] Registration already in progress or completed, skipping"
+                )
+                return
+            self._registration_status = RegistrationStatus.PENDING
+
         try:
             loop = None
             try:
@@ -142,6 +172,8 @@ class NacosRegistry(A2ARegistry):
                 loop = None
 
             if loop is not None:
+                with self._registration_lock:
+                    self._registration_status = RegistrationStatus.IN_PROGRESS
                 self._register_task = loop.create_task(
                     self._register_to_nacos(
                         agent_card=agent_card,
@@ -156,6 +188,13 @@ class NacosRegistry(A2ARegistry):
             # No running loop: use a background thread to run asyncio.run
             def _thread_runner():
                 try:
+                    with self._registration_lock:
+                        if self._shutdown_event.is_set():
+                            logger.info("[NacosRegistry] Shutdown requested before registration started")
+                            self._registration_status = RegistrationStatus.CANCELLED
+                            return
+                        self._registration_status = RegistrationStatus.IN_PROGRESS
+
                     asyncio.run(
                         self._register_to_nacos(
                             agent_card=agent_card,
@@ -164,15 +203,28 @@ class NacosRegistry(A2ARegistry):
                             root_path=root_path,
                         )
                     )
+                    with self._registration_lock:
+                        if self._registration_status == RegistrationStatus.IN_PROGRESS:
+                            self._registration_status = RegistrationStatus.COMPLETED
+                except asyncio.CancelledError:
+                    with self._registration_lock:
+                        self._registration_status = RegistrationStatus.CANCELLED
+                    logger.info("[NacosRegistry] Registration cancelled")
                 except Exception:
+                    with self._registration_lock:
+                        self._registration_status = RegistrationStatus.FAILED
                     logger.error("[NacosRegistry] Registration failed in background thread", exc_info=True)
 
             thread = threading.Thread(
                 target=_thread_runner, name="nacos-registry-register", daemon=True
             )
+            with self._registration_lock:
+                self._register_thread = thread
             thread.start()
             logger.info("[NacosRegistry] Registration task started in background thread")
         except Exception:
+            with self._registration_lock:
+                self._registration_status = RegistrationStatus.FAILED
             logger.warning(
                 "[NacosRegistry] Error starting registration task",
                 exc_info=True,
@@ -226,15 +278,39 @@ class NacosRegistry(A2ARegistry):
         Raises:
             Exception: If registration fails
         """
+        # Check if shutdown was requested
+        if self._shutdown_event.is_set():
+            with self._registration_lock:
+                self._registration_status = RegistrationStatus.CANCELLED
+            logger.info("[NacosRegistry] Registration cancelled due to shutdown")
+            return
+
         client_config = self._get_client_config()
         try:
             self._nacos_ai_service = await NacosAIService.create_ai_service(client_config)
+
+            # Check again after service creation
+            if self._shutdown_event.is_set():
+                with self._registration_lock:
+                    self._registration_status = RegistrationStatus.CANCELLED
+                logger.info("[NacosRegistry] Registration cancelled after service creation")
+                return
 
             # Publish agent card
             await self._nacos_ai_service.release_agent_card(
                 ReleaseAgentCardParam(agent_card=agent_card)
             )
             logger.info("[NacosRegistry] Agent card published: agent=%s", agent_card.name)
+
+            # Check again before endpoint registration
+            if self._shutdown_event.is_set():
+                with self._registration_lock:
+                    self._registration_status = RegistrationStatus.CANCELLED
+                logger.warning(
+                    "[NacosRegistry] Registration cancelled after card publish, "
+                    "endpoint may be partially registered"
+                )
+                return
 
             # Register agent endpoint
             await self._nacos_ai_service.register_agent_endpoint(
@@ -254,7 +330,18 @@ class NacosRegistry(A2ARegistry):
                 root_path,
             )
 
+            with self._registration_lock:
+                if self._registration_status == RegistrationStatus.IN_PROGRESS:
+                    self._registration_status = RegistrationStatus.COMPLETED
+
+        except asyncio.CancelledError:
+            with self._registration_lock:
+                self._registration_status = RegistrationStatus.CANCELLED
+            logger.info("[NacosRegistry] Registration task cancelled")
+            raise
         except Exception as e:
+            with self._registration_lock:
+                self._registration_status = RegistrationStatus.FAILED
             # Log errors but don't re-raise; background tasks should not crash the host
             logger.error(
                 "[NacosRegistry] Failed to register agent=%s: %s",
@@ -275,17 +362,158 @@ class NacosRegistry(A2ARegistry):
                             # If the call returned a coroutine, await it
                             if asyncio.iscoroutine(result):
                                 await result
-                        except TypeError:
-                            # close_coro might be a coroutine function; call and await
-                            try:
-                                maybe_coro = close_coro()
-                                if asyncio.iscoroutine(maybe_coro):
-                                    await maybe_coro
-                            except Exception:
-                                logger.debug("[NacosRegistry] Error awaiting close coroutine", exc_info=True)
+                            else:
+                                logger.debug("[NacosRegistry] NacosAIService closed")
                         except Exception:
                             logger.debug("[NacosRegistry] Error closing NacosAIService", exc_info=True)
-                        else:
-                            logger.debug("[NacosRegistry] NacosAIService closed")
             except Exception:
                 logger.debug("[NacosRegistry] Failed to close NacosAIService cleanly", exc_info=True)
+
+    def get_registration_status(self) -> RegistrationStatus:
+        """Get the current registration status.
+
+        Returns:
+            RegistrationStatus: Current status of the registration task
+        """
+        with self._registration_lock:
+            return self._registration_status
+
+    async def wait_for_registration(
+        self,
+        timeout: Optional[float] = None,
+    ) -> RegistrationStatus:
+        """Wait for registration to complete, fail, or be cancelled.
+
+        Args:
+            timeout: Optional timeout in seconds. If None, waits indefinitely.
+
+        Returns:
+            RegistrationStatus: Final status of the registration
+        """
+        if self._register_task is not None:
+            # Task-based registration: wait for the task
+            try:
+                if timeout is not None:
+                    await asyncio.wait_for(self._register_task, timeout=timeout)
+                else:
+                    await self._register_task
+            except asyncio.TimeoutError:
+                logger.warning(
+                    "[NacosRegistry] Wait for registration timed out after %s seconds",
+                    timeout,
+                )
+            except (asyncio.CancelledError, Exception):
+                pass  # Task may have been cancelled or failed
+        elif self._register_thread is not None:
+            # Thread-based registration: wait for the thread (matching LocalDeployManager pattern)
+            self._register_thread.join(timeout=timeout)
+            if self._register_thread.is_alive():
+                logger.warning(
+                    "[NacosRegistry] Registration thread did not complete within timeout"
+                )
+
+        return self.get_registration_status()
+
+    async def cleanup(
+        self,
+        wait_for_completion: bool = True,
+        timeout: Optional[float] = 5.0,
+    ) -> None:
+        """Clean up registration resources and cancel ongoing registration if needed.
+
+        This method should be called during shutdown to ensure proper cleanup.
+        It will:
+        1. Signal shutdown to prevent new registration attempts
+        2. Optionally wait for the registration to complete or timeout
+        3. Cancel the asyncio task if running
+        4. Wait for background thread if running
+        5. Clean up service connections
+
+        Args:
+            wait_for_completion: If True, wait for registration to complete
+                before cancelling. If False, cancel immediately.
+            timeout: Maximum time to wait for completion (if wait_for_completion=True).
+                Default is 5 seconds.
+        """
+        logger.info("[NacosRegistry] Starting cleanup")
+        
+        # Signal shutdown first to prevent new registration attempts
+        self._shutdown_event.set()
+
+        with self._registration_lock:
+            current_status = self._registration_status
+
+        # If registration is in progress or pending, handle cancellation
+        if current_status in (RegistrationStatus.IN_PROGRESS, RegistrationStatus.PENDING):
+            if wait_for_completion and current_status == RegistrationStatus.IN_PROGRESS:
+                logger.info(
+                    "[NacosRegistry] Waiting for registration to complete (timeout=%s)",
+                    timeout,
+                )
+                try:
+                    await self.wait_for_registration(timeout=timeout)
+                    current_status = self.get_registration_status()
+                    if current_status == RegistrationStatus.COMPLETED:
+                        logger.info("[NacosRegistry] Registration completed before shutdown")
+                    elif current_status == RegistrationStatus.FAILED:
+                        logger.warning("[NacosRegistry] Registration failed before shutdown")
+                    elif current_status == RegistrationStatus.CANCELLED:
+                        logger.info("[NacosRegistry] Registration was cancelled")
+                except Exception as e:
+                    logger.warning(
+                        "[NacosRegistry] Error waiting for registration: %s",
+                        e,
+                        exc_info=True,
+                    )
+            else:
+                if current_status == RegistrationStatus.PENDING:
+                    logger.info("[NacosRegistry] Registration was pending, marking as cancelled")
+                    with self._registration_lock:
+                        self._registration_status = RegistrationStatus.CANCELLED
+                else:
+                    logger.info("[NacosRegistry] Skipping wait, cancelling immediately")
+
+            # Cancel the task if it's still running (matching env_service pattern)
+            if self._register_task is not None and not self._register_task.done():
+                logger.info("[NacosRegistry] Cancelling registration task")
+                self._register_task.cancel()
+                try:
+                    await self._register_task
+                except asyncio.CancelledError:
+                    pass
+                except Exception as e:
+                    logger.debug(
+                        "[NacosRegistry] Error cancelling task: %s",
+                        e,
+                        exc_info=True,
+                    )
+
+            # Wait for thread if it's still running (matching LocalDeployManager pattern)
+            if self._register_thread is not None and self._register_thread.is_alive():
+                logger.info("[NacosRegistry] Waiting for registration thread to finish")
+                thread_timeout = timeout if (wait_for_completion and current_status == RegistrationStatus.IN_PROGRESS) else 1.0
+                self._register_thread.join(timeout=thread_timeout)
+                if self._register_thread.is_alive():
+                    logger.warning(
+                        "[NacosRegistry] Registration thread did not terminate, potential resource leak"
+                    )
+
+        # Always clean up service connection, regardless of status
+        if self._nacos_ai_service is not None:
+            try:
+                close_coro = getattr(
+                    self._nacos_ai_service, "close", None
+                ) or getattr(self._nacos_ai_service, "shutdown", None)
+                if close_coro is not None and callable(close_coro):
+                    result = close_coro()
+                    if asyncio.iscoroutine(result):
+                        await result
+            except Exception:
+                logger.debug(
+                    "[NacosRegistry] Error closing service during cleanup",
+                    exc_info=True,
+                )
+            finally:
+                self._nacos_ai_service = None
+
+        logger.info("[NacosRegistry] Cleanup completed")
