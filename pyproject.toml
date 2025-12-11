@@ -27,6 +27,7 @@ dependencies = [
     "jsonref",
     "asgiref",
     "click>=8.0.0",
+    "rich>=13.0.0",
 ]
 
 [tool.setuptools]
