@@ -66,9 +66,16 @@ class TestA2ARegistry:
         assert registry.registry_name() == "test"
 
         # Create a minimal AgentCard for testing
+        from a2a.types import AgentCapabilities
         agent_card = AgentCard(
             name="test_agent",
             version="1.0.0",
+            description="Test agent description",
+            url="http://localhost:8080",
+            capabilities=AgentCapabilities(),
+            defaultInputModes=["text"],
+            defaultOutputModes=["text"],
+            skills=[],
         )
         deploy_props = DeployProperties(host="localhost", port=8080)
         transport_props = [A2aTransportsProperties(transport_type="JSONRPC")]
@@ -340,10 +347,10 @@ class TestCreateRegistryFromEnv:
                 },
                 clear=False,
             ):
-                # Mock ImportError when importing nacos SDK
+                # Mock _create_nacos_registry_from_settings to return None (simulating SDK not available)
                 with patch(
-                    "agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry.__import__",
-                    side_effect=ImportError("No module named 'v2.nacos'"),
+                    "agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry._create_nacos_registry_from_settings",
+                    return_value=None,
                 ):
                     result = create_registry_from_env()
                     # Should return None when SDK is not available
@@ -353,56 +360,69 @@ class TestCreateRegistryFromEnv:
 
     def test_nacos_registry_with_sdk_mock(self):
         """Test Nacos registry creation with mocked SDK."""
-        import agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry as registry_module
-        registry_module._registry_settings = None
+        import sys
+        from agentscope_runtime.engine.deployers.adapter.a2a import a2a_registry
+        original_settings = a2a_registry._registry_settings
+        a2a_registry._registry_settings = None
 
-        with patch.dict(
-            os.environ,
-            {
-                "A2A_REGISTRY_ENABLED": "true",
-                "A2A_REGISTRY_TYPE": "nacos",
-                "NACOS_SERVER_ADDR": "test.nacos.com:8848",
-            },
-            clear=False,
-        ):
-            # Mock the nacos SDK imports and classes
-            mock_client_config = MagicMock()
-            mock_builder = MagicMock()
-            mock_builder.server_address.return_value = mock_builder
-            mock_builder.username.return_value = mock_builder
-            mock_builder.password.return_value = mock_builder
-            mock_builder.build.return_value = mock_client_config
-
-            mock_nacos_registry = MagicMock()
-            mock_nacos_registry_instance = MagicMock()
-            mock_nacos_registry.return_value = mock_nacos_registry_instance
-
-            with patch(
-                "agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry.ClientConfigBuilder",
-                return_value=mock_builder,
-            ), patch(
-                "agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry.NacosRegistry",
-                mock_nacos_registry,
+        try:
+            with patch.dict(
+                os.environ,
+                {
+                    "A2A_REGISTRY_ENABLED": "true",
+                    "A2A_REGISTRY_TYPE": "nacos",
+                    "NACOS_SERVER_ADDR": "test.nacos.com:8848",
+                },
+                clear=False,
             ):
-                # Import the module to trigger the lazy import
-                from agentscope_runtime.engine.deployers.adapter.a2a import nacos_a2a_registry
+                # Mock the nacos SDK imports and classes
+                mock_client_config = MagicMock()
+                mock_builder = MagicMock()
+                mock_builder.server_address.return_value = mock_builder
+                mock_builder.username.return_value = mock_builder
+                mock_builder.password.return_value = mock_builder
+                mock_builder.build.return_value = mock_client_config
 
-                with patch.object(
-                    nacos_a2a_registry,
-                    "ClientConfigBuilder",
-                    return_value=mock_builder,
-                ), patch.object(
-                    nacos_a2a_registry,
-                    "NacosRegistry",
-                    mock_nacos_registry,
-                ):
-                    result = create_registry_from_env()
-                    # Should return a registry instance when SDK is available
-                    # Note: This test may need adjustment based on actual implementation
-                    # For now, we just verify it doesn't crash
+                # Mock NacosRegistry class
+                mock_nacos_registry_instance = MagicMock()
+                mock_nacos_registry_instance.registry_name.return_value = "nacos"
+                mock_nacos_registry_class = MagicMock(return_value=mock_nacos_registry_instance)
+
+                # Create a mock v2.nacos module
+                mock_v2_nacos = MagicMock()
+                mock_v2_nacos.ClientConfig = mock_client_config
+                mock_v2_nacos.ClientConfigBuilder = MagicMock(return_value=mock_builder)
+
+                # Mock v2.nacos module in sys.modules
+                original_v2_nacos = sys.modules.get("v2.nacos")
+                sys.modules["v2.nacos"] = mock_v2_nacos
+                sys.modules["v2"] = MagicMock()
+                sys.modules["v2"].nacos = mock_v2_nacos
+
+                try:
+                    with patch(
+                        "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry.NacosRegistry",
+                        mock_nacos_registry_class,
+                    ):
+                        result = create_registry_from_env()
+                        # Should return a registry instance when SDK is available
+                        assert result is not None
+                        assert result.registry_name() == "nacos"
+                finally:
+                    # Restore original module
+                    if original_v2_nacos is not None:
+                        sys.modules["v2.nacos"] = original_v2_nacos
+                    elif "v2.nacos" in sys.modules:
+                        del sys.modules["v2.nacos"]
+                    if "v2" in sys.modules and not hasattr(sys.modules["v2"], "nacos"):
+                        # Only delete if we created it
+                        pass
+        finally:
+            a2a_registry._registry_settings = original_settings
 
     def test_multiple_registry_types(self):
         """Test with multiple registry types (comma-separated)."""
+        import sys
         from agentscope_runtime.engine.deployers.adapter.a2a import a2a_registry
         original_settings = a2a_registry._registry_settings
         a2a_registry._registry_settings = None
@@ -416,10 +436,10 @@ class TestCreateRegistryFromEnv:
                 },
                 clear=False,
             ):
-                # Mock ImportError for nacos SDK
+                # Mock _create_nacos_registry_from_settings to return None (simulating SDK not available)
                 with patch(
-                    "agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry.__import__",
-                    side_effect=ImportError("No module named 'v2.nacos'"),
+                    "agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry._create_nacos_registry_from_settings",
+                    return_value=None,
                 ):
                     result = create_registry_from_env()
                     # Should return None when no valid registries can be created
@@ -429,6 +449,7 @@ class TestCreateRegistryFromEnv:
 
     def test_single_registry_returns_instance(self):
         """Test that single registry returns instance, not list."""
+        import sys
         from agentscope_runtime.engine.deployers.adapter.a2a import a2a_registry
         original_settings = a2a_registry._registry_settings
         a2a_registry._registry_settings = None
@@ -444,9 +465,10 @@ class TestCreateRegistryFromEnv:
                 },
                 clear=False,
             ):
+                # Mock _create_nacos_registry_from_settings to return None (simulating SDK not available)
                 with patch(
-                    "agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry.__import__",
-                    side_effect=ImportError("No module named 'v2.nacos'"),
+                    "agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry._create_nacos_registry_from_settings",
+                    return_value=None,
                 ):
                     result = create_registry_from_env()
                     assert result is None

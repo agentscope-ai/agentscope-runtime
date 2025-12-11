@@ -57,9 +57,16 @@ def mock_nacos_sdk():
 @pytest.fixture
 def agent_card():
     """Create a test AgentCard."""
+    from a2a.types import AgentCapabilities
     return AgentCard(
         name="test_agent",
         version="1.0.0",
+        description="Test agent description",
+        url="http://localhost:8080",
+        capabilities=AgentCapabilities(),
+        defaultInputModes=["text"],
+        defaultOutputModes=["text"],
+        skills=[],
     )
 
 
@@ -375,7 +382,7 @@ class TestNacosRegistry:
             registry = NacosRegistry()
             
             with patch(
-                "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry.get_registry_settings"
+                "agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry.get_registry_settings"
             ) as mock_get_settings:
                 mock_settings = MagicMock()
                 mock_settings.NACOS_SERVER_ADDR = "test.nacos.com:8848"
@@ -401,9 +408,14 @@ class TestNacosRegistry:
             # Set status to IN_PROGRESS
             with registry._registration_lock:
                 registry._registration_status = RegistrationStatus.IN_PROGRESS
+                original_task = registry._register_task
+                original_thread = registry._register_thread
             
             # Try to register again
             registry.register(agent_card, deploy_properties, transport_properties)
             
-            # Should not create a new task
-            # (The exact behavior depends on implementation, but should not crash)
+            # Should not create a new task or thread when already in progress
+            with registry._registration_lock:
+                assert registry._registration_status == RegistrationStatus.IN_PROGRESS
+                assert registry._register_task is original_task
+                assert registry._register_thread is original_thread

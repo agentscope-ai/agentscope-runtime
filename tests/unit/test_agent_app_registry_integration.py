@@ -62,27 +62,35 @@ class TestAgentAppRegistryIntegration:
 
     def test_agent_app_with_registry_from_env(self):
         """Test AgentApp initialization with registry from environment."""
-        mock_registry = MockRegistry("test")
-        
-        with patch(
-            "agentscope_runtime.engine.app.agent_app.create_registry_from_env",
-            return_value=mock_registry,
-        ):
-            app = AgentApp(
-                app_name="test_agent",
-                app_description="Test agent",
-            )
-            # Verify registry was passed to adapter
-            # The adapter should have the registry
-            a2a_adapter = None
-            for adapter in app.protocol_adapters:
-                if hasattr(adapter, "_registries"):
-                    a2a_adapter = adapter
-                    break
+        from agentscope_runtime.engine.deployers.adapter.a2a import a2a_registry
+        original_settings = a2a_registry._registry_settings
+        a2a_registry._registry_settings = None
+
+        try:
+            mock_registry = MockRegistry("test")
             
-            if a2a_adapter:
+            # Patch where AgentApp actually calls create_registry_from_env
+            with patch(
+                "agentscope_runtime.engine.app.agent_app.create_registry_from_env",
+                return_value=mock_registry,
+            ):
+                app = AgentApp(
+                    app_name="test_agent",
+                    app_description="Test agent",
+                )
+                # Verify registry was passed to adapter
+                # The adapter should have the registry
+                a2a_adapter = None
+                for adapter in app.protocol_adapters:
+                    if hasattr(adapter, "_registries"):
+                        a2a_adapter = adapter
+                        break
+                
+                assert a2a_adapter is not None
                 assert len(a2a_adapter._registries) > 0
                 assert a2a_adapter._registries[0] is mock_registry
+        finally:
+            a2a_registry._registry_settings = original_settings
 
     def test_agent_app_with_registry_from_a2a_config(self):
         """Test AgentApp initialization with registry from a2a_config."""
@@ -171,33 +179,41 @@ class TestAgentAppRegistryIntegration:
 
     def test_registry_priority_a2a_config_over_env(self):
         """Test that registry from a2a_config takes priority over environment."""
-        mock_registry_env = MockRegistry("env")
-        mock_registry_config = MockRegistry("config")
-        
-        with patch(
-            "agentscope_runtime.engine.app.agent_app.create_registry_from_env",
-            return_value=mock_registry_env,
-        ):
-            app = AgentApp(
-                app_name="test_agent",
-                app_description="Test agent",
-                a2a_config={
-                    "registry": mock_registry_config,
-                },
-            )
+        from agentscope_runtime.engine.deployers.adapter.a2a import a2a_registry
+        original_settings = a2a_registry._registry_settings
+        a2a_registry._registry_settings = None
+
+        try:
+            mock_registry_env = MockRegistry("env")
+            mock_registry_config = MockRegistry("config")
             
-            # Verify config registry is used, not env registry
-            a2a_adapter = None
-            for adapter in app.protocol_adapters:
-                if hasattr(adapter, "_registries"):
-                    a2a_adapter = adapter
-                    break
-            
-            if a2a_adapter and a2a_adapter._registries:
+            with patch(
+                "agentscope_runtime.engine.deployers.adapter.a2a.a2a_protocol_adapter.create_registry_from_env",
+                return_value=mock_registry_env,
+            ):
+                app = AgentApp(
+                    app_name="test_agent",
+                    app_description="Test agent",
+                    a2a_config={
+                        "registry": mock_registry_config,
+                    },
+                )
+                
+                # Verify config registry is used, not env registry
+                a2a_adapter = None
+                for adapter in app.protocol_adapters:
+                    if hasattr(adapter, "_registries"):
+                        a2a_adapter = adapter
+                        break
+                
+                assert a2a_adapter is not None
+                assert len(a2a_adapter._registries) > 0
                 # Config registry should be used
                 assert mock_registry_config in a2a_adapter._registries
                 # Env registry should not be used when config provides one
-                # (This depends on extract_config_params implementation)
+                assert mock_registry_env not in a2a_adapter._registries
+        finally:
+            a2a_registry._registry_settings = original_settings
 
     def test_agent_app_with_disabled_registry_env(self):
         """Test AgentApp when registry is disabled via environment."""
