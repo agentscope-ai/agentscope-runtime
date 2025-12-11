@@ -1,5 +1,5 @@
 # AgentRun Deployment Configuration Example
-# Usage: as-runtime deploy agentrun /path/to/source --config agentrun_deploy_config.yaml
+# Usage: agentscope deploy agentrun /path/to/source --config agentrun_deploy_config.yaml
 
 # Deployment name
 name: "friday-agent"

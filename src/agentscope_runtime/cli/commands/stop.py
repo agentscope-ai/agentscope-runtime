@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""as-runtime stop command - Stop a deployment."""
+"""agentscope stop command - Stop a deployment."""
 # pylint: disable=too-many-return-statements, too-many-branches
 # pylint: disable=no-value-for-parameter, too-many-statements, unused-argument
 
@@ -93,10 +93,10 @@ def stop(deploy_id: str, yes: bool):
     Examples:
     \b
     # Stop deployment with confirmation
-    $ as-runtime stop local_20250101_120000_abc123
+    $ agentscope stop local_20250101_120000_abc123
 
     # Skip confirmation
-    $ as-runtime stop local_20250101_120000_abc123 --yes
+    $ agentscope stop local_20250101_120000_abc123 --yes
 
     """
     try:

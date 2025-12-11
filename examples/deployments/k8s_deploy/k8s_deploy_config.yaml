@@ -1,5 +1,5 @@
 # Kubernetes Deployment Configuration Example
-# Usage: as-runtime deploy k8s /path/to/source --config k8s_deploy_config.yaml
+# Usage: agentscope deploy k8s /path/to/source --config k8s_deploy_config.yaml
 
 # Basic deployment settings
 name: "friday-agent"

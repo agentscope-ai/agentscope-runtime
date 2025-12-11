@@ -1,4 +1,4 @@
-# AgentScope Runtime CLI (`as-runtime`)
+# AgentScope Runtime CLI (`agentscope`)
 
 The unified command-line interface for managing your agent development, deployment, and runtime operations.
 
@@ -7,11 +7,11 @@ The unified command-line interface for managing your agent development, deployme
 - [Quick Start](#quick-start)
 - [Complete Example](#complete-example)
 - [Core Commands](#core-commands)
-  - [Development: `as-runtime chat`](#1-development-as-runtime-run)
-  - [Web UI: `as-runtime web`](#2-web-ui-as-runtime-web)
-  - [Deployment: `as-runtime deploy`](#3-deployment-as-runtime-deploy)
+  - [Development: `agentscope chat`](#1-development-agentscope-chat)
+  - [Web UI: `agentscope web`](#2-web-ui-agentscope-web)
+  - [Deployment: `agentscope deploy`](#3-deployment-agentscope-deploy)
   - [Deployment Management](#4-deployment-management)
-  - [Sandbox Management: `as-runtime sandbox`](#5-sandbox-management-as-runtime-sandbox)
+  - [Sandbox Management: `agentscope sandbox`](#5-sandbox-management-as-runtime-sandbox)
 - [API Reference](#api-reference)
 - [Common Workflows](#common-workflows)
 - [Troubleshooting](#troubleshooting)
@@ -27,8 +27,8 @@ pip install agentscope-runtime
 ### Verify Installation
 
 ```bash
-as-runtime --version
-as-runtime --help
+agentscope --version
+agentscope --help
 ```
 
 ## Complete Example
@@ -168,25 +168,25 @@ if __name__ == "__main__":
 ```bash
 cd my-agent-project
 export DASHSCOPE_API_KEY=sk-your-api-key
-as-runtime chat app_agent.py
+agentscope chat app_agent.py
 ```
 
 **Single query mode:**
 
 ```bash
-as-runtime chat app_agent.py --query "Hello, how are you?"
+agentscope chat app_agent.py --query "Hello, how are you?"
 ```
 
 **With custom session:**
 
 ```bash
-as-runtime chat app_agent.py --query "Hello" --session-id my-session --user-id user123
+agentscope chat app_agent.py --query "Hello" --session-id my-session --user-id user123
 ```
 
 ### Step 4: Test with Web UI
 
 ```bash
-as-runtime web app_agent.py
+agentscope web app_agent.py
 ```
 An backend service will be started at `http://127.0.0.1:8090` on default and
 a web server on `http://localhost:5173/`.
@@ -197,7 +197,7 @@ Open it in your browser.
 **Local deployment:**
 
 ```bash
-as-runtime deploy local app_agent.py --env DASHSCOPE_API_KEY=sk-your-api-key
+agentscope deploy local app_agent.py --env DASHSCOPE_API_KEY=sk-your-api-key
 ```
 
 After deployment, you'll receive:
@@ -226,28 +226,28 @@ curl -i -X POST "http://127.0.0.1:8080/process" \
   }'
 ```
 
-**Or use CLI(TODO):**
+**Or use CLI:**
 
 ```bash
-as-runtime chat local_20250101_120000_abc123 --query "Hello"
+agentscope chat local_20250101_120000_abc123 --query "Hello"
 ```
 
 ### Step 6: Stop Deployment
 
 ```bash
-as-runtime stop local_20250101_120000_abc123
+agentscope stop local_20250101_120000_abc123
 ```
 
 ## Core Commands
 
-### 1. Development: `as-runtime chat`
+### 1. Development: `agentscope chat`
 
 Run your agent interactively or execute single queries for testing during development.
 
 #### Command Syntax
 
 ```bash
-as-runtime chat SOURCE [OPTIONS]
+agentscope chat SOURCE [OPTIONS]
 ```
 
 #### Arguments
@@ -272,46 +272,46 @@ as-runtime chat SOURCE [OPTIONS]
 
 ```bash
 # Start interactive session
-as-runtime chat app_agent.py
+agentscope chat app_agent.py
 
 # Load from project directory
-as-runtime chat ./my-agent-project
+agentscope chat ./my-agent-project
 
 # Use existing deployment
-as-runtime chat local_20250101_120000_abc123
+agentscope chat local_20250101_120000_abc123
 ```
 
 **Single query mode:**
 
 ```bash
 # Execute one query and exit
-as-runtime chat app_agent.py --query "What is the weather today?"
+agentscope chat app_agent.py --query "What is the weather today?"
 
 # With custom session and user
-as-runtime chat app_agent.py --query "Hello" --session-id my-session --user-id user123
+agentscope chat app_agent.py --query "Hello" --session-id my-session --user-id user123
 
 # Verbose mode (show reasoning and logs)
-as-runtime chat app_agent.py --query "Hello" --verbose
+agentscope chat app_agent.py --query "Hello" --verbose
 ```
 
 **Project directory with custom entrypoint:**
 
 ```bash
-as-runtime chat ./my-project --entrypoint custom_app.py
+agentscope chat ./my-project --entrypoint custom_app.py
 ```
 
 #### Agent File Requirements
 
 Your agent file **must** run the `agent_app.run()` as main method.
 
-### 2. Web UI: `as-runtime web`
+### 2. Web UI: `agentscope web`
 
 Launch your agent with a browser-based web interface for testing.
 
 #### Command Syntax
 
 ```bash
-as-runtime web SOURCE [OPTIONS]
+agentscope web SOURCE [OPTIONS]
 ```
 
 #### Arguments
@@ -332,25 +332,25 @@ as-runtime web SOURCE [OPTIONS]
 
 ```bash
 # Default host and port (127.0.0.1:8090)
-as-runtime web app_agent.py
+agentscope web app_agent.py
 
 # Custom host and port
-as-runtime web app_agent.py --host 0.0.0.0 --port 8000
+agentscope web app_agent.py --host 0.0.0.0 --port 8000
 
 # From project directory
-as-runtime web ./my-agent-project
+agentscope web ./my-agent-project
 ```
 
 **Note:** First launch may take longer as web UI dependencies are installed via npm.
 
-### 3. Deployment: `as-runtime deploy`
+### 3. Deployment: `agentscope deploy`
 
 Deploy agents to various platforms for production use.
 
 #### Command Syntax
 
 ```bash
-as-runtime deploy PLATFORM SOURCE [OPTIONS]
+agentscope deploy PLATFORM SOURCE [OPTIONS]
 ```
 
 #### Platforms
@@ -377,7 +377,7 @@ Deploy locally in detached mode. The agent runs as a background process and expo
 ##### Command Syntax
 
 ```bash
-as-runtime deploy local SOURCE [OPTIONS]
+agentscope deploy local SOURCE [OPTIONS]
 ```
 
 ##### Platform-Specific Options
@@ -391,16 +391,16 @@ as-runtime deploy local SOURCE [OPTIONS]
 
 ```bash
 # Basic deployment
-as-runtime deploy local app_agent.py --env DASHSCOPE_API_KEY=sk-xxx
+agentscope deploy local app_agent.py --env DASHSCOPE_API_KEY=sk-xxx
 
 # Custom host and port
-as-runtime deploy local app_agent.py --host 0.0.0.0 --port 8080 --env DASHSCOPE_API_KEY=sk-xxx
+agentscope deploy local app_agent.py --host 0.0.0.0 --port 8080 --env DASHSCOPE_API_KEY=sk-xxx
 
 # Using environment file
-as-runtime deploy local app_agent.py --env-file .env
+agentscope deploy local app_agent.py --env-file .env
 
 # Using config file
-as-runtime deploy local app_agent.py --config deploy-config.yaml
+agentscope deploy local app_agent.py --config deploy-config.yaml
 ```
 
 ##### Output
@@ -436,7 +436,7 @@ curl -i -X POST "http://127.0.0.1:8080/process" \
 **Using CLI（TODO）:**
 
 ```bash
-as-runtime chat local_20250101_120000_abc123 --query "Hello"
+agentscope chat local_20250101_120000_abc123 --query "Hello"
 ```
 
 #### 3.2. ModelStudio Deployment
@@ -446,7 +446,7 @@ Deploy to Alibaba Cloud ModelStudio.
 ##### Command Syntax
 
 ```bash
-as-runtime deploy modelstudio SOURCE [OPTIONS]
+agentscope deploy modelstudio SOURCE [OPTIONS]
 ```
 
 ##### Platform-Specific Options
@@ -466,10 +466,10 @@ as-runtime deploy modelstudio SOURCE [OPTIONS]
 ```bash
 # Basic deployment
 export USE_LOCAL_RUNTIME=True
-as-runtime deploy modelstudio app_agent.py --name my-agent --env DASHSCOPE_API_KEY=sk-xxx
+agentscope deploy modelstudio app_agent.py --name my-agent --env DASHSCOPE_API_KEY=sk-xxx
 
 # Build without uploading
-as-runtime deploy modelstudio app_agent.py --skip-upload
+agentscope deploy modelstudio app_agent.py --skip-upload
 ```
 
 **Note:** `USE_LOCAL_RUNTIME=True` uses local agentscope runtime instead of PyPI version.
@@ -481,7 +481,7 @@ Deploy to Alibaba Cloud AgentRun.
 ##### Command Syntax
 
 ```bash
-as-runtime deploy agentrun SOURCE [OPTIONS]
+agentscope deploy agentrun SOURCE [OPTIONS]
 ```
 
 ##### Platform-Specific Options
@@ -504,10 +504,10 @@ as-runtime deploy agentrun SOURCE [OPTIONS]
 
 ```bash
 # Basic deployment
-as-runtime deploy agentrun app_agent.py --name my-agent
+agentscope deploy agentrun app_agent.py --name my-agent
 
 # Custom region and resources
-as-runtime deploy agentrun app_agent.py \
+agentscope deploy agentrun app_agent.py \
   --region cn-beijing \
   --cpu 4.0 \
   --memory 4096 \
@@ -521,7 +521,7 @@ Deploy to Kubernetes/ACK cluster.
 ##### Command Syntax
 
 ```bash
-as-runtime deploy k8s SOURCE [OPTIONS]
+agentscope deploy k8s SOURCE [OPTIONS]
 ```
 
 ##### Platform-Specific Options
@@ -559,7 +559,7 @@ as-runtime deploy k8s SOURCE [OPTIONS]
 ```bash
 # Basic deployment
 export USE_LOCAL_RUNTIME=True
-as-runtime deploy k8s app_agent.py \
+agentscope deploy k8s app_agent.py \
   --image-name agent_app \
   --env DASHSCOPE_API_KEY=sk-xxx \
   --image-tag linux-amd64-4 \
@@ -567,7 +567,7 @@ as-runtime deploy k8s app_agent.py \
   --push
 
 # Custom namespace and resources
-as-runtime deploy k8s app_agent.py \
+agentscope deploy k8s app_agent.py \
   --namespace production \
   --replicas 3 \
   --cpu-limit 2 \
@@ -586,7 +586,7 @@ List all deployments and their status.
 ##### Command Syntax
 
 ```bash
-as-runtime list [OPTIONS]
+agentscope list [OPTIONS]
 ```
 
 ##### Options
@@ -601,16 +601,16 @@ as-runtime list [OPTIONS]
 
 ```bash
 # List all deployments
-as-runtime list
+agentscope list
 
 # Filter by status
-as-runtime list --status running
+agentscope list --status running
 
 # Filter by platform
-as-runtime list --platform k8s
+agentscope list --platform k8s
 
 # JSON output
-as-runtime list --format json
+agentscope list --format json
 ```
 
 #### 4.2. Check Deployment Status
@@ -620,7 +620,7 @@ Show detailed information about a specific deployment.
 ##### Command Syntax
 
 ```bash
-as-runtime status DEPLOY_ID [OPTIONS]
+agentscope status DEPLOY_ID [OPTIONS]
 ```
 
 ##### Arguments
@@ -639,10 +639,10 @@ as-runtime status DEPLOY_ID [OPTIONS]
 
 ```bash
 # Show detailed deployment info
-as-runtime status local_20250101_120000_abc123
+agentscope status local_20250101_120000_abc123
 
 # JSON format
-as-runtime status local_20250101_120000_abc123 --format json
+agentscope status local_20250101_120000_abc123 --format json
 ```
 
 #### 4.3. Stop Deployment
@@ -652,7 +652,7 @@ Stop a running deployment.
 ##### Command Syntax
 
 ```bash
-as-runtime stop DEPLOY_ID [OPTIONS]
+agentscope stop DEPLOY_ID [OPTIONS]
 ```
 
 ##### Arguments
@@ -671,10 +671,10 @@ as-runtime stop DEPLOY_ID [OPTIONS]
 
 ```bash
 # Stop with confirmation prompt
-as-runtime stop local_20250101_120000_abc123
+agentscope stop local_20250101_120000_abc123
 
 # Skip confirmation
-as-runtime stop local_20250101_120000_abc123 --yes
+agentscope stop local_20250101_120000_abc123 --yes
 ```
 
 **Note:** Currently updates local state only. Platform-specific cleanup may be needed separately.
@@ -686,7 +686,7 @@ Interact with a deployed agent using CLI.
 ##### Command Syntax
 
 ```bash
-as-runtime invoke DEPLOY_ID [OPTIONS]
+agentscope invoke DEPLOY_ID [OPTIONS]
 ```
 
 ##### Arguments
@@ -869,12 +869,12 @@ rm -rf .agentscope_runtime/builds/*
 
 **Note:** The CLI uses content-aware caching, so deleting builds will cause them to be regenerated on next deployment if needed.
 
-### Global State Directory: `~/.as-runtime`
+### Global State Directory: `~/.agentscope-runtime`
 
 Deployment metadata and state are stored in your home directory:
 
 ```
-~/.as-runtime/
+~/.agentscope-runtime/
 ├── deployments.json              # Global deployment registry
 └── deployments.backup.YYYYMMDD.json  # Daily backups (keeps last 30 days)
 ```

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""as-runtime web command - Launch agent with web UI."""
+"""agentscope web command - Launch agent with web UI."""
 # pylint: disable=no-value-for-parameter, unused-argument, unnecessary-pass
 
 import atexit
@@ -105,16 +105,16 @@ def web(source: str, host: str, port: int, entrypoint: str = None):
     Examples:
     \b
     # Launch with default settings
-    $ as-runtime web agent.py
+    $ agentscope web agent.py
 
     # Custom host and port
-    $ as-runtime web agent.py --host 0.0.0.0 --port 8000
+    $ agentscope web agent.py --host 0.0.0.0 --port 8000
 
     # Use deployment
-    $ as-runtime web local_20250101_120000_abc123
+    $ agentscope web local_20250101_120000_abc123
 
     # Use custom entrypoint for directory source
-    $ as-runtime web ./my-project --entrypoint custom_app.py
+    $ agentscope web ./my-project --entrypoint custom_app.py
     """
     global _child_processes, _parent_process
 

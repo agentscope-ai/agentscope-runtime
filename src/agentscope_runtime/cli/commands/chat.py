@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""as-runtime chat command - Interactive and single-shot agent execution."""
+"""agentscope chat command - Interactive and single-shot agent execution."""
 # pylint: disable=no-value-for-parameter, too-many-branches, protected-access
 # pylint: disable=too-many-statements, too-many-nested-blocks
 # pylint: disable=too-many-nested-blocks, unused-argument
@@ -93,19 +93,19 @@ def chat(
     Examples:
     \b
     # Interactive mode
-    $ as-runtime chat agent.py
+    $ agentscope chat agent.py
 
     # Single query
-    $ as-runtime chat agent.py --query "Hello, how are you?"
+    $ agentscope chat agent.py --query "Hello, how are you?"
 
     # Use deployment
-    $ as-runtime chat local_20250101_120000_abc123 --session-id my-session
+    $ agentscope chat local_20250101_120000_abc123 --session-id my-session
 
     # Verbose mode (show reasoning and logs)
-    $ as-runtime chat agent.py --query "Hello" --verbose
+    $ agentscope chat agent.py --query "Hello" --verbose
 
     # Use custom entrypoint for directory source
-    $ as-runtime chat ./my-project --entrypoint custom_app.py
+    $ agentscope chat ./my-project --entrypoint custom_app.py
     """
     # Configure logging and tracing based on verbose flag
     if not verbose:

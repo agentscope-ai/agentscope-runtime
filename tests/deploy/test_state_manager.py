@@ -78,7 +78,7 @@ class TestDeploymentStateManagerBasic:
         import os
 
         original_home = os.path.expanduser("~")
-        expected_default_dir = Path(original_home) / ".as-runtime"
+        expected_default_dir = Path(original_home) / ".agentscope-runtime"
 
         # Create manager with default dir to verify path (will create
         # directory)
@@ -93,7 +93,7 @@ class TestDeploymentStateManagerBasic:
         # This ensures tests don't leave artifacts in the real home directory
         if manager_default.state_dir.exists():
             try:
-                # Check if directory is empty (only .as-runtime dir itself,
+                # Check if directory is empty (only .agentscope dir itself,
                 # no files)
                 contents = list(manager_default.state_dir.iterdir())
                 if not contents:

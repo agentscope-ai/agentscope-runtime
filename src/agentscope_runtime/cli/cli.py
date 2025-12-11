@@ -27,7 +27,7 @@ if "TRACE_ENABLE_LOG" not in os.environ:
 
 
 @click.group()
-@click.version_option(version=__version__, prog_name="as-runtime")
+@click.version_option(version=__version__, prog_name="agentscope")
 @click.pass_context
 def cli(ctx):
     """

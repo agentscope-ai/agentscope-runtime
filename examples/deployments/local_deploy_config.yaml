@@ -1,5 +1,5 @@
 # Local Deployment Configuration Example
-# Usage: as-runtime deploy local /path/to/source --config local_deploy_config.yaml
+# Usage: agentscope deploy local /path/to/source --config local_deploy_config.yaml
 
 # Server settings
 host: "127.0.0.1"

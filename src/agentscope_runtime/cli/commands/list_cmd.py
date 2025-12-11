@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""as-runtime list command - List all deployments."""
+"""agentscope list command - List all deployments."""
 # pylint: disable=no-value-for-parameter, too-many-branches, protected-access
 
 import sys
@@ -47,16 +47,16 @@ def list_deployments(
     Examples:
     \b
     # List all deployments
-    $ as-runtime list
+    $ agentscope list
 
     # Filter by status
-    $ as-runtime list --status running
+    $ agentscope list --status running
 
     # Filter by platform
-    $ as-runtime list --platform k8s
+    $ agentscope list --platform k8s
 
     # JSON output
-    $ as-runtime list --output-format json
+    $ agentscope list --output-format json
     """
     try:
         # Initialize state manager

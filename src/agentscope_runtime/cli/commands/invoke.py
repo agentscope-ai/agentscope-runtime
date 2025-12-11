@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""as-runtime invoke command - Invoke a deployed agent."""
+"""agentscope invoke command - Invoke a deployed agent."""
 # pylint: disable=no-value-for-parameter
 
 import click
@@ -31,15 +31,15 @@ def invoke(deploy_id: str, query: str, session_id: str, user_id: str):
     Invoke a deployed agent (alias for 'run' with deployment ID).
 
     This is a convenience command that is equivalent to:
-    $ as-runtime chat <deploy_id> [options]
+    $ agentscope chat <deploy_id> [options]
 
     Examples:
     \b
     # Interactive mode
-    $ as-runtime invoke local_20250101_120000_abc123
+    $ agentscope invoke local_20250101_120000_abc123
 
     # Single query
-    $ as-runtime invoke local_20250101_120000_abc123 --query "Hello"
+    $ agentscope invoke local_20250101_120000_abc123 --query "Hello"
     """
     echo_info(f"Invoking deployment: {deploy_id}")
 

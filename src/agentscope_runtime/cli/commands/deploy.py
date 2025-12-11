@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""as-runtime deploy command - Deploy agents to various platforms."""
+"""agentscope deploy command - Deploy agents to various platforms."""
 # pylint: disable=too-many-statements, too-many-branches
 
 import asyncio
@@ -248,7 +248,7 @@ def deploy():
     - k8s: Kubernetes/ACK
     - local: Local deployment (detached mode)
 
-    Use 'as-runtime deploy <platform> --help' for platform-specific options.
+    Use 'agentscope deploy <platform> --help' for platform-specific options.
     """
 
 
@@ -370,7 +370,7 @@ def local(
         echo_success("Deployment successful!")
         echo_info(f"Deployment ID: {deploy_id}")
         echo_info(f"URL: {url}")
-        echo_info(f"Use 'as-runtime stop {deploy_id}' to stop the deployment")
+        echo_info(f"Use 'agentscope stop {deploy_id}' to stop the deployment")
 
     except Exception as e:
         echo_error(f"Deployment failed: {e}")

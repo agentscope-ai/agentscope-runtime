@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""as-runtime sandbox command - Sandbox management commands."""
+"""agentscope sandbox command - Sandbox management commands."""
 
 import sys
 
@@ -34,8 +34,8 @@ def mcp(args):
 
     Examples:
     \b
-    $ as-runtime sandbox mcp
-    $ as-runtime sandbox mcp --help
+    $ agentscope sandbox mcp
+    $ agentscope sandbox mcp --help
     """
     try:
         from agentscope_runtime.sandbox.mcp_server import main as mcp_main
@@ -66,8 +66,8 @@ def server(args):
 
     Examples:
     \b
-    $ as-runtime sandbox server
-    $ as-runtime sandbox server --help
+    $ agentscope sandbox server
+    $ agentscope sandbox server --help
     """
     try:
         from agentscope_runtime.sandbox.manager.server.app import (
@@ -100,8 +100,8 @@ def build(args):
 
     Examples:
     \b
-    $ as-runtime sandbox build
-    $ as-runtime sandbox build --help
+    $ agentscope sandbox build
+    $ agentscope sandbox build --help
     """
     try:
         from agentscope_runtime.sandbox.build import main as builder_main

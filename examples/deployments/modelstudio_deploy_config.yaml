@@ -1,5 +1,5 @@
 # ModelStudio Deployment Configuration Example
-# Usage: as-runtime deploy modelstudio /path/to/source --config modelstudio_deploy_config.yaml
+# Usage: agentscope deploy modelstudio /path/to/source --config modelstudio_deploy_config.yaml
 
 # Deployment name
 name: "friday-agent"

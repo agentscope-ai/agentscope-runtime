@@ -1,4 +1,4 @@
-# AgentScope Runtime CLI (`as-runtime`)
+# AgentScope Runtime CLI (`agentscope`)
 
 用于管理智能体开发、部署和运行时操作的统一命令行接口。
 
@@ -7,11 +7,11 @@
 - [快速开始](#快速开始)
 - [完整示例](#完整示例)
 - [核心命令](#核心命令)
-  - [开发：`as-runtime chat`](#1-开发-as-runtime-run)
-  - [Web UI：`as-runtime web`](#2-web-ui-as-runtime-web)
-  - [部署：`as-runtime deploy`](#3-部署-as-runtime-deploy)
+  - [开发：`agentscope chat`](#1-开发agentscope-chat)
+  - [Web UI：`agentscope web`](#2-web-uiagentscope-web)
+  - [部署：`agentscope deploy`](#3-部署agentscope-deploy)
   - [部署管理](#4-部署管理)
-  - [沙箱管理：`as-runtime sandbox`](#5-沙箱管理-as-runtime-sandbox)
+  - [沙箱管理：`agentscope sandbox`](#5-沙箱管理as-runtime-sandbox)
 - [API 参考](#api-参考)
 - [常用工作流](#常用工作流)
 - [故障排除](#故障排除)
@@ -27,8 +27,8 @@ pip install agentscope-runtime
 ### 验证安装
 
 ```bash
-as-runtime --version
-as-runtime --help
+agentscope --version
+agentscope --help
 ```
 
 ## 完整示例
@@ -168,25 +168,25 @@ if __name__ == "__main__":
 ```bash
 cd my-agent-project
 export DASHSCOPE_API_KEY=sk-your-api-key
-as-runtime chat app_agent.py
+agentscope chat app_agent.py
 ```
 
 **单次查询模式：**
 
 ```bash
-as-runtime chat app_agent.py --query "Hello, how are you?"
+agentscope chat app_agent.py --query "Hello, how are you?"
 ```
 
 **使用自定义会话：**
 
 ```bash
-as-runtime chat app_agent.py --query "Hello" --session-id my-session --user-id user123
+agentscope chat app_agent.py --query "Hello" --session-id my-session --user-id user123
 ```
 
 ### 步骤 4：使用 Web UI 测试
 
 ```bash
-as-runtime web app_agent.py
+agentscope web app_agent.py
 ```
 默认情况下，后端服务将在 `http://127.0.0.1:8090` 启动，Web 服务器在 `http://localhost:5173/` 启动。
 在浏览器中打开它。
@@ -196,7 +196,7 @@ as-runtime web app_agent.py
 **本地部署：**
 
 ```bash
-as-runtime deploy local app_agent.py --env DASHSCOPE_API_KEY=sk-your-api-key
+agentscope deploy local app_agent.py --env DASHSCOPE_API_KEY=sk-your-api-key
 ```
 
 部署成功后，您将收到：
@@ -225,28 +225,28 @@ curl -i -X POST "http://127.0.0.1:8080/process" \
   }'
 ```
 
-**或使用 CLI（待实现）：**
+**或使用 CLI：**
 
 ```bash
-as-runtime chat local_20250101_120000_abc123 --query "Hello"
+agentscope chat local_20250101_120000_abc123 --query "Hello"
 ```
 
 ### 步骤 6：停止部署
 
 ```bash
-as-runtime stop local_20250101_120000_abc123
+agentscope stop local_20250101_120000_abc123
 ```
 
 ## 核心命令
 
-### 1. 开发：`as-runtime chat`
+### 1. 开发：`agentscope chat`
 
 在开发过程中以交互方式运行智能体或执行单次查询进行测试。
 
 #### 命令语法
 
 ```bash
-as-runtime chat SOURCE [OPTIONS]
+agentscope chat SOURCE [OPTIONS]
 ```
 
 #### 参数
@@ -271,46 +271,46 @@ as-runtime chat SOURCE [OPTIONS]
 
 ```bash
 # 启动交互式会话
-as-runtime chat app_agent.py
+agentscope chat app_agent.py
 
 # 从项目目录加载
-as-runtime chat ./my-agent-project
+agentscope chat ./my-agent-project
 
 # 使用现有部署
-as-runtime chat local_20250101_120000_abc123
+agentscope chat local_20250101_120000_abc123
 ```
 
 **单次查询模式：**
 
 ```bash
 # 执行一次查询后退出
-as-runtime chat app_agent.py --query "What is the weather today?"
+agentscope chat app_agent.py --query "What is the weather today?"
 
 # 使用自定义会话和用户
-as-runtime chat app_agent.py --query "Hello" --session-id my-session --user-id user123
+agentscope chat app_agent.py --query "Hello" --session-id my-session --user-id user123
 
 # 详细模式（显示推理过程和日志）
-as-runtime chat app_agent.py --query "Hello" --verbose
+agentscope chat app_agent.py --query "Hello" --verbose
 ```
 
 **使用自定义入口点的项目目录：**
 
 ```bash
-as-runtime chat ./my-project --entrypoint custom_app.py
+agentscope chat ./my-project --entrypoint custom_app.py
 ```
 
 #### 智能体文件要求
 
 您的智能体文件**必须**将 `agent_app.run()` 作为主方法运行。
 
-### 2. Web UI：`as-runtime web`
+### 2. Web UI：`agentscope web`
 
 启动带有基于浏览器的 Web 界面的智能体进行测试。
 
 #### 命令语法
 
 ```bash
-as-runtime web SOURCE [OPTIONS]
+agentscope web SOURCE [OPTIONS]
 ```
 
 #### 参数
@@ -331,25 +331,25 @@ as-runtime web SOURCE [OPTIONS]
 
 ```bash
 # 默认主机和端口 (127.0.0.1:8090)
-as-runtime web app_agent.py
+agentscope web app_agent.py
 
 # 自定义主机和端口
-as-runtime web app_agent.py --host 0.0.0.0 --port 8000
+agentscope web app_agent.py --host 0.0.0.0 --port 8000
 
 # 从项目目录启动
-as-runtime web ./my-agent-project
+agentscope web ./my-agent-project
 ```
 
 **注意：** 首次启动可能需要更长时间，因为需要通过 npm 安装 Web UI 依赖。
 
-### 3. 部署：`as-runtime deploy`
+### 3. 部署：`agentscope deploy`
 
 将智能体部署到各种平台以供生产使用。
 
 #### 命令语法
 
 ```bash
-as-runtime deploy PLATFORM SOURCE [OPTIONS]
+agentscope deploy PLATFORM SOURCE [OPTIONS]
 ```
 
 #### 平台
@@ -376,7 +376,7 @@ as-runtime deploy PLATFORM SOURCE [OPTIONS]
 ##### 命令语法
 
 ```bash
-as-runtime deploy local SOURCE [OPTIONS]
+agentscope deploy local SOURCE [OPTIONS]
 ```
 
 ##### 平台特定选项
@@ -390,16 +390,16 @@ as-runtime deploy local SOURCE [OPTIONS]
 
 ```bash
 # 基本部署
-as-runtime deploy local app_agent.py --env DASHSCOPE_API_KEY=sk-xxx
+agentscope deploy local app_agent.py --env DASHSCOPE_API_KEY=sk-xxx
 
 # 自定义主机和端口
-as-runtime deploy local app_agent.py --host 0.0.0.0 --port 8080 --env DASHSCOPE_API_KEY=sk-xxx
+agentscope deploy local app_agent.py --host 0.0.0.0 --port 8080 --env DASHSCOPE_API_KEY=sk-xxx
 
 # 使用环境文件
-as-runtime deploy local app_agent.py --env-file .env
+agentscope deploy local app_agent.py --env-file .env
 
 # 使用配置文件
-as-runtime deploy local app_agent.py --config deploy-config.yaml
+agentscope deploy local app_agent.py --config deploy-config.yaml
 ```
 
 ##### 输出
@@ -435,7 +435,7 @@ curl -i -X POST "http://127.0.0.1:8080/process" \
 **使用 CLI（待实现）：**
 
 ```bash
-as-runtime chat local_20250101_120000_abc123 --query "Hello"
+agentscope chat local_20250101_120000_abc123 --query "Hello"
 ```
 
 #### 3.2. ModelStudio 部署
@@ -445,7 +445,7 @@ as-runtime chat local_20250101_120000_abc123 --query "Hello"
 ##### 命令语法
 
 ```bash
-as-runtime deploy modelstudio SOURCE [OPTIONS]
+agentscope deploy modelstudio SOURCE [OPTIONS]
 ```
 
 ##### 平台特定选项
@@ -465,10 +465,10 @@ as-runtime deploy modelstudio SOURCE [OPTIONS]
 ```bash
 # 基本部署
 export USE_LOCAL_RUNTIME=True
-as-runtime deploy modelstudio app_agent.py --name my-agent --env DASHSCOPE_API_KEY=sk-xxx
+agentscope deploy modelstudio app_agent.py --name my-agent --env DASHSCOPE_API_KEY=sk-xxx
 
 # 构建但不上传
-as-runtime deploy modelstudio app_agent.py --skip-upload
+agentscope deploy modelstudio app_agent.py --skip-upload
 ```
 
 **注意：** `USE_LOCAL_RUNTIME=True` 使用本地 agentscope runtime 而不是 PyPI 版本。
@@ -480,7 +480,7 @@ as-runtime deploy modelstudio app_agent.py --skip-upload
 ##### 命令语法
 
 ```bash
-as-runtime deploy agentrun SOURCE [OPTIONS]
+agentscope deploy agentrun SOURCE [OPTIONS]
 ```
 
 ##### 平台特定选项
@@ -503,10 +503,10 @@ as-runtime deploy agentrun SOURCE [OPTIONS]
 
 ```bash
 # 基本部署
-as-runtime deploy agentrun app_agent.py --name my-agent
+agentscope deploy agentrun app_agent.py --name my-agent
 
 # 自定义区域和资源
-as-runtime deploy agentrun app_agent.py \
+agentscope deploy agentrun app_agent.py \
   --region cn-beijing \
   --cpu 4.0 \
   --memory 4096 \
@@ -520,7 +520,7 @@ as-runtime deploy agentrun app_agent.py \
 ##### 命令语法
 
 ```bash
-as-runtime deploy k8s SOURCE [OPTIONS]
+agentscope deploy k8s SOURCE [OPTIONS]
 ```
 
 ##### 平台特定选项
@@ -558,7 +558,7 @@ as-runtime deploy k8s SOURCE [OPTIONS]
 ```bash
 # 基本部署
 export USE_LOCAL_RUNTIME=True
-as-runtime deploy k8s app_agent.py \
+agentscope deploy k8s app_agent.py \
   --image-name agent_app \
   --env DASHSCOPE_API_KEY=sk-xxx \
   --image-tag linux-amd64-4 \
@@ -566,7 +566,7 @@ as-runtime deploy k8s app_agent.py \
   --push
 
 # 自定义命名空间和资源
-as-runtime deploy k8s app_agent.py \
+agentscope deploy k8s app_agent.py \
   --namespace production \
   --replicas 3 \
   --cpu-limit 2 \
@@ -585,7 +585,7 @@ as-runtime deploy k8s app_agent.py \
 ##### 命令语法
 
 ```bash
-as-runtime list [OPTIONS]
+agentscope list [OPTIONS]
 ```
 
 ##### 选项
@@ -600,16 +600,16 @@ as-runtime list [OPTIONS]
 
 ```bash
 # 列出所有部署
-as-runtime list
+agentscope list
 
 # 按状态筛选
-as-runtime list --status running
+agentscope list --status running
 
 # 按平台筛选
-as-runtime list --platform k8s
+agentscope list --platform k8s
 
 # JSON 输出
-as-runtime list --format json
+agentscope list --format json
 ```
 
 #### 4.2. 检查部署状态
@@ -619,7 +619,7 @@ as-runtime list --format json
 ##### 命令语法
 
 ```bash
-as-runtime status DEPLOY_ID [OPTIONS]
+agentscope status DEPLOY_ID [OPTIONS]
 ```
 
 ##### 参数
@@ -638,7 +638,7 @@ as-runtime status DEPLOY_ID [OPTIONS]
 
 ```bash
 # 显示详细部署信息
-as-runtime status local_20250101_120000_abc123
+agentscope status local_20250101_120000_abc123
 
 # JSON 格式
 as-runtime status local_20250101_120000_abc123 --format json
@@ -866,12 +866,12 @@ rm -rf .agentscope_runtime/builds/*
 
 **注意：** CLI 使用内容感知缓存，因此删除构建后，如果需要，将在下次部署时重新生成它们。
 
-### 全局状态目录：`~/.as-runtime`
+### 全局状态目录：`~/.agentscope-runtime`
 
 部署元数据和状态存储在您的主目录中：
 
 ```
-~/.as-runtime/
+~/.agentscope-runtime/
 ├── deployments.json              # 全局部署注册表
 └── deployments.backup.YYYYMMDD.json  # 每日备份（保留最近 30 天）
 ```

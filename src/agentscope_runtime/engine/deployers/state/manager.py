@@ -22,10 +22,11 @@ class DeploymentStateManager:
         Initialize state manager.
 
         Args:
-            state_dir: Custom state directory (defaults to ~/.as-runtime)
+            state_dir: Custom state directory (defaults to
+            ~/.agentscope-runtime)
         """
         if state_dir is None:
-            state_dir = os.path.expanduser("~/.as-runtime")
+            state_dir = os.path.expanduser("~/.agentscope-runtime")
 
         self.state_dir = Path(state_dir)
         self.state_file = self.state_dir / "deployments.json"

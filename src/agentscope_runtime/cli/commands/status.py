@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""as-runtime status command - Show deployment status."""
+"""agentscope status command - Show deployment status."""
 # pylint: disable=no-value-for-parameter
 
 import sys
@@ -30,10 +30,10 @@ def status(deploy_id: str, output_format: str):
     Examples:
     \b
     # Show deployment status
-    $ as-runtime status local_20250101_120000_abc123
+    $ agentscope status local_20250101_120000_abc123
 
     # JSON output
-    $ as-runtime status local_20250101_120000_abc123 --output-format json
+    $ agentscope status local_20250101_120000_abc123 --output-format json
     """
     try:
         # Initialize state manager
