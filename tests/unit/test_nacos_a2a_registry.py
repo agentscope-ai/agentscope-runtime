@@ -328,12 +328,21 @@ class TestNacosRegistry:
             ) as mock_create:
                 mock_create.return_value = mock_service
                 
-                await registry._register_to_nacos(
-                    agent_card=agent_card,
-                    host="localhost",
-                    port=8080,
-                    root_path="/api",
-                )
+                # Also need to mock ReleaseAgentCardParam and RegisterAgentEndpointParam
+                # to avoid import errors if they're placeholder classes
+                with patch(
+                    "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry.ReleaseAgentCardParam",
+                    MagicMock,
+                ), patch(
+                    "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry.RegisterAgentEndpointParam",
+                    MagicMock,
+                ):
+                    await registry._register_to_nacos(
+                        agent_card=agent_card,
+                        host="localhost",
+                        port=8080,
+                        root_path="/api",
+                    )
                 
                 # Verify service methods were called
                 mock_service.release_agent_card.assert_called_once()
@@ -362,7 +371,12 @@ class TestNacosRegistry:
         with patch("agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE", True):
             _ensure_nacos_ai_service_method()
             
-            registry = NacosRegistry()
+            # Provide client config to avoid calling _get_client_config
+            registry = NacosRegistry(nacos_client_config=mock_nacos_sdk["client_config"])
+            
+            # Set status to IN_PROGRESS so it can be updated to FAILED
+            with registry._registration_lock:
+                registry._registration_status = RegistrationStatus.IN_PROGRESS
             
             mock_service = mock_nacos_sdk["ai_service"]
             mock_service.release_agent_card.side_effect = Exception("Nacos error")
@@ -374,12 +388,17 @@ class TestNacosRegistry:
             ) as mock_create:
                 mock_create.return_value = mock_service
                 
-                await registry._register_to_nacos(
-                    agent_card=agent_card,
-                    host="localhost",
-                    port=8080,
-                    root_path="/api",
-                )
+                # Also need to mock ReleaseAgentCardParam to avoid import errors
+                with patch(
+                    "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry.ReleaseAgentCardParam",
+                    MagicMock,
+                ):
+                    await registry._register_to_nacos(
+                        agent_card=agent_card,
+                        host="localhost",
+                        port=8080,
+                        root_path="/api",
+                    )
                 
                 # Should handle error gracefully
                 assert registry._registration_status == RegistrationStatus.FAILED
