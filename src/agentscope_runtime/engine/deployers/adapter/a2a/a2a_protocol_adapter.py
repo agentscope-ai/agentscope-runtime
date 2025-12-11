@@ -11,6 +11,7 @@ import logging
 from typing import Any, Callable, Dict, List, Optional, Union
 from urllib.parse import urlparse, urljoin
 
+from pydantic import BaseModel
 from a2a.server.apps import A2AFastAPIApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
@@ -25,10 +26,11 @@ from .a2a_registry import (
     A2ARegistry,
     DeployProperties,
     A2aTransportsProperties,
+    create_registry_from_env,
 )
 # NOTE: Do NOT import NacosRegistry at module import time to avoid forcing
 # an optional dependency on environments that don't have nacos SDK installed.
-# The default registry (NacosRegistry) will be imported lazily in __init__.
+# Registry is optional: users must explicitly provide a registry instance if needed.
 # from .nacos_a2a_registry import NacosRegistry
 from ..protocol_adapter import ProtocolAdapter
 
@@ -40,6 +42,183 @@ DEFAULT_TASK_TIMEOUT = 60
 DEFAULT_TASK_EVENT_TIMEOUT = 10
 DEFAULT_TRANSPORT = "JSONRPC"
 DEFAULT_INPUT_OUTPUT_MODES = ["text"]
+
+
+def extract_config_params(
+    agent_name: str,
+    agent_description: str,
+    a2a_config: Union["A2AConfig", Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Extract parameters from A2AConfig for A2AFastAPIDefaultAdapter initialization.
+
+    Args:
+        agent_name: Agent name (required)
+        agent_description: Agent description (required)
+        a2a_config: A2AConfig instance or dictionary with structured config
+
+    Returns:
+        Dictionary of parameters for A2AFastAPIDefaultAdapter.__init__
+    """
+
+    params: Dict[str, Any] = {
+        "agent_name": agent_name,
+        "agent_description": agent_description,
+    }
+
+    # If it's already an A2AConfig instance, use it directly
+    if isinstance(a2a_config, A2AConfig):
+        config = a2a_config
+    elif isinstance(a2a_config, dict):
+        # Convert dict to A2AConfig
+        config = A2AConfig(**a2a_config)
+    else:
+        raise ValueError(
+            f"a2a_config must be A2AConfig or dict, got {type(a2a_config)}"
+        )
+
+    # Extract registry with priority: a2a_config > environment variables
+    if config.registry is not None:
+        # User explicitly provided registry in a2a_config (highest priority)
+        # When user creates NacosRegistry() in a2a_config, it will use
+        # A2ARegistrySettings to load config from .env file
+        params["registry"] = config.registry
+        logger.debug("[A2A] Using registry from a2a_config")
+    else:
+        # Fall back to environment variables if no registry in a2a_config
+        # Uses create_registry_from_env() which:
+        # 1. Loads settings from .env file (if available) via get_registry_settings()
+        # 2. Checks A2A_REGISTRY_ENABLED and A2A_REGISTRY_TYPE
+        # 3. Only creates Nacos registry if A2A_REGISTRY_TYPE=nacos
+        env_registry = create_registry_from_env()
+        if env_registry is not None:
+            params["registry"] = env_registry
+            logger.debug("[A2A] Using registry from environment variables")
+
+    # Extract AgentCard configuration
+    if config.agent_card is not None:
+        agent_card = config.agent_card
+        if agent_card.card_name is not None:
+            params["card_name"] = agent_card.card_name
+        if agent_card.card_description is not None:
+            params["card_description"] = agent_card.card_description
+        if agent_card.card_url is not None:
+            params["card_url"] = agent_card.card_url
+        if agent_card.preferred_transport is not None:
+            params["preferred_transport"] = agent_card.preferred_transport
+        if agent_card.additional_interfaces is not None:
+            params["additional_interfaces"] = agent_card.additional_interfaces
+        if agent_card.card_version is not None:
+            params["card_version"] = agent_card.card_version
+        if agent_card.skills is not None:
+            params["skills"] = agent_card.skills
+        if agent_card.default_input_modes is not None:
+            params["default_input_modes"] = agent_card.default_input_modes
+        if agent_card.default_output_modes is not None:
+            params["default_output_modes"] = agent_card.default_output_modes
+        if agent_card.provider is not None:
+            params["provider"] = agent_card.provider
+        if agent_card.document_url is not None:
+            params["document_url"] = agent_card.document_url
+        if agent_card.icon_url is not None:
+            params["icon_url"] = agent_card.icon_url
+        if agent_card.security_schema is not None:
+            params["security_schema"] = agent_card.security_schema
+        if agent_card.security is not None:
+            params["security"] = agent_card.security
+
+    # Extract Task configuration
+    if config.task is not None:
+        task = config.task
+        if task.task_timeout is not None:
+            params["task_timeout"] = task.task_timeout
+        if task.task_event_timeout is not None:
+            params["task_event_timeout"] = task.task_event_timeout
+
+    # Extract Wellknown configuration
+    if config.wellknown is not None:
+        wellknown = config.wellknown
+        if wellknown.wellknown_path is not None:
+            params["wellknown_path"] = wellknown.wellknown_path
+
+    # Extract Transports configuration
+    if config.transports is not None:
+        transports = config.transports
+        if transports.transports is not None:
+            params["transports"] = transports.transports
+
+    return params
+
+
+class AgentCardConfig(BaseModel):
+    """Configuration for AgentCard settings."""
+
+    card_name: Optional[str] = None
+    card_description: Optional[str] = None
+    card_url: Optional[str] = None
+    preferred_transport: Optional[str] = None
+    additional_interfaces: Optional[List[Dict[str, Any]]] = None
+    card_version: Optional[str] = None
+    skills: Optional[List[AgentSkill]] = None
+    default_input_modes: Optional[List[str]] = None
+    default_output_modes: Optional[List[str]] = None
+    provider: Optional[Union[str, Dict[str, Any]]] = None
+    document_url: Optional[str] = None
+    icon_url: Optional[str] = None
+    security_schema: Optional[Dict[str, Any]] = None
+    security: Optional[Dict[str, Any]] = None
+
+    class Config:
+        extra = "allow"
+
+
+class TaskConfig(BaseModel):
+    """Configuration for Task settings."""
+
+    task_timeout: Optional[int] = None
+    task_event_timeout: Optional[int] = None
+
+    class Config:
+        extra = "allow"
+
+
+class WellknownConfig(BaseModel):
+    """Configuration for Wellknown endpoint settings."""
+
+    wellknown_path: Optional[str] = None
+
+    class Config:
+        extra = "allow"
+
+
+class TransportsConfig(BaseModel):
+    """Configuration for Transports settings."""
+
+    transports: Optional[List[Dict[str, Any]]] = None
+
+    class Config:
+        extra = "allow"
+
+
+class A2AConfig(BaseModel):
+    """Structured A2A protocol configuration.
+
+    This configuration is organized into four main sections:
+    - agent_card: AgentCard related settings
+    - task: Task related settings
+    - wellknown: Wellknown endpoint settings
+    - transports: Transport configurations
+    - registry: A2A registry or list of registries (optional)
+    """
+
+    agent_card: Optional[AgentCardConfig] = None
+    task: Optional[TaskConfig] = None
+    wellknown: Optional[WellknownConfig] = None
+    transports: Optional[TransportsConfig] = None
+    registry: Optional[Union[A2ARegistry, List[A2ARegistry]]] = None
+
+    class Config:
+        arbitrary_types_allowed = True
+        extra = "allow"
 
 
 class A2AFastAPIDefaultAdapter(ProtocolAdapter):
@@ -85,7 +264,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         Args:
             agent_name: Agent name (default for card_name)
             agent_description: Agent description (default for card_description)
-            registry: A2A registry or list of registries for service discovery
+            registry: Optional A2A registry or list of registries for service discovery.
+                If None, registry operations will be skipped.
             card_name: Override agent card name
             card_description: Override agent card description
             card_url: Override agent card URL (default: auto-generated)
@@ -113,20 +293,9 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         self._base_url = kwargs.get("base_url")
 
         # Convert registry to list for uniform handling
-        # Default to NacosRegistry if no registry is provided
+        # Registry is optional: if None, skip registry operations
         if registry is None:
-            # Use NacosRegistry as the default registry implementation if available.
-            try:
-                from .nacos_a2a_registry import NacosRegistry  # local import
-
-                self._registries: List[A2ARegistry] = [NacosRegistry()]
-            except Exception:
-                # Optional dependency missing or instantiation failed: continue with empty list
-                logger.debug(
-                    "[A2A] NacosRegistry not available as default registry (optional dependency missing)",
-                    exc_info=True,
-                )
-                self._registries = []
+            self._registries: List[A2ARegistry] = []
         elif isinstance(registry, A2ARegistry):
             self._registries = [registry]
         else:

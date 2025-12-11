@@ -8,7 +8,6 @@ for A2A protocol adapters.
 """
 import asyncio
 import logging
-import os
 from typing import List, Optional
 import threading
 
@@ -188,16 +187,19 @@ class NacosRegistry(A2ARegistry):
         if self._nacos_client_config is not None:
             return self._nacos_client_config
 
-        server_addr = os.getenv("NACOS_SERVER_ADDR", "localhost:8848")
-        builder = ClientConfigBuilder().server_address(server_addr)
+        # Use A2ARegistrySettings to load configuration (same pattern as sandbox server)
+        # This ensures consistent behavior: loads from .env file if available,
+        # then falls back to system environment variables
+        from .a2a_registry import get_registry_settings
 
-        nacos_username = os.getenv("NACOS_USERNAME")
-        nacos_password = os.getenv("NACOS_PASSWORD")
-        if nacos_username and nacos_password:
-            builder.username(nacos_username).password(nacos_password)
+        settings = get_registry_settings()
+        builder = ClientConfigBuilder().server_address(settings.NACOS_SERVER_ADDR)
+
+        if settings.NACOS_USERNAME and settings.NACOS_PASSWORD:
+            builder.username(settings.NACOS_USERNAME).password(settings.NACOS_PASSWORD)
             logger.debug(
                 "[NacosRegistry] Using authentication: username=%s",
-                nacos_username,
+                settings.NACOS_USERNAME,
             )
 
         return builder.build()
@@ -276,7 +278,9 @@ class NacosRegistry(A2ARegistry):
                         except TypeError:
                             # close_coro might be a coroutine function; call and await
                             try:
-                                await close_coro()
+                                maybe_coro = close_coro()
+                                if asyncio.iscoroutine(maybe_coro):
+                                    await maybe_coro
                             except Exception:
                                 logger.debug("[NacosRegistry] Error awaiting close coroutine", exc_info=True)
                         except Exception:

@@ -4,14 +4,19 @@ import types
 import platform
 import subprocess
 import shlex
-from typing import Optional, Callable, List
+from typing import Optional, Callable, List, Dict, Any, Union
 
 import uvicorn
 from pydantic import BaseModel
 
 from .base_app import BaseApp
 from ..deployers import DeployManager
-from ..deployers.adapter.a2a import A2AFastAPIDefaultAdapter
+from ..deployers.adapter.a2a import (
+    A2AFastAPIDefaultAdapter,
+    A2AConfig,
+    extract_config_params,
+    create_registry_from_env,
+)
 from ..deployers.adapter.responses.response_api_protocol_adapter import (
     ResponseAPIDefaultAdapter,
 )
@@ -44,14 +49,41 @@ class AgentApp(BaseApp):
         backend_url: Optional[str] = None,
         runner: Optional[Runner] = None,
         enable_embedded_worker: bool = False,
+        a2a_config: Optional[Union[A2AConfig, Dict[str, Any]]] = None,
         **kwargs,
     ):
         """
         Initialize the AgentApp.
 
         Args:
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
+            app_name: Name of the agent application
+            app_description: Description of the agent application
+            endpoint_path: API endpoint path for processing requests
+            response_type: Type of response (default: "sse")
+            stream: Whether to enable streaming responses
+            request_model: Request model class
+            before_start: Callback function to execute before starting
+            after_finish: Callback function to execute after finishing
+            broker_url: URL for message broker
+            backend_url: URL for backend service
+            runner: Optional runner instance
+            enable_embedded_worker: Whether to enable embedded worker
+            a2a_config: Optional A2A protocol configuration. Can be either:
+                - A2AConfig instance (structured configuration)
+                - Dictionary with structured configuration containing:
+                  - agent_card: AgentCardConfig or dict with AgentCard settings
+                    (card_name, card_description, card_url, preferred_transport,
+                    additional_interfaces, card_version, skills, default_input_modes,
+                    default_output_modes, provider, document_url, icon_url,
+                    security_schema, security)
+                  - task: TaskConfig or dict with Task settings
+                    (task_timeout, task_event_timeout)
+                  - wellknown: WellknownConfig or dict with Wellknown settings
+                    (wellknown_path)
+                  - transports: TransportsConfig or dict with Transports settings
+                    (transports)
+                  - registry: A2A registry or list of registries (optional)
+            **kwargs: Additional keyword arguments passed to FastAPI app
         """
 
         self.endpoint_path = endpoint_path
@@ -73,10 +105,29 @@ class AgentApp(BaseApp):
         self._shutdown_handler: Optional[Callable] = None
         self._framework_type: Optional[str] = None
 
-        a2a_protocol = A2AFastAPIDefaultAdapter(
-            agent_name=app_name,
-            agent_description=app_description,
-        )
+        # Prepare A2A protocol adapter configuration
+        if a2a_config:
+            # Use structured config extraction
+            # extract_config_params will handle priority: a2a_config > env vars
+            a2a_adapter_kwargs = extract_config_params(
+                agent_name=app_name,
+                agent_description=app_description,
+                a2a_config=a2a_config,
+            )
+        else:
+            # No config provided, use defaults but still check environment variables
+            # for registry configuration
+            # create_registry_from_env reads environment/.env and returns
+            # an optional registry instance or list of instances.
+            env_registry = create_registry_from_env()
+            a2a_adapter_kwargs = {
+                "agent_name": app_name,
+                "agent_description": app_description,
+            }
+            if env_registry is not None:
+                a2a_adapter_kwargs["registry"] = env_registry
+        
+        a2a_protocol = A2AFastAPIDefaultAdapter(**a2a_adapter_kwargs)
 
         response_protocol = ResponseAPIDefaultAdapter()
         self.protocol_adapters = [a2a_protocol, response_protocol]
