@@ -383,10 +383,16 @@ async def adapt_agentscope_message_stream(
                             ] = plugin_output_message
 
                         # Update output
-                        json_str = json.dumps(
-                            element.get("output"),
-                            ensure_ascii=False,
-                        )
+                        try:
+                            json_str = json.dumps(
+                                element.get("output"),
+                                ensure_ascii=False,
+                            )
+                        except Exception:
+                            # For non-JSON outputs, we just use the string
+                            # representation
+                            json_str = str(element.get("output"))
+
                         data_delta_content = DataContent(
                             index=None if last else 0,
                             data=fc_cls(
