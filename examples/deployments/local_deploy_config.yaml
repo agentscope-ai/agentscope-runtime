@@ -1,0 +1,15 @@
+# Local Deployment Configuration Example
+# Usage: agentscope deploy local /path/to/source --config local_deploy_config.yaml
+
+# Server settings
+host: "127.0.0.1"
+port: 8090
+
+# Entrypoint (optional, will auto-detect if not specified)
+# entrypoint: "app.py"
+
+# Environment variables
+environment:
+  PYTHONPATH: "/app"
+  LOG_LEVEL: "DEBUG"
+  DASHSCOPE_API_KEY: "${DASHSCOPE_API_KEY}"

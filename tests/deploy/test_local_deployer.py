@@ -59,9 +59,11 @@ class TestLocalDeployManager:
         async def test_func(request: AgentRequest):
             return {"result": "ok"}
 
+        deploy_id = ""
+
         try:
             result = await deploy_manager.deploy(app=_app)
-
+            deploy_id = result["deploy_id"]
             assert result["url"] == "http://localhost:8090"
             assert deploy_manager.is_running is True
 
@@ -77,16 +79,17 @@ class TestLocalDeployManager:
         finally:
             # Clean up
             if deploy_manager.is_running:
-                await deploy_manager.stop()
+                await deploy_manager.stop(deploy_id)
 
     @pytest.mark.asyncio
     async def test_deploy_already_running(self, deploy_manager):
         """Test deployment when service is already running."""
         _app = AgentApp()
-
+        deploy_id = ""
         try:
             # First deployment
-            await deploy_manager.deploy(app=_app)
+            result = await deploy_manager.deploy(app=_app)
+            deploy_id = result["deploy_id"]
             assert deploy_manager.is_running is True
 
             # Try to deploy again
@@ -99,7 +102,7 @@ class TestLocalDeployManager:
         finally:
             # Clean up
             if deploy_manager.is_running:
-                await deploy_manager.stop()
+                await deploy_manager.stop(deploy_id)
 
     @pytest.mark.asyncio
     async def test_deploy_server_startup_timeout(
@@ -129,13 +132,14 @@ class TestLocalDeployManager:
     @pytest.mark.asyncio
     async def test_stop_success(self, deploy_manager):
         """Test successful service stop."""
+
         _app = AgentApp()
         # First deploy the service
-        await deploy_manager.deploy(app=_app)
+        result = await deploy_manager.deploy(app=_app)
         assert deploy_manager.is_running is True
 
         # Stop the service
-        await deploy_manager.stop()
+        await deploy_manager.stop(result["deploy_id"])
 
         assert deploy_manager.is_running is False
         assert deploy_manager._server is None
@@ -147,7 +151,8 @@ class TestLocalDeployManager:
         deploy_manager.is_running = False
 
         # Should not raise an exception
-        await deploy_manager.stop()
+        result = await deploy_manager.stop("")
+        assert result["success"] is False
 
     def test_is_running_property(self, deploy_manager):
         """Test is_running property."""
@@ -180,11 +185,13 @@ class TestLocalDeployManagerIntegration:
         async def test_func(request: AgentRequest):
             return {"result": "ok"}
 
+        deploy_id = ""
         try:
             # Real deployment
             result = await deploy_manager.deploy(app=_app)
             assert result["url"] == "http://localhost:8091"
             assert deploy_manager.is_running is True
+            deploy_id = result["deploy_id"]
 
             # Test the endpoint works
             response = requests.post(
@@ -195,13 +202,13 @@ class TestLocalDeployManagerIntegration:
             response_result = response.json()
             assert response_result["result"] == "ok"
             # Real stop
-            await deploy_manager.stop()
+            await deploy_manager.stop(deploy_id)
             assert deploy_manager.is_running is False
 
         except Exception as e:
             # Clean up on error
             if deploy_manager.is_running:
-                await deploy_manager.stop()
+                await deploy_manager.stop(deploy_id)
             pytest.fail(f"Integration test failed: {e}")
 
     @pytest.mark.asyncio
@@ -219,14 +226,18 @@ class TestLocalDeployManagerIntegration:
         async def test_func2(request: AgentRequest):
             return {"result": "test2"}
 
+        deploy_id1 = ""
+        deploy_id2 = ""
         try:
             # Deploy first service
             result1 = await deploy_manager1.deploy(app=_app)
             assert result1["url"] == "http://localhost:8092"
+            deploy_id1 = result1["deploy_id"]
 
             # Deploy second service
             result2 = await deploy_manager2.deploy(app=_app)
             assert result2["url"] == "http://localhost:8093"
+            deploy_id2 = result2["deploy_id"]
 
             # Test both services work
             response1 = requests.post(
@@ -248,9 +259,9 @@ class TestLocalDeployManagerIntegration:
         finally:
             # Clean up
             if deploy_manager1.is_running:
-                await deploy_manager1.stop()
+                await deploy_manager1.stop(deploy_id1)
             if deploy_manager2.is_running:
-                await deploy_manager2.stop()
+                await deploy_manager2.stop(deploy_id2)
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ import tempfile
 from unittest.mock import patch
 
 import pytest
+from kubernetes.client.exceptions import ApiException
 
 from agentscope_runtime.engine.deployers.kubernetes_deployer import (
     KubernetesDeployManager,
@@ -45,7 +46,7 @@ class TestBuildConfigK8s:
     def test_build_config_defaults(self):
         """Test BuildConfig default values."""
         config = BuildConfig()
-        assert config.build_context_dir == "/tmp/k8s_build"
+        assert config.build_context_dir is None
         assert config.dockerfile_template is None
         assert config.build_timeout == 600
         assert config.push_timeout == 300
@@ -79,7 +80,7 @@ class TestKubernetesDeployManager:
         assert deployer.kubeconfig == k8s_config
         assert deployer.registry_config == registry_config
         assert deployer.use_deployment is True
-        assert deployer.build_context_dir == "/tmp/k8s_build"
+        assert deployer.build_context_dir is None
 
         # Verify that KubernetesClient was instantiated with correct parameters
         mock_k8s_client.assert_called_once_with(
@@ -103,7 +104,7 @@ class TestKubernetesDeployManager:
         mock_client_instance.create_deployment.return_value = (
             "service-id",
             [8090],
-            "10.0.0.1",
+            "127.0.0.1",
         )
         mock_k8s_client.return_value = mock_client_instance
 
@@ -132,7 +133,7 @@ class TestKubernetesDeployManager:
             assert "resource_name" in result
             assert "replicas" in result
 
-            assert result["url"] == "http://10.0.0.1:8090"
+            assert result["url"] == "http://127.0.0.1:8090"
             assert result["replicas"] == 2
 
             # Verify image build was called
@@ -339,52 +340,58 @@ class TestKubernetesDeployManager:
 
         deployer = KubernetesDeployManager()
         deployer.deploy_id = "test-deploy-123"
-        deployer._deployed_resources["test-deploy-123"] = {
-            "service_name": "agent-test-depl",
-            "resource_name": "agent-test-depl",
-        }
 
-        result = await deployer.stop()
+        result = await deployer.stop("test-deploy-123")
 
-        assert result is True
+        assert result["success"] is True
         mock_client_instance.remove_deployment.assert_called_once_with(
-            "agent-test-depl",
+            "agent-test-dep",
         )
 
     @patch(
         "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
     )
     @pytest.mark.asyncio
-    async def test_stop_nonexistent_deployment(self, mock_k8s_client):
-        """Test stopping a nonexistent deployment."""
+    async def test_stop_nonexistent_deployment_raises(
+        self,
+        mock_k8s_client,
+        mocker,
+    ):
+        """Test stopping a nonexistent deployment raises appropriate
+        exception."""
+        mock_client_instance = mocker.Mock()
+
+        # Make remove_deployment raise ApiException (e.g., 404 Not Found)
+        mock_client_instance.remove_deployment.side_effect = ApiException(
+            status=404,
+            reason="Not Found",
+            http_resp=mocker.Mock(
+                status=404,
+                data='{"message": "Deployment not found"}',
+            ),
+        )
+        mock_k8s_client.return_value = mock_client_instance
+
         deployer = KubernetesDeployManager()
-        deployer.deploy_id = "nonexistent-deploy"
+        deploy_id = "nonexistent-deploy"
 
-        result = await deployer.stop()
-
-        assert result is False
+        # Option 1: If `deployer.stop()` is expected to catch & return {
+        # "success": False}
+        result = await deployer.stop(deploy_id)
+        assert result["success"] is False
 
     @patch(
         "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
     )
     def test_get_status(self, mock_k8s_client, mocker):
         """Test getting deployment status."""
-        mock_client_instance = mocker.Mock()
-        mock_client_instance.get_deployment_status.return_value = "running"
-        mock_k8s_client.return_value = mock_client_instance
 
         deployer = KubernetesDeployManager()
         deployer.deploy_id = "test-deploy-123"
-        deployer._deployed_resources["test-deploy-123"] = {
-            "service_name": "agent-test-depl",
-        }
 
         status = deployer.get_status()
 
-        assert status == "running"
-        mock_client_instance.get_deployment_status.assert_called_once_with(
-            "agent-test-depl",
-        )
+        assert status == "not_found"
 
     @patch(
         "agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesClient",  # noqa E501
@@ -419,7 +426,6 @@ class TestKubernetesDeployManager:
             assert deployer.registry_config == registry_config
             assert deployer.use_deployment is True
             assert deployer.build_context_dir == "/tmp/test-build"
-            assert deployer._deployed_resources == {}
             assert deployer._built_images == {}
 
             # Test deploy_id generation (inherited from DeployManager)

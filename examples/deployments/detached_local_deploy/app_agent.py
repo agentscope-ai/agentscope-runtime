@@ -76,6 +76,7 @@ async def query_func(
         ),
         formatter=DashScopeChatFormatter(),
     )
+    agent.set_console_output_enabled(False)
 
     if state:
         agent.load_state_dict(state)
@@ -93,3 +94,7 @@ async def query_func(
         session_id=session_id,
         state=state,
     )
+
+
+if __name__ == "__main__":
+    agent_app.run()

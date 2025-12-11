@@ -2,10 +2,10 @@
 # pylint: disable=too-many-nested-blocks,too-many-branches,too-many-statements
 import copy
 import json
-
 from typing import AsyncIterator, Tuple, List
 from urllib.parse import urlparse
 
+from agentscope import setup_logger
 from agentscope.message import Msg
 
 from ...engine.schemas.agent_schemas import (
@@ -20,6 +20,8 @@ from ...engine.schemas.agent_schemas import (
     FunctionCallOutput,
     MessageType,
 )
+
+setup_logger("ERROR")
 
 
 def _update_obj_attrs(obj, **attrs):

@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=protected-access, unused-argument
+# pylint:disable=protected-access, unused-argument, too-many-branches
 
 import asyncio
 import logging
 import os
 import socket
 import threading
+from datetime import datetime
 from typing import Callable, Optional, Type, Any, Dict, Union, List
 
 import uvicorn
 
+from agentscope_runtime.engine.deployers.state import Deployment
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .utils.deployment_modes import DeploymentMode
@@ -29,7 +31,7 @@ class LocalDeployManager(DeployManager):
     def __init__(
         self,
         host: str = "127.0.0.1",
-        port: int = 8000,
+        port: int = 8090,
         shutdown_timeout: int = 30,
         startup_timeout: int = 30,
         logger: Optional[logging.Logger] = None,
@@ -80,6 +82,9 @@ class LocalDeployManager(DeployManager):
         broker_url: Optional[str] = None,
         backend_url: Optional[str] = None,
         enable_embedded_worker: bool = False,
+        # New parameters for project-based deployment
+        project_dir: Optional[str] = None,
+        entrypoint: Optional[str] = None,
         **kwargs: Any,
     ) -> Dict[str, str]:
         """Deploy using unified FastAPI architecture.
@@ -100,6 +105,8 @@ class LocalDeployManager(DeployManager):
             backend_url: Celery backend URL for result storage
             enable_embedded_worker: Whether to run Celery worker
                 embedded in the app
+            project_dir: Project directory (for DETACHED_PROCESS mode)
+            entrypoint: Entrypoint specification (for DETACHED_PROCESS mode)
             **kwargs: Additional keyword arguments
 
         Returns:
@@ -152,6 +159,8 @@ class LocalDeployManager(DeployManager):
                     after_finish=after_finish,
                     custom_endpoints=custom_endpoints,
                     protocol_adapters=protocol_adapters,
+                    project_dir=project_dir,
+                    entrypoint=entrypoint,
                     **kwargs,
                 )
             else:
@@ -171,6 +180,7 @@ class LocalDeployManager(DeployManager):
         broker_url: Optional[str] = None,
         backend_url: Optional[str] = None,
         enable_embedded_worker: bool = False,
+        agent_source: Optional[str] = None,
         **kwargs,
     ) -> Dict[str, str]:
         """Deploy in daemon thread mode."""
@@ -208,21 +218,43 @@ class LocalDeployManager(DeployManager):
         await self._wait_for_server_ready(self._startup_timeout)
 
         self.is_running = True
-        self.deploy_id = f"daemon_{self.host}_{self.port}"
+
+        url = f"http://{self.host}:{self.port}"
 
         self._logger.info(
-            f"FastAPI service started at http://{self.host}:{self.port}",
+            f"FastAPI service started at {url}",
         )
+
+        deployment = Deployment(
+            id=self.deploy_id,
+            platform="local",
+            url=url,
+            status="running",
+            created_at=datetime.now().isoformat(),
+            agent_source=agent_source,
+            config={
+                "mode": DeploymentMode.DAEMON_THREAD,
+                "host": self.host,
+                "port": self.port,
+                "broker_url": broker_url,
+                "backend_url": backend_url,
+                "enable_embedded_worker": enable_embedded_worker,
+            },
+        )
+        self.state_manager.save(deployment)
 
         return {
             "deploy_id": self.deploy_id,
-            "url": f"http://{self.host}:{self.port}",
+            "url": url,
         }
 
     async def _deploy_detached_process(
         self,
         runner: Optional[Any] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
+        project_dir: Optional[str] = None,
+        entrypoint: Optional[str] = None,
+        agent_source: Optional[str] = None,
         **kwargs,
     ) -> Dict[str, str]:
         """Deploy in detached process mode."""
@@ -230,9 +262,14 @@ class LocalDeployManager(DeployManager):
             "Deploying FastAPI service in detached process mode...",
         )
 
-        if runner is None and self._app is None:
+        # Clean up old log files (older than 24 hours)
+        ProcessManager.cleanup_old_logs(max_age_hours=24)
+
+        # Original behavior: require app or runner or entrypoint
+        if runner is None and self._app is None and entrypoint is None:
             raise ValueError(
-                "Detached process mode requires an app or runner",
+                "Detached process mode requires an app, runner, "
+                "project_dir, or entrypoint",
             )
 
         if "agent" in kwargs:
@@ -245,18 +282,29 @@ class LocalDeployManager(DeployManager):
             app=self._app,
             runner=runner,
             protocol_adapters=protocol_adapters,
+            entrypoint=entrypoint,
             **kwargs,
         )
+
+        if not project_dir:
+            raise RuntimeError("Failed to parse project directory")
 
         try:
             entry_script = get_bundle_entry_script(project_dir)
             script_path = os.path.join(project_dir, entry_script)
-
+            env = kwargs.get("environment", {}) or {}
+            env.update(
+                {
+                    "HOST": self.host,
+                    "PORT": str(self.port),
+                },
+            )
             # Start detached process using the packaged project
             pid = await self.process_manager.start_detached_process(
                 script_path=script_path,
                 host=self.host,
                 port=self.port,
+                env=env,
             )
 
             self._detached_process_pid = pid
@@ -273,35 +321,65 @@ class LocalDeployManager(DeployManager):
             )
 
             if not service_ready:
-                raise RuntimeError("Service did not start within timeout")
+                # Check if process is still running
+                is_running = self.process_manager.is_process_running(pid)
+
+                # Get process logs
+                logs = self.process_manager.get_process_logs(max_lines=50)
+
+                # Log the detailed error for debugging
+                self._logger.error(
+                    f"Service did not start within timeout. "
+                    f"Process (PID: {pid}) status: "
+                    f"{'running' if is_running else 'terminated'}. "
+                    f"Host: {self.host}, Port: {self.port}.\n\n"
+                    f"Process logs:\n{logs}",
+                )
+
+                # Raise a simple error message
+                raise RuntimeError(
+                    "Service failed to start. Check logs above for details.",
+                )
 
             self.is_running = True
-            self.deploy_id = f"detached_{pid}"
+
+            url = f"http://{self.host}:{self.port}"
 
             self._logger.info(
                 f"FastAPI service started in detached process (PID: {pid})",
             )
 
+            deployment = Deployment(
+                id=self.deploy_id,
+                platform="local",
+                url=url,
+                status="running",
+                created_at=datetime.now().isoformat(),
+                agent_source=agent_source,
+                config={
+                    "mode": DeploymentMode.DETACHED_PROCESS,
+                    "host": self.host,
+                    "port": self.port,
+                    "pid": pid,
+                    "pid_file": self._detached_pid_file,
+                    "project_dir": project_dir,
+                },
+            )
+            self.state_manager.save(deployment)
+
             return {
                 "deploy_id": self.deploy_id,
-                "url": f"http://{self.host}:{self.port}",
+                "url": url,
             }
 
         except Exception as e:
-            # Cleanup on failure
-            if os.path.exists(project_dir):
-                try:
-                    import shutil
-
-                    shutil.rmtree(project_dir)
-                except OSError:
-                    pass
             raise e
 
     @staticmethod
     async def create_detached_project(
         app=None,
         runner: Optional[Any] = None,
+        entrypoint: Optional[str] = None,
         endpoint_path: str = "/process",
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
@@ -310,6 +388,7 @@ class LocalDeployManager(DeployManager):
         broker_url: Optional[str] = None,
         backend_url: Optional[str] = None,
         enable_embedded_worker: bool = False,
+        platform: str = "local",
         **kwargs,
     ) -> str:
         project_dir, _ = build_detached_app(
@@ -317,18 +396,81 @@ class LocalDeployManager(DeployManager):
             runner=runner,
             requirements=requirements,
             extra_packages=extra_packages,
+            platform=platform,
+            entrypoint=entrypoint,
             **kwargs,
         )
 
         return project_dir
 
-    async def stop(self) -> None:
-        """Stop the FastAPI service (unified method for all modes)."""
-        if not self.is_running:
-            self._logger.warning("Service is not running")
-            return
+    async def stop(
+        self,
+        deploy_id: str,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """Stop the FastAPI service.
+
+        Args:
+            deploy_id: Deployment identifier
+            **kwargs: Additional parameters
+
+        Returns:
+            Dict with success status, message, and details
+        """
+        # If URL not provided, try to get it from state manager
+        try:
+            deployment = self.state_manager.get(deploy_id)
+            if deployment:
+                url = deployment.url
+                self._logger.debug(f"Fetched URL from state: {url}")
+        except Exception as e:
+            self._logger.debug(f"Could not fetch URL from state: {e}")
+
+        if not deployment:
+            return {
+                "success": False,
+                "message": "Deploy id not found",
+                "details": {
+                    "deploy_id": deploy_id,
+                    "error": "Deploy id not found",
+                },
+            }
+
+        # Only attempt HTTP shutdown for detached process mode
+        # In daemon thread mode, HTTP shutdown would kill the entire process
+        # (including pytest), so we skip it and use direct stop methods instead
+        if (
+            url
+            and deployment.config["mode"] == DeploymentMode.DETACHED_PROCESS
+        ):
+            try:
+                import requests
+
+                response = requests.post(f"{url}/shutdown", timeout=5)
+                if response.status_code == 200:
+                    # Remove from state manager on successful shutdown
+                    try:
+                        self.state_manager.update_status(deploy_id, "stopped")
+                    except KeyError:
+                        self._logger.debug(
+                            f"Deployment {deploy_id} not found "
+                            f"in state (already removed)",
+                        )
+                    self.is_running = False
+                    return {
+                        "success": True,
+                        "message": "Shutdown signal sent to detached process",
+                        "details": {"url": url, "deploy_id": deploy_id},
+                    }
+
+            except requests.exceptions.RequestException as e:
+                # If HTTP shutdown fails, continue with direct stop methods
+                self._logger.debug(
+                    f"HTTP shutdown failed, falling back to direct stop: {e}",
+                )
 
         try:
+            # when run in from main process instead of cli, make sure close
             if self._detached_process_pid:
                 # Detached process mode
                 await self._stop_detached_process()
@@ -336,9 +478,27 @@ class LocalDeployManager(DeployManager):
                 # Daemon thread mode
                 await self._stop_daemon_thread()
 
+            # Remove from state manager on successful stop
+            try:
+                self.state_manager.update_status(deploy_id, "stopped")
+            except KeyError:
+                self._logger.debug(
+                    f"Deployment {deploy_id} not found in state (already "
+                    f"removed)",
+                )
+
+            return {
+                "success": True,
+                "message": "Service stopped successfully",
+                "details": {"deploy_id": deploy_id},
+            }
         except Exception as e:
             self._logger.error(f"Failed to stop service: {e}")
-            raise RuntimeError(f"Failed to stop FastAPI service: {e}") from e
+            return {
+                "success": False,
+                "message": f"Failed to stop service: {e}",
+                "details": {"deploy_id": deploy_id, "error": str(e)},
+            }
 
     async def _stop_daemon_thread(self):
         """Stop daemon thread mode service."""
@@ -386,6 +546,9 @@ class LocalDeployManager(DeployManager):
         # Cleanup PID file
         if self._detached_pid_file:
             self.process_manager.cleanup_pid_file(self._detached_pid_file)
+
+        # Cleanup log file (keep file for debugging)
+        self.process_manager.cleanup_log_file(keep_file=True)
 
         # Reset state
         self._detached_process_pid = None

@@ -98,6 +98,7 @@ asyncio.run(basic_search_example())
 ```
 
 ### 多策略搜索示例
+
 ```python
 async def multi_strategy_search_example():
     # 学术搜索
@@ -127,10 +128,12 @@ async def multi_strategy_search_example():
     print("学术搜索结果:", academic_result.search_result)
     print("新闻搜索结果:", news_result.search_result)
 
-asyncio.run(multi_strategy_search_example())
+
+asyncio.chat(multi_strategy_search_example())
 ```
 
 ### 高级搜索配置示例
+
 ```python
 async def advanced_search_example():
     result = await search.arun({
@@ -159,7 +162,8 @@ async def advanced_search_example():
     print("综合搜索结果:", result.search_result)
     print("搜索统计:", result.search_info)
 
-asyncio.run(advanced_search_example())
+
+asyncio.chat(advanced_search_example())
 ```
 
 ## 🔍 支持的搜索策略

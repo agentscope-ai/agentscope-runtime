@@ -14,7 +14,7 @@ kernelspec:
 
 # 参考: 完整部署样例
 
-本教程演示了如何使用AgentScope Runtime与[**AgentScope框架**](https://github.com/modelscope/agentscope)创建和部署 *“推理与行动”(ReAct)* 智能体。
+本教程演示了如何使用AgentScope Runtime与[**AgentScope框架**](https://github.com/agentscope-ai/agentscope)创建和部署 *“推理与行动”(ReAct)* 智能体。
 
 ```{note}
 ReAct（推理与行动）范式使智能体能够将推理轨迹与特定任务的行动交织在一起，使其在工具交互任务中特别有效。通过将AgentScope的`ReActAgent`与AgentScope Runtime的基础设施相结合，您可以同时获得智能决策和安全的工具执行。

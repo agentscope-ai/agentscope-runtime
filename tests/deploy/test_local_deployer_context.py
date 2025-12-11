@@ -159,14 +159,14 @@ async def test_local_deployer_context():
         )
 
     deploy_manager = LocalDeployManager(host=server_host, port=server_port)
-
+    deploy_id = ""
     try:
         # Deploy the service
         deployment_info = await agent_app.deploy(
             deploy_manager,
             endpoint_path=f"/{server_endpoint}",
         )
-
+        deploy_id = deployment_info["deploy_id"]
         print("✅ Service deployed successfully!")
         print(f"   URL: {deployment_info['url']}")
         print(f"   Endpoint: {deployment_info['url']}/{server_endpoint}")
@@ -217,5 +217,5 @@ async def test_local_deployer_context():
     finally:
         # Always clean up the service
         if deploy_manager.is_running:
-            await deploy_manager.stop()
+            await deploy_manager.stop(deploy_id)
         print("✅ Service stopped.")

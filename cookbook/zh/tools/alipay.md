@@ -215,6 +215,7 @@ query_component = AlipayPaymentQuery()
 refund_component = AlipayPaymentRefund()
 refund_query_component = AlipayRefundQuery()
 
+
 async def transaction_management_example():
     # 查询支付状态
     query_result = await query_component.arun({
@@ -237,7 +238,8 @@ async def transaction_management_example():
     })
     print("退款状态:", refund_query_result.result)
 
-asyncio.run(transaction_management_example())
+
+asyncio.chat(transaction_management_example())
 ```
 
 ### 订阅服务示例
@@ -254,6 +256,7 @@ status_check = AlipaySubscribeStatusCheck()
 initialize = AlipaySubscribePackageInitialize()
 times_save = AlipaySubscribeTimesSave()
 check_or_init = AlipaySubscribeCheckOrInitialize()
+
 
 async def subscription_example():
     user_uuid = "user_12345"
@@ -278,6 +281,7 @@ async def subscription_example():
         })
         print(f"计次结果: {times_result.success}")
 
+
 async def one_step_subscription_example():
     user_uuid = "user_67890"
 
@@ -289,8 +293,9 @@ async def one_step_subscription_example():
     else:
         print(f"用户未订阅，订阅链接: {result.subscribe_url}")
 
-asyncio.run(subscription_example())
-asyncio.run(one_step_subscription_example())
+
+asyncio.chat(subscription_example())
+asyncio.chat(one_step_subscription_example())
 ```
 
 ## 🏗️ 架构特点

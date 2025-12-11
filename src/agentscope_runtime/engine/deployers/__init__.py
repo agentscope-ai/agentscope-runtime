@@ -3,6 +3,7 @@ from .base import DeployManager
 from .local_deployer import LocalDeployManager
 from .kubernetes_deployer import (
     KubernetesDeployManager,
+    K8sConfig,
 )
 from .modelstudio_deployer import (
     ModelstudioDeployManager,

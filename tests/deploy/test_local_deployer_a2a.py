@@ -41,6 +41,7 @@ async def _local_deploy():
     server_port = int(os.environ.get("SERVER_PORT", "8090"))
     server_endpoint = os.environ.get("SERVER_ENDPOINT", "agent")
 
+    deploy_id = ""
     # Create AgentApp
     agent_app = AgentApp(
         app_name="Friday",
@@ -122,6 +123,7 @@ async def _local_deploy():
             endpoint_path=f"/{server_endpoint}",
             protocol_adapters=[a2a_protocol],
         )
+        deploy_id = deployment_info["deploy_id"]
 
         print("✅ Service deployed successfully!")
         print(f"   URL: {deployment_info['url']}")
@@ -135,15 +137,15 @@ async def _local_deploy():
         # This block will be executed when you press Ctrl+C.
         print("\nShutdown signal received. Stopping the service...")
         if deploy_manager.is_running:
-            await deploy_manager.stop()
+            await deploy_manager.stop(deploy_id)
         print("✅ Service stopped.")
     except Exception as e:
         print(f"An error occurred: {e}")
         if deploy_manager.is_running:
-            await deploy_manager.stop()
+            await deploy_manager.stop(deploy_id)
     finally:
         if deploy_manager.is_running:
-            await deploy_manager.stop()
+            await deploy_manager.stop(deploy_id)
         print("✅ Service stopped after test.")
 
 

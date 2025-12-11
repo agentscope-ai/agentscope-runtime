@@ -7,9 +7,9 @@
 import json
 import logging
 import os
-import time
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, List, Union, Tuple
+from typing import Dict, Optional, List, Union, Tuple, Any
 
 import requests
 from pydantic import BaseModel, Field
@@ -17,11 +17,14 @@ from pydantic import BaseModel, Field
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .local_deployer import LocalDeployManager
+from .state import Deployment
 from .utils.detached_app import get_bundle_entry_script
+from .utils.package import generate_build_directory
 from .utils.wheel_packager import (
     generate_wrapper_project,
     build_wheel,
     default_deploy_name,
+    get_user_bundle_appdir,
 )
 
 logger = logging.getLogger(__name__)
@@ -538,8 +541,9 @@ class ModelstudioDeployManager(DeployManager):
         oss_config: Optional[OSSConfig] = None,
         modelstudio_config: Optional[ModelstudioConfig] = None,
         build_root: Optional[Union[str, Path]] = None,
+        state_manager=None,
     ) -> None:
-        super().__init__()
+        super().__init__(state_manager=state_manager)
         self.oss_config = oss_config or OSSConfig.from_env()
         self.modelstudio_config = (
             modelstudio_config or ModelstudioConfig.from_env()
@@ -552,11 +556,11 @@ class ModelstudioDeployManager(DeployManager):
         cmd: Optional[str] = None,
         deploy_name: Optional[str] = None,
         telemetry_enabled: bool = True,
+        environment: Optional[Dict[str, str]] = None,
+        requirements: Optional[Union[str, List[str]]] = None,
     ) -> Tuple[Path, str]:
         """
-        校验参数、生成 wrapper 项目并构建 wheel。
-
-        返回: (wheel_path, wrapper_project_dir, name)
+        generate temp project path and build wheel.
         """
         if not project_dir or not cmd:
             raise ValueError(
@@ -569,18 +573,18 @@ class ModelstudioDeployManager(DeployManager):
             raise FileNotFoundError(f"Project dir not found: {project_dir}")
 
         name = deploy_name or default_deploy_name()
-        proj_root = project_dir.resolve()
+
+        # Generate build directory with platform-aware naming
         if isinstance(self.build_root, Path):
             effective_build_root = self.build_root.resolve()
         else:
             if self.build_root:
                 effective_build_root = Path(self.build_root).resolve()
             else:
-                effective_build_root = (
-                    proj_root.parent / ".agentscope_runtime_builds"
-                ).resolve()
+                # Use centralized directory generation function
+                effective_build_root = generate_build_directory("modelstudio")
 
-        build_dir = effective_build_root / f"build-{int(time.time())}"
+        build_dir = effective_build_root
         build_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info("Generating wrapper project for %s", name)
@@ -590,10 +594,15 @@ class ModelstudioDeployManager(DeployManager):
             start_cmd=cmd,
             deploy_name=name,
             telemetry_enabled=telemetry_enabled,
+            requirements=requirements,
         )
 
+        # pass environments to the project from user setting
+        user_bundle_app_dir = get_user_bundle_appdir(build_dir, project_dir)
+        self._generate_env_file(user_bundle_app_dir, environment)
         logger.info("Building wheel under %s", wrapper_project_dir)
         wheel_path = build_wheel(wrapper_project_dir)
+
         return wheel_path, name
 
     def _generate_env_file(
@@ -616,7 +625,9 @@ class ModelstudioDeployManager(DeployManager):
             variables provided
         """
         if not environment:
-            return None
+            environment = {}
+        environment["HOST"] = os.environ.get("HOST", "0.0.0.0")
+        environment["PORT"] = int(os.environ.get("PORT", "8080"))
 
         project_path = Path(project_dir).resolve()
         if not project_path.exists():
@@ -731,14 +742,19 @@ class ModelstudioDeployManager(DeployManager):
         resource_name (deploy_name), and workspace_id.
         """
         if not agent_id:
-            if not runner and not project_dir and not external_whl_path:
+            if (
+                not app
+                and not runner
+                and not project_dir
+                and not external_whl_path
+            ):
                 raise ValueError(
-                    "Either runner, project_dir, "
+                    "Either app, runner, project_dir, "
                     "or external_whl_path must be provided.",
                 )
 
         try:
-            if runner:
+            if runner or app:
                 if "agent" in kwargs:
                     kwargs.pop("agent")
 
@@ -751,6 +767,7 @@ class ModelstudioDeployManager(DeployManager):
                     requirements=requirements,
                     extra_packages=extra_packages,
                     port=8080,
+                    platform="modelstudio",
                     **kwargs,
                 )
                 if project_dir:
@@ -793,6 +810,8 @@ class ModelstudioDeployManager(DeployManager):
                     cmd=cmd,
                     deploy_name=deploy_name,
                     telemetry_enabled=telemetry_enabled,
+                    environment=environment,
+                    requirements=requirements,
                 )
 
             console_url = ""
@@ -814,16 +833,41 @@ class ModelstudioDeployManager(DeployManager):
                     telemetry_enabled,
                 )
 
+            # Use base class UUID deploy_id (already set in __init__)
+            deploy_id = self.deploy_id
+
+            # Save deployment to state manager
+            if deploy_identifier:
+                deployment = Deployment(
+                    id=deploy_id,
+                    platform="modelstudio",
+                    url=console_url,
+                    status="running",
+                    created_at=datetime.now().isoformat(),
+                    agent_source=kwargs.get("agent_source"),
+                    config={
+                        "modelstudio_deploy_id": deploy_identifier,
+                        "resource_name": name,
+                        "workspace_id": os.environ.get(
+                            "MODELSTUDIO_WORKSPACE_ID",
+                            "",
+                        ).strip(),
+                        "wheel_path": str(wheel_path),
+                    },
+                )
+                self.state_manager.save(deployment)
+
             result: Dict[str, str] = {
                 "wheel_path": str(wheel_path),
                 "resource_name": name,
                 "url": console_url,
+                "deploy_id": deploy_id,
             }
             env_ws = os.environ.get("MODELSTUDIO_WORKSPACE_ID")
             if env_ws and env_ws.strip():
                 result["workspace_id"] = env_ws.strip()
             if deploy_identifier:
-                result["deploy_id"] = deploy_identifier
+                result["modelstudio_deploy_id"] = deploy_identifier
 
             return result
         except Exception as e:
@@ -835,8 +879,55 @@ class ModelstudioDeployManager(DeployManager):
             )
             raise
 
-    async def stop(self) -> None:  # pragma: no cover - not supported yet
-        pass
+    async def stop(self, deploy_id: str, **kwargs) -> Dict[str, Any]:
+        """Stop ModelStudio deployment.
+
+        Note: ModelStudio stop API not yet available.
+
+        Args:
+            deploy_id: Deployment identifier
+            **kwargs: Additional parameters
+
+        Returns:
+            Dict with success status and message
+        """
+        # Try to get deployment info from state for context
+        deployment_info = None
+        try:
+            deployment = self.state_manager.get(deploy_id)
+            if deployment:
+                deployment_info = {
+                    "url": deployment.url
+                    if hasattr(deployment, "url")
+                    else None,
+                    "workspace_id": getattr(deployment, "workspace_id", None),
+                }
+                logger.debug(
+                    f"Fetched deployment info from state: {deployment_info}",
+                )
+        except Exception as e:
+            logger.debug(f"Could not fetch deployment info from state: {e}")
+
+        # TODO: Implement when ModelStudio provides stop/delete API
+        # When API is available, call it here and then remove from state:
+        # self.state_manager.remove(deploy_id)
+
+        logger.warning(
+            f"ModelStudio stop not implemented for deploy_id={deploy_id} - API not yet available",
+        )
+
+        details = {
+            "deploy_id": deploy_id,
+            "note": "Manual cleanup required via ModelStudio console",
+        }
+        if deployment_info:
+            details.update(deployment_info)
+
+        return {
+            "success": False,
+            "message": "ModelStudio stop not implemented - API not yet available",
+            "details": details,
+        }
 
     def get_status(self) -> str:  # pragma: no cover - not supported yet
         return "unknown"

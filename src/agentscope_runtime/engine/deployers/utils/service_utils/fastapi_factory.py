@@ -470,12 +470,26 @@ class FastAPIAppFactory:
             }
 
         # Mode-specific endpoints
-        if mode == DeploymentMode.DETACHED_PROCESS:
-            FastAPIAppFactory._add_process_control_endpoints(app)
+        FastAPIAppFactory._add_process_control_endpoints(app)
 
     @staticmethod
     def _add_process_control_endpoints(app: FastAPI):
         """Add process control endpoints for detached mode."""
+
+        @app.post("/shutdown")
+        async def shutdown_process_simple():
+            """Gracefully shutdown the process (simple endpoint)."""
+            # Import here to avoid circular imports
+            import os
+            import signal
+
+            # Schedule shutdown after response
+            async def delayed_shutdown():
+                await asyncio.sleep(0.5)
+                os.kill(os.getpid(), signal.SIGTERM)
+
+            asyncio.create_task(delayed_shutdown())
+            return {"status": "shutting down"}
 
         @app.post("/admin/shutdown")
         async def shutdown_process():

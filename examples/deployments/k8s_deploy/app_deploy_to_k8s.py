@@ -263,7 +263,7 @@ async def deployed_service_run(service_url: str):
                 headers={"Content-Type": "application/json"},
             ) as response:
                 if response.status == 200:
-                    result = await response.json()
+                    result = await response.text()
                     print(f"✅ Sync endpoint test successful: {result}")
                 else:
                     print(f"❌ Sync endpoint test failed: {response.status}")
@@ -275,7 +275,7 @@ async def deployed_service_run(service_url: str):
                 headers={"Content-Type": "application/json"},
             ) as response:
                 if response.status == 200:
-                    result = await response.json()
+                    result = await response.text()
                     print(f"✅ Async endpoint test successful: {result}")
                 else:
                     print(f"❌ Async endpoint test failed: {response.status}")

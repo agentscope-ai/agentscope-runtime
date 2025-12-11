@@ -17,11 +17,13 @@ class RegistryConfig(BaseModel):
     registry_url: str = ""
     username: str = None
     password: str = None
-    namespace: str = "agentscope-runtime"
+    namespace: Optional[str] = "agentscope-runtime"
     image_pull_secret: str = None
 
     def get_full_url(self) -> str:
         # Handle different registry URL formats
+        if self.registry_url == "localhost":
+            return self.registry_url
         return f"{self.registry_url}/{self.namespace}"
 
 
@@ -201,6 +203,41 @@ class DockerImageBuilder:
                 error_msg,
             ) from e
 
+    def tag_image(
+        self,
+        image_name: str,
+        registry_config: Optional[RegistryConfig] = None,
+    ) -> str:
+        """
+        Tag image with registry info.
+
+        Args:
+            image_name: Full image name to push
+            registry_config: Optional registry config
+                (uses instance config if None)
+
+        Returns:
+              registry_image_name: Full image name with url
+        """
+        config = registry_config
+        if not config:
+            raise ValueError("No registry configuration provided")
+
+        # Construct full registry image name
+        if config.registry_url and not image_name.startswith(
+            config.registry_url,
+        ):
+            registry_image_name = f"{config.get_full_url()}/{image_name}"
+            # Tag the image with registry prefix
+            subprocess.run(
+                ["docker", "tag", image_name, registry_image_name],
+                check=True,
+                capture_output=True,
+            )
+        else:
+            registry_image_name = image_name
+        return registry_image_name
+
     def push_image(
         self,
         image_name: str,
@@ -223,23 +260,7 @@ class DockerImageBuilder:
             subprocess.CalledProcessError: If push fails
             ValueError: If no registry configuration is available
         """
-        config = registry_config
-        if not config:
-            raise ValueError("No registry configuration provided")
-
-        # Construct full registry image name
-        if config.registry_url and not image_name.startswith(
-            config.registry_url,
-        ):
-            registry_image_name = f"{config.get_full_url()}/{image_name}"
-            # Tag the image with registry prefix
-            subprocess.run(
-                ["docker", "tag", image_name, registry_image_name],
-                check=True,
-                capture_output=True,
-            )
-        else:
-            registry_image_name = image_name
+        registry_image_name = self.tag_image(image_name, registry_config)
 
         try:
             push_cmd = ["docker", "push", registry_image_name]
