@@ -781,7 +781,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         self,
         agent_name: str,
         agent_description: str,
-        app: Optional[FastAPI] = None,
+        app: Optional[FastAPI] = None,  # pylint: disable=unused-argument
     ) -> AgentCard:
         """Build and return AgentCard with configured options.
 

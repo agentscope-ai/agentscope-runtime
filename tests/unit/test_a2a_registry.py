@@ -197,7 +197,7 @@ class TestA2ARegistrySettings:
         ):
             settings = A2ARegistrySettings()
             # Extra fields should be accessible
-            assert hasattr(settings, "A2A_REGISTRY_CUSTOM_FIELD") or True
+            assert hasattr(settings, "A2A_REGISTRY_CUSTOM_FIELD")
 
 
 class TestGetRegistrySettings:
