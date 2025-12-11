@@ -9,9 +9,10 @@ The unified command-line interface for managing your agent development, deployme
 - [Core Commands](#core-commands)
   - [Development: `agentscope chat`](#1-development-agentscope-chat)
   - [Web UI: `agentscope web`](#2-web-ui-agentscope-web)
-  - [Deployment: `agentscope deploy`](#3-deployment-agentscope-deploy)
-  - [Deployment Management](#4-deployment-management)
-  - [Sandbox Management: `agentscope sandbox`](#5-sandbox-management-as-runtime-sandbox)
+  - [Run Agent Service: `agentscope run`](#3-run-agent-service-agentscope-run)
+  - [Deployment: `agentscope deploy`](#4-deployment-agentscope-deploy)
+  - [Deployment Management](#5-deployment-management)
+  - [Sandbox Management: `agentscope sandbox`](#6-sandbox-management-as-runtime-sandbox)
 - [API Reference](#api-reference)
 - [Common Workflows](#common-workflows)
 - [Troubleshooting](#troubleshooting)
@@ -343,7 +344,78 @@ agentscope web ./my-agent-project
 
 **Note:** First launch may take longer as web UI dependencies are installed via npm.
 
-### 3. Deployment: `agentscope deploy`
+### 3. Run Agent Service: `agentscope run`
+
+Start agent service and run continuously, exposing HTTP API endpoints for programmatic access.
+
+#### Command Syntax
+
+```bash
+agentscope run SOURCE [OPTIONS]
+```
+
+#### Arguments
+
+| Argument | Type | Required | Description |
+|----------|------|----------|-------------|
+| `SOURCE` | string | Yes | Path to Python file, project directory, or deployment ID |
+
+#### Options
+
+| Option | Short | Type | Default | Description |
+|--------|-------|------|---------|-------------|
+| `--host` | `-h` | string | `"0.0.0.0"` | Host address to bind to |
+| `--port` | `-p` | integer | `8080` | Port number to serve the application on |
+| `--verbose` | `-v` | flag | `False` | Show verbose output including logs |
+| `--entrypoint` | `-e` | string | `None` | Entrypoint file name for directory sources (e.g., 'app.py', 'main.py') |
+
+#### Examples
+
+```bash
+# Run agent service with defaults (0.0.0.0:8080)
+agentscope run app_agent.py
+
+# Specify custom host and port
+agentscope run app_agent.py --host 127.0.0.1 --port 8090
+
+# Run with verbose logging
+agentscope run app_agent.py --verbose
+
+# Use custom entrypoint for directory source
+agentscope run ./my-project --entrypoint custom_app.py
+
+```
+
+#### Use Cases
+
+The `run` command is ideal for:
+- Running agent as a background service
+- Providing HTTP API access without interactive CLI
+- Integration with other applications via HTTP
+- Production-like local testing
+
+#### Accessing the Service
+
+Once the service is running, you can access it via HTTP API:
+
+```bash
+curl -X POST "http://127.0.0.1:8080/process" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [{"type": "text", "text": "Hello!"}]
+      }
+    ],
+    "session_id": "my-session"
+  }'
+```
+
+**Note:** Press Ctrl+C to stop the service.
+
+### 4. Deployment: `agentscope deploy`
 
 Deploy agents to various platforms for production use.
 
@@ -355,7 +427,6 @@ agentscope deploy PLATFORM SOURCE [OPTIONS]
 
 #### Platforms
 
-- `local`: Local deployment in detached mode
 - `modelstudio`: Alibaba Cloud ModelStudio
 - `agentrun`: Alibaba Cloud AgentRun
 - `k8s`: Kubernetes/ACK
@@ -370,76 +441,7 @@ agentscope deploy PLATFORM SOURCE [OPTIONS]
 | `--env-file` | - | path | `None` | Path to `.env` file with environment variables |
 | `--config` | `-c` | path | `None` | Path to deployment config file (`.json`, `.yaml`, or `.yml`) |
 
-#### 3.1. Local Deployment
-
-Deploy locally in detached mode. The agent runs as a background process and exposes an HTTP API.
-
-##### Command Syntax
-
-```bash
-agentscope deploy local SOURCE [OPTIONS]
-```
-
-##### Platform-Specific Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--host` | string | `"127.0.0.1"` | Host to bind the service to |
-| `--port` | integer | `8090` | Port to expose the service on |
-
-##### Examples
-
-```bash
-# Basic deployment
-agentscope deploy local app_agent.py --env DASHSCOPE_API_KEY=sk-xxx
-
-# Custom host and port
-agentscope deploy local app_agent.py --host 0.0.0.0 --port 8080 --env DASHSCOPE_API_KEY=sk-xxx
-
-# Using environment file
-agentscope deploy local app_agent.py --env-file .env
-
-# Using config file
-agentscope deploy local app_agent.py --config deploy-config.yaml
-```
-
-##### Output
-
-After successful deployment, you'll receive:
-- **Deployment ID**: `local_20250101_120000_abc123`
-- **URL**: `http://127.0.0.1:8080`
-
-##### Querying Deployed Agent
-
-**Using curl:**
-
-```bash
-curl -i -X POST "http://127.0.0.1:8080/process" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{
-    "input": [
-      {
-        "role": "user",
-        "content": [
-          {
-            "type": "text",
-            "text": "Hello, how are you?"
-          }
-        ]
-      }
-    ],
-    "session_id": "123"
-  }'
-```
-
-**Using CLI（TODO）:**
-
-```bash
-agentscope chat local_20250101_120000_abc123 --query "Hello"
-```
-
-#### 3.2. ModelStudio Deployment
+#### 4.1. ModelStudio Deployment
 
 Deploy to Alibaba Cloud ModelStudio.
 
@@ -474,7 +476,37 @@ agentscope deploy modelstudio app_agent.py --skip-upload
 
 **Note:** `USE_LOCAL_RUNTIME=True` uses local agentscope runtime instead of PyPI version.
 
-#### 3.3. AgentRun Deployment
+##### Querying Deployed Agent
+
+**Using curl:**
+
+```bash
+curl -i -X POST "http://127.0.0.1:8080/process" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello, how are you?"
+          }
+        ]
+      }
+    ],
+    "session_id": "123"
+  }'
+```
+
+**Using chat cli :**
+
+```bash
+agentscope chat [DEPLOYMENT_ID] --query "Hello"
+```
+
+#### 4.2. AgentRun Deployment
 
 Deploy to Alibaba Cloud AgentRun.
 
@@ -514,7 +546,7 @@ agentscope deploy agentrun app_agent.py \
   --env DASHSCOPE_API_KEY=sk-xxx
 ```
 
-#### 3.4. Kubernetes Deployment
+#### 4.3. Kubernetes Deployment
 
 Deploy to Kubernetes/ACK cluster.
 
@@ -577,9 +609,9 @@ agentscope deploy k8s app_agent.py \
 
 **Note:** `USE_LOCAL_RUNTIME=True` uses local agentscope runtime instead of PyPI version.
 
-### 4. Deployment Management
+### 5. Deployment Management
 
-#### 4.1. List Deployments
+#### 5.1. List Deployments
 
 List all deployments and their status.
 
@@ -613,7 +645,7 @@ agentscope list --platform k8s
 agentscope list --format json
 ```
 
-#### 4.2. Check Deployment Status
+#### 5.2. Check Deployment Status
 
 Show detailed information about a specific deployment.
 
@@ -645,7 +677,7 @@ agentscope status local_20250101_120000_abc123
 agentscope status local_20250101_120000_abc123 --format json
 ```
 
-#### 4.3. Stop Deployment
+#### 5.3. Stop Deployment
 
 Stop a running deployment.
 
@@ -679,7 +711,7 @@ agentscope stop local_20250101_120000_abc123 --yes
 
 **Note:** Currently updates local state only. Platform-specific cleanup may be needed separately.
 
-#### 4.4. Invoke Deployed Agent
+#### 5.4. Invoke Deployed Agent
 
 Interact with a deployed agent using CLI.
 
@@ -713,7 +745,7 @@ as-runtime invoke local_20250101_120000_abc123
 as-runtime invoke local_20250101_120000_abc123 --query "Hello"
 ```
 
-### 5. Sandbox Management: `as-runtime sandbox`
+### 6. Sandbox Management: `as-runtime sandbox`
 
 Consolidated sandbox commands under unified CLI.
 

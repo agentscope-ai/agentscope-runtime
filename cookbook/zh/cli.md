@@ -9,9 +9,10 @@
 - [核心命令](#核心命令)
   - [开发：`agentscope chat`](#1-开发agentscope-chat)
   - [Web UI：`agentscope web`](#2-web-uiagentscope-web)
-  - [部署：`agentscope deploy`](#3-部署agentscope-deploy)
-  - [部署管理](#4-部署管理)
-  - [沙箱管理：`agentscope sandbox`](#5-沙箱管理as-runtime-sandbox)
+  - [运行智能体服务：`agentscope run`](#3-运行智能体服务agentscope-run)
+  - [部署：`agentscope deploy`](#4-部署agentscope-deploy)
+  - [部署管理](#5-部署管理)
+  - [沙箱管理：`agentscope sandbox`](#6-沙箱管理as-runtime-sandbox)
 - [API 参考](#api-参考)
 - [常用工作流](#常用工作流)
 - [故障排除](#故障排除)
@@ -342,7 +343,78 @@ agentscope web ./my-agent-project
 
 **注意：** 首次启动可能需要更长时间，因为需要通过 npm 安装 Web UI 依赖。
 
-### 3. 部署：`agentscope deploy`
+### 3. 运行智能体服务：`agentscope run`
+
+启动智能体服务并持续运行，暴露 HTTP API 端点供程序化访问。
+
+#### 命令语法
+
+```bash
+agentscope run SOURCE [OPTIONS]
+```
+
+#### 参数
+
+| 参数 | 类型 | 必需 | 描述 |
+|------|------|------|------|
+| `SOURCE` | string | 是 | Python 文件路径、项目目录或部署 ID |
+
+#### 选项
+
+| 选项 | 简写 | 类型 | 默认值 | 描述 |
+|------|------|------|--------|------|
+| `--host` | `-h` | string | `"0.0.0.0"` | 绑定的主机地址 |
+| `--port` | `-p` | integer | `8080` | 服务端口号 |
+| `--verbose` | `-v` | flag | `False` | 显示详细输出，包括日志 |
+| `--entrypoint` | `-e` | string | `None` | 目录源的入口文件名（例如 'app.py'、'main.py'） |
+
+#### 示例
+
+```bash
+# 使用默认配置运行智能体服务 (0.0.0.0:8080)
+agentscope run app_agent.py
+
+# 指定自定义主机和端口
+agentscope run app_agent.py --host 127.0.0.1 --port 8090
+
+# 带详细日志运行
+agentscope run app_agent.py --verbose
+
+# 使用自定义入口点的目录源
+agentscope run ./my-project --entrypoint custom_app.py
+
+```
+
+#### 使用场景
+
+`run` 命令适用于：
+- 将智能体作为后台服务运行
+- 提供 HTTP API 访问而不需要交互式 CLI
+- 通过 HTTP 与其他应用程序集成
+- 类生产环境的本地测试
+
+#### 访问服务
+
+服务运行后，可以通过 HTTP API 访问：
+
+```bash
+curl -X POST "http://127.0.0.1:8080/process" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [{"type": "text", "text": "Hello!"}]
+      }
+    ],
+    "session_id": "my-session"
+  }'
+```
+
+**注意：** 按 Ctrl+C 可以停止服务。
+
+### 4. 部署：`agentscope deploy`
 
 将智能体部署到各种平台以供生产使用。
 
@@ -354,7 +426,6 @@ agentscope deploy PLATFORM SOURCE [OPTIONS]
 
 #### 平台
 
-- `local`：本地分离模式部署
 - `modelstudio`：阿里云 ModelStudio
 - `agentrun`：阿里云 AgentRun
 - `k8s`：Kubernetes/ACK
@@ -369,76 +440,8 @@ agentscope deploy PLATFORM SOURCE [OPTIONS]
 | `--env-file` | - | path | `None` | 包含环境变量的 `.env` 文件路径 |
 | `--config` | `-c` | path | `None` | 部署配置文件路径（`.json`、`.yaml` 或 `.yml`） |
 
-#### 3.1. 本地部署
 
-在分离模式下本地部署。智能体作为后台进程运行并暴露 HTTP API。
-
-##### 命令语法
-
-```bash
-agentscope deploy local SOURCE [OPTIONS]
-```
-
-##### 平台特定选项
-
-| 选项 | 类型 | 默认值 | 描述 |
-|------|------|--------|------|
-| `--host` | string | `"127.0.0.1"` | 服务绑定的主机地址 |
-| `--port` | integer | `8090` | 服务暴露的端口 |
-
-##### 示例
-
-```bash
-# 基本部署
-agentscope deploy local app_agent.py --env DASHSCOPE_API_KEY=sk-xxx
-
-# 自定义主机和端口
-agentscope deploy local app_agent.py --host 0.0.0.0 --port 8080 --env DASHSCOPE_API_KEY=sk-xxx
-
-# 使用环境文件
-agentscope deploy local app_agent.py --env-file .env
-
-# 使用配置文件
-agentscope deploy local app_agent.py --config deploy-config.yaml
-```
-
-##### 输出
-
-部署成功后，您将收到：
-- **部署 ID**：`local_20250101_120000_abc123`
-- **URL**：`http://127.0.0.1:8080`
-
-##### 查询已部署的智能体
-
-**使用 curl：**
-
-```bash
-curl -i -X POST "http://127.0.0.1:8080/process" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{
-    "input": [
-      {
-        "role": "user",
-        "content": [
-          {
-            "type": "text",
-            "text": "Hello, how are you?"
-          }
-        ]
-      }
-    ],
-    "session_id": "123"
-  }'
-```
-
-**使用 CLI（待实现）：**
-
-```bash
-agentscope chat local_20250101_120000_abc123 --query "Hello"
-```
-
-#### 3.2. ModelStudio 部署
+#### 4.1. ModelStudio 部署
 
 部署到阿里云 ModelStudio。
 
@@ -472,8 +475,37 @@ agentscope deploy modelstudio app_agent.py --skip-upload
 ```
 
 **注意：** `USE_LOCAL_RUNTIME=True` 使用本地 agentscope runtime 而不是 PyPI 版本。
+##### 查询已部署的智能体
 
-#### 3.3. AgentRun 部署
+**使用 curl：**
+
+```bash
+curl -i -X POST "http://127.0.0.1:8080/process" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello, how are you?"
+          }
+        ]
+      }
+    ],
+    "session_id": "123"
+  }'
+```
+
+**使用 chat 命令：**
+
+```bash
+agentscope chat [DEPLOYMENT_ID] --query "Hello"
+```
+
+#### 4.2. AgentRun 部署
 
 部署到阿里云 AgentRun。
 
@@ -513,7 +545,7 @@ agentscope deploy agentrun app_agent.py \
   --env DASHSCOPE_API_KEY=sk-xxx
 ```
 
-#### 3.4. Kubernetes 部署
+#### 4.3. Kubernetes 部署
 
 部署到 Kubernetes/ACK 集群。
 
@@ -576,9 +608,9 @@ agentscope deploy k8s app_agent.py \
 
 **注意：** `USE_LOCAL_RUNTIME=True` 使用本地 agentscope runtime 而不是 PyPI 版本。
 
-### 4. 部署管理
+### 5. 部署管理
 
-#### 4.1. 列出部署
+#### 5.1. 列出部署
 
 列出所有部署及其状态。
 
@@ -612,7 +644,7 @@ agentscope list --platform k8s
 agentscope list --format json
 ```
 
-#### 4.2. 检查部署状态
+#### 5.2. 检查部署状态
 
 显示特定部署的详细信息。
 
@@ -644,7 +676,7 @@ agentscope status local_20250101_120000_abc123
 as-runtime status local_20250101_120000_abc123 --format json
 ```
 
-#### 4.3. 停止部署
+#### 5.3. 停止部署
 
 停止正在运行的部署。
 
@@ -678,7 +710,7 @@ as-runtime stop local_20250101_120000_abc123 --yes
 
 **注意：** 目前仅更新本地状态。平台特定的清理可能需要单独进行。
 
-#### 4.4. 调用已部署的智能体
+#### 5.4. 调用已部署的智能体
 
 使用 CLI 与已部署的智能体交互。
 
@@ -712,7 +744,7 @@ as-runtime invoke local_20250101_120000_abc123
 as-runtime invoke local_20250101_120000_abc123 --query "Hello"
 ```
 
-### 5. 沙箱管理：`as-runtime sandbox`
+### 6. 沙箱管理：`as-runtime sandbox`
 
 统一 CLI 下的沙箱命令整合。
 

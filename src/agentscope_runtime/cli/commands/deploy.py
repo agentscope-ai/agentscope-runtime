@@ -373,10 +373,10 @@ def local(
         echo_info(f"Use 'agentscope stop {deploy_id}' to stop the deployment")
 
     except Exception as e:
+        # Error details (including process logs) are already logged by the
+        # deployer
+        # Just show a simple error message here without the full traceback
         echo_error(f"Deployment failed: {e}")
-        import traceback
-
-        echo_error(traceback.format_exc())
         sys.exit(1)
 
 

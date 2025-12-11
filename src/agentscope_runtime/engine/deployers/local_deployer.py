@@ -262,6 +262,9 @@ class LocalDeployManager(DeployManager):
             "Deploying FastAPI service in detached process mode...",
         )
 
+        # Clean up old log files (older than 24 hours)
+        ProcessManager.cleanup_old_logs(max_age_hours=24)
+
         # Original behavior: require app or runner or entrypoint
         if runner is None and self._app is None and entrypoint is None:
             raise ValueError(
@@ -318,7 +321,25 @@ class LocalDeployManager(DeployManager):
             )
 
             if not service_ready:
-                raise RuntimeError("Service did not start within timeout")
+                # Check if process is still running
+                is_running = self.process_manager.is_process_running(pid)
+
+                # Get process logs
+                logs = self.process_manager.get_process_logs(max_lines=50)
+
+                # Log the detailed error for debugging
+                self._logger.error(
+                    f"Service did not start within timeout. "
+                    f"Process (PID: {pid}) status: "
+                    f"{'running' if is_running else 'terminated'}. "
+                    f"Host: {self.host}, Port: {self.port}.\n\n"
+                    f"Process logs:\n{logs}",
+                )
+
+                # Raise a simple error message
+                raise RuntimeError(
+                    "Service failed to start. Check logs above for details.",
+                )
 
             self.is_running = True
 
@@ -525,6 +546,9 @@ class LocalDeployManager(DeployManager):
         # Cleanup PID file
         if self._detached_pid_file:
             self.process_manager.cleanup_pid_file(self._detached_pid_file)
+
+        # Cleanup log file (keep file for debugging)
+        self.process_manager.cleanup_log_file(keep_file=True)
 
         # Reset state
         self._detached_process_pid = None
