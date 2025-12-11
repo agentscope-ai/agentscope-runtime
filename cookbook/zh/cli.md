@@ -7,7 +7,7 @@
 - [快速开始](#快速开始)
 - [完整示例](#完整示例)
 - [核心命令](#核心命令)
-  - [开发：`as-runtime run`](#1-开发-as-runtime-run)
+  - [开发：`as-runtime chat`](#1-开发-as-runtime-run)
   - [Web UI：`as-runtime web`](#2-web-ui-as-runtime-web)
   - [部署：`as-runtime deploy`](#3-部署-as-runtime-deploy)
   - [部署管理](#4-部署管理)
@@ -168,19 +168,19 @@ if __name__ == "__main__":
 ```bash
 cd my-agent-project
 export DASHSCOPE_API_KEY=sk-your-api-key
-as-runtime run app_agent.py
+as-runtime chat app_agent.py
 ```
 
 **单次查询模式：**
 
 ```bash
-as-runtime run app_agent.py --query "Hello, how are you?"
+as-runtime chat app_agent.py --query "Hello, how are you?"
 ```
 
 **使用自定义会话：**
 
 ```bash
-as-runtime run app_agent.py --query "Hello" --session-id my-session --user-id user123
+as-runtime chat app_agent.py --query "Hello" --session-id my-session --user-id user123
 ```
 
 ### 步骤 4：使用 Web UI 测试
@@ -228,7 +228,7 @@ curl -i -X POST "http://127.0.0.1:8080/process" \
 **或使用 CLI（待实现）：**
 
 ```bash
-as-runtime run local_20250101_120000_abc123 --query "Hello"
+as-runtime chat local_20250101_120000_abc123 --query "Hello"
 ```
 
 ### 步骤 6：停止部署
@@ -239,14 +239,14 @@ as-runtime stop local_20250101_120000_abc123
 
 ## 核心命令
 
-### 1. 开发：`as-runtime run`
+### 1. 开发：`as-runtime chat`
 
 在开发过程中以交互方式运行智能体或执行单次查询进行测试。
 
 #### 命令语法
 
 ```bash
-as-runtime run SOURCE [OPTIONS]
+as-runtime chat SOURCE [OPTIONS]
 ```
 
 #### 参数
@@ -271,32 +271,32 @@ as-runtime run SOURCE [OPTIONS]
 
 ```bash
 # 启动交互式会话
-as-runtime run app_agent.py
+as-runtime chat app_agent.py
 
 # 从项目目录加载
-as-runtime run ./my-agent-project
+as-runtime chat ./my-agent-project
 
 # 使用现有部署
-as-runtime run local_20250101_120000_abc123
+as-runtime chat local_20250101_120000_abc123
 ```
 
 **单次查询模式：**
 
 ```bash
 # 执行一次查询后退出
-as-runtime run app_agent.py --query "What is the weather today?"
+as-runtime chat app_agent.py --query "What is the weather today?"
 
 # 使用自定义会话和用户
-as-runtime run app_agent.py --query "Hello" --session-id my-session --user-id user123
+as-runtime chat app_agent.py --query "Hello" --session-id my-session --user-id user123
 
 # 详细模式（显示推理过程和日志）
-as-runtime run app_agent.py --query "Hello" --verbose
+as-runtime chat app_agent.py --query "Hello" --verbose
 ```
 
 **使用自定义入口点的项目目录：**
 
 ```bash
-as-runtime run ./my-project --entrypoint custom_app.py
+as-runtime chat ./my-project --entrypoint custom_app.py
 ```
 
 #### 智能体文件要求
@@ -435,7 +435,7 @@ curl -i -X POST "http://127.0.0.1:8080/process" \
 **使用 CLI（待实现）：**
 
 ```bash
-as-runtime run local_20250101_120000_abc123 --query "Hello"
+as-runtime chat local_20250101_120000_abc123 --query "Hello"
 ```
 
 #### 3.2. ModelStudio 部署
@@ -890,7 +890,7 @@ rm -rf .agentscope_runtime/builds/*
 
 ```bash
 # 1. 在本地开发智能体
-as-runtime run app_agent.py
+as-runtime chat app_agent.py
 
 # 2. 使用 Web UI 测试
 as-runtime web app_agent.py
@@ -913,10 +913,10 @@ as-runtime stop <deployment-id>
 
 ```bash
 # 使用单次查询快速测试
-as-runtime run app_agent.py --query "test query"
+as-runtime chat app_agent.py --query "test query"
 
 # 使用对话历史进行交互式测试
-as-runtime run app_agent.py --session-id test-session
+as-runtime chat app_agent.py --session-id test-session
 
 # 使用 Web UI 测试
 as-runtime web app_agent.py --port 8080
@@ -994,11 +994,11 @@ as-runtime stop <deployment-id>
 
 ```bash
 # 继续之前的会话
-as-runtime run app_agent.py --session-id my-session
+as-runtime chat app_agent.py --session-id my-session
 
 # 多个用户，同一个智能体
-as-runtime run app_agent.py --user-id alice --session-id session1
-as-runtime run app_agent.py --user-id bob --session-id session2
+as-runtime chat app_agent.py --user-id alice --session-id session1
+as-runtime chat app_agent.py --user-id bob --session-id session2
 ```
 
 ### 输出格式

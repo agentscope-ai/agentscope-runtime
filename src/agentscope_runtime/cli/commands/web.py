@@ -76,13 +76,13 @@ signal.signal(signal.SIGTERM, _signal_handler)
     "--host",
     "-h",
     help="Host address to bind to",
-    default="127.0.0.1",
+    default="0.0.0.0",
 )
 @click.option(
     "--port",
     "-p",
     help="Port number to serve on",
-    default=8090,
+    default=8080,
     type=int,
 )
 @click.option(

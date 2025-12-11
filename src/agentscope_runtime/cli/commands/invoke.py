@@ -4,7 +4,7 @@
 
 import click
 
-from agentscope_runtime.cli.commands.run import run
+from agentscope_runtime.cli.commands.chat import chat
 from agentscope_runtime.cli.utils.console import echo_info
 
 
@@ -31,7 +31,7 @@ def invoke(deploy_id: str, query: str, session_id: str, user_id: str):
     Invoke a deployed agent (alias for 'run' with deployment ID).
 
     This is a convenience command that is equivalent to:
-    $ as-runtime run <deploy_id> [options]
+    $ as-runtime chat <deploy_id> [options]
 
     Examples:
     \b
@@ -46,7 +46,7 @@ def invoke(deploy_id: str, query: str, session_id: str, user_id: str):
     # Delegate to run command
     ctx = click.get_current_context()
     ctx.invoke(
-        run,
+        chat,
         source=deploy_id,
         query=query,
         session_id=session_id,

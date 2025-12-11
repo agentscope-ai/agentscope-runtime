@@ -8,7 +8,7 @@ import click
 
 # Import command groups (to be registered below)
 from agentscope_runtime.cli.commands import (
-    run,
+    chat,
     web,
     deploy,
     list_cmd,
@@ -42,7 +42,7 @@ def cli(ctx):
 
 
 # Register commands
-cli.add_command(run.run)
+cli.add_command(chat.chat)
 cli.add_command(web.web)
 cli.add_command(deploy.deploy)
 cli.add_command(list_cmd.list_deployments)

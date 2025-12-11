@@ -7,7 +7,7 @@ The unified command-line interface for managing your agent development, deployme
 - [Quick Start](#quick-start)
 - [Complete Example](#complete-example)
 - [Core Commands](#core-commands)
-  - [Development: `as-runtime run`](#1-development-as-runtime-run)
+  - [Development: `as-runtime chat`](#1-development-as-runtime-run)
   - [Web UI: `as-runtime web`](#2-web-ui-as-runtime-web)
   - [Deployment: `as-runtime deploy`](#3-deployment-as-runtime-deploy)
   - [Deployment Management](#4-deployment-management)
@@ -168,19 +168,19 @@ if __name__ == "__main__":
 ```bash
 cd my-agent-project
 export DASHSCOPE_API_KEY=sk-your-api-key
-as-runtime run app_agent.py
+as-runtime chat app_agent.py
 ```
 
 **Single query mode:**
 
 ```bash
-as-runtime run app_agent.py --query "Hello, how are you?"
+as-runtime chat app_agent.py --query "Hello, how are you?"
 ```
 
 **With custom session:**
 
 ```bash
-as-runtime run app_agent.py --query "Hello" --session-id my-session --user-id user123
+as-runtime chat app_agent.py --query "Hello" --session-id my-session --user-id user123
 ```
 
 ### Step 4: Test with Web UI
@@ -229,7 +229,7 @@ curl -i -X POST "http://127.0.0.1:8080/process" \
 **Or use CLI(TODO):**
 
 ```bash
-as-runtime run local_20250101_120000_abc123 --query "Hello"
+as-runtime chat local_20250101_120000_abc123 --query "Hello"
 ```
 
 ### Step 6: Stop Deployment
@@ -240,14 +240,14 @@ as-runtime stop local_20250101_120000_abc123
 
 ## Core Commands
 
-### 1. Development: `as-runtime run`
+### 1. Development: `as-runtime chat`
 
 Run your agent interactively or execute single queries for testing during development.
 
 #### Command Syntax
 
 ```bash
-as-runtime run SOURCE [OPTIONS]
+as-runtime chat SOURCE [OPTIONS]
 ```
 
 #### Arguments
@@ -272,32 +272,32 @@ as-runtime run SOURCE [OPTIONS]
 
 ```bash
 # Start interactive session
-as-runtime run app_agent.py
+as-runtime chat app_agent.py
 
 # Load from project directory
-as-runtime run ./my-agent-project
+as-runtime chat ./my-agent-project
 
 # Use existing deployment
-as-runtime run local_20250101_120000_abc123
+as-runtime chat local_20250101_120000_abc123
 ```
 
 **Single query mode:**
 
 ```bash
 # Execute one query and exit
-as-runtime run app_agent.py --query "What is the weather today?"
+as-runtime chat app_agent.py --query "What is the weather today?"
 
 # With custom session and user
-as-runtime run app_agent.py --query "Hello" --session-id my-session --user-id user123
+as-runtime chat app_agent.py --query "Hello" --session-id my-session --user-id user123
 
 # Verbose mode (show reasoning and logs)
-as-runtime run app_agent.py --query "Hello" --verbose
+as-runtime chat app_agent.py --query "Hello" --verbose
 ```
 
 **Project directory with custom entrypoint:**
 
 ```bash
-as-runtime run ./my-project --entrypoint custom_app.py
+as-runtime chat ./my-project --entrypoint custom_app.py
 ```
 
 #### Agent File Requirements
@@ -436,7 +436,7 @@ curl -i -X POST "http://127.0.0.1:8080/process" \
 **Using CLI（TODO）:**
 
 ```bash
-as-runtime run local_20250101_120000_abc123 --query "Hello"
+as-runtime chat local_20250101_120000_abc123 --query "Hello"
 ```
 
 #### 3.2. ModelStudio Deployment
@@ -893,7 +893,7 @@ You can manually edit `deployments.json` or share it with team members for deplo
 
 ```bash
 # 1. Develop your agent locally
-as-runtime run app_agent.py
+as-runtime chat app_agent.py
 
 # 2. Test with web UI
 as-runtime web app_agent.py
@@ -916,10 +916,10 @@ as-runtime stop <deployment-id>
 
 ```bash
 # Quick test with single query
-as-runtime run app_agent.py --query "test query"
+as-runtime chat app_agent.py --query "test query"
 
 # Interactive testing with conversation history
-as-runtime run app_agent.py --session-id test-session
+as-runtime chat app_agent.py --session-id test-session
 
 # Test with web UI
 as-runtime web app_agent.py --port 8080
@@ -997,11 +997,11 @@ as-runtime stop <deployment-id>
 
 ```bash
 # Continue previous session
-as-runtime run app_agent.py --session-id my-session
+as-runtime chat app_agent.py --session-id my-session
 
 # Multiple users, same agent
-as-runtime run app_agent.py --user-id alice --session-id session1
-as-runtime run app_agent.py --user-id bob --session-id session2
+as-runtime chat app_agent.py --user-id alice --session-id session1
+as-runtime chat app_agent.py --user-id bob --session-id session2
 ```
 
 ### Output Formats

@@ -291,7 +291,7 @@ def _auto_detect_entrypoint(project_dir: str) -> str:
     - app.py
     - main.py
     - __main__.py
-    - run.py
+    - chat.py
     - runner.py
 
     Args:
@@ -307,7 +307,7 @@ def _auto_detect_entrypoint(project_dir: str) -> str:
         "app.py",
         "main.py",
         "__main__.py",
-        "run.py",
+        "chat.py",
         "runner.py",
     ]
 

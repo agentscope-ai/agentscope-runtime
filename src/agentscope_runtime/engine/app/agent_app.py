@@ -183,7 +183,7 @@ class AgentApp(BaseApp):
 
         Example:
             >>> app = AgentApp(app_name="MyAgent")
-            >>> app.run(host="127.0.0.1", port=8080, web_ui=True)
+            >>> app.chat(host="127.0.0.1", port=8080, web_ui=True)
         """
         # Build runner
         self._build_runner()

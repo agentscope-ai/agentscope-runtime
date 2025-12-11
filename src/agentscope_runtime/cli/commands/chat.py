@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""as-runtime run command - Interactive and single-shot agent execution."""
+"""as-runtime chat command - Interactive and single-shot agent execution."""
 # pylint: disable=no-value-for-parameter, too-many-branches, protected-access
 # pylint: disable=too-many-statements, too-many-nested-blocks
 # pylint: disable=too-many-nested-blocks, unused-argument
@@ -73,7 +73,7 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
     "'main.py')",
     default=None,
 )
-def run(
+def chat(
     source: str,
     query: Optional[str],
     session_id: Optional[str],
@@ -93,19 +93,19 @@ def run(
     Examples:
     \b
     # Interactive mode
-    $ as-runtime run agent.py
+    $ as-runtime chat agent.py
 
     # Single query
-    $ as-runtime run agent.py --query "Hello, how are you?"
+    $ as-runtime chat agent.py --query "Hello, how are you?"
 
     # Use deployment
-    $ as-runtime run local_20250101_120000_abc123 --session-id my-session
+    $ as-runtime chat local_20250101_120000_abc123 --session-id my-session
 
     # Verbose mode (show reasoning and logs)
-    $ as-runtime run agent.py --query "Hello" --verbose
+    $ as-runtime chat agent.py --query "Hello" --verbose
 
     # Use custom entrypoint for directory source
-    $ as-runtime run ./my-project --entrypoint custom_app.py
+    $ as-runtime chat ./my-project --entrypoint custom_app.py
     """
     # Configure logging and tracing based on verbose flag
     if not verbose:
@@ -812,4 +812,4 @@ def _interactive_mode_http(
 
 
 if __name__ == "__main__":
-    run()
+    chat()
