@@ -10,6 +10,7 @@ import asyncio
 import json
 import logging
 import os
+import signal
 import sys
 from typing import Optional
 from urllib.parse import urljoin
@@ -366,42 +367,56 @@ async def _interactive_mode(
     echo_info(f"User ID: {user_id}")
     print()
 
+    # Set up signal handler for Ctrl+C during input
+    def handle_sigint(signum, frame):
+        """Handle SIGINT (Ctrl+C) gracefully."""
+        print()  # New line after ^C
+        echo_warning(
+            "Interrupted. Type 'exit' to quit or continue chatting.",
+        )
+        # Raise KeyboardInterrupt to be caught by the exception handler
+        raise KeyboardInterrupt
+
+    # Install signal handler
+    original_handler = signal.signal(signal.SIGINT, handle_sigint)
+
     # Start runner once for the entire interactive session
     async with runner:
-        while True:
-            try:
-                # Read user input with error handling for encoding issues
+        try:
+            while True:
                 try:
-                    user_input = input("> ").strip()
-                except UnicodeDecodeError as e:
-                    echo_error(f"Input encoding error: {e}")
-                    echo_warning(
-                        "Please ensure your terminal supports UTF-8 encoding",
+                    # Read user input with error handling for encoding issues
+                    try:
+                        user_input = input("> ").strip()
+                    except UnicodeDecodeError as e:
+                        echo_error(f"Input encoding error: {e}")
+                        echo_warning(
+                            "Please ensure your terminal supports UTF-8 "
+                            "encoding",
+                        )
+                        continue
+
+                    if not user_input:
+                        continue
+
+                    if user_input.lower() in ["exit", "quit", "q"]:
+                        echo_info("Exiting interactive mode...")
+                        break
+
+                    # Create Message object
+                    user_message = Message(
+                        role=Role.USER,
+                        content=[TextContent(text=user_input)],
                     )
-                    continue
 
-                if not user_input:
-                    continue
+                    # Create request
+                    request = AgentRequest(
+                        input=[user_message],
+                        session_id=session_id,
+                        user_id=user_id,
+                    )
 
-                if user_input.lower() in ["exit", "quit", "q"]:
-                    echo_info("Exiting interactive mode...")
-                    break
-
-                # Create Message object
-                user_message = Message(
-                    role=Role.USER,
-                    content=[TextContent(text=user_input)],
-                )
-
-                # Create request
-                request = AgentRequest(
-                    input=[user_message],
-                    session_id=session_id,
-                    user_id=user_id,
-                )
-
-                # Execute query using stream_query
-                try:
+                    # Execute query using stream_query
                     # Track reasoning message IDs to filter out their content
                     reasoning_msg_ids = set()
 
@@ -479,27 +494,24 @@ async def _interactive_mode(
 
                     print()  # New line after response
 
+                except KeyboardInterrupt:
+                    # Handled by signal handler, just continue
+                    continue
+                except EOFError:
+                    print()
+                    echo_info("EOF received. Exiting...")
+                    break
                 except Exception as e:
-                    echo_error(f"\nQuery failed: {e}")
+                    # Catch any other unexpected errors
+                    echo_error(f"\nUnexpected error: {e}")
+                    import traceback
 
-            except KeyboardInterrupt:
-                print()  # New line after Ctrl+C
-                echo_warning(
-                    "Interrupted. Type 'exit' to quit or continue chatting.",
-                )
-                continue
-            except EOFError:
-                print()
-                echo_info("EOF received. Exiting...")
-                break
-            except Exception as e:
-                # Catch any other unexpected errors
-                echo_error(f"\nUnexpected error: {e}")
-                import traceback
-
-                if verbose:
-                    traceback.print_exc()
-                continue
+                    if verbose:
+                        traceback.print_exc()
+                    continue
+        finally:
+            # Restore original signal handler
+            signal.signal(signal.SIGINT, original_handler)
 
 
 def _parse_sse_line(line: bytes) -> tuple[Optional[str], Optional[str]]:
@@ -644,142 +656,159 @@ def _interactive_mode_http(
     echo_info(f"User ID: {user_id}")
     print()
 
-    while True:
-        try:
-            # Read user input with error handling for encoding issues
+    # Set up signal handler for Ctrl+C during input
+    def handle_sigint(signum, frame):
+        """Handle SIGINT (Ctrl+C) gracefully."""
+        print()  # New line after ^C
+        echo_warning(
+            "KeyBoardInterrupted. Type 'exit' to quit or continue chatting.",
+        )
+        # Raise KeyboardInterrupt to be caught by the exception handler
+        raise KeyboardInterrupt
+
+    # Install signal handler
+    original_handler = signal.signal(signal.SIGINT, handle_sigint)
+
+    try:
+        while True:
             try:
-                user_input = input("> ").strip()
-            except UnicodeDecodeError as e:
-                echo_error(f"Input encoding error: {e}")
-                echo_warning(
-                    "Please ensure your terminal supports UTF-8 encoding",
-                )
-                continue
+                # Read user input with error handling for encoding issues
+                try:
+                    user_input = input("> ").strip()
+                except UnicodeDecodeError as e:
+                    echo_error(f"Input encoding error: {e}")
+                    echo_warning(
+                        "Please ensure your terminal supports UTF-8 encoding",
+                    )
+                    continue
 
-            if not user_input:
-                continue
+                if not user_input:
+                    continue
 
-            if user_input.lower() in ["exit", "quit", "q"]:
-                echo_info("Exiting interactive mode...")
+                if user_input.lower() in ["exit", "quit", "q"]:
+                    echo_info("Exiting interactive mode...")
+                    break
+
+                # Prepare request payload
+                payload = {
+                    "input": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": user_input,
+                                },
+                            ],
+                        },
+                    ],
+                    "session_id": session_id,
+                }
+
+                # Prepare headers
+                headers = {
+                    "Content-Type": "application/json",
+                    "Accept": "text/event-stream",
+                    "Cache-Control": "no-cache",
+                }
+                if token:
+                    headers["Authorization"] = f"Bearer {token}"
+
+                # Execute query via HTTP
+                try:
+                    response = requests.post(
+                        url,
+                        json=payload,
+                        headers=headers,
+                        stream=True,
+                    )
+                    response.raise_for_status()
+
+                    # Parse SSE stream
+                    for line in response.iter_lines():
+                        if line:
+                            field, value = _parse_sse_line(line)
+                            if field == "data" and value:
+                                try:
+                                    data = json.loads(value)
+                                    # Handle different object types
+                                    obj_type = data.get("object")
+                                    status = data.get("status")
+
+                                    # Skip reasoning messages in non-verbose
+                                    # mode
+                                    if (
+                                        not verbose
+                                        and obj_type == "message"
+                                        and data.get("type") == "reasoning"
+                                    ):
+                                        continue
+
+                                    # Handle content deltas (streaming text)
+                                    if (
+                                        obj_type == "content"
+                                        and data.get("delta") is True
+                                        and data.get("type") == "text"
+                                        and data.get("text")
+                                    ):
+                                        print(data["text"], end="", flush=True)
+
+                                    # Handle completed messages (for
+                                    # non-streaming responses)
+                                    # Note: We mainly rely on delta content for
+                                    # streaming,
+                                    # but handle completed messages as fallback
+                                    if (
+                                        obj_type == "message"
+                                        and status == "completed"
+                                        and data.get("type") != "reasoning"
+                                        and data.get("content")
+                                    ):
+                                        for content_item in data["content"]:
+                                            if (
+                                                isinstance(content_item, dict)
+                                                and content_item.get("type")
+                                                == "text"
+                                                and content_item.get("text")
+                                                # Only print if this is not a
+                                                # delta (already printed)
+                                                and not content_item.get(
+                                                    "delta",
+                                                )
+                                            ):
+                                                print(
+                                                    content_item["text"],
+                                                    end="",
+                                                    flush=True,
+                                                )
+
+                                except json.JSONDecodeError:
+                                    # Skip invalid JSON lines
+                                    pass
+
+                    print()  # New line after response
+
+                except requests.exceptions.RequestException as e:
+                    echo_error(f"\nQuery failed: {e}")
+
+            except KeyboardInterrupt:
+                # Handled by signal handler, just continue
+                continue
+            except EOFError:
+                print()
+                echo_info("EOF received. Exiting...")
                 break
+            except Exception as e:
+                # Catch any other unexpected errors
+                echo_error(f"\nUnexpected error: {e}")
+                import traceback
 
-            # Prepare request payload
-            payload = {
-                "input": [
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": user_input,
-                            },
-                        ],
-                    },
-                ],
-                "session_id": session_id,
-            }
-
-            # Prepare headers
-            headers = {
-                "Content-Type": "application/json",
-                "Accept": "text/event-stream",
-                "Cache-Control": "no-cache",
-            }
-            if token:
-                headers["Authorization"] = f"Bearer {token}"
-
-            # Execute query via HTTP
-            try:
-                response = requests.post(
-                    url,
-                    json=payload,
-                    headers=headers,
-                    stream=True,
-                )
-                response.raise_for_status()
-
-                # Parse SSE stream
-                for line in response.iter_lines():
-                    if line:
-                        field, value = _parse_sse_line(line)
-                        if field == "data" and value:
-                            try:
-                                data = json.loads(value)
-                                # Handle different object types
-                                obj_type = data.get("object")
-                                status = data.get("status")
-
-                                # Skip reasoning messages in non-verbose mode
-                                if (
-                                    not verbose
-                                    and obj_type == "message"
-                                    and data.get("type") == "reasoning"
-                                ):
-                                    continue
-
-                                # Handle content deltas (streaming text)
-                                if (
-                                    obj_type == "content"
-                                    and data.get("delta") is True
-                                    and data.get("type") == "text"
-                                    and data.get("text")
-                                ):
-                                    print(data["text"], end="", flush=True)
-
-                                # Handle completed messages (for
-                                # non-streaming responses)
-                                # Note: We mainly rely on delta content for
-                                # streaming,
-                                # but handle completed messages as fallback
-                                if (
-                                    obj_type == "message"
-                                    and status == "completed"
-                                    and data.get("type") != "reasoning"
-                                    and data.get("content")
-                                ):
-                                    for content_item in data["content"]:
-                                        if (
-                                            isinstance(content_item, dict)
-                                            and content_item.get("type")
-                                            == "text"
-                                            and content_item.get("text")
-                                            # Only print if this is not a
-                                            # delta (already printed)
-                                            and not content_item.get("delta")
-                                        ):
-                                            print(
-                                                content_item["text"],
-                                                end="",
-                                                flush=True,
-                                            )
-
-                            except json.JSONDecodeError:
-                                # Skip invalid JSON lines
-                                pass
-
-                print()  # New line after response
-
-            except requests.exceptions.RequestException as e:
-                echo_error(f"\nQuery failed: {e}")
-
-        except KeyboardInterrupt:
-            print()  # New line after Ctrl+C
-            echo_warning(
-                "Interrupted. Type 'exit' to quit or continue chatting.",
-            )
-            continue
-        except EOFError:
-            print()
-            echo_info("EOF received. Exiting...")
-            break
-        except Exception as e:
-            # Catch any other unexpected errors
-            echo_error(f"\nUnexpected error: {e}")
-            import traceback
-
-            if verbose:
-                traceback.print_exc()
-            continue
+                if verbose:
+                    traceback.print_exc()
+                continue
+    finally:
+        # Restore original signal handler
+        signal.signal(signal.SIGINT, original_handler)
 
 
 if __name__ == "__main__":
