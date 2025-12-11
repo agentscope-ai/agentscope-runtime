@@ -161,11 +161,18 @@ def _create_nacos_registry_from_settings(settings: A2ARegistrySettings) -> Optio
         # lazy import so package is optional
         from .nacos_a2a_registry import NacosRegistry
         from v2.nacos import ClientConfig, ClientConfigBuilder
-    except Exception:
+    except ImportError:
         logger.warning(
             "[A2A] Nacos registry requested but nacos SDK not available. "
             "Install with: pip install v2-nacos",
             exc_info=False,
+        )
+        return None
+    except Exception as e:
+        logger.warning(
+            "[A2A] Unexpected error during Nacos registry import: %s",
+            str(e),
+            exc_info=True,
         )
         return None
 
@@ -181,7 +188,7 @@ def _create_nacos_registry_from_settings(settings: A2ARegistrySettings) -> Optio
         registry = NacosRegistry(nacos_client_config=nacos_client_config)
         logger.info(
             f"[A2A] Created Nacos registry from environment: server={settings.NACOS_SERVER_ADDR}, "
-            f"username={settings.NACOS_USERNAME or 'none'}"
+            f"authentication={'enabled' if settings.NACOS_USERNAME and settings.NACOS_PASSWORD else 'disabled'}"
         )
         return registry
     except Exception:

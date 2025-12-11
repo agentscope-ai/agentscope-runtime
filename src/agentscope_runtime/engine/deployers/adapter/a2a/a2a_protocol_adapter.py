@@ -309,8 +309,19 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                 valid_regs: List[A2ARegistry] = []
                 for r in regs:
                     # Accept objects that implement required methods (duck typing)
-                    if hasattr(r, "register") and hasattr(r, "registry_name"):
-                        valid_regs.append(r)
+                    # Verify both existence and callability to prevent runtime errors
+                    has_register = hasattr(r, "register")
+                    has_registry_name = hasattr(r, "registry_name")
+                    if has_register and has_registry_name:
+                        register_callable = callable(getattr(r, "register", None))
+                        registry_name_callable = callable(getattr(r, "registry_name", None))
+                        if register_callable and registry_name_callable:
+                            valid_regs.append(r)
+                        else:
+                            logger.warning(
+                                "[A2A] Ignoring invalid registry entry (register/registry_name not callable): %s",
+                                type(r),
+                            )
                     else:
                         logger.warning(
                             "[A2A] Ignoring invalid registry entry (missing register/registry_name): %s",
@@ -527,15 +538,23 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         if '://' not in url:
             normalized = 'http://' + url
 
-        parsed = urlparse(normalized)
+        try:
+            parsed = urlparse(normalized)
+        except Exception as e:
+            logger.warning("[A2A] Malformed transport URL provided: %s; error: %s", url, str(e))
+            return None
+
+        # Check for obviously malformed URLs (e.g., only colons, empty host, etc.)
+        if not parsed.hostname:
+            if not parsed.netloc and not parsed.path:
+                logger.warning("[A2A] Malformed transport URL (empty netloc and path): %s", url)
+            else:
+                logger.warning("[A2A] Invalid transport URL (no host) provided: %s", url)
+            return None
 
         host = parsed.hostname or deploy_properties.host
         port = parsed.port or deploy_properties.port
         path = parsed.path or ""
-
-        if not host:
-            logger.warning("[A2A] Invalid transport URL (no host) provided: %s", url)
-            return None
 
         return A2aTransportsProperties(
             transport_type=transport_type,
@@ -566,10 +585,13 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         def _serialize_card(card: AgentCard) -> Dict[str, Any]:
             """Serialize AgentCard to a plain dict in a robust way.
 
-            Tries pydantic v2's model_dump, then model_dump_json, then pydantic v1's dict(),
-            and finally falls back to json() -> loads. If any method fails, continues to
-            try the next method. Only returns an empty dict if all methods fail or are unavailable.
-            Any serialization error is logged at debug level.
+            Attempts serialization in the following order:
+            1. Tries `model_dump` (Pydantic v2).
+            2. Then tries `model_dump_json` (Pydantic v2, returns JSON string).
+            3. Then tries `dict` (Pydantic v1 compatibility).
+            4. Then tries `json` (Pydantic v1 compatibility, returns JSON string or dict).
+            If all methods fail or are unavailable, raises RuntimeError.
+            Individual serialization errors are logged at debug level.
             """
             # Prefer pydantic v2 model_dump, then model_dump_json, then fall back to
             # pydantic v1 style dict/json. Use getattr to avoid static deprecation
@@ -615,8 +637,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                     logger.debug("[A2A] json() serialization failed: %s", e, exc_info=True)
                     # Continue to next method (but this is the last one)
 
-            logger.debug("[A2A] AgentCard has no known serializer or all serialization methods failed, returning empty dict")
-            return {}
+            logger.error("[A2A] AgentCard has no known serializer or all serialization methods failed. This is a critical endpoint and returning an empty dict may cause integration issues.")
+            raise RuntimeError("AgentCard serialization failed: no known serializer succeeded. Please check AgentCard configuration and serialization methods.")
 
         @app.get(self._wellknown_path)
         async def get_agent_card() -> JSONResponse:
@@ -678,10 +700,11 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                 "transport": transport.get("name", DEFAULT_TRANSPORT),
                 "url": transport.get("url", ""),
             }
-            # Note: rootPath, subPath, tls are not part of AgentInterface schema
-            for key in ["rootPath", "subPath", "tls"]:
-                if key in transport:
-                    interface[key] = transport[key]
+            # Note: rootPath, subPath, and tls fields from transport config are
+            # intentionally excluded here as they are not part of the AgentInterface
+            # schema. These fields are used internally by A2aTransportsProperties
+            # for registry configuration but should not be included in the interface
+            # to avoid validation errors.
             interfaces.append(interface)
 
         return interfaces
