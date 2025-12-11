@@ -154,7 +154,9 @@ def get_registry_settings() -> A2ARegistrySettings:
     return _registry_settings
 
 
-def _create_nacos_registry_from_settings(settings: A2ARegistrySettings) -> Optional[A2ARegistry]:
+def _create_nacos_registry_from_settings(
+    settings: A2ARegistrySettings,
+) -> Optional[A2ARegistry]:
     """Create a NacosRegistry instance from provided settings, or return None
     if the required nacos SDK is not available or construction fails."""
     try:
@@ -179,7 +181,9 @@ def _create_nacos_registry_from_settings(settings: A2ARegistrySettings) -> Optio
     builder = ClientConfigBuilder().server_address(settings.NACOS_SERVER_ADDR)
 
     if settings.NACOS_USERNAME and settings.NACOS_PASSWORD:
-        builder.username(settings.NACOS_USERNAME).password(settings.NACOS_PASSWORD)
+        builder.username(settings.NACOS_USERNAME).password(
+            settings.NACOS_PASSWORD,
+        )
         # Avoid logging credentials directly; log that authentication will be used.
         logger.debug("[A2A] Using Nacos authentication")
 
@@ -188,7 +192,7 @@ def _create_nacos_registry_from_settings(settings: A2ARegistrySettings) -> Optio
         registry = NacosRegistry(nacos_client_config=nacos_client_config)
         logger.info(
             f"[A2A] Created Nacos registry from environment: server={settings.NACOS_SERVER_ADDR}, "
-            f"authentication={'enabled' if settings.NACOS_USERNAME and settings.NACOS_PASSWORD else 'disabled'}"
+            f"authentication={'enabled' if settings.NACOS_USERNAME and settings.NACOS_PASSWORD else 'disabled'}",
         )
         return registry
     except Exception:
@@ -206,7 +210,9 @@ def _split_registry_types(raw: Optional[str]) -> List[str]:
     return [r.strip().lower() for r in raw.split(",") if r.strip()]
 
 
-def create_registry_from_env() -> Optional[Union[A2ARegistry, List[A2ARegistry]]]:
+def create_registry_from_env() -> (
+    Optional[Union[A2ARegistry, List[A2ARegistry]]]
+):
     """Create registry instance(s) based on environment settings.
 
     Behavior:
@@ -239,9 +245,13 @@ def create_registry_from_env() -> Optional[Union[A2ARegistry, List[A2ARegistry]]
             if registry:
                 registries.append(registry)
             else:
-                logger.debug("[A2A] Skipping nacos registry due to earlier errors")
+                logger.debug(
+                    "[A2A] Skipping nacos registry due to earlier errors",
+                )
         else:
-            logger.warning(f"[A2A] Unknown registry type requested: {registry_type}. Supported: nacos")
+            logger.warning(
+                f"[A2A] Unknown registry type requested: {registry_type}. Supported: nacos",
+            )
 
     if not registries:
         return None

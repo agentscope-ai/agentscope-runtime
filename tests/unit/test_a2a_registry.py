@@ -49,7 +49,9 @@ class MockRegistry(A2ARegistry):
         a2a_transports_properties: List[A2aTransportsProperties],
     ) -> None:
         self.registered_cards.append(agent_card)
-        self.registered_properties.append((deploy_properties, a2a_transports_properties))
+        self.registered_properties.append(
+            (deploy_properties, a2a_transports_properties),
+        )
 
 
 class TestA2ARegistry:
@@ -67,6 +69,7 @@ class TestA2ARegistry:
 
         # Create a minimal AgentCard for testing
         from a2a.types import AgentCapabilities
+
         agent_card = AgentCard(
             name="test_agent",
             version="1.0.0",
@@ -203,7 +206,10 @@ class TestGetRegistrySettings:
     def test_singleton_behavior(self):
         """Test that get_registry_settings returns a singleton."""
         # Reset the global state
-        from agentscope_runtime.engine.deployers.adapter.a2a import a2a_registry
+        from agentscope_runtime.engine.deployers.adapter.a2a import (
+            a2a_registry,
+        )
+
         original_settings = a2a_registry._registry_settings
         a2a_registry._registry_settings = None
 
@@ -218,12 +224,19 @@ class TestGetRegistrySettings:
     def test_loads_env_files(self):
         """Test that get_registry_settings loads .env files."""
         # Reset the global state
-        from agentscope_runtime.engine.deployers.adapter.a2a import a2a_registry
+        from agentscope_runtime.engine.deployers.adapter.a2a import (
+            a2a_registry,
+        )
+
         original_settings = a2a_registry._registry_settings
         a2a_registry._registry_settings = None
 
         # Create a temporary .env file
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".env", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".env",
+            delete=False,
+        ) as f:
             f.write("A2A_REGISTRY_TYPE=nacos\n")
             f.write("NACOS_SERVER_ADDR=test.nacos.com:8848\n")
             env_file = f.name
@@ -268,7 +281,11 @@ class TestSplitRegistryTypes:
 
     def test_with_spaces(self):
         """Test with spaces around commas."""
-        assert _split_registry_types("nacos , consul , etcd") == ["nacos", "consul", "etcd"]
+        assert _split_registry_types("nacos , consul , etcd") == [
+            "nacos",
+            "consul",
+            "etcd",
+        ]
 
     def test_case_normalization(self):
         """Test that types are lowercased."""
@@ -284,7 +301,10 @@ class TestCreateRegistryFromEnv:
 
     def test_disabled_registry(self):
         """Test when registry is disabled."""
-        from agentscope_runtime.engine.deployers.adapter.a2a import a2a_registry
+        from agentscope_runtime.engine.deployers.adapter.a2a import (
+            a2a_registry,
+        )
+
         original_settings = a2a_registry._registry_settings
         a2a_registry._registry_settings = None
 
@@ -301,7 +321,10 @@ class TestCreateRegistryFromEnv:
 
     def test_no_registry_type(self):
         """Test when no registry type is specified."""
-        from agentscope_runtime.engine.deployers.adapter.a2a import a2a_registry
+        from agentscope_runtime.engine.deployers.adapter.a2a import (
+            a2a_registry,
+        )
+
         original_settings = a2a_registry._registry_settings
         a2a_registry._registry_settings = None
 
@@ -314,7 +337,10 @@ class TestCreateRegistryFromEnv:
 
     def test_unknown_registry_type(self):
         """Test with unknown registry type."""
-        from agentscope_runtime.engine.deployers.adapter.a2a import a2a_registry
+        from agentscope_runtime.engine.deployers.adapter.a2a import (
+            a2a_registry,
+        )
+
         original_settings = a2a_registry._registry_settings
         a2a_registry._registry_settings = None
 
@@ -334,7 +360,10 @@ class TestCreateRegistryFromEnv:
 
     def test_nacos_registry_without_sdk(self):
         """Test Nacos registry creation when SDK is not available."""
-        from agentscope_runtime.engine.deployers.adapter.a2a import a2a_registry
+        from agentscope_runtime.engine.deployers.adapter.a2a import (
+            a2a_registry,
+        )
+
         original_settings = a2a_registry._registry_settings
         a2a_registry._registry_settings = None
 
@@ -361,7 +390,10 @@ class TestCreateRegistryFromEnv:
     def test_nacos_registry_with_sdk_mock(self):
         """Test Nacos registry creation with mocked SDK."""
         import sys
-        from agentscope_runtime.engine.deployers.adapter.a2a import a2a_registry
+        from agentscope_runtime.engine.deployers.adapter.a2a import (
+            a2a_registry,
+        )
+
         original_settings = a2a_registry._registry_settings
         a2a_registry._registry_settings = None
 
@@ -385,13 +417,19 @@ class TestCreateRegistryFromEnv:
 
                 # Mock NacosRegistry class
                 mock_nacos_registry_instance = MagicMock()
-                mock_nacos_registry_instance.registry_name.return_value = "nacos"
-                mock_nacos_registry_class = MagicMock(return_value=mock_nacos_registry_instance)
+                mock_nacos_registry_instance.registry_name.return_value = (
+                    "nacos"
+                )
+                mock_nacos_registry_class = MagicMock(
+                    return_value=mock_nacos_registry_instance,
+                )
 
                 # Create a mock v2.nacos module
                 mock_v2_nacos = MagicMock()
                 mock_v2_nacos.ClientConfig = mock_client_config
-                mock_v2_nacos.ClientConfigBuilder = MagicMock(return_value=mock_builder)
+                mock_v2_nacos.ClientConfigBuilder = MagicMock(
+                    return_value=mock_builder,
+                )
 
                 # Mock v2.nacos module in sys.modules
                 original_v2_nacos = sys.modules.get("v2.nacos")
@@ -414,7 +452,10 @@ class TestCreateRegistryFromEnv:
                         sys.modules["v2.nacos"] = original_v2_nacos
                     elif "v2.nacos" in sys.modules:
                         del sys.modules["v2.nacos"]
-                    if "v2" in sys.modules and not hasattr(sys.modules["v2"], "nacos"):
+                    if "v2" in sys.modules and not hasattr(
+                        sys.modules["v2"],
+                        "nacos",
+                    ):
                         # Only delete if we created it
                         pass
         finally:
@@ -423,7 +464,10 @@ class TestCreateRegistryFromEnv:
     def test_multiple_registry_types(self):
         """Test with multiple registry types (comma-separated)."""
         import sys
-        from agentscope_runtime.engine.deployers.adapter.a2a import a2a_registry
+        from agentscope_runtime.engine.deployers.adapter.a2a import (
+            a2a_registry,
+        )
+
         original_settings = a2a_registry._registry_settings
         a2a_registry._registry_settings = None
 
@@ -450,7 +494,10 @@ class TestCreateRegistryFromEnv:
     def test_single_registry_returns_instance(self):
         """Test that single registry returns instance, not list."""
         import sys
-        from agentscope_runtime.engine.deployers.adapter.a2a import a2a_registry
+        from agentscope_runtime.engine.deployers.adapter.a2a import (
+            a2a_registry,
+        )
+
         original_settings = a2a_registry._registry_settings
         a2a_registry._registry_settings = None
 

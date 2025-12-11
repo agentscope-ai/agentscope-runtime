@@ -28,6 +28,7 @@ from .a2a_registry import (
     A2aTransportsProperties,
     create_registry_from_env,
 )
+
 # NOTE: Do NOT import NacosRegistry at module import time to avoid forcing
 # an optional dependency on environments that don't have nacos SDK installed.
 # Registry is optional: users must explicitly provide a registry instance if needed.
@@ -73,7 +74,7 @@ def extract_config_params(
         config = A2AConfig(**a2a_config)
     else:
         raise ValueError(
-            f"a2a_config must be A2AConfig or dict, got {type(a2a_config)}"
+            f"a2a_config must be A2AConfig or dict, got {type(a2a_config)}",
         )
 
     # Extract registry with priority: a2a_config > environment variables
@@ -303,7 +304,9 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             try:
                 regs = list(registry)
             except Exception:
-                logger.warning("[A2A] Provided registry is not iterable; ignoring")
+                logger.warning(
+                    "[A2A] Provided registry is not iterable; ignoring",
+                )
                 self._registries = []
             else:
                 valid_regs: List[A2ARegistry] = []
@@ -313,8 +316,12 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                     has_register = hasattr(r, "register")
                     has_registry_name = hasattr(r, "registry_name")
                     if has_register and has_registry_name:
-                        register_callable = callable(getattr(r, "register", None))
-                        registry_name_callable = callable(getattr(r, "registry_name", None))
+                        register_callable = callable(
+                            getattr(r, "register", None),
+                        )
+                        registry_name_callable = callable(
+                            getattr(r, "registry_name", None),
+                        )
                         if register_callable and registry_name_callable:
                             valid_regs.append(r)
                         else:
@@ -347,7 +354,9 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
 
         # Task configuration
         self._task_timeout = task_timeout or DEFAULT_TASK_TIMEOUT
-        self._task_event_timeout = task_event_timeout or DEFAULT_TASK_EVENT_TIMEOUT
+        self._task_event_timeout = (
+            task_event_timeout or DEFAULT_TASK_EVENT_TIMEOUT
+        )
 
         # Wellknown configuration
         self._wellknown_path = wellknown_path or DEFAULT_WELLKNOWN_PATH
@@ -411,13 +420,17 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         """
         deploy_properties = self._build_deploy_properties(app, **kwargs)
         a2a_transports_properties = self._build_transports_properties(
-            agent_card, deploy_properties
+            agent_card,
+            deploy_properties,
         )
 
         for registry in self._registries:
             registry_name = registry.registry_name()
             try:
-                logger.info("[A2A] Registering with registry: %s", registry_name)
+                logger.info(
+                    "[A2A] Registering with registry: %s",
+                    registry_name,
+                )
                 registry.register(
                     agent_card=agent_card,
                     deploy_properties=deploy_properties,
@@ -437,7 +450,9 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                 )
 
     def _build_deploy_properties(
-        self, app: FastAPI, **kwargs: Any
+        self,
+        app: FastAPI,
+        **kwargs: Any,
     ) -> DeployProperties:
         """Build DeployProperties from runtime configuration.
 
@@ -490,24 +505,38 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         preferred_url = getattr(agent_card, "url", None)
         if preferred_transport and preferred_url:
             transport_props = self._parse_transport_url(
-                preferred_url, preferred_transport, deploy_properties
+                preferred_url,
+                preferred_transport,
+                deploy_properties,
             )
             if transport_props:
                 transports_properties.append(transport_props)
 
         # Add additional interfaces (support dict or object style)
-        additional_interfaces = getattr(agent_card, "additional_interfaces", None) or getattr(agent_card, "additionalInterfaces", None)
+        additional_interfaces = getattr(
+            agent_card,
+            "additional_interfaces",
+            None,
+        ) or getattr(agent_card, "additionalInterfaces", None)
         if additional_interfaces:
             for interface in additional_interfaces:
                 if isinstance(interface, dict):
                     interface_url = interface.get("url", "") or ""
-                    transport_type = interface.get("transport", DEFAULT_TRANSPORT) or DEFAULT_TRANSPORT
+                    transport_type = (
+                        interface.get("transport", DEFAULT_TRANSPORT)
+                        or DEFAULT_TRANSPORT
+                    )
                 else:
                     interface_url = getattr(interface, "url", "") or ""
-                    transport_type = getattr(interface, "transport", DEFAULT_TRANSPORT) or DEFAULT_TRANSPORT
+                    transport_type = (
+                        getattr(interface, "transport", DEFAULT_TRANSPORT)
+                        or DEFAULT_TRANSPORT
+                    )
 
                 transport_props = self._parse_transport_url(
-                    interface_url, transport_type, deploy_properties
+                    interface_url,
+                    transport_type,
+                    deploy_properties,
                 )
                 if transport_props:
                     transports_properties.append(transport_props)
@@ -535,21 +564,31 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
 
         # If scheme missing, add http:// so urlparse extracts hostname/port
         normalized = url
-        if '://' not in url:
-            normalized = 'http://' + url
+        if "://" not in url:
+            normalized = "http://" + url
 
         try:
             parsed = urlparse(normalized)
         except Exception as e:
-            logger.warning("[A2A] Malformed transport URL provided: %s; error: %s", url, str(e))
+            logger.warning(
+                "[A2A] Malformed transport URL provided: %s; error: %s",
+                url,
+                str(e),
+            )
             return None
 
         # Check for obviously malformed URLs (e.g., only colons, empty host, etc.)
         if not parsed.hostname:
             if not parsed.netloc and not parsed.path:
-                logger.warning("[A2A] Malformed transport URL (empty netloc and path): %s", url)
+                logger.warning(
+                    "[A2A] Malformed transport URL (empty netloc and path): %s",
+                    url,
+                )
             else:
-                logger.warning("[A2A] Invalid transport URL (no host) provided: %s", url)
+                logger.warning(
+                    "[A2A] Invalid transport URL (no host) provided: %s",
+                    url,
+                )
             return None
 
         host = parsed.hostname or deploy_properties.host
@@ -601,7 +640,11 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                 try:
                     return serializer(exclude_none=True)  # type: ignore[call-arg]
                 except Exception as e:
-                    logger.debug("[A2A] model_dump failed: %s", e, exc_info=True)
+                    logger.debug(
+                        "[A2A] model_dump failed: %s",
+                        e,
+                        exc_info=True,
+                    )
                     # Continue to next method instead of returning
 
             serializer_json = getattr(card, "model_dump_json", None)
@@ -610,7 +653,11 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                     # model_dump_json returns a JSON string
                     return json.loads(serializer_json(exclude_none=True))  # type: ignore[call-arg]
                 except Exception as e:
-                    logger.debug("[A2A] model_dump_json failed: %s", e, exc_info=True)
+                    logger.debug(
+                        "[A2A] model_dump_json failed: %s",
+                        e,
+                        exc_info=True,
+                    )
                     # Continue to next method instead of returning
 
             # Fallback to pydantic v1 compatibility methods if present
@@ -619,7 +666,11 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                 try:
                     return dict_serializer(exclude_none=True)  # type: ignore[call-arg]
                 except Exception as e:
-                    logger.debug("[A2A] dict() serialization failed: %s", e, exc_info=True)
+                    logger.debug(
+                        "[A2A] dict() serialization failed: %s",
+                        e,
+                        exc_info=True,
+                    )
                     # Continue to next method instead of returning
 
             json_serializer = getattr(card, "json", None)
@@ -634,11 +685,19 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                     # Fallback: try to parse string representation
                     return json.loads(str(result))
                 except Exception as e:
-                    logger.debug("[A2A] json() serialization failed: %s", e, exc_info=True)
+                    logger.debug(
+                        "[A2A] json() serialization failed: %s",
+                        e,
+                        exc_info=True,
+                    )
                     # Continue to next method (but this is the last one)
 
-            logger.error("[A2A] AgentCard has no known serializer or all serialization methods failed. This is a critical endpoint and returning an empty dict may cause integration issues.")
-            raise RuntimeError("AgentCard serialization failed: no known serializer succeeded. Please check AgentCard configuration and serialization methods.")
+            logger.error(
+                "[A2A] AgentCard has no known serializer or all serialization methods failed. This is a critical endpoint and returning an empty dict may cause integration issues.",
+            )
+            raise RuntimeError(
+                "AgentCard serialization failed: no known serializer succeeded. Please check AgentCard configuration and serialization methods.",
+            )
 
         @app.get(self._wellknown_path)
         async def get_agent_card() -> JSONResponse:
@@ -647,7 +706,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             return JSONResponse(content=content)
 
     def _normalize_provider(
-        self, provider: Optional[Union[str, Dict[str, Any], Any]]
+        self,
+        provider: Optional[Union[str, Dict[str, Any], Any]],
     ) -> Dict[str, Any]:
         """Normalize provider to dict format with organization and url.
 
@@ -673,11 +733,19 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
 
         # Try to coerce object-like provider to dict
         try:
-            organization = getattr(provider, "organization", None) or getattr(provider, "name", "")
+            organization = getattr(provider, "organization", None) or getattr(
+                provider,
+                "name",
+                "",
+            )
             url = getattr(provider, "url", "")
             return {"organization": organization, "url": url}
         except Exception:
-            logger.debug("[A2A] Unable to normalize provider of type %s", type(provider), exc_info=True)
+            logger.debug(
+                "[A2A] Unable to normalize provider of type %s",
+                type(provider),
+                exc_info=True,
+            )
             return {"organization": "", "url": ""}
 
     def _build_additional_interfaces(
@@ -742,8 +810,10 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                 push_notifications=False,
             ),
             "skills": self._skills or [],
-            "defaultInputModes": self._default_input_modes or DEFAULT_INPUT_OUTPUT_MODES,
-            "defaultOutputModes": self._default_output_modes or DEFAULT_INPUT_OUTPUT_MODES,
+            "defaultInputModes": self._default_input_modes
+            or DEFAULT_INPUT_OUTPUT_MODES,
+            "defaultOutputModes": self._default_output_modes
+            or DEFAULT_INPUT_OUTPUT_MODES,
         }
 
         # Add optional transport fields

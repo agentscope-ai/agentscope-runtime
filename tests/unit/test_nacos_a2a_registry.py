@@ -14,10 +14,8 @@ Tests cover:
 - Task-based registration
 """
 import asyncio
-import threading
 import time
-from unittest.mock import AsyncMock, MagicMock, patch, Mock
-from typing import List
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from a2a.types import AgentCard

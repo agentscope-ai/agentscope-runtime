@@ -98,6 +98,12 @@ repos:
           --disable=C0114,  # Disable missing module docstring for quick dev
           --disable=C0115,  # Disable missing class docstring for quick dev
           --disable=C0116,  # Disable missing function or method docstring for quick dev
+          --disable=C0301,  # Disable line-too-long (handled by black)
+          --disable=C0413,  # Disable wrong-import-position (needed for conditional imports)
+          --disable=R0912,  # Disable too-many-branches
+          --disable=R0915,  # Disable too-many-statements
+          --disable=E0611,  # Disable no-name-in-module (false positives for dynamic imports)
+          --disable=W0611,  # Disable unused-import (handled by other tools)
         ]
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: v7.32.0

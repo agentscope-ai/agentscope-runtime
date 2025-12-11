@@ -126,7 +126,7 @@ class AgentApp(BaseApp):
             }
             if env_registry is not None:
                 a2a_adapter_kwargs["registry"] = env_registry
-        
+
         a2a_protocol = A2AFastAPIDefaultAdapter(**a2a_adapter_kwargs)
 
         response_protocol = ResponseAPIDefaultAdapter()
