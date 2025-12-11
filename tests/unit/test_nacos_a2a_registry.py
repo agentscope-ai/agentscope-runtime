@@ -32,6 +32,14 @@ from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
 )
 
 
+def _ensure_nacos_ai_service_method():
+    """Ensure NacosAIService has create_ai_service method for testing."""
+    from agentscope_runtime.engine.deployers.adapter.a2a import nacos_a2a_registry
+    if not hasattr(nacos_a2a_registry.NacosAIService, 'create_ai_service'):
+        # Add the method if it doesn't exist (placeholder class case)
+        nacos_a2a_registry.NacosAIService.create_ai_service = AsyncMock()
+
+
 @pytest.fixture
 def mock_nacos_sdk():
     """Mock Nacos SDK components."""
@@ -145,9 +153,14 @@ class TestNacosRegistry:
         with patch("agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE", True):
             registry = NacosRegistry()
             
+            # Use an event to ensure task has started but not completed
+            task_started = asyncio.Event()
+            task_can_complete = asyncio.Event()
+            
             # Mock the _register_to_nacos method to avoid actual Nacos calls
             async def mock_register_to_nacos(agent_card, host, port, root_path):
-                await asyncio.sleep(0.01)  # Simulate async work
+                task_started.set()  # Signal that task has started
+                await task_can_complete.wait()  # Wait for permission to complete
                 with registry._registration_lock:
                     if registry._registration_status == RegistrationStatus.IN_PROGRESS:
                         registry._registration_status = RegistrationStatus.COMPLETED
@@ -156,11 +169,14 @@ class TestNacosRegistry:
 
             registry.register(agent_card, deploy_properties, transport_properties)
             
-            # Wait a bit for the task to start
-            await asyncio.sleep(0.1)
+            # Wait for task to start
+            await asyncio.wait_for(task_started.wait(), timeout=1.0)
             
             assert registry._register_task is not None
             assert not registry._register_task.done()
+            
+            # Allow task to complete
+            task_can_complete.set()
             
             # Wait for task to complete
             await registry._register_task
@@ -294,15 +310,24 @@ class TestNacosRegistry:
     async def test_register_to_nacos_success(self, mock_nacos_sdk, agent_card):
         """Test _register_to_nacos() successful flow."""
         with patch("agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE", True):
-            registry = NacosRegistry()
+            _ensure_nacos_ai_service_method()
+            
+            # Provide client config to avoid calling _get_client_config
+            registry = NacosRegistry(nacos_client_config=mock_nacos_sdk["client_config"])
+            
+            # Set status to IN_PROGRESS so it can be updated to COMPLETED
+            with registry._registration_lock:
+                registry._registration_status = RegistrationStatus.IN_PROGRESS
             
             mock_service = mock_nacos_sdk["ai_service"]
             
-            # Mock NacosAIService.create_ai_service
+            # Patch create_ai_service on the class
             with patch(
                 "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry.NacosAIService.create_ai_service",
-                return_value=mock_service,
-            ):
+                new_callable=AsyncMock,
+            ) as mock_create:
+                mock_create.return_value = mock_service
+                
                 await registry._register_to_nacos(
                     agent_card=agent_card,
                     host="localhost",
@@ -335,15 +360,20 @@ class TestNacosRegistry:
     async def test_register_to_nacos_with_error(self, mock_nacos_sdk, agent_card):
         """Test _register_to_nacos() error handling."""
         with patch("agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE", True):
+            _ensure_nacos_ai_service_method()
+            
             registry = NacosRegistry()
             
             mock_service = mock_nacos_sdk["ai_service"]
             mock_service.release_agent_card.side_effect = Exception("Nacos error")
             
+            # Patch create_ai_service on the class
             with patch(
                 "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry.NacosAIService.create_ai_service",
-                return_value=mock_service,
-            ):
+                new_callable=AsyncMock,
+            ) as mock_create:
+                mock_create.return_value = mock_service
+                
                 await registry._register_to_nacos(
                     agent_card=agent_card,
                     host="localhost",
@@ -358,21 +388,28 @@ class TestNacosRegistry:
     async def test_register_to_nacos_cancelled(self, mock_nacos_sdk, agent_card):
         """Test _register_to_nacos() when cancelled."""
         with patch("agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE", True):
-            registry = NacosRegistry()
+            # Provide client config to avoid calling _get_client_config
+            registry = NacosRegistry(nacos_client_config=mock_nacos_sdk["client_config"])
             
-            async def mock_register_with_cancel(agent_card, host, port, root_path):
-                await asyncio.sleep(0.1)
-                raise asyncio.CancelledError()
-
-            registry._register_to_nacos = mock_register_with_cancel
+            # Set status to IN_PROGRESS before cancellation
+            with registry._registration_lock:
+                registry._registration_status = RegistrationStatus.IN_PROGRESS
             
-            with pytest.raises(asyncio.CancelledError):
-                await registry._register_to_nacos(
-                    agent_card=agent_card,
-                    host="localhost",
-                    port=8080,
-                    root_path="/api",
-                )
+            _ensure_nacos_ai_service_method()
+            
+            # Mock NacosAIService.create_ai_service to raise CancelledError
+            with patch(
+                "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry.NacosAIService.create_ai_service",
+                new_callable=AsyncMock,
+                side_effect=asyncio.CancelledError(),
+            ):
+                with pytest.raises(asyncio.CancelledError):
+                    await registry._register_to_nacos(
+                        agent_card=agent_card,
+                        host="localhost",
+                        port=8080,
+                        root_path="/api",
+                    )
             
             assert registry._registration_status == RegistrationStatus.CANCELLED
 
