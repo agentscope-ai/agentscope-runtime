@@ -94,7 +94,7 @@ def transport_properties():
     return [A2ATransportsProperties(transport_type="JSONRPC")]
 
 
-class TestNacosRegistry:
+class TestNacosRegistry:  # pylint: disable=too-many-public-methods
     """Test NacosRegistry class."""
 
     def test_registry_name(self, mock_nacos_sdk):
@@ -775,7 +775,8 @@ class TestNacosRegistry:
         mock_nacos_sdk,
         agent_card,
     ):
-        """Test _register_to_nacos() when shutdown occurs during service creation."""
+        """Test _register_to_nacos() when shutdown occurs during
+        service creation."""
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
             ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
@@ -818,7 +819,8 @@ class TestNacosRegistry:
         mock_nacos_sdk,
         agent_card,
     ):
-        """Test _register_to_nacos() when shutdown occurs after card publish."""
+        """Test _register_to_nacos() when shutdown occurs after
+        card publish."""
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
             ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
@@ -933,7 +935,9 @@ class TestNacosRegistry:
 
             # Mock a service that raises error on close
             mock_service = AsyncMock()
-            mock_service.close = AsyncMock(side_effect=Exception("Close error"))
+            mock_service.close = AsyncMock(
+                side_effect=Exception("Close error")
+            )
             registry._nacos_ai_service = mock_service
 
             # Should not raise
@@ -948,7 +952,8 @@ class TestNacosRegistry:
         agent_card,
         transport_properties,
     ):
-        """Test register() uses default host when not specified."""
+        """Test register() uses default host when not
+        specified."""
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
             ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
@@ -962,10 +967,14 @@ class TestNacosRegistry:
             )
 
             # Mock _start_register_task to capture parameters
-            original_start = registry._start_register_task
             captured_args = {}
 
-            def mock_start_register_task(agent_card, host, port, root_path):
+            def mock_start_register_task(
+                agent_card,
+                host,
+                port,
+                root_path,
+            ):
                 captured_args['host'] = host
                 captured_args['port'] = port
                 captured_args['root_path'] = root_path
@@ -1004,7 +1013,12 @@ class TestNacosRegistry:
 
             captured_args = {}
 
-            def mock_start_register_task(agent_card, host, port, root_path):
+            def mock_start_register_task(
+                agent_card,
+                host,
+                port,
+                root_path,
+            ):
                 captured_args['root_path'] = root_path
 
             registry._start_register_task = mock_start_register_task

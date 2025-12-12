@@ -121,7 +121,7 @@ class TestAgentAppRegistryIntegration:
             assert a2a_adapter._registries[0] is mock_registry
 
     def test_agent_app_with_registry_list_from_a2a_config(self):
-        """Test AgentApp initialization with list of registries
+        """Test AgentApp initialization with list of registry instances
         from a2a_config."""
         mock_registry1 = MockRegistry("test1")
         mock_registry2 = MockRegistry("test2")
@@ -134,7 +134,7 @@ class TestAgentAppRegistryIntegration:
             },
         )
 
-        # Verify both registries were passed to adapter
+        # Verify both registry instances were passed to adapter
         a2a_adapter = None
         for adapter in app.protocol_adapters:
             if hasattr(adapter, "_registries"):
@@ -252,7 +252,7 @@ class TestAgentAppRegistryIntegration:
                         a2a_adapter = adapter
                         break
 
-                # If adapter exists, registries should be empty or None
+                # If adapter exists, registry list should be empty or None
                 if a2a_adapter:
                     # Registry from env should be None when disabled
                     # But explicit registry in a2a_config would still work

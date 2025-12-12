@@ -40,9 +40,22 @@ def __getattr__(name: str):
     that doesn't exist at module level. This allows NacosRegistry
     to be imported only when actually needed, rather than at module
     import time.
+
+    If the nacos SDK is not installed, provides a helpful error message
+    instead of a confusing ImportError.
     """
     if name == "NacosRegistry":
-        from .nacos_a2a_registry import NacosRegistry
+        try:
+            from .nacos_a2a_registry import NacosRegistry
 
-        return NacosRegistry
+            return NacosRegistry
+        except ImportError as e:
+            # Check if it's the v2.nacos dependency that's missing
+            if "v2.nacos" in str(e) or "nacos" in str(e).lower():
+                raise ImportError(
+                    "NacosRegistry requires the 'v2-nacos' package. "
+                    "Install it with: pip install v2-nacos"
+                ) from e
+            # Re-raise other import errors as-is
+            raise
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -73,15 +73,19 @@ class AgentApp(BaseApp):
             backend_url: URL for backend service
             runner: Optional runner instance
             enable_embedded_worker: Whether to enable embedded worker
-            a2a_config: Optional A2A runtime configuration. Can be:
+            a2a_config: Optional A2A runtime configuration.
+                Can be:
                 - AgentCardWithRuntimeConfig (Recommended):
                   Inherits from AgentCard and adds runtime fields
-                  (registries, transports, task_timeout, etc.)
+                  (registry, transports, task_timeout, etc.)
                   Example:
-                    from a2a.types import AgentCapabilities
-                    from agentscope_runtime.engine.deployers.adapter.a2a import (
-                        AgentCardWithRuntimeConfig,
+                    from a2a.types import (
+                        AgentCapabilities,
                     )
+                    from agentscope_runtime.engine.deployers\
+                        .adapter.a2a import (
+                            AgentCardWithRuntimeConfig,
+                        )
                     config = AgentCardWithRuntimeConfig(
                         name="MyAgent",
                         version="1.0.0",
@@ -91,7 +95,7 @@ class AgentApp(BaseApp):
                         defaultInputModes=["text"],
                         defaultOutputModes=["text"],
                         skills=[],
-                        registries=[nacos_registry],
+                        registry=[nacos_registry],
                         transports=[{"name": "JSONRPC", "url": "..."}],
                         task_timeout=120,
                     )

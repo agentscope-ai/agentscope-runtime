@@ -493,7 +493,7 @@ class TestCreateRegistryFromEnv:
                     return_value=None,
                 ):
                     result = create_registry_from_env()
-                    # Should return None when no valid registries
+                    # Should return None when no valid registry instances
                     # can be created
                     assert result is None
         finally:
@@ -598,7 +598,7 @@ class TestMultipleRegistrySupport:
     """Test support for multiple registry types."""
 
     def test_multiple_nacos_registries_returns_list(self):
-        """Test that multiple registries return as list."""
+        """Test that multiple registry instances return as list."""
         from agentscope_runtime.engine.deployers.adapter.a2a import (
             a2a_registry,
         )
@@ -607,7 +607,7 @@ class TestMultipleRegistrySupport:
         a2a_registry._registry_settings = None
 
         try:
-            # Create two mock registries
+            # Create two mock registry instances
             mock_registry_1 = MockRegistry("nacos1")
             mock_registry_2 = MockRegistry("nacos2")
 
@@ -619,7 +619,7 @@ class TestMultipleRegistrySupport:
                 },
                 clear=False,
             ):
-                # Mock to return two registries
+                # Mock to return two registry instances
                 call_count = [0]
 
                 def mock_create_nacos(*args, **kwargs):
@@ -635,7 +635,8 @@ class TestMultipleRegistrySupport:
                     side_effect=mock_create_nacos,
                 ):
                     result = create_registry_from_env()
-                    # Should return list when multiple registries created
+                    # Should return list when multiple
+                    # registry instances created
                     # (though in practice this would be same type)
                     # In current implementation, we get a single instance
                     # for "nacos,nacos" as they're the same type
