@@ -155,6 +155,8 @@ async def deploy_app_to_agentrun():
             "OSS_ACCESS_KEY_SECRET",
             os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
         ),
+        region=os.environ.get("OSS_REGION", "cn-hangzhou"),
+        bucket_name=os.environ.get("OSS_BUCKET_NAME", "tmp-agentrun-deploy"),
     )
 
     # 2. Configure AgentRun

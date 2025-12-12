@@ -41,6 +41,7 @@ parts:
     - file: en/demohouse.md
     - file: en/ut.md
     - file: en/langgraph_guidelines.md
+    - file: en/agno_guidelines.md
   - file: en/contribute.md
     sections:
     - file: en/README.md
@@ -101,6 +102,7 @@ parts:
       - file: zh/demohouse.md
       - file: zh/ut.md
       - file: zh/langgraph_guidelines.md
+      - file: zh/agno_guidelines.md
   - file: zh/contribute.md
     sections:
     - file: zh/README.md

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=not-callable
+# pylint: disable=not-callable,too-many-statements
 import asyncio
 import logging
 import inspect
@@ -260,6 +260,16 @@ class Runner:
             stream_adapter = adapt_langgraph_message_stream
             kwargs.update(
                 {"msgs": message_to_langgraph_msg(request.input)},
+            )
+        elif self.framework_type == "agno":
+            from ..adapters.agno.stream import (
+                adapt_agno_message_stream,
+            )
+            from ..adapters.agno.message import message_to_agno_message
+
+            stream_adapter = adapt_agno_message_stream
+            kwargs.update(
+                {"msgs": message_to_agno_message(request.input)},
             )
         # TODO: support other frameworks
         else:
