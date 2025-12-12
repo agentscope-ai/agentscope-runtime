@@ -587,10 +587,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         except Exception as e:
             # pylint: disable=implicit-str-concat
             logger.warning(
-                (
-                    "[A2A] Malformed transport URL provided: %s; "
-                    "error: %s"
-                ),
+                ("[A2A] Malformed transport URL provided: %s; " "error: %s"),
                 url,
                 str(e),
             )

@@ -58,8 +58,8 @@ class TestA2ARegistry:
     def test_abstract_class_cannot_be_instantiated(self):
         """Test that A2ARegistry cannot be instantiated directly."""
         # A2ARegistry is abstract and requires implementing abstract methods
-        assert hasattr(A2ARegistry, 'registry_name')
-        assert hasattr(A2ARegistry, 'register')
+        assert hasattr(A2ARegistry, "registry_name")
+        assert hasattr(A2ARegistry, "register")
 
     def test_concrete_implementation(self):
         """Test that a concrete implementation works correctly."""
