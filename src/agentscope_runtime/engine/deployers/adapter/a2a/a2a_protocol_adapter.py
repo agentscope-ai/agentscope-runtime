@@ -103,7 +103,9 @@ def extract_config_params(
         if "preferredTransport" in a2a_config:
             params["preferred_transport"] = a2a_config["preferredTransport"]
         if "additionalInterfaces" in a2a_config:
-            params["additional_interfaces"] = a2a_config["additionalInterfaces"]
+            params["additional_interfaces"] = a2a_config[
+                "additionalInterfaces"
+            ]
         if "skills" in a2a_config:
             params["skills"] = a2a_config["skills"]
         if "defaultInputModes" in a2a_config:
@@ -152,7 +154,10 @@ def extract_config_params(
             params["card_url"] = a2a_config.url
         if a2a_config.version:
             params["card_version"] = a2a_config.version
-        if hasattr(a2a_config, "preferredTransport") and a2a_config.preferredTransport:
+        if (
+            hasattr(a2a_config, "preferredTransport")
+            and a2a_config.preferredTransport
+        ):
             params["preferred_transport"] = a2a_config.preferredTransport
         if (
             hasattr(a2a_config, "additionalInterfaces")
@@ -161,9 +166,15 @@ def extract_config_params(
             params["additional_interfaces"] = a2a_config.additionalInterfaces
         if a2a_config.skills:
             params["skills"] = a2a_config.skills
-        if hasattr(a2a_config, "defaultInputModes") and a2a_config.defaultInputModes:
+        if (
+            hasattr(a2a_config, "defaultInputModes")
+            and a2a_config.defaultInputModes
+        ):
             params["default_input_modes"] = a2a_config.defaultInputModes
-        if hasattr(a2a_config, "defaultOutputModes") and a2a_config.defaultOutputModes:
+        if (
+            hasattr(a2a_config, "defaultOutputModes")
+            and a2a_config.defaultOutputModes
+        ):
             params["default_output_modes"] = a2a_config.defaultOutputModes
         if hasattr(a2a_config, "provider") and a2a_config.provider:
             params["provider"] = a2a_config.provider
@@ -381,7 +392,9 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
 
         # Task configuration
         self._task_timeout = task_timeout or DEFAULT_TASK_TIMEOUT
-        self._task_event_timeout = task_event_timeout or DEFAULT_TASK_EVENT_TIMEOUT
+        self._task_event_timeout = (
+            task_event_timeout or DEFAULT_TASK_EVENT_TIMEOUT
+        )
 
         # Wellknown configuration
         self._wellknown_path = wellknown_path or DEFAULT_WELLKNOWN_PATH
@@ -609,7 +622,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         if not parsed.hostname:
             if not parsed.netloc and not parsed.path:
                 logger.warning(
-                    "[A2A] Malformed transport URL (empty netloc " "and path): %s",
+                    "[A2A] Malformed transport URL (empty netloc "
+                    "and path): %s",
                     url,
                 )
             else:

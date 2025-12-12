@@ -200,7 +200,9 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 deploy_properties,
                 transport_properties,
             )
-            assert registry._registration_status == RegistrationStatus.CANCELLED
+            assert (
+                registry._registration_status == RegistrationStatus.CANCELLED
+            )
 
     @pytest.mark.asyncio
     async def test_register_with_running_loop(
@@ -233,8 +235,13 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 await task_can_complete.wait()
                 # Wait for permission to complete
                 with registry._registration_lock:
-                    if registry._registration_status == RegistrationStatus.IN_PROGRESS:
-                        registry._registration_status = RegistrationStatus.COMPLETED
+                    if (
+                        registry._registration_status
+                        == RegistrationStatus.IN_PROGRESS
+                    ):
+                        registry._registration_status = (
+                            RegistrationStatus.COMPLETED
+                        )
 
             registry._register_to_nacos = mock_register_to_nacos
 
@@ -255,7 +262,9 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             # Wait for task to complete
             await registry._register_task
-            assert registry._registration_status == RegistrationStatus.COMPLETED
+            assert (
+                registry._registration_status == RegistrationStatus.COMPLETED
+            )
 
     def test_register_without_running_loop(
         self,
@@ -281,8 +290,13 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             ):
                 await asyncio.sleep(0.01)
                 with registry._registration_lock:
-                    if registry._registration_status == RegistrationStatus.IN_PROGRESS:
-                        registry._registration_status = RegistrationStatus.COMPLETED
+                    if (
+                        registry._registration_status
+                        == RegistrationStatus.IN_PROGRESS
+                    ):
+                        registry._registration_status = (
+                            RegistrationStatus.COMPLETED
+                        )
 
             registry._register_to_nacos = mock_register_to_nacos
 
@@ -320,11 +334,17 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             True,
         ):
             registry = NacosRegistry()
-            assert registry.get_registration_status() == RegistrationStatus.PENDING
+            assert (
+                registry.get_registration_status()
+                == RegistrationStatus.PENDING
+            )
 
             with registry._registration_lock:
                 registry._registration_status = RegistrationStatus.IN_PROGRESS
-            assert registry.get_registration_status() == RegistrationStatus.IN_PROGRESS
+            assert (
+                registry.get_registration_status()
+                == RegistrationStatus.IN_PROGRESS
+            )
 
     @pytest.mark.asyncio
     async def test_wait_for_registration_task(
@@ -350,7 +370,9 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             ):
                 await asyncio.sleep(0.05)
                 with registry._registration_lock:
-                    registry._registration_status = RegistrationStatus.COMPLETED
+                    registry._registration_status = (
+                        RegistrationStatus.COMPLETED
+                    )
 
             registry._register_to_nacos = mock_register_to_nacos
             registry.register(
@@ -473,7 +495,9 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             ):
                 await asyncio.sleep(0.05)
                 with registry._registration_lock:
-                    registry._registration_status = RegistrationStatus.COMPLETED
+                    registry._registration_status = (
+                        RegistrationStatus.COMPLETED
+                    )
 
             registry._register_to_nacos = mock_register_to_nacos
             registry.register(
@@ -487,7 +511,9 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             # Cleanup should wait for completion
             await registry.cleanup(wait_for_completion=True, timeout=1.0)
 
-            assert registry._registration_status == RegistrationStatus.COMPLETED
+            assert (
+                registry._registration_status == RegistrationStatus.COMPLETED
+            )
 
     @pytest.mark.asyncio
     async def test_register_to_nacos_success(self, mock_nacos_sdk, agent_card):
@@ -541,7 +567,10 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 # Verify service methods were called
                 mock_service.release_agent_card.assert_called_once()
                 mock_service.register_agent_endpoint.assert_called_once()
-                assert registry._registration_status == RegistrationStatus.COMPLETED
+                assert (
+                    registry._registration_status
+                    == RegistrationStatus.COMPLETED
+                )
 
     @pytest.mark.asyncio
     async def test_register_to_nacos_with_shutdown(
@@ -565,7 +594,9 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 root_path="/api",
             )
 
-            assert registry._registration_status == RegistrationStatus.CANCELLED
+            assert (
+                registry._registration_status == RegistrationStatus.CANCELLED
+            )
 
     @pytest.mark.asyncio
     async def test_register_to_nacos_with_error(
@@ -618,7 +649,9 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                     )
 
                 # Should handle error gracefully
-                assert registry._registration_status == RegistrationStatus.FAILED
+                assert (
+                    registry._registration_status == RegistrationStatus.FAILED
+                )
 
     @pytest.mark.asyncio
     async def test_register_to_nacos_cancelled(
@@ -659,7 +692,9 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                         root_path="/api",
                     )
 
-            assert registry._registration_status == RegistrationStatus.CANCELLED
+            assert (
+                registry._registration_status == RegistrationStatus.CANCELLED
+            )
 
     def test_get_client_config_from_env(self, mock_nacos_sdk):
         """Test _get_client_config() loading from environment."""
@@ -687,8 +722,10 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 ):
                     config = registry._get_client_config()
                     assert config is not None
-                    mock_nacos_sdk["builder"].server_address.assert_called_with(
-                        "test.nacos.com:8848"
+                    mock_nacos_sdk[
+                        "builder"
+                    ].server_address.assert_called_with(
+                        "test.nacos.com:8848",
                     )
                     mock_nacos_sdk["builder"].username.assert_called_with(
                         "user",
@@ -727,7 +764,10 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             # Should not create a new task or thread when already in progress
             with registry._registration_lock:
-                assert registry._registration_status == RegistrationStatus.IN_PROGRESS
+                assert (
+                    registry._registration_status
+                    == RegistrationStatus.IN_PROGRESS
+                )
                 assert registry._register_task is original_task
                 assert registry._register_thread is original_thread
 
@@ -771,7 +811,9 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                     root_path="/api",
                 )
 
-            assert registry._registration_status == RegistrationStatus.CANCELLED
+            assert (
+                registry._registration_status == RegistrationStatus.CANCELLED
+            )
 
     @pytest.mark.asyncio
     async def test_register_to_nacos_shutdown_after_card_publish(
@@ -823,7 +865,9 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                         root_path="/api",
                     )
 
-            assert registry._registration_status == RegistrationStatus.CANCELLED
+            assert (
+                registry._registration_status == RegistrationStatus.CANCELLED
+            )
 
     @pytest.mark.asyncio
     async def test_cleanup_with_nacos_service_close(
@@ -1015,8 +1059,10 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 ):
                     config = registry._get_client_config()
                     assert config is not None
-                    mock_nacos_sdk["builder"].server_address.assert_called_with(
-                        "localhost:8848"
+                    mock_nacos_sdk[
+                        "builder"
+                    ].server_address.assert_called_with(
+                        "localhost:8848",
                     )
                     # Username and password should not be called
                     mock_nacos_sdk["builder"].username.assert_not_called()
@@ -1052,7 +1098,9 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             await registry.cleanup(wait_for_completion=False)
 
             # Should be cancelled
-            assert registry._registration_status == RegistrationStatus.CANCELLED
+            assert (
+                registry._registration_status == RegistrationStatus.CANCELLED
+            )
 
     @pytest.mark.asyncio
     async def test_cleanup_with_completed_status(self, mock_nacos_sdk):
@@ -1071,7 +1119,9 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             await registry.cleanup(wait_for_completion=True)
 
             # Should remain COMPLETED
-            assert registry._registration_status == RegistrationStatus.COMPLETED
+            assert (
+                registry._registration_status == RegistrationStatus.COMPLETED
+            )
 
     @pytest.mark.asyncio
     async def test_cleanup_with_failed_status(self, mock_nacos_sdk):
