@@ -83,7 +83,7 @@ class TestWellknownEndpointErrorHandling:
         # Patch _serialize_card to raise RuntimeError
         with patch.object(
             adapter,
-            '_add_wellknown_route',
+            "_add_wellknown_route",
         ) as mock_add_wellknown:
             # Create a custom implementation that raises error
             # pylint: disable=unused-argument
@@ -155,7 +155,7 @@ class TestAgentCardConfiguration:
 
         assert card.provider is not None
         # Provider should be an AgentProvider object with organization field
-        assert hasattr(card.provider, 'organization')
+        assert hasattr(card.provider, "organization")
         assert card.provider.organization == "Test Organization"
 
     def test_get_agent_card_url_configuration(self):
@@ -180,14 +180,14 @@ class TestAgentCardConfiguration:
         card = adapter.get_agent_card("test_agent", "Test description")
 
         # Verify required AgentCard fields exist
-        assert hasattr(card, 'name')
-        assert hasattr(card, 'version')
-        assert hasattr(card, 'description')
-        assert hasattr(card, 'url')
-        assert hasattr(card, 'capabilities')
-        assert hasattr(card, 'skills')
-        assert hasattr(card, 'default_input_modes')
-        assert hasattr(card, 'default_output_modes')
+        assert hasattr(card, "name")
+        assert hasattr(card, "version")
+        assert hasattr(card, "description")
+        assert hasattr(card, "url")
+        assert hasattr(card, "capabilities")
+        assert hasattr(card, "skills")
+        assert hasattr(card, "default_input_modes")
+        assert hasattr(card, "default_output_modes")
 
 
 class TestSerializationFallbackLogic:

@@ -63,7 +63,7 @@ a2a_config = {
     "url": "http://localhost:8099/a2a",
     "preferredTransport": "JSONRPC",
     "skills": [...],
-    
+
     # 运行时字段
     "registry": [nacos_registry],
     "transports": [...],
@@ -160,11 +160,11 @@ from typing import List
 
 class MyCustomRegistry(A2ARegistry):
     """自定义 Registry 实现"""
-    
+
     def registry_name(self) -> str:
         """返回 Registry 名称"""
         return "my-custom-registry"
-    
+
     def register(
         self,
         agent_card: AgentCard,

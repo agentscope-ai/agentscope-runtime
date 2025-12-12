@@ -54,7 +54,7 @@ def __getattr__(name: str):
             if "v2.nacos" in str(e) or "nacos" in str(e).lower():
                 raise ImportError(
                     "NacosRegistry requires the 'v2-nacos' package. "
-                    "Install it with: pip install v2-nacos"
+                    "Install it with: pip install v2-nacos",
                 ) from e
             # Re-raise other import errors as-is
             raise
