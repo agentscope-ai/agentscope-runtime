@@ -127,10 +127,7 @@ def extract_config_params(
         if a2a_config.registry is not None:
             params["registry"] = a2a_config.registry
             logger.debug(
-                (
-                    "[A2A] Using registry from "
-                    "AgentCardWithRuntimeConfig"
-                ),
+                "[A2A] Using registry from AgentCardWithRuntimeConfig",
             )
 
         if a2a_config.transports is not None:
