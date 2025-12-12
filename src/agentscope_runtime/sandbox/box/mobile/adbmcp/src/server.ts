@@ -82,18 +82,41 @@ const adbToolParams = z.discriminatedUnion("action", [
 
 const legacyAdbTool = {
   name: "adb",
-  description:
-    "A tool to control an Android device using the Android Debug Bridge (ADB).",
+  description: `A tool to control an Android device using the Android Debug Bridge (ADB).
+
+*   **Use 'get_screenshot' to observe the state.** Capture the current UI
+    to determine precise coordinates of elements before interaction.
+*   **Coordinates are essential.** Get pixel coordinates before interacting
+    with UI elements. Use 'get_screen_resolution' initially to find
+    the screen's boundaries.
+*   **Interaction is via touch simulation.** The main methods are 'tap' and
+    'swipe' at specific [x, y] coordinates. There is no mouse cursor.
+*   **Text input requires focus.** To use 'input_text', you MUST first
+    'tap' a text field to give it focus.
+*   **Use key events for navigation.** Use 'key_event' for system actions
+    like 'Back' (4), 'Home' (3), or 'Enter' (66).
+*   **Actions are not instantaneous.** An app may take time to respond
+    after an action. Take another 'get_screenshot' to observe the
+    result and confirm the new state.
+*   **Be precise.** Aim for the center of a target element to ensure
+    the action registers correctly.
+*   **Screenshots are Base64 images.** The 'get_screenshot' action
+    returns a Base64 encoded image.`,
 
   inputSchema: {
+    type: "object",
     properties: {
       action: {
         type: "string",
-        description: "The specific action to perform.",
+        description:
+          "The specific action to perform: get_screen_resolution, tap, swipe, input_text, key_event, get_screenshot.",
       },
-      coordinate: { type: "array", description: 'For "tap" action.' },
-      start: { type: "array", description: 'For "swipe" action.' },
-      end: { type: "array", description: 'For "swipe" action.' },
+      coordinate: { type: "array", description: 'For "tap" action: [x, y].' },
+      start: {
+        type: "array",
+        description: 'For "swipe" action: starting [x, y].',
+      },
+      end: { type: "array", description: 'For "swipe" action: ending [x, y].' },
       duration: {
         type: "number",
         description: 'For "swipe" action (optional).',

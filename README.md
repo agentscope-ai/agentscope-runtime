@@ -333,6 +333,8 @@ with FilesystemSandbox() as box:
 
 Provides a **sandboxed Android emulator environment** that allows executing various mobile operations, such as tapping, swiping, inputting text, and taking screenshots.
 
+<img src="https://img.alicdn.com/imgextra/i2/O1CN01m9smAi1cUE8TdJ13d_!!6000000003603-2-tps-1435-1103.png" alt="Mobile Sandbox" height="500">
+
 ##### Prerequisites
 
 - **Linux Host**:
@@ -354,7 +356,7 @@ with MobileSandbox() as box:
     # By default, pulls 'agentscope/runtime-sandbox-mobile:latest' from DockerHub
     print(box.list_tools()) # List all available tools
     print(box.mobile_get_screen_resolution()) # Get the screen resolution
-    print(box.mobile_tap(x=500, y=1000)) # Tap at coordinate (500, 1000)
+    print(box.mobile_tap([500, 1000])) # Tap at coordinate (500, 1000)
     print(box.mobile_input_text("Hello from AgentScope!")) # Input text
     print(box.mobile_key_event(3)) # Sends a HOME key event (KeyCode: 3)
     screenshot_result = box.mobile_get_screenshot() # Get the current screenshot

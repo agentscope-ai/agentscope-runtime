@@ -11,13 +11,24 @@ autorestart=true
 priority=20
 stdout_logfile=/var/log/nginx.out.log
 stderr_logfile=/var/log/nginx.err.log
+environment=SECRET_TOKEN="${SECRET_TOKEN}"
 
 [program:fastapi_app]
-command=/app/python_app/.venv/bin/uvicorn app:app --host 0.0.0.0 --port 8000
+command=/app/python_app/.venv/bin/uvicorn app:app --host 0.0.0.0 --port 8001
 directory=/app/python_app
 autostart=true
 autorestart=true
 priority=10
 stdout_logfile=/var/log/fastapi.out.log
 stderr_logfile=/var/log/fastapi.err.log
+environment=SECRET_TOKEN="${SECRET_TOKEN}"
+
+[program:ws_scrcpy]
+command=node index.js --host 0.0.0.0 --port 8000
+directory=/app/ws-scrcpy
+autostart=true
+autorestart=true
+priority=15
+stdout_logfile=/var/log/ws_scrcpy.out.log
+stderr_logfile=/var/log/ws_scrcpy.err.log
 environment=SECRET_TOKEN="${SECRET_TOKEN}"

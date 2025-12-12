@@ -334,6 +334,8 @@ with FilesystemSandbox() as box:
 
 提供一个**沙箱化的 Android 模拟器环境**，允许执行各种移动端操作，如点击、滑动、输入文本和截屏等。
 
+<img src="https://img.alicdn.com/imgextra/i2/O1CN01m9smAi1cUE8TdJ13d_!!6000000003603-2-tps-1435-1103.png" alt="Mobile Sandbox" height="500">
+
 ##### 运行环境要求
 
 - **Linux 主机**:
@@ -357,7 +359,7 @@ with MobileSandbox() as box:
     # 默认从 DockerHub 拉取 'agentscope/runtime-sandbox-mobile:latest' 镜像
     print(box.list_tools()) # 列出所有可用工具
     print(box.mobile_get_screen_resolution()) # 获取屏幕分辨率
-    print(box.mobile_tap(x=500, y=1000)) # 在坐标 (500, 1000) 处进行点击
+    print(box.mobile_tap([500, 1000])) # 在坐标 (500, 1000) 处进行点击
     print(box.mobile_input_text("Hello from AgentScope!")) # 输入文本
     print(box.mobile_key_event(3)) # 发送 HOME 按键事件 (KeyCode: 3)
     screenshot_result = box.mobile_get_screenshot() # 获取当前屏幕截图
