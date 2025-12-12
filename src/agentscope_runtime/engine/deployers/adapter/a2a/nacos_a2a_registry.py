@@ -58,7 +58,7 @@ else:
 from .a2a_registry import (  # pylint: disable=wrong-import-position
     A2ARegistry,
     DeployProperties,
-    A2aTransportsProperties,
+    A2ATransportsProperties,
 )
 
 logger = logging.getLogger(__name__)
@@ -113,7 +113,7 @@ class NacosRegistry(A2ARegistry):
         self,
         agent_card: AgentCard,
         deploy_properties: DeployProperties,
-        a2a_transports_properties: List[A2aTransportsProperties],
+        a2a_transports_properties: List[A2ATransportsProperties],
     ) -> None:
         """Register an A2A agent service to Nacos.
 

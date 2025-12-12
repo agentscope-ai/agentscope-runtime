@@ -25,7 +25,7 @@ from agentscope_runtime.engine.deployers.adapter.a2a import (
 )
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     DeployProperties,
-    A2aTransportsProperties,
+    A2ATransportsProperties,
 )
 
 NacosRegistry = nacos_a2a_registry.NacosRegistry
@@ -91,7 +91,7 @@ def deploy_properties():
 @pytest.fixture
 def transport_properties():
     """Create test transport properties."""
-    return [A2aTransportsProperties(transport_type="JSONRPC")]
+    return [A2ATransportsProperties(transport_type="JSONRPC")]
 
 
 class TestNacosRegistry:

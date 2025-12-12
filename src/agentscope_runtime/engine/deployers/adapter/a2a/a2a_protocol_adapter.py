@@ -25,7 +25,7 @@ from .a2a_agent_adapter import A2AExecutor
 from .a2a_registry import (
     A2ARegistry,
     DeployProperties,
-    A2aTransportsProperties,
+    A2ATransportsProperties,
     create_registry_from_env,
 )
 
@@ -502,15 +502,15 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         self,
         agent_card: AgentCard,
         deploy_properties: DeployProperties,
-    ) -> List[A2aTransportsProperties]:
-        """Build A2aTransportsProperties from agent card and transport configs.
+    ) -> List[A2ATransportsProperties]:
+        """Build A2ATransportsProperties from agent card and transport configs.
 
         Args:
             agent_card: The generated AgentCard
             deploy_properties: Deployment properties
 
         Returns:
-            List of A2aTransportsProperties
+            List of A2ATransportsProperties
         """
         transports_properties = []
 
@@ -562,8 +562,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         url: str,
         transport_type: str,
         deploy_properties: DeployProperties,
-    ) -> Optional[A2aTransportsProperties]:
-        """Parse transport URL and create A2aTransportsProperties.
+    ) -> Optional[A2ATransportsProperties]:
+        """Parse transport URL and create A2ATransportsProperties.
 
         Args:
             url: Transport URL
@@ -571,7 +571,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             deploy_properties: Deployment properties for fallback values
 
         Returns:
-            A2aTransportsProperties instance or None if URL is invalid
+            A2ATransportsProperties instance or None if URL is invalid
         """
         if not url:
             return None
@@ -613,7 +613,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         port = parsed.port or deploy_properties.port
         path = parsed.path or ""
 
-        return A2aTransportsProperties(
+        return A2ATransportsProperties(
             transport_type=transport_type,
             url=url,
             host=host,
@@ -808,7 +808,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             # Note: rootPath, subPath, and tls fields from transport
             # config are intentionally excluded here as they are not
             # part of the AgentInterface schema. These fields are
-            # used internally by A2aTransportsProperties for registry
+            # used internally by A2ATransportsProperties for registry
             # configuration but should not be included in the
             # interface to avoid validation errors.
             interfaces.append(interface)

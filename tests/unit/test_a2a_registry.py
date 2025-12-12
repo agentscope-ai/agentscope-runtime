@@ -5,7 +5,7 @@ Unit tests for A2A Registry functionality.
 
 Tests cover:
 - A2ARegistry abstract base class
-- DeployProperties and A2aTransportsProperties dataclasses
+- DeployProperties and A2ATransportsProperties dataclasses
 - A2ARegistrySettings configuration
 - get_registry_settings() function
 - create_registry_from_env() factory function
@@ -20,7 +20,7 @@ from a2a.types import AgentCard
 
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     DeployProperties,
-    A2aTransportsProperties,
+    A2ATransportsProperties,
     A2ARegistrySettings,
     get_registry_settings,
     create_registry_from_env,
@@ -44,7 +44,7 @@ class MockRegistry(A2ARegistry):
         self,
         agent_card: AgentCard,
         deploy_properties: DeployProperties,
-        a2a_transports_properties: List[A2aTransportsProperties],
+        a2a_transports_properties: List[A2ATransportsProperties],
     ) -> None:
         self.registered_cards.append(agent_card)
         self.registered_properties.append(
@@ -80,7 +80,7 @@ class TestA2ARegistry:
             skills=[],
         )
         deploy_props = DeployProperties(host="localhost", port=8080)
-        transport_props = [A2aTransportsProperties(transport_type="JSONRPC")]
+        transport_props = [A2ATransportsProperties(transport_type="JSONRPC")]
 
         registry.register(agent_card, deploy_props, transport_props)
         assert len(registry.registered_cards) == 1
@@ -116,12 +116,12 @@ class TestDeployProperties:
         assert props.extra == {"key": "value"}
 
 
-class TestA2aTransportsProperties:
-    """Test A2aTransportsProperties dataclass."""
+class TestA2ATransportsProperties:
+    """Test A2ATransportsProperties dataclass."""
 
     def test_required_fields(self):
-        """Test A2aTransportsProperties with required fields."""
-        props = A2aTransportsProperties(transport_type="JSONRPC")
+        """Test A2ATransportsProperties with required fields."""
+        props = A2ATransportsProperties(transport_type="JSONRPC")
         assert props.transport_type == "JSONRPC"
         assert props.url is None
         assert props.host is None
@@ -129,8 +129,8 @@ class TestA2aTransportsProperties:
         assert props.extra == {}
 
     def test_all_fields(self):
-        """Test A2aTransportsProperties with all fields."""
-        props = A2aTransportsProperties(
+        """Test A2ATransportsProperties with all fields."""
+        props = A2ATransportsProperties(
             transport_type="HTTP",
             url="https://example.com",
             host="example.com",

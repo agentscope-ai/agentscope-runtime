@@ -25,7 +25,7 @@ from a2a.types import AgentCard
 __all__ = [
     "A2ARegistry",
     "DeployProperties",
-    "A2aTransportsProperties",
+    "A2ATransportsProperties",
     "A2ARegistrySettings",
     "get_registry_settings",
     "create_registry_from_env",
@@ -54,7 +54,7 @@ class DeployProperties:
 
 
 @dataclass
-class A2aTransportsProperties:
+class A2ATransportsProperties:
     """Transport-level configuration for A2A transports.
 
     Each transport may have transport-specific host/port/path and extra
@@ -90,7 +90,7 @@ class A2ARegistry(ABC):
         self,
         agent_card: AgentCard,
         deploy_properties: DeployProperties,
-        a2a_transports_properties: List[A2aTransportsProperties],
+        a2a_transports_properties: List[A2ATransportsProperties],
     ) -> None:
         """Register an agent/service and its transport endpoints.
 
