@@ -235,7 +235,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
     be overridden by users.
     """
 
-    def __init__(  # pylint: disable=R0917
+    def __init__(
         self,
         agent_name: str,
         agent_description: str,
