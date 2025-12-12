@@ -127,8 +127,10 @@ def extract_config_params(
         if a2a_config.registry is not None:
             params["registry"] = a2a_config.registry
             logger.debug(
-                "[A2A] Using registry from "
-                "AgentCardWithRuntimeConfig"
+                (
+                    "[A2A] Using registry from "
+                    "AgentCardWithRuntimeConfig"
+                )
             )
 
         if a2a_config.transports is not None:
@@ -270,7 +272,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
     be overridden by users.
     """
 
-    def __init__(  # pylint: disable=too-many-positional-arguments
+    def __init__(
         self,
         agent_name: str,
         agent_description: str,
