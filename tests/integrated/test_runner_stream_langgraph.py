@@ -56,7 +56,7 @@ class MyLangGraphRunner(Runner):
 
         def call_model(state: AgentState, config: RunnableConfig):
             """Call the LLM to generate a joke about a topic"""
-            model_response = llm.invoke(state["messages"],config=config)
+            model_response = llm.invoke(state["messages"], config=config)
             return {"messages": model_response}
 
         workflow = StateGraph(AgentState)
