@@ -130,7 +130,7 @@ def extract_config_params(
                 (
                     "[A2A] Using registry from "
                     "AgentCardWithRuntimeConfig"
-                )
+                ),
             )
 
         if a2a_config.transports is not None:

@@ -12,9 +12,9 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from a2a.types import AgentCard, AgentCapabilities
 
-from agentscope_runtime.engine.deployers.adapter import a2a
-
-A2AFastAPIDefaultAdapter = a2a.a2a.A2AFastAPIDefaultAdapter
+from agentscope_runtime.engine.deployers.adapter.a2a import (
+    A2AFastAPIDefaultAdapter,
+)
 
 
 class TestWellknownEndpointErrorHandling:
