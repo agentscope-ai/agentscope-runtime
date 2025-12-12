@@ -768,3 +768,393 @@ class TestNacosRegistry:
                 )
                 assert registry._register_task is original_task
                 assert registry._register_thread is original_thread
+
+    @pytest.mark.asyncio
+    async def test_register_to_nacos_shutdown_during_service_creation(
+        self,
+        mock_nacos_sdk,
+        agent_card,
+    ):
+        """Test _register_to_nacos() when shutdown occurs during service creation."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            _ensure_nacos_ai_service_method()
+
+            registry = NacosRegistry(
+                nacos_client_config=mock_nacos_sdk["client_config"],
+            )
+
+            # Set status to IN_PROGRESS
+            with registry._registration_lock:
+                registry._registration_status = RegistrationStatus.IN_PROGRESS
+
+            async def mock_create_service_with_shutdown(config):
+                # Simulate shutdown during service creation
+                registry._shutdown_event.set()
+                return mock_nacos_sdk["ai_service"]
+
+            with patch(
+                "agentscope_runtime.engine.deployers.adapter.a2a"
+                ".nacos_a2a_registry.NacosAIService.create_ai_service",
+                side_effect=mock_create_service_with_shutdown,
+            ):
+                await registry._register_to_nacos(
+                    agent_card=agent_card,
+                    host="localhost",
+                    port=8080,
+                    root_path="/api",
+                )
+
+            assert (
+                registry._registration_status == RegistrationStatus.CANCELLED
+            )
+
+    @pytest.mark.asyncio
+    async def test_register_to_nacos_shutdown_after_card_publish(
+        self,
+        mock_nacos_sdk,
+        agent_card,
+    ):
+        """Test _register_to_nacos() when shutdown occurs after card publish."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            _ensure_nacos_ai_service_method()
+
+            registry = NacosRegistry(
+                nacos_client_config=mock_nacos_sdk["client_config"],
+            )
+
+            # Set status to IN_PROGRESS
+            with registry._registration_lock:
+                registry._registration_status = RegistrationStatus.IN_PROGRESS
+
+            mock_service = mock_nacos_sdk["ai_service"]
+
+            async def mock_release_card(param):
+                # Simulate shutdown after card is published
+                registry._shutdown_event.set()
+
+            mock_service.release_agent_card = mock_release_card
+
+            with patch(
+                "agentscope_runtime.engine.deployers.adapter.a2a"
+                ".nacos_a2a_registry.NacosAIService.create_ai_service",
+                new_callable=AsyncMock,
+            ) as mock_create:
+                mock_create.return_value = mock_service
+
+                with patch(
+                    "agentscope_runtime.engine.deployers.adapter"
+                    ".a2a.nacos_a2a_registry.ReleaseAgentCardParam",
+                    MagicMock,
+                ):
+                    await registry._register_to_nacos(
+                        agent_card=agent_card,
+                        host="localhost",
+                        port=8080,
+                        root_path="/api",
+                    )
+
+            assert (
+                registry._registration_status == RegistrationStatus.CANCELLED
+            )
+
+    @pytest.mark.asyncio
+    async def test_cleanup_with_nacos_service_close(
+        self,
+        mock_nacos_sdk,
+        agent_card,
+    ):
+        """Test cleanup() properly closes NacosAIService."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            registry = NacosRegistry()
+
+            # Mock a service with close method
+            mock_service = AsyncMock()
+            mock_service.close = AsyncMock()
+            registry._nacos_ai_service = mock_service
+
+            await registry.cleanup()
+
+            # Verify close was called
+            mock_service.close.assert_called_once()
+            assert registry._nacos_ai_service is None
+
+    @pytest.mark.asyncio
+    async def test_cleanup_with_nacos_service_shutdown(
+        self,
+        mock_nacos_sdk,
+        agent_card,
+    ):
+        """Test cleanup() using shutdown method if close not available."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            registry = NacosRegistry()
+
+            # Create a custom mock service that only has shutdown method
+            class MockNacosService:
+                def __init__(self):
+                    self.shutdown = AsyncMock()
+
+            mock_service = MockNacosService()
+            registry._nacos_ai_service = mock_service
+
+            await registry.cleanup()
+
+            # Verify shutdown was called
+            mock_service.shutdown.assert_called_once()
+            assert registry._nacos_ai_service is None
+
+    @pytest.mark.asyncio
+    async def test_cleanup_with_service_close_error(
+        self,
+        mock_nacos_sdk,
+    ):
+        """Test cleanup() handles errors during service close gracefully."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            registry = NacosRegistry()
+
+            # Mock a service that raises error on close
+            mock_service = AsyncMock()
+            mock_service.close = AsyncMock(side_effect=Exception("Close error"))
+            registry._nacos_ai_service = mock_service
+
+            # Should not raise
+            await registry.cleanup()
+
+            # Service should still be cleared
+            assert registry._nacos_ai_service is None
+
+    def test_register_with_default_host(
+        self,
+        mock_nacos_sdk,
+        agent_card,
+        transport_properties,
+    ):
+        """Test register() uses default host when not specified."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            registry = NacosRegistry()
+
+            deploy_props_no_host = DeployProperties(
+                host=None,
+                port=8080,
+            )
+
+            # Mock _start_register_task to capture parameters
+            original_start = registry._start_register_task
+            captured_args = {}
+
+            def mock_start_register_task(agent_card, host, port, root_path):
+                captured_args['host'] = host
+                captured_args['port'] = port
+                captured_args['root_path'] = root_path
+
+            registry._start_register_task = mock_start_register_task
+
+            registry.register(
+                agent_card,
+                deploy_props_no_host,
+                transport_properties,
+            )
+
+            # Should use default host
+            assert captured_args['host'] == "127.0.0.1"
+            assert captured_args['port'] == 8080
+
+    def test_register_with_custom_root_path(
+        self,
+        mock_nacos_sdk,
+        agent_card,
+        transport_properties,
+    ):
+        """Test register() with custom root_path."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            registry = NacosRegistry()
+
+            deploy_props = DeployProperties(
+                host="example.com",
+                port=9090,
+                root_path="/custom/path",
+            )
+
+            captured_args = {}
+
+            def mock_start_register_task(agent_card, host, port, root_path):
+                captured_args['root_path'] = root_path
+
+            registry._start_register_task = mock_start_register_task
+
+            registry.register(
+                agent_card,
+                deploy_props,
+                transport_properties,
+            )
+
+            assert captured_args['root_path'] == "/custom/path"
+
+    def test_get_client_config_without_auth(self, mock_nacos_sdk):
+        """Test _get_client_config() without authentication."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            registry = NacosRegistry()
+
+            with patch(
+                "agentscope_runtime.engine.deployers.adapter.a2a"
+                ".a2a_registry.get_registry_settings",
+            ) as mock_get_settings:
+                mock_settings = MagicMock()
+                mock_settings.NACOS_SERVER_ADDR = "localhost:8848"
+                mock_settings.NACOS_USERNAME = None
+                mock_settings.NACOS_PASSWORD = None
+                mock_get_settings.return_value = mock_settings
+
+                with patch(
+                    "agentscope_runtime.engine.deployers.adapter"
+                    ".a2a.nacos_a2a_registry.ClientConfigBuilder",
+                    return_value=mock_nacos_sdk["builder"],
+                ):
+                    config = registry._get_client_config()
+                    assert config is not None
+                    mock_nacos_sdk[
+                        "builder"
+                    ].server_address.assert_called_with("localhost:8848")
+                    # Username and password should not be called
+                    mock_nacos_sdk["builder"].username.assert_not_called()
+                    mock_nacos_sdk["builder"].password.assert_not_called()
+
+    def test_get_client_config_with_provided_config(self, mock_nacos_sdk):
+        """Test _get_client_config() returns provided config."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            config = mock_nacos_sdk["client_config"]
+            registry = NacosRegistry(nacos_client_config=config)
+
+            # Should return the provided config without calling settings
+            returned_config = registry._get_client_config()
+            assert returned_config is config
+
+    @pytest.mark.asyncio
+    async def test_cleanup_with_pending_status(self, mock_nacos_sdk):
+        """Test cleanup() with PENDING status."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            registry = NacosRegistry()
+
+            # Status is already PENDING by default
+            assert registry._registration_status == RegistrationStatus.PENDING
+
+            await registry.cleanup(wait_for_completion=False)
+
+            # Should be cancelled
+            assert (
+                registry._registration_status == RegistrationStatus.CANCELLED
+            )
+
+    @pytest.mark.asyncio
+    async def test_cleanup_with_completed_status(self, mock_nacos_sdk):
+        """Test cleanup() with already COMPLETED status."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            registry = NacosRegistry()
+
+            # Set status to COMPLETED
+            with registry._registration_lock:
+                registry._registration_status = RegistrationStatus.COMPLETED
+
+            await registry.cleanup(wait_for_completion=True)
+
+            # Should remain COMPLETED
+            assert (
+                registry._registration_status == RegistrationStatus.COMPLETED
+            )
+
+    @pytest.mark.asyncio
+    async def test_cleanup_with_failed_status(self, mock_nacos_sdk):
+        """Test cleanup() with FAILED status."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            registry = NacosRegistry()
+
+            # Set status to FAILED
+            with registry._registration_lock:
+                registry._registration_status = RegistrationStatus.FAILED
+
+            await registry.cleanup(wait_for_completion=True)
+
+            # Should remain FAILED
+            assert registry._registration_status == RegistrationStatus.FAILED
+
+    @pytest.mark.asyncio
+    async def test_wait_for_registration_with_thread(
+        self,
+        mock_nacos_sdk,
+    ):
+        """Test wait_for_registration() with thread-based registration."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            registry = NacosRegistry()
+
+            # Create a mock thread that completes quickly
+            mock_thread = MagicMock()
+            mock_thread.is_alive.return_value = False
+            registry._register_thread = mock_thread
+
+            # Set status to COMPLETED
+            with registry._registration_lock:
+                registry._registration_status = RegistrationStatus.COMPLETED
+
+            status = await registry.wait_for_registration(timeout=1.0)
+
+            assert status == RegistrationStatus.COMPLETED
+            mock_thread.join.assert_called_once_with(timeout=1.0)
+
+    def test_registration_status_enum_values(self):
+        """Test RegistrationStatus enum has expected values."""
+        assert RegistrationStatus.PENDING.value == "pending"
+        assert RegistrationStatus.IN_PROGRESS.value == "in_progress"
+        assert RegistrationStatus.COMPLETED.value == "completed"
+        assert RegistrationStatus.FAILED.value == "failed"
+        assert RegistrationStatus.CANCELLED.value == "cancelled"

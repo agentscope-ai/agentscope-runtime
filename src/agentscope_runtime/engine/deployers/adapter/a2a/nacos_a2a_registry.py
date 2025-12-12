@@ -452,21 +452,20 @@ class NacosRegistry(A2ARegistry):
             try:
                 svc = self._nacos_ai_service
                 if svc is not None:
-                    close_coro = getattr(svc, "close", None) or getattr(
+                    close_method = getattr(svc, "close", None) or getattr(
                         svc,
                         "shutdown",
                         None,
                     )
-                    if close_coro is not None and callable(close_coro):
+                    if close_method is not None and callable(close_method):
                         try:
-                            result = close_coro()
-                            # If the call returned a coroutine, await it
-                            if asyncio.iscoroutine(result):
-                                await result
+                            if asyncio.iscoroutinefunction(close_method):
+                                await close_method()
                             else:
-                                logger.debug(
-                                    "[NacosRegistry] NacosAIService closed",
-                                )
+                                close_method()
+                            logger.debug(
+                                "[NacosRegistry] NacosAIService closed",
+                            )
                         except Exception:
                             logger.debug(
                                 "[NacosRegistry] Error closing NacosAIService",

@@ -215,7 +215,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         skills: Optional[List[AgentSkill]] = None,
         default_input_modes: Optional[List[str]] = None,
         default_output_modes: Optional[List[str]] = None,
-        provider: Optional[Union[str, Dict[str, Any]]] = None,
+        provider: Optional[Union[str, Dict[str, Any], AgentProvider]] = None,
         document_url: Optional[str] = None,
         icon_url: Optional[str] = None,
         security_schema: Optional[Dict[str, Any]] = None,
@@ -841,7 +841,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         }
         for field, card_field in field_mapping.items():
             value = getattr(self, f"_{field}", None)
-            if value:
+            if value is not None:
                 card_kwargs[card_field] = value
 
         return AgentCard(**card_kwargs)
