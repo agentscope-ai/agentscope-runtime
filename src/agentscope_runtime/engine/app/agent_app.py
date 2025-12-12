@@ -13,7 +13,7 @@ from .base_app import BaseApp
 from ..deployers import DeployManager
 from ..deployers.adapter.a2a import (
     A2AFastAPIDefaultAdapter,
-    A2AConfig,
+    AgentCardWithRuntimeConfig,
     extract_config_params,
     create_registry_from_env,
 )
@@ -49,7 +49,12 @@ class AgentApp(BaseApp):
         backend_url: Optional[str] = None,
         runner: Optional[Runner] = None,
         enable_embedded_worker: bool = False,
-        a2a_config: Optional[Union[A2AConfig, Dict[str, Any]]] = None,
+        a2a_config: Optional[
+            Union[
+                "AgentCardWithRuntimeConfig",
+                Dict[str, Any],
+            ]
+        ] = None,
         **kwargs,
     ):
         """
@@ -68,23 +73,30 @@ class AgentApp(BaseApp):
             backend_url: URL for backend service
             runner: Optional runner instance
             enable_embedded_worker: Whether to enable embedded worker
-            a2a_config: Optional A2A protocol configuration. Can be either:
-                - A2AConfig instance (structured configuration)
-                - Dictionary with structured configuration containing:
-                  - agent_card: AgentCardConfig or dict with
-                    AgentCard settings (card_name, card_description,
-                    card_url, preferred_transport,
-                    additional_interfaces, card_version, skills,
-                    default_input_modes, default_output_modes,
-                    provider, document_url, icon_url,
-                    security_schema, security)
-                  - task: TaskConfig or dict with Task
-                    settings (task_timeout, task_event_timeout)
-                  - wellknown: WellknownConfig or dict with
-                    Wellknown settings (wellknown_path)
-                  - transports: TransportsConfig or dict with
-                    Transports settings (transports)
-                  - registry: A2A registry or list of registries (optional)
+            a2a_config: Optional A2A runtime configuration. Can be:
+                - AgentCardWithRuntimeConfig (Recommended):
+                  Inherits from AgentCard and adds runtime fields
+                  (registries, transports, task_timeout, etc.)
+                  Example:
+                    from a2a.types import AgentCapabilities
+                    from agentscope_runtime.engine.deployers.adapter.a2a import (
+                        AgentCardWithRuntimeConfig,
+                    )
+                    config = AgentCardWithRuntimeConfig(
+                        name="MyAgent",
+                        version="1.0.0",
+                        description="My agent",
+                        url="http://localhost:8080",
+                        capabilities=AgentCapabilities(),
+                        defaultInputModes=["text"],
+                        defaultOutputModes=["text"],
+                        skills=[],
+                        registries=[nacos_registry],
+                        transports=[{"name": "JSONRPC", "url": "..."}],
+                        task_timeout=120,
+                    )
+
+                - Dictionary with AgentCardWithRuntimeConfig fields
             **kwargs: Additional keyword arguments passed to FastAPI app
         """
 

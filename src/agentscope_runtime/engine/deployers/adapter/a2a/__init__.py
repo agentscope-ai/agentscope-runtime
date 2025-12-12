@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 from .a2a_protocol_adapter import (
     A2AFastAPIDefaultAdapter,
-    A2AConfig,
-    AgentCardConfig,
-    TaskConfig,
-    WellknownConfig,
-    TransportsConfig,
+    AgentCardWithRuntimeConfig,
     extract_config_params,
 )
 from .a2a_registry import (
@@ -24,11 +20,7 @@ from .a2a_registry import (
 
 __all__ = [
     "A2AFastAPIDefaultAdapter",
-    "A2AConfig",
-    "AgentCardConfig",
-    "TaskConfig",
-    "WellknownConfig",
-    "TransportsConfig",
+    "AgentCardWithRuntimeConfig",
     "extract_config_params",
     "A2ARegistry",
     "DeployProperties",
