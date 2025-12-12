@@ -34,7 +34,7 @@ class QwenImageEditInput(BaseModel):
         default=None,
         description="反向提示词，用来描述不希望在画面中看到的内容，可以对画面进行限制，超过500个字符自动截断",
     )
-    watermark: Optional[bool] = Field(
+    watermark: Optional[bool] = Field(  
         default=None,
         description="是否添加水印，默认不设置",
     )
@@ -121,6 +121,13 @@ class QwenImageEdit(Tool[QwenImageEditInput, QwenImageEditOutput]):
             },
         ]
 
+        # >>> 新增：标准化 watermark 输入为布尔值 <<<
+        if args.watermark is not None:
+            if isinstance(args.watermark, str):
+                args.watermark = args.watermark.strip().lower() in ('true', '1')
+            else:
+                args.watermark = bool(args.watermark)
+
         parameters = {}
         if args.negative_prompt:
             parameters["negative_prompt"] = args.negative_prompt
@@ -203,3 +210,4 @@ class QwenImageEdit(Tool[QwenImageEditInput, QwenImageEditOutput]):
             results=results,
             request_id=request_id,
         )
+        
