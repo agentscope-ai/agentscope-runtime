@@ -12,7 +12,7 @@ kernelspec:
   name: python3
 ---
 
-# 🔄 LangGraph Integration Guide
+# LangGraph Integration Guide
 
 This guide introduces how to integrate and use LangGraph with AgentScope Runtime to build complex agent workflows.
 
