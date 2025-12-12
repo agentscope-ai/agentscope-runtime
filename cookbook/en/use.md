@@ -69,9 +69,21 @@ Introduces runnable demo scenarios that help teams showcase, train, or validate 
 
 Dive deeper into {doc}`demohouse`.
 
+### A2A Registry - Service Registration and Discovery
+
+Introduces the service registration and discovery mechanism for the A2A (Agent-to-Agent) protocol. This section covers:
+
+- Registry architecture
+- Two configuration methods: a2a_config, environment variables
+- Nacos Registry usage guide
+- How to implement custom Registry extensions
+- Multiple Registry support with complete example code
+
+Perfect for developers who need to register agent services to service discovery systems (such as Nacos). See {doc}`a2a_registry` for full documentation.
+
 ### Tests
 
-Explains the repository’s test samples, including:
+Explains the repository's test samples, including:
 
 - Unit tests
 - Integration tests
