@@ -187,17 +187,16 @@ class TestA2ARegistrySettings:
             assert settings.NACOS_PASSWORD == "testpass"
 
     def test_extra_fields_allowed(self):
-        """Test that extra fields are allowed in settings."""
-        with patch.dict(
-            os.environ,
-            {
-                "A2A_REGISTRY_CUSTOM_FIELD": "custom_value",
-            },
-            clear=False,
-        ):
-            settings = A2ARegistrySettings()
-            # Extra fields should be accessible
-            assert hasattr(settings, "A2A_REGISTRY_CUSTOM_FIELD")
+        """Test that extra fields are allowed when passed directly."""
+        # Pydantic v2 BaseSettings with extra="allow" allows extra fields
+        # when passed directly to the constructor, but does not automatically
+        # load undefined fields from environment variables.
+        settings = A2ARegistrySettings(
+            A2A_REGISTRY_CUSTOM_FIELD="custom_value",
+        )
+        # Extra fields should be accessible
+        assert hasattr(settings, "A2A_REGISTRY_CUSTOM_FIELD")
+        assert settings.A2A_REGISTRY_CUSTOM_FIELD == "custom_value"
 
 
 class TestGetRegistrySettings:
