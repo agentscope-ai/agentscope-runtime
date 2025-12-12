@@ -1264,16 +1264,126 @@ docker<span class="w"> </span>login<span class="w">  </span>your-registry
 <section id="agentrun-deployment-prerequisites">
 <h3>AgentRun Deployment Prerequisites<a class="headerlink" href="#agentrun-deployment-prerequisites" title="Link to this heading">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Ensure environment variables are set</span>
+<span class="c1"># More env settings, please refer to the table below</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_ACCESS_KEY_ID</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span><span class="o">=</span><span class="s2">&quot;your-access-key-secret&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_REGION_ID</span><span class="o">=</span><span class="s2">&quot;cn-hangzhou&quot;</span><span class="w">  </span><span class="c1"># or other regions</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">AGENT_RUN_REGION_ID</span><span class="o">=</span><span class="s2">&quot;cn-hangzhou&quot;</span><span class="w">  </span><span class="c1"># or other regions</span>
 
 <span class="c1"># OSS configuration (for storing build artifacts)</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">OSS_ACCESS_KEY_ID</span><span class="o">=</span><span class="s2">&quot;your-oss-access-key-id&quot;</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">OSS_ACCESS_KEY_SECRET</span><span class="o">=</span><span class="s2">&quot;your-oss-access-key-secret&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">OSS_ENDPOINT</span><span class="o">=</span><span class="s2">&quot;oss-cn-hangzhou.aliyuncs.com&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OSS_REGION</span><span class="o">=</span><span class="s2">&quot;cn-hangzhou&quot;</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">OSS_BUCKET_NAME</span><span class="o">=</span><span class="s2">&quot;your-bucket-name&quot;</span>
 </pre></div>
+</div>
+<p>You can set the following environment variables or <code class="docutils literal notranslate"><span class="pre">AgentRunConfig</span></code> to customize the deployment:</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_ID</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>-</p></td>
+<td><p>Alibaba Cloud Access Key ID</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>-</p></td>
+<td><p>Alibaba Cloud Access Key Secret</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_REGION_ID</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cn-hangzhou</span></code></p></td>
+<td><p>Region ID for AgentRun service</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_ENDPOINT</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">agentrun.{region_id}.aliyuncs.com</span></code></p></td>
+<td><p>AgentRun service endpoint</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_LOG_STORE</span></code></p></td>
+<td><p>No</p></td>
+<td><p>-</p></td>
+<td><p>Log store name (requires log_project to be set)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_LOG_PROJECT</span></code></p></td>
+<td><p>No</p></td>
+<td><p>-</p></td>
+<td><p>Log project name (requires log_store to be set)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_NETWORK_MODE</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">PUBLIC</span></code></p></td>
+<td><p>Network mode: <code class="docutils literal notranslate"><span class="pre">PUBLIC</span></code>/<code class="docutils literal notranslate"><span class="pre">PRIVATE</span></code>/<code class="docutils literal notranslate"><span class="pre">PUBLIC_AND_PRIVATE</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_VPC_ID</span></code></p></td>
+<td><p>Conditional</p></td>
+<td><p>-</p></td>
+<td><p>VPC ID (required if network_mode is <code class="docutils literal notranslate"><span class="pre">PRIVATE</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_SECURITY_GROUP_ID</span></code></p></td>
+<td><p>Conditional</p></td>
+<td><p>-</p></td>
+<td><p>Security Group ID (required if network_mode is <code class="docutils literal notranslate"><span class="pre">PRIVATE</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_VSWITCH_IDS</span></code></p></td>
+<td><p>Conditional</p></td>
+<td><p>-</p></td>
+<td><p>VSwitch IDs in JSON array format (required if network_mode is <code class="docutils literal notranslate"><span class="pre">PRIVATE</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_CPU</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2.0</span></code></p></td>
+<td><p>CPU allocation in cores</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_MEMORY</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2048</span></code></p></td>
+<td><p>Memory allocation in MB</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_EXECUTION_ROLE_ARN</span></code></p></td>
+<td><p>No</p></td>
+<td><p>-</p></td>
+<td><p>Execution role ARN for permissions</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_SESSION_CONCURRENCY_LIMIT</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">200</span></code></p></td>
+<td><p>Session concurrency limit</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AGENT_RUN_SESSION_IDLE_TIMEOUT_SECONDS</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">600</span></code></p></td>
+<td><p>Session idle timeout in seconds</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">OSS_ACCESS_KEY_ID</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_ID</span></code></p></td>
+<td><p>OSS Access Key ID (falls back to Alibaba Cloud credentials)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">OSS_ACCESS_KEY_SECRET</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span></code></p></td>
+<td><p>OSS Access Key Secret (falls back to Alibaba Cloud credentials)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">OSS_REGION</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cn-hangzhou</span></code></p></td>
+<td><p>OSS region</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">OSS_BUCKET_NAME</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>-</p></td>
+<td><p>OSS bucket name for storing build artifacts</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </section>
 <section id="id9">
@@ -1299,7 +1409,7 @@ docker<span class="w"> </span>login<span class="w">  </span>your-registry
         <span class="n">oss_config</span><span class="o">=</span><span class="n">OSSConfig</span><span class="p">(</span>
             <span class="n">access_key_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_ACCESS_KEY_ID&quot;</span><span class="p">),</span>
             <span class="n">access_key_secret</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_ACCESS_KEY_SECRET&quot;</span><span class="p">),</span>
-            <span class="n">endpoint</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_ENDPOINT&quot;</span><span class="p">),</span>
+            <span class="n">region</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_REGION&quot;</span><span class="p">),</span>
             <span class="n">bucket_name</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_BUCKET_NAME&quot;</span><span class="p">),</span>
         <span class="p">),</span>
         <span class="n">agentrun_config</span><span class="o">=</span><span class="n">AgentRunConfig</span><span class="p">(</span>
@@ -1351,7 +1461,7 @@ docker<span class="w"> </span>login<span class="w">  </span>your-registry
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">OSSConfig</span><span class="p">(</span>
     <span class="n">access_key_id</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span><span class="p">,</span>
     <span class="n">access_key_secret</span><span class="o">=</span><span class="s2">&quot;your-access-key-secret&quot;</span><span class="p">,</span>
-    <span class="n">endpoint</span><span class="o">=</span><span class="s2">&quot;oss-cn-hangzhou.aliyuncs.com&quot;</span><span class="p">,</span>
+    <span class="n">region</span><span class="o">=</span><span class="s2">&quot;cn-hangzhou&quot;</span><span class="p">,</span>
     <span class="n">bucket_name</span><span class="o">=</span><span class="s2">&quot;your-bucket-name&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
@@ -1449,7 +1559,7 @@ docker<span class="w"> </span>login<span class="w">  </span>your-registry
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-12-11</div>
+              Last updated on 2025-12-12</div>
           </div>
           <div class="right-details">
             <div class="icons">

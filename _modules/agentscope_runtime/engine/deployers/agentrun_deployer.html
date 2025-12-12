@@ -732,7 +732,7 @@ body.preview-active {
 
     <span class="n">execution_role_arn</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="n">session_concurrency_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">session_concurrency_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">200</span>
     <span class="n">session_idle_timeout_seconds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3600</span>
 
 <div class="viewcode-block" id="AgentRunConfig.from_env">
@@ -786,7 +786,7 @@ body.preview-active {
 
         <span class="n">session_concurrency_limit_str</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
             <span class="s2">&quot;AGENT_RUN_SESSION_CONCURRENCY_LIMIT&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;200&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">session_idle_timeout_seconds_str</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
             <span class="s2">&quot;AGENT_RUN_SESSION_IDLE_TIMEOUT_SECONDS&quot;</span><span class="p">,</span>
@@ -864,6 +864,7 @@ body.preview-active {
     <span class="n">region</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="s2">&quot;cn-hangzhou&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;OSS region&quot;</span><span class="p">)</span>
     <span class="n">access_key_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">access_key_secret</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">bucket_name</span><span class="p">:</span> <span class="nb">str</span>
 
 <div class="viewcode-block" id="OSSConfig.from_env">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.agentrun_deployer.OSSConfig.from_env">[docs]</a>
@@ -884,6 +885,7 @@ body.preview-active {
                 <span class="s2">&quot;OSS_ACCESS_KEY_SECRET&quot;</span><span class="p">,</span>
                 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ALIBABA_CLOUD_ACCESS_KEY_SECRET&quot;</span><span class="p">),</span>
             <span class="p">),</span>
+            <span class="n">bucket_name</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_BUCKET_NAME&quot;</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 
@@ -896,10 +898,14 @@ body.preview-active {
 <span class="sd">            RuntimeError: If required AccessKey credentials are missing.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Allow fallback to Alibaba Cloud AK/SK via from_env()</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">access_key_id</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">access_key_secret</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">access_key_id</span>
+            <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">access_key_secret</span>
+            <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">bucket_name</span>
+        <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                 <span class="s2">&quot;Missing AccessKey for OSS. Set either OSS_ACCESS_KEY_ID/OSS_ACCESS_KEY_SECRET &quot;</span>
-                <span class="s2">&quot;or ALIBABA_CLOUD_ACCESS_KEY_ID/ALIBABA_CLOUD_ACCESS_KEY_SECRET.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;or ALIBABA_CLOUD_ACCESS_KEY_ID/ALIBABA_CLOUD_ACCESS_KEY_SECRET or OSS_BUCKET_NAME.&quot;</span><span class="p">,</span>
             <span class="p">)</span></div>
 </div>
 
@@ -1307,7 +1313,7 @@ body.preview-active {
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Uploading zip package to OSS&quot;</span><span class="p">)</span>
             <span class="n">oss_result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_upload_to_fixed_oss_bucket</span><span class="p">(</span>
                 <span class="n">zip_file_path</span><span class="o">=</span><span class="n">zip_file_path</span><span class="p">,</span>
-                <span class="n">bucket_name</span><span class="o">=</span><span class="s2">&quot;tmp-agentscope-agentrun-code&quot;</span><span class="p">,</span>
+                <span class="n">bucket_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">oss_config</span><span class="o">.</span><span class="n">bucket_name</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Zip package uploaded to OSS successfully&quot;</span><span class="p">)</span>
 
@@ -1334,7 +1340,7 @@ body.preview-active {
                 <span class="p">],</span>
                 <span class="s2">&quot;wheel_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">wheel_path</span><span class="p">),</span>
                 <span class="s2">&quot;artifact_url&quot;</span><span class="p">:</span> <span class="n">oss_result</span><span class="p">[</span><span class="s2">&quot;presigned_url&quot;</span><span class="p">],</span>
-                <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;https://functionai.console.aliyun.com/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">agentrun_config</span><span class="o">.</span><span class="n">region_id</span><span class="si">}</span><span class="s1">/agent/infra/agent-runtime/agent-detail?id=</span><span class="si">{</span><span class="n">agentrun_deploy_result</span><span class="p">[</span><span class="s2">&quot;agent_runtime_id&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+                <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;https://functionai.console.aliyun.com/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">agentrun_config</span><span class="o">.</span><span class="n">region_id</span><span class="si">}</span><span class="s1">/agent/runtime/agent-detail-code/</span><span class="si">{</span><span class="n">agentrun_deploy_result</span><span class="p">[</span><span class="s2">&quot;agent_runtime_id&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
                 <span class="s2">&quot;deploy_id&quot;</span><span class="p">:</span> <span class="n">agentrun_deploy_result</span><span class="p">[</span><span class="s2">&quot;agent_runtime_id&quot;</span><span class="p">],</span>
                 <span class="s2">&quot;resource_name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
             <span class="p">}</span>
@@ -3248,7 +3254,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-12-11</div>
+              Last updated on 2025-12-12</div>
           </div>
           <div class="right-details">
             <div class="icons">
