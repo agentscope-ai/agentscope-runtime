@@ -20,10 +20,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from a2a.types import AgentCard
 
-from agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry import (
-    NacosRegistry,
-    RegistrationStatus,
-)
+from agentscope_runtime.engine.deployers.adapter.a2a\
+    .nacos_a2a_registry import (
+        NacosRegistry,
+        RegistrationStatus,
+    )
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     DeployProperties,
     A2aTransportsProperties,
@@ -102,7 +103,8 @@ class TestNacosRegistry:
     def test_registry_name(self, mock_nacos_sdk):
         """Test registry_name() returns 'nacos'."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             registry = NacosRegistry()
@@ -111,7 +113,8 @@ class TestNacosRegistry:
     def test_initialization(self, mock_nacos_sdk):
         """Test NacosRegistry initialization."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             registry = NacosRegistry()
@@ -125,7 +128,8 @@ class TestNacosRegistry:
     def test_initialization_with_config(self, mock_nacos_sdk):
         """Test NacosRegistry initialization with client config."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             config = mock_nacos_sdk["client_config"]
@@ -140,7 +144,8 @@ class TestNacosRegistry:
     ):
         """Test register() when SDK is not available."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             False,
         ):
             registry = NacosRegistry()
@@ -160,7 +165,8 @@ class TestNacosRegistry:
     ):
         """Test register() when port is not specified."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             registry = NacosRegistry()
@@ -186,7 +192,8 @@ class TestNacosRegistry:
     ):
         """Test register() when shutdown is already requested."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             registry = NacosRegistry()
@@ -210,7 +217,8 @@ class TestNacosRegistry:
     ):
         """Test register() with a running event loop."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             registry = NacosRegistry()
@@ -227,7 +235,8 @@ class TestNacosRegistry:
                 root_path,
             ):
                 task_started.set()  # Signal that task has started
-                await task_can_complete.wait()  # Wait for permission to complete
+                await task_can_complete.wait()
+                # Wait for permission to complete
                 with registry._registration_lock:
                     if (
                         registry._registration_status
@@ -269,7 +278,8 @@ class TestNacosRegistry:
     ):
         """Test register() without a running event loop (thread-based)."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             registry = NacosRegistry()
@@ -322,7 +332,8 @@ class TestNacosRegistry:
     def test_get_registration_status(self, mock_nacos_sdk):
         """Test get_registration_status()."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             registry = NacosRegistry()
@@ -348,7 +359,8 @@ class TestNacosRegistry:
     ):
         """Test wait_for_registration() with task-based registration."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             registry = NacosRegistry()
@@ -388,7 +400,8 @@ class TestNacosRegistry:
     ):
         """Test wait_for_registration() with timeout."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             registry = NacosRegistry()
@@ -428,7 +441,8 @@ class TestNacosRegistry:
     ):
         """Test cleanup() with an active task."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             registry = NacosRegistry()
@@ -470,7 +484,8 @@ class TestNacosRegistry:
     ):
         """Test cleanup() with wait_for_completion=True."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             registry = NacosRegistry()
@@ -507,7 +522,8 @@ class TestNacosRegistry:
     async def test_register_to_nacos_success(self, mock_nacos_sdk, agent_card):
         """Test _register_to_nacos() successful flow."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             _ensure_nacos_ai_service_method()
@@ -525,18 +541,23 @@ class TestNacosRegistry:
 
             # Patch create_ai_service on the class
             with patch(
-                "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry.NacosAIService.create_ai_service",
+                "agentscope_runtime.engine.deployers.adapter.a2a"
+                ".nacos_a2a_registry.NacosAIService.create_ai_service",
                 new_callable=AsyncMock,
             ) as mock_create:
                 mock_create.return_value = mock_service
 
-                # Also need to mock ReleaseAgentCardParam and RegisterAgentEndpointParam
-                # to avoid import errors if they're placeholder classes
+                # Also need to mock ReleaseAgentCardParam and
+                # RegisterAgentEndpointParam to avoid import errors
+                # if they're placeholder classes
                 with patch(
-                    "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry.ReleaseAgentCardParam",
+                    "agentscope_runtime.engine.deployers.adapter"
+                    ".a2a.nacos_a2a_registry.ReleaseAgentCardParam",
                     MagicMock,
                 ), patch(
-                    "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry.RegisterAgentEndpointParam",
+                    "agentscope_runtime.engine.deployers.adapter"
+                    ".a2a.nacos_a2a_registry"
+                    ".RegisterAgentEndpointParam",
                     MagicMock,
                 ):
                     await registry._register_to_nacos(
@@ -562,7 +583,8 @@ class TestNacosRegistry:
     ):
         """Test _register_to_nacos() when shutdown is requested."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             registry = NacosRegistry()
@@ -587,7 +609,8 @@ class TestNacosRegistry:
     ):
         """Test _register_to_nacos() error handling."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             _ensure_nacos_ai_service_method()
@@ -608,14 +631,17 @@ class TestNacosRegistry:
 
             # Patch create_ai_service on the class
             with patch(
-                "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry.NacosAIService.create_ai_service",
+                "agentscope_runtime.engine.deployers.adapter.a2a"
+                ".nacos_a2a_registry.NacosAIService.create_ai_service",
                 new_callable=AsyncMock,
             ) as mock_create:
                 mock_create.return_value = mock_service
 
-                # Also need to mock ReleaseAgentCardParam to avoid import errors
+                # Also need to mock ReleaseAgentCardParam to
+                # avoid import errors
                 with patch(
-                    "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry.ReleaseAgentCardParam",
+                    "agentscope_runtime.engine.deployers.adapter"
+                    ".a2a.nacos_a2a_registry.ReleaseAgentCardParam",
                     MagicMock,
                 ):
                     await registry._register_to_nacos(
@@ -638,7 +664,8 @@ class TestNacosRegistry:
     ):
         """Test _register_to_nacos() when cancelled."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             # Provide client config to avoid calling _get_client_config
@@ -652,9 +679,11 @@ class TestNacosRegistry:
 
             _ensure_nacos_ai_service_method()
 
-            # Mock NacosAIService.create_ai_service to raise CancelledError
+            # Mock NacosAIService.create_ai_service to raise
+            # CancelledError
             with patch(
-                "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry.NacosAIService.create_ai_service",
+                "agentscope_runtime.engine.deployers.adapter.a2a"
+                ".nacos_a2a_registry.NacosAIService.create_ai_service",
                 new_callable=AsyncMock,
                 side_effect=asyncio.CancelledError(),
             ):
@@ -673,13 +702,15 @@ class TestNacosRegistry:
     def test_get_client_config_from_env(self, mock_nacos_sdk):
         """Test _get_client_config() loading from environment."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             registry = NacosRegistry()
 
             with patch(
-                "agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry.get_registry_settings",
+                "agentscope_runtime.engine.deployers.adapter.a2a"
+                ".a2a_registry.get_registry_settings",
             ) as mock_get_settings:
                 mock_settings = MagicMock()
                 mock_settings.NACOS_SERVER_ADDR = "test.nacos.com:8848"
@@ -688,7 +719,8 @@ class TestNacosRegistry:
                 mock_get_settings.return_value = mock_settings
 
                 with patch(
-                    "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry.ClientConfigBuilder",
+                    "agentscope_runtime.engine.deployers.adapter"
+                    ".a2a.nacos_a2a_registry.ClientConfigBuilder",
                     return_value=mock_nacos_sdk["builder"],
                 ):
                     config = registry._get_client_config()
@@ -712,7 +744,8 @@ class TestNacosRegistry:
     ):
         """Test that duplicate registrations are prevented."""
         with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
             True,
         ):
             registry = NacosRegistry()

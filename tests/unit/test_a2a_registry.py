@@ -243,11 +243,13 @@ class TestGetRegistrySettings:
         try:
             # Mock find_dotenv to return our test file
             with patch(
-                "agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry.find_dotenv",
+                "agentscope_runtime.engine.deployers.adapter.a2a"
+                ".a2a_registry.find_dotenv",
                 return_value=env_file,
             ):
-                # Note: load_dotenv with override=False won't override existing env vars
-                # So we need to clear them first
+                # Note: load_dotenv with override=False won't
+                # override existing env vars. So we need to clear
+                # them first
                 with patch.dict(os.environ, {}, clear=True):
                     a2a_registry._registry_settings = None
                     settings = get_registry_settings()
@@ -375,9 +377,12 @@ class TestCreateRegistryFromEnv:
                 },
                 clear=False,
             ):
-                # Mock _create_nacos_registry_from_settings to return None (simulating SDK not available)
+                # Mock _create_nacos_registry_from_settings to
+                # return None (simulating SDK not available)
                 with patch(
-                    "agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry._create_nacos_registry_from_settings",
+                    "agentscope_runtime.engine.deployers.adapter"
+                    ".a2a.a2a_registry"
+                    "._create_nacos_registry_from_settings",
                     return_value=None,
                 ):
                     result = create_registry_from_env()
@@ -438,11 +443,13 @@ class TestCreateRegistryFromEnv:
 
                 try:
                     with patch(
-                        "agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry.NacosRegistry",
+                        "agentscope_runtime.engine.deployers.adapter"
+                        ".a2a.nacos_a2a_registry.NacosRegistry",
                         mock_nacos_registry_class,
                     ):
                         result = create_registry_from_env()
-                        # Should return a registry instance when SDK is available
+                        # Should return a registry instance when
+                        # SDK is available
                         assert result is not None
                         assert result.registry_name() == "nacos"
                 finally:
@@ -479,13 +486,17 @@ class TestCreateRegistryFromEnv:
                 },
                 clear=False,
             ):
-                # Mock _create_nacos_registry_from_settings to return None (simulating SDK not available)
+                # Mock _create_nacos_registry_from_settings to
+                # return None (simulating SDK not available)
                 with patch(
-                    "agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry._create_nacos_registry_from_settings",
+                    "agentscope_runtime.engine.deployers.adapter"
+                    ".a2a.a2a_registry"
+                    "._create_nacos_registry_from_settings",
                     return_value=None,
                 ):
                     result = create_registry_from_env()
-                    # Should return None when no valid registries can be created
+                    # Should return None when no valid registries
+                    # can be created
                     assert result is None
         finally:
             a2a_registry._registry_settings = original_settings
@@ -501,8 +512,9 @@ class TestCreateRegistryFromEnv:
         a2a_registry._registry_settings = None
 
         try:
-            # This test would require a working Nacos SDK or more complex mocking
-            # For now, we test the logic path
+            # This test would require a working Nacos SDK or
+            # more complex mocking. For now, we test the logic
+            # path
             with patch.dict(
                 os.environ,
                 {
@@ -511,9 +523,12 @@ class TestCreateRegistryFromEnv:
                 },
                 clear=False,
             ):
-                # Mock _create_nacos_registry_from_settings to return None (simulating SDK not available)
+                # Mock _create_nacos_registry_from_settings to
+                # return None (simulating SDK not available)
                 with patch(
-                    "agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry._create_nacos_registry_from_settings",
+                    "agentscope_runtime.engine.deployers.adapter"
+                    ".a2a.a2a_registry"
+                    "._create_nacos_registry_from_settings",
                     return_value=None,
                 ):
                     result = create_registry_from_env()

@@ -44,9 +44,10 @@ def __getattr__(name: str):
     """
     Lazy import for NacosRegistry to avoid forcing optional nacos dependency.
 
-    This function is called by Python when an attribute is accessed that doesn't
-    exist at module level. This allows NacosRegistry to be imported only when
-    actually needed, rather than at module import time.
+    This function is called by Python when an attribute is accessed
+    that doesn't exist at module level. This allows NacosRegistry
+    to be imported only when actually needed, rather than at module
+    import time.
     """
     if name == "NacosRegistry":
         from .nacos_a2a_registry import NacosRegistry

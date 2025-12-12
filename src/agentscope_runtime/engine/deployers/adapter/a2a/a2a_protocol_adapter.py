@@ -29,9 +29,10 @@ from .a2a_registry import (
     create_registry_from_env,
 )
 
-# NOTE: Do NOT import NacosRegistry at module import time to avoid forcing
-# an optional dependency on environments that don't have nacos SDK installed.
-# Registry is optional: users must explicitly provide a registry instance if needed.
+# NOTE: Do NOT import NacosRegistry at module import time to avoid
+# forcing an optional dependency on environments that don't have nacos
+# SDK installed. Registry is optional: users must explicitly provide a
+# registry instance if needed.
 # from .nacos_a2a_registry import NacosRegistry
 from ..protocol_adapter import ProtocolAdapter
 
@@ -50,7 +51,8 @@ def extract_config_params(
     agent_description: str,
     a2a_config: Union["A2AConfig", Dict[str, Any]],
 ) -> Dict[str, Any]:
-    """Extract parameters from A2AConfig for A2AFastAPIDefaultAdapter initialization.
+    """Extract parameters from A2AConfig for
+    A2AFastAPIDefaultAdapter initialization.
 
     Args:
         agent_name: Agent name (required)
@@ -85,9 +87,10 @@ def extract_config_params(
         params["registry"] = config.registry
         logger.debug("[A2A] Using registry from a2a_config")
     else:
-        # Fall back to environment variables if no registry in a2a_config
-        # Uses create_registry_from_env() which:
-        # 1. Loads settings from .env file (if available) via get_registry_settings()
+        # Fall back to environment variables if no registry in
+        # a2a_config Uses create_registry_from_env() which:
+        # 1. Loads settings from .env file (if available) via
+        #    get_registry_settings()
         # 2. Checks A2A_REGISTRY_ENABLED and A2A_REGISTRY_TYPE
         # 3. Only creates Nacos registry if A2A_REGISTRY_TYPE=nacos
         env_registry = create_registry_from_env()
@@ -265,8 +268,9 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         Args:
             agent_name: Agent name (default for card_name)
             agent_description: Agent description (default for card_description)
-            registry: Optional A2A registry or list of registries for service discovery.
-                If None, registry operations will be skipped.
+            registry: Optional A2A registry or list of registries
+                for service discovery. If None, registry operations
+                will be skipped.
             card_name: Override agent card name
             card_description: Override agent card description
             card_url: Override agent card URL (default: auto-generated)
@@ -276,15 +280,19 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             skills: List of agent skills (default: empty list)
             default_input_modes: Default input modes (default: ["text"])
             default_output_modes: Default output modes (default: ["text"])
-            provider: Provider info (str/dict/AgentProvider, str converted to dict)
+            provider: Provider info (str/dict/AgentProvider,
+                str converted to dict)
             document_url: Documentation URL
             icon_url: Icon URL
             security_schema: Security schema configuration
             security: Security configuration
             task_timeout: Task completion timeout in seconds (default: 60)
-            task_event_timeout: Task event timeout in seconds (default: 10)
-            wellknown_path: Wellknown endpoint path (default: "/.wellknown/agent-card.json")
-            transports: Transport configurations for additional_interfaces
+            task_event_timeout: Task event timeout in seconds
+                (default: 10)
+            wellknown_path: Wellknown endpoint path
+                (default: "/.wellknown/agent-card.json")
+            transports: Transport configurations for
+                additional_interfaces
             **kwargs: Additional arguments passed to parent class
         """
         super().__init__(**kwargs)
@@ -300,7 +308,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         elif isinstance(registry, A2ARegistry):
             self._registries = [registry]
         else:
-            # Accept any iterable; validate members for duck-typed registry interface
+            # Accept any iterable; validate members for duck-typed
+            # registry interface
             try:
                 regs = list(registry)
             except Exception:
@@ -311,8 +320,9 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             else:
                 valid_regs: List[A2ARegistry] = []
                 for r in regs:
-                    # Accept objects that implement required methods (duck typing)
-                    # Verify both existence and callability to prevent runtime errors
+                    # Accept objects that implement required methods
+                    # (duck typing) Verify both existence and
+                    # callability to prevent runtime errors
                     has_register = hasattr(r, "register")
                     has_registry_name = hasattr(r, "registry_name")
                     if has_register and has_registry_name:
@@ -322,16 +332,21 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                         registry_name_callable = callable(
                             getattr(r, "registry_name", None),
                         )
-                        if register_callable and registry_name_callable:
+                        if register_callable and (
+                            registry_name_callable
+                        ):
                             valid_regs.append(r)
                         else:
                             logger.warning(
-                                "[A2A] Ignoring invalid registry entry (register/registry_name not callable): %s",
+                                "[A2A] Ignoring invalid registry "
+                                "entry (register/registry_name not "
+                                "callable): %s",
                                 type(r),
                             )
                     else:
                         logger.warning(
-                            "[A2A] Ignoring invalid registry entry (missing register/registry_name): %s",
+                            "[A2A] Ignoring invalid registry entry "
+                            "(missing register/registry_name): %s",
                             type(r),
                         )
                 self._registries = valid_regs
@@ -562,7 +577,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         if not url:
             return None
 
-        # If scheme missing, add http:// so urlparse extracts hostname/port
+        # If scheme missing, add http:// so urlparse extracts
+        # hostname/port
         normalized = url
         if "://" not in url:
             normalized = "http://" + url
@@ -571,17 +587,20 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             parsed = urlparse(normalized)
         except Exception as e:
             logger.warning(
-                "[A2A] Malformed transport URL provided: %s; error: %s",
+                "[A2A] Malformed transport URL provided: %s; "
+                "error: %s",
                 url,
                 str(e),
             )
             return None
 
-        # Check for obviously malformed URLs (e.g., only colons, empty host, etc.)
+        # Check for obviously malformed URLs (e.g., only colons,
+        # empty host, etc.)
         if not parsed.hostname:
             if not parsed.netloc and not parsed.path:
                 logger.warning(
-                    "[A2A] Malformed transport URL (empty netloc and path): %s",
+                    "[A2A] Malformed transport URL (empty netloc "
+                    "and path): %s",
                     url,
                 )
             else:
@@ -626,19 +645,24 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
 
             Attempts serialization in the following order:
             1. Tries `model_dump` (Pydantic v2).
-            2. Then tries `model_dump_json` (Pydantic v2, returns JSON string).
+            2. Then tries `model_dump_json` (Pydantic v2, returns
+               JSON string).
             3. Then tries `dict` (Pydantic v1 compatibility).
-            4. Then tries `json` (Pydantic v1 compatibility, returns JSON string or dict).
-            If all methods fail or are unavailable, raises RuntimeError.
-            Individual serialization errors are logged at debug level.
+            4. Then tries `json` (Pydantic v1 compatibility, returns
+               JSON string or dict).
+            If all methods fail or are unavailable, raises
+            RuntimeError. Individual serialization errors are logged
+            at debug level.
             """
-            # Prefer pydantic v2 model_dump, then model_dump_json, then fall back to
-            # pydantic v1 style dict/json. Use getattr to avoid static deprecation
-            # warnings about direct attribute usage.
+            # Prefer pydantic v2 model_dump, then model_dump_json,
+            # then fall back to pydantic v1 style dict/json. Use
+            # getattr to avoid static deprecation warnings about
+            # direct attribute usage.
             serializer = getattr(card, "model_dump", None)
             if callable(serializer):
                 try:
-                    return serializer(exclude_none=True)  # type: ignore[call-arg]
+                    # type: ignore[call-arg]
+                    return serializer(exclude_none=True)
                 except Exception as e:
                     logger.debug(
                         "[A2A] model_dump failed: %s",
@@ -651,7 +675,10 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             if callable(serializer_json):
                 try:
                     # model_dump_json returns a JSON string
-                    return json.loads(serializer_json(exclude_none=True))  # type: ignore[call-arg]
+                    # type: ignore[call-arg]
+                    return json.loads(
+                        serializer_json(exclude_none=True),
+                    )
                 except Exception as e:
                     logger.debug(
                         "[A2A] model_dump_json failed: %s",
@@ -664,7 +691,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             dict_serializer = getattr(card, "dict", None)
             if callable(dict_serializer):
                 try:
-                    return dict_serializer(exclude_none=True)  # type: ignore[call-arg]
+                    # type: ignore[call-arg]
+                    return dict_serializer(exclude_none=True)
                 except Exception as e:
                     logger.debug(
                         "[A2A] dict() serialization failed: %s",
@@ -677,7 +705,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             if callable(json_serializer):
                 try:
                     result = json_serializer()
-                    # json() may return a JSON string or a dict depending on implementation.
+                    # json() may return a JSON string or a dict
+                    # depending on implementation.
                     if isinstance(result, (str, bytes, bytearray)):
                         return json.loads(result)
                     if isinstance(result, dict):
@@ -693,10 +722,15 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                     # Continue to next method (but this is the last one)
 
             logger.error(
-                "[A2A] AgentCard has no known serializer or all serialization methods failed. This is a critical endpoint and returning an empty dict may cause integration issues.",
+                "[A2A] AgentCard has no known serializer or all "
+                "serialization methods failed. This is a critical "
+                "endpoint and returning an empty dict may cause "
+                "integration issues.",
             )
             raise RuntimeError(
-                "AgentCard serialization failed: no known serializer succeeded. Please check AgentCard configuration and serialization methods.",
+                "AgentCard serialization failed: no known "
+                "serializer succeeded. Please check AgentCard "
+                "configuration and serialization methods.",
             )
 
         @app.get(self._wellknown_path)
@@ -733,7 +767,11 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
 
         # Try to coerce object-like provider to dict
         try:
-            organization = getattr(provider, "organization", None) or getattr(
+            organization = getattr(
+                provider,
+                "organization",
+                None,
+            ) or getattr(
                 provider,
                 "name",
                 "",
@@ -768,11 +806,12 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                 "transport": transport.get("name", DEFAULT_TRANSPORT),
                 "url": transport.get("url", ""),
             }
-            # Note: rootPath, subPath, and tls fields from transport config are
-            # intentionally excluded here as they are not part of the AgentInterface
-            # schema. These fields are used internally by A2aTransportsProperties
-            # for registry configuration but should not be included in the interface
-            # to avoid validation errors.
+            # Note: rootPath, subPath, and tls fields from transport
+            # config are intentionally excluded here as they are not
+            # part of the AgentInterface schema. These fields are
+            # used internally by A2aTransportsProperties for registry
+            # configuration but should not be included in the
+            # interface to avoid validation errors.
             interfaces.append(interface)
 
         return interfaces

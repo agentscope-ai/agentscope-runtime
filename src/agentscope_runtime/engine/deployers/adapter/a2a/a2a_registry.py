@@ -184,15 +184,22 @@ def _create_nacos_registry_from_settings(
         builder.username(settings.NACOS_USERNAME).password(
             settings.NACOS_PASSWORD,
         )
-        # Avoid logging credentials directly; log that authentication will be used.
+        # Avoid logging credentials directly; log that
+        # authentication will be used.
         logger.debug("[A2A] Using Nacos authentication")
 
     try:
         nacos_client_config = builder.build()
         registry = NacosRegistry(nacos_client_config=nacos_client_config)
+        auth_status = (
+            "enabled"
+            if settings.NACOS_USERNAME and settings.NACOS_PASSWORD
+            else "disabled"
+        )
         logger.info(
-            f"[A2A] Created Nacos registry from environment: server={settings.NACOS_SERVER_ADDR}, "
-            f"authentication={'enabled' if settings.NACOS_USERNAME and settings.NACOS_PASSWORD else 'disabled'}",
+            f"[A2A] Created Nacos registry from environment: "
+            f"server={settings.NACOS_SERVER_ADDR}, "
+            f"authentication={auth_status}",
         )
         return registry
     except Exception:
@@ -204,7 +211,8 @@ def _create_nacos_registry_from_settings(
 
 
 def _split_registry_types(raw: Optional[str]) -> List[str]:
-    """Split a comma-separated registry type string into a normalized list."""
+    """Split a comma-separated registry type string into a
+    normalized list."""
     if not raw:
         return []
     return [r.strip().lower() for r in raw.split(",") if r.strip()]
@@ -250,7 +258,8 @@ def create_registry_from_env() -> (
                 )
         else:
             logger.warning(
-                f"[A2A] Unknown registry type requested: {registry_type}. Supported: nacos",
+                f"[A2A] Unknown registry type requested: "
+                f"{registry_type}. Supported: nacos",
             )
 
     if not registries:

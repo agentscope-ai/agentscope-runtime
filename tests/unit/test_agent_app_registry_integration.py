@@ -72,9 +72,11 @@ class TestAgentAppRegistryIntegration:
         try:
             mock_registry = MockRegistry("test")
 
-            # Patch where AgentApp actually calls create_registry_from_env
+            # Patch where AgentApp actually calls
+            # create_registry_from_env
             with patch(
-                "agentscope_runtime.engine.app.agent_app.create_registry_from_env",
+                "agentscope_runtime.engine.app.agent_app"
+                ".create_registry_from_env",
                 return_value=mock_registry,
             ):
                 app = AgentApp(
@@ -119,7 +121,8 @@ class TestAgentAppRegistryIntegration:
             assert a2a_adapter._registries[0] is mock_registry
 
     def test_agent_app_with_registry_list_from_a2a_config(self):
-        """Test AgentApp initialization with list of registries from a2a_config."""
+        """Test AgentApp initialization with list of registries
+        from a2a_config."""
         mock_registry1 = MockRegistry("test1")
         mock_registry2 = MockRegistry("test2")
 
@@ -170,13 +173,15 @@ class TestAgentAppRegistryIntegration:
                 break
 
         if a2a_adapter and a2a_adapter._registries:
-            # The adapter should call registry.register during on_deploy
-            # This is typically called by the deploy manager
-            # For testing, we can directly verify the adapter has the registry
+            # The adapter should call registry.register during
+            # on_deploy This is typically called by the deploy
+            # manager For testing, we can directly verify the
+            # adapter has the registry
             assert len(a2a_adapter._registries) > 0
 
     def test_registry_priority_a2a_config_over_env(self):
-        """Test that registry from a2a_config takes priority over environment."""
+        """Test that registry from a2a_config takes priority over
+        environment."""
         from agentscope_runtime.engine.deployers.adapter.a2a import (
             a2a_registry,
         )
@@ -189,7 +194,8 @@ class TestAgentAppRegistryIntegration:
             mock_registry_config = MockRegistry("config")
 
             with patch(
-                "agentscope_runtime.engine.deployers.adapter.a2a.a2a_protocol_adapter.create_registry_from_env",
+                "agentscope_runtime.engine.deployers.adapter.a2a"
+                ".a2a_protocol_adapter.create_registry_from_env",
                 return_value=mock_registry_env,
             ):
                 app = AgentApp(

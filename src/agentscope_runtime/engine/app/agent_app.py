@@ -71,17 +71,19 @@ class AgentApp(BaseApp):
             a2a_config: Optional A2A protocol configuration. Can be either:
                 - A2AConfig instance (structured configuration)
                 - Dictionary with structured configuration containing:
-                  - agent_card: AgentCardConfig or dict with AgentCard settings
-                    (card_name, card_description, card_url, preferred_transport,
-                    additional_interfaces, card_version, skills, default_input_modes,
-                    default_output_modes, provider, document_url, icon_url,
+                  - agent_card: AgentCardConfig or dict with
+                    AgentCard settings (card_name, card_description,
+                    card_url, preferred_transport,
+                    additional_interfaces, card_version, skills,
+                    default_input_modes, default_output_modes,
+                    provider, document_url, icon_url,
                     security_schema, security)
-                  - task: TaskConfig or dict with Task settings
-                    (task_timeout, task_event_timeout)
-                  - wellknown: WellknownConfig or dict with Wellknown settings
-                    (wellknown_path)
-                  - transports: TransportsConfig or dict with Transports settings
-                    (transports)
+                  - task: TaskConfig or dict with Task
+                    settings (task_timeout, task_event_timeout)
+                  - wellknown: WellknownConfig or dict with
+                    Wellknown settings (wellknown_path)
+                  - transports: TransportsConfig or dict with
+                    Transports settings (transports)
                   - registry: A2A registry or list of registries (optional)
             **kwargs: Additional keyword arguments passed to FastAPI app
         """
@@ -115,10 +117,11 @@ class AgentApp(BaseApp):
                 a2a_config=a2a_config,
             )
         else:
-            # No config provided, use defaults but still check environment variables
-            # for registry configuration
-            # create_registry_from_env reads environment/.env and returns
-            # an optional registry instance or list of instances.
+            # No config provided, use defaults but still check
+            # environment variables for registry configuration
+            # create_registry_from_env reads environment/.env and
+            # returns an optional registry instance or list of
+            # instances.
             env_registry = create_registry_from_env()
             a2a_adapter_kwargs = {
                 "agent_name": app_name,
