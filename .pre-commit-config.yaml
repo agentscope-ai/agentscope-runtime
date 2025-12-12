@@ -51,7 +51,7 @@ repos:
     rev: 6.1.0
     hooks:
       - id: flake8
-        args: [ "--extend-ignore=E203,E501"]
+        args: [ "--extend-ignore=E203"]
   - repo: https://github.com/pylint-dev/pylint
     rev: v3.0.2
     hooks:
@@ -98,16 +98,6 @@ repos:
           --disable=C0114,  # Disable missing module docstring for quick dev
           --disable=C0115,  # Disable missing class docstring for quick dev
           --disable=C0116,  # Disable missing function or method docstring for quick dev
-          --disable=C0301,  # Disable line-too-long (handled by black)
-          --disable=C0413,  # Disable wrong-import-position (needed for conditional imports)
-          --disable=R0912,  # Disable too-many-branches
-          --disable=R0915,  # Disable too-many-statements
-          --disable=E0611,  # Disable no-name-in-module (false positives for dynamic imports)
-          --disable=W0611,  # Disable unused-import (handled by other tools)
-          --disable=E0603,  # Disable undefined-all-variable (lazy imports via __getattr__)
-          --disable=W0613,  # Disable unused-argument (interface compatibility)
-          --disable=E0110,  # Disable abstract-class-instantiated (needed for testing)
-          --disable=R1727,  # Disable condition-evals-to-constant (test logic)
         ]
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: v7.32.0
