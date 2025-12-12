@@ -20,15 +20,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from a2a.types import AgentCard
 
-from agentscope_runtime.engine.deployers.adapter.a2a\
-    .nacos_a2a_registry import (
-        NacosRegistry,
-        RegistrationStatus,
-    )
+from agentscope_runtime.engine.deployers.adapter.a2a import (
+    nacos_a2a_registry,
+)
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     DeployProperties,
     A2aTransportsProperties,
 )
+
+NacosRegistry = nacos_a2a_registry.NacosRegistry
+RegistrationStatus = nacos_a2a_registry.RegistrationStatus
 
 
 def _ensure_nacos_ai_service_method():

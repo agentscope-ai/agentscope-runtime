@@ -332,9 +332,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                         registry_name_callable = callable(
                             getattr(r, "registry_name", None),
                         )
-                        if register_callable and (
-                            registry_name_callable
-                        ):
+                        if register_callable and (registry_name_callable):
                             valid_regs.append(r)
                         else:
                             logger.warning(
@@ -587,8 +585,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             parsed = urlparse(normalized)
         except Exception as e:
             logger.warning(
-                "[A2A] Malformed transport URL provided: %s; "
-                "error: %s",
+                "[A2A] Malformed transport URL provided: %s; " "error: %s",
                 url,
                 str(e),
             )
