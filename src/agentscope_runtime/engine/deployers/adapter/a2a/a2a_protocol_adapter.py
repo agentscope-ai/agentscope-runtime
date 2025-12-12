@@ -342,9 +342,9 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         # Convert registry to list for uniform handling
         # Registry is optional: if None, skip registry operations
         if registry is None:
-            self._registries: List[A2ARegistry] = []
+            self._registry: List[A2ARegistry] = []
         elif isinstance(registry, A2ARegistry):
-            self._registries = [registry]
+            self._registry = [registry]
         else:
             # Accept any iterable; validate members for duck-typed
             # registry interface
@@ -354,7 +354,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                 logger.warning(
                     "[A2A] Provided registry is not iterable; ignoring",
                 )
-                self._registries = []
+                self._registry = []
             else:
                 valid_regs: List[A2ARegistry] = []
                 for r in regs:
@@ -385,7 +385,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                             "(missing register/registry_name): %s",
                             type(r),
                         )
-                self._registries = valid_regs
+                self._registry = valid_regs
 
         # AgentCard configuration
         self._card_name = card_name
@@ -447,7 +447,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         server.add_routes_to_app(app, rpc_url=self._json_rpc_path)
         self._add_wellknown_route(app, agent_card)
 
-        if self._registries:
+        if self._registry:
             self._register_with_all_registries(
                 agent_card=agent_card,
                 app=app,
@@ -475,7 +475,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             deploy_properties,
         )
 
-        for registry in self._registries:
+        for registry in self._registry:
             registry_name = registry.registry_name()
             try:
                 logger.info(

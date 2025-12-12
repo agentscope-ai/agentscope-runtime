@@ -87,13 +87,13 @@ class TestAgentAppRegistryIntegration:
                 # The adapter should have the registry
                 a2a_adapter = None
                 for adapter in app.protocol_adapters:
-                    if hasattr(adapter, "_registries"):
+                    if hasattr(adapter, "_registry"):
                         a2a_adapter = adapter
                         break
 
                 assert a2a_adapter is not None
-                assert len(a2a_adapter._registries) > 0
-                assert a2a_adapter._registries[0] is mock_registry
+                assert len(a2a_adapter._registry) > 0
+                assert a2a_adapter._registry[0] is mock_registry
         finally:
             a2a_registry._registry_settings = original_settings
 
@@ -112,13 +112,13 @@ class TestAgentAppRegistryIntegration:
         # Verify registry was passed to adapter
         a2a_adapter = None
         for adapter in app.protocol_adapters:
-            if hasattr(adapter, "_registries"):
+            if hasattr(adapter, "_registry"):
                 a2a_adapter = adapter
                 break
 
         if a2a_adapter:
-            assert len(a2a_adapter._registries) > 0
-            assert a2a_adapter._registries[0] is mock_registry
+            assert len(a2a_adapter._registry) > 0
+            assert a2a_adapter._registry[0] is mock_registry
 
     def test_agent_app_with_registry_list_from_a2a_config(self):
         """Test AgentApp initialization with list of registry instances
@@ -137,14 +137,14 @@ class TestAgentAppRegistryIntegration:
         # Verify both registry instances were passed to adapter
         a2a_adapter = None
         for adapter in app.protocol_adapters:
-            if hasattr(adapter, "_registries"):
+            if hasattr(adapter, "_registry"):
                 a2a_adapter = adapter
                 break
 
         if a2a_adapter:
-            assert len(a2a_adapter._registries) == 2
-            assert mock_registry1 in a2a_adapter._registries
-            assert mock_registry2 in a2a_adapter._registries
+            assert len(a2a_adapter._registry) == 2
+            assert mock_registry1 in a2a_adapter._registry
+            assert mock_registry2 in a2a_adapter._registry
 
     @pytest.mark.asyncio
     async def test_registry_registration_during_deploy(self):
@@ -168,16 +168,16 @@ class TestAgentAppRegistryIntegration:
         # Mock the adapter's on_deploy method to trigger registry registration
         a2a_adapter = None
         for adapter in app.protocol_adapters:
-            if hasattr(adapter, "_registries"):
+            if hasattr(adapter, "_registry"):
                 a2a_adapter = adapter
                 break
 
-        if a2a_adapter and a2a_adapter._registries:
+        if a2a_adapter and a2a_adapter._registry:
             # The adapter should call registry.register during
             # on_deploy This is typically called by the deploy
             # manager For testing, we can directly verify the
             # adapter has the registry
-            assert len(a2a_adapter._registries) > 0
+            assert len(a2a_adapter._registry) > 0
 
     def test_registry_priority_a2a_config_over_env(self):
         """Test that registry from a2a_config takes priority over
@@ -209,16 +209,16 @@ class TestAgentAppRegistryIntegration:
                 # Verify config registry is used, not env registry
                 a2a_adapter = None
                 for adapter in app.protocol_adapters:
-                    if hasattr(adapter, "_registries"):
+                    if hasattr(adapter, "_registry"):
                         a2a_adapter = adapter
                         break
 
                 assert a2a_adapter is not None
-                assert len(a2a_adapter._registries) > 0
+                assert len(a2a_adapter._registry) > 0
                 # Config registry should be used
-                assert mock_registry_config in a2a_adapter._registries
+                assert mock_registry_config in a2a_adapter._registry
                 # Env registry should not be used when config provides one
-                assert mock_registry_env not in a2a_adapter._registries
+                assert mock_registry_env not in a2a_adapter._registry
         finally:
             a2a_registry._registry_settings = original_settings
 
@@ -248,7 +248,7 @@ class TestAgentAppRegistryIntegration:
                 # Registry should not be created from env
                 a2a_adapter = None
                 for adapter in app.protocol_adapters:
-                    if hasattr(adapter, "_registries"):
+                    if hasattr(adapter, "_registry"):
                         a2a_adapter = adapter
                         break
 
