@@ -36,7 +36,7 @@ __all__ = [
     "A2ARegistrySettings",
     "get_registry_settings",
     "create_registry_from_env",
-    "NacosRegistry",
+    "NacosRegistry",  # pylint: disable=undefined-all-variable
 ]
 
 

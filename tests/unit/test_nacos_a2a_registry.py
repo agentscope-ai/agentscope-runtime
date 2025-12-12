@@ -34,10 +34,6 @@ RegistrationStatus = nacos_a2a_registry.RegistrationStatus
 
 def _ensure_nacos_ai_service_method():
     """Ensure NacosAIService has create_ai_service method for testing."""
-    from agentscope_runtime.engine.deployers.adapter.a2a import (
-        nacos_a2a_registry,
-    )
-
     if not hasattr(nacos_a2a_registry.NacosAIService, "create_ai_service"):
         # Add the method if it doesn't exist (placeholder class case)
         nacos_a2a_registry.NacosAIService.create_ai_service = AsyncMock()

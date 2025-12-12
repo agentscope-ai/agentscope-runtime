@@ -162,7 +162,7 @@ def _create_nacos_registry_from_settings(
     try:
         # lazy import so package is optional
         from .nacos_a2a_registry import NacosRegistry
-        from v2.nacos import ClientConfig, ClientConfigBuilder
+        from v2.nacos import ClientConfigBuilder
     except ImportError:
         logger.warning(
             "[A2A] Nacos registry requested but nacos SDK not available. "

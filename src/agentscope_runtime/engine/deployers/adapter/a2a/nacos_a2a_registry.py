@@ -335,6 +335,7 @@ class NacosRegistry(A2ARegistry):
 
         return builder.build()
 
+    # pylint: disable=too-many-branches
     async def _register_to_nacos(
         self,
         agent_card: AgentCard,
@@ -528,6 +529,7 @@ class NacosRegistry(A2ARegistry):
 
         return self.get_registration_status()
 
+    # pylint: disable=too-many-branches,too-many-statements
     async def cleanup(
         self,
         wait_for_completion: bool = True,

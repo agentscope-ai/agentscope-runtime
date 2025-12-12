@@ -46,6 +46,7 @@ DEFAULT_TRANSPORT = "JSONRPC"
 DEFAULT_INPUT_OUTPUT_MODES = ["text"]
 
 
+# pylint: disable=too-many-branches,too-many-statements
 def extract_config_params(
     agent_name: str,
     agent_description: str,
@@ -585,7 +586,10 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             parsed = urlparse(normalized)
         except Exception as e:
             logger.warning(
-                "[A2A] Malformed transport URL provided: %s; " "error: %s",
+                (
+                    "[A2A] Malformed transport URL provided: %s; "
+                    "error: %s"
+                ),
                 url,
                 str(e),
             )
