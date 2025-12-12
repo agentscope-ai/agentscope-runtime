@@ -16,7 +16,6 @@ import tempfile
 from unittest.mock import patch, MagicMock
 from typing import List
 
-import pytest
 from a2a.types import AgentCard
 
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
@@ -26,7 +25,6 @@ from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     get_registry_settings,
     create_registry_from_env,
     _split_registry_types,
-    _load_env_files,
 )
 from agentscope_runtime.engine.deployers.adapter.a2a import A2ARegistry
 

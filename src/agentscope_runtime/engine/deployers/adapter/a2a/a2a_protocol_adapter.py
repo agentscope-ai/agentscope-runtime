@@ -235,6 +235,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
     be overridden by users.
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         agent_name: str,
@@ -585,6 +586,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         try:
             parsed = urlparse(normalized)
         except Exception as e:
+            # pylint: disable=implicit-str-concat
             logger.warning(
                 (
                     "[A2A] Malformed transport URL provided: %s; "
