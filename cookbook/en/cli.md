@@ -739,13 +739,13 @@ agentscope invoke DEPLOY_ID [OPTIONS]
 
 ```bash
 # Interactive mode with deployed agent
-as-runtime invoke local_20250101_120000_abc123
+agentscope invoke local_20250101_120000_abc123
 
 # Single query
-as-runtime invoke local_20250101_120000_abc123 --query "Hello"
+agentscope invoke local_20250101_120000_abc123 --query "Hello"
 ```
 
-### 6. Sandbox Management: `as-runtime sandbox`
+### 6. Sandbox Management: `agentscope sandbox`
 
 Consolidated sandbox commands under unified CLI.
 
@@ -753,16 +753,16 @@ Consolidated sandbox commands under unified CLI.
 
 ```bash
 # Start MCP server
-as-runtime sandbox mcp
+agentscope sandbox mcp
 
 # Start sandbox manager server
-as-runtime sandbox server
+agentscope sandbox server
 
 # Build sandbox environments
-as-runtime sandbox build
+agentscope sandbox build
 ```
 
-**Legacy Commands:** The old `runtime-sandbox-*` commands still work but are recommended to migrate to `as-runtime sandbox *`.
+**Legacy Commands:** The old `runtime-sandbox-*` commands still work but are recommended to migrate to `agentscope sandbox *`.
 
 ## API Reference
 
@@ -925,43 +925,43 @@ You can manually edit `deployments.json` or share it with team members for deplo
 
 ```bash
 # 1. Develop your agent locally
-as-runtime chat app_agent.py
+agentscope chat app_agent.py
 
 # 2. Test with web UI
-as-runtime web app_agent.py
+agentscope web app_agent.py
 
 # 3. Deploy when ready
-as-runtime deploy local app_agent.py --env DASHSCOPE_API_KEY=sk-xxx
+agentscope deploy local app_agent.py --env DASHSCOPE_API_KEY=sk-xxx
 
 # 4. Check deployment status
-as-runtime list
-as-runtime status <deployment-id>
+agentscope list
+agentscope status <deployment-id>
 
 # 5. Test deployed agent
-as-runtime invoke <deployment-id> --query "test query"
+agentscope invoke <deployment-id> --query "test query"
 
 # 6. Stop when done
-as-runtime stop <deployment-id>
+agentscope stop <deployment-id>
 ```
 
 ### Testing Workflow
 
 ```bash
 # Quick test with single query
-as-runtime chat app_agent.py --query "test query"
+agentscope chat app_agent.py --query "test query"
 
 # Interactive testing with conversation history
-as-runtime chat app_agent.py --session-id test-session
+agentscope chat app_agent.py --session-id test-session
 
 # Test with web UI
-as-runtime web app_agent.py --port 8080
+agentscope web app_agent.py --port 8080
 ```
 
 ### Production Deployment Workflow
 
 ```bash
 # 1. Deploy to Kubernetes
-as-runtime deploy k8s app_agent.py \
+agentscope deploy k8s app_agent.py \
   --image-name my-agent \
   --registry-url registry.example.com \
   --push \
@@ -969,16 +969,16 @@ as-runtime deploy k8s app_agent.py \
   --env DASHSCOPE_API_KEY=sk-xxx
 
 # 2. Monitor deployments
-as-runtime list --platform k8s
+agentscope list --platform k8s
 
 # 3. Check specific deployment
-as-runtime status <deployment-id>
+agentscope status <deployment-id>
 
 # 4. Scale or update as needed
 # (Re-run deploy command with updated parameters)
 
 # 5. Stop when no longer needed
-as-runtime stop <deployment-id>
+agentscope stop <deployment-id>
 ```
 
 ## Troubleshooting
@@ -1015,7 +1015,7 @@ as-runtime stop <deployment-id>
 - Check network connectivity
 - Verify credentials and environment variables
 - Check platform-specific requirements (Docker, Kubernetes, etc.)
-- Review deployment logs: `as-runtime status <deployment-id>`
+- Review deployment logs: `agentscope status <deployment-id>`
 
 ### Session Not Persisting
 
@@ -1029,21 +1029,21 @@ as-runtime stop <deployment-id>
 
 ```bash
 # Continue previous session
-as-runtime chat app_agent.py --session-id my-session
+agentscope chat app_agent.py --session-id my-session
 
 # Multiple users, same agent
-as-runtime chat app_agent.py --user-id alice --session-id session1
-as-runtime chat app_agent.py --user-id bob --session-id session2
+agentscope chat app_agent.py --user-id alice --session-id session1
+agentscope chat app_agent.py --user-id bob --session-id session2
 ```
 
 ### Output Formats
 
 ```bash
 # Human-readable table (default)
-as-runtime list
+agentscope list
 
 # JSON for scripting
-as-runtime list --format json | jq '.[] | .id'
+agentscope list --format json | jq '.[] | .id'
 ```
 
 ### Environment Variables
@@ -1052,13 +1052,13 @@ You can provide environment variables in multiple ways:
 
 ```bash
 # Via CLI (highest priority)
-as-runtime deploy local app_agent.py --env KEY1=value1 --env KEY2=value2
+agentscope deploy local app_agent.py --env KEY1=value1 --env KEY2=value2
 
 # Via env file
-as-runtime deploy local app_agent.py --env-file .env
+agentscope deploy local app_agent.py --env-file .env
 
 # Via config file
-as-runtime deploy local app_agent.py --config deploy-config.yaml
+agentscope deploy local app_agent.py --config deploy-config.yaml
 ```
 
 Priority order: CLI > env-file > config file

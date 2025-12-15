@@ -673,7 +673,7 @@ agentscope status DEPLOY_ID [OPTIONS]
 agentscope status local_20250101_120000_abc123
 
 # JSON 格式
-as-runtime status local_20250101_120000_abc123 --format json
+agentscope status local_20250101_120000_abc123 --format json
 ```
 
 #### 5.3. 停止部署
@@ -683,7 +683,7 @@ as-runtime status local_20250101_120000_abc123 --format json
 ##### 命令语法
 
 ```bash
-as-runtime stop DEPLOY_ID [OPTIONS]
+agentscope stop DEPLOY_ID [OPTIONS]
 ```
 
 ##### 参数
@@ -702,10 +702,10 @@ as-runtime stop DEPLOY_ID [OPTIONS]
 
 ```bash
 # 停止并显示确认提示
-as-runtime stop local_20250101_120000_abc123
+agentscope stop local_20250101_120000_abc123
 
 # 跳过确认
-as-runtime stop local_20250101_120000_abc123 --yes
+agentscope stop local_20250101_120000_abc123 --yes
 ```
 
 **注意：** 目前仅更新本地状态。平台特定的清理可能需要单独进行。
@@ -717,7 +717,7 @@ as-runtime stop local_20250101_120000_abc123 --yes
 ##### 命令语法
 
 ```bash
-as-runtime invoke DEPLOY_ID [OPTIONS]
+agentscope invoke DEPLOY_ID [OPTIONS]
 ```
 
 ##### 参数
@@ -738,13 +738,13 @@ as-runtime invoke DEPLOY_ID [OPTIONS]
 
 ```bash
 # 与已部署智能体的交互模式
-as-runtime invoke local_20250101_120000_abc123
+agentscope invoke local_20250101_120000_abc123
 
 # 单次查询
-as-runtime invoke local_20250101_120000_abc123 --query "Hello"
+agentscope invoke local_20250101_120000_abc123 --query "Hello"
 ```
 
-### 6. 沙箱管理：`as-runtime sandbox`
+### 6. 沙箱管理：`agentscope sandbox`
 
 统一 CLI 下的沙箱命令整合。
 
@@ -752,16 +752,16 @@ as-runtime invoke local_20250101_120000_abc123 --query "Hello"
 
 ```bash
 # 启动 MCP 服务器
-as-runtime sandbox mcp
+agentscope sandbox mcp
 
 # 启动沙箱管理器服务器
-as-runtime sandbox server
+agentscope sandbox server
 
 # 构建沙箱环境
-as-runtime sandbox build
+agentscope sandbox build
 ```
 
-**遗留命令：** 旧的 `runtime-sandbox-*` 命令仍然有效，但建议迁移到 `as-runtime sandbox *`。
+**遗留命令：** 旧的 `runtime-sandbox-*` 命令仍然有效，但建议迁移到 `agentscope sandbox *`。
 
 ## API 参考
 
@@ -922,43 +922,43 @@ rm -rf .agentscope_runtime/builds/*
 
 ```bash
 # 1. 在本地开发智能体
-as-runtime chat app_agent.py
+agentscope chat app_agent.py
 
 # 2. 使用 Web UI 测试
-as-runtime web app_agent.py
+agentscope web app_agent.py
 
 # 3. 准备就绪后部署
-as-runtime deploy local app_agent.py --env DASHSCOPE_API_KEY=sk-xxx
+agentscope deploy local app_agent.py --env DASHSCOPE_API_KEY=sk-xxx
 
 # 4. 检查部署状态
-as-runtime list
-as-runtime status <deployment-id>
+agentscope list
+agentscope status <deployment-id>
 
 # 5. 测试已部署的智能体
-as-runtime invoke <deployment-id> --query "test query"
+agentscope invoke <deployment-id> --query "test query"
 
 # 6. 完成后停止
-as-runtime stop <deployment-id>
+agentscope stop <deployment-id>
 ```
 
 ### 测试工作流
 
 ```bash
 # 使用单次查询快速测试
-as-runtime chat app_agent.py --query "test query"
+agentscope chat app_agent.py --query "test query"
 
 # 使用对话历史进行交互式测试
-as-runtime chat app_agent.py --session-id test-session
+agentscope chat app_agent.py --session-id test-session
 
 # 使用 Web UI 测试
-as-runtime web app_agent.py --port 8080
+agentscope web app_agent.py --port 8080
 ```
 
 ### 生产部署工作流
 
 ```bash
 # 1. 部署到 Kubernetes
-as-runtime deploy k8s app_agent.py \
+agentscope deploy k8s app_agent.py \
   --image-name my-agent \
   --registry-url registry.example.com \
   --push \
@@ -966,16 +966,16 @@ as-runtime deploy k8s app_agent.py \
   --env DASHSCOPE_API_KEY=sk-xxx
 
 # 2. 监控部署
-as-runtime list --platform k8s
+agentscope list --platform k8s
 
 # 3. 检查特定部署
-as-runtime status <deployment-id>
+agentscope status <deployment-id>
 
 # 4. 根据需要扩展或更新
 # （使用更新的参数重新运行部署命令）
 
 # 5. 不再需要时停止
-as-runtime stop <deployment-id>
+agentscope stop <deployment-id>
 ```
 
 ## 故障排除
@@ -1012,7 +1012,7 @@ as-runtime stop <deployment-id>
 - 检查网络连接
 - 验证凭证和环境变量
 - 检查平台特定要求（Docker、Kubernetes 等）
-- 查看部署日志：`as-runtime status <deployment-id>`
+- 查看部署日志：`agentscope status <deployment-id>`
 
 ### 会话未持久化
 
@@ -1026,21 +1026,21 @@ as-runtime stop <deployment-id>
 
 ```bash
 # 继续之前的会话
-as-runtime chat app_agent.py --session-id my-session
+agentscope chat app_agent.py --session-id my-session
 
 # 多个用户，同一个智能体
-as-runtime chat app_agent.py --user-id alice --session-id session1
-as-runtime chat app_agent.py --user-id bob --session-id session2
+agentscope chat app_agent.py --user-id alice --session-id session1
+agentscope chat app_agent.py --user-id bob --session-id session2
 ```
 
 ### 输出格式
 
 ```bash
 # 人类可读的表格（默认）
-as-runtime list
+agentscope list
 
 # 用于脚本的 JSON
-as-runtime list --format json | jq '.[] | .id'
+agentscope list --format json | jq '.[] | .id'
 ```
 
 ### 环境变量
@@ -1049,13 +1049,13 @@ as-runtime list --format json | jq '.[] | .id'
 
 ```bash
 # 通过 CLI（最高优先级）
-as-runtime deploy local app_agent.py --env KEY1=value1 --env KEY2=value2
+agentscope deploy local app_agent.py --env KEY1=value1 --env KEY2=value2
 
 # 通过环境文件
-as-runtime deploy local app_agent.py --env-file .env
+agentscope deploy local app_agent.py --env-file .env
 
 # 通过配置文件
-as-runtime deploy local app_agent.py --config deploy-config.yaml
+agentscope deploy local app_agent.py --config deploy-config.yaml
 ```
 
 优先级顺序：CLI > env-file > 配置文件
