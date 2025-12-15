@@ -2,7 +2,7 @@
 
 ## 概述
 
-A2A Registry 是 AgentScope Runtime 为 A2A（Agent-to-Agent）协议提供的服务注册与发现机制。通过 Registry，你可以将智能体服务注册到服务发现系统（如 Nacos、Consul 等），使得其他智能体或客户端能够动态发现和调用你的服务。
+A2A Registry 是 AgentScope Runtime 为 A2A（Agent-to-Agent）协议提供的服务注册与发现机制。通过 Registry，你可以将智能体服务注册到服务发现系统（如 Nacos 等），使得其他智能体或客户端能够动态发现和调用你的服务。
 
 ## 核心概念
 
@@ -136,7 +136,6 @@ from agentscope_runtime.engine.deployers.adapter.a2a import (
 # 创建多个 Registry 实例
 nacos_registry_1 = NacosRegistry(config_1)
 nacos_registry_2 = NacosRegistry(config_2)
-# consul_registry = ConsulRegistry(...)  # 未来支持
 
 a2a_config = AgentCardWithRuntimeConfig(
     name="MyAgent",

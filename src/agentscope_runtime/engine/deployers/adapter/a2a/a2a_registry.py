@@ -4,7 +4,7 @@ A2A Registry Extension Point
 
 Defines the abstract interface and helper utilities for A2A registry
 implementations. Registry implementations are responsible for registering
-agent services to service discovery systems (for example: Nacos, Consul).
+agent services to service discovery systems (for example: Nacos).
 
 This module focuses on clarity and small helper functions used by the
 runtime to instantiate registry implementations from environment
@@ -111,7 +111,7 @@ class A2ARegistrySettings(BaseSettings):
     A2A_REGISTRY_ENABLED: bool = True
 
     # Registry type(s). Can be a single value like "nacos" or a comma-separated
-    # list of registry types (e.g. "nacos,consul").
+    # list of registry types (e.g. "nacos").
     A2A_REGISTRY_TYPE: Optional[str] = None
 
     # Nacos specific configuration
