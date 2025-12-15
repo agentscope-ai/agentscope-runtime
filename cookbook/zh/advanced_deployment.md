@@ -571,16 +571,41 @@ if __name__ == "__main__":
 
 ```bash
 # 确保设置环境变量
+# 更多环境变量配置，请参考下面的表格
 export ALIBABA_CLOUD_ACCESS_KEY_ID="your-access-key-id"
 export ALIBABA_CLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
-export ALIBABA_CLOUD_REGION_ID="cn-hangzhou"  # 或其他区域
+export AGENT_RUN_REGION_ID="cn-hangzhou"  # 或其他区域
 
 # OSS 配置（用于存储构建制品）
 export OSS_ACCESS_KEY_ID="your-oss-access-key-id"
 export OSS_ACCESS_KEY_SECRET="your-oss-access-key-secret"
-export OSS_ENDPOINT="oss-cn-hangzhou.aliyuncs.com"
+export OSS_REGION="cn-hangzhou"
 export OSS_BUCKET_NAME="your-bucket-name"
 ```
+
+您可以设置以下环境变量或指定`AgentRunConfig`来自定义部署：
+
+| 变量 | 必填 | 默认值 | 描述 |
+|-----|-----|-------|------|
+| `ALIBABA_CLOUD_ACCESS_KEY_ID` | 是 | - | 阿里云 Access Key ID |
+| `ALIBABA_CLOUD_ACCESS_KEY_SECRET` | 是 | - | 阿里云 Access Key Secret |
+| `AGENT_RUN_REGION_ID` | 否 | `cn-hangzhou` | AgentRun 服务的区域 ID |
+| `AGENT_RUN_ENDPOINT` | 否 | `agentrun.{region_id}.aliyuncs.com` | AgentRun 服务端点 |
+| `AGENT_RUN_LOG_STORE` | 否 | - | 日志存储名称（需同时设置 log_project） |
+| `AGENT_RUN_LOG_PROJECT` | 否 | - | 日志项目名称（需同时设置 log_store） |
+| `AGENT_RUN_NETWORK_MODE` | 否 | `PUBLIC` | 网络模式：`PUBLIC`/`PRIVATE`/`PUBLIC_AND_PRIVATE` |
+| `AGENT_RUN_VPC_ID` | 条件必填 | - | VPC ID（当 network_mode 为 `PRIVATE` 时必填） |
+| `AGENT_RUN_SECURITY_GROUP_ID` | 条件必填 | - | 安全组 ID（当 network_mode 为 `PRIVATE` 时必填） |
+| `AGENT_RUN_VSWITCH_IDS` | 条件必填 | - | VSwitch ID 列表，JSON 数组格式（当 network_mode 为 `PRIVATE` 时必填） |
+| `AGENT_RUN_CPU` | 否 | `2.0` | CPU 分配（核数） |
+| `AGENT_RUN_MEMORY` | 否 | `2048` | 内存分配（MB） |
+| `AGENT_RUN_EXECUTION_ROLE_ARN` | 否 | - | 执行角色 ARN（用于权限控制） |
+| `AGENT_RUN_SESSION_CONCURRENCY_LIMIT` | 否 | `200` | 会话并发限制 |
+| `AGENT_RUN_SESSION_IDLE_TIMEOUT_SECONDS` | 否 | `600` | 会话空闲超时时间（秒） |
+| `OSS_ACCESS_KEY_ID` | 否 | `ALIBABA_CLOUD_ACCESS_KEY_ID` | OSS Access Key ID（默认使用阿里云凭证） |
+| `OSS_ACCESS_KEY_SECRET` | 否 | `ALIBABA_CLOUD_ACCESS_KEY_SECRET` | OSS Access Key Secret（默认使用阿里云凭证） |
+| `OSS_REGION` | 否 | `cn-hangzhou` | OSS 区域 |
+| `OSS_BUCKET_NAME` | 是 | - | OSS 存储桶名称（用于存储构建制品） |
 
 ### 实现
 
@@ -605,13 +630,13 @@ async def deploy_to_agentrun():
         oss_config=OSSConfig(
             access_key_id=os.environ.get("OSS_ACCESS_KEY_ID"),
             access_key_secret=os.environ.get("OSS_ACCESS_KEY_SECRET"),
-            endpoint=os.environ.get("OSS_ENDPOINT"),
+            region=os.environ.get("OSS_REGION"),
             bucket_name=os.environ.get("OSS_BUCKET_NAME"),
         ),
         agentrun_config=AgentRunConfig(
             access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
             access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
-            region_id=os.environ.get("ALIBABA_CLOUD_REGION_ID", "cn-hangzhou"),
+            region_id=os.environ.get("AGENT_RUN_REGION_ID", "cn-hangzhou"),
         ),
     )
 
@@ -655,7 +680,7 @@ OSS 配置用于存储构建制品：
 OSSConfig(
     access_key_id="your-access-key-id",
     access_key_secret="your-access-key-secret",
-    endpoint="oss-cn-hangzhou.aliyuncs.com",
+    region="cn-hangzhou",
     bucket_name="your-bucket-name",
 )
 ```

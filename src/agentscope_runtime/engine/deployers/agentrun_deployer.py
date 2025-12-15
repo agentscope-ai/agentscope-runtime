@@ -98,7 +98,7 @@ class AgentRunConfig(BaseModel):
 
     execution_role_arn: Optional[str] = None
 
-    session_concurrency_limit: Optional[int] = 1
+    session_concurrency_limit: Optional[int] = 200
     session_idle_timeout_seconds: Optional[int] = 3600
 
     @classmethod
@@ -150,7 +150,7 @@ class AgentRunConfig(BaseModel):
 
         session_concurrency_limit_str = os.environ.get(
             "AGENT_RUN_SESSION_CONCURRENCY_LIMIT",
-            "1",
+            "200",
         )
         session_idle_timeout_seconds_str = os.environ.get(
             "AGENT_RUN_SESSION_IDLE_TIMEOUT_SECONDS",
@@ -221,6 +221,7 @@ class OSSConfig(BaseModel):
     region: str = Field("cn-hangzhou", description="OSS region")
     access_key_id: Optional[str] = None
     access_key_secret: Optional[str] = None
+    bucket_name: str
 
     @classmethod
     def from_env(cls) -> "OSSConfig":
@@ -239,6 +240,7 @@ class OSSConfig(BaseModel):
                 "OSS_ACCESS_KEY_SECRET",
                 os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
             ),
+            bucket_name=os.environ.get("OSS_BUCKET_NAME"),
         )
 
     def ensure_valid(self) -> None:
@@ -248,10 +250,14 @@ class OSSConfig(BaseModel):
             RuntimeError: If required AccessKey credentials are missing.
         """
         # Allow fallback to Alibaba Cloud AK/SK via from_env()
-        if not self.access_key_id or not self.access_key_secret:
+        if (
+            not self.access_key_id
+            or not self.access_key_secret
+            or not self.bucket_name
+        ):
             raise RuntimeError(
                 "Missing AccessKey for OSS. Set either OSS_ACCESS_KEY_ID/OSS_ACCESS_KEY_SECRET "
-                "or ALIBABA_CLOUD_ACCESS_KEY_ID/ALIBABA_CLOUD_ACCESS_KEY_SECRET.",
+                "or ALIBABA_CLOUD_ACCESS_KEY_ID/ALIBABA_CLOUD_ACCESS_KEY_SECRET or OSS_BUCKET_NAME.",
             )
 
 
@@ -660,7 +666,7 @@ class AgentRunDeployManager(DeployManager):
             logger.info("Uploading zip package to OSS")
             oss_result = await self._upload_to_fixed_oss_bucket(
                 zip_file_path=zip_file_path,
-                bucket_name="tmp-agentscope-agentrun-code",
+                bucket_name=self.oss_config.bucket_name,
             )
             logger.info("Zip package uploaded to OSS successfully")
 

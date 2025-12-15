@@ -89,6 +89,7 @@ ext = [
     "wheel",
     "alibabacloud-credentials",
     "PyYAML",
+    "agno>=2.3.8",
 ]
 
 [tool.pytest.ini_options]
