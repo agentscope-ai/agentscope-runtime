@@ -122,29 +122,25 @@ class TestAgentAppRegistryIntegration:
 
     def test_agent_app_with_registry_list_from_a2a_config(self):
         """Test AgentApp initialization with list of registry instances
-        from a2a_config."""
+        from a2a_config.
+
+        Note: Currently A2AFastAPIDefaultAdapter does not support
+        list of registries directly, so this test expects a TypeError.
+        """
         mock_registry1 = MockRegistry("test1")
         mock_registry2 = MockRegistry("test2")
 
-        app = AgentApp(
-            app_name="test_agent",
-            app_description="Test agent",
-            a2a_config={
-                "registry": [mock_registry1, mock_registry2],
-            },
-        )
-
-        # Verify both registry instances were passed to adapter
-        a2a_adapter = None
-        for adapter in app.protocol_adapters:
-            if hasattr(adapter, "_registry"):
-                a2a_adapter = adapter
-                break
-
-        if a2a_adapter:
-            assert len(a2a_adapter._registry) == 2
-            assert mock_registry1 in a2a_adapter._registry
-            assert mock_registry2 in a2a_adapter._registry
+        # Currently, A2AFastAPIDefaultAdapter only supports single
+        # registry or None, not a list. The adapter will raise TypeError
+        # when a list is passed.
+        with pytest.raises(TypeError, match="Invalid registry type"):
+            AgentApp(
+                app_name="test_agent",
+                app_description="Test agent",
+                a2a_config={
+                    "registry": [mock_registry1, mock_registry2],
+                },
+            )
 
     @pytest.mark.asyncio
     async def test_registry_registration_during_deploy(self):

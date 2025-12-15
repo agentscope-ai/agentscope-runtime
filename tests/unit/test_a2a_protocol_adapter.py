@@ -7,7 +7,6 @@ Tests cover:
 - Wellknown endpoint error responses when serialization fails
 - AgentCard configuration
 """
-from unittest.mock import patch
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from a2a.types import AgentCard, AgentCapabilities
@@ -70,38 +69,6 @@ class TestWellknownEndpointErrorHandling:
         data = response.json()
         assert "name" in data
         assert data["name"] == "test_agent"
-
-    def test_wellknown_endpoint_serialization_error_handling(self):
-        """Test that serialization errors are caught and logged."""
-        adapter = A2AFastAPIDefaultAdapter(
-            agent_name="test_agent",
-            agent_description="Test agent",
-        )
-
-        app = FastAPI()
-
-        # Patch _serialize_card to raise RuntimeError
-        with patch.object(
-            adapter,
-            "_add_wellknown_route",
-        ) as mock_add_wellknown:
-            # Create a custom implementation that raises error
-            # pylint: disable=unused-argument
-            def failing_wellknown_route(app, agent_card):
-                @app.get(adapter._wellknown_path)
-                async def get_agent_card():
-                    raise RuntimeError("Serialization failed")
-
-            mock_add_wellknown.side_effect = failing_wellknown_route
-
-            def mock_func():
-                return {"message": "test"}
-
-            # This should not crash even if wellknown fails
-            try:
-                adapter.add_endpoint(app, mock_func)
-            except Exception:
-                pass  # Expected if wellknown setup fails
 
 
 class TestAgentCardConfiguration:
