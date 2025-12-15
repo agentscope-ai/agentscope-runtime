@@ -6,12 +6,10 @@ This module provides the default A2A (Agent-to-Agent) protocol adapter
 implementation for FastAPI applications. It handles agent card configuration,
 wellknown endpoint setup, and task management.
 """
-import json
 import logging
 from typing import Any, Callable, Dict, List, Optional, Union
 from urllib.parse import urlparse, urljoin
 
-from pydantic import ConfigDict
 from a2a.server.apps import A2AFastAPIApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
@@ -22,10 +20,9 @@ from a2a.types import (
     AgentProvider,
 )
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from pydantic import ConfigDict
 
 from agentscope_runtime.version import __version__ as runtime_version
-
 from .a2a_agent_adapter import A2AExecutor
 from .a2a_registry import (
     A2ARegistry,
@@ -333,46 +330,12 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         elif isinstance(registry, A2ARegistry):
             self._registry = [registry]
         else:
-            # Accept any iterable; validate members for duck-typed
-            # registry interface
-            try:
-                regs = list(registry)
-            except Exception:
-                logger.warning(
-                    "[A2A] Provided registry is not iterable; ignoring",
-                )
-                self._registry = []
-            else:
-                valid_regs: List[A2ARegistry] = []
-                for r in regs:
-                    # Accept objects that implement required methods
-                    # (duck typing) Verify both existence and
-                    # callability to prevent runtime errors
-                    has_register = hasattr(r, "register")
-                    has_registry_name = hasattr(r, "registry_name")
-                    if has_register and has_registry_name:
-                        register_callable = callable(
-                            getattr(r, "register", None),
-                        )
-                        registry_name_callable = callable(
-                            getattr(r, "registry_name", None),
-                        )
-                        if register_callable and (registry_name_callable):
-                            valid_regs.append(r)
-                        else:
-                            logger.warning(
-                                "[A2A] Ignoring invalid registry "
-                                "entry (register/registry_name not "
-                                "callable): %s",
-                                type(r),
-                            )
-                    else:
-                        logger.warning(
-                            "[A2A] Ignoring invalid registry entry "
-                            "(missing register/registry_name): %s",
-                            type(r),
-                        )
-                self._registry = valid_regs
+            error_msg = (
+                f"[A2A] Invalid registry type: expected None, A2ARegistry, "
+                f"or List[A2ARegistry], got {type(registry).__name__}"
+            )
+            logger.error(error_msg)
+            raise TypeError(error_msg)
 
         # AgentCard configuration
         self._card_name = card_name
@@ -431,8 +394,11 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             http_handler=request_handler,
         )
 
-        server.add_routes_to_app(app, rpc_url=self._json_rpc_path)
-        self._add_wellknown_route(app, agent_card)
+        server.add_routes_to_app(
+            app,
+            rpc_url=self._json_rpc_path,
+            agent_card_url=self._wellknown_path,
+        )
 
         if self._registry:
             self._register_with_all_registries(
@@ -650,147 +616,6 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         base = self._base_url or "http://127.0.0.1:8000"
         base_with_slash = base.rstrip("/") + "/"
         return urljoin(base_with_slash, self._json_rpc_path.lstrip("/"))
-
-    def _add_wellknown_route(
-        self,
-        app: FastAPI,
-        agent_card: AgentCard,
-    ) -> None:
-        """Add wellknown route for agent card endpoint.
-
-        Args:
-            app: FastAPI application instance
-            agent_card: Agent card to expose
-        """
-
-        def _serialize_card(card: AgentCard) -> Dict[str, Any]:
-            """Serialize AgentCard to a plain dict in a robust way.
-
-            Attempts serialization in the following order:
-            1. Tries `model_dump` (Pydantic v2).
-            2. Then tries `model_dump_json` (Pydantic v2, returns
-               JSON string).
-            3. Then tries `dict` (Pydantic v1 compatibility).
-            4. Then tries `json` (Pydantic v1 compatibility, returns
-               JSON string or dict).
-            If all methods fail or are unavailable, raises
-            RuntimeError. Individual serialization errors are logged
-            at debug level.
-            """
-            # Prefer pydantic v2 model_dump, then model_dump_json,
-            # then fall back to pydantic v1 style dict/json. Use
-            # getattr to avoid static deprecation warnings about
-            # direct attribute usage.
-            serializer = getattr(card, "model_dump", None)
-            if callable(serializer):
-                try:
-                    # type: ignore[call-arg]
-                    return serializer(exclude_none=True)
-                except Exception as e:
-                    logger.debug(
-                        "[A2A] model_dump failed: %s",
-                        e,
-                        exc_info=True,
-                    )
-                    # Continue to next method instead of returning
-
-            serializer_json = getattr(card, "model_dump_json", None)
-            if callable(serializer_json):
-                try:
-                    # model_dump_json returns a JSON string
-                    # type: ignore[call-arg]
-                    return json.loads(
-                        serializer_json(exclude_none=True),
-                    )
-                except Exception as e:
-                    logger.debug(
-                        "[A2A] model_dump_json failed: %s",
-                        e,
-                        exc_info=True,
-                    )
-                    # Continue to next method instead of returning
-
-            # Fallback to pydantic v1 compatibility methods if present
-            dict_serializer = getattr(card, "dict", None)
-            if callable(dict_serializer):
-                try:
-                    # type: ignore[call-arg]
-                    return dict_serializer(exclude_none=True)
-                except Exception as e:
-                    logger.debug(
-                        "[A2A] dict() serialization failed: %s",
-                        e,
-                        exc_info=True,
-                    )
-                    # Continue to next method instead of returning
-
-            json_serializer = getattr(card, "json", None)
-            if callable(json_serializer):
-                try:
-                    result = json_serializer()
-                    # json() may return a JSON string or a dict
-                    # depending on implementation.
-                    if isinstance(result, (str, bytes, bytearray)):
-                        return json.loads(result)
-                    if isinstance(result, dict):
-                        return result
-                    # Fallback: try to parse string representation
-                    return json.loads(str(result))
-                except Exception as e:
-                    logger.debug(
-                        "[A2A] json() serialization failed: %s",
-                        e,
-                        exc_info=True,
-                    )
-                    # Continue to next method (but this is the last one)
-
-            logger.error(
-                "[A2A] AgentCard has no known serializer or all "
-                "serialization methods failed. This is a critical "
-                "endpoint and returning an empty dict may cause "
-                "integration issues.",
-            )
-            raise RuntimeError(
-                "AgentCard serialization failed: no known "
-                "serializer succeeded. Please check AgentCard "
-                "configuration and serialization methods.",
-            )
-
-        @app.get(self._wellknown_path)
-        async def get_agent_card() -> JSONResponse:
-            """Return agent card as JSON response."""
-            try:
-                content = _serialize_card(agent_card)
-                return JSONResponse(content=content)
-            except RuntimeError as e:
-                # Serialization completely failed
-                logger.error(
-                    "[A2A] Critical error: Failed to serialize AgentCard "
-                    "for wellknown endpoint: %s",
-                    e,
-                    exc_info=True,
-                )
-                return JSONResponse(
-                    status_code=500,
-                    content={
-                        "error": "Agent card serialization failed",
-                        "detail": str(e),
-                    },
-                )
-            except Exception as e:
-                # Unexpected error
-                logger.error(
-                    "[A2A] Unexpected error in wellknown endpoint: %s",
-                    e,
-                    exc_info=True,
-                )
-                return JSONResponse(
-                    status_code=500,
-                    content={
-                        "error": "Internal server error",
-                        "detail": str(e),
-                    },
-                )
 
     def _normalize_provider(
         self,
