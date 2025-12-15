@@ -89,6 +89,8 @@ NACOS_SERVER_ADDR=localhost:8848   # Nacos server address
 NACOS_USERNAME=your_username       # Nacos username (optional)
 NACOS_PASSWORD=your_password       # Nacos password (optional)
 NACOS_NAMESPACE_ID=public          # Nacos namespace ID (optional, default: public)
+NACOS_ACCESS_KEY=your_access_key   # Nacos access key (optional)
+NACOS_SECRET_KEY=your_secret_key   # Nacos secret key (optional)
 ```
 
 When `a2a_config` is not explicitly configured, AgentApp automatically reads environment variables to create Registry
@@ -122,6 +124,9 @@ builder.username("nacos").password("nacos")
 
 # Optional: Set namespace
 builder.namespace_id("your-namespace-id")
+
+# Optional: Set access key and secret key
+builder.access_key("your-access-key").secret_key("your-secret-key")
 ```
 
 ## Multiple Registry Support

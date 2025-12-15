@@ -41,15 +41,13 @@ class DeployProperties:
     Attributes:
         host: Optional server host.
         port: Optional server port.
-        root_path: Application root path (for frameworks like FastAPI).
-        base_url: Optional base URL for the service.
+        path: Application path (for frameworks like FastAPI).
         extra: Additional runtime properties.
     """
 
     host: Optional[str] = None
     port: Optional[int] = None
-    root_path: str = ""
-    base_url: Optional[str] = None
+    path: str = ""
     extra: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -62,12 +60,9 @@ class A2ATransportsProperties:
     """
 
     transport_type: str
-    url: Optional[str] = None
     host: Optional[str] = None
     port: Optional[int] = None
     path: Optional[str] = None
-    root_path: Optional[str] = None
-    sub_path: Optional[str] = None
     tls: Optional[Dict[str, Any]] = None
     extra: Dict[str, Any] = field(default_factory=dict)
 
@@ -118,6 +113,9 @@ class A2ARegistrySettings(BaseSettings):
     NACOS_SERVER_ADDR: str = "localhost:8848"
     NACOS_USERNAME: Optional[str] = None
     NACOS_PASSWORD: Optional[str] = None
+    NACOS_NAMESPACE_ID: Optional[str] = None
+    NACOS_ACCESS_KEY: Optional[str] = None
+    NACOS_SECRET_KEY: Optional[str] = None
 
     model_config = ConfigDict(
         extra="allow",
@@ -188,6 +186,19 @@ def _create_nacos_registry_from_settings(
         # authentication will be used.
         logger.debug("[A2A] Using Nacos authentication")
 
+    if settings.NACOS_NAMESPACE_ID:
+        builder.namespace_id(settings.NACOS_NAMESPACE_ID)
+        logger.debug(
+            "[A2A] Using Nacos namespace: %s",
+            settings.NACOS_NAMESPACE_ID,
+        )
+
+    if settings.NACOS_ACCESS_KEY and settings.NACOS_SECRET_KEY:
+        builder.access_key(settings.NACOS_ACCESS_KEY).secret_key(
+            settings.NACOS_SECRET_KEY,
+        )
+        logger.debug("[A2A] Using Nacos access key authentication")
+
     try:
         nacos_client_config = builder.build()
         registry = NacosRegistry(nacos_client_config=nacos_client_config)
@@ -196,10 +207,20 @@ def _create_nacos_registry_from_settings(
             if settings.NACOS_USERNAME and settings.NACOS_PASSWORD
             else "disabled"
         )
+        namespace_info = (
+            f", namespace={settings.NACOS_NAMESPACE_ID}"
+            if settings.NACOS_NAMESPACE_ID
+            else ""
+        )
+        access_key_info = (
+            ", access_key_auth=enabled"
+            if settings.NACOS_ACCESS_KEY and settings.NACOS_SECRET_KEY
+            else ""
+        )
         logger.info(
             f"[A2A] Created Nacos registry from environment: "
             f"server={settings.NACOS_SERVER_ADDR}, "
-            f"authentication={auth_status}",
+            f"authentication={auth_status}{namespace_info}{access_key_info}",
         )
         return registry
     except Exception:

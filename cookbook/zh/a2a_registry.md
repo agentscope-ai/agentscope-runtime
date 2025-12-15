@@ -89,6 +89,8 @@ NACOS_SERVER_ADDR=localhost:8848   # Nacos 服务器地址
 NACOS_USERNAME=your_username       # Nacos 用户名（可选）
 NACOS_PASSWORD=your_password       # Nacos 密码（可选）
 NACOS_NAMESPACE_ID=public          # Nacos 命名空间 ID（可选，默认：public）
+NACOS_ACCESS_KEY=your_access_key   # Nacos 访问密钥（可选）
+NACOS_SECRET_KEY=your_secret_key   # Nacos 密钥（可选）
 ```
 
 当未显式配置 `a2a_config` 时，AgentApp 会自动读取环境变量创建 Registry
@@ -122,6 +124,9 @@ builder.username("nacos").password("nacos")
 
 # 可选：设置命名空间
 builder.namespace_id("your-namespace-id")
+
+# 可选：设置访问密钥和密钥
+builder.access_key("your-access-key").secret_key("your-secret-key")
 ```
 
 ## 多 Registry 支持

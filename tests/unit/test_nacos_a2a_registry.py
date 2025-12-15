@@ -52,6 +52,7 @@ def mock_nacos_sdk():
     mock_ai_service = AsyncMock()
     mock_ai_service.release_agent_card = AsyncMock()
     mock_ai_service.register_agent_endpoint = AsyncMock()
+    mock_ai_service.shutdown = AsyncMock()
     mock_ai_service.create_ai_service = AsyncMock(return_value=mock_ai_service)
 
     return {
@@ -84,7 +85,7 @@ def deploy_properties():
     return DeployProperties(
         host="localhost",
         port=8080,
-        root_path="/api",
+        path="/api",
     )
 
 
@@ -229,7 +230,8 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 agent_card,
                 host,
                 port,
-                root_path,
+                path,
+                a2a_transports_properties,
             ):
                 task_started.set()  # Signal that task has started
                 await task_can_complete.wait()
@@ -286,7 +288,8 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 agent_card,
                 host,
                 port,
-                root_path,
+                path,
+                a2a_transports_properties,
             ):
                 await asyncio.sleep(0.01)
                 with registry._registration_lock:
@@ -366,7 +369,8 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 agent_card,
                 host,
                 port,
-                root_path,
+                path,
+                a2a_transports_properties,
             ):
                 await asyncio.sleep(0.05)
                 with registry._registration_lock:
@@ -407,7 +411,8 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 agent_card,
                 host,
                 port,
-                root_path,
+                path,
+                a2a_transports_properties,
             ):
                 await asyncio.sleep(10.0)  # Long-running task
 
@@ -448,7 +453,8 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 agent_card,
                 host,
                 port,
-                root_path,
+                path,
+                a2a_transports_properties,
             ):
                 await asyncio.sleep(1.0)  # Long-running task
 
@@ -491,7 +497,8 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 agent_card,
                 host,
                 port,
-                root_path,
+                path,
+                a2a_transports_properties,
             ):
                 await asyncio.sleep(0.05)
                 with registry._registration_lock:
@@ -561,7 +568,8 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                         agent_card=agent_card,
                         host="localhost",
                         port=8080,
-                        root_path="/api",
+                        path="/api",
+                        a2a_transports_properties=[],
                     )
 
                 # Verify service methods were called
@@ -591,7 +599,8 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 agent_card=agent_card,
                 host="localhost",
                 port=8080,
-                root_path="/api",
+                path="/api",
+                a2a_transports_properties=[],
             )
 
             assert (
@@ -645,7 +654,8 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                         agent_card=agent_card,
                         host="localhost",
                         port=8080,
-                        root_path="/api",
+                        path="/api",
+                        a2a_transports_properties=[],
                     )
 
                 # Should handle error gracefully
@@ -689,7 +699,8 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                         agent_card=agent_card,
                         host="localhost",
                         port=8080,
-                        root_path="/api",
+                        path="/api",
+                        a2a_transports_properties=[],
                     )
 
             assert (
@@ -808,7 +819,8 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                     agent_card=agent_card,
                     host="localhost",
                     port=8080,
-                    root_path="/api",
+                    path="/api",
+                    a2a_transports_properties=[],
                 )
 
             assert (
@@ -862,7 +874,8 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                         agent_card=agent_card,
                         host="localhost",
                         port=8080,
-                        root_path="/api",
+                        path="/api",
+                        a2a_transports_properties=[],
                     )
 
             assert (
@@ -875,7 +888,7 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         mock_nacos_sdk,
         agent_card,
     ):
-        """Test cleanup() properly closes NacosAIService."""
+        """Test cleanup() properly shuts down NacosAIService."""
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
             ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
@@ -883,15 +896,15 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         ):
             registry = NacosRegistry()
 
-            # Mock a service with close method
+            # Mock a service with shutdown method
             mock_service = AsyncMock()
-            mock_service.close = AsyncMock()
+            mock_service.shutdown = AsyncMock()
             registry._nacos_ai_service = mock_service
 
             await registry.cleanup()
 
-            # Verify close was called
-            mock_service.close.assert_called_once()
+            # Verify shutdown was called
+            mock_service.shutdown.assert_called_once()
             assert registry._nacos_ai_service is None
 
     @pytest.mark.asyncio
@@ -900,7 +913,7 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         mock_nacos_sdk,
         agent_card,
     ):
-        """Test cleanup() using shutdown method if close not available."""
+        """Test cleanup() using shutdown method."""
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
             ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
@@ -908,7 +921,7 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         ):
             registry = NacosRegistry()
 
-            # Create a custom mock service that only has shutdown method
+            # Create a custom mock service with shutdown method
             class MockNacosService:
                 def __init__(self):
                     self.shutdown = AsyncMock()
@@ -927,7 +940,7 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         self,
         mock_nacos_sdk,
     ):
-        """Test cleanup() handles errors during service close gracefully."""
+        """Test cleanup() handles errors during service shutdown gracefully."""
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
             ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
@@ -935,10 +948,10 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         ):
             registry = NacosRegistry()
 
-            # Mock a service that raises error on close
+            # Mock a service that raises error on shutdown
             mock_service = AsyncMock()
-            mock_service.close = AsyncMock(
-                side_effect=Exception("Close error"),
+            mock_service.shutdown = AsyncMock(
+                side_effect=Exception("Shutdown error"),
             )
             registry._nacos_ai_service = mock_service
 
@@ -975,11 +988,12 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 agent_card,
                 host,
                 port,
-                root_path,
+                path,
+                a2a_transports_properties,
             ):
                 captured_args["host"] = host
                 captured_args["port"] = port
-                captured_args["root_path"] = root_path
+                captured_args["path"] = path
 
             registry._start_register_task = mock_start_register_task
 
@@ -1010,7 +1024,7 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             deploy_props = DeployProperties(
                 host="example.com",
                 port=9090,
-                root_path="/custom/path",
+                path="/custom/path",
             )
 
             captured_args = {}
@@ -1019,9 +1033,10 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 agent_card,
                 host,
                 port,
-                root_path,
+                path,
+                a2a_transports_properties,
             ):
-                captured_args["root_path"] = root_path
+                captured_args["path"] = path
 
             registry._start_register_task = mock_start_register_task
 
@@ -1031,7 +1046,7 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 transport_properties,
             )
 
-            assert captured_args["root_path"] == "/custom/path"
+            assert captured_args["path"] == "/custom/path"
 
     def test_get_client_config_without_auth(self, mock_nacos_sdk):
         """Test _get_client_config() without authentication."""

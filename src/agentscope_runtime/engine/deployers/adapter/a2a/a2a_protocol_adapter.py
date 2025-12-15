@@ -85,8 +85,6 @@ def extract_config_params(
             params["task_event_timeout"] = a2a_config["task_event_timeout"]
         if "wellknown_path" in a2a_config:
             params["wellknown_path"] = a2a_config["wellknown_path"]
-        if "base_url" in a2a_config:
-            params["base_url"] = a2a_config["base_url"]
 
         # Extract AgentCard protocol fields from dict
         if "name" in a2a_config:
@@ -138,9 +136,6 @@ def extract_config_params(
 
         if a2a_config.wellknown_path is not None:
             params["wellknown_path"] = a2a_config.wellknown_path
-
-        if a2a_config.base_url is not None:
-            params["base_url"] = a2a_config.base_url
 
         # Extract AgentCard protocol fields
         if a2a_config.name:
@@ -216,7 +211,6 @@ class AgentCardWithRuntimeConfig(AgentCard):
     task_timeout: Optional[int] = DEFAULT_TASK_TIMEOUT
     task_event_timeout: Optional[int] = DEFAULT_TASK_EVENT_TIMEOUT
     wellknown_path: Optional[str] = DEFAULT_WELLKNOWN_PATH
-    base_url: Optional[str] = None
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -240,7 +234,6 @@ class AgentCardWithRuntimeConfig(AgentCard):
                 "task_timeout",
                 "task_event_timeout",
                 "wellknown_path",
-                "base_url",
             },
             exclude_none=True,
         )
@@ -321,7 +314,6 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         self._agent_name = agent_name
         self._agent_description = agent_description
         self._json_rpc_path = kwargs.get("json_rpc_path", A2A_JSON_RPC_URL)
-        self._base_url = kwargs.get("base_url")
 
         # Convert registry to list for uniform handling
         # Registry is optional: if None, skip registry operations
@@ -467,7 +459,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         Returns:
             DeployProperties instance
         """
-        root_path = getattr(app, "root_path", "") or ""
+        path = getattr(app, "root_path", "") or ""
         host = None
         port = None
 
@@ -477,14 +469,13 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             host = parsed.hostname
             port = parsed.port
 
-        excluded_keys = {"host", "port", "root_path", "base_url"}
+        excluded_keys = {"host", "port", "path"}
         extra = {k: v for k, v in kwargs.items() if k not in excluded_keys}
 
         return DeployProperties(
             host=host,
             port=port,
-            root_path=root_path,
-            base_url=self._base_url,
+            path=path,
             extra=extra,
         )
 
@@ -605,7 +596,6 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
 
         return A2ATransportsProperties(
             transport_type=transport_type,
-            url=url,
             host=host,
             port=port,
             path=path,
@@ -613,7 +603,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
 
     def _get_json_rpc_url(self) -> str:
         """Return the full JSON-RPC endpoint URL for this adapter."""
-        base = self._base_url or "http://127.0.0.1:8000"
+        # Use default base URL
+        base = self._card_url or "http://127.0.0.1:8000"
         base_with_slash = base.rstrip("/") + "/"
         return urljoin(base_with_slash, self._json_rpc_path.lstrip("/"))
 

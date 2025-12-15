@@ -96,8 +96,7 @@ class TestDeployProperties:
         props = DeployProperties()
         assert props.host is None
         assert props.port is None
-        assert props.root_path == ""
-        assert props.base_url is None
+        assert props.path == ""
         assert props.extra == {}
 
     def test_custom_values(self):
@@ -105,14 +104,12 @@ class TestDeployProperties:
         props = DeployProperties(
             host="example.com",
             port=9090,
-            root_path="/api",
-            base_url="https://example.com/api",
+            path="/api",
             extra={"key": "value"},
         )
         assert props.host == "example.com"
         assert props.port == 9090
-        assert props.root_path == "/api"
-        assert props.base_url == "https://example.com/api"
+        assert props.path == "/api"
         assert props.extra == {"key": "value"}
 
 
@@ -123,31 +120,26 @@ class TestA2ATransportsProperties:
         """Test A2ATransportsProperties with required fields."""
         props = A2ATransportsProperties(transport_type="JSONRPC")
         assert props.transport_type == "JSONRPC"
-        assert props.url is None
         assert props.host is None
         assert props.port is None
+        assert props.path is None
+        assert props.tls is None
         assert props.extra == {}
 
     def test_all_fields(self):
         """Test A2ATransportsProperties with all fields."""
         props = A2ATransportsProperties(
             transport_type="HTTP",
-            url="https://example.com",
             host="example.com",
             port=443,
             path="/api",
-            root_path="/",
-            sub_path="/v1",
             tls={"verify": True},
             extra={"timeout": 30},
         )
         assert props.transport_type == "HTTP"
-        assert props.url == "https://example.com"
         assert props.host == "example.com"
         assert props.port == 443
         assert props.path == "/api"
-        assert props.root_path == "/"
-        assert props.sub_path == "/v1"
         assert props.tls == {"verify": True}
         assert props.extra == {"timeout": 30}
 
@@ -164,6 +156,9 @@ class TestA2ARegistrySettings:
             assert settings.NACOS_SERVER_ADDR == "localhost:8848"
             assert settings.NACOS_USERNAME is None
             assert settings.NACOS_PASSWORD is None
+            assert settings.NACOS_NAMESPACE_ID is None
+            assert settings.NACOS_ACCESS_KEY is None
+            assert settings.NACOS_SECRET_KEY is None
 
     def test_from_environment_variables(self):
         """Test loading settings from environment variables."""
@@ -175,6 +170,9 @@ class TestA2ARegistrySettings:
                 "NACOS_SERVER_ADDR": "nacos.example.com:8848",
                 "NACOS_USERNAME": "testuser",
                 "NACOS_PASSWORD": "testpass",
+                "NACOS_NAMESPACE_ID": "test-namespace",
+                "NACOS_ACCESS_KEY": "test-access-key",
+                "NACOS_SECRET_KEY": "test-secret-key",
             },
             clear=False,
         ):
@@ -184,6 +182,9 @@ class TestA2ARegistrySettings:
             assert settings.NACOS_SERVER_ADDR == "nacos.example.com:8848"
             assert settings.NACOS_USERNAME == "testuser"
             assert settings.NACOS_PASSWORD == "testpass"
+            assert settings.NACOS_NAMESPACE_ID == "test-namespace"
+            assert settings.NACOS_ACCESS_KEY == "test-access-key"
+            assert settings.NACOS_SECRET_KEY == "test-secret-key"
 
     def test_extra_fields_allowed(self):
         """Test that extra fields are allowed when passed directly."""
@@ -416,6 +417,9 @@ class TestCreateRegistryFromEnv:
                 mock_builder.server_address.return_value = mock_builder
                 mock_builder.username.return_value = mock_builder
                 mock_builder.password.return_value = mock_builder
+                mock_builder.namespace_id.return_value = mock_builder
+                mock_builder.access_key.return_value = mock_builder
+                mock_builder.secret_key.return_value = mock_builder
                 mock_builder.build.return_value = mock_client_config
 
                 # Mock NacosRegistry class
@@ -717,17 +721,33 @@ class TestOptionalDependencyHandling:
         )
 
         # Mock the import to raise unexpected error
+        # Use a simpler approach: mock the logger to avoid recursion
+        # when it tries to format the exception with exc_info=True
+        original_warning = a2a_registry.logger.warning
+
+        def mock_warning(msg, *args, exc_info=False, **kwargs):
+            # Only log the message, don't format exception to avoid recursion
+            return original_warning(msg, *args, exc_info=False, **kwargs)
+
         def mock_import(name, *args, **kwargs):
             if "nacos_a2a_registry" in name or "v2.nacos" in name:
                 raise RuntimeError("Unexpected initialization error")
-            return __import__(name, *args, **kwargs)
+            # Use importlib to avoid recursion
+            import importlib
 
-        with patch("builtins.__import__", side_effect=mock_import):
-            result = a2a_registry._create_nacos_registry_from_settings(
-                settings,
-            )
-            # Should return None and log warning
-            assert result is None
+            return importlib.__import__(name, *args, **kwargs)
+
+        with patch.object(
+            a2a_registry.logger,
+            "warning",
+            side_effect=mock_warning,
+        ):
+            with patch("builtins.__import__", side_effect=mock_import):
+                result = a2a_registry._create_nacos_registry_from_settings(
+                    settings,
+                )
+                # Should return None and log warning
+                assert result is None
 
 
 class TestRegistrySettingsValidation:
@@ -799,6 +819,23 @@ class TestRegistrySettingsValidation:
             settings = A2ARegistrySettings()
             assert settings.NACOS_USERNAME == "user"
             assert settings.NACOS_PASSWORD is None
+
+    def test_nacos_config_with_namespace_and_access_key(self):
+        """Test Nacos config with namespace ID and access key/secret key."""
+        with patch.dict(
+            os.environ,
+            {
+                "NACOS_SERVER_ADDR": "nacos.example.com:8848",
+                "NACOS_NAMESPACE_ID": "my-namespace",
+                "NACOS_ACCESS_KEY": "my-access-key",
+                "NACOS_SECRET_KEY": "my-secret-key",
+            },
+            clear=False,
+        ):
+            settings = A2ARegistrySettings()
+            assert settings.NACOS_NAMESPACE_ID == "my-namespace"
+            assert settings.NACOS_ACCESS_KEY == "my-access-key"
+            assert settings.NACOS_SECRET_KEY == "my-secret-key"
 
 
 class TestErrorHandlingInRegistration:
