@@ -86,4 +86,5 @@ ext = [
     "wheel",
     "alibabacloud-credentials",
     "PyYAML",
+    "agno>=2.3.8",
 ]

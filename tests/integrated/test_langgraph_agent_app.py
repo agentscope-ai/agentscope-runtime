@@ -11,6 +11,7 @@ import aiohttp
 import pytest
 from langchain.tools import tool
 from langchain_core.messages import HumanMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
@@ -57,9 +58,9 @@ def build_graph():
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
     )
 
-    def call_model(state: AgentState):
+    def call_model(state: AgentState, config: RunnableConfig):
         """Call the LLM to generate a joke about a topic"""
-        model_response = llm.invoke(state["messages"])
+        model_response = llm.invoke(state["messages"], config=config)
         return {"messages": model_response}
 
     workflow = StateGraph(AgentState)
@@ -182,7 +183,7 @@ async def test_langgraph_process_endpoint_stream_async(start_langgraph_app):
                         text_content = event["output"][-1]["content"][0][
                             "text"
                         ].lower()
-                        if text_content:
+                        if "paris" in text_content:
                             found_response = True
                     except Exception:
                         # Structure may differ; ignore

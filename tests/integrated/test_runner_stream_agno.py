@@ -1,40 +1,29 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=all
-
 import os
+
 import pytest
 
-from langchain.agents import AgentState
-from langchain_core.runnables import RunnableConfig
-from langchain_openai import ChatOpenAI
-from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.constants import START
-from langgraph.graph import StateGraph
-
+from agno.agent import Agent
+from agno.models.dashscope import DashScope
 from agentscope_runtime.engine.schemas.agent_schemas import (
     AgentRequest,
     MessageType,
     RunStatus,
 )
 from agentscope_runtime.engine.runner import Runner
+from agentscope_runtime.engine.services.agent_state import (
+    InMemoryStateService,
+)
+from agentscope_runtime.engine.services.session_history import (
+    InMemorySessionHistoryService,
+)
+from agentscope_runtime.engine.services.sandbox import SandboxService
 
 
-class MyLangGraphRunner(Runner):
+class MyRunner(Runner):
     def __init__(self) -> None:
         super().__init__()
-        self.framework_type = "langgraph"
-
-    async def init_handler(self, *args, **kwargs):
-        """
-        Init handler.
-        """
-        self.short_term_mem = InMemorySaver()
-
-    async def shutdown_handler(self, *args, **kwargs):
-        """
-        Shutdown handler.
-        """
-        pass
+        self.framework_type = "agno"
 
     async def query_handler(
         self,
@@ -43,38 +32,65 @@ class MyLangGraphRunner(Runner):
         **kwargs,
     ):
         """
-        Handle LangGraph agent query.
+        Handle agent query.
         """
         session_id = request.session_id
         user_id = request.user_id
-        print(f"Received query from user {user_id} with session {session_id}")
-        llm = ChatOpenAI(
-            model="qwen-plus",
-            api_key=os.environ.get("DASHSCOPE_API_KEY"),
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+
+        # Get sandbox
+        sandboxes = self.sandbox_service.connect(
+            session_id=session_id,
+            user_id=user_id,
+            sandbox_types=["browser"],
         )
 
-        def call_model(state: AgentState, config: RunnableConfig):
-            """Call the LLM to generate a joke about a topic"""
-            model_response = llm.invoke(state["messages"], config=config)
-            return {"messages": model_response}
+        sandbox = sandboxes[0]
+        browser_tools = [
+            sandbox.browser_navigate,
+            sandbox.browser_take_screenshot,
+            sandbox.browser_snapshot,
+            sandbox.browser_click,
+            sandbox.browser_type,
+        ]
 
-        workflow = StateGraph(AgentState)
-        workflow.add_node("call_model", call_model)
-        workflow.add_edge(START, "call_model")
-        graph = workflow.compile(name="langgraph_agent")
+        # Modify agent according to the config
+        agent = Agent(
+            name="Friday",
+            instructions="You're a helpful assistant named Friday",
+            model=DashScope(
+                id="qwen-plus",
+                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+                api_key=os.getenv("DASHSCOPE_API_KEY"),
+            ),
+            tools=browser_tools,
+        )
 
-        async for chunk, meta_data in graph.astream(
-            input={"messages": msgs},
-            stream_mode="messages",
-            config={"configurable": {"thread_id": session_id}},
+        async for event in agent.arun(
+            msgs,
+            # session_state=ag_context.memory,
+            stream=True,
+            stream_events=True,
         ):
-            is_last_chunk = (
-                True
-                if getattr(chunk, "chunk_position", "") == "last"
-                else False
-            )
-            yield chunk, is_last_chunk
+            yield event
+
+    async def init_handler(self, *args, **kwargs):
+        """
+        Init handler.
+        """
+        self.state_service = InMemoryStateService()
+        self.session_service = InMemorySessionHistoryService()
+        self.sandbox_service = SandboxService()
+        await self.state_service.start()
+        await self.session_service.start()
+        await self.sandbox_service.start()
+
+    async def shutdown_handler(self, *args, **kwargs):
+        """
+        Shutdown handler.
+        """
+        await self.state_service.stop()
+        await self.session_service.stop()
+        await self.sandbox_service.stop()
 
 
 @pytest.mark.asyncio
@@ -91,7 +107,7 @@ async def test_runner_sample1():
                     "content": [
                         {
                             "type": "text",
-                            "text": "What's the weather like in Hangzhou?",
+                            "text": "杭州的天气怎么样？",
                         },
                     ],
                 },
@@ -103,7 +119,7 @@ async def test_runner_sample1():
                             "data": {
                                 "call_id": "call_eb113ba709d54ab6a4dcbf",
                                 "name": "get_current_weather",
-                                "arguments": '{"location": "Hangzhou"}',
+                                "arguments": '{"location": "杭州"}',
                             },
                         },
                     ],
@@ -129,26 +145,26 @@ async def test_runner_sample1():
 
     print("\n")
     final_text = ""
-    async with MyLangGraphRunner() as runner:
+    async with MyRunner() as runner:
         async for message in runner.stream_query(
             request=request,
         ):
-            print(message.model_dump_json())
+            print("message", message.model_dump_json())
             if message.object == "message":
                 if MessageType.MESSAGE == message.type:
                     if RunStatus.Completed == message.status:
                         res = message.content
-                        print(res)
+                        print("res", res)
                         if res and len(res) > 0:
                             final_text = res[0].text
-                            print(final_text)
+                            print("final_text", final_text)
                 if MessageType.FUNCTION_CALL == message.type:
                     if RunStatus.Completed == message.status:
                         res = message.content
-                        print(res)
+                        print("res", res)
 
         print("\n")
-    assert "Hangzhou" in final_text
+    assert "杭州" in final_text
 
 
 @pytest.mark.asyncio
@@ -177,7 +193,7 @@ async def test_runner_sample2():
 
     print("\n")
     final_text = ""
-    async with MyLangGraphRunner() as runner:
+    async with MyRunner() as runner:
         async for message in runner.stream_query(
             request=request,
         ):

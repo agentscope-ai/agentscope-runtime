@@ -6,6 +6,7 @@
 [![PyPI](https://img.shields.io/pypi/v/agentscope-runtime?label=PyPI&color=brightgreen&logo=python)](https://pypi.org/project/agentscope-runtime/)
 [![Downloads](https://static.pepy.tech/badge/agentscope-runtime)](https://pepy.tech/project/agentscope-runtime)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg?logo=python&label=Python)](https://python.org)
+[![Last Commit](https://img.shields.io/github/last-commit/agentscope-ai/agentscope-runtime)](https://github.com/agentscope-ai/agentscope-runtime)
 [![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=License)](LICENSE)
 [![Code Style](https://img.shields.io/badge/code%20style-black-black.svg?logo=python&label=CodeStyle)](https://github.com/psf/black)
 [![GitHub Stars](https://img.shields.io/github/stars/agentscope-ai/agentscope-runtime?style=flat&logo=github&color=yellow&label=Stars)](https://github.com/agentscope-ai/agentscope-runtime/stargazers)
@@ -49,7 +50,15 @@
 
 > [!NOTE]
 >
-> **关于框架无关**：当前，AgentScope Runtime 支持 **AgentScope** 框架。未来我们计划扩展支持更多智能体开发框架。
+> **关于框架无关**：当前，AgentScope Runtime 支持 **AgentScope** 框架。未来我们计划扩展支持更多智能体开发框架。该表格展示了目前版本针对不同框架的适配器（adapter）支持情况，不同框架在各功能上的支持程度有所差异：
+>
+> | 框架 / 功能项                                                | 消息 / 事件 | 工具 | 服务 |
+> | ------------------------------------------------------------ | ----------- | ---- | ---- |
+> | AgentScope                                                   | ✅           | ✅    | ✅    |
+> | [LangGraph](https://runtime.agentscope.io/zh/langgraph_guidelines.html) | ✅           | 🚧    | 🚧    |
+> | AutoGen                                                      | 🚧           | ✅    | 🚧    |
+> | Microsoft Agent Framework                                    | 🚧           | 🚧    | 🚧    |
+> | [Agno](https://runtime.agentscope.io/zh/agno_guidelines.html) | 🧪           | ✅    | 🚧    |
 
 ---
 
