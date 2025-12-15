@@ -21,10 +21,10 @@ async def message_to_agno_message(
     """
 
     as_msgs = message_to_agentscope_msg(messages)
-
-    if not isinstance(as_msgs, list):
-        as_msgs = [as_msgs]
+    raw_list = isinstance(as_msgs, list)
+    as_msgs = as_msgs if raw_list else [as_msgs]
 
     formatter = OpenAIChatFormatter()
+    agno_message = await formatter.format(as_msgs)
 
-    return await formatter.format(as_msgs)
+    return agno_message if raw_list else agno_message[0]
