@@ -922,7 +922,7 @@ body.preview-active {
 
             <span class="n">stream_adapter</span> <span class="o">=</span> <span class="n">adapt_agno_message_stream</span>
             <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-                <span class="p">{</span><span class="s2">&quot;msgs&quot;</span><span class="p">:</span> <span class="n">message_to_agno_message</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">input</span><span class="p">)},</span>
+                <span class="p">{</span><span class="s2">&quot;msgs&quot;</span><span class="p">:</span> <span class="k">await</span> <span class="n">message_to_agno_message</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">input</span><span class="p">)},</span>
             <span class="p">)</span>
         <span class="c1"># TODO: support other frameworks</span>
         <span class="k">else</span><span class="p">:</span>
