@@ -164,7 +164,7 @@ async def test_runner_sample1():
                         print("res", res)
 
         print("\n")
-    assert "杭州" in final_text
+    assert "杭州" in final_text or "hangzhou" in final_text.lower()
 
 
 @pytest.mark.asyncio

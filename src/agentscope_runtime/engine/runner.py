@@ -269,7 +269,7 @@ class Runner:
 
             stream_adapter = adapt_agno_message_stream
             kwargs.update(
-                {"msgs": message_to_agno_message(request.input)},
+                {"msgs": await message_to_agno_message(request.input)},
             )
         # TODO: support other frameworks
         else:
