@@ -172,7 +172,7 @@ with BrowserSandbox() as box:
 
 * **Mobile Sandbox**: A sandbox based on an Android emulator, allowing for **mobile operations** such as tapping, swiping, inputting text, and taking screenshots.
 
-  <img src="https://img.alicdn.com/imgextra/i2/O1CN01m9smAi1cUE8TdJ13d_!!6000000003603-2-tps-1435-1103.png" alt="Mobile Sandbox" height="500">
+  <img src="https://img.alicdn.com/imgextra/i4/O1CN01yPnBC21vOi45fLy7V_!!6000000006163-2-tps-544-865.png" alt="Mobile Sandbox" height="500">
 
   - **Prerequisites**
 
