@@ -23,7 +23,7 @@ from a2a.types import (
     SecurityScheme,
 )
 from fastapi import FastAPI
-from pydantic import ConfigDict
+from pydantic import ConfigDict, BaseModel
 
 from agentscope_runtime.engine.deployers.utils.net_utils import (
     get_first_non_loopback_ip,
@@ -56,7 +56,6 @@ DEFAULT_INPUT_OUTPUT_MODES = ["text"]
 PORT = int(os.getenv("PORT", "8080"))
 
 
-# pylint: disable=too-many-branches,too-many-statements
 def extract_config_params(
     agent_name: str,
     agent_description: str,
@@ -70,84 +69,37 @@ def extract_config_params(
         a2a_config: Configuration as dict or AgentCardWithRuntimeConfig object
 
     Returns:
-        Dictionary of extracted parameters
+        Dictionary of extracted parameters for A2AFastAPIDefaultAdapter
     """
-
-    params: Dict[str, Any] = {}
-
-    # Extract runtime-specific fields
+    # Convert AgentCardWithRuntimeConfig to dict if needed
     if isinstance(a2a_config, dict):
-        registry = a2a_config.get("registry")
+        params = dict(a2a_config)
     else:
-        registry = getattr(a2a_config, "registry", None)
-    if registry is not None:
-        params["registry"] = registry
-        logger.debug("[A2A] Using registry from a2a_config")
+        # Use model_dump to get all fields, excluding None values
+        params = a2a_config.model_dump(exclude_none=True)
 
-    if isinstance(a2a_config, dict):
-        task_timeout = a2a_config.get("task_timeout")
+    # Map name/description to agent_name/agent_description (if present)
+    # Priority: a2a_config > fallback
+    if "name" in params:
+        params["agent_name"] = params.pop("name")
     else:
-        task_timeout = getattr(a2a_config, "task_timeout", None)
-    if task_timeout is not None:
-        params["task_timeout"] = task_timeout
+        params["agent_name"] = agent_name
 
-    if isinstance(a2a_config, dict):
-        task_event_timeout = a2a_config.get("task_event_timeout")
+    if "description" in params:
+        params["agent_description"] = params.pop("description")
     else:
-        task_event_timeout = getattr(a2a_config, "task_event_timeout", None)
-    if task_event_timeout is not None:
-        params["task_event_timeout"] = task_event_timeout
+        params["agent_description"] = agent_description
 
-    if isinstance(a2a_config, dict):
-        wellknown_path = a2a_config.get("wellknown_path")
-    else:
-        wellknown_path = getattr(a2a_config, "wellknown_path", None)
-    if wellknown_path is not None:
-        params["wellknown_path"] = wellknown_path
+    # Handle field mappings for backward compatibility
+    # Map url -> card_url, version -> card_version if they exist
+    if "url" in params and "card_url" not in params:
+        params["card_url"] = params.pop("url")
 
-    # Extract AgentCard fields (priority: a2a_config > fallback)
-    if isinstance(a2a_config, dict):
-        config_name = a2a_config.get("name")
-    else:
-        config_name = getattr(a2a_config, "name", None)
-    params["agent_name"] = config_name if config_name else agent_name
+    if "version" in params and "card_version" not in params:
+        params["card_version"] = params.pop("version")
 
-    if isinstance(a2a_config, dict):
-        config_desc = a2a_config.get("description")
-    else:
-        config_desc = getattr(a2a_config, "description", None)
-    params["agent_description"] = (
-        config_desc if config_desc else agent_description
-    )
-
-    # Field mapping: maps from a2a_config to adapter params
-    # All field names match AgentCard definition in
-    # a2a.types.AgentCard (snake_case)
-    field_mappings = [
-        ("url", "card_url"),
-        ("version", "card_version"),
-        ("preferred_transport", "preferred_transport"),
-        ("additional_interfaces", "additional_interfaces"),
-        ("skills", "skills"),
-        ("default_input_modes", "default_input_modes"),
-        ("default_output_modes", "default_output_modes"),
-        ("provider", "provider"),
-        ("documentation_url", "documentation_url"),
-        ("icon_url", "icon_url"),
-        ("security_schemes", "security_schemes"),
-        ("security", "security"),
-    ]
-
-    for field_key, param_key in field_mappings:
-        if isinstance(a2a_config, dict):
-            value = a2a_config.get(field_key)
-        else:
-            value = getattr(a2a_config, field_key, None)
-        if value is not None:
-            params[param_key] = value
-
-    # Fallback to environment registry
-    if "registry" not in params:
+    # Fallback to environment registry if not provided
+    if "registry" not in params or params.get("registry") is None:
         env_registry = create_registry_from_env()
         if env_registry is not None:
             params["registry"] = env_registry
@@ -156,20 +108,37 @@ def extract_config_params(
     return params
 
 
-class AgentCardWithRuntimeConfig(AgentCard):
+class AgentCardWithRuntimeConfig(BaseModel):
     """Extended AgentCard with runtime-specific configuration fields.
 
-    Inherits all protocol-compliant AgentCard fields from a2a.types.AgentCard
+    This class flattens all protocol-compliant AgentCard fields from
+    a2a.types.AgentCard (such as name, description, url, version, skills, etc.)
     and adds runtime-specific configuration like registry, task timeouts, etc.
 
-    Runtime-only fields should be excluded when publishing the public AgentCard
-    via A2A protocol using the to_public_card() method.
+    All AgentCard fields are directly defined in this class, making it
+    straightforward to configure both protocol fields and runtime fields
+    in a single configuration object.
+
+    Runtime-only fields (host, port, registry, task_timeout, etc.) should be
+    excluded when publishing the public AgentCard via A2A protocol.
     """
 
     # Runtime-specific fields (not part of AgentCard protocol)
     host: Optional[str] = None
     port: int = PORT
     registry: Optional[List[A2ARegistry]] = None
+    card_url: Optional[str] = None
+    preferred_transport: Optional[str] = None
+    additional_interfaces: list[AgentInterface] | None = None
+    card_version: Optional[str] = None
+    skills: Optional[List[AgentSkill]] = None
+    default_input_modes: Optional[List[str]] = None
+    default_output_modes: Optional[List[str]] = None
+    provider: Optional[Union[str, Dict[str, Any], AgentProvider]] = None
+    documentation_url: Optional[str] = None
+    icon_url: Optional[str] = None
+    security_schemes: dict[str, SecurityScheme] | None = None
+    security: Optional[Dict[str, Any]] = None
     task_timeout: Optional[int] = DEFAULT_TASK_TIMEOUT
     task_event_timeout: Optional[int] = DEFAULT_TASK_EVENT_TIMEOUT
     wellknown_path: Optional[str] = DEFAULT_WELLKNOWN_PATH
@@ -178,27 +147,6 @@ class AgentCardWithRuntimeConfig(AgentCard):
         arbitrary_types_allowed=True,
         extra="allow",
     )
-
-    def to_public_card(self) -> AgentCard:
-        """Export a pure AgentCard for A2A protocol registration.
-
-        Returns a standard AgentCard instance with all runtime-specific
-        fields excluded.
-
-        Returns:
-            AgentCard instance suitable for A2A protocol publication
-        """
-        # Use model_dump to get all fields as dict, then filter
-        card_data = self.model_dump(
-            exclude={
-                "registry",
-                "task_timeout",
-                "task_event_timeout",
-                "wellknown_path",
-            },
-            exclude_none=True,
-        )
-        return AgentCard(**card_data)
 
 
 class A2AFastAPIDefaultAdapter(ProtocolAdapter):
@@ -557,6 +505,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
 
         if self._additional_interfaces:
             card_kwargs["additional_interfaces"] = self._additional_interfaces
+        else:
+            card_kwargs["additional_interfaces"] = []
 
         # Handle provider
         if self._provider:

@@ -78,8 +78,10 @@ class AgentApp(BaseApp):
             a2a_config: Optional A2A runtime configuration.
                 Can be:
                 - AgentCardWithRuntimeConfig (Recommended):
-                  Inherits from AgentCard and adds runtime fields
-                  (registry, task_timeout, etc.)
+                  Flattens all AgentCard protocol fields (name, description,
+                  url, version, skills, etc.) and adds runtime fields
+                  (registry, task_timeout, etc.) in a single configuration
+                  object.
                   Example:
                     from a2a.types import (
                         AgentCapabilities,
@@ -90,9 +92,9 @@ class AgentApp(BaseApp):
                         )
                     config = AgentCardWithRuntimeConfig(
                         name="MyAgent",
-                        version="1.0.0",
+                        card_version="1.0.0",
                         description="My agent",
-                        url="http://localhost:8080",
+                        card_url="http://localhost:8080",
                         capabilities=AgentCapabilities(),
                         default_input_modes=["text"],
                         default_output_modes=["text"],
@@ -102,6 +104,8 @@ class AgentApp(BaseApp):
                     )
 
                 - Dictionary with AgentCardWithRuntimeConfig fields
+                  (supports both AgentCard field names like "url"/"version"
+                  and runtime field names like "card_url"/"card_version")
             **kwargs: Additional keyword arguments passed to FastAPI app
         """
 
