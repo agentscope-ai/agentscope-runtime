@@ -15,7 +15,6 @@ from ..deployers.adapter.a2a import (
     A2AFastAPIDefaultAdapter,
     AgentCardWithRuntimeConfig,
     extract_config_params,
-    create_registry_from_env,
 )
 from ..deployers.adapter.responses.response_api_protocol_adapter import (
     ResponseAPIDefaultAdapter,
@@ -124,27 +123,11 @@ class AgentApp(BaseApp):
         self._framework_type: Optional[str] = None
 
         # Prepare A2A protocol adapter configuration
-        if a2a_config:
-            # Use structured config extraction
-            # extract_config_params will handle priority: a2a_config > env vars
-            a2a_adapter_kwargs = extract_config_params(
-                agent_name=app_name,
-                agent_description=app_description,
-                a2a_config=a2a_config,
-            )
-        else:
-            # No config provided, use defaults but still check
-            # environment variables for registry configuration
-            # create_registry_from_env reads environment/.env and
-            # returns an optional registry instance or list of
-            # instances.
-            env_registry = create_registry_from_env()
-            a2a_adapter_kwargs = {
-                "agent_name": app_name,
-                "agent_description": app_description,
-            }
-            if env_registry is not None:
-                a2a_adapter_kwargs["registry"] = env_registry
+        a2a_adapter_kwargs = extract_config_params(
+            agent_name=app_name,
+            agent_description=app_description,
+            a2a_config=a2a_config or {},
+        )
 
         a2a_protocol = A2AFastAPIDefaultAdapter(**a2a_adapter_kwargs)
 
@@ -163,8 +146,8 @@ class AgentApp(BaseApp):
             backend_url=backend_url,
         )
 
-        # Store custom endpoints and tasks for deployment
-        # but don't add them to FastAPI here - let FastAPIAppFactory handle it
+        # Store custom endpoints for deployment
+        # FastAPIAppFactory will handle adding them to FastAPI
 
     def init(self, func):
         """Register init hook (support async and sync functions)."""

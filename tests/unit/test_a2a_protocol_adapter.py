@@ -81,7 +81,7 @@ class TestAgentCardConfiguration:
             agent_description="Test description",
         )
 
-        card = adapter.get_agent_card("test_agent", "Test description")
+        card = adapter.get_agent_card()
 
         assert card.name == "test_agent"
         assert card.description == "Test description"
@@ -92,16 +92,14 @@ class TestAgentCardConfiguration:
     def test_get_agent_card_with_custom_values(self):
         """Test get_agent_card with custom configuration."""
         adapter = A2AFastAPIDefaultAdapter(
-            agent_name="default_agent",
-            agent_description="Default description",
-            card_name="custom_agent",
-            card_description="Custom description",
+            agent_name="custom_agent",
+            agent_description="Custom description",
             card_version="2.0.0",
             default_input_modes=["text", "image"],
             default_output_modes=["text", "audio"],
         )
 
-        card = adapter.get_agent_card("default_agent", "Default description")
+        card = adapter.get_agent_card()
 
         # Should use custom values
         assert card.name == "custom_agent"
@@ -118,7 +116,7 @@ class TestAgentCardConfiguration:
             provider="Test Organization",
         )
 
-        card = adapter.get_agent_card("test_agent", "Test description")
+        card = adapter.get_agent_card()
 
         assert card.provider is not None
         # Provider should be an AgentProvider object with organization field
@@ -133,7 +131,7 @@ class TestAgentCardConfiguration:
             card_url="https://example.com/agent",
         )
 
-        card = adapter.get_agent_card("test_agent", "Test description")
+        card = adapter.get_agent_card()
 
         assert card.url == "https://example.com/agent"
 
@@ -144,7 +142,7 @@ class TestAgentCardConfiguration:
             agent_description="Test description",
         )
 
-        card = adapter.get_agent_card("test_agent", "Test description")
+        card = adapter.get_agent_card()
 
         # Verify required AgentCard fields exist
         assert hasattr(card, "name")

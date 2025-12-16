@@ -25,7 +25,6 @@ from agentscope_runtime.engine.deployers.adapter.a2a import (
 )
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     DeployProperties,
-    A2ATransportsProperties,
 )
 
 NacosRegistry = nacos_a2a_registry.NacosRegistry
@@ -89,12 +88,6 @@ def deploy_properties():
     )
 
 
-@pytest.fixture
-def transport_properties():
-    """Create test transport properties."""
-    return [A2ATransportsProperties(transport_type="JSONRPC")]
-
-
 class TestNacosRegistry:  # pylint: disable=too-many-public-methods
     """Test NacosRegistry class."""
 
@@ -138,7 +131,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         self,
         agent_card,
         deploy_properties,
-        transport_properties,
     ):
         """Test register() when SDK is not available."""
         with patch(
@@ -151,7 +143,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry.register(
                 agent_card,
                 deploy_properties,
-                transport_properties,
             )
             assert registry._registration_status == RegistrationStatus.PENDING
 
@@ -159,7 +150,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         self,
         mock_nacos_sdk,
         agent_card,
-        transport_properties,
     ):
         """Test register() when port is not specified."""
         with patch(
@@ -175,7 +165,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry.register(
                 agent_card,
                 deploy_props_no_port,
-                transport_properties,
             )
             # Should not start registration task
             assert registry._register_task is None
@@ -186,7 +175,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         mock_nacos_sdk,
         agent_card,
         deploy_properties,
-        transport_properties,
     ):
         """Test register() when shutdown is already requested."""
         with patch(
@@ -199,7 +187,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry.register(
                 agent_card,
                 deploy_properties,
-                transport_properties,
             )
             assert (
                 registry._registration_status == RegistrationStatus.CANCELLED
@@ -211,7 +198,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         mock_nacos_sdk,
         agent_card,
         deploy_properties,
-        transport_properties,
     ):
         """Test register() with a running event loop."""
         with patch(
@@ -231,7 +217,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 host,
                 port,
                 path,
-                a2a_transports_properties,
             ):
                 task_started.set()  # Signal that task has started
                 await task_can_complete.wait()
@@ -250,7 +235,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry.register(
                 agent_card,
                 deploy_properties,
-                transport_properties,
             )
 
             # Wait for task to start
@@ -273,7 +257,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         mock_nacos_sdk,
         agent_card,
         deploy_properties,
-        transport_properties,
     ):
         """Test register() without a running event loop (thread-based)."""
         with patch(
@@ -289,7 +272,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 host,
                 port,
                 path,
-                a2a_transports_properties,
             ):
                 await asyncio.sleep(0.01)
                 with registry._registration_lock:
@@ -313,7 +295,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry.register(
                 agent_card,
                 deploy_properties,
-                transport_properties,
             )
 
             # Wait for thread to start
@@ -355,7 +336,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         mock_nacos_sdk,
         agent_card,
         deploy_properties,
-        transport_properties,
     ):
         """Test wait_for_registration() with task-based registration."""
         with patch(
@@ -370,7 +350,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 host,
                 port,
                 path,
-                a2a_transports_properties,
             ):
                 await asyncio.sleep(0.05)
                 with registry._registration_lock:
@@ -382,7 +361,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry.register(
                 agent_card,
                 deploy_properties,
-                transport_properties,
             )
 
             # Wait for task to be created
@@ -397,7 +375,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         mock_nacos_sdk,
         agent_card,
         deploy_properties,
-        transport_properties,
     ):
         """Test wait_for_registration() with timeout."""
         with patch(
@@ -412,7 +389,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 host,
                 port,
                 path,
-                a2a_transports_properties,
             ):
                 await asyncio.sleep(10.0)  # Long-running task
 
@@ -420,7 +396,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry.register(
                 agent_card,
                 deploy_properties,
-                transport_properties,
             )
 
             await asyncio.sleep(0.01)
@@ -439,7 +414,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         mock_nacos_sdk,
         agent_card,
         deploy_properties,
-        transport_properties,
     ):
         """Test cleanup() with an active task."""
         with patch(
@@ -454,7 +428,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 host,
                 port,
                 path,
-                a2a_transports_properties,
             ):
                 await asyncio.sleep(1.0)  # Long-running task
 
@@ -462,7 +435,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry.register(
                 agent_card,
                 deploy_properties,
-                transport_properties,
             )
 
             await asyncio.sleep(0.01)
@@ -483,7 +455,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         mock_nacos_sdk,
         agent_card,
         deploy_properties,
-        transport_properties,
     ):
         """Test cleanup() with wait_for_completion=True."""
         with patch(
@@ -498,7 +469,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 host,
                 port,
                 path,
-                a2a_transports_properties,
             ):
                 await asyncio.sleep(0.05)
                 with registry._registration_lock:
@@ -510,7 +480,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry.register(
                 agent_card,
                 deploy_properties,
-                transport_properties,
             )
 
             await asyncio.sleep(0.01)
@@ -569,7 +538,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                         host="localhost",
                         port=8080,
                         path="/api",
-                        a2a_transports_properties=[],
                     )
 
                 # Verify service methods were called
@@ -600,7 +568,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 host="localhost",
                 port=8080,
                 path="/api",
-                a2a_transports_properties=[],
             )
 
             assert (
@@ -655,7 +622,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                         host="localhost",
                         port=8080,
                         path="/api",
-                        a2a_transports_properties=[],
                     )
 
                 # Should handle error gracefully
@@ -700,7 +666,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                         host="localhost",
                         port=8080,
                         path="/api",
-                        a2a_transports_properties=[],
                     )
 
             assert (
@@ -724,33 +689,31 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 mock_settings.NACOS_SERVER_ADDR = "test.nacos.com:8848"
                 mock_settings.NACOS_USERNAME = "user"
                 mock_settings.NACOS_PASSWORD = "pass"
+                mock_settings.NACOS_NAMESPACE_ID = None
+                mock_settings.NACOS_ACCESS_KEY = None
+                mock_settings.NACOS_SECRET_KEY = None
                 mock_get_settings.return_value = mock_settings
 
+                # Mock _build_nacos_client_config instead of
+                # ClientConfigBuilder
                 with patch(
-                    "agentscope_runtime.engine.deployers.adapter"
-                    ".a2a.nacos_a2a_registry.ClientConfigBuilder",
-                    return_value=mock_nacos_sdk["builder"],
-                ):
+                    "agentscope_runtime.engine.deployers.adapter.a2a"
+                    ".a2a_registry._build_nacos_client_config",
+                    return_value=mock_nacos_sdk["client_config"],
+                ) as mock_build_config:
                     config = registry._get_client_config()
                     assert config is not None
-                    mock_nacos_sdk[
-                        "builder"
-                    ].server_address.assert_called_with(
-                        "test.nacos.com:8848",
-                    )
-                    mock_nacos_sdk["builder"].username.assert_called_with(
-                        "user",
-                    )
-                    mock_nacos_sdk["builder"].password.assert_called_with(
-                        "pass",
-                    )
+                    # Verify _build_nacos_client_config was called
+                    # with settings
+                    mock_build_config.assert_called_once()
+                    call_args = mock_build_config.call_args[0]
+                    assert call_args[0] is mock_settings
 
     def test_register_duplicate_prevention(
         self,
         mock_nacos_sdk,
         agent_card,
         deploy_properties,
-        transport_properties,
     ):
         """Test that duplicate registrations are prevented."""
         with patch(
@@ -770,7 +733,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry.register(
                 agent_card,
                 deploy_properties,
-                transport_properties,
             )
 
             # Should not create a new task or thread when already in progress
@@ -820,7 +782,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                     host="localhost",
                     port=8080,
                     path="/api",
-                    a2a_transports_properties=[],
                 )
 
             assert (
@@ -875,7 +836,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                         host="localhost",
                         port=8080,
                         path="/api",
-                        a2a_transports_properties=[],
                     )
 
             assert (
@@ -965,7 +925,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         self,
         mock_nacos_sdk,
         agent_card,
-        transport_properties,
     ):
         """Test register() uses default host when not
         specified."""
@@ -989,7 +948,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 host,
                 port,
                 path,
-                a2a_transports_properties,
             ):
                 captured_args["host"] = host
                 captured_args["port"] = port
@@ -1000,7 +958,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry.register(
                 agent_card,
                 deploy_props_no_host,
-                transport_properties,
             )
 
             # Should use default host
@@ -1011,7 +968,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         self,
         mock_nacos_sdk,
         agent_card,
-        transport_properties,
     ):
         """Test register() with custom root_path."""
         with patch(
@@ -1034,7 +990,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 host,
                 port,
                 path,
-                a2a_transports_properties,
             ):
                 captured_args["path"] = path
 
@@ -1043,7 +998,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry.register(
                 agent_card,
                 deploy_props,
-                transport_properties,
             )
 
             assert captured_args["path"] == "/custom/path"
@@ -1065,23 +1019,20 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 mock_settings.NACOS_SERVER_ADDR = "localhost:8848"
                 mock_settings.NACOS_USERNAME = None
                 mock_settings.NACOS_PASSWORD = None
+                mock_settings.NACOS_NAMESPACE_ID = None
+                mock_settings.NACOS_ACCESS_KEY = None
+                mock_settings.NACOS_SECRET_KEY = None
                 mock_get_settings.return_value = mock_settings
 
+                # Mock _build_nacos_client_config
                 with patch(
-                    "agentscope_runtime.engine.deployers.adapter"
-                    ".a2a.nacos_a2a_registry.ClientConfigBuilder",
-                    return_value=mock_nacos_sdk["builder"],
-                ):
+                    "agentscope_runtime.engine.deployers.adapter.a2a"
+                    ".a2a_registry._build_nacos_client_config",
+                    return_value=mock_nacos_sdk["client_config"],
+                ) as mock_build_config:
                     config = registry._get_client_config()
                     assert config is not None
-                    mock_nacos_sdk[
-                        "builder"
-                    ].server_address.assert_called_with(
-                        "localhost:8848",
-                    )
-                    # Username and password should not be called
-                    mock_nacos_sdk["builder"].username.assert_not_called()
-                    mock_nacos_sdk["builder"].password.assert_not_called()
+                    mock_build_config.assert_called_once()
 
     def test_get_client_config_with_provided_config(self, mock_nacos_sdk):
         """Test _get_client_config() returns provided config."""

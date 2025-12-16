@@ -14,7 +14,7 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from dotenv import find_dotenv, load_dotenv
 from pydantic import ConfigDict
@@ -22,10 +22,12 @@ from pydantic_settings import BaseSettings
 
 from a2a.types import AgentCard
 
+if TYPE_CHECKING:
+    from v2.nacos import ClientConfig
+
 __all__ = [
     "A2ARegistry",
     "DeployProperties",
-    "A2ATransportsProperties",
     "A2ARegistrySettings",
     "get_registry_settings",
     "create_registry_from_env",
@@ -51,22 +53,6 @@ class DeployProperties:
     extra: Dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass
-class A2ATransportsProperties:
-    """Transport-level configuration for A2A transports.
-
-    Each transport may have transport-specific host/port/path and extra
-    configuration used by the registry implementation.
-    """
-
-    transport_type: str
-    host: Optional[str] = None
-    port: Optional[int] = None
-    path: Optional[str] = None
-    tls: Optional[Dict[str, Any]] = None
-    extra: Dict[str, Any] = field(default_factory=dict)
-
-
 class A2ARegistry(ABC):
     """Abstract base class for A2A registry implementations.
 
@@ -85,12 +71,11 @@ class A2ARegistry(ABC):
         self,
         agent_card: AgentCard,
         deploy_properties: DeployProperties,
-        a2a_transports_properties: List[A2ATransportsProperties],
     ) -> None:
-        """Register an agent/service and its transport endpoints.
+        """Register an agent/service.
 
-        Implementations may register the agent card itself and/or individual
-        transport endpoints depending on their semantics.
+        Implementations may register the agent card itself and/or endpoint
+        depending on their semantics.
         """
         raise NotImplementedError("Subclasses must implement register()")
 
@@ -155,12 +140,11 @@ def get_registry_settings() -> A2ARegistrySettings:
 def _create_nacos_registry_from_settings(
     settings: A2ARegistrySettings,
 ) -> Optional[A2ARegistry]:
-    """Create a NacosRegistry instance from provided settings, or return None
-    if the required nacos SDK is not available or construction fails."""
+    """Create a NacosRegistry instance from provided settings, or return
+    None if the required nacos SDK is not available or construction fails."""
     try:
         # lazy import so package is optional
         from .nacos_a2a_registry import NacosRegistry
-        from v2.nacos import ClientConfigBuilder
     except ImportError:
         logger.warning(
             "[A2A] Nacos registry requested but nacos SDK not available. "
@@ -176,51 +160,27 @@ def _create_nacos_registry_from_settings(
         )
         return None
 
-    builder = ClientConfigBuilder().server_address(settings.NACOS_SERVER_ADDR)
-
-    if settings.NACOS_USERNAME and settings.NACOS_PASSWORD:
-        builder.username(settings.NACOS_USERNAME).password(
-            settings.NACOS_PASSWORD,
-        )
-        # Avoid logging credentials directly; log that
-        # authentication will be used.
-        logger.debug("[A2A] Using Nacos authentication")
-
-    if settings.NACOS_NAMESPACE_ID:
-        builder.namespace_id(settings.NACOS_NAMESPACE_ID)
-        logger.debug(
-            "[A2A] Using Nacos namespace: %s",
-            settings.NACOS_NAMESPACE_ID,
-        )
-
-    if settings.NACOS_ACCESS_KEY and settings.NACOS_SECRET_KEY:
-        builder.access_key(settings.NACOS_ACCESS_KEY).secret_key(
-            settings.NACOS_SECRET_KEY,
-        )
-        logger.debug("[A2A] Using Nacos access key authentication")
-
     try:
-        nacos_client_config = builder.build()
+        nacos_client_config = _build_nacos_client_config(settings)
         registry = NacosRegistry(nacos_client_config=nacos_client_config)
-        auth_status = (
-            "enabled"
-            if settings.NACOS_USERNAME and settings.NACOS_PASSWORD
-            else "disabled"
-        )
+
+        # Determine authentication status
+        auth_methods = []
+        if settings.NACOS_USERNAME and settings.NACOS_PASSWORD:
+            auth_methods.append("username/password")
+        if settings.NACOS_ACCESS_KEY and settings.NACOS_SECRET_KEY:
+            auth_methods.append("access_key")
+        auth_status = ", ".join(auth_methods) if auth_methods else "disabled"
+
         namespace_info = (
             f", namespace={settings.NACOS_NAMESPACE_ID}"
             if settings.NACOS_NAMESPACE_ID
             else ""
         )
-        access_key_info = (
-            ", access_key_auth=enabled"
-            if settings.NACOS_ACCESS_KEY and settings.NACOS_SECRET_KEY
-            else ""
-        )
         logger.info(
             f"[A2A] Created Nacos registry from environment: "
             f"server={settings.NACOS_SERVER_ADDR}, "
-            f"authentication={auth_status}{namespace_info}{access_key_info}",
+            f"authentication={auth_status}{namespace_info}",
         )
         return registry
     except Exception:
@@ -231,9 +191,41 @@ def _create_nacos_registry_from_settings(
         return None
 
 
+def _build_nacos_client_config(
+    settings: A2ARegistrySettings,
+) -> Any:
+    """Build Nacos client configuration from settings.
+
+    Supports both username/password and access key authentication.
+    """
+    from v2.nacos import ClientConfigBuilder
+
+    builder = ClientConfigBuilder().server_address(settings.NACOS_SERVER_ADDR)
+
+    if settings.NACOS_NAMESPACE_ID:
+        builder.namespace_id(settings.NACOS_NAMESPACE_ID)
+        logger.debug(
+            "[A2A] Using Nacos namespace: %s",
+            settings.NACOS_NAMESPACE_ID,
+        )
+
+    if settings.NACOS_USERNAME and settings.NACOS_PASSWORD:
+        builder.username(settings.NACOS_USERNAME).password(
+            settings.NACOS_PASSWORD,
+        )
+        logger.debug("[A2A] Using Nacos username/password authentication")
+
+    if settings.NACOS_ACCESS_KEY and settings.NACOS_SECRET_KEY:
+        builder.access_key(settings.NACOS_ACCESS_KEY).secret_key(
+            settings.NACOS_SECRET_KEY,
+        )
+        logger.debug("[A2A] Using Nacos access key authentication")
+
+    return builder.build()
+
+
 def _split_registry_types(raw: Optional[str]) -> List[str]:
-    """Split a comma-separated registry type string into a
-    normalized list."""
+    """Split comma-separated registry type string."""
     if not raw:
         return []
     return [r.strip().lower() for r in raw.split(",") if r.strip()]
@@ -242,18 +234,10 @@ def _split_registry_types(raw: Optional[str]) -> List[str]:
 def create_registry_from_env() -> (
     Optional[Union[A2ARegistry, List[A2ARegistry]]]
 ):
-    """Create registry instance(s) based on environment settings.
+    """Create registry instance(s) from environment settings.
 
-    Behavior:
-    - Loads settings via get_registry_settings().
-    - If A2A_REGISTRY_ENABLED is False -> returns None.
-    - A2A_REGISTRY_TYPE may be a single value or comma-separated list.
-    - Currently only "nacos" is implemented; unknown types are logged.
-
-    Returns:
-        An A2ARegistry instance, a list of instances when multiple types are
-        configured, or None if registry is disabled or no valid registry could
-        be created.
+    Supports single or multiple registry types (comma-separated).
+    Returns None if disabled or no valid registry created.
     """
     settings = get_registry_settings()
 
@@ -286,6 +270,4 @@ def create_registry_from_env() -> (
     if not registry_list:
         return None
 
-    # Return single instance when only one was configured to preserve
-    # backward compatibility with callers that expect a single registry.
     return registry_list[0] if len(registry_list) == 1 else registry_list

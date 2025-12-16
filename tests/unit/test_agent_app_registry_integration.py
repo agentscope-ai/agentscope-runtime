@@ -72,11 +72,10 @@ class TestAgentAppRegistryIntegration:
         try:
             mock_registry = MockRegistry("test")
 
-            # Patch where AgentApp actually calls
-            # create_registry_from_env
+            # Patch where extract_config_params calls create_registry_from_env
             with patch(
-                "agentscope_runtime.engine.app.agent_app"
-                ".create_registry_from_env",
+                "agentscope_runtime.engine.deployers.adapter.a2a"
+                ".a2a_protocol_adapter.create_registry_from_env",
                 return_value=mock_registry,
             ):
                 app = AgentApp(
@@ -122,25 +121,30 @@ class TestAgentAppRegistryIntegration:
 
     def test_agent_app_with_registry_list_from_a2a_config(self):
         """Test AgentApp initialization with list of registry instances
-        from a2a_config.
-
-        Note: Currently A2AFastAPIDefaultAdapter does not support
-        list of registries directly, so this test expects a TypeError.
-        """
+        from a2a_config."""
         mock_registry1 = MockRegistry("test1")
         mock_registry2 = MockRegistry("test2")
 
-        # Currently, A2AFastAPIDefaultAdapter only supports single
-        # registry or None, not a list. The adapter will raise TypeError
-        # when a list is passed.
-        with pytest.raises(TypeError, match="Invalid registry type"):
-            AgentApp(
-                app_name="test_agent",
-                app_description="Test agent",
-                a2a_config={
-                    "registry": [mock_registry1, mock_registry2],
-                },
-            )
+        # A2AFastAPIDefaultAdapter now supports list of registries
+        app = AgentApp(
+            app_name="test_agent",
+            app_description="Test agent",
+            a2a_config={
+                "registry": [mock_registry1, mock_registry2],
+            },
+        )
+
+        # Verify both registries were passed to adapter
+        a2a_adapter = None
+        for adapter in app.protocol_adapters:
+            if hasattr(adapter, "_registry"):
+                a2a_adapter = adapter
+                break
+
+        assert a2a_adapter is not None
+        assert len(a2a_adapter._registry) == 2
+        assert mock_registry1 in a2a_adapter._registry
+        assert mock_registry2 in a2a_adapter._registry
 
     @pytest.mark.asyncio
     async def test_registry_registration_during_deploy(self):

@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=redefined-outer-name, protected-access, unused-argument
-"""
-Unit tests for A2A Registry functionality.
+"""Unit tests for A2A Registry functionality.
 
 Tests cover:
 - A2ARegistry abstract base class
-- DeployProperties and A2ATransportsProperties dataclasses
+- DeployProperties dataclass
 - A2ARegistrySettings configuration
 - get_registry_settings() function
 - create_registry_from_env() factory function
@@ -14,13 +13,11 @@ Tests cover:
 import os
 import tempfile
 from unittest.mock import patch, MagicMock
-from typing import List
 
 from a2a.types import AgentCard
 
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     DeployProperties,
-    A2ATransportsProperties,
     A2ARegistrySettings,
     get_registry_settings,
     create_registry_from_env,
@@ -44,12 +41,9 @@ class MockRegistry(A2ARegistry):
         self,
         agent_card: AgentCard,
         deploy_properties: DeployProperties,
-        a2a_transports_properties: List[A2ATransportsProperties],
     ) -> None:
         self.registered_cards.append(agent_card)
-        self.registered_properties.append(
-            (deploy_properties, a2a_transports_properties),
-        )
+        self.registered_properties.append(deploy_properties)
 
 
 class TestA2ARegistry:
@@ -80,9 +74,8 @@ class TestA2ARegistry:
             skills=[],
         )
         deploy_props = DeployProperties(host="localhost", port=8080)
-        transport_props = [A2ATransportsProperties(transport_type="JSONRPC")]
 
-        registry.register(agent_card, deploy_props, transport_props)
+        registry.register(agent_card, deploy_props)
         assert len(registry.registered_cards) == 1
         assert registry.registered_cards[0].name == "test_agent"
         assert len(registry.registered_properties) == 1
@@ -111,37 +104,6 @@ class TestDeployProperties:
         assert props.port == 9090
         assert props.path == "/api"
         assert props.extra == {"key": "value"}
-
-
-class TestA2ATransportsProperties:
-    """Test A2ATransportsProperties dataclass."""
-
-    def test_required_fields(self):
-        """Test A2ATransportsProperties with required fields."""
-        props = A2ATransportsProperties(transport_type="JSONRPC")
-        assert props.transport_type == "JSONRPC"
-        assert props.host is None
-        assert props.port is None
-        assert props.path is None
-        assert props.tls is None
-        assert props.extra == {}
-
-    def test_all_fields(self):
-        """Test A2ATransportsProperties with all fields."""
-        props = A2ATransportsProperties(
-            transport_type="HTTP",
-            host="example.com",
-            port=443,
-            path="/api",
-            tls={"verify": True},
-            extra={"timeout": 30},
-        )
-        assert props.transport_type == "HTTP"
-        assert props.host == "example.com"
-        assert props.port == 443
-        assert props.path == "/api"
-        assert props.tls == {"verify": True}
-        assert props.extra == {"timeout": 30}
 
 
 class TestA2ARegistrySettings:
@@ -860,14 +822,13 @@ class TestErrorHandlingInRegistration:
         )
 
         deploy_props = DeployProperties(port=8080)
-        transport_props = []
 
         # Should not raise even with minimal card
-        registry.register(minimal_card, deploy_props, transport_props)
+        registry.register(minimal_card, deploy_props)
         assert len(registry.registered_cards) == 1
 
     def test_registry_with_empty_transports(self):
-        """Test registration with empty transport properties list."""
+        """Test registration with empty configuration."""
         registry = MockRegistry()
 
         from a2a.types import AgentCapabilities
@@ -885,7 +846,7 @@ class TestErrorHandlingInRegistration:
 
         deploy_props = DeployProperties(host="localhost", port=8080)
 
-        # Register with empty transports list
-        registry.register(agent_card, deploy_props, [])
+        # Register
+        registry.register(agent_card, deploy_props)
         assert len(registry.registered_cards) == 1
-        assert registry.registered_properties[0][1] == []
+        assert registry.registered_properties[0] == deploy_props

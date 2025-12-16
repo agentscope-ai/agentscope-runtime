@@ -7,7 +7,6 @@ from .a2a_protocol_adapter import (
 from .a2a_registry import (
     A2ARegistry,
     DeployProperties,
-    A2ATransportsProperties,
     A2ARegistrySettings,
     get_registry_settings,
     create_registry_from_env,
@@ -24,7 +23,6 @@ __all__ = [
     "extract_config_params",
     "A2ARegistry",
     "DeployProperties",
-    "A2ATransportsProperties",
     "A2ARegistrySettings",
     "get_registry_settings",
     "create_registry_from_env",
