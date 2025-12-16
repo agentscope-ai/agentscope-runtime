@@ -594,7 +594,9 @@ def message_to_agentscope_msg(
                 agentscope_msg.id = orig_id
                 grouped[orig_id] = agentscope_msg
             else:
-                grouped[orig_id].content.extend(orig_msg.content)
+                grouped[orig_id].content.extend(
+                    [_ for _ in orig_msg.content if _ not in grouped[orig_id].content],
+                )
 
         return list(grouped.values())
     else:
