@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def _coerce_timedelta_seconds(value: Any, default_seconds: float) -> timedelta:
-    """将 timeout 配置规范化为 timedelta（兼容不同版本 mcp 的参数类型）。"""
+    """Normalize timeout values to timedelta for MCP client compatibility."""
     if value is None:
         return timedelta(seconds=default_seconds)
     if isinstance(value, timedelta):
