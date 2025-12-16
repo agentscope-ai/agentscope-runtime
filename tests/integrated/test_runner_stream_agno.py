@@ -12,12 +12,6 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
     RunStatus,
 )
 from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.engine.services.agent_state import (
-    InMemoryStateService,
-)
-from agentscope_runtime.engine.services.session_history import (
-    InMemorySessionHistoryService,
-)
 from agentscope_runtime.engine.services.sandbox import SandboxService
 
 
@@ -78,19 +72,13 @@ class MyRunner(Runner):
         """
         Init handler.
         """
-        self.state_service = InMemoryStateService()
-        self.session_service = InMemorySessionHistoryService()
         self.sandbox_service = SandboxService()
-        await self.state_service.start()
-        await self.session_service.start()
         await self.sandbox_service.start()
 
     async def shutdown_handler(self, *args, **kwargs):
         """
         Shutdown handler.
         """
-        await self.state_service.stop()
-        await self.session_service.stop()
         await self.sandbox_service.stop()
 
 
