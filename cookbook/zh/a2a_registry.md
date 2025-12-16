@@ -1,157 +1,269 @@
 # A2A Registry - 服务注册与发现
 
-## 概述
+## AgentApp 扩展字段 a2a_config
 
-A2A Registry 是 AgentScope Runtime 为 A2A（Agent-to-Agent）协议提供的服务注册与发现机制。通过 Registry，你可以将智能体服务注册到中心化的智能体注册中心（如 Nacos 等），使得其他智能体或客户端能够动态发现和调用智能体的服务。
+在 `AgentApp` 的构造函数中，我们新增了可选参数 `a2a_config`，用于扩展配置 Agent 的 A2A 协议信息和运行时相关字段。
 
-## 核心概念
+其类型为：
 
-### Registry 架构
+- `AgentCardWithRuntimeConfig`（推荐）：将 AgentCard 协议字段与运行时字段封装到一个数据结构中统一管理；
+- `Dict[str, Any]`：字段与 `AgentCardWithRuntimeConfig` 完全一致，适合从配置文件等动态构造。
 
-A2A Registry 采用可扩展的插件式架构：
+`AgentCardWithRuntimeConfig`中的字段分为两类：
 
-- **A2ARegistry**：抽象基类，定义了 Registry 的核心接口
-- **具体实现**：如 `NacosRegistry`，实现特定服务发现系统的注册逻辑
-- **注册流程**：
-  1. **Agent Card 发布**：将智能体的元数据（名称、版本、技能等）发布到注册中心
-  2. **Endpoint 注册**：注册智能体的服务端点（host、port、path）信息
-  3. **后台异步执行**：注册过程在后台异步执行，不阻塞应用启动
+**1. AgentCard 协议字段**
 
-## 配置方式
+- `card_url`：Agent 服务的完整 URL，默认情况下可根据 `host` / `port` 自动推导；
+- `card_version`：Agent 版本号，默认使用运行时代码版本；
+- `preferred_transport`：首选传输协议，例如 `"JSONRPC"`；
+- `additional_interfaces`：额外的传输接口列表；
+- `skills`：Agent 能力 / 技能列表；
+- `default_input_modes`：默认支持的输入模式，例如 `["text"]`；
+- `default_output_modes`：默认支持的输出模式，例如 `["text"]`；
+- `provider`：提供方信息，可以是字符串、字典或结构化对象；
+- `documentation_url`：文档地址；
+- `icon_url`：图标地址；
+- `security_schemes`：安全方案定义；
+- `security`：安全需求配置。
 
-### 方式 1：通过 a2a_config（推荐）
+**2. Runtime 运行时字段**
 
-使用 `AgentCardWithRuntimeConfig` 或字典配置 `a2a_config` 参数。
+- `host`：对外服务绑定的主机地址，未指定时会自动获取当前部署机器的外网 IP；
+- `port`：对外服务端口，默认 `8080`；
+- `registry`：Registry 实例或列表，用于将 Agent 服务注册到 Nacos 等注册中心；
+- `task_timeout`：任务完成的超时时间（秒），默认 `60`；
+- `task_event_timeout`：任务事件的超时时间（秒），默认 `10`；
+- `wellknown_path`：AgentCard 对外暴露的路径，默认 `"/.wellknown/agent-card.json"`。
 
-**使用 AgentCardWithRuntimeConfig：**
+在实际使用中，你只需在构造 `AgentApp` 时传入合适的 `a2a_config`。其中，我们提供了 A2A Registry 能力，可通过 `registry` 字段指定当前 Agent 应该注册到哪些中心化的智能体注册中心（例如 Nacos）。
+
+## Registry 架构
+A2A Registry 采用可扩展的插件式架构，用于将 Agent 服务注册到不同的中心化的智能体注册中心（如 Nacos）。
+
+核心组件：
+
+**1. A2ARegistry 抽象基类**
+
+定义了所有 Registry 实现必须遵循的接口：
+
+- `registry_name()`：返回标识该 Registry 的短名称（如 `"nacos"`）；
+- `register(agent_card, deploy_properties, a2a_transports_properties)`：执行实际的注册逻辑。
+
+Runtime 会在注册过程中捕获并记录异常，确保 Registry 失败不会阻塞 Agent 服务的启动。
+
+**2. DeployProperties**
+
+封装部署相关的运行时信息：
+
+- `host`：服务监听地址；
+- `port`：服务监听端口；
+- `extra`：额外的运行时属性（如标签或环境元数据），用于扩展。
+
+**3. A2ATransportsProperties**
+
+描述一个或多个 A2A 传输协议：
+
+- `host` / `port` / `path`：对外暴露的传输端点；
+- `support_tls`：是否支持 TLS；
+- `extra`：每个传输通道的额外配置；
+- `transport_type`：传输类型（如 `"JSONRPC"`、`"HTTP"`）。
+
+当 Agent 通过多种传输协议暴露服务时，可以提供多个传输配置并一起注册。
+
+**注册流程**
+
+当 `AgentApp` 启动时，Registry 注册流程如下：
+
+1. **Agent Card 发布**：将智能体的元数据（名称、版本、技能等）发布到注册中心，使其他智能体能够发现和了解该智能体的能力。
+
+2. **Endpoint 注册**：注册智能体的服务端点信息（host、port、path），包括部署配置和传输协议配置，使其他智能体能够连接到该服务。
+
+3. **后台异步执行**：注册过程在后台异步执行，不阻塞应用启动。如果某个 Registry 注册失败，Runtime 会记录警告日志，但不会影响 Agent 服务的正常启动。
+
+## Registry 配置方式
+
+Runtime 支持三种方式配置 Registry：
+
+### 1. 通过 a2a_config 配置
+
+在构造 `AgentApp` 时，通过 `a2a_config` 参数的 `registry` 字段指定 Registry 实例或列表：
 
 ```python
-from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.deployers.adapter.a2a import (
     AgentCardWithRuntimeConfig,
+)
+from agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry import (
     NacosRegistry,
 )
 from v2.nacos import ClientConfigBuilder
 
-# 创建 Nacos Registry
-builder = ClientConfigBuilder().server_address("localhost:8848")
-nacos_registry = NacosRegistry(nacos_client_config=builder.build())
+# 创建 Nacos Registry 实例
+nacos_config = (
+    ClientConfigBuilder()
+    .server_address("localhost:8848")
+    .username("nacos")
+    .password("nacos")
+    .build()
+)
+nacos_registry = NacosRegistry(nacos_client_config=nacos_config)
 
-# 配置 A2A（只需指定关键字段）
+# 在 a2a_config 中配置 registry
+# 方式1：使用 AgentCardWithRuntimeConfig 对象
 a2a_config = AgentCardWithRuntimeConfig(
-    name="MyAgent",
-    description="我的智能体",
-    registry=[nacos_registry],  # 运行时字段
+    registry=[nacos_registry],  # 可以是单个实例或列表
+)
+
+agent_app = AgentApp(
+    app_name="MyAgent",
+    app_description="My agent description",
+    a2a_config=a2a_config,
+)
+
+# 方式2：使用字典形式（支持 name/description 字段）
+a2a_config_dict = {
+    "registry": [nacos_registry],
+}
+
+agent_app = AgentApp(
+    app_name="MyAgent",
+    app_description="My agent description",
+    a2a_config=a2a_config_dict,
+)
+```
+
+### 2. 通过环境变量配置
+
+如果未在 `a2a_config` 中指定 `registry`，Runtime 会根据环境变量创建 Registry 实例。目前系统仅实现了 `NacosRegistry`，用户可以通过环境变量配置 Nacos 注册中心：
+
+- `A2A_REGISTRY_ENABLED`：是否启用 Registry 功能（默认：`True`）
+- `A2A_REGISTRY_TYPE`：Registry 类型，支持逗号分隔的多个值（如：`"nacos"`）
+- `NACOS_SERVER_ADDR`：Nacos 服务器地址（默认：`"localhost:8848"`）
+- `NACOS_USERNAME`：Nacos 用户名（可选，用于控制台登录）
+- `NACOS_PASSWORD`：Nacos 密码（可选，用于控制台登录）
+- `NACOS_NAMESPACE_ID`：Nacos 命名空间 ID（可选，默认public）
+- `NACOS_ACCESS_KEY`：Nacos Access Key（可选，用于客户端鉴权）
+- `NACOS_SECRET_KEY`：Nacos Secret Key（可选，用于客户端鉴权）
+
+环境变量可以通过 `.env` 文件或系统环境变量设置：
+
+```bash
+# .env 文件示例
+A2A_REGISTRY_ENABLED=true
+A2A_REGISTRY_TYPE=nacos
+NACOS_SERVER_ADDR=localhost:8848
+NACOS_USERNAME=nacos
+NACOS_PASSWORD=nacos
+NACOS_NAMESPACE_ID=your_namespace_id
+```
+
+```python
+# 无需在 a2a_config 中指定 registry，会自动从环境变量创建
+agent_app = AgentApp(
+    app_name="MyAgent",
+    app_description="My agent description",
+)
+```
+
+### 3. 通过 deploy 方法传入 adapter
+
+在使用 `AgentApp.deploy()` 方法部署时，可以通过 `protocol_adapters` 参数传入配置了 Registry 的 A2A Protocol Adapter。
+
+**A2AFastAPIDefaultAdapter 参数说明：**
+
+- `agent_name`（必需）：智能体名称，用于 Agent Card
+- `agent_description`（必需）：智能体描述，用于 Agent Card
+- `host`（可选）：服务的主机地址。如果不传，默认会调用 `get_first_non_loopback_ip()` 自动获取当前部署机器的公网地址
+- `port`（可选）：服务的端口号。如果不传，默认为 8080
+- `registry`（可选）：Registry 实例或 Registry 列表，用于服务注册与发现
+
+```python
+from agentscope_runtime.engine.app import AgentApp
+from agentscope_runtime.engine.deployers.adapter.a2a import (
+    A2AFastAPIDefaultAdapter,
+)
+from agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry import (
+    NacosRegistry,
+)
+from agentscope_runtime.engine.deployers import LocalDeployManager
+from v2.nacos import ClientConfigBuilder
+
+# 创建 Nacos Registry 实例
+nacos_config = (
+    ClientConfigBuilder()
+    .server_address("localhost:8848")
+    .build()
+)
+nacos_registry = NacosRegistry(nacos_client_config=nacos_config)
+
+# 创建配置了 Registry 的 A2A Protocol Adapter
+a2a_adapter = A2AFastAPIDefaultAdapter(
+    agent_name="MyAgent",
+    agent_description="My agent description",
+    registry=[nacos_registry],
 )
 
 # 创建 AgentApp
-app = AgentApp(
+agent_app = AgentApp(
     app_name="MyAgent",
-    app_description="我的智能体",
-    a2a_config=a2a_config,
+    app_description="My agent description",
+)
+
+# 在 deploy 方法中传入 adapter
+deployer = LocalDeployManager(host="127.0.0.1", port=8090)
+await agent_app.deploy(
+    deployer,
+    protocol_adapters=[a2a_adapter],
+    # ... 其他部署参数
 )
 ```
 
-**使用字典配置：**
-
-```python
-a2a_config = {
-    # AgentCard 字段
-    "name": "MyAgent",
-    "version": "1.0.0",
-    "description": "我的智能体",
-    "url": "http://localhost:8099/a2a",
-    "preferredTransport": "JSONRPC",
-    "skills": [...],
-
-    # 运行时字段
-    "registry": [nacos_registry],
-    "transports": [...],
-    "task_timeout": 60,
-}
-
-app = AgentApp(
-    app_name="MyAgent",
-    app_description="我的智能体",
-    a2a_config=a2a_config,
-)
-```
-
-### 方式 2：通过环境变量
-
-Runtime 支持从环境变量或 `.env` 文件自动创建 Registry：
-
-```bash
-# .env 文件
-A2A_REGISTRY_ENABLED=true          # 是否启用 Registry（默认：true）
-A2A_REGISTRY_TYPE=nacos            # Registry 类型（如：nacos）
-NACOS_SERVER_ADDR=localhost:8848   # Nacos 服务器地址
-NACOS_USERNAME=your_username       # Nacos 用户名（可选）
-NACOS_PASSWORD=your_password       # Nacos 密码（可选）
-NACOS_NAMESPACE_ID=public          # Nacos 命名空间 ID（可选，默认：public）
-NACOS_ACCESS_KEY=your_access_key   # Nacos 访问密钥（可选）
-NACOS_SECRET_KEY=your_secret_key   # Nacos 密钥（可选）
-```
-
-当未显式配置 `a2a_config` 时，AgentApp 会自动读取环境变量创建 Registry
+**配置优先级**：通过 `a2a_config` 显式指定的 `registry` 优先级最高，如果未指定则从环境变量自动创建。通过 `deploy` 方法传入的 `protocol_adapters` 会覆盖 `AgentApp` 中配置的 adapter。
 
 ## Nacos Registry 使用指南
 
-### 启动 Nacos 服务
+在使用 Nacos Registry 之前，需要先安装并启动 Nacos 服务器。以下是快速开始步骤：
+
+### 1. 下载安装包
+
+进入 [Nacos Github 的最新稳定版本](https://github.com/alibaba/nacos/releases)，选择需要下载的 Nacos 版本，在 `Assets` 中点击下载 `nacos-server-$version.zip` 包。
+
+### 2. 解压缩 Nacos 发行包
 
 ```bash
-# 快速启动 Nacos（单机模式）
+unzip nacos-server-$version.zip
+# 或者 tar -xvf nacos-server-$version.tar.gz
 cd nacos/bin
+```
+
+### 3. 启动服务器
+
+**Linux/Unix/Mac：**
+```bash
 sh startup.sh -m standalone
 ```
 
-启动后访问控制台：http://localhost:8848/nacos（默认用户名/密码：nacos/nacos）
-
-> 更多部署方式请参考：https://nacos.io/docs/v3.0/quickstart/quick-start/
-
-### 基本配置
-
-```python
-from v2.nacos import ClientConfigBuilder
-from agentscope_runtime.engine.deployers.adapter.a2a import NacosRegistry
-
-# 创建 Nacos Registry
-builder = ClientConfigBuilder().server_address("localhost:8848")
-nacos_registry = NacosRegistry(nacos_client_config=builder.build())
-
-# 可选：添加认证
-builder.username("nacos").password("nacos")
-
-# 可选：设置命名空间
-builder.namespace_id("your-namespace-id")
-
-# 可选：设置访问密钥和密钥
-builder.access_key("your-access-key").secret_key("your-secret-key")
+**Windows：**
+```bash
+startup.cmd -m standalone
 ```
 
-## 多 Registry 支持
+> 注意：`standalone` 代表单机模式运行，非集群模式。
 
-Runtime 支持同时注册到多个服务发现系统：
+更多详细的安装、配置和验证步骤，请参考 [Nacos 官方快速开始文档](https://nacos.io/docs/v3.0/quickstart/quick-start/)。
 
-```python
-from agentscope_runtime.engine.deployers.adapter.a2a import (
-    AgentCardWithRuntimeConfig,
-)
+## 自定义 Registry 的实现方法
 
-# 创建多个 Registry 实例
-nacos_registry_1 = NacosRegistry(config_1)
-nacos_registry_2 = NacosRegistry(config_2)
+如果需要集成其他类型的中心化的智能体注册中心，可以实现自定义 Registry。自定义 Registry 需要继承 `A2ARegistry` 抽象基类，并实现以下方法：
 
-a2a_config = AgentCardWithRuntimeConfig(
-    name="MyAgent",
-    # ... 其他字段 ...
-    registry=[nacos_registry_1, nacos_registry_2],  # 多个 Registry
-)
-```
+### 实现步骤
 
-## 扩展自定义 Registry
+1. **继承 `A2ARegistry` 抽象基类**
+2. **实现 `registry_name()` 方法**：返回 Registry 的短名称，用于日志和诊断
+3. **实现 `register()` 方法**：执行实际的注册逻辑
 
-你可以实现自定义 Registry 来支持其他服务发现系统：
+### 示例代码
+
+以下是一个简单的自定义 Registry 实现示例：
 
 ```python
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
@@ -160,38 +272,65 @@ from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     A2ATransportsProperties,
 )
 from a2a.types import AgentCard
-from typing import List
+from typing import Optional, List
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class MyCustomRegistry(A2ARegistry):
-    """自定义 Registry 实现"""
+    """自定义 Registry 实现示例。"""
 
     def registry_name(self) -> str:
-        """返回 Registry 名称"""
         return "my-custom-registry"
 
     def register(
         self,
         agent_card: AgentCard,
         deploy_properties: DeployProperties,
-        a2a_transports_properties: List[A2ATransportsProperties],
+        a2a_transports_properties: Optional[
+            List[A2ATransportsProperties]
+        ] = None,
     ) -> None:
-        """注册智能体服务"""
-        # 实现你的注册逻辑
-        pass
 
-# 使用自定义 Registry
-custom_registry = MyCustomRegistry()
-a2a_config = AgentCardWithRuntimeConfig(
-    name="MyAgent",
-    # ... 其他字段 ...
-    registry=[custom_registry],
-)
+        try:
+            # 构建注册信息
+            service_info = {
+                "agent_name": agent_card.name,
+                "agent_version": agent_card.version,
+                "host": deploy_properties.host,
+                "port": deploy_properties.port,
+            }
+
+            # 执行注册逻辑
+            logger.info(f"[MyCustomRegistry] Registering: {service_info}")
+            # ...
+
+        except Exception as e:
+            logger.warning(f"[MyCustomRegistry] Registration failed: {e}", exc_info=True)
 ```
 
-## 最佳实践
+### 使用自定义 Registry
 
-1. **使用环境变量配置**：将敏感信息（如密码）放在 `.env` 文件中，避免硬编码
-2. **优雅关闭**：在应用关闭时调用 `cleanup()` 方法清理资源
-3. **监控注册状态**：在生产环境中监控注册状态，及时发现和处理注册失败
-4. **合理设置超时**：根据网络状况设置合适的 `task_timeout` 和 `task_event_timeout`
-5. **使用命名空间**：在多环境部署时使用不同的命名空间隔离服务
+实现自定义 Registry 后，可以通过以下方式使用：
+
+```python
+from agentscope_runtime.engine.app import AgentApp
+from agentscope_runtime.engine.deployers.adapter.a2a import (
+    AgentCardWithRuntimeConfig,
+)
+
+# 创建自定义 Registry 实例
+custom_registry = MyCustomRegistry()
+
+# 在 a2a_config 中使用
+a2a_config = AgentCardWithRuntimeConfig(
+    registry=[custom_registry],
+)
+
+agent_app = AgentApp(
+    app_name="MyAgent",
+    app_description="My agent description",
+    a2a_config=a2a_config,
+)
+```

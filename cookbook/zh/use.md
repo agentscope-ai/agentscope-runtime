@@ -75,13 +75,13 @@ Runtime 支持多种消费方式，满足不同角色需求：
 
 介绍 A2A（Agent-to-Agent）协议的服务注册与发现机制。章节涵盖：
 
+- AgentApp 扩展字段 a2a_config
 - Registry 架构
-- 两种配置方式：a2a_config、环境变量
-- Nacos Registry 的使用指南
-- 扩展自定义 Registry 的实现方法
-- 多 Registry 支持与完整示例代码
+- Registry 配置方式
+- Nacos Registry 使用指南
+- 自定义 Registry 的实现方法
 
-适合需要将智能体服务注册到服务发现系统（如 Nacos）的开发者。完整文档见 {doc}`a2a_registry`。
+适合需要将智能体服务注册到中心化的智能体注册中心（如 Nacos）的开发者。完整文档见 {doc}`a2a_registry`。
 
 ### 测试用例
 

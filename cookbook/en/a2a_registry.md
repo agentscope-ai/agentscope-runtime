@@ -1,157 +1,269 @@
 # A2A Registry - Service Registration and Discovery
 
-## Overview
+## AgentApp extension field a2a_config
 
-A2A Registry is a service registration and discovery mechanism provided by AgentScope Runtime for the A2A (Agent-to-Agent) protocol. Through Registry, you can register agent services to centralized agent registries (such as Nacos, etc.), enabling other agents or clients to dynamically discover and invoke agent services.
+In the `AgentApp` constructor, we introduce an optional parameter `a2a_config` to extend the configuration of the agent's A2A protocol information and runtime-related fields.
 
-## Core Concepts
+Its supported types are:
 
-### Registry Architecture
+- `AgentCardWithRuntimeConfig` (recommended): wraps AgentCard protocol fields and runtime fields into a single data structure for unified management.
+- `Dict[str, Any]`: has exactly the same field set as `AgentCardWithRuntimeConfig`, and is suitable for dynamic construction from configuration files.
 
-A2A Registry adopts an extensible plugin-based architecture:
+The fields in `AgentCardWithRuntimeConfig` fall into two categories:
 
-- **A2ARegistry**: Abstract base class defining the core Registry interface
-- **Concrete Implementations**: Such as `NacosRegistry`, implementing registration logic for specific service discovery systems
-- **Registration Flow**:
-  1. **Agent Card Publication**: Publish agent metadata (name, version, skills, etc.) to the registry center
-  2. **Endpoint Registration**: Register agent service endpoints (host, port, path) information
-  3. **Background Async Execution**: Registration process runs asynchronously in the background without blocking application startup
+**1. AgentCard protocol fields**
 
-## Configuration Methods
+- `card_url`: Complete URL of the agent service. By default it can be inferred automatically from `host` / `port`.
+- `card_version`: Agent version. By default it follows the runtime code version.
+- `preferred_transport`: Preferred transport protocol, such as `"JSONRPC"`.
+- `additional_interfaces`: List of additional transport interfaces.
+- `skills`: List of agent capabilities/skills.
+- `default_input_modes`: Default supported input modes, for example `["text"]`.
+- `default_output_modes`: Default supported output modes, for example `["text"]`.
+- `provider`: Provider information, which can be a string, dict, or structured object.
+- `documentation_url`: Documentation URL.
+- `icon_url`: Icon URL.
+- `security_schemes`: Security schemes definition.
+- `security`: Security requirements configuration.
 
-### Method 1: Via a2a_config (Recommended)
+**2. Runtime fields**
 
-Use `AgentCardWithRuntimeConfig` or dictionary to configure the `a2a_config` parameter.
+- `host`: Host address for the external service. If not specified, the runtime automatically obtains the public IP of the current deployment machine.
+- `port`: Port that the external service listens on. Defaults to `8080`.
+- `registry`: Registry instance or list, used to register the agent service to centralized agent registries such as Nacos.
+- `task_timeout`: Timeout in seconds for a task to complete. Defaults to `60`.
+- `task_event_timeout`: Timeout in seconds for task events. Defaults to `10`.
+- `wellknown_path`: Public path where the AgentCard is exposed. Defaults to `"/.wellknown/agent-card.json"`.
 
-**Using AgentCardWithRuntimeConfig:**
+In practice, you only need to pass an appropriate `a2a_config` when constructing `AgentApp`. Among these fields, we provide A2A Registry capability, which allows you to specify which centralized agent registries (such as Nacos) the current agent should be registered to via the `registry` field.
+
+## Registry Architecture
+The A2A Registry adopts an extensible plugin-based architecture for registering agent services to different centralized agent registries (such as Nacos).
+
+Core components:
+
+**1. A2ARegistry abstract base class**
+
+Defines the interface that all registry implementations must follow:
+
+- `registry_name()`: returns a short name identifying the registry (for example, `"nacos"`);
+- `register(agent_card, deploy_properties, a2a_transports_properties)`: performs the actual registration logic.
+
+The runtime catches and logs exceptions during registration so that registry failures do not block the agent service from starting.
+
+**2. DeployProperties**
+
+Encapsulates deployment-related runtime information:
+
+- `host`: service listen address;
+- `port`: service listen port;
+- `extra`: additional runtime attributes for extension (such as labels or environment metadata).
+
+**3. A2ATransportsProperties**
+
+Describes one or more A2A transport protocols:
+
+- `host` / `port` / `path`: externally exposed transport endpoints;
+- `support_tls`: whether TLS is supported;
+- `extra`: extra configuration for each transport channel;
+- `transport_type`: transport type (for example, `"JSONRPC"`, `"HTTP"`).
+
+When an agent exposes services over multiple transport protocols, multiple transport configurations can be provided and registered together.
+
+**Registration Flow**
+
+When `AgentApp` starts, the Registry registration flow is as follows:
+
+1. **Agent Card publishing**: Publish the agent's metadata (name, version, skills, etc.) to the registry, enabling other agents to discover and understand the agent's capabilities.
+
+2. **Endpoint registration**: Register the agent's service endpoint information (host, port, path), including deployment configuration and transport protocol configuration, enabling other agents to connect to the service.
+
+3. **Asynchronous background execution**: The registration process executes asynchronously in the background and does not block application startup. If a Registry registration fails, the Runtime logs a warning but does not affect the normal startup of the agent service.
+
+## Registry Configuration Methods
+
+The Runtime supports three ways to configure Registry:
+
+### 1. Configuration via a2a_config
+
+When constructing `AgentApp`, specify Registry instance(s) via the `registry` field in the `a2a_config` parameter:
 
 ```python
-from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.deployers.adapter.a2a import (
     AgentCardWithRuntimeConfig,
+)
+from agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry import (
     NacosRegistry,
 )
 from v2.nacos import ClientConfigBuilder
 
-# Create Nacos Registry
-builder = ClientConfigBuilder().server_address("localhost:8848")
-nacos_registry = NacosRegistry(nacos_client_config=builder.build())
+# Create Nacos Registry instance
+nacos_config = (
+    ClientConfigBuilder()
+    .server_address("localhost:8848")
+    .username("nacos")
+    .password("nacos")
+    .build()
+)
+nacos_registry = NacosRegistry(nacos_client_config=nacos_config)
 
-# Configure A2A (only specify key fields)
+# Configure registry in a2a_config
+# Method 1: Using AgentCardWithRuntimeConfig object
 a2a_config = AgentCardWithRuntimeConfig(
-    name="MyAgent",
-    description="My agent",
-    registry=[nacos_registry],  # Runtime field
+    registry=[nacos_registry],  # Can be a single instance or a list
+)
+
+agent_app = AgentApp(
+    app_name="MyAgent",
+    app_description="My agent description",
+    a2a_config=a2a_config,
+)
+
+# Method 2: Using dictionary form (supports name/description fields)
+a2a_config_dict = {
+    "registry": [nacos_registry],
+}
+
+agent_app = AgentApp(
+    app_name="MyAgent",
+    app_description="My agent description",
+    a2a_config=a2a_config_dict,
+)
+```
+
+### 2. Configuration via Environment Variables
+
+If `registry` is not specified in `a2a_config`, the Runtime automatically creates Registry instances from environment variables. Currently, the system only implements `NacosRegistry`, and users can configure the Nacos registry via environment variables. The following environment variables are supported:
+
+- `A2A_REGISTRY_ENABLED`: Whether to enable Registry feature (default: `True`)
+- `A2A_REGISTRY_TYPE`: Registry type(s), supports comma-separated values (e.g., `"nacos"`)
+- `NACOS_SERVER_ADDR`: Nacos server address (default: `"localhost:8848"`)
+- `NACOS_USERNAME`: Nacos username (optional, for console login)
+- `NACOS_PASSWORD`: Nacos password (optional, for console login)
+- `NACOS_NAMESPACE_ID`: Nacos namespace ID (optional, defaults to public)
+- `NACOS_ACCESS_KEY`: Nacos Access Key (optional, for client authentication)
+- `NACOS_SECRET_KEY`: Nacos Secret Key (optional, for client authentication)
+
+Environment variables can be set via `.env` file or system environment variables:
+
+```bash
+# .env file example
+A2A_REGISTRY_ENABLED=true
+A2A_REGISTRY_TYPE=nacos
+NACOS_SERVER_ADDR=localhost:8848
+NACOS_USERNAME=nacos
+NACOS_PASSWORD=nacos
+NACOS_NAMESPACE_ID=your_namespace_id
+```
+
+```python
+# No need to specify registry in a2a_config, will be created from environment variables
+agent_app = AgentApp(
+    app_name="MyAgent",
+    app_description="My agent description",
+)
+```
+
+### 3. Passing adapter via deploy method
+
+When deploying using `AgentApp.deploy()`, you can pass an A2A Protocol Adapter configured with Registry via the `protocol_adapters` parameter.
+
+**A2AFastAPIDefaultAdapter Parameter Description:**
+
+- `agent_name` (required): Agent name, used in Agent Card
+- `agent_description` (required): Agent description, used in Agent Card
+- `host` (optional): Host address for the service. If not provided, defaults to calling `get_first_non_loopback_ip()` to automatically obtain the public IP address of the current deployment machine
+- `port` (optional): Port number for the service. If not provided, defaults to 8080
+- `registry` (optional): Registry instance or list of Registry instances, used for service registration and discovery
+
+```python
+from agentscope_runtime.engine.app import AgentApp
+from agentscope_runtime.engine.deployers.adapter.a2a import (
+    A2AFastAPIDefaultAdapter,
+)
+from agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry import (
+    NacosRegistry,
+)
+from agentscope_runtime.engine.deployers import LocalDeployManager
+from v2.nacos import ClientConfigBuilder
+
+# Create Nacos Registry instance
+nacos_config = (
+    ClientConfigBuilder()
+    .server_address("localhost:8848")
+    .build()
+)
+nacos_registry = NacosRegistry(nacos_client_config=nacos_config)
+
+# Create A2A Protocol Adapter configured with Registry
+a2a_adapter = A2AFastAPIDefaultAdapter(
+    agent_name="MyAgent",
+    agent_description="My agent description",
+    registry=[nacos_registry],
 )
 
 # Create AgentApp
-app = AgentApp(
+agent_app = AgentApp(
     app_name="MyAgent",
-    app_description="My agent",
-    a2a_config=a2a_config,
+    app_description="My agent description",
+)
+
+# Pass adapter in deploy method
+deployer = LocalDeployManager(host="127.0.0.1", port=8090)
+await agent_app.deploy(
+    deployer,
+    protocol_adapters=[a2a_adapter],
+    # ... other deployment parameters
 )
 ```
 
-**Using Dictionary Configuration:**
-
-```python
-a2a_config = {
-    # AgentCard fields
-    "name": "MyAgent",
-    "version": "1.0.0",
-    "description": "My agent",
-    "url": "http://localhost:8099/a2a",
-    "preferredTransport": "JSONRPC",
-    "skills": [...],
-
-    # Runtime fields
-    "registry": [nacos_registry],
-    "transports": [...],
-    "task_timeout": 60,
-}
-
-app = AgentApp(
-    app_name="MyAgent",
-    app_description="My agent",
-    a2a_config=a2a_config,
-)
-```
-
-### Method 2: Via Environment Variables
-
-Runtime supports automatic Registry creation from environment variables or `.env` files:
-
-```bash
-# .env file
-A2A_REGISTRY_ENABLED=true          # Enable Registry (default: true)
-A2A_REGISTRY_TYPE=nacos            # Registry type (e.g.: nacos)
-NACOS_SERVER_ADDR=localhost:8848   # Nacos server address
-NACOS_USERNAME=your_username       # Nacos username (optional)
-NACOS_PASSWORD=your_password       # Nacos password (optional)
-NACOS_NAMESPACE_ID=public          # Nacos namespace ID (optional, default: public)
-NACOS_ACCESS_KEY=your_access_key   # Nacos access key (optional)
-NACOS_SECRET_KEY=your_secret_key   # Nacos secret key (optional)
-```
-
-When `a2a_config` is not explicitly configured, AgentApp automatically reads environment variables to create Registry
+**Configuration Priority**: The `registry` explicitly specified via `a2a_config` has the highest priority. If not specified, it will be automatically created from environment variables. The `protocol_adapters` passed via the `deploy` method will override the adapter configured in `AgentApp`.
 
 ## Nacos Registry Usage Guide
 
-### Start Nacos Service
+Before using Nacos Registry, you need to install and start the Nacos server. The following are the quick start steps:
+
+### 1. Download Installation Package
+
+Go to [Nacos Github latest stable release](https://github.com/alibaba/nacos/releases), select the Nacos version you want to download, and click to download the `nacos-server-$version.zip` package in `Assets`.
+
+### 2. Extract Nacos Distribution Package
 
 ```bash
-# Quick start Nacos (standalone mode)
+unzip nacos-server-$version.zip
+# or tar -xvf nacos-server-$version.tar.gz
 cd nacos/bin
+```
+
+### 3. Start Server
+
+**Linux/Unix/Mac:**
+```bash
 sh startup.sh -m standalone
 ```
 
-Access console: http://localhost:8848/nacos (default username/password: nacos/nacos)
-
-> For more deployment options, see: https://nacos.io/docs/v3.0/quickstart/quick-start/
-
-### Basic Configuration
-
-```python
-from v2.nacos import ClientConfigBuilder
-from agentscope_runtime.engine.deployers.adapter.a2a import NacosRegistry
-
-# Create Nacos Registry
-builder = ClientConfigBuilder().server_address("localhost:8848")
-nacos_registry = NacosRegistry(nacos_client_config=builder.build())
-
-# Optional: Add authentication
-builder.username("nacos").password("nacos")
-
-# Optional: Set namespace
-builder.namespace_id("your-namespace-id")
-
-# Optional: Set access key and secret key
-builder.access_key("your-access-key").secret_key("your-secret-key")
+**Windows:**
+```bash
+startup.cmd -m standalone
 ```
 
-## Multiple Registry Support
+> Note: `standalone` represents standalone mode, not cluster mode.
 
-Runtime supports registering to multiple service discovery systems simultaneously:
+For more detailed installation, configuration, and verification steps, please refer to the [Nacos official quick start documentation](https://nacos.io/docs/v3.0/quickstart/quick-start/).
 
-```python
-from agentscope_runtime.engine.deployers.adapter.a2a import (
-    AgentCardWithRuntimeConfig,
-)
+## Custom Registry Implementations
 
-# Create multiple Registry instances
-nacos_registry_1 = NacosRegistry(config_1)
-nacos_registry_2 = NacosRegistry(config_2)
+If you need to integrate other types of centralized agent registries, you can implement a custom Registry. A custom Registry needs to inherit from the `A2ARegistry` abstract base class and implement the following methods:
 
-a2a_config = AgentCardWithRuntimeConfig(
-    name="MyAgent",
-    # ... other fields ...
-    registry=[nacos_registry_1, nacos_registry_2],  # Multiple Registries
-)
-```
+### Implementation Steps
 
-## Extending Custom Registry
+1. **Inherit from `A2ARegistry` abstract base class**
+2. **Implement `registry_name()` method**: Returns a short name for the registry, used for logging and diagnostics
+3. **Implement `register()` method**: Performs the actual registration logic
 
-You can implement a custom Registry to support other service discovery systems:
+### Example Code
+
+The following is a simple custom Registry implementation example:
 
 ```python
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
@@ -160,38 +272,77 @@ from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     A2ATransportsProperties,
 )
 from a2a.types import AgentCard
-from typing import List
+from typing import Optional, List
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class MyCustomRegistry(A2ARegistry):
-    """Custom Registry implementation"""
+    """Custom Registry implementation example."""
 
     def registry_name(self) -> str:
-        """Return Registry name"""
         return "my-custom-registry"
 
     def register(
         self,
         agent_card: AgentCard,
         deploy_properties: DeployProperties,
-        a2a_transports_properties: List[A2ATransportsProperties],
+        a2a_transports_properties: Optional[
+            List[A2ATransportsProperties]
+        ] = None,
     ) -> None:
-        """Register agent service"""
-        # Implement your registration logic
-        pass
 
-# Use custom Registry
+        try:
+            # Build registration information
+            service_info = {
+                "agent_name": agent_card.name,
+                "agent_version": agent_card.version,
+                "host": deploy_properties.host,
+                "port": deploy_properties.port,
+            }
+
+            # Perform registration logic
+            logger.info(f"[MyCustomRegistry] Registering: {service_info}")
+            # ...
+
+        except Exception as e:
+            logger.warning(f"[MyCustomRegistry] Registration failed: {e}", exc_info=True)
+```
+
+### Using Custom Registry
+
+After implementing a custom Registry, you can use it in the following way:
+
+```python
+from agentscope_runtime.engine.app import AgentApp
+from agentscope_runtime.engine.deployers.adapter.a2a import (
+    AgentCardWithRuntimeConfig,
+)
+
+# Create custom Registry instance
 custom_registry = MyCustomRegistry()
+
+# Use in a2a_config
 a2a_config = AgentCardWithRuntimeConfig(
-    name="MyAgent",
-    # ... other fields ...
     registry=[custom_registry],
+)
+
+agent_app = AgentApp(
+    app_name="MyAgent",
+    app_description="My agent description",
+    a2a_config=a2a_config,
 )
 ```
 
-## Best Practices
+### Implementation Notes
 
-1. **Use Environment Variables**: Keep sensitive information (like passwords) in `.env` files, avoid hardcoding
-2. **Graceful Shutdown**: Call `cleanup()` method during application shutdown to clean up resources
-3. **Monitor Registration Status**: Monitor registration status in production environments to detect and handle failures promptly
-4. **Set Reasonable Timeouts**: Configure appropriate `task_timeout` and `task_event_timeout` based on network conditions
-5. **Use Namespaces**: Use different namespaces to isolate services in multi-environment deployments
+1. **Exception handling**: Exceptions in the `register()` method should be caught and logged, not raised, to ensure that registry failures do not block agent service startup.
+
+2. **Async support**: If registration operations are asynchronous, you can start background tasks in the `register()` method, refer to the `NacosRegistry` implementation.
+
+3. **Configuration management**: You can receive configuration parameters through the constructor or read configuration from environment variables.
+
+4. **Logging**: Use `logger` to record key information during registration for debugging and monitoring.
+
+## Multi-Registry Support with Complete Example Code

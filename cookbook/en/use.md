@@ -73,13 +73,13 @@ Dive deeper into {doc}`demohouse`.
 
 Introduces the service registration and discovery mechanism for the A2A (Agent-to-Agent) protocol. This section covers:
 
+- AgentApp extension field a2a_config
 - Registry architecture
-- Two configuration methods: a2a_config, environment variables
+- Registry configuration methods
 - Nacos Registry usage guide
-- How to implement custom Registry extensions
-- Multiple Registry support with complete example code
+- Custom Registry Implementations
 
-Perfect for developers who need to register agent services to service discovery systems (such as Nacos). See {doc}`a2a_registry` for full documentation.
+Perfect for developers who need to register agent services to centralized agent registries (such as Nacos). See {doc}`a2a_registry` for full documentation.
 
 ### Tests
 

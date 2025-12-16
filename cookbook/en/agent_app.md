@@ -64,6 +64,50 @@ agent_app.run(host="127.0.0.1", port=8090)
 
 ------
 
+## A2A Extension Field Configuration
+
+**What it does**
+
+Extend the configuration of the agent's A2A (Agent-to-Agent) protocol information and runtime-related fields through the `a2a_config` parameter.
+
+**Key parameter**
+
+- `a2a_config`: Optional parameter, supports `AgentCardWithRuntimeConfig` object or dictionary form
+
+**Configuration content**
+
+`a2a_config` supports configuring two types of fields:
+
+1. **AgentCard protocol fields**: Skills, transport protocols, input/output modes, etc.
+2. **Runtime fields**: Service registration and discovery (Registry), timeout settings, service endpoints, etc.
+
+**Example**
+
+```{code-cell}
+from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.deployers.adapter.a2a import (
+    AgentCardWithRuntimeConfig,
+)
+
+agent_app = AgentApp(
+    app_name="MyAgent",
+    app_description="My agent description",
+    a2a_config=AgentCardWithRuntimeConfig(
+        skills=[...],  # Agent skills list
+        preferred_transport="JSONRPC",  # Transport protocol
+        registry=[...],  # Service registration and discovery (optional)
+        task_timeout=120,  # Task timeout settings
+        # ... other configuration fields
+    ),
+)
+```
+
+**Detailed documentation**
+
+For complete field descriptions, configuration methods, and usage examples, please refer to the {doc}`a2a_registry` documentation.
+
+------
+
 ## Streaming Output (SSE)
 
 **Purpose**
