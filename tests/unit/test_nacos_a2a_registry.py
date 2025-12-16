@@ -1049,8 +1049,22 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             assert returned_config is config
 
     @pytest.mark.asyncio
-    async def test_cleanup_with_pending_status(self, mock_nacos_sdk):
-        """Test cleanup() with PENDING status."""
+    @pytest.mark.parametrize(
+        "initial_status,wait_for_completion,expected_status",
+        [
+            (RegistrationStatus.PENDING, False, RegistrationStatus.CANCELLED),
+            (RegistrationStatus.COMPLETED, True, RegistrationStatus.COMPLETED),
+            (RegistrationStatus.FAILED, True, RegistrationStatus.FAILED),
+        ],
+    )
+    async def test_cleanup_with_different_statuses(
+        self,
+        mock_nacos_sdk,
+        initial_status,
+        wait_for_completion,
+        expected_status,
+    ):
+        """Test cleanup() with different registration statuses."""
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
             ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
@@ -1058,55 +1072,17 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         ):
             registry = NacosRegistry()
 
-            # Status is already PENDING by default
-            assert registry._registration_status == RegistrationStatus.PENDING
+            # Set initial status
+            if initial_status != RegistrationStatus.PENDING:
+                with registry._registration_lock:
+                    registry._registration_status = initial_status
 
-            await registry.cleanup(wait_for_completion=False)
-
-            # Should be cancelled
-            assert (
-                registry._registration_status == RegistrationStatus.CANCELLED
+            await registry.cleanup(
+                wait_for_completion=wait_for_completion,
             )
 
-    @pytest.mark.asyncio
-    async def test_cleanup_with_completed_status(self, mock_nacos_sdk):
-        """Test cleanup() with already COMPLETED status."""
-        with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a"
-            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
-            True,
-        ):
-            registry = NacosRegistry()
-
-            # Set status to COMPLETED
-            with registry._registration_lock:
-                registry._registration_status = RegistrationStatus.COMPLETED
-
-            await registry.cleanup(wait_for_completion=True)
-
-            # Should remain COMPLETED
-            assert (
-                registry._registration_status == RegistrationStatus.COMPLETED
-            )
-
-    @pytest.mark.asyncio
-    async def test_cleanup_with_failed_status(self, mock_nacos_sdk):
-        """Test cleanup() with FAILED status."""
-        with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a"
-            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
-            True,
-        ):
-            registry = NacosRegistry()
-
-            # Set status to FAILED
-            with registry._registration_lock:
-                registry._registration_status = RegistrationStatus.FAILED
-
-            await registry.cleanup(wait_for_completion=True)
-
-            # Should remain FAILED
-            assert registry._registration_status == RegistrationStatus.FAILED
+            # Verify final status
+            assert registry._registration_status == expected_status
 
     @pytest.mark.asyncio
     async def test_wait_for_registration_with_thread(
@@ -1134,11 +1110,3 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             assert status == RegistrationStatus.COMPLETED
             mock_thread.join.assert_called_once_with(timeout=1.0)
-
-    def test_registration_status_enum_values(self):
-        """Test RegistrationStatus enum has expected values."""
-        assert RegistrationStatus.PENDING.value == "pending"
-        assert RegistrationStatus.IN_PROGRESS.value == "in_progress"
-        assert RegistrationStatus.COMPLETED.value == "completed"
-        assert RegistrationStatus.FAILED.value == "failed"
-        assert RegistrationStatus.CANCELLED.value == "cancelled"

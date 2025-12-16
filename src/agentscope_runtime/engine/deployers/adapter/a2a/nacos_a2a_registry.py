@@ -327,9 +327,13 @@ class NacosRegistry(A2ARegistry):
         1. Release agent card to Nacos
         2. Register agent endpoint with host/port information
 
-        Most exceptions are caught and logged without re-raising to
-        prevent background tasks from crashing the host. Only
-        `asyncio.CancelledError` is re-raised.
+        On successful registration, the NacosAIService connection is kept
+        alive to maintain heartbeat and health checks. The service will be
+        closed in cleanup() during application shutdown.
+
+        Most exceptions are caught and logged without re-raising to prevent
+        background tasks from crashing the host. Only `asyncio.CancelledError`
+        is re-raised.
 
         Args:
             agent_card: The A2A agent card to register
@@ -408,11 +412,27 @@ class NacosRegistry(A2ARegistry):
             with self._registration_lock:
                 if self._registration_status == RegistrationStatus.IN_PROGRESS:
                     self._registration_status = RegistrationStatus.COMPLETED
+            # Service remains alive to maintain heartbeat and health checks.
+            # It will be closed in cleanup() during application shutdown.
 
         except asyncio.CancelledError:
             with self._registration_lock:
                 self._registration_status = RegistrationStatus.CANCELLED
             logger.info("[NacosRegistry] Registration task cancelled")
+            try:
+                svc = self._nacos_ai_service
+                if svc is not None:
+                    await svc.shutdown()
+                    logger.debug(
+                        "[NacosRegistry] NacosAIService closed due to "
+                        "cancellation",
+                    )
+            except Exception:
+                logger.debug(
+                    "[NacosRegistry] Error closing NacosAIService on "
+                    "cancellation",
+                    exc_info=True,
+                )
             raise
         except Exception as e:
             with self._registration_lock:
@@ -425,19 +445,17 @@ class NacosRegistry(A2ARegistry):
                 str(e),
                 exc_info=True,
             )
-
-        finally:
-            # Attempt to gracefully close the service
             try:
                 svc = self._nacos_ai_service
                 if svc is not None:
                     await svc.shutdown()
                     logger.debug(
-                        "[NacosRegistry] NacosAIService closed",
+                        "[NacosRegistry] NacosAIService closed due to "
+                        "registration failure",
                     )
             except Exception:
                 logger.debug(
-                    "[NacosRegistry] Error closing NacosAIService",
+                    "[NacosRegistry] Error closing NacosAIService on failure",
                     exc_info=True,
                 )
 

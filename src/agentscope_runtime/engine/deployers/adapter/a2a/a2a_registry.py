@@ -110,28 +110,20 @@ class A2ARegistrySettings(BaseSettings):
 _registry_settings: Optional[A2ARegistrySettings] = None
 
 
-def _load_env_files() -> None:
-    """Load .env or .env.example if present.
-
-    This helper keeps the loading logic in one place and avoids attempting
-    to load files repeatedly.
-    """
-    # prefer a .env file if present, otherwise fall back to .env.example
-    dotenv_path = find_dotenv(raise_error_if_not_found=False)
-    if dotenv_path:
-        load_dotenv(dotenv_path, override=False)
-    else:
-        # If find_dotenv didn't find a file, try the explicit fallback name
-        if os.path.exists(".env.example"):
-            load_dotenv(".env.example", override=False)
-
-
 def get_registry_settings() -> A2ARegistrySettings:
     """Return a singleton settings instance, loading .env files if needed."""
     global _registry_settings
 
     if _registry_settings is None:
-        _load_env_files()
+        # Inline _load_env_files() logic
+        # prefer a .env file if present, otherwise fall back to .env.example
+        dotenv_path = find_dotenv(raise_error_if_not_found=False)
+        if dotenv_path:
+            load_dotenv(dotenv_path, override=False)
+        else:
+            # If find_dotenv didn't find a file, try the explicit fallback name
+            if os.path.exists(".env.example"):
+                load_dotenv(".env.example", override=False)
         _registry_settings = A2ARegistrySettings()
 
     return _registry_settings
@@ -224,13 +216,6 @@ def _build_nacos_client_config(
     return builder.build()
 
 
-def _split_registry_types(raw: Optional[str]) -> List[str]:
-    """Split comma-separated registry type string."""
-    if not raw:
-        return []
-    return [r.strip().lower() for r in raw.split(",") if r.strip()]
-
-
 def create_registry_from_env() -> (
     Optional[Union[A2ARegistry, List[A2ARegistry]]]
 ):
@@ -245,7 +230,11 @@ def create_registry_from_env() -> (
         logger.debug("[A2A] Registry disabled via A2A_REGISTRY_ENABLED")
         return None
 
-    types = _split_registry_types(settings.A2A_REGISTRY_TYPE)
+    # Inline _split_registry_types() logic
+    raw = settings.A2A_REGISTRY_TYPE
+    types = (
+        [r.strip().lower() for r in raw.split(",") if r.strip()] if raw else []
+    )
     if not types:
         logger.debug("[A2A] No registry type specified in A2A_REGISTRY_TYPE")
         return None

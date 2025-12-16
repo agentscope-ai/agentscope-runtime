@@ -10,9 +10,7 @@ Tests cover:
 - Registry cleanup during shutdown
 """
 import os
-from unittest.mock import MagicMock, patch, AsyncMock
-
-import pytest
+from unittest.mock import patch
 
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
@@ -146,9 +144,8 @@ class TestAgentAppRegistryIntegration:
         assert mock_registry1 in a2a_adapter._registry
         assert mock_registry2 in a2a_adapter._registry
 
-    @pytest.mark.asyncio
-    async def test_registry_registration_during_deploy(self):
-        """Test that registry.register() is called during deployment."""
+    def test_registry_available_in_adapter(self):
+        """Test that registry is properly passed to adapter."""
         mock_registry = MockRegistry("test")
 
         app = AgentApp(
@@ -159,25 +156,16 @@ class TestAgentAppRegistryIntegration:
             },
         )
 
-        # Mock deploy manager
-        mock_deploy_manager = MagicMock()
-        mock_deploy_manager.deploy = AsyncMock(
-            return_value={"url": "http://localhost:8080"},
-        )
-
-        # Mock the adapter's on_deploy method to trigger registry registration
+        # Verify registry is available in adapter
         a2a_adapter = None
         for adapter in app.protocol_adapters:
             if hasattr(adapter, "_registry"):
                 a2a_adapter = adapter
                 break
 
-        if a2a_adapter and a2a_adapter._registry:
-            # The adapter should call registry.register during
-            # on_deploy This is typically called by the deploy
-            # manager For testing, we can directly verify the
-            # adapter has the registry
-            assert len(a2a_adapter._registry) > 0
+        assert a2a_adapter is not None
+        assert len(a2a_adapter._registry) > 0
+        assert mock_registry in a2a_adapter._registry
 
     def test_registry_priority_a2a_config_over_env(self):
         """Test that registry from a2a_config takes priority over

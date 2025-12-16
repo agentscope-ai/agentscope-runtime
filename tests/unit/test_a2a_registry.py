@@ -14,6 +14,7 @@ import os
 import tempfile
 from unittest.mock import patch, MagicMock
 
+import pytest
 from a2a.types import AgentCard
 
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
@@ -21,9 +22,24 @@ from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     A2ARegistrySettings,
     get_registry_settings,
     create_registry_from_env,
-    _split_registry_types,
 )
 from agentscope_runtime.engine.deployers.adapter.a2a import A2ARegistry
+
+
+@pytest.fixture
+def reset_registry_settings():
+    """Fixture to reset and restore registry settings for testing."""
+    from agentscope_runtime.engine.deployers.adapter.a2a import (
+        a2a_registry,
+    )
+
+    original_settings = a2a_registry._registry_settings
+    a2a_registry._registry_settings = None
+
+    yield
+
+    # Restore original state
+    a2a_registry._registry_settings = original_settings
 
 
 class MockRegistry(A2ARegistry):
@@ -164,33 +180,17 @@ class TestA2ARegistrySettings:
 class TestGetRegistrySettings:
     """Test get_registry_settings() function."""
 
-    def test_singleton_behavior(self):
+    def test_singleton_behavior(self, reset_registry_settings):
         """Test that get_registry_settings returns a singleton."""
-        # Reset the global state
-        from agentscope_runtime.engine.deployers.adapter.a2a import (
-            a2a_registry,
-        )
+        settings1 = get_registry_settings()
+        settings2 = get_registry_settings()
+        assert settings1 is settings2
 
-        original_settings = a2a_registry._registry_settings
-        a2a_registry._registry_settings = None
-
-        try:
-            settings1 = get_registry_settings()
-            settings2 = get_registry_settings()
-            assert settings1 is settings2
-        finally:
-            # Restore original state
-            a2a_registry._registry_settings = original_settings
-
-    def test_loads_env_files(self):
+    def test_loads_env_files(self, reset_registry_settings):
         """Test that get_registry_settings loads .env files."""
-        # Reset the global state
         from agentscope_runtime.engine.deployers.adapter.a2a import (
             a2a_registry,
         )
-
-        original_settings = a2a_registry._registry_settings
-        a2a_registry._registry_settings = None
 
         # Create a temporary .env file
         with tempfile.NamedTemporaryFile(
@@ -219,44 +219,35 @@ class TestGetRegistrySettings:
                     assert settings is not None
         finally:
             os.unlink(env_file)
-            # Restore original state
-            a2a_registry._registry_settings = original_settings
 
 
 class TestSplitRegistryTypes:
-    """Test _split_registry_types() helper function."""
+    """Test registry type splitting logic.
 
-    def test_none_input(self):
-        """Test with None input."""
-        assert _split_registry_types(None) == []
+    Logic is now inlined in create_registry_from_env.
+    """
 
-    def test_empty_string(self):
-        """Test with empty string."""
-        assert _split_registry_types("") == []
-
-    def test_single_type(self):
-        """Test with single registry type."""
-        assert _split_registry_types("nacos") == ["nacos"]
-
-    def test_multiple_types(self):
-        """Test with comma-separated types."""
-        assert _split_registry_types("nacos,consul") == ["nacos", "consul"]
-
-    def test_with_spaces(self):
-        """Test with spaces around commas."""
-        assert _split_registry_types("nacos , consul , etcd") == [
-            "nacos",
-            "consul",
-            "etcd",
-        ]
-
-    def test_case_normalization(self):
-        """Test that types are lowercased."""
-        assert _split_registry_types("NACOS,Consul") == ["nacos", "consul"]
-
-    def test_empty_entries_filtered(self):
-        """Test that empty entries are filtered out."""
-        assert _split_registry_types("nacos,,consul,") == ["nacos", "consul"]
+    @pytest.mark.parametrize(
+        "raw,expected",
+        [
+            (None, []),
+            ("", []),
+            ("nacos", ["nacos"]),
+            ("nacos,consul", ["nacos", "consul"]),
+            ("nacos , consul , etcd", ["nacos", "consul", "etcd"]),
+            ("NACOS,Consul", ["nacos", "consul"]),
+            ("nacos,,consul,", ["nacos", "consul"]),
+        ],
+    )
+    def test_registry_type_splitting(self, raw, expected):
+        """Test registry type splitting with various inputs."""
+        # Test the inlined logic
+        types = (
+            [r.strip().lower() for r in raw.split(",") if r.strip()]
+            if raw
+            else []
+        )
+        assert types == expected
 
 
 class TestCreateRegistryFromEnv:

@@ -64,36 +64,47 @@ def extract_config_params(
 
     params: Dict[str, Any] = {}
 
-    def get_config_value(key: str, default: Any = None) -> Any:
-        """Get value from config regardless of type (dict or object)."""
-        if isinstance(a2a_config, dict):
-            return a2a_config.get(key, default)
-        else:
-            return getattr(a2a_config, key, default)
-
     # Extract runtime-specific fields
-    registry = get_config_value("registry")
+    if isinstance(a2a_config, dict):
+        registry = a2a_config.get("registry")
+    else:
+        registry = getattr(a2a_config, "registry", None)
     if registry is not None:
         params["registry"] = registry
         logger.debug("[A2A] Using registry from a2a_config")
 
-    task_timeout = get_config_value("task_timeout")
+    if isinstance(a2a_config, dict):
+        task_timeout = a2a_config.get("task_timeout")
+    else:
+        task_timeout = getattr(a2a_config, "task_timeout", None)
     if task_timeout is not None:
         params["task_timeout"] = task_timeout
 
-    task_event_timeout = get_config_value("task_event_timeout")
+    if isinstance(a2a_config, dict):
+        task_event_timeout = a2a_config.get("task_event_timeout")
+    else:
+        task_event_timeout = getattr(a2a_config, "task_event_timeout", None)
     if task_event_timeout is not None:
         params["task_event_timeout"] = task_event_timeout
 
-    wellknown_path = get_config_value("wellknown_path")
+    if isinstance(a2a_config, dict):
+        wellknown_path = a2a_config.get("wellknown_path")
+    else:
+        wellknown_path = getattr(a2a_config, "wellknown_path", None)
     if wellknown_path is not None:
         params["wellknown_path"] = wellknown_path
 
     # Extract AgentCard fields (priority: a2a_config > fallback)
-    config_name = get_config_value("name")
+    if isinstance(a2a_config, dict):
+        config_name = a2a_config.get("name")
+    else:
+        config_name = getattr(a2a_config, "name", None)
     params["agent_name"] = config_name if config_name else agent_name
 
-    config_desc = get_config_value("description")
+    if isinstance(a2a_config, dict):
+        config_desc = a2a_config.get("description")
+    else:
+        config_desc = getattr(a2a_config, "description", None)
     params["agent_description"] = (
         config_desc if config_desc else agent_description
     )
@@ -115,7 +126,10 @@ def extract_config_params(
     ]
 
     for config_key, param_key in field_mappings:
-        value = get_config_value(config_key)
+        if isinstance(a2a_config, dict):
+            value = a2a_config.get(config_key)
+        else:
+            value = getattr(a2a_config, config_key, None)
         if value is not None:
             params[param_key] = value
 
@@ -383,7 +397,13 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         host = None
         port = None
 
-        json_rpc_url = self._get_json_rpc_url()
+        # Inline _get_json_rpc_url() logic
+        base = self._card_url or "http://127.0.0.1:8000"
+        base_with_slash = base.rstrip("/") + "/"
+        json_rpc_url = urljoin(
+            base_with_slash,
+            self._json_rpc_path.lstrip("/"),
+        )
         if json_rpc_url:
             parsed = urlparse(json_rpc_url)
             host = parsed.hostname
@@ -398,13 +418,6 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             path=path,
             extra=extra,
         )
-
-    def _get_json_rpc_url(self) -> str:
-        """Return the full JSON-RPC endpoint URL for this adapter."""
-        # Use default base URL
-        base = self._card_url or "http://127.0.0.1:8000"
-        base_with_slash = base.rstrip("/") + "/"
-        return urljoin(base_with_slash, self._json_rpc_path.lstrip("/"))
 
     def _normalize_provider(
         self,
@@ -471,10 +484,18 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             Configured AgentCard instance
         """
         # Build required fields with defaults
+        # Use default base URL for JSON-RPC endpoint
+        base = self._card_url or "http://127.0.0.1:8000"
+        base_with_slash = base.rstrip("/") + "/"
+        json_rpc_url = urljoin(
+            base_with_slash,
+            self._json_rpc_path.lstrip("/"),
+        )
+
         card_kwargs: Dict[str, Any] = {
             "name": self._agent_name,
             "description": self._agent_description,
-            "url": self._card_url or self._get_json_rpc_url(),
+            "url": self._card_url or json_rpc_url,
             "version": self._card_version or runtime_version,
             "capabilities": AgentCapabilities(
                 streaming=False,

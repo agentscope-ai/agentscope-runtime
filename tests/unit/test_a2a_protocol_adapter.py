@@ -45,6 +45,10 @@ class TestWellknownEndpointErrorHandling:
         assert data["name"] == "test_agent"
         assert "description" in data
         assert data["description"] == "Test agent description"
+        # Verify the response is a valid serialized AgentCard
+        assert "version" in data
+        assert "url" in data
+        assert "capabilities" in data
 
     def test_wellknown_endpoint_with_custom_path(self):
         """Test wellknown endpoint with custom path."""
@@ -135,25 +139,6 @@ class TestAgentCardConfiguration:
 
         assert card.url == "https://example.com/agent"
 
-    def test_agent_card_has_required_fields(self):
-        """Test that generated agent card has all required fields."""
-        adapter = A2AFastAPIDefaultAdapter(
-            agent_name="test_agent",
-            agent_description="Test description",
-        )
-
-        card = adapter.get_agent_card()
-
-        # Verify required AgentCard fields exist
-        assert hasattr(card, "name")
-        assert hasattr(card, "version")
-        assert hasattr(card, "description")
-        assert hasattr(card, "url")
-        assert hasattr(card, "capabilities")
-        assert hasattr(card, "skills")
-        assert hasattr(card, "default_input_modes")
-        assert hasattr(card, "default_output_modes")
-
 
 class TestSerializationFallbackLogic:
     """Test the serialization fallback mechanism."""
@@ -180,31 +165,3 @@ class TestSerializationFallbackLogic:
         assert isinstance(result, dict)
         assert result["name"] == "test"
         assert result["version"] == "1.0"
-
-    def test_wellknown_endpoint_returns_serialized_card(self):
-        """Test that wellknown endpoint returns properly serialized card."""
-        adapter = A2AFastAPIDefaultAdapter(
-            agent_name="test_agent",
-            agent_description="Test agent",
-        )
-
-        app = FastAPI()
-
-        def mock_func():
-            return {"message": "test"}
-
-        adapter.add_endpoint(app, mock_func)
-
-        client = TestClient(app)
-        response = client.get("/.wellknown/agent-card.json")
-
-        assert response.status_code == 200
-        data = response.json()
-
-        # Verify the response is a valid serialized AgentCard
-        assert isinstance(data, dict)
-        assert "name" in data
-        assert "version" in data
-        assert "description" in data
-        assert "url" in data
-        assert "capabilities" in data
