@@ -5,6 +5,7 @@ import os
 import shutil
 import traceback
 from contextlib import AsyncExitStack
+from datetime import timedelta
 from typing import Any
 
 from mcp import ClientSession, StdioServerParameters
@@ -14,6 +15,20 @@ from mcp.client.streamable_http import streamablehttp_client
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def _coerce_timedelta_seconds(value: Any, default_seconds: float) -> timedelta:
+    """将 timeout 配置规范化为 timedelta（兼容不同版本 mcp 的参数类型）。"""
+    if value is None:
+        return timedelta(seconds=default_seconds)
+    if isinstance(value, timedelta):
+        return value
+    if isinstance(value, int | float):
+        return timedelta(seconds=float(value))
+    try:
+        return timedelta(seconds=float(value))
+    except (TypeError, ValueError):
+        return timedelta(seconds=default_seconds)
 
 
 class MCPSessionHandler:
@@ -57,10 +72,13 @@ class MCPSessionHandler:
                         streamablehttp_client(
                             url=self.config["url"],
                             headers=self.config.get("headers"),
-                            timeout=self.config.get("timeout", 30),
-                            sse_read_timeout=self.config.get(
-                                "sse_read_timeout",
-                                60 * 5,
+                            timeout=_coerce_timedelta_seconds(
+                                self.config.get("timeout"),
+                                default_seconds=30,
+                            ),
+                            sse_read_timeout=_coerce_timedelta_seconds(
+                                self.config.get("sse_read_timeout"),
+                                default_seconds=60 * 5,
                             ),
                         ),
                     )
