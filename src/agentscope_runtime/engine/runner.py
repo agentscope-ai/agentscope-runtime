@@ -1,12 +1,21 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=not-callable,too-many-statements
+import asyncio
+import logging
+import inspect
+import traceback
 import uuid
 from contextlib import AsyncExitStack
-from typing import Optional, List, AsyncGenerator, Any, Union, Dict
-
-from agentscope_runtime.engine.deployers.utils.service_utils import (
-    ServicesConfig,
+from typing import (
+    Optional,
+    List,
+    AsyncGenerator,
+    Any,
+    Union,
+    Dict,
+    AsyncIterator,
 )
-from .agents import Agent
+
 from .deployers import (
     DeployManager,
     LocalDeployManager,
@@ -18,65 +27,91 @@ from .schemas.agent_schemas import (
     RunStatus,
     AgentResponse,
     SequenceNumberGenerator,
+    Error,
 )
-from .schemas.context import Context
-from .services.context_manager import ContextManager
-from .services.environment_manager import EnvironmentManager
 from .tracing import TraceType
 from .tracing.wrapper import trace
 from .tracing.message_util import (
     merge_agent_response,
     get_agent_response_finish_reason,
 )
+from .constant import ALLOWED_FRAMEWORK_TYPES
+
+
+logger = logging.getLogger(__name__)
 
 
 class Runner:
-    def __init__(
-        self,
-        agent: Agent,
-        environment_manager: Optional[EnvironmentManager] = None,
-        context_manager: Optional[ContextManager] = None,
-    ) -> None:
+    def __init__(self) -> None:
         """
-        Initializes a runner as core function.
-        Args:
-            agent: The agent to run.
-            environment_manager: The environment manager
-            context_manager: The context manager
+        Initializes a runner as core instance.
         """
-        self._agent = agent
-        self._environment_manager = environment_manager
-        self._context_manager = (
-            context_manager or ContextManager()
-        )  # Add default context manager
+        self.framework_type = None
+
         self._deploy_managers = {}
+        self._health = False
         self._exit_stack = AsyncExitStack()
 
-    async def __aenter__(self) -> "Runner":
+    async def query_handler(self, *args, **kwargs):
         """
-        Initializes the runner and ensures context/environment managers
-        are fully entered so that attributes like compose_session are
-        available.
+        Handle agent query.
         """
-        if self._environment_manager:
-            # enter_async_context returns the "real" object
-            self._environment_manager = (
-                await self._exit_stack.enter_async_context(
-                    self._environment_manager,
-                )
-            )
+        raise NotImplementedError("query_handler not implemented")
 
-        if self._context_manager:
-            self._context_manager = await self._exit_stack.enter_async_context(
-                self._context_manager,
-            )
+    async def init_handler(self, *args, **kwargs):
+        """
+        Init handler.
+        """
 
+    async def shutdown_handler(self, *args, **kwargs):
+        """
+        Shutdown handler.
+        """
+
+    async def start(self):
+        init_fn = getattr(self, "init_handler", None)
+        if callable(init_fn):
+            if inspect.iscoroutinefunction(init_fn):
+                await init_fn()
+            else:
+                init_fn()
+        else:
+            logger.warning("[Runner] init_handler is not callable")
+        self._health = True
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def stop(self):
+        shutdown_fn = getattr(self, "shutdown_handler", None)
+        try:
+            if callable(shutdown_fn):
+                if inspect.iscoroutinefunction(shutdown_fn):
+                    await shutdown_fn()
+                else:
+                    shutdown_fn()
+        except Exception as e:
+            logger.warning(f"[Runner] Exception in shutdown handler: {e}")
         try:
             await self._exit_stack.aclose()
         except Exception:
+            pass
+
+        self._health = False
+
+    async def __aenter__(self) -> "Runner":
+        """
+        Initializes the runner
+        """
+        await self.start()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.stop()
+
+        if hasattr(self, "_deploy_manager") and self._deploy_manager:
+            for deploy_id in self._deploy_manager:
+                await self._deploy_manager[deploy_id].stop()
+        else:
+            # No deploy manager found, nothing to stop
             pass
 
     async def deploy(
@@ -90,7 +125,6 @@ class Runner:
         base_image: str = "python:3.9-slim",
         environment: Optional[Dict[str, str]] = None,
         runtime_config: Optional[Dict] = None,
-        services_config: Optional[Union[ServicesConfig, dict]] = None,
         **kwargs,
     ):
         """
@@ -106,7 +140,6 @@ class Runner:
             base_image: Docker base image (for containerized deployment)
             environment: Environment variables dict
             runtime_config: Runtime configuration dict
-            services_config: Services configuration dict
             **kwargs: Additional arguments passed to deployment manager
         Returns:
             URL of the deployed service
@@ -124,13 +157,33 @@ class Runner:
             base_image=base_image,
             environment=environment,
             runtime_config=runtime_config,
-            services_config=services_config,
             **kwargs,
         )
 
-        # TODO: add redis or other persistant method
+        # TODO: add redis or other persistent method
         self._deploy_managers[deploy_manager.deploy_id] = deploy_result
         return deploy_result
+
+    async def _call_handler_streaming(self, handler, *args, **kwargs):
+        """
+        Call handler and yield results in streaming fashion, async or sync.
+        """
+        result = handler(*args, **kwargs)
+
+        if inspect.isasyncgenfunction(handler):
+            async for item in result:
+                yield item
+
+        elif inspect.isgenerator(result):
+            for item in result:
+                yield item
+
+        elif asyncio.iscoroutine(result):
+            res = await result
+            yield res
+
+        else:
+            yield result
 
     @trace(
         TraceType.AGENT_STEP,
@@ -141,127 +194,123 @@ class Runner:
     async def stream_query(  # pylint:disable=unused-argument
         self,
         request: Union[AgentRequest, dict],
-        user_id: Optional[str] = None,
-        tools: Optional[List] = None,
         **kwargs: Any,
     ) -> AsyncGenerator[Event, None]:
         """
         Streams the agent.
         """
+        if self.framework_type not in ALLOWED_FRAMEWORK_TYPES:
+            raise RuntimeError(
+                f"Framework type '{self.framework_type}' is invalid or not "
+                f"set. Please set `self.framework_type` to one of:"
+                f" {', '.join(ALLOWED_FRAMEWORK_TYPES)}.",
+            )
+
+        if not self._health:
+            raise RuntimeError(
+                "Runner has not been started. "
+                "Please call 'await runner.start()' or use 'async with "
+                "Runner()' before calling 'stream_query'.",
+            )
+
         if isinstance(request, dict):
             request = AgentRequest(**request)
+
+        # Assign session ID
+        request.session_id = request.session_id or str(uuid.uuid4())
+
+        # Assign user ID
+        request.user_id = request.user_id or request.session_id
 
         seq_gen = SequenceNumberGenerator()
 
         # Initial response
-        response = AgentResponse()
+        response = AgentResponse(id=request.id)
+        response.session_id = request.session_id
         yield seq_gen.yield_with_sequence(response)
 
         # Set to in-progress status
         response.in_progress()
         yield seq_gen.yield_with_sequence(response)
 
-        if user_id is None:
-            if getattr(request, "user_id", None):
-                user_id = request.user_id
-            else:
-                user_id = ""  # Default user id
+        query_kwargs = {
+            "request": request,
+        }
 
-        session_id = request.session_id or str(uuid.uuid4())
-        request_input = request.input
+        if self.framework_type == "text":
+            from ..adapters.text.stream import adapt_text_stream
 
-        # TODO: `compose_session` will be removed in v1.0
-        session = await self._context_manager.compose_session(
-            user_id=user_id,
-            session_id=session_id,
-        )
-
-        context = Context(
-            user_id=session.user_id,
-            session=session,
-            request=request,
-            current_messages=request_input,
-            context_manager=self._context_manager,
-            environment_manager=self._environment_manager,
-            agent=self._agent,
-        )
-
-        # TODO: Update activate tools into the context (not schema only)
-        tools = tools or getattr(self._agent, "tools", None)
-        if tools:
-            # Lazy import
-            from ..sandbox.tools.utils import setup_tools
-
-            activated_tools, schemas = setup_tools(
-                tools=tools,
-                environment_manager=context.environment_manager,
-                session_id=session.id,
-                user_id=session.user_id,
-                include_schemas=True,
+            stream_adapter = adapt_text_stream
+        elif self.framework_type == "agentscope":
+            from ..adapters.agentscope.stream import (
+                adapt_agentscope_message_stream,
             )
+            from ..adapters.agentscope.message import message_to_agentscope_msg
 
-            # update the context
-            context.activate_tools = activated_tools
-
-            # convert schema to a function call tool lists
-            # TODO: use pydantic model
-            if hasattr(context.request, "tools") and context.request.tools:
-                context.request.tools.extend(schemas)
-
-        # update message in session
-        # TODO: remove this after refactoring all agents
-        from .agents.agentscope_agent import AgentScopeAgent
-
-        if not isinstance(self._agent, AgentScopeAgent):
-            await context.context_manager.compose_context(
-                session=context.session,
-                request_input=request_input,
+            stream_adapter = adapt_agentscope_message_stream
+            kwargs.update(
+                {"msgs": message_to_agentscope_msg(request.input)},
             )
-
-        async for event in self._agent.run_async(context):
-            if (
-                event.status == RunStatus.Completed
-                and event.object == "message"
-            ):
-                response.add_new_message(event)
-            yield seq_gen.yield_with_sequence(event)
-
-        # TODO: remove this after refactoring all agents
-        if not isinstance(self._agent, AgentScopeAgent):
-            await context.context_manager.append(
-                session=context.session,
-                event_output=response.output,
+        elif self.framework_type == "langgraph":
+            from ..adapters.langgraph.stream import (
+                adapt_langgraph_message_stream,
             )
-        yield seq_gen.yield_with_sequence(response.completed())
+            from ..adapters.langgraph.message import message_to_langgraph_msg
 
-    #  TODO: will be added before 2025/11/30
-    # @trace(TraceType.AGENT_STEP)
-    # async def query(  # pylint:disable=unused-argument
-    #     self,
-    #     message: List[dict],
-    #     session_id: Optional[str] = None,
-    #     **kwargs: Any,
-    # ) -> ChatCompletion:
-    #     """
-    #     Streams the agent.
-    #     """
-    #     return self._agent.query(message, session_id)
+            stream_adapter = adapt_langgraph_message_stream
+            kwargs.update(
+                {"msgs": message_to_langgraph_msg(request.input)},
+            )
+        elif self.framework_type == "agno":
+            from ..adapters.agno.stream import (
+                adapt_agno_message_stream,
+            )
+            from ..adapters.agno.message import message_to_agno_message
 
-    async def stop(
-        self,
-        deploy_id: str,
-    ) -> None:
-        """
-        Stops the agent service.
-
-        Args:
-            deploy_id: Optional deploy ID (not used for service shutdown)
-
-        Raises:
-            RuntimeError: If stopping fails
-        """
-        if hasattr(self, "_deploy_manager") and self._deploy_manager:
-            await self._deploy_manager[deploy_id].stop()
+            stream_adapter = adapt_agno_message_stream
+            kwargs.update(
+                {"msgs": await message_to_agno_message(request.input)},
+            )
+        # TODO: support other frameworks
         else:
-            # No deploy manager found, nothing to stop
+
+            def identity_stream_adapter(
+                source_stream: AsyncIterator[Any],
+            ) -> AsyncIterator[Any]:
+                return source_stream
+
+            stream_adapter = identity_stream_adapter
+
+        try:
+            async for event in stream_adapter(
+                source_stream=self._call_handler_streaming(
+                    self.query_handler,
+                    **query_kwargs,
+                    **kwargs,
+                ),
+            ):
+                if (
+                    event.status == RunStatus.Completed
+                    and event.object == "message"
+                ):
+                    response.add_new_message(event)
+                yield seq_gen.yield_with_sequence(event)
+        except Exception as e:
+            # TODO: fix code
+            error = Error(
+                code="500",
+                message=f"Error happens in `query_handler`: {e}",
+            )
+            logger.error(f"{error.model_dump()}: {traceback.format_exc()}")
+            yield seq_gen.yield_with_sequence(response.failed(error))
+            return
+
+        # Obtain token usage
+        try:
+            if response.output:
+                response.usage = response.output[-1].usage
+        except IndexError:
+            # Avoid empty message
             pass
+
+        yield seq_gen.yield_with_sequence(response.completed())

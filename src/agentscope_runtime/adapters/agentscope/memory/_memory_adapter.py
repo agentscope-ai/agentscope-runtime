@@ -9,7 +9,7 @@ from agentscope.memory import MemoryBase
 from agentscope.message import Msg
 
 from ..message import agentscope_msg_to_message, message_to_agentscope_msg
-from ....engine.services.session_history_service import SessionHistoryService
+from ....engine.services.session_history import SessionHistoryService
 
 
 def ensure_session(func):

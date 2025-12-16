@@ -1,11 +1,12 @@
 <div align="center">
 
-# AgentScope Runtime
+# AgentScope Runtime v1.0
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/agentscope-ai/agentscope-runtime)
 [![PyPI](https://img.shields.io/pypi/v/agentscope-runtime?label=PyPI&color=brightgreen&logo=python)](https://pypi.org/project/agentscope-runtime/)
 [![Downloads](https://static.pepy.tech/badge/agentscope-runtime)](https://pepy.tech/project/agentscope-runtime)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg?logo=python&label=Python)](https://python.org)
+[![Last Commit](https://img.shields.io/github/last-commit/agentscope-ai/agentscope-runtime)](https://github.com/agentscope-ai/agentscope-runtime)
 [![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=License)](LICENSE)
 [![Code Style](https://img.shields.io/badge/code%20style-black-black.svg?logo=python&label=CodeStyle)](https://github.com/psf/black)
 [![GitHub Stars](https://img.shields.io/github/stars/agentscope-ai/agentscope-runtime?style=flat&logo=github&color=yellow&label=Stars)](https://github.com/agentscope-ai/agentscope-runtime/stargazers)
@@ -24,7 +25,9 @@
 
 **智能体应用的生产就绪运行时框架**
 
-*AgentScope Runtime 解决了智能体开发中的两个关键挑战：安全的沙盒工具执行和可扩展的智能体服务化部署。凭借双核架构，AgentScope Runtime提供了与智能体框架无关的基础设施，以实现智能体部署的可观察性和安全工具调用。*
+***AgentScope Runtime** 是一个全面的智能体运行时框架，旨在解决两个关键挑战：**高效的智能体部署**和**沙箱执行**。它内置了基础服务（长短期记忆、智能体状态持久化）和安全沙箱基础设施。无论您需要大规模部署智能体还是确保安全的工具交互，AgentScope Runtime 都能提供具有完整可观测性和开发者友好部署的核心基础设施。*
+
+*在 V1.0 中，这些运行时服务通过 **适配器模式** 对外开放，允许开发者在保留原有智能体框架接口与行为的基础上，将 AgentScope 的状态管理、会话记录、工具调用等模块按需嵌入到应用生命周期中。从过去的 “黑盒化替换” 变为 “白盒化集成”，开发者可以显式地控制服务初始化、工具注册与状态持久化流程，从而在不同框架间实现无缝整合，同时获得更高的扩展性与灵活性。*
 
 </div>
 
@@ -32,18 +35,30 @@
 
 ## 🆕 新闻
 
-* **[2025-10]** 我们发布了 `v0.2.0` ——新增了 **`AgentApp` API 服务器支持**，支持通过同步、异步和流式接口轻松使用智能体应用和自定义API入口。更多详情请查看我们的[cookbook](https://runtime.agentscope.io/zh/agent_app.html)。
-* **[2025-10]** 添加了 **GUI Sandbox**，支持虚拟桌面环境、鼠标、键盘以及屏幕操作。引入了 **`desktop_url`** 属性，适用于 GUI Sandbox、Browser Sandbox 和 Filesystem Sandbox —— 允许通过浏览器直接访问虚拟桌面。详情请参阅我们的 [cookbook](https://runtime.agentscope.io/zh/sandbox.html#id18)。
+* **[2025-12]** 我们发布了 **AgentScope Runtime v1.0**，该版本引入统一的 “Agent 作为 API” 白盒化开发体验，并全面强化多智能体协作、状态持久化与跨框架组合能力，同时对抽象与模块进行了简化优化，确保开发与生产环境一致性。完整更新内容与迁移说明请参考 **[CHANGELOG](https://runtime.agentscope.io/zh/CHANGELOG.html)**。
 
 ---
 
 ## ✨ 关键特性
 
-- **🏗️ 部署基础设施**：内置服务用于历史会话管理、长期记忆和沙盒环境生命周期控制
-- **🔒 沙盒工具执行**：隔离的沙盒确保安全工具执行，不会影响系统
+- **🏗️ 部署基础设施**：内置多种服务用于智能体状态管理、历史会话管理、长期记忆和沙盒环境生命周期控制等
 - **🔧 框架无关**：不绑定任何特定智能体框架，与流行的开源智能体框架和自定义实现无缝集成
-- ⚡ **对开发者友好**：简单部署并提供强大的自定义选项
+- ⚡ **对开发者友好**：提供`AgentApp`方便部署并提供强大的自定义选项
 - **📊 可观察性**：对运行时操作进行全面跟踪和监控
+- **🔒 沙盒工具执行**：隔离的沙盒确保安全工具执行，不会影响系统
+- **🛠️ 开箱即用 & 一键适配**：提供种类丰富的开箱即用工具，适配器快速接入不同框架
+
+> [!NOTE]
+>
+> **关于框架无关**：当前，AgentScope Runtime 支持 **AgentScope** 框架。未来我们计划扩展支持更多智能体开发框架。该表格展示了目前版本针对不同框架的适配器（adapter）支持情况，不同框架在各功能上的支持程度有所差异：
+>
+> | 框架 / 功能项                                                | 消息 / 事件 | 工具 | 服务 |
+> | ------------------------------------------------------------ | ----------- | ---- | ---- |
+> | AgentScope                                                   | ✅           | ✅    | ✅    |
+> | [LangGraph](https://runtime.agentscope.io/zh/langgraph_guidelines.html) | ✅           | 🚧    | 🚧    |
+> | AutoGen                                                      | 🚧           | ✅    | 🚧    |
+> | Microsoft Agent Framework                                    | 🚧           | 🚧    | 🚧    |
+> | [Agno](https://runtime.agentscope.io/zh/agno_guidelines.html) | 🧪           | ✅    | 🚧    |
 
 ---
 
@@ -61,7 +76,6 @@
 
 - [🚀 快速开始](#-快速开始)
 - [📚 指南](#-指南)
-- [🔌 智能体框架集成](#-智能体框架集成)
 - [🏗️ 部署](#️-部署)
 - [🤝 贡献](#-贡献)
 - [📄 许可证](#-许可证)
@@ -81,6 +95,12 @@
 ```bash
 # 安装核心依赖
 pip install agentscope-runtime
+
+# 安装拓展
+pip install "agentscope-runtime[ext]"
+
+# 安装预览版本
+pip install --pre agentscope-runtime
 ```
 
 （可选）从源码安装：
@@ -94,36 +114,113 @@ cd agentscope-runtime
 pip install -e .
 ```
 
-### 基础 Agent App 示例
+### Agent App 示例
 
-本示例演示如何使用 agentscope 的 `ReActAgent` 和 `AgentApp` 创建一个 Agent API 服务器。
-服务器会处理你的输入，并 **以流式方式** 返回 Agent 生成的响应。
+这个示例演示了如何使用 AgentScope 的 `ReActAgent` 和 `AgentApp` 创建一个代理 API 服务器。
+要在 AgentScope Runtime 中运行一个最小化的 `AgentScope` Agent，通常需要实现以下内容：
+
+1. **`@agent_app.init`** – 在启动时初始化服务或资源
+2. **`@agent_app.query(framework="agentscope")`** – 处理请求的核心逻辑，**必须使用** `stream_printing_messages` 并 `yield msg, last` 来实现流式输出
+3. **`@agent_app.shutdown`** – 在退出时清理服务或资源
 
 
 ```python
 import os
 
-from agentscope_runtime.engine import AgentApp
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-
 from agentscope.agent import ReActAgent
-from agentscope.model import OpenAIChatModel
+from agentscope.model import DashScopeChatModel
+from agentscope.formatter import DashScopeChatFormatter
+from agentscope.tool import Toolkit, execute_python_code
+from agentscope.pipeline import stream_printing_messages
 
-
-agent = AgentScopeAgent(
-    name="Friday",
-    model=OpenAIChatModel(
-        "gpt-4",
-        api_key=os.getenv("OPENAI_API_KEY"),
-    ),
-    agent_config={
-        "sys_prompt": "You're a helpful assistant named Friday.",
-    },
-    agent_builder=ReActAgent,  # 或者使用你自己的 agent builder
+from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
+from agentscope_runtime.adapters.agentscope.memory import (
+    AgentScopeSessionHistoryMemory,
 )
-app = AgentApp(agent=agent, endpoint_path="/process")
+from agentscope_runtime.engine.services.agent_state import (
+    InMemoryStateService,
+)
+from agentscope_runtime.engine.services.session_history import (
+    InMemorySessionHistoryService,
+)
 
-app.run(host="0.0.0.0", port=8090)
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+)
+
+
+@agent_app.init
+async def init_func(self):
+    self.state_service = InMemoryStateService()
+    self.session_service = InMemorySessionHistoryService()
+
+    await self.state_service.start()
+    await self.session_service.start()
+
+
+@agent_app.shutdown
+async def shutdown_func(self):
+    await self.state_service.stop()
+    await self.session_service.stop()
+
+
+@agent_app.query(framework="agentscope")
+async def query_func(
+    self,
+    msgs,
+    request: AgentRequest = None,
+    **kwargs,
+):
+    session_id = request.session_id
+    user_id = request.user_id
+
+    state = await self.state_service.export_state(
+        session_id=session_id,
+        user_id=user_id,
+    )
+
+    toolkit = Toolkit()
+    toolkit.register_tool_function(execute_python_code)
+
+    agent = ReActAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+            stream=True,
+        ),
+        sys_prompt="You're a helpful assistant named Friday.",
+        toolkit=toolkit,
+        memory=AgentScopeSessionHistoryMemory(
+            service=self.session_service,
+            session_id=session_id,
+            user_id=user_id,
+        ),
+        formatter=DashScopeChatFormatter(),
+    )
+    agent.set_console_output_enabled(enabled=False)
+
+    if state:
+        agent.load_state_dict(state)
+
+    async for msg, last in stream_printing_messages(
+        agents=[agent],
+        coroutine_task=agent(msgs),
+    ):
+        yield msg, last
+
+    state = agent.state_dict()
+
+    await self.state_service.save_state(
+        user_id=user_id,
+        session_id=session_id,
+        state=state,
+    )
+
+
+agent_app.run(host="127.0.0.1", port=8090)
 ```
 
 运行后，服务器会启动并监听：`http://localhost:8090/process`。你可以使用 `curl` 向 API 发送 JSON 输入：
@@ -149,12 +246,14 @@ curl -N \
 ```bash
 data: {"sequence_number":0,"object":"response","status":"created", ... }
 data: {"sequence_number":1,"object":"response","status":"in_progress", ... }
-data: {"sequence_number":2,"object":"content","status":"in_progress","text":"The" }
-data: {"sequence_number":3,"object":"content","status":"in_progress","text":" capital of France is Paris." }
-data: {"sequence_number":4,"object":"message","status":"completed","text":"The capital of France is Paris." }
+data: {"sequence_number":2,"object":"message","status":"in_progress", ... }
+data: {"sequence_number":3,"object":"content","status":"in_progress","text":"The" }
+data: {"sequence_number":4,"object":"content","status":"in_progress","text":" capital of France is Paris." }
+data: {"sequence_number":5,"object":"message","status":"completed","text":"The capital of France is Paris." }
+data: {"sequence_number":6,"object":"response","status":"completed", ... }
 ```
 
-### 基本沙盒使用示例
+### 沙盒示例
 
 这些示例演示了如何创建沙箱环境并在其中执行工具，部分示例提供前端可交互页面（通过VNC，即Virtual Network Computing技术实现）
 
@@ -231,6 +330,59 @@ with FilesystemSandbox() as box:
     input("按 Enter 键继续...")
 ```
 
+#### 移动端沙箱（Mobile Sandbox）
+
+提供一个**沙箱化的 Android 模拟器环境**，允许执行各种移动端操作，如点击、滑动、输入文本和截屏等。
+
+##### 运行环境要求
+
+- **Linux 主机**:
+  该沙箱在 Linux 主机上运行时，需要内核加载 `binder` 和 `ashmem` 模块。如果缺失，请在主机上执行以下命令来安装和加载所需模块：
+
+  ```bash
+  # 1. 安装额外的内核模块
+  sudo apt update && sudo apt install -y linux-modules-extra-`uname -r`
+
+  # 2. 加载模块并创建设备节点
+  sudo modprobe binder_linux devices="binder,hwbinder,vndbinder"
+  sudo modprobe ashmem_linux
+  ```
+- **架构兼容性**:
+  在 ARM64/aarch64 架构（如 Apple M 系列芯片）上运行时，可能会遇到兼容性或性能问题，建议在 x86_64 架构的主机上运行。
+
+```python
+from agentscope_runtime.sandbox import MobileSandbox
+
+with MobileSandbox() as box:
+    # 默认从 DockerHub 拉取 'agentscope/runtime-sandbox-mobile:latest' 镜像
+    print(box.list_tools()) # 列出所有可用工具
+    print(box.mobile_get_screen_resolution()) # 获取屏幕分辨率
+    print(box.mobile_tap(x=500, y=1000)) # 在坐标 (500, 1000) 处进行点击
+    print(box.mobile_input_text("Hello from AgentScope!")) # 输入文本
+    print(box.mobile_key_event(3)) # 发送 HOME 按键事件 (KeyCode: 3)
+    screenshot_result = box.mobile_get_screenshot() # 获取当前屏幕截图
+    input("按 Enter 键继续...")
+```
+
+> [!NOTE]
+>
+> 要向 AgentScope 的 `Toolkit` 添加工具：
+>
+> 1. 使用 `sandbox_tool_adapter` 包装沙箱工具，以便 AgentScope 中的 agent 可以调用它：
+>
+>    ```python
+>    from agentscope_runtime.adapters.agentscope.tool import sandbox_tool_adapter
+>
+>    wrapped_tool = sandbox_tool_adapter(sandbox.browser_navigate)
+>    ```
+>
+> 2. 使用 `register_tool_function` 注册工具：
+>
+>    ```python
+>    toolkit = Toolkit()
+>    Toolkit.register_tool_function(wrapped_tool)
+>    ```
+
 #### 配置沙箱镜像的 Registry（镜像仓库）、Namespace（命名空间）和 Tag（标签）
 
 ##### 1. Registry（镜像仓库）
@@ -281,6 +433,23 @@ agentscope-registry.ap-southeast-1.cr.aliyuncs.com/myteam/runtime-sandbox-base:p
 
 ---
 
+#### Serverless 沙箱部署
+
+AgentScope Runtime 同样支持 serverless 部署，适用于在无服务器环境中运行沙箱，例如 [阿里云函数计算（FC）](https://help.aliyun.com/zh/functioncompute/fc/)或[阿里云 AgentRun](https://docs.agent.run/)。
+
+首先，请参考[文档](https://runtime.agentscope.io/zh/sandbox/advanced.html#optional-function-compute-fc-settings)配置 serverless 环境变量。
+将 `CONTAINER_DEPLOYMENT` 设置为 `fc` 或 `agentrun` 以启用 serverless 部署。
+
+然后，启动沙箱服务器，使用 `--config` 选项指定 serverless 环境配置：
+
+```bash
+# 此命令将加载 `fc.env` 文件中定义的设置
+runtime-sandbox-server --config fc.env
+```
+服务器启动后，您可以通过URL `http://localhost:8000` 访问沙箱服务器，并调用上述描述的沙箱工具。
+
+---
+
 ## 📚 指南
 
 - **[📖 Cookbook](https://runtime.agentscope.io/zh/intro.html)**: 全面教程
@@ -291,99 +460,15 @@ agentscope-registry.ap-southeast-1.cr.aliyuncs.com/myteam/runtime-sandbox-base:p
 
 ---
 
-## 🔌 其他智能体框架集成
-
-### Agno集成
-
-```python
-# pip install "agentscope-runtime[agno]"
-from agno.agent import Agent
-from agno.models.openai import OpenAIChat
-from agentscope_runtime.engine.agents.agno_agent import AgnoAgent
-
-agent = AgnoAgent(
-    name="Friday",
-    model=OpenAIChat(
-        id="gpt-4",
-    ),
-    agent_config={
-        "instructions": "You're a helpful assistant.",
-    },
-    agent_builder=Agent,
-)
-```
-
-### AutoGen集成
-
-```python
-# pip install "agentscope-runtime[autogen]"
-from autogen_agentchat.agents import AssistantAgent
-from autogen_ext.models.openai import OpenAIChatCompletionClient
-from agentscope_runtime.engine.agents.autogen_agent import AutogenAgent
-
-agent = AutogenAgent(
-    name="Friday",
-    model=OpenAIChatCompletionClient(
-        model="gpt-4",
-    ),
-    agent_config={
-        "system_message": "You're a helpful assistant",
-    },
-    agent_builder=AssistantAgent,
-)
-```
-
-### LangGraph集成
-
-```python
-# pip install "agentscope-runtime[langgraph]"
-from typing import TypedDict
-from langgraph import graph, types
-from agentscope_runtime.engine.agents.langgraph_agent import LangGraphAgent
-
-
-# 定义状态
-class State(TypedDict, total=False):
-    id: str
-
-
-# 定义节点函数
-async def set_id(state: State):
-    new_id = state.get("id")
-    assert new_id is not None, "must set ID"
-    return types.Command(update=State(id=new_id), goto="REVERSE_ID")
-
-
-async def reverse_id(state: State):
-    new_id = state.get("id")
-    assert new_id is not None, "ID must be set before reversing"
-    return types.Command(update=State(id=new_id[::-1]))
-
-
-state_graph = graph.StateGraph(state_schema=State)
-state_graph.add_node("SET_ID", set_id)
-state_graph.add_node("REVERSE_ID", reverse_id)
-state_graph.set_entry_point("SET_ID")
-compiled_graph = state_graph.compile(name="ID Reversal")
-agent = LangGraphAgent(graph=compiled_graph)
-```
-
-> [!NOTE]
->
-> 更多智能体框架集成即将推出！
-
----
-
 ## 🏗️ 部署
 
-智能体运行器使用了`deploy` 方法，该方法采用一个 `DeployManager` 实例并部署智能体。
-服务端口在创建 `LocalDeployManager` 时设置为参数 `port`。
-服务端点路径在部署智能体时设置为参数 `endpoint_path`。
+`AgentApp` 提供了一个 `deploy` 方法，该方法接收一个 `DeployManager` 实例并部署代理（agent）。
 
-与此同时，DeployManager将基于默认端点 /process 自动配置添加一些通用的智能体代理协议，例如 A2A 和 Response API。
+- 在创建 `LocalDeployManager` 时，通过参数 `port` 设置服务端口。
+- 在部署代理时，通过参数 `endpoint_path` 设置服务的端点路径为`/process`。
+- 部署器会自动添加常见的代理协议，例如 **A2A**、**Response API**。
 
-在此示例中，我们将端点路径设置为 `/process`。部署后，您可以通过 [http://localhost:8090/process](http://localhost:8090/process) 访问该服务，
-用户也可以基于OpenAI SDK的response api访问这个服务。
+部署后，可以通过 [http://localhost:8090/process](http://localhost:8090/process) 访问该服务：
 
 ```python
 from agentscope_runtime.engine.deployers import LocalDeployManager
@@ -395,10 +480,13 @@ deployer = LocalDeployManager(
 )
 
 # 部署应用
-deploy_result = await app.deploy(deployer=deployer)
+deploy_result = await app.deploy(
+    deployer=deployer,
+  	endpoint_path="/process"
+)
 ```
 
-部署后用户可以基于OpenAI SDK的代码调用服务。
+部署后用户也可以基于OpenAI SDK的Response API访问这个服务：
 
 ```python
 from openai import OpenAI
@@ -412,6 +500,41 @@ response = client.responses.create(
 
 print(response)
 ```
+
+此外，`DeployManager` 也支持 Serverless 部署，例如将您的 agent 应用部署到
+[ModelStudio](https://bailian.console.aliyun.com/?admin=1&tab=doc#/doc/?type=app&url=2983030)
+或 [AgentRun](https://docs.agent.run/)。
+
+```python
+from agentscope_runtime.engine.deployers import ModelStudioDeployManager
+# 创建部署管理器
+deployer = ModelstudioDeployManager(
+    oss_config=OSSConfig(
+        access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+        access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+    ),
+    modelstudio_config=ModelstudioConfig(
+        workspace_id=os.environ.get("MODELSTUDIO_WORKSPACE_ID"),
+        access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+        access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+        dashscope_api_key=os.environ.get("DASHSCOPE_API_KEY"),
+    ),
+)
+
+# 部署到 ModelStudio
+result = await app.deploy(
+    deployer,
+    deploy_name="agent-app-example",
+    telemetry_enabled=True,
+    requirements=["agentscope", "fastapi", "uvicorn"],
+    environment={
+        "PYTHONPATH": "/app",
+        "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+    },
+)
+```
+
+有关更高级的 serverless 部署指南，请参考[文档](https://runtime.agentscope.io/zh/advanced_deployment.html#method-4-modelstudio-deployment)。
 
 ---
 
@@ -465,11 +588,11 @@ limitations under the License.
 
 ## 贡献者 ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-19-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-25-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 
-感谢这些优秀的贡献者们 ([表情符号说明](https://allcontributors.org/docs/en/emoji-key)):
+感谢这些优秀的贡献者们 ([表情符号说明](https://allcontributors.org/emoji-key/)):
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
@@ -500,6 +623,14 @@ limitations under the License.
       <td align="center" valign="top" width="14.28%"><a href="http://ceshihao.github.io"><img src="https://avatars.githubusercontent.com/u/7711875?v=4?s=100" width="100px;" alt="Zheng Dayu"/><br /><sub><b>Zheng Dayu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=ceshihao" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Aceshihao" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://lokk.cn/about"><img src="https://avatars.githubusercontent.com/u/39740818?v=4?s=100" width="100px;" alt="quanyu"/><br /><sub><b>quanyu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=taoquanyus" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Littlegrace111"><img src="https://avatars.githubusercontent.com/u/3880455?v=4?s=100" width="100px;" alt="Grace Wu"/><br /><sub><b>Grace Wu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Littlegrace111" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Littlegrace111" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/pitt-liang"><img src="https://avatars.githubusercontent.com/u/8534560?v=4?s=100" width="100px;" alt="LiangQuan"/><br /><sub><b>LiangQuan</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=pitt-liang" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://lishengcn.cn"><img src="https://avatars.githubusercontent.com/u/12003270?v=4?s=100" width="100px;" alt="ls"/><br /><sub><b>ls</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=lishengzxc" title="Code">💻</a> <a href="#design-lishengzxc" title="Design">🎨</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/iSample"><img src="https://avatars.githubusercontent.com/u/12894421?v=4?s=100" width="100px;" alt="iSample"/><br /><sub><b>iSample</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=iSample" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=iSample" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/XiuShenAl"><img src="https://avatars.githubusercontent.com/u/242360128?v=4?s=100" width="100px;" alt="XiuShenAl"/><br /><sub><b>XiuShenAl</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=XiuShenAl" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=XiuShenAl" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/k-farruh"><img src="https://avatars.githubusercontent.com/u/33511681?v=4?s=100" width="100px;" alt="Farruh Kushnazarov"/><br /><sub><b>Farruh Kushnazarov</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=k-farruh" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/fengxsong"><img src="https://avatars.githubusercontent.com/u/7008971?v=4?s=100" width="100px;" alt="fengxsong"/><br /><sub><b>fengxsong</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Afengxsong" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
   <tfoot>

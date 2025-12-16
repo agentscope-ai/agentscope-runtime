@@ -1,92 +1,104 @@
-# AgentBay SDK 集成进 Agentscope-Runtime 调研方案
+# AgentBay SDK Integration into Agentscope-Runtime – Research Proposal
 
-## AgentBay 是什么：
+## What is AgentBay?
 
-AgentBay 是一个阿里云上的 GUI 沙箱环境。
-AgentBay 能够提供 Code Space、Browser Use、Computer Use、Mobile Use 四种沙箱环境。提供 MCP Server 和 AgentBay SDK 的方式接入，目前 AgentBay SDK 已开源。
-AgentBay SDK 开源地址: [AgentBay SDK 开源地址](https://github.com/aliyun/wuying-agentbay-sdk)
-AgentBay 云产品地址: [AgentBay 云产品地址](https://www.aliyun.com/product/agentbay)
+AgentBay is a GUI sandbox environment provided by Alibaba Cloud.
+It offers four types of sandbox environments: **Code Space**, **Browser Use**, **Computer Use**, and **Mobile Use**.
 
-## AgentBay 能力
+AgentBay can be integrated via **MCP Server** or **AgentBay SDK**. The SDK is open source.
 
-- **新增沙箱类型**: Code Space、Browser Use、Computer Use、Mobile Use
-- **接入方式**: MCP Server 和 AgentBay SDK；
+- **AgentBay SDK GitHub Repository**: https://github.com/aliyun/wuying-agentbay-sdk
+- **AgentBay Cloud Product Page**: https://www.aliyun.com/product/agentbay
 
-### 镜像类型支持
+## AgentBay Capabilities
 
-- `linux_latest` - Linux 环境
-- `windows_latest` - Windows 环境
-- `browser_latest` - 浏览器自动化环境
-- `code_latest` - 代码执行环境
-- `mobile_latest` - 移动端环境
+- **New Sandbox Types**: Code Space, Browser Use, Computer Use, Mobile Use
+- **Integration Methods**: MCP Server and AgentBay SDK
 
-### 支持的工具操作
+### Supported Image Types
 
-- **基础操作**：`run_shell_command`, `run_ipython_cell`, `screenshot`
-- **文件操作**：`read_file`, `write_file`, `list_directory`, `create_directory`, `move_file`, `delete_file`
-- **浏览器操作**：`browser_navigate`, `browser_click`, `browser_input` (browser_latest 镜像)
+- `linux_latest` – Linux environment
+- `windows_latest` – Windows environment
+- `browser_latest` – Browser automation environment
+- `code_latest` – Code execution environment
+- `mobile_latest` – Mobile device environment
 
-## AgentBay 集成进 Agentscope-Runtime：
+### Supported Tool Operations
 
-目前，Agentscope-Runtime 的沙箱容器基于 docker 实现，云上容器基于 k8s 实现；AgentBay 集成进 AgentScope-Runtime，能够给使用 Agentscope-Runtime 提供另外一种云上沙箱环境的选择，可以使用除了 docker 容器沙箱之外，也可以选择使用 AgentBay 的 GUI 沙箱；
+- **Basic Operations**: `run_shell_command`, `run_ipython_cell`, `screenshot`
+- **File Operations**: `read_file`, `write_file`, `list_directory`, `create_directory`, `move_file`, `delete_file`
+- **Browser Operations** *(browser_latest image)*: `browser_navigate`, `browser_click`, `browser_input`
 
-### 核心思路：
+## Integrating AgentBay into Agentscope-Runtime
 
-AgentBay 这个云产品是对标国外 e2b、daytona 等云沙箱产品做的，使用 api_key 就开箱即用，无需部署；
-核心思路是把 AgentBay 封装成 AgentBay Sandbox 集成进 AgentScope-Runtime，作为另外一种云沙箱的选择，其实 e2b 也可以复用这套逻辑；
-由于 AgentBay Sandbox 并不依赖容器，所以创建 CloudSandbox 基类继承 Sandbox 类，这样就使得 Agentscope-Runtime 能够同时支持传统容器沙箱和云原生沙箱，在使用上与传统容器沙箱尽量保持一致；
+Currently, the sandbox containers for Agentscope-Runtime are implemented based on Docker, and the cloud containers are managed via Kubernetes.
 
-### 1. 核心架构集成
+Integrating AgentBay into Agentscope-Runtime allows users to choose **AgentBay’s GUI cloud sandbox** in addition to Docker-based sandboxes.
 
-- **新增沙箱类型**: `SandboxType.AGENTBAY` 枚举，用于创建 Agentbay Sandbox，支持动态枚举扩展；
-- **CloudSandbox 基类**: 抽象基类，为云服务沙箱提供统一接口，不依赖容器管理，直接通过云 API 通信，可以支持不同云提供商扩展；
-- **AgentbaySandbox 实现**: 继承自 CloudSandbox，直接通过 AgentBay API 访问云端沙箱，实现完整的工具映射和错误处理；
-- **SandboxService 支持**: 保持与原有 sandbox_service 调用方式的兼容性，特殊处理 AgentBay 沙箱类型，支持会话管理和资源清理；
+### Key Idea
 
-### 2. 类层次结构
+AgentBay is similar to cloud sandbox products like **e2b** or **Daytona**, offering **API-key based access without deployment**.
+
+We can wrap AgentBay as an **AgentBaySandbox** inside Agentscope-Runtime, serving as another cloud sandbox option.
+The same logic could be reused for e2b integration.
+
+Since the AgentBay sandbox does not depend on local containers, we introduce a `CloudSandbox` base class (inheriting from `Sandbox`), allowing Agentscope-Runtime to support both container-based and cloud-native sandboxes, with consistent usage patterns.
+
+------
+
+### 1. Core Architecture Integration
+
+- **Add Sandbox Type**: `SandboxType.AGENTBAY` enum for creating AgentBay sandboxes, supporting dynamic extension.
+- **CloudSandbox Base Class**: Abstract base class for cloud-based sandboxes, using cloud APIs instead of container management. Extensible for other cloud providers.
+- **AgentbaySandbox Implementation**: Inherits from `CloudSandbox`, uses AgentBay API to access the cloud sandbox, implementing full tool mapping and error handling.
+- **SandboxService Support**: Maintains compatibility with existing `sandbox_service` calls, includes special handling for AgentBay sandbox type, supports session management and resource cleanup.
+
+### 2. Class Hierarchy
 
 ```
-Sandbox (基类)
-└── CloudSandbox (云沙箱基类)
-    └── AgentbaySandbox (AgentBay 实现)
+Sandbox (base class)
+└── CloudSandbox (cloud sandbox base class)
+    └── AgentbaySandbox (AgentBay implementation)
 ```
 
-### 3. 文件结构
+### 3. File Structure
 
 ```
 src/agentscope_runtime/sandbox/
-├── enums.py                          # 新增 AGENTBAY 枚举
+├── enums.py                          # Add AGENTBAY enum
 ├── box/
 │   ├── cloud/
-│   │   ├── __init__.py               # 新增
-│   │   └── cloud_sandbox.py         # 新增 CloudSandbox 基类
+│   │   ├── __init__.py               # New
+│   │   └── cloud_sandbox.py          # New CloudSandbox base class
 │   └── agentbay/
-│       ├── __init__.py               # 新增
-│       └── agentbay_sandbox.py       # 新增 AgentbaySandbox 实现
-└── __init__.py                       # 更新导出
+│       ├── __init__.py               # New
+│       └── agentbay_sandbox.py       # New AgentbaySandbox implementation
+└── __init__.py                       # Update exports
 ```
 
-### 4. 服务层集成
+------
 
-- **注册机制**：使用 `@SandboxRegistry.register` 装饰器注册
-- **服务集成**：在 `SandboxService` 中特殊处理 AgentBay 类型
-- **兼容性**：保持与现有沙箱接口的完全兼容
-- **生命周期管理**: 支持创建、连接、释放 AgentBay 会话
+### 4. Service Layer Integration
 
-## AgentBay Sandbox 如何使用
+- **Registration Mechanism**: Use `@SandboxRegistry.register` decorator for sandbox registration.
+- **Service Integration**: Add special handling for AgentBay in `SandboxService`.
+- **Compatibility**: Ensure full compatibility with existing sandbox APIs.
+- **Lifecycle Management**: Support creation, connection, and cleanup of AgentBay sessions.
 
-### 0. 设置环境变量
+## Using AgentBay Sandbox
+
+### 0. Set Environment Variables
 
 ```bash
-pip install wuying-agentbay-sdk
+pip install "agentscope-runtime[ext]"
 export AGENTBAY_API_KEY='your_agentbay_api_key'
-export DASHSCOPE_API_KEY='your_dashscope_api_key' # 可选
+export DASHSCOPE_API_KEY='your_dashscope_api_key' # optional
 ```
 
-### 1. 直接使用
+### 1. Direct Usage
 
 ```python
-from agentscope_runtime.sandbox.box.agentbay.agentbay_sandbox import AgentbaySandbox
+from agentscope_runtime.sandbox import AgentbaySandbox
 
 sandbox = AgentbaySandbox(
     api_key="your_api_key",
@@ -96,27 +108,26 @@ sandbox = AgentbaySandbox(
 result = sandbox.call_tool("run_shell_command", {"command": "echo 'Hello'"})
 ```
 
-### 2. 通过 SandboxService
+### 2. Using SandboxService
 
 ```python
 from agentscope_runtime.sandbox.enums import SandboxType
-from agentscope_runtime.engine.services.sandbox_service import SandboxService
+from agentscope_runtime.engine.services.sandbox import SandboxService
 
 sandbox_service = SandboxService(bearer_token="your_api_key")
 sandboxes = sandbox_service.connect(
     session_id="session1",
     user_id="user1",
-    env_types=[SandboxType.AGENTBAY.value]
+    sandbox_types=[SandboxType.AGENTBAY]
 )
 ```
 
-## 运行演示 demo
+## Demo Execution
 
 ```bash
-# agentbay 沙箱演示
+# AgentBay sandbox demo
 python examples/agentbay_sandbox/agentbay_sandbox_demo.py
 
-# 模型调用sandbox 演示
+# Model calls using AgentBay sandbox demo
 python examples/agentbay_sandbox/agentscope_use_agentbay_sandbox.py
-
 ```

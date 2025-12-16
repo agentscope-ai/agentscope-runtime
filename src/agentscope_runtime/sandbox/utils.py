@@ -13,7 +13,6 @@ def build_image_uri(
     tag: str = None,
     registry: str = None,
     namespace: str = None,
-    arm64_compatible: bool = True,
 ) -> str:
     """
     Build a fully qualified Docker image URI.
@@ -30,12 +29,6 @@ def build_image_uri(
         If empty or whitespace, registry prefix will be omitted.
     namespace : str, optional
         Docker image namespace. Defaults to the global ``IMAGE_NAMESPACE``.
-    arm64_compatible : bool, optional
-        Whether the image is ARM64-compatible without special tagging.
-        If ``True`` (default), the tag is returned unchanged.
-        If ``False``, the function will detect the current machine
-        architecture and append ``-arm64`` to the tag if running on ARM64 (
-        e.g., ``arm64``, ``aarch64``).
 
     Returns
     -------
@@ -55,23 +48,12 @@ def build_image_uri(
     >>> build_image_uri("runtime-sandbox-base", registry="")
     'agentscope/runtime-sandbox-base:latest'
 
-    >>> build_image_uri("runtime-sandbox-base", arm64_compatible=False)
-    'agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime
-    -sandbox-base:latest-arm64'
-    # (Above example assumes running on ARM64 machine)
     """
     reg = registry if registry is not None else REGISTRY
     reg = "" if reg.strip() == "" else f"{reg.strip()}/"
 
     final_namespace = namespace if namespace is not None else IMAGE_NAMESPACE
     final_tag = tag or IMAGE_TAG
-
-    # TODO: make manifest compatible and remove this
-    # Adjust tag based on ARM64 compatibility
-    if not arm64_compatible:
-        machine = platform.machine().lower()
-        if "arm" in machine or "aarch64" in machine:
-            final_tag = f"{final_tag}-arm64"
 
     return f"{reg}{final_namespace}/{image_name}:{final_tag}"
 

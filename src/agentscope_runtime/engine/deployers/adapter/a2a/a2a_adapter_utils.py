@@ -13,11 +13,8 @@ from a2a.types import (
     TaskStatusUpdateEvent,
     TaskArtifactUpdateEvent,
     TaskQueryParams,
-    AgentCard,
-    AgentCapabilities,
 )
 
-from ....agents import Agent
 from ....schemas.agent_schemas import (
     Message as AgentMessage,
     Content,
@@ -404,22 +401,4 @@ def agent_message_to_a2a_message(msg: "AgentMessage") -> "A2AMessage":
         role=agent_role_to_a2a_role(msg.role),
         parts=parts,
         # Others can be added as needed, such as metadata
-    )
-
-
-def agent_card(
-    agent: Agent,
-    url: str,
-    version: str = "1.0.0",
-    **kwargs,
-) -> AgentCard:
-    return AgentCard(
-        name=agent.name,
-        description=agent.description,
-        url=url,
-        version=version,
-        capabilities=AgentCapabilities(streaming=False),
-        default_input_modes=["application/json"],
-        default_output_modes=["application/json"],
-        **kwargs,
     )

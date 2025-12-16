@@ -14,10 +14,10 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
     MessageType,
     TextContent,
 )
-from agentscope_runtime.engine.services.session_history_service import Session
+from agentscope_runtime.engine.schemas.session import Session
 # fmt: off
 from agentscope_runtime.engine.services. \
-    tablestore_session_history_service import TablestoreSessionHistoryService
+    session_history import TablestoreSessionHistoryService
 
 from agentscope_runtime.engine.services.utils.tablestore_service_utils import \
     convert_message_to_tablestore_message
@@ -37,7 +37,7 @@ def create_message(role: str, content: str) -> Message:
 def mock_memory_store():
     """Mock memory store fixture"""
     with patch(
-        "agentscope_runtime.engine.services."
+        "agentscope_runtime.engine.services.session_history."
         "tablestore_session_history_service.AsyncMemoryStore",
     ) as mock:
         memory_store_instance = AsyncMock()
@@ -93,7 +93,7 @@ async def test_create_session(
 
     # Test public create_session method since _create_session is private
     with patch(
-        "agentscope_runtime.engine.services."
+        "agentscope_runtime.engine.services.session_history."
         "tablestore_session_history_service.uuid",
     ) as mock_uuid:
         mock_uuid.uuid4.return_value = "test_session_id"

@@ -1,28 +1,24 @@
 # -*- coding: utf-8 -*-
-import asyncio
 import logging
-from contextlib import asynccontextmanager
-from typing import Optional, Any, Callable, List
+import types
+import platform
+import subprocess
+import shlex
+from typing import Optional, Callable, List
 
 import uvicorn
-from fastapi import FastAPI
 from pydantic import BaseModel
 
 from .base_app import BaseApp
-from ..agents.base_agent import Agent
+from ..deployers import DeployManager
 from ..deployers.adapter.a2a import A2AFastAPIDefaultAdapter
 from ..deployers.adapter.responses.response_api_protocol_adapter import (
     ResponseAPIDefaultAdapter,
 )
 from ..deployers.utils.deployment_modes import DeploymentMode
 from ..deployers.utils.service_utils.fastapi_factory import FastAPIAppFactory
-from ..deployers.utils.service_utils.service_config import (
-    DEFAULT_SERVICES_CONFIG,
-)
 from ..runner import Runner
 from ..schemas.agent_schemas import AgentRequest
-from ..services.context_manager import ContextManager
-from ..services.environment_manager import EnvironmentManager
 from ...version import __version__
 
 logger = logging.getLogger(__name__)
@@ -36,9 +32,8 @@ class AgentApp(BaseApp):
     def __init__(
         self,
         *,
-        agent: Optional[Agent] = None,
-        environment_manager: Optional[EnvironmentManager] = None,
-        context_manager: Optional[ContextManager] = None,
+        app_name: str = "",
+        app_description: str = "",
         endpoint_path: str = "/process",
         response_type: str = "sse",
         stream: bool = True,
@@ -47,6 +42,8 @@ class AgentApp(BaseApp):
         after_finish: Optional[Callable] = None,
         broker_url: Optional[str] = None,
         backend_url: Optional[str] = None,
+        runner: Optional[Runner] = None,
+        enable_embedded_worker: bool = False,
         **kwargs,
     ):
         """
@@ -65,135 +62,215 @@ class AgentApp(BaseApp):
         self.after_finish = after_finish
         self.broker_url = broker_url
         self.backend_url = backend_url
+        self.enable_embedded_worker = enable_embedded_worker
 
-        self._agent = agent
-        self._runner = None
+        self._runner = runner
         self.custom_endpoints = []  # Store custom endpoints
 
-        a2a_protocol = A2AFastAPIDefaultAdapter(agent=self._agent)
+        # Custom Handlers
+        self._query_handler: Optional[Callable] = None
+        self._init_handler: Optional[Callable] = None
+        self._shutdown_handler: Optional[Callable] = None
+        self._framework_type: Optional[str] = None
+
+        a2a_protocol = A2AFastAPIDefaultAdapter(
+            agent_name=app_name,
+            agent_description=app_description,
+        )
+
         response_protocol = ResponseAPIDefaultAdapter()
         self.protocol_adapters = [a2a_protocol, response_protocol]
 
-        if self._agent:
-            self._runner = Runner(
-                agent=self._agent,
-                environment_manager=environment_manager,
-                context_manager=context_manager,
-            )
-
-        @asynccontextmanager
-        async def lifespan(app: FastAPI) -> Any:
-            """Manage the application lifespan."""
-            if hasattr(self, "before_start") and self.before_start:
-                if asyncio.iscoroutinefunction(self.before_start):
-                    await self.before_start(app, **getattr(self, "kwargs", {}))
-                else:
-                    self.before_start(app, **getattr(self, "kwargs", {}))
-            yield
-            if hasattr(self, "after_finish") and self.after_finish:
-                if asyncio.iscoroutinefunction(self.after_finish):
-                    await self.after_finish(app, **getattr(self, "kwargs", {}))
-                else:
-                    self.after_finish(app, **getattr(self, "kwargs", {}))
-
-        kwargs = {
+        self._app_kwargs = {
             "title": "Agent Service",
             "version": __version__,
             "description": "Production-ready Agent Service API",
-            "lifespan": lifespan,
             **kwargs,
         }
-
-        if self._runner:
-            if self.stream:
-                self.func = self._runner.stream_query
-            else:
-                self.func = self._runner.query
 
         super().__init__(
             broker_url=broker_url,
             backend_url=backend_url,
-            **kwargs,
         )
 
         # Store custom endpoints and tasks for deployment
         # but don't add them to FastAPI here - let FastAPIAppFactory handle it
 
+    def init(self, func):
+        """Register init hook (support async and sync functions)."""
+        self._init_handler = func
+        return func
+
+    def query(self, framework: Optional[str] = "agentscope"):
+        """
+        Register run hook and optionally specify agent framework.
+        Allowed framework values: 'agentscope', 'autogen', 'agno', 'langgraph'.
+        """
+
+        allowed_frameworks = {"agentscope", "autogen", "agno", "langgraph"}
+        if framework not in allowed_frameworks:
+            raise ValueError(f"framework must be one of {allowed_frameworks}")
+
+        def decorator(func):
+            self._query_handler = func
+            self._framework_type = framework
+            return func
+
+        return decorator
+
+    def shutdown(self, func):
+        """Register shutdown hook (support async and sync functions)."""
+        self._shutdown_handler = func
+        return func
+
+    def _build_runner(self):
+        if self._runner is None:
+            self._runner = Runner()
+
+        if self._framework_type is not None:
+            self._runner.framework_type = self._framework_type
+
+        if self._query_handler is not None:
+            self._runner.query_handler = types.MethodType(
+                self._query_handler,
+                self._runner,
+            )
+
+        if self._init_handler is not None:
+            self._runner.init_handler = types.MethodType(
+                self._init_handler,
+                self._runner,
+            )
+
+        if self._shutdown_handler is not None:
+            self._runner.shutdown_handler = types.MethodType(
+                self._shutdown_handler,
+                self._runner,
+            )
+
     def run(
         self,
         host="0.0.0.0",
         port=8090,
-        embed_task_processor=False,
-        services_config=None,
+        web_ui=False,
         **kwargs,
     ):
         """
-        Run the AgentApp using FastAPIAppFactory directly.
+        Launch the AgentApp HTTP API server.
+
+        This method starts a FastAPI server for the agent service.
+        Optionally, it can also launch a browser-based Web UI for
+        interacting with the agent.
+
+        Note:
+        If `web_ui=True` and this is the **first time** launching the Web UI,
+        additional time may be required to initialize. This happens because the
+        underlying Node.js command (`npx @agentscope-ai/chat
+        agentscope-runtime-webui`) might install dependencies and set up
+        the runtime environment.
 
         Args:
-            host: Host to bind to
-            port: Port to bind to
-            embed_task_processor: Whether to embed task processor
-            services_config: Optional services configuration
-            **kwargs: Additional keyword arguments
+            host (str): Host address to bind to. Default "0.0.0.0".
+            port (int): Port number to serve the application on. Default 8090.
+            web_ui (bool): If True, launches the Agentscope Web UI in a
+                separate process, pointing it to the API endpoint. This
+                allows interactive use via browser. Default False.
+            **kwargs: Additional keyword arguments passed to FastAPIAppFactory
+                when creating the FastAPI application.
+
+        Example:
+            >>> app = AgentApp(app_name="MyAgent")
+            >>> app.run(host="127.0.0.1", port=8000, web_ui=True)
         """
+        # Build runner
+        self._build_runner()
 
         try:
             logger.info(
                 "[AgentApp] Starting AgentApp with FastAPIAppFactory...",
             )
-
-            # Use default services config if not provided
-            if services_config is None:
-                services_config = DEFAULT_SERVICES_CONFIG
-
-            # Create FastAPI application using the factory
-            fastapi_app = FastAPIAppFactory.create_app(
-                runner=self._runner,
-                endpoint_path=self.endpoint_path,
-                request_model=self.request_model,
-                response_type=self.response_type,
-                stream=self.stream,
-                before_start=self.before_start,
-                after_finish=self.after_finish,
-                mode=DeploymentMode.DAEMON_THREAD,
-                services_config=services_config,
-                protocol_adapters=self.protocol_adapters,
-                custom_endpoints=self.custom_endpoints,
-                broker_url=self.broker_url,
-                backend_url=self.backend_url,
-                enable_embedded_worker=embed_task_processor,
-                **kwargs,
-            )
+            fastapi_app = self.get_fastapi_app(**kwargs)
 
             logger.info(f"[AgentApp] Starting server on {host}:{port}")
 
-            # Start the FastAPI application with uvicorn
-            uvicorn.run(
-                fastapi_app,
-                host=host,
-                port=port,
-                log_level="info",
-                access_log=True,
+            if web_ui:
+                webui_url = f"http://{host}:{port}{self.endpoint_path}"
+                cmd = (
+                    f"npx @agentscope-ai/chat agentscope-runtime-webui "
+                    f"--url {webui_url}"
+                )
+                logger.info(f"[AgentApp] WebUI started at {webui_url}")
+                logger.info(
+                    "[AgentApp] Note: First WebUI launch may take extra time "
+                    "as dependencies are installed.",
+                )
+
+                cmd_kwarg = {}
+                if platform.system() == "Windows":
+                    cmd_kwarg.update({"shell": True})
+                else:
+                    cmd = shlex.split(cmd)
+                with subprocess.Popen(cmd, **cmd_kwarg):
+                    uvicorn.run(
+                        fastapi_app,
+                        host=host,
+                        port=port,
+                        log_level="info",
+                        access_log=True,
+                    )
+            else:
+                uvicorn.run(
+                    fastapi_app,
+                    host=host,
+                    port=port,
+                    log_level="info",
+                    access_log=True,
+                )
+
+        except KeyboardInterrupt:
+            logger.info(
+                "[AgentApp] KeyboardInterrupt received, shutting down...",
             )
 
-        except Exception as e:
-            logger.error(f"[AgentApp] Error while running: {e}")
-            raise
+    def get_fastapi_app(self, **kwargs):
+        """Get the FastAPI application"""
 
-    async def deploy(self, deployer, **kwargs):
+        self._build_runner()
+        mode = kwargs.pop("mode", DeploymentMode.DAEMON_THREAD)
+
+        return FastAPIAppFactory.create_app(
+            runner=self._runner,
+            endpoint_path=self.endpoint_path,
+            request_model=self.request_model,
+            response_type=self.response_type,
+            stream=self.stream,
+            before_start=self.before_start,
+            after_finish=self.after_finish,
+            mode=mode,
+            protocol_adapters=self.protocol_adapters,
+            custom_endpoints=self.custom_endpoints,
+            broker_url=self.broker_url,
+            backend_url=self.backend_url,
+            enable_embedded_worker=self.enable_embedded_worker,
+            app_kwargs=self._app_kwargs,
+            **kwargs,
+        )
+
+    async def deploy(self, deployer: DeployManager, **kwargs):
         """Deploy the agent app with custom endpoints support"""
         # Pass custom endpoints and tasks to the deployer
+        # Build runner
+        self._build_runner()
 
         deploy_kwargs = {
-            **kwargs,
+            "app": self,
             "custom_endpoints": self.custom_endpoints,
-            "agent": self._agent,
             "runner": self._runner,
             "endpoint_path": self.endpoint_path,
             "stream": self.stream,
             "protocol_adapters": self.protocol_adapters,
         }
+        deploy_kwargs.update(kwargs)
         return await deployer.deploy(**deploy_kwargs)
 
     def endpoint(self, path: str, methods: Optional[List[str]] = None):

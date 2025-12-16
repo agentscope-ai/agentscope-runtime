@@ -12,7 +12,7 @@ The flow includes:
 - Python >= 3.10
 - Install runtime and required cloud SDKs:
 ```bash
-pip install agentscope-runtime && pip install "agentscope-runtime[deployment]"
+pip install "agentscope-runtime[ext]"
 ```
 
 - Set the required environment variables:

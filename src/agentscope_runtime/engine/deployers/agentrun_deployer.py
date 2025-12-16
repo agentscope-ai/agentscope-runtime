@@ -6,9 +6,9 @@ import asyncio
 import logging
 import os
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional, List, Any, Union, Tuple
-from dataclasses import dataclass
 
 from alibabacloud_agentrun20250910.client import Client as AgentRunClient
 from alibabacloud_agentrun20250910.models import (
@@ -34,13 +34,12 @@ from pydantic import BaseModel, Field
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .local_deployer import LocalDeployManager
-from .utils.service_utils import ServicesConfig
+from .utils.detached_app import get_bundle_entry_script
 from .utils.wheel_packager import (
     default_deploy_name,
     generate_wrapper_project,
     build_wheel,
 )
-from ..runner import Runner
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +95,7 @@ class AgentRunConfig(BaseModel):
 
     execution_role_arn: Optional[str] = None
 
-    session_concurrency_limit: Optional[int] = 1
+    session_concurrency_limit: Optional[int] = 200
     session_idle_timeout_seconds: Optional[int] = 3600
 
     @classmethod
@@ -148,7 +147,7 @@ class AgentRunConfig(BaseModel):
 
         session_concurrency_limit_str = os.environ.get(
             "AGENT_RUN_SESSION_CONCURRENCY_LIMIT",
-            "1",
+            "200",
         )
         session_idle_timeout_seconds_str = os.environ.get(
             "AGENT_RUN_SESSION_IDLE_TIMEOUT_SECONDS",
@@ -219,6 +218,7 @@ class OSSConfig(BaseModel):
     region: str = Field("cn-hangzhou", description="OSS region")
     access_key_id: Optional[str] = None
     access_key_secret: Optional[str] = None
+    bucket_name: str
 
     @classmethod
     def from_env(cls) -> "OSSConfig":
@@ -237,6 +237,7 @@ class OSSConfig(BaseModel):
                 "OSS_ACCESS_KEY_SECRET",
                 os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
             ),
+            bucket_name=os.environ.get("OSS_BUCKET_NAME"),
         )
 
     def ensure_valid(self) -> None:
@@ -246,10 +247,14 @@ class OSSConfig(BaseModel):
             RuntimeError: If required AccessKey credentials are missing.
         """
         # Allow fallback to Alibaba Cloud AK/SK via from_env()
-        if not self.access_key_id or not self.access_key_secret:
+        if (
+            not self.access_key_id
+            or not self.access_key_secret
+            or not self.bucket_name
+        ):
             raise RuntimeError(
                 "Missing AccessKey for OSS. Set either OSS_ACCESS_KEY_ID/OSS_ACCESS_KEY_SECRET "
-                "or ALIBABA_CLOUD_ACCESS_KEY_ID/ALIBABA_CLOUD_ACCESS_KEY_SECRET.",
+                "or ALIBABA_CLOUD_ACCESS_KEY_ID/ALIBABA_CLOUD_ACCESS_KEY_SECRET or OSS_BUCKET_NAME.",
             )
 
 
@@ -432,7 +437,7 @@ class AgentRunDeployManager(DeployManager):
         build_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info("Generating wrapper project: %s", name)
-        wrapper_project_dir, _ = await generate_wrapper_project(
+        wrapper_project_dir, _ = generate_wrapper_project(
             build_root=build_dir,
             user_project_dir=project_dir,
             start_cmd=cmd,
@@ -441,7 +446,7 @@ class AgentRunDeployManager(DeployManager):
         )
 
         logger.info("Building wheel package from: %s", wrapper_project_dir)
-        wheel_path = await build_wheel(wrapper_project_dir)
+        wheel_path = build_wheel(wrapper_project_dir)
         logger.info("Wheel package created: %s", wheel_path)
         return wheel_path, name
 
@@ -508,9 +513,8 @@ class AgentRunDeployManager(DeployManager):
 
     async def deploy(
         self,
-        runner: Optional[Runner] = None,
+        runner=None,
         endpoint_path: str = "/process",
-        services_config: Optional[Union[ServicesConfig, dict]] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
@@ -522,14 +526,15 @@ class AgentRunDeployManager(DeployManager):
         external_whl_path: Optional[str] = None,
         agentrun_id: Optional[str] = None,
         custom_endpoints: Optional[List[Dict]] = None,
+        app=None,
         **kwargs,
     ) -> Dict[str, str]:
         """Deploy agent to AgentRun service.
 
         Args:
+            app: AgentApp instance to deploy.
             runner: Runner instance containing the agent to deploy.
             endpoint_path: HTTP endpoint path for the agent service.
-            services_config: Configuration for additional services.
             protocol_adapters: List of protocol adapters for the agent.
             requirements: Python requirements for the agent (file path or list).
             extra_packages: Additional Python packages to install.
@@ -565,23 +570,17 @@ class AgentRunDeployManager(DeployManager):
                 raise ValueError(
                     "Must provide either runner, project_dir, or external_whl_path",
                 )
-
-        # Convert services_config to ServicesConfig model
-        if services_config and isinstance(services_config, dict):
-            services_config = ServicesConfig(**services_config)
-
         try:
-            if runner:
-                agent = runner._agent
+            if runner or app:
                 logger.info("Creating detached project from runner")
                 if "agent" in kwargs:
                     kwargs.pop("agent")
 
                 # Create package project for detached deployment
                 project_dir = await LocalDeployManager.create_detached_project(
-                    agent=agent,
+                    app=app,
+                    runner=runner,
                     endpoint_path=endpoint_path,
-                    services_config=services_config,  # type: ignore[arg-type]
                     custom_endpoints=custom_endpoints,
                     protocol_adapters=protocol_adapters,
                     requirements=requirements,
@@ -590,7 +589,8 @@ class AgentRunDeployManager(DeployManager):
                 )
                 if project_dir:
                     self._generate_env_file(project_dir, environment)
-                cmd = "python main.py"
+                entry_script = get_bundle_entry_script(project_dir)
+                cmd = f"python {entry_script}"
                 deploy_name = deploy_name or default_deploy_name()
 
             if agentrun_id:
@@ -653,7 +653,7 @@ class AgentRunDeployManager(DeployManager):
             logger.info("Uploading zip package to OSS")
             oss_result = await self._upload_to_fixed_oss_bucket(
                 zip_file_path=zip_file_path,
-                bucket_name="tmp-agentscope-agentrun-code",
+                bucket_name=self.oss_config.bucket_name,
             )
             logger.info("Zip package uploaded to OSS successfully")
 
@@ -680,7 +680,7 @@ class AgentRunDeployManager(DeployManager):
                 ],
                 "wheel_path": str(wheel_path),
                 "artifact_url": oss_result["presigned_url"],
-                "url": f'https://functionai.console.aliyun.com/{self.agentrun_config.region_id}/agent/infra/agent-runtime/agent-detail?id={agentrun_deploy_result["agent_runtime_id"]}',
+                "url": f'https://functionai.console.aliyun.com/{self.agentrun_config.region_id}/agent/runtime/agent-detail-code/{agentrun_deploy_result["agent_runtime_id"]}',
                 "deploy_id": agentrun_deploy_result["agent_runtime_id"],
                 "resource_name": name,
             }
@@ -1028,7 +1028,7 @@ ls -lh /output/{zip_filename}
                     artifact_type="Code",
                     cpu=self.agentrun_config.cpu,
                     memory=self.agentrun_config.memory,
-                    port=8080,
+                    port=8090,
                     code_configuration=CodeConfig(
                         command=["python3", "/code/deploy_starter/main.py"],
                         oss_bucket_name=oss_bucket_name,
@@ -1165,7 +1165,7 @@ ls -lh /output/{zip_filename}
                 artifact_type="Code",
                 cpu=self.agentrun_config.cpu,
                 memory=self.agentrun_config.memory,
-                port=8080,
+                port=8090,
                 code_configuration=CodeConfig(
                     command=["python3", "/code/deploy_starter/main.py"],
                     oss_bucket_name=oss_bucket_name,

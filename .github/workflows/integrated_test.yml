@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'main'
+      - 'dev'
 
 
 jobs:
@@ -61,7 +62,7 @@ jobs:
       - name: Install dependencies
         run: |
           export PIP_DEFAULT_TIMEOUT=300
-          pip install -q -e ".[dev,langgraph,agno,autogen,langchain_rag,llamaindex_rag,aliyun_tablestore_ext,memory_ext,fc,agentrun]"
+          pip install -q -e ".[dev,ext]"
 
       - name: Run integrated tests with coverage
         env:

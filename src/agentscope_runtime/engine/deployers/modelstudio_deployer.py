@@ -4,10 +4,10 @@
 # pylint:disable=ungrouped-imports, arguments-renamed, protected-access
 #
 # flake8: noqa: E501
+import json
 import logging
 import os
 import time
-import json
 from pathlib import Path
 from typing import Dict, Optional, List, Union, Tuple
 
@@ -17,15 +17,12 @@ from pydantic import BaseModel, Field
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .local_deployer import LocalDeployManager
-from .utils.service_utils import (
-    ServicesConfig,
-)
+from .utils.detached_app import get_bundle_entry_script
 from .utils.wheel_packager import (
     generate_wrapper_project,
     build_wheel,
     default_deploy_name,
 )
-from ..runner import Runner
 
 logger = logging.getLogger(__name__)
 
@@ -587,7 +584,7 @@ class ModelstudioDeployManager(DeployManager):
         build_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info("Generating wrapper project for %s", name)
-        wrapper_project_dir, _ = await generate_wrapper_project(
+        wrapper_project_dir, _ = generate_wrapper_project(
             build_root=build_dir,
             user_project_dir=project_dir,
             start_cmd=cmd,
@@ -596,7 +593,7 @@ class ModelstudioDeployManager(DeployManager):
         )
 
         logger.info("Building wheel under %s", wrapper_project_dir)
-        wheel_path = await build_wheel(wrapper_project_dir)
+        wheel_path = build_wheel(wrapper_project_dir)
         return wheel_path, name
 
     def _generate_env_file(
@@ -705,9 +702,9 @@ class ModelstudioDeployManager(DeployManager):
 
     async def deploy(
         self,
-        runner: Optional[Runner] = None,
+        app=None,
+        runner=None,
         endpoint_path: str = "/process",
-        services_config: Optional[Union[ServicesConfig, dict]] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
@@ -730,7 +727,7 @@ class ModelstudioDeployManager(DeployManager):
         """
         Package the project, upload to OSS and trigger ModelStudio deploy.
 
-        Returns a dict containing deploy_id, wheel_path, artifact_url (if uploaded),
+        Returns a dict containing deploy_id, wheel_path, url (if uploaded),
         resource_name (deploy_name), and workspace_id.
         """
         if not agent_id:
@@ -740,30 +737,26 @@ class ModelstudioDeployManager(DeployManager):
                     "or external_whl_path must be provided.",
                 )
 
-        # convert services_config to Model body
-        if services_config and isinstance(services_config, dict):
-            services_config = ServicesConfig(**services_config)
-
         try:
             if runner:
-                agent = runner._agent
                 if "agent" in kwargs:
                     kwargs.pop("agent")
 
                 # Create package project for detached deployment
                 project_dir = await LocalDeployManager.create_detached_project(
-                    agent=agent,
+                    app=app,
                     endpoint_path=endpoint_path,
-                    services_config=services_config,  # type: ignore[arg-type]
                     protocol_adapters=protocol_adapters,
-                    custom_endpoints=custom_endpoints,  # Pass custom endpoints
+                    custom_endpoints=custom_endpoints,
                     requirements=requirements,
                     extra_packages=extra_packages,
+                    port=8080,
                     **kwargs,
                 )
                 if project_dir:
                     self._generate_env_file(project_dir, environment)
-                cmd = "python main.py"
+                entry_script = get_bundle_entry_script(project_dir)
+                cmd = f"python {entry_script}"
                 deploy_name = deploy_name or default_deploy_name()
 
             if agent_id:
@@ -781,10 +774,17 @@ class ModelstudioDeployManager(DeployManager):
                         f"External wheel file not found: {wheel_path}",
                     )
                 name = deploy_name or default_deploy_name()
-                # 如果是更新agent，且没有传deploy_name, 则不更新名字
+                # Don't change name if agent was not updated and
+                # deploye_name was missing
                 if agent_id and (deploy_name is None):
                     name = None
+                logger.info(
+                    "Using external wheel file: %s",
+                    wheel_path,
+                )
+
             else:
+                logger.info("Building wheel package from project")
                 (
                     wheel_path,
                     name,
@@ -798,7 +798,8 @@ class ModelstudioDeployManager(DeployManager):
             console_url = ""
             deploy_identifier = ""
             if not skip_upload:
-                # Only require cloud SDKs and credentials when performing upload/deploy
+                # Only require cloud SDKs and credentials when performing
+                # upload/deploy
                 _assert_cloud_sdks_available()
                 self.oss_config.ensure_valid()
                 self.modelstudio_config.ensure_valid()
@@ -828,7 +829,10 @@ class ModelstudioDeployManager(DeployManager):
         except Exception as e:
             # Print richer error message to improve UX
             err_text = str(e)
-            logger.error("Failed to deploy to modelstudio: %s", err_text)
+            logger.error(
+                "Failed to deploy to modelstudio: %s",
+                err_text,
+            )
             raise
 
     async def stop(self) -> None:  # pragma: no cover - not supported yet

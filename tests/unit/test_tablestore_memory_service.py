@@ -12,9 +12,11 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
     Role,
     TextContent,
 )
-from agentscope_runtime.engine.services.tablestore_memory_service import (
-    SearchStrategy,
+from agentscope_runtime.engine.services.memory import (
     TablestoreMemoryService,
+)
+from agentscope_runtime.engine.services.memory.tablestore_memory_service import (  # noqa: E501
+    SearchStrategy,
 )
 from agentscope_runtime.engine.services.utils.tablestore_service_utils import (
     convert_message_to_tablestore_document,
@@ -34,7 +36,7 @@ def create_message(role: str, content: str) -> Message:
 @pytest.fixture
 def mock_knowledge_store():
     with patch(
-        "agentscope_runtime.engine.services."
+        "agentscope_runtime.engine.services.memory."
         "tablestore_memory_service.AsyncKnowledgeStore",
     ) as mock:
         instance = mock.return_value
@@ -52,7 +54,7 @@ def mock_knowledge_store():
 @pytest.fixture(autouse=True)
 def mock_embedding_model():
     with patch(
-        "agentscope_runtime.engine.services.tablestore_memory_service"
+        "agentscope_runtime.engine.services.memory.tablestore_memory_service"
         ".DashScopeEmbeddings",
     ) as mock_cls:
         instance = mock_cls.return_value

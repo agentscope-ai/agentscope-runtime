@@ -1,7 +1,7 @@
-# Demo House
+# Reference: Demo House
 
 ```{note}
-Explore a variety of demos showcasing the use of AgentScope Runtime to build agent applications in our Demo House. These demos, previously hosted in this repository, have now been migrated to [agentscope-ai/agentscope-samples](https://github.com/agentscope-ai/agentscope-samples) to better demonstrate their integration and collaboration with other AgentScope libraries.
+Visit our Demo House to explore sample projects that show how to build agent applications with AgentScope Runtime. These demos were previously hosted in this repository and now live in [agentscope-ai/agentscope-samples](https://github.com/agentscope-ai/agentscope-samples) to better highlight their integration with other AgentScope libraries.
 ```
 
 <div class="gallery-container">
@@ -11,30 +11,12 @@ Explore a variety of demos showcasing the use of AgentScope Runtime to build age
             <div class="gallery-item-card-image-container">
                 <img class="gallery-item-card-img"
                      src="https://img.alicdn.com/imgextra/i2/O1CN01M4Xm6S1PypUvcjzq5_!!6000000001910-0-tps-1598-1596.jpg"
-                     alt="Browser Use Agent">
+                     alt="Browser Control Agent">
             </div>
             <div class="gallery-item-card-content">
-                <div class="gallery-item-card-title">Browser Use Agent</div>
+                <div class="gallery-item-card-title">Browser Control Agent</div>
                 <div class="gallery-item-description">
-                    Create a web browser control agent in AgentScope Runtime
-                    using a browser sandbox.
-                </div>
-            </div>
-        </div>
-    </a>
-    <a class="gallery-item"
-       href="https://github.com/agentscope-ai/agentscope-samples/tree/main/deep_research/qwen_langgraph_search_fullstack_runtime">
-        <div class="gallery-item-card">
-            <div class="gallery-item-card-image-container">
-                <img class="gallery-item-card-img"
-                     src="https://img.alicdn.com/imgextra/i2/O1CN01M4Xm6S1PypUvcjzq5_!!6000000001910-0-tps-1598-1596.jpg"
-                     alt="Qwen Langgraph Search">
-            </div>
-            <div class="gallery-item-card-content">
-                <div class="gallery-item-card-title">Qwen Langgraph Search
-                </div>
-                <div class="gallery-item-description">
-                    Develop a Qwen Langgraph Search in the AgentScope Runtime.
+                    Build a web-browser control agent in AgentScope Runtime using the browser sandbox.
                 </div>
             </div>
         </div>
@@ -50,13 +32,12 @@ Explore a variety of demos showcasing the use of AgentScope Runtime to build age
             <div class="gallery-item-card-content">
                 <div class="gallery-item-card-title">Multi-User Chatbot</div>
                 <div class="gallery-item-description">
-                    Construct a Multi-User Chatbot using AgentScope Runtime.
+                    Use AgentScope Runtime to create a chatbot that serves multiple users concurrently.
                 </div>
             </div>
         </div>
     </a>
 </div>
-
 
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -104,7 +85,7 @@ Explore a variety of demos showcasing the use of AgentScope Runtime to build age
     }
 
     .gallery-item:hover {
-        transform: translateY(-8px) scale(1.02);;
+        transform: translateY(-8px) scale(1.02);
     }
 
     .gallery-item:hover .gallery-item-card::before {
@@ -227,10 +208,6 @@ Explore a variety of demos showcasing the use of AgentScope Runtime to build age
 
     .gallery-item:nth-child(2) .gallery-item-card {
         animation-delay: 0.2s;
-    }
-
-    .gallery-item:nth-child(3) .gallery-item-card {
-        animation-delay: 0.3s;
     }
 
     @keyframes fadeInUp {

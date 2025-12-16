@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=redefined-outer-name, protected-access, unused-argument, wrong-import-position
 # flake8: noqa: E402
-import sys
-
 import pytest
 import pytest_asyncio
 
-pytestmark = pytest.mark.skipif(
-    sys.version_info < (3, 12),
-    reason="ReMe requires Python 3.12 or higher",
-)
 
 from agentscope_runtime.engine.schemas.agent_schemas import (
     Message,
@@ -18,7 +12,7 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
     ContentType,
     Role,
 )
-from agentscope_runtime.engine.services.reme_personal_memory_service import (
+from agentscope_runtime.engine.services.memory import (
     ReMePersonalMemoryService,
 )
 
@@ -36,7 +30,8 @@ def create_message(role: str, content: str) -> Message:
 async def mock_personal_memory_service(mocker):
     """Mock the PersonalMemoryService from reme_ai."""
     mock_class = mocker.patch(
-        "reme_ai.service.personal_memory_service.PersonalMemoryService",
+        "agentscope_runtime.engine.services.memory."
+        "reme_personal_memory_service.PersonalMemoryService",
     )
     instance = mock_class.return_value
     instance.start = mocker.AsyncMock()
@@ -76,7 +71,9 @@ async def test_missing_env_variables():
 
 
 @pytest.mark.asyncio
-async def test_service_lifecycle(memory_service: ReMePersonalMemoryService):
+async def test_service_lifecycle(
+    memory_service: ReMePersonalMemoryService,  # type: ignore[valid-type]
+):
     """Test service start, stop, and health check."""
     assert await memory_service.health() is True
     await memory_service.stop()
@@ -121,7 +118,9 @@ async def test_transform_message():
 
 
 @pytest.mark.asyncio
-async def test_transform_messages(memory_service: ReMePersonalMemoryService):
+async def test_transform_messages(
+    memory_service: ReMePersonalMemoryService,  # type: ignore[valid-type]
+):
     """Test transformation of multiple messages."""
     messages = [
         create_message(Role.USER, "first message"),
@@ -142,7 +141,7 @@ async def test_transform_messages(memory_service: ReMePersonalMemoryService):
 
 @pytest.mark.asyncio
 async def test_add_memory_no_session(
-    memory_service: ReMePersonalMemoryService,
+    memory_service: ReMePersonalMemoryService,  # type: ignore[valid-type]
 ):
     """Test adding memory without session ID."""
     user_id = "user1"
@@ -160,7 +159,7 @@ async def test_add_memory_no_session(
 
 @pytest.mark.asyncio
 async def test_add_memory_with_session(
-    memory_service: ReMePersonalMemoryService,
+    memory_service: ReMePersonalMemoryService,  # type: ignore[valid-type]
 ):
     """Test adding memory with session ID."""
     user_id = "user2"
@@ -180,7 +179,9 @@ async def test_add_memory_with_session(
 
 
 @pytest.mark.asyncio
-async def test_search_memory(memory_service: ReMePersonalMemoryService):
+async def test_search_memory(
+    memory_service: ReMePersonalMemoryService,  # type: ignore[valid-type]
+):
     """Test searching memory."""
     user_id = "user3"
     messages = [create_message(Role.USER, "search query")]
@@ -204,7 +205,7 @@ async def test_search_memory(memory_service: ReMePersonalMemoryService):
 
 @pytest.mark.asyncio
 async def test_search_memory_with_filters(
-    memory_service: ReMePersonalMemoryService,
+    memory_service: ReMePersonalMemoryService,  # type: ignore[valid-type]
 ):
     """Test searching memory with filters."""
     user_id = "user4"
@@ -230,7 +231,9 @@ async def test_search_memory_with_filters(
 
 
 @pytest.mark.asyncio
-async def test_list_memory(memory_service: ReMePersonalMemoryService):
+async def test_list_memory(
+    memory_service: ReMePersonalMemoryService,  # type: ignore[valid-type]
+):
     """Test listing memory."""
     user_id = "user5"
     expected_results = [
@@ -251,7 +254,7 @@ async def test_list_memory(memory_service: ReMePersonalMemoryService):
 
 @pytest.mark.asyncio
 async def test_list_memory_with_filters(
-    memory_service: ReMePersonalMemoryService,
+    memory_service: ReMePersonalMemoryService,  # type: ignore[valid-type]
 ):
     """Test listing memory with pagination filters."""
     user_id = "user6"
@@ -274,7 +277,7 @@ async def test_list_memory_with_filters(
 
 @pytest.mark.asyncio
 async def test_delete_memory_session(
-    memory_service: ReMePersonalMemoryService,
+    memory_service: ReMePersonalMemoryService,  # type: ignore[valid-type]
 ):
     """Test deleting memory for a specific session."""
     user_id = "user7"
@@ -290,7 +293,9 @@ async def test_delete_memory_session(
 
 
 @pytest.mark.asyncio
-async def test_delete_memory_user(memory_service: ReMePersonalMemoryService):
+async def test_delete_memory_user(
+    memory_service: ReMePersonalMemoryService,  # type: ignore[valid-type]
+):
     """Test deleting all memory for a user."""
     user_id = "user_to_delete"
 
@@ -302,7 +307,7 @@ async def test_delete_memory_user(memory_service: ReMePersonalMemoryService):
 
 @pytest.mark.asyncio
 async def test_multiple_messages_transformation(
-    memory_service: ReMePersonalMemoryService,
+    memory_service: ReMePersonalMemoryService,  # type: ignore[valid-type]
 ):
     """Test adding multiple messages with different content types."""
     user_id = "user8"
@@ -335,7 +340,9 @@ async def test_multiple_messages_transformation(
 
 
 @pytest.mark.asyncio
-async def test_empty_messages_list(memory_service: ReMePersonalMemoryService):
+async def test_empty_messages_list(
+    memory_service: ReMePersonalMemoryService,  # type: ignore[valid-type]
+):
     """Test handling empty messages list."""
     user_id = "user9"
     messages = []
@@ -350,7 +357,7 @@ async def test_empty_messages_list(memory_service: ReMePersonalMemoryService):
 
 @pytest.mark.asyncio
 async def test_service_error_propagation(
-    memory_service: ReMePersonalMemoryService,
+    memory_service: ReMePersonalMemoryService,  # type: ignore[valid-type]
 ):
     """Test that errors from the underlying service are propagated."""
     user_id = "error_user"
@@ -412,7 +419,7 @@ async def test_message_without_role():
 
 @pytest.mark.asyncio
 async def test_concurrent_operations(
-    memory_service: ReMePersonalMemoryService,
+    memory_service: ReMePersonalMemoryService,  # type: ignore[valid-type]
 ):
     """Test that concurrent operations work correctly."""
     import asyncio

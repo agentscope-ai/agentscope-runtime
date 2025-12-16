@@ -2,7 +2,7 @@
 # pylint: disable=redefined-outer-name, protected-access
 import pytest
 import pytest_asyncio
-from agentscope_runtime.engine.services.memory_service import (
+from agentscope_runtime.engine.services.memory import (
     InMemoryMemoryService,
 )
 from agentscope_runtime.engine.schemas.agent_schemas import (

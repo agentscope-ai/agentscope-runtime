@@ -104,14 +104,14 @@ repos:
     hooks:
       - id: eslint
         files: \.(js|jsx)$
-        exclude: '.*js_third_party.*'
+        exclude: '(?x)(^web/|.*js_third_party.*)'
         args: [ '--fix' ]
   - repo: https://github.com/thibaudcolas/pre-commit-stylelint
     rev: v14.4.0
     hooks:
       - id: stylelint
         files: \.(css)$
-        exclude: '.*css_third_party.*'
+        exclude: '(?x)(^web/|.*css_third_party.*)'
         args: [ '--fix' ]
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: 'v3.0.0'
@@ -119,3 +119,4 @@ repos:
       - id: prettier
         additional_dependencies: [ 'prettier@3.0.0' ]
         files: \.(tsx?)$
+        exclude: ^web/

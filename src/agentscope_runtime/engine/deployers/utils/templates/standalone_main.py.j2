@@ -1,0 +1,166 @@
+import os
+import sys
+
+# Add current directory and handler directories to Python path for local module imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
+{% if handler_dirs %}
+# Add copied handler directories to sys.path
+{% for handler_dir in handler_dirs %}
+handler_dir_path = os.path.join(current_dir, "{{handler_dir}}")
+if os.path.isdir(handler_dir_path) and handler_dir_path not in sys.path:
+    sys.path.insert(0, handler_dir_path)
+{% endfor %}
+{% endif %}
+
+import uvicorn
+from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
+from agentscope_runtime.engine.deployers.utils.service_utils import (
+    FastAPIAppFactory,
+)
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
+from typing import Callable, Optional, Dict, List, Any, Union
+
+from agent_file import {{agent_name}} as agent
+{% if protocol_adapters %}{{protocol_adapters}}{% endif %}
+
+{% if custom_endpoints %}
+# Custom endpoint imports
+{% for endpoint in custom_endpoints %}
+{% if endpoint.handler_module and endpoint.function_name %}
+from {{endpoint.handler_module}} import {{endpoint.function_name}}
+{% elif endpoint.module and endpoint.function_name %}
+from agent_file import {{endpoint.function_name}}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+
+
+def load_celery_config():
+    """Load Celery configuration from environment variables or infer from existing config."""
+    celery_config = {
+        'broker_url': None,
+        'backend_url': None,
+        'enable_embedded_worker': False,
+        'redis_available': False
+    }
+
+    {% if celery_config %}
+    # Apply inline Celery configuration
+    {{celery_config}}
+    {% endif %}
+
+    if not celery_config.get('broker_url') or not celery_config.get('backend_url'):
+        redis_host = os.getenv('REDIS_HOST', 'localhost')
+        redis_port = os.getenv('REDIS_PORT', '6379')
+
+        # Use different databases for different purposes
+        broker_db = os.getenv('CELERY_BROKER_DB', '2')  # Default DB 2 for Celery broker
+        backend_db = os.getenv('CELERY_BACKEND_DB', '3')  # Default DB 3 for Celery backend
+
+        # Auto-generate URLs if Redis is available
+        if not celery_config.get('broker_url'):
+            celery_config['broker_url'] = f"redis://{redis_host}:{redis_port}/{broker_db}"
+        if not celery_config.get('backend_url'):
+            celery_config['backend_url'] = f"redis://{redis_host}:{redis_port}/{backend_db}"
+
+    return celery_config
+
+
+def _check_redis_availability(redis_url: str) -> bool:
+    """Check if Redis is available at the given URL."""
+    try:
+        import redis
+        from urllib.parse import urlparse
+
+        parsed = urlparse(redis_url)
+        host = parsed.hostname or 'localhost'
+        port = parsed.port or 6379
+
+        r = redis.Redis(host=host, port=port, socket_connect_timeout=2)
+        r.ping()
+        return True
+    except Exception:
+        return False
+
+
+{% if custom_endpoints %}
+def setup_custom_endpoints():
+    """Setup custom endpoints configuration."""
+    custom_endpoints = [
+        {% for endpoint in custom_endpoints %}
+        {
+            "path": "{{endpoint.path}}",
+            "handler": {% if endpoint.handler_module or endpoint.module %}{{endpoint.function_name}}{% else %}{{endpoint.inline_code|default('lambda request: {"error": "Handler not available"}')}}{% endif %},
+            "methods": {{endpoint.methods}}
+        },
+        {% endfor %}
+    ]
+    return custom_endpoints
+{% endif %}
+
+
+async def setup_runner_with_agent(app):
+    """Setup runner with the agent instance."""
+    if hasattr(app.state, 'runner') and app.state.runner:
+        # Set the agent on the runner
+        app.state.runner._agent = agent
+
+
+async def before_start(app, **kwargs):
+    """Application startup callback."""
+    await setup_runner_with_agent(app)
+
+
+async def after_finish(app, **kwargs):
+    """Application shutdown callback."""
+    # Runner cleanup is handled by the factory
+    pass
+
+
+# Load Celery configuration
+celery_config = load_celery_config()
+
+# Determine deployment mode from environment or use default
+deployment_mode_str = os.getenv('DEPLOYMENT_MODE', '{{deployment_mode|default("standalone")}}')
+if deployment_mode_str == 'detached_process':
+    deployment_mode = DeploymentMode.DETACHED_PROCESS
+elif deployment_mode_str == 'standalone':
+    deployment_mode = DeploymentMode.STANDALONE
+else:
+    deployment_mode = DeploymentMode.STANDALONE  # fallback
+
+# Create FastAPI application using the factory
+app = FastAPIAppFactory.create_app(
+    endpoint_path="{{endpoint_path}}",
+    mode=deployment_mode,
+    before_start=before_start,
+    after_finish=after_finish,
+    stream=True,
+    broker_url=celery_config['broker_url'],
+    backend_url=celery_config['backend_url'],
+    enable_embedded_worker=celery_config['enable_embedded_worker']{% if protocol_adapters %},
+    protocol_adapters=protocol_adapters{% endif %}{% if custom_endpoints %},
+    custom_endpoints=setup_custom_endpoints(){% endif %}
+)
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="AgentScope Runtime Standalone Service")
+    parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
+    parser.add_argument("--port", type=int, default=8080, help="Port to bind to")
+    parser.add_argument("--workers", type=int, default=1, help="Number of worker processes")
+
+    args = parser.parse_args()
+
+    uvicorn.run(
+        app,
+        host=args.host,
+        port=args.port,
+        workers=args.workers if args.workers > 1 else None
+    )

@@ -12,20 +12,39 @@ kernelspec:
   name: python3
 ---
 
-# 高级部署指南
+# 高级部署
 
-本指南演示了AgentScope Runtime中可用的四种高级部署方法，为不同场景提供生产就绪的解决方案：**本地守护进程**、**独立进程**、**Kubernetes部署**和**ModelStudio部署**。
+章节演示了AgentScope Runtime中可用的五种高级部署方法，为不同场景提供生产就绪的解决方案：**本地守护进程**、**独立进程**、**Kubernetes部署**、**ModelStudio部署**和**AgentRun部署**。
 
 ## 部署方法概述
 
-AgentScope Runtime提供四种不同的部署方式，每种都针对特定的使用场景：
+AgentScope Runtime提供五种不同的部署方式，每种都针对特定的使用场景：
 
 | 部署类型 | 使用场景 | 扩展性 | 管理方式 | 资源隔离 |
 |---------|---------|--------|---------|---------|
 | **本地守护进程** | 开发与测试 | 单进程 | 手动 | 进程级 |
 | **独立进程** | 生产服务 | 单节点 | 自动化 | 进程级 |
 | **Kubernetes** | 企业与云端 | 单节点（将支持多节点） | 编排 | 容器级 |
-| **ModelStudio** | 阿里云平台 | 云端管理 | 平台管理 | 容器级 |
+| **ModelStudio** | 魔搭平台 | 云端管理 | 平台管理 | 容器级 |
+| **AgentRun** | AgentRun平台 | 云端管理 | 平台管理 | 容器级 |
+
+
+### 部署模式（DeploymentMode）
+
+`LocalDeployManager` 支持两种部署模式：
+
+- **`DAEMON_THREAD`**（默认）：在守护线程中运行服务，主进程阻塞直到服务停止
+- **`DETACHED_PROCESS`**：在独立进程中运行服务，主脚本可以退出而服务继续运行
+
+```{code-cell}
+from agentscope_runtime.engine.deployers.utils.deployment_modes import DeploymentMode
+
+# 使用不同的部署模式
+await app.deploy(
+    LocalDeployManager(host="0.0.0.0", port=8080),
+    mode=DeploymentMode.DAEMON_THREAD,  # 或 DETACHED_PROCESS
+)
+```
 
 ## 前置条件
 
@@ -35,13 +54,11 @@ AgentScope Runtime提供四种不同的部署方式，每种都针对特定的�
 
 ```bash
 # 基础安装
-pip install agentscope-runtime
+pip install agentscope-runtime>=1.0.0
 
 # Kubernetes部署依赖
-pip install "agentscope-runtime[deployment]"
+pip install "agentscope-runtime[ext]>=1.0.0"
 
-# 沙箱工具（可选）
-pip install "agentscope-runtime[sandbox]"
 ```
 
 ### 🔑 环境配置
@@ -76,38 +93,104 @@ export KUBECONFIG="/path/to/your/kubeconfig"
 所有部署方法共享相同的智能体和端点配置。让我们首先创建基础智能体并定义端点：
 
 ```{code-cell}
-# agent_app.py - 所有部署方法的共享配置
+# agent_app.py - Shared configuration for all deployment methods
+# -*- coding: utf-8 -*-
 import os
-import time
 
 from agentscope.agent import ReActAgent
+from agentscope.formatter import DashScopeChatFormatter
 from agentscope.model import DashScopeChatModel
-from agentscope.tool import Toolkit, view_text_file
+from agentscope.pipeline import stream_printing_messages
+from agentscope.tool import Toolkit, execute_python_code
 
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
+from agentscope_runtime.adapters.agentscope.memory import (
+    AgentScopeSessionHistoryMemory,
+)
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-
-# 1. 创建带工具包的智能体
-toolkit = Toolkit()
-toolkit.register_tool_function(view_text_file)
-
-agent = AgentScopeAgent(
-    name="Friday",
-    model=DashScopeChatModel(
-        "qwen-max",
-        api_key=os.getenv("DASHSCOPE_API_KEY"),
-    ),
-    agent_config={
-        "sys_prompt": "You're a helpful assistant named Friday.",
-        "toolkit": toolkit,
-    },
-    agent_builder=ReActAgent,
+from agentscope_runtime.engine.services.agent_state import (
+    InMemoryStateService,
+)
+from agentscope_runtime.engine.services.session_history import (
+    InMemorySessionHistoryService,
 )
 
-# 2. 创建带有多个端点的 AgentApp
-app = AgentApp(agent=agent)
+app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+)
 
+
+@app.init
+async def init_func(self):
+    self.state_service = InMemoryStateService()
+    self.session_service = InMemorySessionHistoryService()
+
+    await self.state_service.start()
+    await self.session_service.start()
+
+
+@app.shutdown
+async def shutdown_func(self):
+    await self.state_service.stop()
+    await self.session_service.stop()
+
+
+@app.query(framework="agentscope")
+async def query_func(
+    self,
+    msgs,
+    request: AgentRequest = None,
+    **kwargs,
+):
+    assert kwargs is not None, "kwargs is Required for query_func"
+    session_id = request.session_id
+    user_id = request.user_id
+
+    state = await self.state_service.export_state(
+        session_id=session_id,
+        user_id=user_id,
+    )
+
+    toolkit = Toolkit()
+    toolkit.register_tool_function(execute_python_code)
+
+    agent = ReActAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+            enable_thinking=True,
+            stream=True,
+        ),
+        sys_prompt="You're a helpful assistant named Friday.",
+        toolkit=toolkit,
+        memory=AgentScopeSessionHistoryMemory(
+            service=self.session_service,
+            session_id=session_id,
+            user_id=user_id,
+        ),
+        formatter=DashScopeChatFormatter(),
+    )
+
+    if state:
+        agent.load_state_dict(state)
+
+    async for msg, last in stream_printing_messages(
+        agents=[agent],
+        coroutine_task=agent(msgs),
+    ):
+        yield msg, last
+
+    state = agent.state_dict()
+
+    await self.state_service.save_state(
+        user_id=user_id,
+        session_id=session_id,
+        state=state,
+    )
+
+# 2. 创建带有多个端点的 AgentApp
 @app.endpoint("/sync")
 def sync_handler(request: AgentRequest):
     return {"status": "ok", "payload": request}
@@ -288,7 +371,7 @@ production_services = ServicesConfig(
 )
 
 # 使用生产服务进行部署
-deployment_info = await runner.deploy(
+deployment_info = await app.deploy(
     deploy_manager=deploy_manager,
     endpoint_path="/process",
     stream=True,
@@ -390,7 +473,7 @@ if __name__ == "__main__":
 - 可使用 `kubectl scale deployment` 进行扩展
 
 
-## 方法4：ModelStudio部署
+## 方法4：Serverless部署：ModelStudio
 
 **最适合**：阿里云用户，需要托管云部署，具有内置监控、扩展和与阿里云生态系统集成。
 
@@ -473,31 +556,167 @@ if __name__ == "__main__":
 - 内置监控和自动扩展
 - 与 DashScope LLM 服务集成
 
+## 方法5：Serverless部署：AgentRun
 
-## 总结
+**最适合**：阿里云用户，需要将智能体部署到 AgentRun 服务，实现自动化的构建、上传和部署流程。
 
-本指南涵盖了AgentScope Runtime的四种部署方法：
+### 特性
+- 阿里云 AgentRun 服务的托管部署
+- 自动构建和打包项目
+- OSS 集成用于制品存储
+- 完整的生命周期管理
+- 自动创建和管理运行时端点
 
-### 🏃 **本地守护进程**：开发与测试
-- 快速设置和直接控制
-- 最适合开发和小规模使用
-- 手动生命周期管理
+### AgentRun 部署前置条件
 
-### 🔧 **独立进程**：生产服务
-- 进程隔离和自动化管理
-- 适用于单节点生产部署
-- 远程控制功能
+```bash
+# 确保设置环境变量
+# 更多环境变量配置，请参考下面的表格
+export ALIBABA_CLOUD_ACCESS_KEY_ID="your-access-key-id"
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
+export AGENT_RUN_REGION_ID="cn-hangzhou"  # 或其他区域
 
-### ☸️ **Kubernetes**：企业与云端
-- 完整的容器编排和扩展
-- 高可用性和云原生特性
-- 企业级生产部署
+# OSS 配置（用于存储构建制品）
+export OSS_ACCESS_KEY_ID="your-oss-access-key-id"
+export OSS_ACCESS_KEY_SECRET="your-oss-access-key-secret"
+export OSS_REGION="cn-hangzhou"
+export OSS_BUCKET_NAME="your-bucket-name"
+```
 
-### ☁️ **ModelStudio**：阿里云平台
-- 完全托管的云部署
-- 内置监控和自动扩展
-- 与阿里云服务无缝集成
+您可以设置以下环境变量或指定`AgentRunConfig`来自定义部署：
 
-选择最适合您的用例、基础设施和扩展需求的部署方法。所有方法都使用相同的智能体代码，使得随着需求演变在部署类型之间迁移变得简单。
+| 变量 | 必填 | 默认值 | 描述 |
+|-----|-----|-------|------|
+| `ALIBABA_CLOUD_ACCESS_KEY_ID` | 是 | - | 阿里云 Access Key ID |
+| `ALIBABA_CLOUD_ACCESS_KEY_SECRET` | 是 | - | 阿里云 Access Key Secret |
+| `AGENT_RUN_REGION_ID` | 否 | `cn-hangzhou` | AgentRun 服务的区域 ID |
+| `AGENT_RUN_ENDPOINT` | 否 | `agentrun.{region_id}.aliyuncs.com` | AgentRun 服务端点 |
+| `AGENT_RUN_LOG_STORE` | 否 | - | 日志存储名称（需同时设置 log_project） |
+| `AGENT_RUN_LOG_PROJECT` | 否 | - | 日志项目名称（需同时设置 log_store） |
+| `AGENT_RUN_NETWORK_MODE` | 否 | `PUBLIC` | 网络模式：`PUBLIC`/`PRIVATE`/`PUBLIC_AND_PRIVATE` |
+| `AGENT_RUN_VPC_ID` | 条件必填 | - | VPC ID（当 network_mode 为 `PRIVATE` 时必填） |
+| `AGENT_RUN_SECURITY_GROUP_ID` | 条件必填 | - | 安全组 ID（当 network_mode 为 `PRIVATE` 时必填） |
+| `AGENT_RUN_VSWITCH_IDS` | 条件必填 | - | VSwitch ID 列表，JSON 数组格式（当 network_mode 为 `PRIVATE` 时必填） |
+| `AGENT_RUN_CPU` | 否 | `2.0` | CPU 分配（核数） |
+| `AGENT_RUN_MEMORY` | 否 | `2048` | 内存分配（MB） |
+| `AGENT_RUN_EXECUTION_ROLE_ARN` | 否 | - | 执行角色 ARN（用于权限控制） |
+| `AGENT_RUN_SESSION_CONCURRENCY_LIMIT` | 否 | `200` | 会话并发限制 |
+| `AGENT_RUN_SESSION_IDLE_TIMEOUT_SECONDS` | 否 | `600` | 会话空闲超时时间（秒） |
+| `OSS_ACCESS_KEY_ID` | 否 | `ALIBABA_CLOUD_ACCESS_KEY_ID` | OSS Access Key ID（默认使用阿里云凭证） |
+| `OSS_ACCESS_KEY_SECRET` | 否 | `ALIBABA_CLOUD_ACCESS_KEY_SECRET` | OSS Access Key Secret（默认使用阿里云凭证） |
+| `OSS_REGION` | 否 | `cn-hangzhou` | OSS 区域 |
+| `OSS_BUCKET_NAME` | 是 | - | OSS 存储桶名称（用于存储构建制品） |
 
-有关特定组件的更多详细信息，请参阅[管理器模块](manager.md)、[沙箱](sandbox.md)和[快速开始](quickstart.md)指南。
+### 实现
+
+使用 {ref}`通用智能体配置<zh-common-agent-setup>` 部分定义的智能体和端点：
+
+```{code-cell}
+# agentrun_deploy.py
+import asyncio
+import os
+from agentscope_runtime.engine.deployers.agentrun_deployer import (
+    AgentRunDeployManager,
+    OSSConfig,
+    AgentRunConfig,
+)
+from agent_app import app  # 导入已配置的 app
+
+async def deploy_to_agentrun():
+    """将 AgentApp 部署到阿里云 AgentRun 服务"""
+
+    # 配置 OSS 和 AgentRun
+    deployer = AgentRunDeployManager(
+        oss_config=OSSConfig(
+            access_key_id=os.environ.get("OSS_ACCESS_KEY_ID"),
+            access_key_secret=os.environ.get("OSS_ACCESS_KEY_SECRET"),
+            region=os.environ.get("OSS_REGION"),
+            bucket_name=os.environ.get("OSS_BUCKET_NAME"),
+        ),
+        agentrun_config=AgentRunConfig(
+            access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+            access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+            region_id=os.environ.get("AGENT_RUN_REGION_ID", "cn-hangzhou"),
+        ),
+    )
+
+    # 执行部署
+    result = await app.deploy(
+        deployer,
+        endpoint_path="/process",
+        requirements=["agentscope", "fastapi", "uvicorn"],
+        environment={
+            "PYTHONPATH": "/app",
+            "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+        },
+        deploy_name="agent-app-example",
+        project_dir=".",  # 当前项目目录
+        cmd="python -m uvicorn app:app --host 0.0.0.0 --port 8080",
+    )
+
+    print(f"✅ 部署到 AgentRun：{result['url']}")
+    print(f"📍 AgentRun ID：{result.get('agentrun_id', 'N/A')}")
+    print(f"📦 制品 URL：{result.get('artifact_url', 'N/A')}")
+    return result
+
+if __name__ == "__main__":
+    asyncio.run(deploy_to_agentrun())
+```
+
+**关键点**：
+- 自动构建项目并打包为 wheel 文件
+- 上传制品到 OSS
+- 在 AgentRun 服务中创建和管理运行时
+- 自动创建公共访问端点
+- 支持更新现有部署（通过 `agentrun_id` 参数）
+
+### 配置说明
+
+#### OSSConfig
+
+OSS 配置用于存储构建制品：
+
+```python
+OSSConfig(
+    access_key_id="your-access-key-id",
+    access_key_secret="your-access-key-secret",
+    region="cn-hangzhou",
+    bucket_name="your-bucket-name",
+)
+```
+
+#### AgentRunConfig
+
+AgentRun 服务配置：
+
+```python
+AgentRunConfig(
+    access_key_id="your-access-key-id",
+    access_key_secret="your-access-key-secret",
+    region_id="cn-hangzhou",  # 支持的区域：cn-hangzhou, cn-beijing 等
+)
+```
+
+### 高级用法
+
+#### 使用预构建的 Wheel 文件
+
+```python
+result = await app.deploy(
+    deployer,
+    external_whl_path="/path/to/prebuilt.whl",  # 使用预构建的 wheel
+    skip_upload=False,  # 仍需要上传到 OSS
+    # ... 其他参数
+)
+```
+
+#### 更新现有部署
+
+```python
+result = await app.deploy(
+    deployer,
+    agentrun_id="existing-agentrun-id",  # 更新现有部署
+    # ... 其他参数
+)
+```
+

@@ -1,0 +1,10 @@
+ipython==8.31.0
+fastapi==0.115.6
+uvicorn==0.34.0
+pydantic==2.10.5
+requests==2.32.3
+mcp==1.9.0
+aiofiles
+aiohttp
+uv
+gitpython

@@ -7,6 +7,7 @@ import json
 import os
 import re
 import time
+import threading
 import uuid
 from collections.abc import Callable
 from copy import deepcopy
@@ -25,7 +26,7 @@ from typing import (
 from pydantic import BaseModel
 from opentelemetry.propagate import extract
 from opentelemetry.context import attach
-from opentelemetry.trace import StatusCode
+from opentelemetry.trace import StatusCode, NoOpTracerProvider
 from opentelemetry import trace as ot_trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
     OTLPSpanExporter as OTLPSpanGrpcExporter,
@@ -177,7 +178,7 @@ def trace(  # pylint: disable=too-many-statements
                 **common_attrs,
             }
 
-            with _ot_tracer.start_as_current_span(
+            with _get_ot_tracer().start_as_current_span(
                 final_trace_name,
                 context=parent_ctx,
                 attributes=span_attributes,
@@ -280,7 +281,7 @@ def trace(  # pylint: disable=too-many-statements
                 **common_attrs,
             }
 
-            with _ot_tracer.start_as_current_span(
+            with _get_ot_tracer().start_as_current_span(
                 final_trace_name,
                 context=parent_ctx,
                 attributes=span_attributes,
@@ -385,7 +386,7 @@ def trace(  # pylint: disable=too-many-statements
                 **common_attrs,
             }
 
-            with _ot_tracer.start_as_current_span(
+            with _get_ot_tracer().start_as_current_span(
                 final_trace_name,
                 context=parent_ctx,
                 attributes=span_attributes,
@@ -518,7 +519,7 @@ def trace(  # pylint: disable=too-many-statements
                 **common_attrs,
             }
 
-            with _ot_tracer.start_as_current_span(
+            with _get_ot_tracer().start_as_current_span(
                 final_trace_name,
                 context=parent_ctx,
                 attributes=span_attributes,
@@ -897,11 +898,15 @@ def _get_service_name() -> str:
 
 def _get_tracer() -> Tracer:
     handlers: list[TracerHandler] = []
-    if _str_to_bool(os.getenv("TRACE_ENABLE_LOG", "true")):
+    if _str_to_bool(os.getenv("TRACE_ENABLE_LOG", "false")):
         handlers.append(LocalLogHandler(enable_console=True))
 
     tracer = Tracer(handlers=handlers)
     return tracer
+
+
+_otel_tracer_lock = threading.Lock()
+_otel_tracer = None
 
 
 # TODO: support more tracing protocols and platforms
@@ -912,35 +917,48 @@ def _get_ot_tracer() -> ot_trace.Tracer:
         ot_trace.Tracer: The OpenTelemetry tracer instance.
     """
 
-    resource = Resource(
-        attributes={
-            SERVICE_NAME: _get_service_name(),
-            SERVICE_VERSION: os.getenv("SERVICE_VERSION", "1.0.0"),
-            "source": "agentscope_runtime-source",
-        },
-    )
-    provider = TracerProvider(resource=resource)
-    if _str_to_bool(os.getenv("TRACE_ENABLE_REPORT", "false")):
-        span_exporter = BatchSpanProcessor(
-            OTLPSpanGrpcExporter(
-                endpoint=os.getenv("TRACE_ENDPOINT", ""),
-                headers=f"Authentication="
-                f"{os.getenv('TRACE_AUTHENTICATION', '')}",
-            ),
+    def _get_ot_tracer_inner() -> ot_trace.Tracer:
+        existing_provider = ot_trace.get_tracer_provider()
+
+        if not isinstance(existing_provider, NoOpTracerProvider):
+            return ot_trace.get_tracer("agentscope_runtime")
+
+        resource = Resource(
+            attributes={
+                SERVICE_NAME: _get_service_name(),
+                SERVICE_VERSION: os.getenv("SERVICE_VERSION", "1.0.0"),
+                "source": "agentscope_runtime-source",
+            },
         )
-        provider.add_span_processor(span_exporter)
+        provider = TracerProvider(resource=resource)
+        if _str_to_bool(os.getenv("TRACE_ENABLE_REPORT", "false")):
+            span_exporter = BatchSpanProcessor(
+                OTLPSpanGrpcExporter(
+                    endpoint=os.getenv("TRACE_ENDPOINT", ""),
+                    headers=f"Authentication="
+                    f"{os.getenv('TRACE_AUTHENTICATION', '')}",
+                ),
+            )
+            provider.add_span_processor(span_exporter)
 
-    if _str_to_bool(os.getenv("TRACE_ENABLE_DEBUG", "false")):
-        span_logger = BatchSpanProcessor(ConsoleSpanExporter())
-        provider.add_span_processor(span_logger)
+        if _str_to_bool(os.getenv("TRACE_ENABLE_DEBUG", "false")):
+            span_logger = BatchSpanProcessor(ConsoleSpanExporter())
+            provider.add_span_processor(span_logger)
 
-    tracer = ot_trace.get_tracer(
-        "agentscope_runtime",
-        tracer_provider=provider,
-    )
-    return tracer
+        tracer = ot_trace.get_tracer(
+            "agentscope_runtime",
+            tracer_provider=provider,
+        )
+        return tracer
 
+    global _otel_tracer
 
-_ot_tracer = _get_ot_tracer()
+    if _otel_tracer is None:
+        with _otel_tracer_lock:
+            if _otel_tracer is None:
+                _otel_tracer = _get_ot_tracer_inner()
+
+    return _otel_tracer
+
 
 _tracer = _get_tracer()

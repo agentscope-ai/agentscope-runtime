@@ -1,11 +1,12 @@
 <div align="center">
 
-# AgentScope Runtime
+# AgentScope Runtime v1.0
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/agentscope-ai/agentscope-runtime)
 [![PyPI](https://img.shields.io/pypi/v/agentscope-runtime?label=PyPI&color=brightgreen&logo=python)](https://pypi.org/project/agentscope-runtime/)
 [![Downloads](https://static.pepy.tech/badge/agentscope-runtime)](https://pepy.tech/project/agentscope-runtime)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg?logo=python&label=Python)](https://python.org)
+[![Last Commit](https://img.shields.io/github/last-commit/agentscope-ai/agentscope-runtime)](https://github.com/agentscope-ai/agentscope-runtime)
 [![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=License)](LICENSE)
 [![Code Style](https://img.shields.io/badge/code%20style-black-black.svg?logo=python&label=CodeStyle)](https://github.com/psf/black)
 [![GitHub Stars](https://img.shields.io/github/stars/agentscope-ai/agentscope-runtime?style=flat&logo=github&color=yellow&label=Stars)](https://github.com/agentscope-ai/agentscope-runtime/stargazers)
@@ -24,7 +25,9 @@
 
 **A Production-Ready Runtime Framework for Intelligent Agent Applications**
 
-*AgentScope Runtime tackles two critical challenges in agent development: secure sandboxed tool execution and scalable agent deployment. Built with a dual-core architecture, it provides framework-agnostic infrastructure for deploying agents with full observability and safe tool interactions.*
+***AgentScope Runtime** is a full-stack agent runtime that tackles two core challenges: **efficient agent deployment** and **secure sandbox execution**. It ships with foundational services such as short- and long-term memory plus agent state persistence, along with hardened sandbox infrastructure. Whether you need to orchestrate production-grade agents or guarantee safe tool interactions, AgentScope Runtime provides developer-friendly workflows with complete observability.*
+
+*In V1.0, these services are exposed via an **adapter pattern**, enabling seamless integration with the native modules of different agent frameworks while preserving their native interfaces and behaviors, ensuring both compatibility and flexibility.*
 
 </div>
 
@@ -32,21 +35,30 @@
 
 ## 🆕 NEWS
 
-* **[2025-10]** We released `v0.2.0` — introducing **`AgentApp` API server support**, enabling easy use of agent applications and custom API endpoints through synchronous, asynchronous, and streaming interfaces. Check our [cookbook](https://runtime.agentscope.io/en/agent_app.html) for more details.
-* **[2025-10]**  **GUI Sandbox** is added with support for virtual desktop environments, mouse, keyboard, and screen operations.  Introduced the **`desktop_url`** property for GUI Sandbox, Browser Sandbox, and Filesystem Sandbox — allowing direct access to the virtual desktop via your browser.  Check our [cookbook](https://runtime.agentscope.io/en/sandbox.html#sandbox-usage) for more details.
+* **[2025-12]** We have released **AgentScope Runtime v1.0**, introducing a unified “Agent as API” white-box development experience, with enhanced multi-agent collaboration, state persistence, and cross-framework integration. This release also streamlines abstractions and modules to ensure consistency between development and production environments. Please refer to the **[CHANGELOG](https://runtime.agentscope.io/en/CHANGELOG.html)** for full update details and migration guide.
 
 ---
 
 ## ✨ Key Features
 
-- **🏗️ Deployment Infrastructure**: Built-in services for session management, memory, and sandbox environment control
-- **🔒 Sandboxed Tool Execution**: Isolated sandboxes ensure safe tool execution without system compromise
+- **🏗️ Deployment Infrastructure**: Built-in services for agent state management, conversation history, long-term memory, and sandbox lifecycle control
+- **🔧 Framework-Agnostic**: Not tied to any specific agent framework; seamlessly integrates with popular open-source and custom implementations
+- ⚡ **Developer-Friendly**: Offers `AgentApp` for easy deployment with powerful customization options
+- **📊 Observability**: Comprehensive tracking and monitoring of runtime operations
+- **🔒 Sandboxed Tool Execution**: Isolated sandbox ensures safe tool execution without affecting the system
+- **🛠️ Out-of-the-Box Tools & One-Click Adaptation**: Rich set of ready-to-use tools, with adapters enabling quick integration into different frameworks
 
-- **🔧 Framework Agnostic**: Not tied to any specific framework. Works seamlessly with popular open-source agent frameworks and custom implementations
-
-- ⚡ **Developer Friendly**: Simple deployment with powerful customization options
-
-- **📊 Observability**: Comprehensive tracing and monitoring for runtime operations
+> [!NOTE]
+>
+> **About Framework-Agnostic**: Currently, AgentScope Runtime supports the **AgentScope** framework. We plan to extend compatibility to more agent development frameworks in the future. This table shows the current version’s adapter support for different frameworks. The level of support for each functionality varies across frameworks:
+>
+> | Framework/Feature                                            | Message/Event | Tool | Service |
+> | ------------------------------------------------------------ | ------------- | ---- | ------- |
+> | AgentScope                                                   | ✅             | ✅    | ✅       |
+> | [LangGraph](https://runtime.agentscope.io/en/langgraph_guidelines.html) | ✅             | 🚧    | 🚧       |
+> | AutoGen                                                      | 🚧             | ✅    | 🚧       |
+> | Microsoft Agent Framework                                    | 🚧             | 🚧    | 🚧       |
+> | [Agno](https://runtime.agentscope.io/en/agno_guidelines.html) | ✅             | ✅    | 🚧       |
 
 ---
 
@@ -64,7 +76,6 @@ Welcome to join our community on
 
 - [🚀 Quick Start](#-quick-start)
 - [📚 Cookbook](#-cookbook)
-- [🔌 Agent Framework Integration](#-agent-framework-integration)
 - [🏗️ Deployment](#️-deployment)
 - [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
@@ -84,6 +95,12 @@ From PyPI:
 ```bash
 # Install core dependencies
 pip install agentscope-runtime
+
+# Install extension
+pip install "agentscope-runtime[ext]"
+
+# Install preview version
+pip install --pre agentscope-runtime
 ```
 
 (Optional) From source:
@@ -97,35 +114,112 @@ cd agentscope-runtime
 pip install -e .
 ```
 
-### Basic Agent App Example
+### Agent App Example
 
-This example demonstrates how to create an agent API server using agentscope `ReActAgent` and `AgentApp`. The server will process your input and return streaming agent-generated responses.
+This example demonstrates how to create an agent API server using agentscope `ReActAgent` and `AgentApp`.  To run a minimal `AgentScope` Agent with AgentScope Runtime, you generally need to implement:
+
+1. **`@agent_app.init`** – Initialize services/resources at startup
+2. **`@agent_app.query(framework="agentscope")`** – Core logic for handling requests, **must use** `stream_printing_messages` to `yield msg, last` for streaming output
+3. **`@agent_app.shutdown`** – Clean up services/resources on exit
 
 
 ```python
 import os
 
-from agentscope_runtime.engine import AgentApp
-from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent
-
 from agentscope.agent import ReActAgent
-from agentscope.model import OpenAIChatModel
+from agentscope.model import DashScopeChatModel
+from agentscope.formatter import DashScopeChatFormatter
+from agentscope.tool import Toolkit, execute_python_code
+from agentscope.pipeline import stream_printing_messages
 
-
-agent = AgentScopeAgent(
-    name="Friday",
-    model=OpenAIChatModel(
-        "gpt-4",
-        api_key=os.getenv("OPENAI_API_KEY"),
-    ),
-    agent_config={
-        "sys_prompt": "You're a helpful assistant named Friday.",
-    },
-    agent_builder=ReActAgent,  # Or use your own agent builder
+from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
+from agentscope_runtime.adapters.agentscope.memory import (
+    AgentScopeSessionHistoryMemory,
 )
-app = AgentApp(agent=agent, endpoint_path="/process")
+from agentscope_runtime.engine.services.agent_state import (
+    InMemoryStateService,
+)
+from agentscope_runtime.engine.services.session_history import (
+    InMemorySessionHistoryService,
+)
 
-app.run(host="0.0.0.0", port=8090)
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+)
+
+
+@agent_app.init
+async def init_func(self):
+    self.state_service = InMemoryStateService()
+    self.session_service = InMemorySessionHistoryService()
+
+    await self.state_service.start()
+    await self.session_service.start()
+
+
+@agent_app.shutdown
+async def shutdown_func(self):
+    await self.state_service.stop()
+    await self.session_service.stop()
+
+
+@agent_app.query(framework="agentscope")
+async def query_func(
+    self,
+    msgs,
+    request: AgentRequest = None,
+    **kwargs,
+):
+    session_id = request.session_id
+    user_id = request.user_id
+
+    state = await self.state_service.export_state(
+        session_id=session_id,
+        user_id=user_id,
+    )
+
+    toolkit = Toolkit()
+    toolkit.register_tool_function(execute_python_code)
+
+    agent = ReActAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+            stream=True,
+        ),
+        sys_prompt="You're a helpful assistant named Friday.",
+        toolkit=toolkit,
+        memory=AgentScopeSessionHistoryMemory(
+            service=self.session_service,
+            session_id=session_id,
+            user_id=user_id,
+        ),
+        formatter=DashScopeChatFormatter(),
+    )
+    agent.set_console_output_enabled(enabled=False)
+
+    if state:
+        agent.load_state_dict(state)
+
+    async for msg, last in stream_printing_messages(
+        agents=[agent],
+        coroutine_task=agent(msgs),
+    ):
+        yield msg, last
+
+    state = agent.state_dict()
+
+    await self.state_service.save_state(
+        user_id=user_id,
+        session_id=session_id,
+        state=state,
+    )
+
+
+agent_app.run(host="127.0.0.1", port=8090)
 ```
 
 The server will start and listen on: `http://localhost:8090/process`. You can send JSON input to the API using `curl`:
@@ -151,12 +245,14 @@ You’ll see output streamed in **Server-Sent Events (SSE)** format:
 ```bash
 data: {"sequence_number":0,"object":"response","status":"created", ... }
 data: {"sequence_number":1,"object":"response","status":"in_progress", ... }
-data: {"sequence_number":2,"object":"content","status":"in_progress","text":"The" }
-data: {"sequence_number":3,"object":"content","status":"in_progress","text":" capital of France is Paris." }
-data: {"sequence_number":4,"object":"message","status":"completed","text":"The capital of France is Paris." }
+data: {"sequence_number":2,"object":"message","status":"in_progress", ... }
+data: {"sequence_number":3,"object":"content","status":"in_progress","text":"The" }
+data: {"sequence_number":4,"object":"content","status":"in_progress","text":" capital of France is Paris." }
+data: {"sequence_number":5,"object":"message","status":"completed","text":"The capital of France is Paris." }
+data: {"sequence_number":6,"object":"response","status":"completed", ... }
 ```
 
-### Basic Sandbox Usage Example
+### Sandbox Example
 
 These examples demonstrate how to create sandboxed environments and execute tools within them, with some examples featuring interactive frontend interfaces accessible via VNC (Virtual Network Computing):
 
@@ -233,6 +329,57 @@ with FilesystemSandbox() as box:
     input("Press Enter to continue...")
 ```
 
+#### Mobile Sandbox
+
+Provides a **sandboxed Android emulator environment** that allows executing various mobile operations, such as tapping, swiping, inputting text, and taking screenshots.
+
+##### Prerequisites
+
+- **Linux Host**:
+  When running on a Linux host, this sandbox requires the `binder` and `ashmem` kernel modules to be loaded. If they are missing, execute the following commands on your host to install and load the required modules:
+
+  ```bash
+  # 1. Install extra kernel modules
+  sudo apt update && sudo apt install -y linux-modules-extra-`uname -r`
+
+  # 2. Load modules and create device nodes
+  sudo modprobe binder_linux devices="binder,hwbinder,vndbinder"
+  sudo modprobe ashmem_linux
+- **Architecture Compatibility**:
+  When running on an ARM64/aarch64 architecture (e.g., Apple M-series chips), you may encounter compatibility or performance issues. It is recommended to run on an x86_64 host.
+```python
+from agentscope_runtime.sandbox import MobileSandbox
+
+with MobileSandbox() as box:
+    # By default, pulls 'agentscope/runtime-sandbox-mobile:latest' from DockerHub
+    print(box.list_tools()) # List all available tools
+    print(box.mobile_get_screen_resolution()) # Get the screen resolution
+    print(box.mobile_tap(x=500, y=1000)) # Tap at coordinate (500, 1000)
+    print(box.mobile_input_text("Hello from AgentScope!")) # Input text
+    print(box.mobile_key_event(3)) # Sends a HOME key event (KeyCode: 3)
+    screenshot_result = box.mobile_get_screenshot() # Get the current screenshot
+    input("Press Enter to continue...")
+```
+
+> [!NOTE]
+>
+> To add tools to the AgentScope `Toolkit`:
+>
+> 1. Wrap sandbox tool with `sandbox_tool_adapter`, so the AgentScope agent can call them:
+>
+>    ```python
+>    from agentscope_runtime.adapters.agentscope.tool import sandbox_tool_adapter
+>
+>    wrapped_tool = sandbox_tool_adapter(sandbox.browser_navigate)
+>    ```
+>
+> 2. Register the tool with `register_tool_function`:
+>
+>    ```python
+>    toolkit = Toolkit()
+>    Toolkit.register_tool_function(wrapped_tool)
+>    ```
+
 #### Configuring Sandbox Image Registry, Namespace, and Tag
 
 ##### 1. Registry
@@ -283,6 +430,22 @@ agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-ba
 
 ---
 
+#### Serverless Sandbox Deployment
+
+AgentScope Runtime also supports serverless deployment, which is suitable for running sandboxes in a serverless environment,
+[Alibaba Cloud Function Compute (FC)](https://help.aliyun.com/zh/functioncompute/fc/) or [Alibaba Cloud AgentRun](https://docs.agent.run/).
+
+First, please refer to the [documentation](https://runtime.agentscope.io/en/sandbox/advanced.html#optional-function-compute-fc-settings) to configure the serverless environment variables.
+Make `CONTAINER_DEPLOYMENT` to `fc` or `agentrun` to enable serverless deployment.
+
+Then, start a sandbox server, use the `--config` option to specify a serverless environment setup:
+
+```bash
+# This command will load the settings defined in the `custom.env` file
+runtime-sandbox-server --config fc.env
+```
+After the server starts, you can access the sandbox server at baseurl `http://localhost:8000` and invoke sandbox tools described above.
+
 ## 📚 Cookbook
 
 - **[📖 Cookbook](https://runtime.agentscope.io/en/intro.html)**: Comprehensive tutorials
@@ -293,99 +456,16 @@ agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-ba
 
 ---
 
-## 🔌 Other Agent Framework Integration
-
-### Agno Integration
-
-```python
-# pip install "agentscope-runtime[agno]"
-from agno.agent import Agent
-from agno.models.openai import OpenAIChat
-from agentscope_runtime.engine.agents.agno_agent import AgnoAgent
-
-agent = AgnoAgent(
-    name="Friday",
-    model=OpenAIChat(
-        id="gpt-4",
-    ),
-    agent_config={
-        "instructions": "You're a helpful assistant.",
-    },
-    agent_builder=Agent,
-)
-```
-
-### AutoGen Integration
-
-```python
-# pip install "agentscope-runtime[autogen]"
-from autogen_agentchat.agents import AssistantAgent
-from autogen_ext.models.openai import OpenAIChatCompletionClient
-from agentscope_runtime.engine.agents.autogen_agent import AutogenAgent
-
-agent = AutogenAgent(
-    name="Friday",
-    model=OpenAIChatCompletionClient(
-        model="gpt-4",
-    ),
-    agent_config={
-        "system_message": "You're a helpful assistant",
-    },
-    agent_builder=AssistantAgent,
-)
-```
-
-### LangGraph Integration
-
-```python
-# pip install "agentscope-runtime[langgraph]"
-from typing import TypedDict
-from langgraph import graph, types
-from agentscope_runtime.engine.agents.langgraph_agent import LangGraphAgent
-
-
-# define the state
-class State(TypedDict, total=False):
-    id: str
-
-
-# define the node functions
-async def set_id(state: State):
-    new_id = state.get("id")
-    assert new_id is not None, "must set ID"
-    return types.Command(update=State(id=new_id), goto="REVERSE_ID")
-
-
-async def reverse_id(state: State):
-    new_id = state.get("id")
-    assert new_id is not None, "ID must be set before reversing"
-    return types.Command(update=State(id=new_id[::-1]))
-
-
-state_graph = graph.StateGraph(state_schema=State)
-state_graph.add_node("SET_ID", set_id)
-state_graph.add_node("REVERSE_ID", reverse_id)
-state_graph.set_entry_point("SET_ID")
-compiled_graph = state_graph.compile(name="ID Reversal")
-agent = LangGraphAgent(graph=compiled_graph)
-```
-
-> [!NOTE]
->
-> More agent framework interations are comming soon!
-
----
-
 ## 🏗️ Deployment
 
-The app exposes a `deploy` method that takes a `DeployManager` instance and deploys the agent.
-The service port is set as the parameter `port` when creating the `LocalDeployManager`.
-The service endpoint path is set as the parameter `endpoint_path` when deploying the agent.
+The `AgentApp` exposes a `deploy` method that takes a `DeployManager` instance and deploys the agent.
 
-The deployer will automatically add common agent protocols, such as **A2A**, **Response API** based on the default endpoint `/process`.
+* The service port is set as the parameter `port` when creating the `LocalDeployManager`.
+* The service endpoint path is set as the parameter `endpoint_path` to `/process` when deploying the agent.
 
-In this example, we set the endpoint path to `/process`,
-after deployment, users can access the service at `http://localhost:8090/process`, and can also access the service from OpenAI SDK by Response API.
+* The deployer will automatically add common agent protocols, such as **A2A**, **Response API**.
+
+After deployment, users can access the service at `http://localhost:8090/process:
 
 ```python
 from agentscope_runtime.engine.deployers import LocalDeployManager
@@ -401,7 +481,7 @@ deploy_result = await app.deploy(deployer=deployer)
 
 ```
 
-Then user could query the deployment by OpenAI SDK.
+After deployment, users can also access this service using the Response API of the OpenAI SDK:
 
 ```python
 from openai import OpenAI
@@ -416,6 +496,40 @@ response = client.responses.create(
 print(response)
 ```
 
+Besides, `DeployManager` also supports serverless deployments, such as deploying your agent app
+to [ModelStudio](https://bailian.console.aliyun.com/?admin=1&tab=doc#/doc/?type=app&url=2983030)
+or [AgentRun](https://docs.agent.run/).
+
+```python
+from agentscope_runtime.engine.deployers import ModelStudioDeployManager
+# Create deployment manager
+deployer = ModelstudioDeployManager(
+    oss_config=OSSConfig(
+        access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+        access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+    ),
+    modelstudio_config=ModelstudioConfig(
+        workspace_id=os.environ.get("MODELSTUDIO_WORKSPACE_ID"),
+        access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+        access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+        dashscope_api_key=os.environ.get("DASHSCOPE_API_KEY"),
+    ),
+)
+
+# Deploy to ModelStudio
+result = await app.deploy(
+    deployer,
+    deploy_name="agent-app-example",
+    telemetry_enabled=True,
+    requirements=["agentscope", "fastapi", "uvicorn"],
+    environment={
+        "PYTHONPATH": "/app",
+        "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+    },
+)
+```
+
+For more advanced serverless deployment guides, please refer to the [documentation](https://runtime.agentscope.io/en/advanced_deployment.html#method-4-modelstudio-deployment).
 
 ---
 
@@ -466,10 +580,10 @@ limitations under the License.
 
 ## Contributors ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-19-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-25-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/emoji-key/)):
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
@@ -500,6 +614,14 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="http://ceshihao.github.io"><img src="https://avatars.githubusercontent.com/u/7711875?v=4?s=100" width="100px;" alt="Zheng Dayu"/><br /><sub><b>Zheng Dayu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=ceshihao" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Aceshihao" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://lokk.cn/about"><img src="https://avatars.githubusercontent.com/u/39740818?v=4?s=100" width="100px;" alt="quanyu"/><br /><sub><b>quanyu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=taoquanyus" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Littlegrace111"><img src="https://avatars.githubusercontent.com/u/3880455?v=4?s=100" width="100px;" alt="Grace Wu"/><br /><sub><b>Grace Wu</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Littlegrace111" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Littlegrace111" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/pitt-liang"><img src="https://avatars.githubusercontent.com/u/8534560?v=4?s=100" width="100px;" alt="LiangQuan"/><br /><sub><b>LiangQuan</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=pitt-liang" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://lishengcn.cn"><img src="https://avatars.githubusercontent.com/u/12003270?v=4?s=100" width="100px;" alt="ls"/><br /><sub><b>ls</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=lishengzxc" title="Code">💻</a> <a href="#design-lishengzxc" title="Design">🎨</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/iSample"><img src="https://avatars.githubusercontent.com/u/12894421?v=4?s=100" width="100px;" alt="iSample"/><br /><sub><b>iSample</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=iSample" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=iSample" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/XiuShenAl"><img src="https://avatars.githubusercontent.com/u/242360128?v=4?s=100" width="100px;" alt="XiuShenAl"/><br /><sub><b>XiuShenAl</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=XiuShenAl" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=XiuShenAl" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/k-farruh"><img src="https://avatars.githubusercontent.com/u/33511681?v=4?s=100" width="100px;" alt="Farruh Kushnazarov"/><br /><sub><b>Farruh Kushnazarov</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=k-farruh" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/fengxsong"><img src="https://avatars.githubusercontent.com/u/7008971?v=4?s=100" width="100px;" alt="fengxsong"/><br /><sub><b>fengxsong</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Afengxsong" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
   <tfoot>

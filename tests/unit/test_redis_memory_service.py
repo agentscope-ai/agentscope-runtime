@@ -3,7 +3,7 @@
 import pytest
 import pytest_asyncio
 import fakeredis.aioredis
-from agentscope_runtime.engine.services.redis_memory_service import (
+from agentscope_runtime.engine.services.memory import (
     RedisMemoryService,
 )
 from agentscope_runtime.engine.schemas.agent_schemas import (

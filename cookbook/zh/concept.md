@@ -1,34 +1,143 @@
+---
+jupytext:
+  formats: md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.11.5
+kernelspec:
+  display_name: Python 3.10
+  language: python
+  name: python3
+---
+
 # 概念
 
-本章介绍了AgentScope Runtime的核心概念，它提供了两种主要的使用模式：
+本章介绍了AgentScope Runtime的核心概念。
 
-- **智能体部署**: 使用引擎模块进行功能完整的智能体部署，包括运行时编排、上下文管理和生产就绪的服务
-- **沙箱工具使用**: 独立使用沙箱模块，在您自己的应用程序中进行安全的工具执行和集成
-
-## Engine模块概念
-
-### 架构
+## 架构
 
 AgentScope Runtime使用模块化架构，包含几个关键组件：
 
-<img src="/_static/agent_architecture_zh.jpg" alt="Installation Options" style="zoom:25%;" />
+```{mermaid}
+flowchart LR
+    %% 工具模块
+    subgraph Tools["🛠 工具"]
+        RT["RAG 工具"]
+        ST["搜索工具"]
+        PT["支付工具"]
+    end
 
-- **Agent**：处理请求并生成响应的核心AI组件（可以是基于LLM的、基于工作流的或自定义实现，如 Langgraph、Agentscope、Agno）
-- **AgentApp**: 继承于 FastAPI App，作为应用入口，负责对外提供 API 接口、路由注册、配置加载，并将请求交由 Runner 调用执行
-- **Runner**：在运行时编排智能体执行并管理部署
-- **Context**：包含智能体执行所需的所有信息
-- **Context & Env Manager**：提供额外功能服务管理，如会话历史管理、长期记忆管理、沙箱管理
-- **Deployer**：将Runner部署为服务
+    %% 服务模块
+    subgraph Service["💼 服务"]
+        MS["记忆服务"]
+        SS["会话服务"]
+        STS["状态服务"]
+        SBS["沙箱服务"]
+    end
+
+    %% 沙箱模块
+    subgraph Sandbox["🐳 沙箱"]
+        BS["浏览器沙箱"]
+        FS["文件系统沙箱"]
+        GS["GUI 沙箱"]
+        CSB["云沙箱"]
+        MSB["移动端沙箱"]
+        ETC["更多..."]
+    end
+
+    %% 适配器模块（大块）
+    subgraph Adapter["🔌 适配器"]
+        TAD["工具适配器"]
+        MAD["记忆适配器"]
+        SAD["会话适配器"]
+        STAD["状态适配器"]
+        SBAD["沙箱工具适配器"]
+    end
+
+    %% Agent 模块（大块）
+    subgraph Agent["🤖 智能体"]
+        AG["AgentScope"]
+        AG_NOTE["（更多...）"]
+    end
+
+    %% 应用层
+    subgraph AgentAPP["📦 智能体应用"]
+        RA["运行器"]
+    end
+
+    %% 部署模块
+    subgraph Deployer["🚀 部署器"]
+        CT["容器部署"]
+        KD["K8s 部署"]
+        DP["云部署"]
+        LD["本地部署"]
+    end
+
+    %% 外部协议
+    OAI["OpenAI SDK"]:::ext
+    A2A["Google A2A 协议"]:::ext
+    CUS["自定义端点"]:::ext
+
+    %% 内部连接
+    RT --> TAD
+    ST --> TAD
+    PT --> TAD
+
+    MS --> MAD
+    SS --> SAD
+    STS --> STAD
+    SBS --> SBAD
+
+    BS --> SBS
+    FS --> SBS
+    GS --> SBS
+    CSB --> SBS
+    MSB --> SBS
+    ETC --> SBS
+
+    %% 大块到大块的连接
+    Adapter --> Agent
+
+    AG --> RA
+    RA --> CT
+    RA --> KD
+    RA --> DP
+    RA --> LD
+
+    %% 整个部署模块连接到外部协议
+    Deployer --> OAI
+    Deployer --> A2A
+    Deployer --> CUS
+
+    %% 样式
+    classDef small fill:#0066FF,stroke:#004CBE,color:#FFFFFF,font-weight:bold
+    classDef big fill:#99D6FF,stroke:#004CBE,color:#FFFFFF,font-weight:bold
+    classDef ext fill:#FFFFFF,stroke:#000000,color:#000000,font-weight:bold
+
+    class Tools,Service,Sandbox,Adapter,Agent,AgentAPP,Deployer big
+    class RT,ST,PT,MS,SS,STS,SBS,BS,FS,GS,CSB,MSB,ETC,TAD,MAD,SAD,STAD,SBAD,AG,AG_NOTE,RA,CT,KD,DP,LD small
+
+```
+
+- **Agent**：处理请求并生成响应的核心AI组件，在Runtime中，Agent的构建推荐使用AgentScope框架。
+- **AgentApp**: 作为智能体应用入口，负责对外提供 API 接口、路由注册、配置加载，并将请求交由 Runner 调用执行
+- **Runner**：在运行时编排智能体执行并管理部署。它处理智能体生命周期、会话管理、流式响应和服务部署。
+- **Deployer**：将Runner部署为服务，提供健康检查、监控、生命周期管理、使用SSE的实时响应流式传输、错误处理、日志记录和优雅关闭。
+- **Tool**: 提供即用型服务，比如RAG。
+- **Service**：提供智能体所需要的管理服务，比如记忆管理，沙箱管理等。
+- **Adapter**：将Runtime提供的组件/模块适配到不同Agent框架的适配器
 
 ### 关键组件
 
 #### 1. Agent
 
-`Agent` 是处理请求并生成响应的核心组件。它是一个抽象基类，定义了所有智能体类型的接口。我们将使用 `AgentScopeAgent`作为主要示例，但相同的部署步骤适用于所有智能体类型。
+`Agent` 是处理请求并生成响应的核心组件。市面上已有大量的开发框架包含了Agent类，Runtime本身不提供额外的Agent类，开发者可以使用AgentScope开发需要的Agent。
 
 #### 2. AgentApp
 
-`AgentApp` 是 AgentScope Runtime 中的 **应用入口点**，继承自 `BaseApp`（一个扩展了 FastAPI 并可选集成 Celery 的基类），用于将 Agent 部署为可对外提供服务的 API 应用。
+`AgentApp` 是 AgentScope Runtime 中的 **应用入口点**，用于将 Agent 部署为可对外提供服务的 API 应用。
 
 它的职责是：
 
@@ -42,96 +151,37 @@ AgentScope Runtime使用模块化架构，包含几个关键组件：
 
 `Runner` 类提供灵活且可扩展的运行时来编排智能体执行并提供部署功能。它管理：
 
-- 智能体生命周期 +会话管理
+- 通过 `init_handler` 和 `shutdown_handler` 管理智能体生命周期
+- 通过 `query_handler` 处理请求
 - 流式响应
-- 服务部署
+- 通过 `deploy()` 方法进行服务部署
 
-#### 4. Context
+#### 4. Deployer
 
-`Context` 对象包含智能体执行所需的所有信息：
+`Deployer`（实现为 `DeployManager`）提供生产级别的部署功能：
 
-- 智能体实例本身
-- 会话信息
-- 用户请求
-- 服务实例
-
-#### 5. Context & Env Manager
-
-包含`ContextManager`和`EnvironmentManager`:
-
-* `ContextManager`：提供会话历史管理、长期记忆管理
-* `EnvironmentManager`:提供沙箱生命周期的管理
-
-#### 6. Deployer
-
-`Deployer` 系统提供生产级别的部署功能：
-
-- 将`runner`部署为服务
+- 将Runner部署为服务
 - 健康检查、监控和生命周期管理
 - 使用SSE的实时响应流式传输
 - 错误处理、日志记录和优雅关闭
+- 支持多种部署模式（本地、容器化、Kubernetes等）
 
-## 沙箱模块概念
+#### 5. Sandbox & Tool
 
-### 架构
+Runtime提供两种工具接入方式
+- 即用型工具，即由服务提供商提供的开箱即用的服务，比如RAG
+- 工具沙箱，即运行在runtime里安全可控的工具，比如浏览器
 
-沙箱模块为各种操作提供了一个**安全**且**隔离**的执行环境，包括MCP工具执行、浏览器自动化和文件系统操作。该架构围绕三个主要组件构建：
 
-- **Sandbox（沙箱）**: 提供隔离和安全的容器化执行环境
-- **Tools（工具）**:在沙箱内执行的类似函数的接口
+#### 6. Service
 
-### 沙箱类型
+`Service`包含如下几种：
 
-系统支持多种沙箱类型，每种都针对特定用例进行了优化：
+- `state_service` 状态服务
+- `memory_service` 智能体记忆服务
+- `sandbox_service` 即沙箱服务
+- `session_history_service` 即会话历史记录保存服务
 
-#### 1. BaseSandbox（基础沙箱）
+#### 7. Adapter
 
-- **用途**: 基本Python代码执行和shell命令
-- **使用场景**: 基础工具执行和脚本编写的必需品
-- **能力**: IPython环境、shell命令执行
-
-#### 2. GuiSandbox （GUI沙箱）
-
-- **用途**：具有安全访问控制的图形用户界面（GUI）交互与自动化
-- **使用场景**：用户界面测试、桌面自动化、交互式工作流程
-- **功能**：模拟用户输入（点击、键盘输入）、窗口管理、屏幕捕获等
-
-#### 3. FilesystemSandbox（文件系统沙箱）
-
-- **用途**: 具有安全访问控制的文件系统操作
-- **使用场景**: 文件管理、文本处理和数据操作
-- **能力**: 文件读写、目录操作、文件搜索和元数据等
-
-#### 4. BrowserSandbox（浏览器沙箱）
-
-- **用途**: Web浏览器自动化和控制
-- **使用场景**: 网页抓取、UI测试和基于浏览器的交互
-- **能力**: 页面导航、元素交互、截图捕获等
-
-#### 5. TrainingSandbox（训练沙箱）
-
-- **用途**:智能体训练和评估环境
-- **使用场景**: 基准测试和性能评估
-- **能力**: 环境分析、训练数据管理
-
-### 工具模块
-
-#### 类函数接口
-
-工具设计采用直观的类函数接口，在抽象沙箱复杂性的同时提供最大的灵活性：
-
-- **直接执行**: 工具可以直接调用，自动创建临时沙箱
-- **沙箱绑定**: 工具可以绑定到特定的沙箱实例以获得持久的执行上下文
-- **模式定义**: 每个工具都有一个定义的模式，指定输入参数和预期行为
-
-#### 工具执行优先级
-
-工具模块实现了三级沙箱规范优先级：
-
-1. **临时沙箱**（最高优先级）: 在函数调用期间指定
-2. **实例绑定沙箱**（第二优先级）: 通过绑定方法指定
-3. **演练模式**（最低优先级，未指定沙箱）: 当未指定沙箱时自动创建临时沙箱，工具执行后将被释放
-
-#### 不可变绑定模式
-
-当工具绑定到特定沙箱时，会创建一个新的工具实例，而不是修改原始实例。这种不可变绑定模式确保了线程安全，并允许同一工具的多个沙箱绑定版本共存而不会相互干扰。
+`Adapter`按照不同Agent框架分类，包含工具适配器、记忆适配器、会话适配器、消息协议适配器等。
