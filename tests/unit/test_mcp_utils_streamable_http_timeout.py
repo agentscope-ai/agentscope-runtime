@@ -31,12 +31,15 @@ async def test_streamable_http_timeout_coerces_timedelta() -> None:
     @asynccontextmanager
     async def fake_streamablehttp_client(
         *,
-        _url: str,
-        _headers: dict[str, Any] | None = None,
+        url: str,
+        headers: dict[str, Any] | None = None,
         timeout: Any = None,
         sse_read_timeout: Any = None,
-        **_kwargs: Any,
+        **kwargs: Any,
     ):
+        seen["url"] = url
+        seen["headers"] = headers
+        seen["kwargs"] = kwargs
         seen["timeout"] = timeout
         seen["sse_read_timeout"] = sse_read_timeout
         yield (object(), object(), (lambda: None))
