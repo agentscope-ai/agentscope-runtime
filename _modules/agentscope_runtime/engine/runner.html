@@ -626,7 +626,7 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <h1>Source code for agentscope_runtime.engine.runner</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="c1"># pylint: disable=not-callable,too-many-statements</span>
+<span class="c1"># pylint: disable=not-callable,too-many-statements,too-many-branches</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
@@ -656,6 +656,7 @@ body.preview-active {
     <span class="n">SequenceNumberGenerator</span><span class="p">,</span>
     <span class="n">Error</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.schemas.exception</span><span class="w"> </span><span class="kn">import</span> <span class="n">AppBaseException</span><span class="p">,</span> <span class="n">UnknownAgentException</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.tracing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TraceType</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.tracing.wrapper</span><span class="w"> </span><span class="kn">import</span> <span class="n">trace</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.tracing.message_util</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -951,11 +952,9 @@ body.preview-active {
                     <span class="n">response</span><span class="o">.</span><span class="n">add_new_message</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
                 <span class="k">yield</span> <span class="n">seq_gen</span><span class="o">.</span><span class="n">yield_with_sequence</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="c1"># TODO: fix code</span>
-            <span class="n">error</span> <span class="o">=</span> <span class="n">Error</span><span class="p">(</span>
-                <span class="n">code</span><span class="o">=</span><span class="s2">&quot;500&quot;</span><span class="p">,</span>
-                <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Error happens in `query_handler`: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">AppBaseException</span><span class="p">):</span>
+                <span class="n">e</span> <span class="o">=</span> <span class="n">UnknownAgentException</span><span class="p">(</span><span class="n">original_exception</span><span class="o">=</span><span class="n">e</span><span class="p">)</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="n">Error</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="n">e</span><span class="o">.</span><span class="n">code</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">error</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="k">yield</span> <span class="n">seq_gen</span><span class="o">.</span><span class="n">yield_with_sequence</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">failed</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
             <span class="k">return</span>
