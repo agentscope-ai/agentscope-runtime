@@ -569,7 +569,9 @@ class UnknownAgentException(AgentRuntimeErrorException):
         details: Optional[Dict[str, Any]] = None,
     ):
         message = "Unknown agent error" + (
-            f": {original_exception}" if original_exception is not None else ""
+            f": {type(original_exception).__name__}: {str(original_exception)}"
+            if original_exception is not None
+            else ""
         )
         super().__init__(
             "AGENT_UNKNOWN_ERROR",
