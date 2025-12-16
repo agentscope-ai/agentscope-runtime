@@ -25,8 +25,13 @@ class TestGetFirstNonLoopbackIP:
         """Test returns None when no network interfaces are available."""
         with patch("psutil.net_if_addrs", return_value={}):
             with patch("psutil.net_if_stats", return_value={}):
-                result = get_first_non_loopback_ip()
-                assert result is None
+                with patch("socket.gethostname", return_value="testhost"):
+                    with patch(
+                        "socket.gethostbyname",
+                        side_effect=socket.error("Host not found"),
+                    ):
+                        result = get_first_non_loopback_ip()
+                        assert result is None
 
     def test_skips_loopback_addresses(self):
         """Test that loopback addresses are skipped."""
@@ -345,7 +350,11 @@ class TestGetFirstNonLoopbackIP:
 
         with patch("psutil.net_if_addrs", return_value=mock_addrs):
             with patch("psutil.net_if_stats", return_value=mock_stats):
-                with patch.dict(os.environ, {"USE_IPV6": "false"}, clear=False):
+                with patch.dict(
+                    os.environ,
+                    {"USE_IPV6": "false"},
+                    clear=False,
+                ):
                     result = get_first_non_loopback_ip()
                     # Should use IPv4 even when env var is set to false
                     assert result == "192.168.1.100"

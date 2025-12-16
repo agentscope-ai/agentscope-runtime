@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import ipaddress
 import os
 import socket
@@ -19,7 +20,7 @@ def get_first_non_loopback_ip() -> Optional[str]:
         str | None: The first non-loopback IP address, or None if not found
     """
     result = None
-    lowest_index = float('inf')
+    lowest_index = float("inf")
 
     use_ipv6 = os.environ.get("USE_IPV6", "false").lower() == "true"
     target_family = socket.AF_INET6 if use_ipv6 else socket.AF_INET
@@ -27,7 +28,8 @@ def get_first_non_loopback_ip() -> Optional[str]:
     net_if_stats = psutil.net_if_stats()
 
     for index, (interface, addrs) in enumerate(
-            psutil.net_if_addrs().items()):
+        psutil.net_if_addrs().items(),
+    ):
         stats = net_if_stats.get(interface)
         if stats is None or not stats.isup:
             continue
@@ -43,7 +45,7 @@ def get_first_non_loopback_ip() -> Optional[str]:
 
             try:
                 ip_obj = ipaddress.ip_address(
-                    addr.address.split('%')[0]
+                    addr.address.split("%")[0],
                 )
                 if ip_obj.is_loopback:
                     continue
