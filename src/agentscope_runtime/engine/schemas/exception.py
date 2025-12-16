@@ -453,3 +453,126 @@ class TimeoutException(GatewayTimeoutException):
             f" {timeout} seconds"
         )
         super().__init__("TIMEOUT", message, details)
+
+
+# ==================== Agent runtime related Exceptions ====================
+class AgentRuntimeErrorException(BusinessLogicException):
+    """
+    Base class for agent runtime error exceptions (HTTP 422 - Unprocessable
+    Entity)
+    """
+
+
+class ToolExecutionException(AgentRuntimeErrorException):
+    """Error occurred during tool execution"""
+
+    def __init__(self, details: Optional[Dict[str, Any]] = None):
+        super().__init__(
+            "TOOL_EXECUTION_FAILED",
+            "Error occurred during tool execution",
+            details,
+        )
+
+
+class ToolNotFoundException(AgentRuntimeErrorException):
+    """Specified tool not found"""
+
+    def __init__(
+        self,
+        tool_name: str,
+        details: Optional[Dict[str, Any]] = None,
+    ):
+        message = f"Tool not found: {tool_name}"
+        super().__init__("TOOL_NOT_FOUND", message, details)
+
+
+class MCPConnectionException(AgentRuntimeErrorException):
+    """Failed to connect to MCP service"""
+
+    def __init__(self, details: Optional[Dict[str, Any]] = None):
+        super().__init__(
+            "MCP_CONNECTION_FAILED",
+            "Failed to connect to MCP service",
+            details,
+        )
+
+
+class MCPProtocolException(AgentRuntimeErrorException):
+    """Invalid MCP protocol message format"""
+
+    def __init__(self, details: Optional[Dict[str, Any]] = None):
+        super().__init__(
+            "MCP_PROTOCOL_ERROR",
+            "Invalid MCP protocol message format",
+            details,
+        )
+
+
+class ModelExecutionException(AgentRuntimeErrorException):
+    """Error occurred during model execution"""
+
+    def __init__(
+        self,
+        model_name: str,
+        details: Optional[Dict[str, Any]] = None,
+    ):
+        message = f"Error occurred during execution of model: {model_name}"
+        super().__init__("MODEL_EXECUTION_FAILED", message, details)
+
+
+class ModelTimeoutException(AgentRuntimeErrorException):
+    """Model inference timed out"""
+
+    def __init__(
+        self,
+        model_name: str,
+        timeout: int,
+        details: Optional[Dict[str, Any]] = None,
+    ):
+        message = (
+            f"Model inference timed out: {model_name}, timeout limit:"
+            f" {timeout} seconds"
+        )
+        super().__init__("MODEL_TIMEOUT", message, details)
+
+
+class ModelNotFoundException(AgentRuntimeErrorException):
+    """Specified model not found"""
+
+    def __init__(
+        self,
+        model_name: str,
+        details: Optional[Dict[str, Any]] = None,
+    ):
+        message = f"Model not found: {model_name}"
+        super().__init__("MODEL_NOT_FOUND", message, details)
+
+
+class UnauthorizedModelAccessException(AgentRuntimeErrorException):
+    """Unauthorized access to model"""
+
+    def __init__(
+        self,
+        model_name: str,
+        details: Optional[Dict[str, Any]] = None,
+    ):
+        message = f"Unauthorized access to model: {model_name}"
+        super().__init__("MODEL_UNAUTHORIZED_ACCESS", message, details)
+
+
+class UnknownAgentException(AgentRuntimeErrorException):
+    """Generic agent error with no specific classification"""
+
+    def __init__(
+        self,
+        original_exception: Optional[Exception] = None,
+        details: Optional[Dict[str, Any]] = None,
+    ):
+        message = "Unknown agent error" + (
+            f": {original_exception}" if original_exception is not None else ""
+        )
+        super().__init__(
+            "AGENT_UNKNOWN_ERROR",
+            message,
+            details,
+        )
