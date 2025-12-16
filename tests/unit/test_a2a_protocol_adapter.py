@@ -144,6 +144,68 @@ class TestAgentCardConfiguration:
 
         assert card.url == "https://example.com/agent"
 
+    def test_get_agent_card_url_with_http_host(self):
+        """Test get_agent_card URL with host starting with http://."""
+        adapter = A2AFastAPIDefaultAdapter(
+            agent_name="test_agent",
+            agent_description="Test description",
+            host="http://localhost",
+            port=8080,
+        )
+
+        app = FastAPI()
+        card = adapter.get_agent_card(app=app)
+
+        # Should preserve http:// protocol and append port and path
+        assert card.url == "http://localhost:8080/a2a"
+
+    def test_get_agent_card_url_with_https_host(self):
+        """Test get_agent_card URL with host starting with https://."""
+        adapter = A2AFastAPIDefaultAdapter(
+            agent_name="test_agent",
+            agent_description="Test description",
+            host="https://example.com",
+            port=8443,
+        )
+
+        app = FastAPI()
+        card = adapter.get_agent_card(app=app)
+
+        # Should preserve https:// protocol and append port and path
+        assert card.url == "https://example.com:8443/a2a"
+
+    def test_get_agent_card_url_with_host_no_protocol(self):
+        """Test get_agent_card URL with host without protocol prefix."""
+        adapter = A2AFastAPIDefaultAdapter(
+            agent_name="test_agent",
+            agent_description="Test description",
+            host="localhost",
+            port=8080,
+        )
+
+        app = FastAPI()
+        card = adapter.get_agent_card(app=app)
+
+        # Should add http:// protocol prefix
+        assert card.url == "http://localhost:8080/a2a"
+
+    def test_get_agent_card_url_with_root_path(self):
+        """Test get_agent_card URL with root_path and protocol handling."""
+        # Test with http:// host and root_path
+        adapter = A2AFastAPIDefaultAdapter(
+            agent_name="test_agent",
+            agent_description="Test description",
+            host="http://example.com",
+            port=8080,
+        )
+
+        app = FastAPI(root_path="/api/v1")
+        card = adapter.get_agent_card(app=app)
+
+        # Should preserve http:// protocol and combine root_path with
+        # json_rpc_path
+        assert card.url == "http://example.com:8080/api/v1/a2a"
+
 
 class TestSerializationFallbackLogic:
     """Test the serialization fallback mechanism."""

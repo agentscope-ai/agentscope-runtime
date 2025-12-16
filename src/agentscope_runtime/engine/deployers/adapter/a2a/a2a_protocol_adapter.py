@@ -519,17 +519,25 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         """
         # Build required fields with defaults
         # Use default base URL for JSON-RPC endpoint
-        base = self._card_url or "http://127.0.0.1:8000"
-        base_with_slash = base.rstrip("/") + "/"
-        json_rpc_url = urljoin(
-            base_with_slash,
-            self._json_rpc_path.lstrip("/"),
-        )
+        if self._card_url is not None:
+            url = self._card_url
+        else:
+            path = getattr(app, "root_path", "")
+            json_rpc = urljoin(
+                path.rstrip("/") + "/",
+                self._json_rpc_path.lstrip("/"),
+            ).lstrip("/")
+
+            if self._host.startswith(("http://", "https://")):
+                base_url = f"{self._host}:{self._port}"
+            else:
+                base_url = f"http://{self._host}:{self._port}"
+            url = f"{base_url}/{json_rpc}"
 
         card_kwargs: Dict[str, Any] = {
             "name": self._agent_name,
             "description": self._agent_description,
-            "url": self._card_url or json_rpc_url,
+            "url": url,
             "version": self._card_version or runtime_version,
             "capabilities": AgentCapabilities(
                 streaming=False,
