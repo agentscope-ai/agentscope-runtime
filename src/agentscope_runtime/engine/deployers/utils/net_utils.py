@@ -10,7 +10,6 @@ import psutil
 def get_first_non_loopback_ip() -> Optional[str]:
     """Get the first non-loopback IP address from network interfaces.
 
-    Similar to Java's findFirstNonLoopbackAddress() logic:
     - Selects the interface with the lowest index
     - Only considers interfaces that are up
     - Supports IPv4/IPv6 based on environment variable
@@ -56,7 +55,6 @@ def get_first_non_loopback_ip() -> Optional[str]:
     if result is not None:
         return result
 
-    # Fallback: similar to Java's InetAddress.getLocalHost()
     try:
         hostname = socket.gethostname()
         fallback_ip = socket.gethostbyname(hostname)
