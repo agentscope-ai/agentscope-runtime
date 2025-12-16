@@ -105,7 +105,6 @@ class TestDeployProperties:
         props = DeployProperties()
         assert props.host is None
         assert props.port is None
-        assert props.path == ""
         assert props.extra == {}
 
     def test_custom_values(self):
@@ -113,12 +112,10 @@ class TestDeployProperties:
         props = DeployProperties(
             host="example.com",
             port=9090,
-            path="/api",
             extra={"key": "value"},
         )
         assert props.host == "example.com"
         assert props.port == 9090
-        assert props.path == "/api"
         assert props.extra == {"key": "value"}
 
 

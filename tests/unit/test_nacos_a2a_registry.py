@@ -24,6 +24,7 @@ from agentscope_runtime.engine.deployers.adapter.a2a import (
     nacos_a2a_registry,
 )
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
+    A2ATransportsProperties,
     DeployProperties,
 )
 
@@ -84,8 +85,30 @@ def deploy_properties():
     return DeployProperties(
         host="localhost",
         port=8080,
-        path="/api",
     )
+
+
+@pytest.fixture
+def a2a_transports_properties():
+    """Create test A2ATransportsProperties list."""
+    return [
+        A2ATransportsProperties(
+            host="localhost",
+            port=8080,
+            path="/api",
+            support_tls=False,
+            extra={},
+            transport_type="grpc",
+        ),
+        A2ATransportsProperties(
+            host="localhost",
+            port=8081,
+            path="/api/v2",
+            support_tls=True,
+            extra={"version": "2.0"},
+            transport_type="http",
+        ),
+    ]
 
 
 class TestNacosRegistry:  # pylint: disable=too-many-public-methods
@@ -165,6 +188,7 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry.register(
                 agent_card,
                 deploy_props_no_port,
+                None,
             )
             # Should not start registration task
             assert registry._register_task is None
@@ -964,12 +988,13 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             assert captured_args["host"] == "127.0.0.1"
             assert captured_args["port"] == 8080
 
-    def test_register_with_custom_root_path(
+    def test_register_with_multiple_transports(
         self,
         mock_nacos_sdk,
         agent_card,
+        deploy_properties,
     ):
-        """Test register() with custom root_path."""
+        """Test register() with multiple transports calls register for each."""
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
             ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
@@ -977,13 +1002,34 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         ):
             registry = NacosRegistry()
 
-            deploy_props = DeployProperties(
-                host="example.com",
-                port=9090,
-                path="/custom/path",
-            )
+            transports = [
+                A2ATransportsProperties(
+                    host="host1.com",
+                    port=8080,
+                    path="/v1",
+                    support_tls=False,
+                    extra={},
+                    transport_type="grpc",
+                ),
+                A2ATransportsProperties(
+                    host="host2.com",
+                    port=8081,
+                    path="/v2",
+                    support_tls=True,
+                    extra={},
+                    transport_type="http",
+                ),
+                A2ATransportsProperties(
+                    host="host3.com",
+                    port=8082,
+                    path="/v3",
+                    support_tls=False,
+                    extra={},
+                    transport_type="grpc",
+                ),
+            ]
 
-            captured_args = {}
+            captured_calls = []
 
             def mock_start_register_task(
                 agent_card,
@@ -991,16 +1037,27 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 port,
                 path,
             ):
-                captured_args["path"] = path
+                captured_calls.append(
+                    {
+                        "host": host,
+                        "port": port,
+                        "path": path,
+                    },
+                )
 
             registry._start_register_task = mock_start_register_task
 
             registry.register(
                 agent_card,
-                deploy_props,
+                deploy_properties,
+                transports,
             )
 
-            assert captured_args["path"] == "/custom/path"
+            # Should register all 3 transports
+            assert len(captured_calls) == 3
+            assert captured_calls[0]["host"] == "host1.com"
+            assert captured_calls[1]["host"] == "host2.com"
+            assert captured_calls[2]["host"] == "host3.com"
 
     def test_get_client_config_without_auth(self, mock_nacos_sdk):
         """Test _get_client_config() without authentication."""
@@ -1110,3 +1167,268 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             assert status == RegistrationStatus.COMPLETED
             mock_thread.join.assert_called_once_with(timeout=1.0)
+
+    def test_register_with_transports_properties(
+        self,
+        mock_nacos_sdk,
+        agent_card,
+        deploy_properties,
+        a2a_transports_properties,
+    ):
+        """Test register() with a2a_transports_properties list."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            registry = NacosRegistry()
+
+            # Track all register task calls
+            captured_calls = []
+
+            def mock_start_register_task(
+                agent_card,
+                host,
+                port,
+                path,
+            ):
+                captured_calls.append(
+                    {
+                        "host": host,
+                        "port": port,
+                        "path": path,
+                    },
+                )
+
+            registry._start_register_task = mock_start_register_task
+
+            # Register with transports list
+            registry.register(
+                agent_card,
+                deploy_properties,
+                a2a_transports_properties,
+            )
+
+            # Should register each transport
+            assert len(captured_calls) == 2
+            # First transport
+            assert captured_calls[0]["host"] == "localhost"
+            assert captured_calls[0]["port"] == 8080
+            assert captured_calls[0]["path"] == "/api"
+            # Second transport
+            assert captured_calls[1]["host"] == "localhost"
+            assert captured_calls[1]["port"] == 8081
+            assert captured_calls[1]["path"] == "/api/v2"
+
+    def test_register_with_transports_priority_over_deploy_props(
+        self,
+        mock_nacos_sdk,
+        agent_card,
+    ):
+        """Test that transport properties take priority over deploy
+        properties."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            registry = NacosRegistry()
+
+            # Deploy properties as fallback
+            deploy_props = DeployProperties(
+                host="fallback.host",
+                port=9090,
+            )
+
+            # Transport with partial values (should use fallback for missing)
+            transports = [
+                A2ATransportsProperties(
+                    host="transport.host",
+                    port=None,  # Should fallback to deploy_props
+                    path="/transport",
+                    support_tls=False,
+                    extra={},
+                    transport_type="grpc",
+                ),
+            ]
+
+            captured_calls = []
+
+            def mock_start_register_task(
+                agent_card,
+                host,
+                port,
+                path,
+            ):
+                captured_calls.append(
+                    {
+                        "host": host,
+                        "port": port,
+                        "path": path,
+                    },
+                )
+
+            registry._start_register_task = mock_start_register_task
+
+            registry.register(
+                agent_card,
+                deploy_props,
+                transports,
+            )
+
+            # Should use transport host but fallback port
+            assert len(captured_calls) == 1
+            assert captured_calls[0]["host"] == "transport.host"
+            assert (
+                captured_calls[0]["port"] == 9090
+            )  # Fallback from deploy_props
+            assert captured_calls[0]["path"] == "/transport"
+
+    def test_register_with_empty_transports_list(
+        self,
+        mock_nacos_sdk,
+        agent_card,
+        deploy_properties,
+    ):
+        """Test register() with empty transports list uses
+        deploy_properties."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            registry = NacosRegistry()
+
+            captured_calls = []
+
+            def mock_start_register_task(
+                agent_card,
+                host,
+                port,
+                path,
+            ):
+                captured_calls.append(
+                    {
+                        "host": host,
+                        "port": port,
+                        "path": path,
+                    },
+                )
+
+            registry._start_register_task = mock_start_register_task
+
+            # Register with empty list
+            registry.register(
+                agent_card,
+                deploy_properties,
+                [],  # Empty transports
+            )
+
+            # Should fallback to deploy_properties
+            assert len(captured_calls) == 1
+            assert captured_calls[0]["host"] == "localhost"
+            assert captured_calls[0]["port"] == 8080
+            assert captured_calls[0]["path"] == ""  # No path in deploy_props
+
+    def test_register_with_transport_missing_port(
+        self,
+        mock_nacos_sdk,
+        agent_card,
+        deploy_properties,
+    ):
+        """Test register() skips transport when port is missing."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            registry = NacosRegistry()
+
+            # Deploy properties without port
+            deploy_props_no_port = DeployProperties(
+                host="localhost",
+                port=None,
+            )
+
+            # Transports also without port
+            transports = [
+                A2ATransportsProperties(
+                    host="localhost",
+                    port=None,
+                    path="/api",
+                    support_tls=False,
+                    extra={},
+                    transport_type="grpc",
+                ),
+            ]
+
+            captured_calls = []
+
+            def mock_start_register_task(
+                agent_card,
+                host,
+                port,
+                path,
+            ):
+                captured_calls.append(
+                    {
+                        "host": host,
+                        "port": port,
+                        "path": path,
+                    },
+                )
+
+            registry._start_register_task = mock_start_register_task
+
+            registry.register(
+                agent_card,
+                deploy_props_no_port,
+                transports,
+            )
+
+            # Should skip the transport (no calls)
+            assert len(captured_calls) == 0
+
+    def test_register_with_none_transports(
+        self,
+        mock_nacos_sdk,
+        agent_card,
+        deploy_properties,
+    ):
+        """Test register() with None transports uses deploy_properties."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
+            True,
+        ):
+            registry = NacosRegistry()
+
+            captured_calls = []
+
+            def mock_start_register_task(
+                agent_card,
+                host,
+                port,
+                path,
+            ):
+                captured_calls.append(
+                    {
+                        "host": host,
+                        "port": port,
+                        "path": path,
+                    },
+                )
+
+            registry._start_register_task = mock_start_register_task
+
+            # Register with None transports (backward compatibility)
+            registry.register(
+                agent_card,
+                deploy_properties,
+                None,
+            )
+
+            # Should use deploy_properties
+            assert len(captured_calls) == 1
+            assert captured_calls[0]["host"] == "localhost"
+            assert captured_calls[0]["port"] == 8080

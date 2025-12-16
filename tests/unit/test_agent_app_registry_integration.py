@@ -34,7 +34,7 @@ class MockRegistry(A2ARegistry):
         self,
         agent_card,
         deploy_properties: DeployProperties,
-        a2a_transports_properties,
+        a2a_transports_properties=None,
     ) -> None:
         self.registered = True
 

@@ -79,7 +79,7 @@ class AgentApp(BaseApp):
                 Can be:
                 - AgentCardWithRuntimeConfig (Recommended):
                   Inherits from AgentCard and adds runtime fields
-                  (registry, transports, task_timeout, etc.)
+                  (registry, task_timeout, etc.)
                   Example:
                     from a2a.types import (
                         AgentCapabilities,
@@ -94,11 +94,10 @@ class AgentApp(BaseApp):
                         description="My agent",
                         url="http://localhost:8080",
                         capabilities=AgentCapabilities(),
-                        defaultInputModes=["text"],
-                        defaultOutputModes=["text"],
+                        default_input_modes=["text"],
+                        default_output_modes=["text"],
                         skills=[],
                         registry=[nacos_registry],
-                        transports=[{"name": "JSONRPC", "url": "..."}],
                         task_timeout=120,
                     )
 

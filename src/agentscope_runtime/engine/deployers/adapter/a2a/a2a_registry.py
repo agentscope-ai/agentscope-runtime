@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 __all__ = [
     "A2ARegistry",
     "DeployProperties",
+    "A2ATransportsProperties",
     "A2ARegistrySettings",
     "get_registry_settings",
     "create_registry_from_env",
@@ -43,14 +44,33 @@ class DeployProperties:
     Attributes:
         host: Optional server host.
         port: Optional server port.
-        path: Application path (for frameworks like FastAPI).
         extra: Additional runtime properties.
     """
 
     host: Optional[str] = None
     port: Optional[int] = None
-    path: str = ""
     extra: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class A2ATransportsProperties:
+    """A2A transport properties for multi-transport support.
+
+    Attributes:
+        port: Transport port.
+        host: Transport host.
+        path: Transport path.
+        support_tls: Whether TLS is supported.
+        extra: Additional transport properties.
+        transport_type: Type of transport (e.g., "http", "grpc").
+    """
+
+    host: Optional[str] = None
+    port: Optional[int] = None
+    path: Optional[str] = None
+    support_tls: Optional[bool] = False
+    extra: Dict[str, Any] = field(default_factory=dict)
+    transport_type: str = "grpc"
 
 
 class A2ARegistry(ABC):
@@ -71,8 +91,18 @@ class A2ARegistry(ABC):
         self,
         agent_card: AgentCard,
         deploy_properties: DeployProperties,
+        a2a_transports_properties: Optional[
+            List[A2ATransportsProperties]
+        ] = None,
     ) -> None:
         """Register an agent/service.
+
+        Args:
+            agent_card: Agent card of this agent.
+            deploy_properties: Deploy properties include interface information
+                such as address, port, etc.
+            a2a_transports_properties: Multiple transports for A2A Server,
+                and each transport might include different configs.
 
         Implementations may register the agent card itself and/or endpoint
         depending on their semantics.
