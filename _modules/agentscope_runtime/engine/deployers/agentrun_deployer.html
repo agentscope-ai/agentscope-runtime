@@ -506,6 +506,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/call.html">AgentApp API Invocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../en/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/demohouse.html">Reference: Demo House</a></li>
@@ -570,6 +571,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/call.html">智能体应用API调用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../zh/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
@@ -632,6 +634,7 @@ body.preview-active {
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span>
 
@@ -659,7 +662,9 @@ body.preview-active {
 <span class="kn">from</span><span class="w"> </span><span class="nn">.adapter.protocol_adapter</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProtocolAdapter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeployManager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.local_deployer</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalDeployManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">Deployment</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils.detached_app</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_bundle_entry_script</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils.package</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_build_directory</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils.wheel_packager</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">default_deploy_name</span><span class="p">,</span>
     <span class="n">generate_wrapper_project</span><span class="p">,</span>
@@ -943,6 +948,7 @@ body.preview-active {
         <span class="n">oss_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OSSConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">agentrun_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AgentRunConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">build_root</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">state_manager</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize AgentRun deployment manager.</span>
 
@@ -950,8 +956,9 @@ body.preview-active {
 <span class="sd">            oss_config: OSS configuration for artifact storage. If None, loads from environment.</span>
 <span class="sd">            agentrun_config: AgentRun service configuration. If None, loads from environment.</span>
 <span class="sd">            build_root: Root directory for build artifacts. If None, uses parent directory of current working directory.</span>
+<span class="sd">            state_manager: Deployment state manager. If None, creates a new instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">state_manager</span><span class="o">=</span><span class="n">state_manager</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">oss_config</span> <span class="o">=</span> <span class="n">oss_config</span> <span class="ow">or</span> <span class="n">OSSConfig</span><span class="o">.</span><span class="n">from_env</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">agentrun_config</span> <span class="o">=</span> <span class="n">agentrun_config</span> <span class="ow">or</span> <span class="n">AgentRunConfig</span><span class="o">.</span><span class="n">from_env</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">build_root</span> <span class="o">=</span> <span class="p">(</span>
@@ -1082,18 +1089,19 @@ body.preview-active {
             <span class="p">)</span>
 
         <span class="n">name</span> <span class="o">=</span> <span class="n">deploy_name</span> <span class="ow">or</span> <span class="n">default_deploy_name</span><span class="p">()</span>
-        <span class="n">proj_root</span> <span class="o">=</span> <span class="n">project_dir</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+
+        <span class="c1"># Generate build directory with platform-aware naming</span>
+        <span class="c1"># proj_root = project_dir.resolve()</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build_root</span><span class="p">,</span> <span class="n">Path</span><span class="p">):</span>
             <span class="n">effective_build_root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_root</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_root</span><span class="p">:</span>
                 <span class="n">effective_build_root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build_root</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">effective_build_root</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">proj_root</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;.agentscope_runtime_builds&quot;</span>
-                <span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+                <span class="c1"># Use centralized directory generation function</span>
+                <span class="n">effective_build_root</span> <span class="o">=</span> <span class="n">generate_build_directory</span><span class="p">(</span><span class="s2">&quot;agentrun&quot;</span><span class="p">)</span>
 
-        <span class="n">build_dir</span> <span class="o">=</span> <span class="n">effective_build_root</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;build-</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">build_dir</span> <span class="o">=</span> <span class="n">effective_build_root</span>
         <span class="n">build_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Generating wrapper project: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
@@ -1108,6 +1116,7 @@ body.preview-active {
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Building wheel package from: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">wrapper_project_dir</span><span class="p">)</span>
         <span class="n">wheel_path</span> <span class="o">=</span> <span class="n">build_wheel</span><span class="p">(</span><span class="n">wrapper_project_dir</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Wheel package created: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">wheel_path</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">wheel_path</span><span class="p">,</span> <span class="n">name</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_generate_env_file</span><span class="p">(</span>
@@ -1228,9 +1237,14 @@ body.preview-active {
 <span class="sd">            FileNotFoundError: If specified files/directories don&#39;t exist.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">agentrun_id</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">runner</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">project_dir</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">external_whl_path</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="ow">not</span> <span class="n">app</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">runner</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">project_dir</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">external_whl_path</span>
+            <span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;Must provide either runner, project_dir, or external_whl_path&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Must provide either app, runner, project_dir, or external_whl_path&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">runner</span> <span class="ow">or</span> <span class="n">app</span><span class="p">:</span>
@@ -1247,6 +1261,7 @@ body.preview-active {
                     <span class="n">protocol_adapters</span><span class="o">=</span><span class="n">protocol_adapters</span><span class="p">,</span>
                     <span class="n">requirements</span><span class="o">=</span><span class="n">requirements</span><span class="p">,</span>
                     <span class="n">extra_packages</span><span class="o">=</span><span class="n">extra_packages</span><span class="p">,</span>
+                    <span class="n">platform</span><span class="o">=</span><span class="s2">&quot;agentrun&quot;</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">if</span> <span class="n">project_dir</span><span class="p">:</span>
@@ -1329,21 +1344,50 @@ body.preview-active {
                 <span class="n">environment</span><span class="o">=</span><span class="n">environment</span><span class="p">,</span>
             <span class="p">)</span>
 
+            <span class="c1"># Use base class UUID deploy_id (already set in __init__)</span>
+            <span class="n">deploy_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">deploy_id</span>
+            <span class="n">agent_runtime_id</span> <span class="o">=</span> <span class="n">agentrun_deploy_result</span><span class="p">[</span><span class="s2">&quot;agent_runtime_id&quot;</span><span class="p">]</span>
+            <span class="n">endpoint_url</span> <span class="o">=</span> <span class="n">agentrun_deploy_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s2">&quot;agent_runtime_public_endpoint_url&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">console_url</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;https://functionai.console.aliyun.com/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">agentrun_config</span><span class="o">.</span><span class="n">region_id</span><span class="si">}</span><span class="s2">/&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;agent/infra/agent-runtime/agent-detail?id=</span><span class="si">{</span><span class="n">agent_runtime_id</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Save deployment to state manager</span>
+            <span class="n">deployment</span> <span class="o">=</span> <span class="n">Deployment</span><span class="p">(</span>
+                <span class="nb">id</span><span class="o">=</span><span class="n">deploy_id</span><span class="p">,</span>
+                <span class="n">platform</span><span class="o">=</span><span class="s2">&quot;agentrun&quot;</span><span class="p">,</span>
+                <span class="n">url</span><span class="o">=</span><span class="n">console_url</span><span class="p">,</span>
+                <span class="n">status</span><span class="o">=</span><span class="s2">&quot;running&quot;</span><span class="p">,</span>
+                <span class="n">created_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                <span class="n">agent_source</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;agent_source&quot;</span><span class="p">),</span>
+                <span class="n">config</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;agent_runtime_id&quot;</span><span class="p">:</span> <span class="n">agent_runtime_id</span><span class="p">,</span>
+                    <span class="s2">&quot;agent_runtime_endpoint_url&quot;</span><span class="p">:</span> <span class="n">endpoint_url</span><span class="p">,</span>
+                    <span class="s2">&quot;resource_name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+                    <span class="s2">&quot;wheel_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">wheel_path</span><span class="p">),</span>
+                    <span class="s2">&quot;artifact_url&quot;</span><span class="p">:</span> <span class="n">oss_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;presigned_url&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                    <span class="s2">&quot;region_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">agentrun_config</span><span class="o">.</span><span class="n">region_id</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state_manager</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">deployment</span><span class="p">)</span>
+
             <span class="c1"># Return deployment results</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
                 <span class="s2">&quot;Deployment completed successfully. Agent runtime ID: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="n">agentrun_deploy_result</span><span class="p">[</span><span class="s2">&quot;agent_runtime_id&quot;</span><span class="p">],</span>
+                <span class="n">agent_runtime_id</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="p">{</span>
                 <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Agent deployed successfully to AgentRun&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;agentrun_id&quot;</span><span class="p">:</span> <span class="n">agentrun_deploy_result</span><span class="p">[</span><span class="s2">&quot;agent_runtime_id&quot;</span><span class="p">],</span>
-                <span class="s2">&quot;agentrun_endpoint_url&quot;</span><span class="p">:</span> <span class="n">agentrun_deploy_result</span><span class="p">[</span>
-                    <span class="s2">&quot;agent_runtime_public_endpoint_url&quot;</span>
-                <span class="p">],</span>
+                <span class="s2">&quot;agentrun_id&quot;</span><span class="p">:</span> <span class="n">agent_runtime_id</span><span class="p">,</span>
+                <span class="s2">&quot;agentrun_endpoint_url&quot;</span><span class="p">:</span> <span class="n">endpoint_url</span><span class="p">,</span>
                 <span class="s2">&quot;wheel_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">wheel_path</span><span class="p">),</span>
-                <span class="s2">&quot;artifact_url&quot;</span><span class="p">:</span> <span class="n">oss_result</span><span class="p">[</span><span class="s2">&quot;presigned_url&quot;</span><span class="p">],</span>
-                <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;https://functionai.console.aliyun.com/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">agentrun_config</span><span class="o">.</span><span class="n">region_id</span><span class="si">}</span><span class="s1">/agent/runtime/agent-detail-code/</span><span class="si">{</span><span class="n">agentrun_deploy_result</span><span class="p">[</span><span class="s2">&quot;agent_runtime_id&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
-                <span class="s2">&quot;deploy_id&quot;</span><span class="p">:</span> <span class="n">agentrun_deploy_result</span><span class="p">[</span><span class="s2">&quot;agent_runtime_id&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;artifact_url&quot;</span><span class="p">:</span> <span class="n">oss_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;presigned_url&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">console_url</span><span class="p">,</span>
+                <span class="s2">&quot;deploy_id&quot;</span><span class="p">:</span> <span class="n">deploy_id</span><span class="p">,</span>
                 <span class="s2">&quot;resource_name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
             <span class="p">}</span>
 
@@ -1530,7 +1574,6 @@ body.preview-active {
             <span class="kn">from</span><span class="w"> </span><span class="nn">alibabacloud_oss_v2.credentials</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
                 <span class="n">StaticCredentialsProvider</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
         <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;OSS SDK not available. Install with: pip install alibabacloud-oss-v2&quot;</span><span class="p">,</span>
@@ -3236,6 +3279,92 @@ body.preview-active {
                 <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
                 <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
                 <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Exception occurred while publishing agent runtime version: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="AgentRunDeployManager.stop">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.agentrun_deployer.AgentRunDeployManager.stop">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deploy_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop AgentRun deployment by deleting it.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            deploy_id: AgentRun runtime ID (agent_runtime_id)</span>
+<span class="sd">            **kwargs: Additional parameters</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict with success status, message, and details</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Try to get deployment info from state for context</span>
+            <span class="n">deployment_info</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">deployment</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">deployment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_manager</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">deploy_id</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">deployment</span><span class="p">:</span>
+                    <span class="n">deployment_info</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">deployment</span><span class="o">.</span><span class="n">url</span>
+                        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">deployment</span><span class="p">,</span> <span class="s2">&quot;url&quot;</span><span class="p">)</span>
+                        <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="s2">&quot;resource_name&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span>
+                            <span class="n">deployment</span><span class="p">,</span>
+                            <span class="s2">&quot;resource_name&quot;</span><span class="p">,</span>
+                            <span class="kc">None</span><span class="p">,</span>
+                        <span class="p">),</span>
+                    <span class="p">}</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Fetched deployment info from state: </span><span class="si">{</span><span class="n">deployment_info</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Could not fetch deployment info from state: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Stopping AgentRun deployment: </span><span class="si">{</span><span class="n">deploy_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Get agent_runtime_id from deployment config</span>
+            <span class="n">agent_runtime_id</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">deployment</span> <span class="ow">and</span> <span class="n">deployment</span><span class="o">.</span><span class="n">config</span><span class="p">:</span>
+                <span class="n">agent_runtime_id</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;agent_runtime_id&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">agent_runtime_id</span><span class="p">:</span>
+                <span class="c1"># Fallback: try using deploy_id as agent_runtime_id for backward compatibility</span>
+                <span class="n">agent_runtime_id</span> <span class="o">=</span> <span class="n">deploy_id</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Could not find agent_runtime_id in deployment config, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;using deploy_id as fallback: </span><span class="si">{</span><span class="n">deploy_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Use the existing delete method with agent_runtime_id</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">agent_runtime_id</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+                <span class="c1"># Remove from state manager on successful deletion</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">state_manager</span><span class="o">.</span><span class="n">update_status</span><span class="p">(</span><span class="n">deploy_id</span><span class="p">,</span> <span class="s2">&quot;stopped&quot;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Deployment </span><span class="si">{</span><span class="n">deploy_id</span><span class="si">}</span><span class="s2"> not found in state (already removed)&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                <span class="k">return</span> <span class="p">{</span>
+                    <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;AgentRun deployment </span><span class="si">{</span><span class="n">deploy_id</span><span class="si">}</span><span class="s2"> deleted successfully&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;details&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span>
+                    <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Failed to delete AgentRun deployment: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Unknown error&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;details&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">,</span>
+                <span class="p">}</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to stop AgentRun deployment </span><span class="si">{</span><span class="n">deploy_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Failed to stop AgentRun deployment: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;details&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;deploy_id&quot;</span><span class="p">:</span> <span class="n">deploy_id</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
             <span class="p">}</span></div>
 </div>
 

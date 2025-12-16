@@ -506,6 +506,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/call.html">AgentApp API Invocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../en/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/demohouse.html">Reference: Demo House</a></li>
@@ -570,6 +571,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/call.html">智能体应用API调用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
@@ -1103,12 +1105,26 @@ body.preview-active {
             <span class="p">}</span>
 
         <span class="c1"># Mode-specific endpoints</span>
-        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="n">DeploymentMode</span><span class="o">.</span><span class="n">DETACHED_PROCESS</span><span class="p">:</span>
-            <span class="n">FastAPIAppFactory</span><span class="o">.</span><span class="n">_add_process_control_endpoints</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+        <span class="n">FastAPIAppFactory</span><span class="o">.</span><span class="n">_add_process_control_endpoints</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_add_process_control_endpoints</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add process control endpoints for detached mode.&quot;&quot;&quot;</span>
+
+        <span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/shutdown&quot;</span><span class="p">)</span>
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown_process_simple</span><span class="p">():</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Gracefully shutdown the process (simple endpoint).&quot;&quot;&quot;</span>
+            <span class="c1"># Import here to avoid circular imports</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">signal</span>
+
+            <span class="c1"># Schedule shutdown after response</span>
+            <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delayed_shutdown</span><span class="p">():</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">kill</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">(),</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIGTERM</span><span class="p">)</span>
+
+            <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">delayed_shutdown</span><span class="p">())</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;shutting down&quot;</span><span class="p">}</span>
 
         <span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/admin/shutdown&quot;</span><span class="p">)</span>
         <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown_process</span><span class="p">():</span>

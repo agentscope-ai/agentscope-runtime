@@ -506,6 +506,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/call.html">AgentApp API Invocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../en/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/demohouse.html">Reference: Demo House</a></li>
@@ -570,6 +571,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/call.html">智能体应用API调用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../zh/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
@@ -624,17 +626,19 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <h1>Source code for agentscope_runtime.engine.deployers.local_deployer</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="c1"># pylint:disable=protected-access, unused-argument</span>
+<span class="c1"># pylint:disable=protected-access, unused-argument, too-many-branches</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">socket</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">Deployment</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.adapter.protocol_adapter</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProtocolAdapter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeployManager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils.deployment_modes</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeploymentMode</span>
@@ -658,7 +662,7 @@ body.preview-active {
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
-        <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8000</span><span class="p">,</span>
+        <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8090</span><span class="p">,</span>
         <span class="n">shutdown_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
         <span class="n">startup_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
         <span class="n">logger</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -712,6 +716,9 @@ body.preview-active {
         <span class="n">broker_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">backend_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">enable_embedded_worker</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="c1"># New parameters for project-based deployment</span>
+        <span class="n">project_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">entrypoint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Deploy using unified FastAPI architecture.</span>
@@ -732,6 +739,8 @@ body.preview-active {
 <span class="sd">            backend_url: Celery backend URL for result storage</span>
 <span class="sd">            enable_embedded_worker: Whether to run Celery worker</span>
 <span class="sd">                embedded in the app</span>
+<span class="sd">            project_dir: Project directory (for DETACHED_PROCESS mode)</span>
+<span class="sd">            entrypoint: Entrypoint specification (for DETACHED_PROCESS mode)</span>
 <span class="sd">            **kwargs: Additional keyword arguments</span>
 
 <span class="sd">        Returns:</span>
@@ -784,6 +793,8 @@ body.preview-active {
                     <span class="n">after_finish</span><span class="o">=</span><span class="n">after_finish</span><span class="p">,</span>
                     <span class="n">custom_endpoints</span><span class="o">=</span><span class="n">custom_endpoints</span><span class="p">,</span>
                     <span class="n">protocol_adapters</span><span class="o">=</span><span class="n">protocol_adapters</span><span class="p">,</span>
+                    <span class="n">project_dir</span><span class="o">=</span><span class="n">project_dir</span><span class="p">,</span>
+                    <span class="n">entrypoint</span><span class="o">=</span><span class="n">entrypoint</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
@@ -804,6 +815,7 @@ body.preview-active {
         <span class="n">broker_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">backend_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">enable_embedded_worker</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">agent_source</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Deploy in daemon thread mode.&quot;&quot;&quot;</span>
@@ -841,21 +853,43 @@ body.preview-active {
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait_for_server_ready</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_startup_timeout</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">is_running</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">deploy_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;daemon_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;http://</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;FastAPI service started at http://</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;FastAPI service started at </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="p">)</span>
+
+        <span class="n">deployment</span> <span class="o">=</span> <span class="n">Deployment</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">deploy_id</span><span class="p">,</span>
+            <span class="n">platform</span><span class="o">=</span><span class="s2">&quot;local&quot;</span><span class="p">,</span>
+            <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span>
+            <span class="n">status</span><span class="o">=</span><span class="s2">&quot;running&quot;</span><span class="p">,</span>
+            <span class="n">created_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+            <span class="n">agent_source</span><span class="o">=</span><span class="n">agent_source</span><span class="p">,</span>
+            <span class="n">config</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="n">DeploymentMode</span><span class="o">.</span><span class="n">DAEMON_THREAD</span><span class="p">,</span>
+                <span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span>
+                <span class="s2">&quot;port&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span>
+                <span class="s2">&quot;broker_url&quot;</span><span class="p">:</span> <span class="n">broker_url</span><span class="p">,</span>
+                <span class="s2">&quot;backend_url&quot;</span><span class="p">:</span> <span class="n">backend_url</span><span class="p">,</span>
+                <span class="s2">&quot;enable_embedded_worker&quot;</span><span class="p">:</span> <span class="n">enable_embedded_worker</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state_manager</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">deployment</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">&quot;deploy_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">deploy_id</span><span class="p">,</span>
-            <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;http://</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span>
         <span class="p">}</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_deploy_detached_process</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">runner</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">protocol_adapters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">ProtocolAdapter</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">project_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">entrypoint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">agent_source</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Deploy in detached process mode.&quot;&quot;&quot;</span>
@@ -863,9 +897,14 @@ body.preview-active {
             <span class="s2">&quot;Deploying FastAPI service in detached process mode...&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">runner</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_app</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Clean up old log files (older than 24 hours)</span>
+        <span class="n">ProcessManager</span><span class="o">.</span><span class="n">cleanup_old_logs</span><span class="p">(</span><span class="n">max_age_hours</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+
+        <span class="c1"># Original behavior: require app or runner or entrypoint</span>
+        <span class="k">if</span> <span class="n">runner</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_app</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">entrypoint</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Detached process mode requires an app or runner&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Detached process mode requires an app, runner, &quot;</span>
+                <span class="s2">&quot;project_dir, or entrypoint&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="s2">&quot;agent&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
@@ -878,18 +917,29 @@ body.preview-active {
             <span class="n">app</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_app</span><span class="p">,</span>
             <span class="n">runner</span><span class="o">=</span><span class="n">runner</span><span class="p">,</span>
             <span class="n">protocol_adapters</span><span class="o">=</span><span class="n">protocol_adapters</span><span class="p">,</span>
+            <span class="n">entrypoint</span><span class="o">=</span><span class="n">entrypoint</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">project_dir</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Failed to parse project directory&quot;</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">entry_script</span> <span class="o">=</span> <span class="n">get_bundle_entry_script</span><span class="p">(</span><span class="n">project_dir</span><span class="p">)</span>
             <span class="n">script_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">project_dir</span><span class="p">,</span> <span class="n">entry_script</span><span class="p">)</span>
-
+            <span class="n">env</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;environment&quot;</span><span class="p">,</span> <span class="p">{})</span> <span class="ow">or</span> <span class="p">{}</span>
+            <span class="n">env</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;HOST&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span>
+                    <span class="s2">&quot;PORT&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">),</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
             <span class="c1"># Start detached process using the packaged project</span>
             <span class="n">pid</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_manager</span><span class="o">.</span><span class="n">start_detached_process</span><span class="p">(</span>
                 <span class="n">script_path</span><span class="o">=</span><span class="n">script_path</span><span class="p">,</span>
                 <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span>
                 <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="n">env</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_detached_process_pid</span> <span class="o">=</span> <span class="n">pid</span>
@@ -906,29 +956,58 @@ body.preview-active {
             <span class="p">)</span>
 
             <span class="k">if</span> <span class="ow">not</span> <span class="n">service_ready</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Service did not start within timeout&quot;</span><span class="p">)</span>
+                <span class="c1"># Check if process is still running</span>
+                <span class="n">is_running</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_manager</span><span class="o">.</span><span class="n">is_process_running</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+
+                <span class="c1"># Get process logs</span>
+                <span class="n">logs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_manager</span><span class="o">.</span><span class="n">get_process_logs</span><span class="p">(</span><span class="n">max_lines</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+
+                <span class="c1"># Log the detailed error for debugging</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Service did not start within timeout. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Process (PID: </span><span class="si">{</span><span class="n">pid</span><span class="si">}</span><span class="s2">) status: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;running&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">is_running</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;terminated&#39;</span><span class="si">}</span><span class="s2">. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Host: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">, Port: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s2">.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Process logs:</span><span class="se">\n</span><span class="si">{</span><span class="n">logs</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="c1"># Raise a simple error message</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="s2">&quot;Service failed to start. Check logs above for details.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">is_running</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">deploy_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;detached_</span><span class="si">{</span><span class="n">pid</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;http://</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;FastAPI service started in detached process (PID: </span><span class="si">{</span><span class="n">pid</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
+            <span class="n">deployment</span> <span class="o">=</span> <span class="n">Deployment</span><span class="p">(</span>
+                <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">deploy_id</span><span class="p">,</span>
+                <span class="n">platform</span><span class="o">=</span><span class="s2">&quot;local&quot;</span><span class="p">,</span>
+                <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span>
+                <span class="n">status</span><span class="o">=</span><span class="s2">&quot;running&quot;</span><span class="p">,</span>
+                <span class="n">created_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                <span class="n">agent_source</span><span class="o">=</span><span class="n">agent_source</span><span class="p">,</span>
+                <span class="n">config</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="n">DeploymentMode</span><span class="o">.</span><span class="n">DETACHED_PROCESS</span><span class="p">,</span>
+                    <span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span>
+                    <span class="s2">&quot;port&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span>
+                    <span class="s2">&quot;pid&quot;</span><span class="p">:</span> <span class="n">pid</span><span class="p">,</span>
+                    <span class="s2">&quot;pid_file&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detached_pid_file</span><span class="p">,</span>
+                    <span class="s2">&quot;project_dir&quot;</span><span class="p">:</span> <span class="n">project_dir</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state_manager</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">deployment</span><span class="p">)</span>
+
             <span class="k">return</span> <span class="p">{</span>
                 <span class="s2">&quot;deploy_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">deploy_id</span><span class="p">,</span>
-                <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;http://</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span>
             <span class="p">}</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="c1"># Cleanup on failure</span>
-            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">project_dir</span><span class="p">):</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
-
-                    <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">project_dir</span><span class="p">)</span>
-                <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
-                    <span class="k">pass</span>
             <span class="k">raise</span> <span class="n">e</span>
 
 <div class="viewcode-block" id="LocalDeployManager.create_detached_project">
@@ -937,6 +1016,7 @@ body.preview-active {
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_detached_project</span><span class="p">(</span>
         <span class="n">app</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">runner</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">entrypoint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">endpoint_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/process&quot;</span><span class="p">,</span>
         <span class="n">requirements</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">extra_packages</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -945,6 +1025,7 @@ body.preview-active {
         <span class="n">broker_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">backend_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">enable_embedded_worker</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">platform</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;local&quot;</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="n">project_dir</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">build_detached_app</span><span class="p">(</span>
@@ -952,6 +1033,8 @@ body.preview-active {
             <span class="n">runner</span><span class="o">=</span><span class="n">runner</span><span class="p">,</span>
             <span class="n">requirements</span><span class="o">=</span><span class="n">requirements</span><span class="p">,</span>
             <span class="n">extra_packages</span><span class="o">=</span><span class="n">extra_packages</span><span class="p">,</span>
+            <span class="n">platform</span><span class="o">=</span><span class="n">platform</span><span class="p">,</span>
+            <span class="n">entrypoint</span><span class="o">=</span><span class="n">entrypoint</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -960,13 +1043,74 @@ body.preview-active {
 
 <div class="viewcode-block" id="LocalDeployManager.stop">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.local_deployer.LocalDeployManager.stop">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop the FastAPI service (unified method for all modes).&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_running</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Service is not running&quot;</span><span class="p">)</span>
-            <span class="k">return</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">deploy_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop the FastAPI service.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            deploy_id: Deployment identifier</span>
+<span class="sd">            **kwargs: Additional parameters</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict with success status, message, and details</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># If URL not provided, try to get it from state manager</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">deployment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_manager</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">deploy_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">deployment</span><span class="p">:</span>
+                <span class="n">url</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">url</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Fetched URL from state: </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not fetch URL from state: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">deployment</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Deploy id not found&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;details&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;deploy_id&quot;</span><span class="p">:</span> <span class="n">deploy_id</span><span class="p">,</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Deploy id not found&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">}</span>
+
+        <span class="c1"># Only attempt HTTP shutdown for detached process mode</span>
+        <span class="c1"># In daemon thread mode, HTTP shutdown would kill the entire process</span>
+        <span class="c1"># (including pytest), so we skip it and use direct stop methods instead</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">url</span>
+            <span class="ow">and</span> <span class="n">deployment</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;mode&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">DeploymentMode</span><span class="o">.</span><span class="n">DETACHED_PROCESS</span>
+        <span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+
+                <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">/shutdown&quot;</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                    <span class="c1"># Remove from state manager on successful shutdown</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">state_manager</span><span class="o">.</span><span class="n">update_status</span><span class="p">(</span><span class="n">deploy_id</span><span class="p">,</span> <span class="s2">&quot;stopped&quot;</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Deployment </span><span class="si">{</span><span class="n">deploy_id</span><span class="si">}</span><span class="s2"> not found &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;in state (already removed)&quot;</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">is_running</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">return</span> <span class="p">{</span>
+                        <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                        <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Shutdown signal sent to detached process&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;details&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span> <span class="s2">&quot;deploy_id&quot;</span><span class="p">:</span> <span class="n">deploy_id</span><span class="p">},</span>
+                    <span class="p">}</span>
+
+            <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">RequestException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="c1"># If HTTP shutdown fails, continue with direct stop methods</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;HTTP shutdown failed, falling back to direct stop: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># when run in from main process instead of cli, make sure close</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detached_process_pid</span><span class="p">:</span>
                 <span class="c1"># Detached process mode</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stop_detached_process</span><span class="p">()</span>
@@ -974,9 +1118,27 @@ body.preview-active {
                 <span class="c1"># Daemon thread mode</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stop_daemon_thread</span><span class="p">()</span>
 
+            <span class="c1"># Remove from state manager on successful stop</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">state_manager</span><span class="o">.</span><span class="n">update_status</span><span class="p">(</span><span class="n">deploy_id</span><span class="p">,</span> <span class="s2">&quot;stopped&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Deployment </span><span class="si">{</span><span class="n">deploy_id</span><span class="si">}</span><span class="s2"> not found in state (already &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;removed)&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Service stopped successfully&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;details&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;deploy_id&quot;</span><span class="p">:</span> <span class="n">deploy_id</span><span class="p">},</span>
+            <span class="p">}</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to stop service: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to stop FastAPI service: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Failed to stop service: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;details&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;deploy_id&quot;</span><span class="p">:</span> <span class="n">deploy_id</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+            <span class="p">}</span></div>
 
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_stop_daemon_thread</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1025,6 +1187,9 @@ body.preview-active {
         <span class="c1"># Cleanup PID file</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detached_pid_file</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">process_manager</span><span class="o">.</span><span class="n">cleanup_pid_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_detached_pid_file</span><span class="p">)</span>
+
+        <span class="c1"># Cleanup log file (keep file for debugging)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">process_manager</span><span class="o">.</span><span class="n">cleanup_log_file</span><span class="p">(</span><span class="n">keep_file</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="c1"># Reset state</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_detached_process_pid</span> <span class="o">=</span> <span class="kc">None</span>

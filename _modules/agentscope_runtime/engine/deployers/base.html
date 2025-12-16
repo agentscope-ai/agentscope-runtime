@@ -506,6 +506,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/call.html">AgentApp API Invocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../en/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/demohouse.html">Reference: Demo House</a></li>
@@ -570,6 +571,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/call.html">智能体应用API调用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../zh/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
@@ -626,7 +628,7 @@ body.preview-active {
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">abstractmethod</span><span class="p">,</span> <span class="n">ABC</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
 
 
 <span class="c1"># there is not many attributes in it, consider it as interface, instead of</span>
@@ -636,9 +638,18 @@ body.preview-active {
 <span class="k">class</span><span class="w"> </span><span class="nc">DeployManager</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <div class="viewcode-block" id="DeployManager.__init__">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.base.DeployManager.__init__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_manager</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">deploy_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_app</span> <span class="o">=</span> <span class="kc">None</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_app</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Initialize state manager - shared across all deployers</span>
+        <span class="k">if</span> <span class="n">state_manager</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.state</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+                <span class="n">DeploymentStateManager</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">state_manager</span> <span class="o">=</span> <span class="n">DeploymentStateManager</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state_manager</span> <span class="o">=</span> <span class="n">state_manager</span></div>
 
 
 <div class="viewcode-block" id="DeployManager.deploy">
@@ -647,6 +658,25 @@ body.preview-active {
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">deploy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Deploy the service and return a dictionary with deploy_id and</span>
 <span class="sd">        URL.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="DeployManager.stop">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.base.DeployManager.stop">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deploy_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop the deployed service.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            deploy_id: Deployment identifier</span>
+<span class="sd">            **kwargs: Platform-specific parameters (url, namespace, etc.)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict with keys:</span>
+<span class="sd">                - success (bool): Whether stop succeeded</span>
+<span class="sd">                - message (str): Status message</span>
+<span class="sd">                - details (dict, optional): Platform-specific details</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 </div>
 

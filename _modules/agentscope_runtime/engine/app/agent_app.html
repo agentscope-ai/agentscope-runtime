@@ -506,6 +506,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/call.html">AgentApp API Invocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../en/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/demohouse.html">Reference: Demo House</a></li>
@@ -570,6 +571,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/call.html">智能体应用API调用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../zh/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
@@ -625,6 +627,7 @@ body.preview-active {
           <h1>Source code for agentscope_runtime.engine.app.agent_app</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">types</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
@@ -647,6 +650,8 @@ body.preview-active {
 <span class="kn">from</span><span class="w"> </span><span class="nn">...version</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">HOST</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;0.0.0.0&quot;</span><span class="p">)</span>
+<span class="n">PORT</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;PORT&quot;</span><span class="p">,</span> <span class="s2">&quot;8080&quot;</span><span class="p">))</span>
 
 
 <div class="viewcode-block" id="AgentApp">
@@ -791,8 +796,8 @@ body.preview-active {
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.app.agent_app.AgentApp.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">host</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span>
-        <span class="n">port</span><span class="o">=</span><span class="mi">8090</span><span class="p">,</span>
+        <span class="n">host</span><span class="o">=</span><span class="n">HOST</span><span class="p">,</span>
+        <span class="n">port</span><span class="o">=</span><span class="n">PORT</span><span class="p">,</span>
         <span class="n">web_ui</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
@@ -812,7 +817,7 @@ body.preview-active {
 
 <span class="sd">        Args:</span>
 <span class="sd">            host (str): Host address to bind to. Default &quot;0.0.0.0&quot;.</span>
-<span class="sd">            port (int): Port number to serve the application on. Default 8090.</span>
+<span class="sd">            port (int): Port number to serve the application on. Default 8080.</span>
 <span class="sd">            web_ui (bool): If True, launches the Agentscope Web UI in a</span>
 <span class="sd">                separate process, pointing it to the API endpoint. This</span>
 <span class="sd">                allows interactive use via browser. Default False.</span>
@@ -821,7 +826,7 @@ body.preview-active {
 
 <span class="sd">        Example:</span>
 <span class="sd">            &gt;&gt;&gt; app = AgentApp(app_name=&quot;MyAgent&quot;)</span>
-<span class="sd">            &gt;&gt;&gt; app.run(host=&quot;127.0.0.1&quot;, port=8000, web_ui=True)</span>
+<span class="sd">            &gt;&gt;&gt; app.chat(host=&quot;127.0.0.1&quot;, port=8080, web_ui=True)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Build runner</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_build_runner</span><span class="p">()</span>

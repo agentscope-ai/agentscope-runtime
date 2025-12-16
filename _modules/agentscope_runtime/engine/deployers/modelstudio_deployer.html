@@ -506,6 +506,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/call.html">AgentApp API Invocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../en/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/demohouse.html">Reference: Demo House</a></li>
@@ -570,6 +571,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/call.html">智能体应用API调用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../zh/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
@@ -632,9 +634,9 @@ body.preview-active {
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Any</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
@@ -642,11 +644,14 @@ body.preview-active {
 <span class="kn">from</span><span class="w"> </span><span class="nn">.adapter.protocol_adapter</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProtocolAdapter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeployManager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.local_deployer</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalDeployManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">Deployment</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils.detached_app</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_bundle_entry_script</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils.package</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_build_directory</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils.wheel_packager</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">generate_wrapper_project</span><span class="p">,</span>
     <span class="n">build_wheel</span><span class="p">,</span>
     <span class="n">default_deploy_name</span><span class="p">,</span>
+    <span class="n">get_user_bundle_appdir</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -1185,8 +1190,9 @@ body.preview-active {
         <span class="n">oss_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">OSSConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">modelstudio_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelstudioConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">build_root</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">state_manager</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">state_manager</span><span class="o">=</span><span class="n">state_manager</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">oss_config</span> <span class="o">=</span> <span class="n">oss_config</span> <span class="ow">or</span> <span class="n">OSSConfig</span><span class="o">.</span><span class="n">from_env</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">modelstudio_config</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">modelstudio_config</span> <span class="ow">or</span> <span class="n">ModelstudioConfig</span><span class="o">.</span><span class="n">from_env</span><span class="p">()</span>
@@ -1200,11 +1206,11 @@ body.preview-active {
         <span class="n">cmd</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">deploy_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">telemetry_enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">environment</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">requirements</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        校验参数、生成 wrapper 项目并构建 wheel。</span>
-
-<span class="sd">        返回: (wheel_path, wrapper_project_dir, name)</span>
+<span class="sd">        generate temp project path and build wheel.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">project_dir</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">cmd</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
@@ -1217,18 +1223,18 @@ body.preview-active {
             <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Project dir not found: </span><span class="si">{</span><span class="n">project_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="n">name</span> <span class="o">=</span> <span class="n">deploy_name</span> <span class="ow">or</span> <span class="n">default_deploy_name</span><span class="p">()</span>
-        <span class="n">proj_root</span> <span class="o">=</span> <span class="n">project_dir</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+
+        <span class="c1"># Generate build directory with platform-aware naming</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build_root</span><span class="p">,</span> <span class="n">Path</span><span class="p">):</span>
             <span class="n">effective_build_root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_root</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_root</span><span class="p">:</span>
                 <span class="n">effective_build_root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">build_root</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">effective_build_root</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">proj_root</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;.agentscope_runtime_builds&quot;</span>
-                <span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+                <span class="c1"># Use centralized directory generation function</span>
+                <span class="n">effective_build_root</span> <span class="o">=</span> <span class="n">generate_build_directory</span><span class="p">(</span><span class="s2">&quot;modelstudio&quot;</span><span class="p">)</span>
 
-        <span class="n">build_dir</span> <span class="o">=</span> <span class="n">effective_build_root</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;build-</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">build_dir</span> <span class="o">=</span> <span class="n">effective_build_root</span>
         <span class="n">build_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Generating wrapper project for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
@@ -1238,10 +1244,15 @@ body.preview-active {
             <span class="n">start_cmd</span><span class="o">=</span><span class="n">cmd</span><span class="p">,</span>
             <span class="n">deploy_name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
             <span class="n">telemetry_enabled</span><span class="o">=</span><span class="n">telemetry_enabled</span><span class="p">,</span>
+            <span class="n">requirements</span><span class="o">=</span><span class="n">requirements</span><span class="p">,</span>
         <span class="p">)</span>
 
+        <span class="c1"># pass environments to the project from user setting</span>
+        <span class="n">user_bundle_app_dir</span> <span class="o">=</span> <span class="n">get_user_bundle_appdir</span><span class="p">(</span><span class="n">build_dir</span><span class="p">,</span> <span class="n">project_dir</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_generate_env_file</span><span class="p">(</span><span class="n">user_bundle_app_dir</span><span class="p">,</span> <span class="n">environment</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Building wheel under </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">wrapper_project_dir</span><span class="p">)</span>
         <span class="n">wheel_path</span> <span class="o">=</span> <span class="n">build_wheel</span><span class="p">(</span><span class="n">wrapper_project_dir</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">wheel_path</span><span class="p">,</span> <span class="n">name</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_generate_env_file</span><span class="p">(</span>
@@ -1264,7 +1275,9 @@ body.preview-active {
 <span class="sd">            variables provided</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">environment</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">None</span>
+            <span class="n">environment</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">environment</span><span class="p">[</span><span class="s2">&quot;HOST&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;0.0.0.0&quot;</span><span class="p">)</span>
+        <span class="n">environment</span><span class="p">[</span><span class="s2">&quot;PORT&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;PORT&quot;</span><span class="p">,</span> <span class="s2">&quot;8080&quot;</span><span class="p">))</span>
 
         <span class="n">project_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">project_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">project_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
@@ -1381,14 +1394,19 @@ body.preview-active {
 <span class="sd">        resource_name (deploy_name), and workspace_id.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">agent_id</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">runner</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">project_dir</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">external_whl_path</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="ow">not</span> <span class="n">app</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">runner</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">project_dir</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">external_whl_path</span>
+            <span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;Either runner, project_dir, &quot;</span>
+                    <span class="s2">&quot;Either app, runner, project_dir, &quot;</span>
                     <span class="s2">&quot;or external_whl_path must be provided.&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">runner</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">runner</span> <span class="ow">or</span> <span class="n">app</span><span class="p">:</span>
                 <span class="k">if</span> <span class="s2">&quot;agent&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
                     <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;agent&quot;</span><span class="p">)</span>
 
@@ -1401,6 +1419,7 @@ body.preview-active {
                     <span class="n">requirements</span><span class="o">=</span><span class="n">requirements</span><span class="p">,</span>
                     <span class="n">extra_packages</span><span class="o">=</span><span class="n">extra_packages</span><span class="p">,</span>
                     <span class="n">port</span><span class="o">=</span><span class="mi">8080</span><span class="p">,</span>
+                    <span class="n">platform</span><span class="o">=</span><span class="s2">&quot;modelstudio&quot;</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">if</span> <span class="n">project_dir</span><span class="p">:</span>
@@ -1443,6 +1462,8 @@ body.preview-active {
                     <span class="n">cmd</span><span class="o">=</span><span class="n">cmd</span><span class="p">,</span>
                     <span class="n">deploy_name</span><span class="o">=</span><span class="n">deploy_name</span><span class="p">,</span>
                     <span class="n">telemetry_enabled</span><span class="o">=</span><span class="n">telemetry_enabled</span><span class="p">,</span>
+                    <span class="n">environment</span><span class="o">=</span><span class="n">environment</span><span class="p">,</span>
+                    <span class="n">requirements</span><span class="o">=</span><span class="n">requirements</span><span class="p">,</span>
                 <span class="p">)</span>
 
             <span class="n">console_url</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
@@ -1464,16 +1485,41 @@ body.preview-active {
                     <span class="n">telemetry_enabled</span><span class="p">,</span>
                 <span class="p">)</span>
 
+            <span class="c1"># Use base class UUID deploy_id (already set in __init__)</span>
+            <span class="n">deploy_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">deploy_id</span>
+
+            <span class="c1"># Save deployment to state manager</span>
+            <span class="k">if</span> <span class="n">deploy_identifier</span><span class="p">:</span>
+                <span class="n">deployment</span> <span class="o">=</span> <span class="n">Deployment</span><span class="p">(</span>
+                    <span class="nb">id</span><span class="o">=</span><span class="n">deploy_id</span><span class="p">,</span>
+                    <span class="n">platform</span><span class="o">=</span><span class="s2">&quot;modelstudio&quot;</span><span class="p">,</span>
+                    <span class="n">url</span><span class="o">=</span><span class="n">console_url</span><span class="p">,</span>
+                    <span class="n">status</span><span class="o">=</span><span class="s2">&quot;running&quot;</span><span class="p">,</span>
+                    <span class="n">created_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                    <span class="n">agent_source</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;agent_source&quot;</span><span class="p">),</span>
+                    <span class="n">config</span><span class="o">=</span><span class="p">{</span>
+                        <span class="s2">&quot;modelstudio_deploy_id&quot;</span><span class="p">:</span> <span class="n">deploy_identifier</span><span class="p">,</span>
+                        <span class="s2">&quot;resource_name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+                        <span class="s2">&quot;workspace_id&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                            <span class="s2">&quot;MODELSTUDIO_WORKSPACE_ID&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+                        <span class="s2">&quot;wheel_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">wheel_path</span><span class="p">),</span>
+                    <span class="p">},</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">state_manager</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">deployment</span><span class="p">)</span>
+
             <span class="n">result</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s2">&quot;wheel_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">wheel_path</span><span class="p">),</span>
                 <span class="s2">&quot;resource_name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
                 <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">console_url</span><span class="p">,</span>
+                <span class="s2">&quot;deploy_id&quot;</span><span class="p">:</span> <span class="n">deploy_id</span><span class="p">,</span>
             <span class="p">}</span>
             <span class="n">env_ws</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;MODELSTUDIO_WORKSPACE_ID&quot;</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">env_ws</span> <span class="ow">and</span> <span class="n">env_ws</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
                 <span class="n">result</span><span class="p">[</span><span class="s2">&quot;workspace_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env_ws</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">deploy_identifier</span><span class="p">:</span>
-                <span class="n">result</span><span class="p">[</span><span class="s2">&quot;deploy_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">deploy_identifier</span>
+                <span class="n">result</span><span class="p">[</span><span class="s2">&quot;modelstudio_deploy_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">deploy_identifier</span>
 
             <span class="k">return</span> <span class="n">result</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -1488,8 +1534,55 @@ body.preview-active {
 
 <div class="viewcode-block" id="ModelstudioDeployManager.stop">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.modelstudio_deployer.ModelstudioDeployManager.stop">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># pragma: no cover - not supported yet</span>
-        <span class="k">pass</span></div>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deploy_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop ModelStudio deployment.</span>
+
+<span class="sd">        Note: ModelStudio stop API not yet available.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            deploy_id: Deployment identifier</span>
+<span class="sd">            **kwargs: Additional parameters</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict with success status and message</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Try to get deployment info from state for context</span>
+        <span class="n">deployment_info</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">deployment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_manager</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">deploy_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">deployment</span><span class="p">:</span>
+                <span class="n">deployment_info</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">deployment</span><span class="o">.</span><span class="n">url</span>
+                    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">deployment</span><span class="p">,</span> <span class="s2">&quot;url&quot;</span><span class="p">)</span>
+                    <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="s2">&quot;workspace_id&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">deployment</span><span class="p">,</span> <span class="s2">&quot;workspace_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                <span class="p">}</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Fetched deployment info from state: </span><span class="si">{</span><span class="n">deployment_info</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not fetch deployment info from state: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># TODO: Implement when ModelStudio provides stop/delete API</span>
+        <span class="c1"># When API is available, call it here and then remove from state:</span>
+        <span class="c1"># self.state_manager.remove(deploy_id)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;ModelStudio stop not implemented for deploy_id=</span><span class="si">{</span><span class="n">deploy_id</span><span class="si">}</span><span class="s2"> - API not yet available&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">details</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;deploy_id&quot;</span><span class="p">:</span> <span class="n">deploy_id</span><span class="p">,</span>
+            <span class="s2">&quot;note&quot;</span><span class="p">:</span> <span class="s2">&quot;Manual cleanup required via ModelStudio console&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">deployment_info</span><span class="p">:</span>
+            <span class="n">details</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">deployment_info</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;ModelStudio stop not implemented - API not yet available&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;details&quot;</span><span class="p">:</span> <span class="n">details</span><span class="p">,</span>
+        <span class="p">}</span></div>
 
 
 <div class="viewcode-block" id="ModelstudioDeployManager.get_status">

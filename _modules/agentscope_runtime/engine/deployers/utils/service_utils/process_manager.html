@@ -506,6 +506,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/call.html">AgentApp API Invocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../en/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/demohouse.html">Reference: Demo House</a></li>
@@ -570,6 +571,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/call.html">智能体应用API调用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
@@ -647,7 +649,9 @@ body.preview-active {
 <span class="sd">        Args:</span>
 <span class="sd">            shutdown_timeout: Timeout in seconds for graceful shutdown</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">shutdown_timeout</span> <span class="o">=</span> <span class="n">shutdown_timeout</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shutdown_timeout</span> <span class="o">=</span> <span class="n">shutdown_timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log_file</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log_file_handle</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 <div class="viewcode-block" id="ProcessManager.start_detached_process">
@@ -679,7 +683,25 @@ body.preview-active {
             <span class="k">if</span> <span class="n">env</span><span class="p">:</span>
                 <span class="n">process_env</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
 
-            <span class="c1"># Start detached process</span>
+            <span class="c1"># Create log file path with timestamp and child process PID</span>
+            <span class="c1"># We&#39;ll update the filename after process starts</span>
+            <span class="n">log_dir</span> <span class="o">=</span> <span class="s2">&quot;/tmp/agentscope_runtime_logs&quot;</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">log_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># Use a temporary name first, will rename after getting PID</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">_%H%M%S&quot;</span><span class="p">)</span>
+            <span class="n">temp_log_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="n">log_dir</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;process_temp_</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">()</span><span class="si">}</span><span class="s2">.log&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Open log file (don&#39;t use &#39;with&#39; to keep it open for the</span>
+            <span class="c1"># subprocess)</span>
+            <span class="n">log_f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">temp_log_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Start detached process with log file</span>
             <span class="n">process</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span>
                 <span class="p">[</span>
                     <span class="s2">&quot;python&quot;</span><span class="p">,</span>
@@ -689,22 +711,63 @@ body.preview-active {
                     <span class="s2">&quot;--port&quot;</span><span class="p">,</span>
                     <span class="nb">str</span><span class="p">(</span><span class="n">port</span><span class="p">),</span>
                 <span class="p">],</span>
-                <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">,</span>
-                <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">,</span>
+                <span class="n">stdout</span><span class="o">=</span><span class="n">log_f</span><span class="p">,</span>
+                <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">,</span>  <span class="c1"># Redirect stderr to stdout</span>
                 <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">,</span>
                 <span class="n">start_new_session</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Create new process group</span>
                 <span class="n">env</span><span class="o">=</span><span class="n">process_env</span><span class="p">,</span>
                 <span class="n">cwd</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">script_path</span><span class="p">),</span>
             <span class="p">)</span>
 
+            <span class="c1"># Rename log file with actual process PID</span>
+            <span class="n">log_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">log_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;process_</span><span class="si">{</span><span class="n">process</span><span class="o">.</span><span class="n">pid</span><span class="si">}</span><span class="s2">.log&quot;</span><span class="p">)</span>
+            <span class="n">log_f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># Close temp file</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">temp_log_file</span><span class="p">,</span> <span class="n">log_file</span><span class="p">)</span>
+
+            <span class="c1"># Reopen with the correct name</span>
+            <span class="n">log_f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Store log file path and handle for later retrieval</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log_file</span> <span class="o">=</span> <span class="n">log_file</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log_file_handle</span> <span class="o">=</span> <span class="n">log_f</span>
+
             <span class="c1"># Verify process started successfully</span>
-            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>  <span class="c1"># Give process time to start</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span>
+                <span class="mf">0.5</span><span class="p">,</span>
+            <span class="p">)</span>  <span class="c1"># Give process time to start and write logs</span>
             <span class="k">if</span> <span class="n">process</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Process failed to start&quot;</span><span class="p">)</span>
+                <span class="c1"># Process failed to start, wait a bit more for logs to be</span>
+                <span class="c1"># flushed</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>
+                <span class="c1"># Read logs and print them</span>
+                <span class="n">logs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_process_logs</span><span class="p">(</span><span class="n">max_lines</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+                <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+                <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Process failed to start immediately.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Process logs:</span><span class="se">\n</span><span class="si">{</span><span class="n">logs</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="s2">&quot;Process failed to start. Check logs above.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
 
             <span class="k">return</span> <span class="n">process</span><span class="o">.</span><span class="n">pid</span>
 
+        <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
+            <span class="c1"># Re-raise RuntimeError with logs already included</span>
+            <span class="k">raise</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># For other exceptions, try to include logs if available</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_file</span><span class="p">:</span>
+                <span class="n">logs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_process_logs</span><span class="p">(</span><span class="n">max_lines</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+                <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+                <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Failed to start detached process: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Process logs:</span><span class="se">\n</span><span class="si">{</span><span class="n">logs</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to start detached process: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
 
 
@@ -759,7 +822,10 @@ body.preview-active {
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Failed to terminate process </span><span class="si">{</span><span class="n">pid</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="c1"># Close log file handle if open</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_close_log_file</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="ProcessManager.is_process_running">
@@ -926,6 +992,101 @@ body.preview-active {
             <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="ProcessManager.get_process_logs">
+<a class="viewcode-back" href="../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.utils.service_utils.process_manager.ProcessManager.get_process_logs">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_process_logs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the last N lines of process logs.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            max_lines: Maximum number of lines to return</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Log content as string</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_file</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_log_file</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">&quot;No log file available&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Flush the log file handle if it&#39;s still open</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_file_handle</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_file_handle</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_log_file_handle</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_log_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">lines</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="p">(</span>
+                        <span class="s2">&quot;Log file is empty (process may not have written &quot;</span>
+                        <span class="s2">&quot;any output yet)&quot;</span>
+                    <span class="p">)</span>
+                <span class="c1"># Return last N lines</span>
+                <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="o">-</span><span class="n">max_lines</span><span class="p">:])</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Failed to read log file: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_close_log_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close log file handle if open.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_file_handle</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_file_handle</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_log_file_handle</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">pass</span>  <span class="c1"># Ignore errors when closing</span>
+
+<div class="viewcode-block" id="ProcessManager.cleanup_log_file">
+<a class="viewcode-back" href="../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.utils.service_utils.process_manager.ProcessManager.cleanup_log_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cleanup_log_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keep_file</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clean up log file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            keep_file: If True, keep the log file on disk but close the handle.</span>
+<span class="sd">                      If False, delete the log file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_close_log_file</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">keep_file</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_file</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_log_file</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_log_file</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">pass</span>  <span class="c1"># Ignore cleanup errors</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log_file</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log_file_handle</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="ProcessManager.cleanup_old_logs">
+<a class="viewcode-back" href="../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.utils.service_utils.process_manager.ProcessManager.cleanup_old_logs">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cleanup_old_logs</span><span class="p">(</span><span class="n">max_age_hours</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">24</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clean up old log files.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            max_age_hours: Remove log files older than this many hours</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+        <span class="n">log_dir</span> <span class="o">=</span> <span class="s2">&quot;/tmp/agentscope_runtime_logs&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">log_dir</span><span class="p">):</span>
+            <span class="k">return</span>
+
+        <span class="n">current_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">max_age_seconds</span> <span class="o">=</span> <span class="n">max_age_hours</span> <span class="o">*</span> <span class="mi">3600</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">log_dir</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">filename</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;process_&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span>
+                    <span class="s2">&quot;.log&quot;</span><span class="p">,</span>
+                <span class="p">):</span>
+                    <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">log_dir</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">file_age</span> <span class="o">=</span> <span class="n">current_time</span> <span class="o">-</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">file_age</span> <span class="o">&gt;</span> <span class="n">max_age_seconds</span><span class="p">:</span>
+                            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                        <span class="k">pass</span>  <span class="c1"># Ignore errors for individual files</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>  <span class="c1"># Ignore errors during cleanup</span></div>
 
 
     <span class="nd">@staticmethod</span>

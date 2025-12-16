@@ -506,6 +506,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/call.html">AgentApp API Invocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../en/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/demohouse.html">Reference: Demo House</a></li>
@@ -570,6 +571,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/call.html">智能体应用API调用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
@@ -647,7 +649,8 @@ body.preview-active {
     <span class="n">env_vars</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">startup_command</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">health_check_endpoint</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/health&quot;</span>
-    <span class="n">custom_template</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+    <span class="n">custom_template</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">platform</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 
@@ -661,7 +664,7 @@ body.preview-active {
 
     <span class="c1"># Default Dockerfile template for Python applications</span>
     <span class="n">DEFAULT_TEMPLATE</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;# Use official Python runtime as base image</span>
-<span class="s2">FROM </span><span class="si">{base_image}</span>
+<span class="s2">FROM --platform=</span><span class="si">{platform}</span><span class="s2"> </span><span class="si">{base_image}</span>
 
 <span class="s2"># Set working directory in container</span>
 <span class="s2">WORKDIR /app</span>
@@ -673,14 +676,19 @@ body.preview-active {
 <span class="s2"># Configure package sources for better performance</span>
 <span class="s2">RUN rm -f /etc/apt/sources.list.d/*.list</span>
 
-<span class="s2"># 替换主源为阿里云</span>
-<span class="s2">RUN echo &quot;deb https://mirrors.aliyun.com/debian/ bookworm main contrib &quot; </span><span class="se">\\</span>
-<span class="s2">        &quot;non-free non-free-firmware&quot; &gt; /etc/apt/sources.list &amp;&amp; </span><span class="se">\\</span>
-<span class="s2">    echo &quot;deb https://mirrors.aliyun.com/debian/ bookworm-updates main &quot; </span><span class="se">\\</span>
-<span class="s2">         &quot;contrib non-free non-free-firmware&quot; &gt;&gt; /etc/apt/sources.list &amp;&amp; </span><span class="se">\\</span>
-<span class="s2">    echo &quot;deb https://mirrors.aliyun.com/debian-security/ &quot; </span><span class="se">\\</span>
-<span class="s2">         &quot;bookworm-security main contrib non-free &quot; </span><span class="se">\\</span>
+<span class="s2"># add aliyun mirrors</span>
+<span class="s2">RUN echo &quot;deb https://mirrors.aliyun.com/debian/ bookworm main contrib &quot; </span><span class="se">\</span>
+<span class="s2">        &quot;non-free non-free-firmware&quot; &gt; /etc/apt/sources.list &amp;&amp; </span><span class="se">\</span>
+<span class="s2">    echo &quot;deb https://mirrors.aliyun.com/debian/ bookworm-updates main &quot; </span><span class="se">\</span>
+<span class="s2">         &quot;contrib non-free non-free-firmware&quot; &gt;&gt; /etc/apt/sources.list &amp;&amp; </span><span class="se">\</span>
+<span class="s2">    echo &quot;deb https://mirrors.aliyun.com/debian-security/ &quot; </span><span class="se">\</span>
+<span class="s2">         &quot;bookworm-security main contrib non-free &quot; </span><span class="se">\</span>
 <span class="s2">         &quot;non-free-firmware&quot; &gt;&gt; /etc/apt/sources.list</span>
+
+<span class="s2"># replace debian to aliyun</span>
+<span class="s2">RUN mkdir -p /etc/apt/sources.list.d &amp;&amp; </span><span class="se">\</span>
+<span class="s2">    cat &gt; /etc/apt/sources.list.d/debian.sources &lt;&lt;&#39;EOF&#39;</span>
+<span class="s2">EOF</span>
 
 <span class="s2"># Clean up package lists</span>
 <span class="s2">RUN rm -rf /var/lib/apt/lists/*</span>
@@ -775,6 +783,7 @@ body.preview-active {
             <span class="n">additional_packages_section</span><span class="o">=</span><span class="n">additional_packages_section</span><span class="p">,</span>
             <span class="n">env_vars_section</span><span class="o">=</span><span class="n">env_vars_section</span><span class="p">,</span>
             <span class="n">startup_command_section</span><span class="o">=</span><span class="n">startup_command_section</span><span class="p">,</span>
+            <span class="n">platform</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">platform</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">content</span></div>

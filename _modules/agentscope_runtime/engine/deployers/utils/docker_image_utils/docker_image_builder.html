@@ -506,6 +506,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/call.html">AgentApp API Invocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../en/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/demohouse.html">Reference: Demo House</a></li>
@@ -570,6 +571,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/call.html">智能体应用API调用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
@@ -644,13 +646,15 @@ body.preview-active {
     <span class="n">registry_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
     <span class="n">username</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">password</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;agentscope-runtime&quot;</span>
+    <span class="n">namespace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;agentscope-runtime&quot;</span>
     <span class="n">image_pull_secret</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="RegistryConfig.get_full_url">
 <a class="viewcode-back" href="../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.utils.docker_image_utils.docker_image_builder.RegistryConfig.get_full_url">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_full_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="c1"># Handle different registry URL formats</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">registry_url</span> <span class="o">==</span> <span class="s2">&quot;localhost&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">registry_url</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">registry_url</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">namespace</span><span class="si">}</span><span class="s2">&quot;</span></div>
 </div>
 
@@ -846,6 +850,44 @@ body.preview-active {
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
 
 
+<div class="viewcode-block" id="DockerImageBuilder.tag_image">
+<a class="viewcode-back" href="../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.utils.docker_image_utils.docker_image_builder.DockerImageBuilder.tag_image">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tag_image</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">registry_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RegistryConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Tag image with registry info.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            image_name: Full image name to push</span>
+<span class="sd">            registry_config: Optional registry config</span>
+<span class="sd">                (uses instance config if None)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">              registry_image_name: Full image name with url</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">registry_config</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No registry configuration provided&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Construct full registry image name</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">registry_url</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">image_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">registry_url</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="n">registry_image_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">get_full_url</span><span class="p">()</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="c1"># Tag the image with registry prefix</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                <span class="p">[</span><span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;tag&quot;</span><span class="p">,</span> <span class="n">image_name</span><span class="p">,</span> <span class="n">registry_image_name</span><span class="p">],</span>
+                <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">registry_image_name</span> <span class="o">=</span> <span class="n">image_name</span>
+        <span class="k">return</span> <span class="n">registry_image_name</span></div>
+
+
 <div class="viewcode-block" id="DockerImageBuilder.push_image">
 <a class="viewcode-back" href="../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.utils.docker_image_utils.docker_image_builder.DockerImageBuilder.push_image">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">push_image</span><span class="p">(</span>
@@ -870,23 +912,7 @@ body.preview-active {
 <span class="sd">            subprocess.CalledProcessError: If push fails</span>
 <span class="sd">            ValueError: If no registry configuration is available</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">config</span> <span class="o">=</span> <span class="n">registry_config</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No registry configuration provided&quot;</span><span class="p">)</span>
-
-        <span class="c1"># Construct full registry image name</span>
-        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">registry_url</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">image_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span>
-            <span class="n">config</span><span class="o">.</span><span class="n">registry_url</span><span class="p">,</span>
-        <span class="p">):</span>
-            <span class="n">registry_image_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">get_full_url</span><span class="p">()</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="c1"># Tag the image with registry prefix</span>
-            <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-                <span class="p">[</span><span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;tag&quot;</span><span class="p">,</span> <span class="n">image_name</span><span class="p">,</span> <span class="n">registry_image_name</span><span class="p">],</span>
-                <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">registry_image_name</span> <span class="o">=</span> <span class="n">image_name</span>
+        <span class="n">registry_image_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tag_image</span><span class="p">(</span><span class="n">image_name</span><span class="p">,</span> <span class="n">registry_config</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">push_cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;push&quot;</span><span class="p">,</span> <span class="n">registry_image_name</span><span class="p">]</span>

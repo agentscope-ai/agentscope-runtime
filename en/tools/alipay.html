@@ -507,6 +507,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../call.html">AgentApp API Invocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../demohouse.html">Reference: Demo House</a></li>
@@ -571,6 +572,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../zh/call.html">智能体应用API调用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../zh/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../zh/demohouse.html">参考: Demo 展示厅</a></li>
@@ -910,8 +912,8 @@ body.preview-active {
 
 <span class="n">refund_query_component</span> <span class="o">=</span> <span class="n">AlipayRefundQuery</span><span class="p">()</span>
 
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">transaction_management_example</span><span class="p">():</span>
 
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">transaction_management_example</span><span class="p">():</span>
     <span class="c1"># Query payment status</span>
 
     <span class="n">query_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">query_component</span><span class="o">.</span><span class="n">arun</span><span class="p">({</span>
@@ -948,7 +950,8 @@ body.preview-active {
 
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Refund status:&quot;</span><span class="p">,</span> <span class="n">refund_query_result</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
 
-<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">transaction_management_example</span><span class="p">())</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span><span class="n">transaction_management_example</span><span class="p">())</span>
 
 </pre></div>
 </div>
@@ -976,8 +979,8 @@ body.preview-active {
 
 <span class="n">check_or_init</span> <span class="o">=</span> <span class="n">AlipaySubscribeCheckOrInitialize</span><span class="p">()</span>
 
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">subscription_example</span><span class="p">():</span>
 
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">subscription_example</span><span class="p">():</span>
     <span class="n">user_uuid</span> <span class="o">=</span> <span class="s2">&quot;user_12345&quot;</span>
 
     <span class="c1"># Check subscription status</span>
@@ -987,7 +990,6 @@ body.preview-active {
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Subscription status: </span><span class="si">{</span><span class="n">status</span><span class="o">.</span><span class="n">subscribe_flag</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">status</span><span class="o">.</span><span class="n">subscribe_flag</span><span class="p">:</span>
-
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Package info: </span><span class="si">{</span><span class="n">status</span><span class="o">.</span><span class="n">subscribe_package</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="c1"># If not subscribed, get subscription link</span>
@@ -997,13 +999,11 @@ body.preview-active {
         <span class="n">init_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">initialize</span><span class="o">.</span><span class="n">arun</span><span class="p">({</span><span class="s2">&quot;uuid&quot;</span><span class="p">:</span> <span class="n">user_uuid</span><span class="p">})</span>
 
         <span class="k">if</span> <span class="n">init_result</span><span class="o">.</span><span class="n">subscribe_url</span><span class="p">:</span>
-
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Subscription link: </span><span class="si">{</span><span class="n">init_result</span><span class="o">.</span><span class="n">subscribe_url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="c1"># Track usage after service use</span>
 
     <span class="k">if</span> <span class="n">status</span><span class="o">.</span><span class="n">subscribe_flag</span><span class="p">:</span>
-
         <span class="n">times_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">times_save</span><span class="o">.</span><span class="n">arun</span><span class="p">({</span>
 
             <span class="s2">&quot;uuid&quot;</span><span class="p">:</span> <span class="n">user_uuid</span><span class="p">,</span>
@@ -1014,8 +1014,8 @@ body.preview-active {
 
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Usage tracking result: </span><span class="si">{</span><span class="n">times_result</span><span class="o">.</span><span class="n">success</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">one_step_subscription_example</span><span class="p">():</span>
 
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">one_step_subscription_example</span><span class="p">():</span>
     <span class="n">user_uuid</span> <span class="o">=</span> <span class="s2">&quot;user_67890&quot;</span>
 
     <span class="c1"># One-step subscription check or initialization</span>
@@ -1030,9 +1030,10 @@ body.preview-active {
 
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;User not subscribed, subscription link: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">subscribe_url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">subscription_example</span><span class="p">())</span>
 
-<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">one_step_subscription_example</span><span class="p">())</span>
+<span class="n">asyncio</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span><span class="n">subscription_example</span><span class="p">())</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span><span class="n">one_step_subscription_example</span><span class="p">())</span>
 
 </pre></div>
 </div>

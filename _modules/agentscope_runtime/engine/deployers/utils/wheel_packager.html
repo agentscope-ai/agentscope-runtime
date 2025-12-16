@@ -506,6 +506,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../en/call.html">AgentApp API Invocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../en/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../en/tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../en/demohouse.html">Reference: Demo House</a></li>
@@ -570,6 +571,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../zh/call.html">智能体应用API调用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
@@ -647,12 +649,18 @@ body.preview-active {
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.detached_app</span><span class="w"> </span><span class="kn">import</span> <span class="n">_parse_pyproject_toml</span><span class="p">,</span> <span class="n">append_project_requirements</span>
 
-<span class="k">try</span><span class="p">:</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">tomllib</span>  <span class="c1"># Python 3.11+</span>
-<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>  <span class="c1"># pragma: no cover - fallback on older Pythons</span>
-    <span class="n">tomllib</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: ignore</span>
+
+<div class="viewcode-block" id="get_user_bundle_appdir">
+<a class="viewcode-back" href="../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.utils.wheel_packager.get_user_bundle_appdir">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_user_bundle_appdir</span><span class="p">(</span><span class="n">build_root</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">user_project_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">build_root</span> <span class="o">/</span> <span class="s2">&quot;deploy_starter&quot;</span> <span class="o">/</span> <span class="s2">&quot;user_bundle&quot;</span> <span class="o">/</span> <span class="n">user_project_dir</span><span class="o">.</span><span class="n">name</span>
+    <span class="p">)</span></div>
+
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_read_text_file_lines</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -687,72 +695,6 @@ body.preview-active {
             <span class="n">standard_requirements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">standard_requirements</span><span class="p">,</span> <span class="n">local_wheel_paths</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_parse_pyproject_toml</span><span class="p">(</span><span class="n">pyproject_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-    <span class="n">deps</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">pyproject_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
-        <span class="k">return</span> <span class="n">deps</span>
-    <span class="n">text</span> <span class="o">=</span> <span class="n">pyproject_path</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
-
-    <span class="k">try</span><span class="p">:</span>
-        <span class="c1"># Prefer stdlib tomllib (Python 3.11+)</span>
-        <span class="k">if</span> <span class="n">tomllib</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;tomllib not available&quot;</span><span class="p">)</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">tomllib</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-        <span class="c1"># PEP 621</span>
-        <span class="n">proj</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;project&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
-        <span class="n">deps</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">proj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dependencies&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[])</span>
-        <span class="c1"># Poetry fallback</span>
-        <span class="n">poetry</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tool&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;poetry&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
-        <span class="n">poetry_deps</span> <span class="o">=</span> <span class="n">poetry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dependencies&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">poetry_deps</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;python&quot;</span><span class="p">:</span>
-                <span class="k">continue</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-                <span class="n">deps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}{</span><span class="n">spec</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">spec</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-                <span class="n">version</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;version&quot;</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">version</span><span class="p">:</span>
-                    <span class="n">deps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}{</span><span class="n">version</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">deps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-        <span class="c1"># Minimal non-toml parser fallback: try to extract a dependencies = [ ... ] list</span>
-        <span class="n">block_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
-            <span class="sa">r</span><span class="s2">&quot;dependencies\s*=\s*\[(.*?)\]&quot;</span><span class="p">,</span>
-            <span class="n">text</span><span class="p">,</span>
-            <span class="n">re</span><span class="o">.</span><span class="n">S</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">block_match</span><span class="p">:</span>
-            <span class="n">block</span> <span class="o">=</span> <span class="n">block_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[&#39;</span><span class="se">\&quot;</span><span class="s2">]([^&#39;</span><span class="se">\&quot;</span><span class="s2">]+)[&#39;</span><span class="se">\&quot;</span><span class="s2">]&quot;</span><span class="p">,</span> <span class="n">block</span><span class="p">):</span>
-                <span class="n">deps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
-        <span class="c1"># Poetry fallback: very limited, heuristic</span>
-        <span class="n">poetry_block</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
-            <span class="sa">r</span><span class="s2">&quot;\[tool\.poetry\.dependencies\](.*?)\n\[&quot;</span><span class="p">,</span>
-            <span class="n">text</span><span class="p">,</span>
-            <span class="n">re</span><span class="o">.</span><span class="n">S</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">poetry_block</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">poetry_block</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
-                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span> <span class="ow">or</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">):</span>
-                    <span class="k">continue</span>
-                <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
-                    <span class="c1"># name = &quot;^1.2.3&quot;</span>
-                    <span class="n">m</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span>
-                        <span class="sa">r</span><span class="s2">&quot;([A-Za-z0-9_.-]+)\s*=\s*[&#39;</span><span class="se">\&quot;</span><span class="s2">]([^&#39;</span><span class="se">\&quot;</span><span class="s2">]+)[&#39;</span><span class="se">\&quot;</span><span class="s2">]&quot;</span><span class="p">,</span>
-                        <span class="n">line</span><span class="p">,</span>
-                    <span class="p">)</span>
-                    <span class="k">if</span> <span class="n">m</span> <span class="ow">and</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;python&quot;</span><span class="p">:</span>
-                        <span class="n">deps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="si">}{</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="c1"># name without version</span>
-                    <span class="n">name</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-                    <span class="k">if</span> <span class="n">name</span> <span class="ow">and</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;python&quot;</span><span class="p">:</span>
-                        <span class="n">deps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">deps</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_gather_user_dependencies</span><span class="p">(</span>
@@ -838,6 +780,7 @@ body.preview-active {
     <span class="n">start_cmd</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">deploy_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">telemetry_enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">requirements</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create a wrapper project under build_root, embedding user project under</span>
@@ -848,9 +791,8 @@ body.preview-active {
     <span class="c1"># 1) Copy user project into wrapper under deploy_starter/user_bundle/&lt;project_basename&gt;</span>
     <span class="c1"># Put user code inside the deploy_starter package so wheel includes it and preserves project folder name</span>
     <span class="n">project_basename</span> <span class="o">=</span> <span class="n">user_project_dir</span><span class="o">.</span><span class="n">name</span>
-    <span class="n">bundle_app_dir</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">wrapper_dir</span> <span class="o">/</span> <span class="s2">&quot;deploy_starter&quot;</span> <span class="o">/</span> <span class="s2">&quot;user_bundle&quot;</span> <span class="o">/</span> <span class="n">project_basename</span>
-    <span class="p">)</span>
+    <span class="n">bundle_app_dir</span> <span class="o">=</span> <span class="n">get_user_bundle_appdir</span><span class="p">(</span><span class="n">wrapper_dir</span><span class="p">,</span> <span class="n">user_project_dir</span><span class="p">)</span>
+
     <span class="n">ignore</span> <span class="o">=</span> <span class="n">shutil</span><span class="o">.</span><span class="n">ignore_patterns</span><span class="p">(</span>
         <span class="s2">&quot;.git&quot;</span><span class="p">,</span>
         <span class="s2">&quot;.venv&quot;</span><span class="p">,</span>
@@ -872,16 +814,6 @@ body.preview-active {
     <span class="p">)</span>
 
     <span class="c1"># 2) Dependencies</span>
-    <span class="n">_</span><span class="p">,</span> <span class="n">local_wheels</span> <span class="o">=</span> <span class="n">_gather_user_dependencies</span><span class="p">(</span><span class="n">user_project_dir</span><span class="p">)</span>
-
-    <span class="c1"># Copy local wheel files to wrapper project</span>
-    <span class="k">if</span> <span class="n">local_wheels</span><span class="p">:</span>
-        <span class="n">wheels_dir</span> <span class="o">=</span> <span class="n">wrapper_dir</span> <span class="o">/</span> <span class="s2">&quot;deploy_starter&quot;</span> <span class="o">/</span> <span class="s2">&quot;wheels&quot;</span>
-        <span class="n">wheels_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">wheel_file</span> <span class="ow">in</span> <span class="n">local_wheels</span><span class="p">:</span>
-            <span class="n">dest</span> <span class="o">=</span> <span class="n">wheels_dir</span> <span class="o">/</span> <span class="n">wheel_file</span><span class="o">.</span><span class="n">name</span>
-            <span class="n">shutil</span><span class="o">.</span><span class="n">copy2</span><span class="p">(</span><span class="n">wheel_file</span><span class="p">,</span> <span class="n">dest</span><span class="p">)</span>
-
     <span class="n">wrapper_deps</span> <span class="o">=</span> <span class="p">[</span>
         <span class="s2">&quot;pyyaml&quot;</span><span class="p">,</span>
         <span class="s2">&quot;alibabacloud-oss-v2&quot;</span><span class="p">,</span>
@@ -894,6 +826,30 @@ body.preview-active {
         <span class="s2">&quot;jinja2&quot;</span><span class="p">,</span>
         <span class="s2">&quot;psutil&quot;</span><span class="p">,</span>
     <span class="p">]</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="n">local_wheels</span> <span class="o">=</span> <span class="n">_gather_user_dependencies</span><span class="p">(</span><span class="n">user_project_dir</span><span class="p">)</span>
+
+    <span class="c1"># gather</span>
+    <span class="n">append_project_requirements</span><span class="p">(</span>
+        <span class="n">build_root</span><span class="p">,</span>
+        <span class="n">additional_requirements</span><span class="o">=</span><span class="n">requirements</span><span class="p">,</span>
+        <span class="n">use_local_runtime</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;USE_LOCAL_RUNTIME&quot;</span><span class="p">,</span> <span class="s2">&quot;False&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;True&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">project_wheels</span> <span class="o">=</span> <span class="n">_gather_user_dependencies</span><span class="p">(</span><span class="n">build_root</span><span class="p">)</span>
+
+    <span class="n">local_wheels</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">project_wheels</span><span class="p">)</span>
+
+    <span class="c1"># Copy local wheel files to wrapper project</span>
+    <span class="k">if</span> <span class="n">local_wheels</span><span class="p">:</span>
+        <span class="n">wheels_dir</span> <span class="o">=</span> <span class="n">wrapper_dir</span> <span class="o">/</span> <span class="s2">&quot;deploy_starter&quot;</span> <span class="o">/</span> <span class="s2">&quot;wheels&quot;</span>
+        <span class="n">wheels_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">wheel_file</span> <span class="ow">in</span> <span class="n">local_wheels</span><span class="p">:</span>
+            <span class="n">dest</span> <span class="o">=</span> <span class="n">wheels_dir</span> <span class="o">/</span> <span class="n">wheel_file</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">copy2</span><span class="p">(</span><span class="n">wheel_file</span><span class="p">,</span> <span class="n">dest</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># if not use local wheel, make sure the agentscope-runtime will be installed</span>
+        <span class="n">wrapper_deps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;agentscope_runtime&quot;</span><span class="p">)</span>
+
     <span class="c1"># De-duplicate while preserving order</span>
     <span class="n">seen</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
     <span class="n">standard_reqs</span><span class="p">,</span> <span class="n">local_wheel_paths</span> <span class="o">=</span> <span class="n">_parse_requirements_txt</span><span class="p">(</span>
@@ -906,9 +862,6 @@ body.preview-active {
         <span class="k">if</span> <span class="n">key</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
             <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
             <span class="n">install_requires</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pkg</span><span class="p">)</span>
-
-    <span class="n">req_content</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">install_requires</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-    <span class="n">req_content</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">local_wheel_paths</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
 
     <span class="c1"># 3) Packaging metadata</span>
     <span class="n">unique_suffix</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span>
@@ -936,28 +889,7 @@ body.preview-active {
 <span class="s2">        return yaml.safe_load(f) or </span><span class="se">{{}}</span>
 
 
-<span class="s2">def install_local_wheels():</span>
-<span class="s2">    </span><span class="se">\&quot;\&quot;\&quot;</span><span class="s2">Install local wheel files if they exist.</span><span class="se">\&quot;\&quot;\&quot;</span>
-<span class="s2">    wheels_dir = Path(__file__).resolve().parent / &#39;wheels&#39;</span>
-<span class="s2">    if wheels_dir.exists() and wheels_dir.is_dir():</span>
-<span class="s2">        wheel_files = list(wheels_dir.glob(&#39;*.whl&#39;))</span>
-<span class="s2">        if wheel_files:</span>
-<span class="s2">            print(f&#39;[deploy_starter] Installing </span><span class="se">{{</span><span class="s2">len(wheel_files)</span><span class="se">}}</span><span class="s2"> local wheel(s)...&#39;)</span>
-<span class="s2">            for wheel in wheel_files:</span>
-<span class="s2">                try:</span>
-<span class="s2">                    subprocess.run(</span>
-<span class="s2">                        [&#39;pip&#39;, &#39;install&#39;, &#39;--no-deps&#39;, str(wheel)],</span>
-<span class="s2">                        check=True,</span>
-<span class="s2">                        capture_output=True,</span>
-<span class="s2">                    )</span>
-<span class="s2">                    print(f&#39;[deploy_starter] Installed: </span><span class="se">{{</span><span class="s2">wheel.name</span><span class="se">}}</span><span class="s2">&#39;)</span>
-<span class="s2">                except subprocess.CalledProcessError as e:</span>
-<span class="s2">                    print(f&#39;[deploy_starter] Warning: Failed to install </span><span class="se">{{</span><span class="s2">wheel.name</span><span class="se">}}</span><span class="s2">: </span><span class="se">{{</span><span class="s2">e</span><span class="se">}}</span><span class="s2">&#39;, file=sys.stderr)</span>
-
-
 <span class="s2">def main():</span>
-<span class="s2">    # Install local wheels first</span>
-<span class="s2">    install_local_wheels()</span>
 
 <span class="s2">    cfg = read_config()</span>
 <span class="s2">    subdir = cfg.get(&#39;APP_SUBDIR_NAME&#39;)</span>
@@ -1046,22 +978,76 @@ body.preview-active {
 
     <span class="n">setup_py</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">from setuptools import setup, find_packages</span>
-<span class="s2">import os</span>
-<span class="s2">import subprocess</span>
-<span class="s2">import sys</span>
+<span class="s2">from setuptools.command.build_py import build_py</span>
+<span class="s2">import zipfile</span>
+<span class="s2">import shutil</span>
 <span class="s2">from pathlib import Path</span>
-<span class="s2">from setuptools import setup, find_packages</span>
-<span class="s2">from setuptools.command.install import install</span>
+<span class="s2">from email.parser import Parser</span>
+<span class="s2">import tempfile</span>
 
-<span class="s2">def run():</span>
-<span class="s2">    # Step 1: Install all .whl files in the ./wheel/ directory (relative to setup.py)</span>
-<span class="s2">    wheel_dir = Path(__file__).parent / &quot;wheel&quot;</span>
-<span class="s2">    if wheel_dir.is_dir():</span>
-<span class="s2">        whl_files = sorted(wheel_dir.glob(&quot;*.whl&quot;))</span>
-<span class="s2">        if whl_files:</span>
-<span class="s2">            for whl in whl_files:</span>
-<span class="s2">                # Use the same Python interpreter to avoid env issues</span>
-<span class="s2">                subprocess.check_call([sys.executable, &quot;-m&quot;, &quot;pip&quot;, &quot;install&quot;, str(whl)])</span>
+
+<span class="s2">class BuildPyWithWheelMerge(build_py):</span>
+<span class="s2">    </span><span class="se">\&quot;\&quot;\&quot;</span><span class="s2">Merge bundled wheel packages into the final wheel at build time</span><span class="se">\&quot;\&quot;\&quot;</span>
+
+<span class="s2">    def run(self):</span>
+<span class="s2">        build_py.run(self)</span>
+<span class="s2">        self._merge_wheels()</span>
+
+<span class="s2">    def _merge_wheels(self):</span>
+<span class="s2">        </span><span class="se">\&quot;\&quot;\&quot;</span><span class="s2">Extract and merge all wheel files from the wheels directory</span><span class="se">\&quot;\&quot;\&quot;</span>
+<span class="s2">        wheels_dir = Path(&quot;deploy_starter/wheels&quot;)</span>
+<span class="s2">        if not wheels_dir.exists():</span>
+<span class="s2">            return</span>
+
+<span class="s2">        whl_files = list(wheels_dir.glob(&quot;*.whl&quot;))</span>
+<span class="s2">        if not whl_files:</span>
+<span class="s2">            return</span>
+
+<span class="s2">        print(f&quot;</span><span class="se">\\</span><span class="s2">n</span><span class="se">{{</span><span class="s2">&#39;=&#39;*60</span><span class="se">}}\\</span><span class="s2">nMerging </span><span class="se">{{</span><span class="s2">len(whl_files)</span><span class="se">}}</span><span class="s2"> wheel(s)...</span><span class="se">\\</span><span class="s2">n</span><span class="se">{{</span><span class="s2">&#39;=&#39;*60</span><span class="se">}}\\</span><span class="s2">n&quot;)</span>
+
+<span class="s2">        for whl_file in whl_files:</span>
+<span class="s2">            self._extract_wheel(whl_file, Path(self.build_lib))</span>
+
+<span class="s2">        print(f&quot;</span><span class="se">{{</span><span class="s2">&#39;=&#39;*60</span><span class="se">}}\\</span><span class="s2">nMerge completed!</span><span class="se">\\</span><span class="s2">n</span><span class="se">{{</span><span class="s2">&#39;=&#39;*60</span><span class="se">}}\\</span><span class="s2">n&quot;)</span>
+
+<span class="s2">    def _extract_wheel(self, whl_path, build_lib):</span>
+<span class="s2">        </span><span class="se">\&quot;\&quot;\&quot;</span><span class="s2">Extract wheel contents to build directory</span><span class="se">\&quot;\&quot;\&quot;</span>
+<span class="s2">        with tempfile.TemporaryDirectory() as tmpdir, zipfile.ZipFile(whl_path) as zf:</span>
+<span class="s2">            zf.extractall(tmpdir)</span>
+
+<span class="s2">            for item in Path(tmpdir).iterdir():</span>
+<span class="s2">                if item.suffix in [&#39;.dist-info&#39;, &#39;.egg-info&#39;]:</span>
+<span class="s2">                    continue</span>
+
+<span class="s2">                dest = build_lib / item.name</span>
+<span class="s2">                if dest.exists():</span>
+<span class="s2">                    shutil.rmtree(dest) if dest.is_dir() else dest.unlink()</span>
+
+<span class="s2">                shutil.copytree(item, dest) if item.is_dir() else shutil.copy2(item, dest)</span>
+<span class="s2">                print(f&quot;  Merged: </span><span class="se">{{</span><span class="s2">item.name</span><span class="se">}}</span><span class="s2">&quot;)</span>
+
+
+<span class="s2">def extract_wheel_dependencies():</span>
+<span class="s2">    </span><span class="se">\&quot;\&quot;\&quot;</span><span class="s2">Extract dependency declarations from wheel files</span><span class="se">\&quot;\&quot;\&quot;</span>
+<span class="s2">    deps = []</span>
+<span class="s2">    wheels_dir = Path(&quot;deploy_starter/wheels&quot;)</span>
+
+<span class="s2">    if not wheels_dir.exists():</span>
+<span class="s2">        return deps</span>
+
+<span class="s2">    for whl in wheels_dir.glob(&quot;*.whl&quot;):</span>
+<span class="s2">        try:</span>
+<span class="s2">            with zipfile.ZipFile(whl) as zf:</span>
+<span class="s2">                metadata_file = next((f for f in zf.namelist() if f.endswith(&#39;/METADATA&#39;)), None)</span>
+<span class="s2">                if metadata_file:</span>
+<span class="s2">                    content = zf.read(metadata_file).decode(&#39;utf-8&#39;)</span>
+<span class="s2">                    metadata = Parser().parsestr(content)</span>
+<span class="s2">                    deps.extend([v.split(&#39;;&#39;)[0].strip() for k, v in metadata.items()</span>
+<span class="s2">                               if k == &#39;Requires-Dist&#39; and v.split(&#39;;&#39;)[0].strip() not in deps])</span>
+<span class="s2">        except Exception as e:</span>
+<span class="s2">            print(f&quot;Warning: Failed to extract deps from </span><span class="se">{{</span><span class="s2">whl.name</span><span class="se">}}</span><span class="s2">: </span><span class="se">{{</span><span class="s2">e</span><span class="se">}}</span><span class="s2">&quot;)</span>
+
+<span class="s2">    return deps</span>
 
 
 <span class="s2">setup(</span>
@@ -1069,7 +1055,10 @@ body.preview-active {
 <span class="s2">    version=&#39;</span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2">&#39;,</span>
 <span class="s2">    packages=find_packages(),</span>
 <span class="s2">    include_package_data=True,</span>
-<span class="s2">    install_requires=</span><span class="si">{</span><span class="n">install_requires</span><span class="si">!r}</span><span class="s2">,</span>
+<span class="s2">    install_requires=</span><span class="si">{</span><span class="n">install_requires</span><span class="si">!r}</span><span class="s2"> + extract_wheel_dependencies(),</span>
+<span class="s2">    cmdclass=</span><span class="se">{{</span>
+<span class="s2">        &#39;build_py&#39;: BuildPyWithWheelMerge,</span>
+<span class="s2">    </span><span class="se">}}</span><span class="s2">,</span>
 <span class="s2">)</span>
 <span class="s2">&quot;&quot;&quot;</span>
     <span class="n">_write_file</span><span class="p">(</span><span class="n">wrapper_dir</span> <span class="o">/</span> <span class="s2">&quot;setup.py&quot;</span><span class="p">,</span> <span class="n">setup_py</span><span class="p">)</span>

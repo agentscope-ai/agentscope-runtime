@@ -506,6 +506,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/call.html">AgentApp API Invocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../en/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/demohouse.html">Reference: Demo House</a></li>
@@ -570,6 +571,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/call.html">智能体应用API调用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
@@ -655,7 +657,7 @@ body.preview-active {
     <span class="c1"># Package configuration</span>
     <span class="n">requirements</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">extra_packages</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">build_context_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/tmp/k8s_build&quot;</span>
+    <span class="n">build_context_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">endpoint_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/process&quot;</span>
     <span class="n">protocol_adapters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># New: protocol adapters</span>
     <span class="n">custom_endpoints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
@@ -804,6 +806,8 @@ body.preview-active {
         <span class="n">app</span><span class="p">,</span>
         <span class="n">runner</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Runner</span><span class="p">],</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">ImageConfig</span><span class="p">,</span>
+        <span class="n">entrypoint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Build a complete Docker image for the Runner.</span>
@@ -814,9 +818,15 @@ body.preview-active {
 <span class="sd">        3. Build Docker image</span>
 <span class="sd">        4. Optionally push to registry</span>
 
+<span class="sd">        All temporary files are created in cwd/.agentscope_runtime/ by default.</span>
+
 <span class="sd">        Args:</span>
+<span class="sd">            app: Agent app object</span>
 <span class="sd">            runner: Runner object containing agent and managers</span>
 <span class="sd">            config: Configuration for the image building process</span>
+<span class="sd">            entrypoint: Entrypoint specification (e.g., &quot;app.py&quot; or</span>
+<span class="sd">                &quot;app.py:handler&quot;)</span>
+<span class="sd">            use_cache: Enable build cache (default: True)</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            str: Full image name (with registry if pushed)</span>
@@ -842,6 +852,7 @@ body.preview-active {
                 <span class="n">port</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">port</span><span class="p">,</span>
                 <span class="n">env_vars</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">env_vars</span><span class="p">,</span>
                 <span class="n">startup_command</span><span class="o">=</span><span class="n">startup_command</span><span class="p">,</span>
+                <span class="n">platform</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">platform</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="n">dockerfile_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dockerfile_generator</span><span class="o">.</span><span class="n">create_dockerfile</span><span class="p">(</span>
@@ -855,10 +866,13 @@ body.preview-active {
             <span class="n">project_dir</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">build_detached_app</span><span class="p">(</span>
                 <span class="n">app</span><span class="o">=</span><span class="n">app</span><span class="p">,</span>
                 <span class="n">runner</span><span class="o">=</span><span class="n">runner</span><span class="p">,</span>
+                <span class="n">entrypoint</span><span class="o">=</span><span class="n">entrypoint</span><span class="p">,</span>
                 <span class="n">requirements</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">requirements</span><span class="p">,</span>
                 <span class="n">extra_packages</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">extra_packages</span><span class="p">,</span>
                 <span class="n">output_dir</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">build_context_dir</span><span class="p">,</span>
                 <span class="n">dockerfile_path</span><span class="o">=</span><span class="n">dockerfile_path</span><span class="p">,</span>
+                <span class="n">use_cache</span><span class="o">=</span><span class="n">use_cache</span><span class="p">,</span>
+                <span class="n">platform</span><span class="o">=</span><span class="s2">&quot;k8s&quot;</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">is_updated</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Project packaged: </span><span class="si">{</span><span class="n">project_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -893,6 +907,15 @@ body.preview-active {
                     <span class="n">config</span><span class="o">=</span><span class="n">build_config</span><span class="p">,</span>
                     <span class="n">source_updated</span><span class="o">=</span><span class="n">is_updated</span><span class="p">,</span>
                 <span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Image built: </span><span class="si">{</span><span class="n">full_image_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="c1"># make sure tag the image if not push</span>
+                <span class="n">registry_full_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_builder</span><span class="o">.</span><span class="n">tag_image</span><span class="p">(</span>
+                    <span class="n">full_image_name</span><span class="p">,</span>
+                    <span class="n">config</span><span class="o">.</span><span class="n">registry_config</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Image tag to: </span><span class="si">{</span><span class="n">registry_full_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Image built locally: </span><span class="si">{</span><span class="n">full_image_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
             <span class="k">return</span> <span class="n">full_image_name</span>
@@ -911,6 +934,7 @@ body.preview-active {
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">app</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">runner</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Runner</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">entrypoint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">requirements</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">extra_packages</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">base_image</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;python:3.10-slim-bookworm&quot;</span><span class="p">,</span>
@@ -926,14 +950,19 @@ body.preview-active {
         <span class="n">host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span>
         <span class="n">embed_task_processor</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">extra_startup_args</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Simplified interface for building Runner images.</span>
 
+<span class="sd">        All temporary files are created in cwd/.agentscope_runtime/ by default.</span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            app: agent app object</span>
 <span class="sd">            runner: Runner object</span>
+<span class="sd">            entrypoint: Entrypoint specification (e.g., &quot;app.py&quot; or</span>
+<span class="sd">                    &quot;app.py:handler&quot;)</span>
 <span class="sd">            requirements: Python requirements</span>
 <span class="sd">            extra_packages: Additional files to include</span>
 <span class="sd">            base_image: Docker base image</span>
@@ -946,6 +975,7 @@ body.preview-active {
 <span class="sd">            host: Host to bind to (default: 0.0.0.0 for containers)</span>
 <span class="sd">            embed_task_processor: Whether to embed task processor</span>
 <span class="sd">            extra_startup_args: Additional startup arguments</span>
+<span class="sd">            use_cache: Enable build cache (default: True)</span>
 <span class="sd">            **kwargs: Additional configuration options</span>
 
 <span class="sd">        Returns:</span>
@@ -983,7 +1013,7 @@ body.preview-active {
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_image</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">runner</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_image</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">runner</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">entrypoint</span><span class="p">,</span> <span class="n">use_cache</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ImageFactory.cleanup">

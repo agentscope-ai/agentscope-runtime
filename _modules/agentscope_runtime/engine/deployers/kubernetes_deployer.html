@@ -506,6 +506,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/call.html">AgentApp API Invocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../en/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/demohouse.html">Reference: Demo House</a></li>
@@ -570,6 +571,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/call.html">智能体应用API调用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../zh/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
@@ -626,17 +628,19 @@ body.preview-active {
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Any</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">Deployment</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.adapter.protocol_adapter</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProtocolAdapter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeployManager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils.docker_image_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ImageFactory</span><span class="p">,</span>
     <span class="n">RegistryConfig</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils.k8s_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">isLocalK8sEnvironment</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...common.container_clients.kubernetes_client</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">KubernetesClient</span><span class="p">,</span>
 <span class="p">)</span>
@@ -666,7 +670,7 @@ body.preview-active {
 <span class="k">class</span><span class="w"> </span><span class="nc">BuildConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Build configuration&quot;&quot;&quot;</span>
 
-    <span class="n">build_context_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/tmp/k8s_build&quot;</span>
+    <span class="n">build_context_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># None allows caching</span>
     <span class="n">dockerfile_template</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">build_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">600</span>  <span class="c1"># 10 minutes</span>
     <span class="n">push_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span>  <span class="c1"># 5 minutes</span>
@@ -686,15 +690,15 @@ body.preview-active {
         <span class="n">kube_config</span><span class="p">:</span> <span class="n">K8sConfig</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">registry_config</span><span class="p">:</span> <span class="n">RegistryConfig</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="p">(),</span>
         <span class="n">use_deployment</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-        <span class="n">build_context_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/tmp/k8s_build&quot;</span><span class="p">,</span>
+        <span class="n">build_context_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">state_manager</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">state_manager</span><span class="o">=</span><span class="n">state_manager</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kubeconfig</span> <span class="o">=</span> <span class="n">kube_config</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">registry_config</span> <span class="o">=</span> <span class="n">registry_config</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">image_factory</span> <span class="o">=</span> <span class="n">ImageFactory</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">use_deployment</span> <span class="o">=</span> <span class="n">use_deployment</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">build_context_dir</span> <span class="o">=</span> <span class="n">build_context_dir</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_deployed_resources</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_built_images</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">k8s_client</span> <span class="o">=</span> <span class="n">KubernetesClient</span><span class="p">(</span>
@@ -703,12 +707,73 @@ body.preview-active {
         <span class="p">)</span></div>
 
 
+<div class="viewcode-block" id="KubernetesDeployManager.get_service_endpoint">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesDeployManager.get_service_endpoint">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_service_endpoint</span><span class="p">(</span>
+        <span class="n">service_external_ip</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">service_port</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">]],</span>
+        <span class="n">fallback_host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Auto-select appropriate service endpoint based on detected environment.</span>
+
+<span class="sd">        Solves the common issue where Kubernetes LoadBalancer/ExternalIP is not</span>
+<span class="sd">        reachable from localhost in local clusters (e.g., Minikube/Kind).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            service_external_ip: ExternalIP or LoadBalancer IP from Service</span>
+<span class="sd">            service_port: Target port</span>
+<span class="sd">            fallback_host: Host to use in local environments (default:</span>
+<span class="sd">            127.0.0.1)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: Full HTTP endpoint URL: http://&lt;host&gt;:&lt;port&gt;</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; endpoint = get_service_endpoint(&#39;192.168.5.1&#39;, 8080)</span>
+<span class="sd">            &gt;&gt;&gt; # In local env → &#39;http://127.0.0.1:8080&#39;</span>
+<span class="sd">            &gt;&gt;&gt; # In cloud env → &#39;http://192.168.5.1:8080&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">service_external_ip</span><span class="p">:</span>
+            <span class="n">service_external_ip</span> <span class="o">=</span> <span class="s2">&quot;127.0.0.1&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">service_port</span><span class="p">:</span>
+            <span class="n">service_port</span> <span class="o">=</span> <span class="mi">8080</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">service_port</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">service_port</span> <span class="o">=</span> <span class="n">service_port</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">isLocalK8sEnvironment</span><span class="p">():</span>
+            <span class="n">host</span> <span class="o">=</span> <span class="n">fallback_host</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Local K8s environment detected; using </span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2"> instead of &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">service_external_ip</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">host</span> <span class="o">=</span> <span class="n">service_external_ip</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Cloud/remote environment detected; using External IP: &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;http://</span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">service_port</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="KubernetesDeployManager.get_resource_name">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesDeployManager.get_resource_name">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_resource_name</span><span class="p">(</span><span class="n">deploy_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;agent-</span><span class="si">{</span><span class="n">deploy_id</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
 <div class="viewcode-block" id="KubernetesDeployManager.deploy">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesDeployManager.deploy">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">deploy</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">app</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">runner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">entrypoint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">endpoint_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/process&quot;</span><span class="p">,</span>
         <span class="n">stream</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">custom_endpoints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -724,15 +789,19 @@ body.preview-active {
         <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;agent_llm&quot;</span><span class="p">,</span>
         <span class="n">image_tag</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;latest&quot;</span><span class="p">,</span>
         <span class="n">push_to_registry</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">use_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Deploy runner to Kubernetes.</span>
 
+<span class="sd">        All temporary files are created in cwd/.agentscope_runtime/ by default.</span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            app: Agent app to be deployed</span>
 <span class="sd">            runner: Complete Runner object with agent, environment_manager,</span>
 <span class="sd">                context_manager</span>
+<span class="sd">            entrypoint: Entrypoint spec (e.g., &quot;app.py&quot; or &quot;app.py:handler&quot;)</span>
 <span class="sd">            endpoint_path: API endpoint path</span>
 <span class="sd">            stream: Enable streaming responses</span>
 <span class="sd">            custom_endpoints: Custom endpoints from agent app</span>
@@ -746,6 +815,7 @@ body.preview-active {
 <span class="sd">            environment: Environment variables dict</span>
 <span class="sd">            mount_dir: Mount directory</span>
 <span class="sd">            runtime_config: K8s runtime configuration</span>
+<span class="sd">            use_cache: Enable build cache (default: True)</span>
 <span class="sd">            # Backward compatibility</span>
 <span class="sd">            image_name: Image name</span>
 <span class="sd">            image_tag: Image tag</span>
@@ -770,6 +840,7 @@ body.preview-active {
                 <span class="n">built_image_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_factory</span><span class="o">.</span><span class="n">build_image</span><span class="p">(</span>
                     <span class="n">app</span><span class="o">=</span><span class="n">app</span><span class="p">,</span>
                     <span class="n">runner</span><span class="o">=</span><span class="n">runner</span><span class="p">,</span>
+                    <span class="n">entrypoint</span><span class="o">=</span><span class="n">entrypoint</span><span class="p">,</span>
                     <span class="n">requirements</span><span class="o">=</span><span class="n">requirements</span><span class="p">,</span>
                     <span class="n">extra_packages</span><span class="o">=</span><span class="n">extra_packages</span> <span class="ow">or</span> <span class="p">[],</span>
                     <span class="n">base_image</span><span class="o">=</span><span class="n">base_image</span><span class="p">,</span>
@@ -783,6 +854,7 @@ body.preview-active {
                     <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span>
                     <span class="n">protocol_adapters</span><span class="o">=</span><span class="n">protocol_adapters</span><span class="p">,</span>
                     <span class="n">custom_endpoints</span><span class="o">=</span><span class="n">custom_endpoints</span><span class="p">,</span>
+                    <span class="n">use_cache</span><span class="o">=</span><span class="n">use_cache</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">built_image_name</span><span class="p">:</span>
@@ -811,7 +883,7 @@ body.preview-active {
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">volume_bindings</span> <span class="o">=</span> <span class="p">{}</span>
 
-            <span class="n">resource_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;agent-</span><span class="si">{</span><span class="n">deploy_id</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">resource_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_resource_name</span><span class="p">(</span><span class="n">deploy_id</span><span class="p">)</span>
 
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Building kubernetes deployment for </span><span class="si">{</span><span class="n">deploy_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
@@ -835,33 +907,36 @@ body.preview-active {
                 <span class="p">)</span>
 
             <span class="k">if</span> <span class="n">ports</span><span class="p">:</span>
-                <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;http://</span><span class="si">{</span><span class="n">ip</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">ports</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_service_endpoint</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span> <span class="n">ports</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;http://</span><span class="si">{</span><span class="n">ip</span><span class="si">}</span><span class="s2">:8080&quot;</span>
+                <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_service_endpoint</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
 
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Deployment </span><span class="si">{</span><span class="n">deploy_id</span><span class="si">}</span><span class="s2"> successful: </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">_deployed_resources</span><span class="p">[</span><span class="n">deploy_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;resource_name&quot;</span><span class="p">:</span> <span class="n">resource_name</span><span class="p">,</span>
-                <span class="s2">&quot;service_name&quot;</span><span class="p">:</span> <span class="n">_id</span><span class="p">,</span>
-                <span class="s2">&quot;image&quot;</span><span class="p">:</span> <span class="n">built_image_name</span><span class="p">,</span>
-                <span class="s2">&quot;created_at&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
-                <span class="s2">&quot;replicas&quot;</span><span class="p">:</span> <span class="n">replicas</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_deployment</span> <span class="k">else</span> <span class="mi">1</span><span class="p">,</span>
-                <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span>
-                    <span class="s2">&quot;runner&quot;</span><span class="p">:</span> <span class="n">runner</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="n">deployment</span> <span class="o">=</span> <span class="n">Deployment</span><span class="p">(</span>
+                <span class="nb">id</span><span class="o">=</span><span class="n">deploy_id</span><span class="p">,</span>
+                <span class="n">platform</span><span class="o">=</span><span class="s2">&quot;k8s&quot;</span><span class="p">,</span>
+                <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span>
+                <span class="n">status</span><span class="o">=</span><span class="s2">&quot;running&quot;</span><span class="p">,</span>
+                <span class="n">created_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                <span class="n">agent_source</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;agent_source&quot;</span><span class="p">),</span>
+                <span class="n">config</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;service_name&quot;</span><span class="p">:</span> <span class="n">_id</span><span class="p">,</span>
+                    <span class="s2">&quot;image&quot;</span><span class="p">:</span> <span class="n">built_image_name</span><span class="p">,</span>
+                    <span class="s2">&quot;replicas&quot;</span><span class="p">:</span> <span class="n">replicas</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_deployment</span> <span class="k">else</span> <span class="mi">1</span><span class="p">,</span>
+                    <span class="s2">&quot;runner&quot;</span><span class="p">:</span> <span class="n">runner</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">if</span> <span class="n">runner</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
                     <span class="s2">&quot;extra_packages&quot;</span><span class="p">:</span> <span class="n">extra_packages</span><span class="p">,</span>
-                    <span class="s2">&quot;requirements&quot;</span><span class="p">:</span> <span class="n">requirements</span><span class="p">,</span>  <span class="c1"># New format</span>
+                    <span class="s2">&quot;requirements&quot;</span><span class="p">:</span> <span class="n">requirements</span><span class="p">,</span>
                     <span class="s2">&quot;base_image&quot;</span><span class="p">:</span> <span class="n">base_image</span><span class="p">,</span>
                     <span class="s2">&quot;port&quot;</span><span class="p">:</span> <span class="n">port</span><span class="p">,</span>
-                    <span class="s2">&quot;replicas&quot;</span><span class="p">:</span> <span class="n">replicas</span><span class="p">,</span>
                     <span class="s2">&quot;environment&quot;</span><span class="p">:</span> <span class="n">environment</span><span class="p">,</span>
                     <span class="s2">&quot;runtime_config&quot;</span><span class="p">:</span> <span class="n">runtime_config</span><span class="p">,</span>
                     <span class="s2">&quot;endpoint_path&quot;</span><span class="p">:</span> <span class="n">endpoint_path</span><span class="p">,</span>
                     <span class="s2">&quot;stream&quot;</span><span class="p">:</span> <span class="n">stream</span><span class="p">,</span>
-                    <span class="s2">&quot;protocol_adapters&quot;</span><span class="p">:</span> <span class="n">protocol_adapters</span><span class="p">,</span>
-                    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
                 <span class="p">},</span>
-            <span class="p">}</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state_manager</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">deployment</span><span class="p">)</span>
+
             <span class="k">return</span> <span class="p">{</span>
                 <span class="s2">&quot;deploy_id&quot;</span><span class="p">:</span> <span class="n">deploy_id</span><span class="p">,</span>
                 <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span>
@@ -881,25 +956,85 @@ body.preview-active {
 
 <div class="viewcode-block" id="KubernetesDeployManager.stop">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesDeployManager.stop">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop service&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">deploy_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deployed_resources</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">deploy_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop Kubernetes deployment.</span>
 
-        <span class="n">resources</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deployed_resources</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">deploy_id</span><span class="p">]</span>
-        <span class="n">service_name</span> <span class="o">=</span> <span class="n">resources</span><span class="p">[</span><span class="s2">&quot;service_name&quot;</span><span class="p">]</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">k8s_client</span><span class="o">.</span><span class="n">remove_deployment</span><span class="p">(</span><span class="n">service_name</span><span class="p">)</span></div>
+<span class="sd">        Args:</span>
+<span class="sd">            deploy_id: Deployment identifier</span>
+<span class="sd">            **kwargs: Additional parameters</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict with success status, message, and details</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Derive resource name from deploy_id</span>
+        <span class="n">resource_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_resource_name</span><span class="p">(</span><span class="n">deploy_id</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Try to remove the deployment</span>
+            <span class="n">success</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">k8s_client</span><span class="o">.</span><span class="n">remove_deployment</span><span class="p">(</span><span class="n">resource_name</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+                <span class="c1"># Remove from state manager</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">state_manager</span><span class="o">.</span><span class="n">update_status</span><span class="p">(</span><span class="n">deploy_id</span><span class="p">,</span> <span class="s2">&quot;stopped&quot;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Deployment </span><span class="si">{</span><span class="n">deploy_id</span><span class="si">}</span><span class="s2"> not found &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;in state (already removed)&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                <span class="k">return</span> <span class="p">{</span>
+                    <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Kubernetes deployment </span><span class="si">{</span><span class="n">resource_name</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;removed&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;details&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;deploy_id&quot;</span><span class="p">:</span> <span class="n">deploy_id</span><span class="p">,</span>
+                        <span class="s2">&quot;resource_name&quot;</span><span class="p">:</span> <span class="n">resource_name</span><span class="p">,</span>
+                    <span class="p">},</span>
+                <span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span>
+                    <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Kubernetes deployment </span><span class="si">{</span><span class="n">resource_name</span><span class="si">}</span><span class="s2"> not &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;found (may already be deleted), Please check the &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;detail in cluster&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;details&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;deploy_id&quot;</span><span class="p">:</span> <span class="n">deploy_id</span><span class="p">,</span>
+                        <span class="s2">&quot;resource_name&quot;</span><span class="p">:</span> <span class="n">resource_name</span><span class="p">,</span>
+                    <span class="p">},</span>
+                <span class="p">}</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to remove K8s deployment </span><span class="si">{</span><span class="n">resource_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Failed to remove K8s deployment: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;details&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;deploy_id&quot;</span><span class="p">:</span> <span class="n">deploy_id</span><span class="p">,</span>
+                    <span class="s2">&quot;resource_name&quot;</span><span class="p">:</span> <span class="n">resource_name</span><span class="p">,</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                <span class="p">},</span>
+            <span class="p">}</span></div>
 
 
 <div class="viewcode-block" id="KubernetesDeployManager.get_status">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.kubernetes_deployer.KubernetesDeployManager.get_status">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get deployment status&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">deploy_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deployed_resources</span><span class="p">:</span>
+        <span class="n">deployment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_manager</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">deploy_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">deployment</span><span class="p">:</span>
             <span class="k">return</span> <span class="s2">&quot;not_found&quot;</span>
 
-        <span class="n">resources</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deployed_resources</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">deploy_id</span><span class="p">]</span>
-        <span class="n">service_name</span> <span class="o">=</span> <span class="n">resources</span><span class="p">[</span><span class="s2">&quot;service_name&quot;</span><span class="p">]</span>
+        <span class="c1"># Get service_name from config</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">deployment</span><span class="p">,</span> <span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">service_name</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;service_name&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">service_name</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;unknown&quot;</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">k8s_client</span><span class="o">.</span><span class="n">get_deployment_status</span><span class="p">(</span><span class="n">service_name</span><span class="p">)</span></div>
 </div>

@@ -506,6 +506,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../en/use.html">7. Usage</a><input aria-label="Toggle navigation of 7. Usage" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../en/call.html">AgentApp API Invocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../en/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../en/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../en/tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../en/demohouse.html">Reference: Demo House</a></li>
@@ -570,6 +571,7 @@ body.preview-active {
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../../../zh/use.html">7. 使用</a><input aria-label="Toggle navigation of 7. 使用" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../zh/call.html">智能体应用API调用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../zh/webui.html">WebUI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../zh/cli.html">AgentScope Runtime CLI (<code class="docutils literal notranslate"><span class="pre">agentscope</span></code>)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
@@ -641,7 +643,6 @@ body.preview-active {
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">zipfile</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
@@ -654,6 +655,47 @@ body.preview-active {
 <span class="n">DEPLOYMENT_ZIP</span> <span class="o">=</span> <span class="s2">&quot;deployment.zip&quot;</span>
 <span class="n">TEMPLATES_DIR</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;templates&quot;</span>
 <span class="n">DEFAULT_ENTRYPOINT_FILE</span> <span class="o">=</span> <span class="s2">&quot;runtime_main.py&quot;</span>
+
+<span class="c1"># Default workspace for build artifacts</span>
+<span class="n">DEFAULT_BUILD_WORKSPACE</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span> <span class="o">/</span> <span class="s2">&quot;.agentscope_runtime&quot;</span> <span class="o">/</span> <span class="s2">&quot;builds&quot;</span>
+
+
+<div class="viewcode-block" id="generate_build_directory">
+<a class="viewcode-back" href="../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.utils.package.generate_build_directory">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_build_directory</span><span class="p">(</span>
+    <span class="n">platform</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span><span class="p">,</span>
+    <span class="n">workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate a platform-aware build directory with timestamp and random suffix.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        platform: Deployment platform (k8s, modelstudio, agentrun, local, etc.)</span>
+<span class="sd">        workspace: Custom workspace directory (defaults to</span>
+<span class="sd">                DEFAULT_BUILD_WORKSPACE)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Path: Generated build directory path</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; build_dir = generate_build_directory(&quot;modelstudio&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; # Returns: .agentscope_runtime/builds/modelstudio_20251207_xxx</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+    <span class="k">if</span> <span class="n">workspace</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">workspace</span> <span class="o">=</span> <span class="n">DEFAULT_BUILD_WORKSPACE</span>
+
+    <span class="n">workspace</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Generate timestamp-based name with random suffix</span>
+    <span class="n">timestamp</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">_%H%M%S&quot;</span><span class="p">)</span>
+    <span class="n">random_suffix</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choices</span><span class="p">(</span><span class="s2">&quot;0123456789abcdef&quot;</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">6</span><span class="p">))</span>
+    <span class="n">build_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">platform</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">random_suffix</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">return</span> <span class="n">workspace</span> <span class="o">/</span> <span class="n">build_name</span></div>
+
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_template_env</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Environment</span><span class="p">:</span>
@@ -894,7 +936,7 @@ body.preview-active {
 <span class="sd">    - app.py</span>
 <span class="sd">    - main.py</span>
 <span class="sd">    - __main__.py</span>
-<span class="sd">    - run.py</span>
+<span class="sd">    - chat.py</span>
 <span class="sd">    - runner.py</span>
 
 <span class="sd">    Args:</span>
@@ -910,7 +952,7 @@ body.preview-active {
         <span class="s2">&quot;app.py&quot;</span><span class="p">,</span>
         <span class="s2">&quot;main.py&quot;</span><span class="p">,</span>
         <span class="s2">&quot;__main__.py&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;run.py&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;chat.py&quot;</span><span class="p">,</span>
         <span class="s2">&quot;runner.py&quot;</span><span class="p">,</span>
     <span class="p">]</span>
 
@@ -1075,6 +1117,7 @@ body.preview-active {
         <span class="s2">&quot;.vscode&quot;</span><span class="p">,</span>
         <span class="s2">&quot;*.log&quot;</span><span class="p">,</span>
         <span class="s2">&quot;logs&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;.agentscope_runtime&quot;</span><span class="p">,</span>  <span class="c1"># Ignore build workspace</span>
     <span class="p">]</span>
 
 
@@ -1195,6 +1238,8 @@ body.preview-active {
     <span class="n">host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span>
     <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8090</span><span class="p">,</span>
     <span class="n">extra_parameters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">RuntimeParameter</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">requirements</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">platform</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ProjectInfo</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -1210,6 +1255,13 @@ body.preview-active {
 <span class="sd">    2. Generate a new main.py that imports and runs the app/runner</span>
 <span class="sd">    3. Package the project with the generated main.py as entrypoint</span>
 
+<span class="sd">    Build directory naming:</span>
+<span class="sd">    - When output_dir=None (default), creates workspace directory with</span>
+<span class="sd">                platform-aware naming</span>
+<span class="sd">    - Directory format: cwd/.agentscope_runtime/builds/&lt;platform&gt;_</span>
+<span class="sd">                 &lt;timestamp&gt;_&lt;code&gt;/</span>
+<span class="sd">    - Explicit output_dir uses the provided path</span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        app: AgentApp instance (for object-style deployment)</span>
 <span class="sd">        runner: Runner instance (for object-style deployment)</span>
@@ -1218,6 +1270,8 @@ body.preview-active {
 <span class="sd">        host: Default host for the service (default: &quot;0.0.0.0&quot;)</span>
 <span class="sd">        port: Default port for the service (default: 8090)</span>
 <span class="sd">        extra_parameters: Additional runtime parameters to expose via CLI</span>
+<span class="sd">        requirements: Additional pip requirements</span>
+<span class="sd">        platform: Deployment platform (k8s, modelstudio, agentrun, local)</span>
 <span class="sd">        **kwargs: Additional keyword arguments (ignored)</span>
 
 <span class="sd">    Returns:</span>
@@ -1245,7 +1299,7 @@ body.preview-active {
 <span class="sd">        ...         help=&quot;Number of worker threads&quot;</span>
 <span class="sd">        ...     ),</span>
 <span class="sd">        ... ]</span>
-<span class="sd">        &gt;&gt;&gt; package(app=my_app, extra_parameters=extra_params)</span>
+<span class="sd">        &gt;&gt;&gt; package(app=my_app, extra_parameters=extra_params, platform=&quot;k8s&quot;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Determine project info and target object</span>
     <span class="n">target_obj</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1261,9 +1315,10 @@ body.preview-active {
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Packaging project from: </span><span class="si">{</span><span class="n">project_info</span><span class="o">.</span><span class="n">project_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-    <span class="c1"># Create output directory</span>
+    <span class="c1"># Create output directory with platform-aware naming</span>
     <span class="k">if</span> <span class="n">output_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">output_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;agentscope_package_&quot;</span><span class="p">)</span>
+        <span class="n">output_dir</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">generate_build_directory</span><span class="p">(</span><span class="n">platform</span><span class="p">))</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
