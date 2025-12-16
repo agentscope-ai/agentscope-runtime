@@ -831,6 +831,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </div>
 <ul>
 <li><p><strong>Mobile Sandbox</strong>: A sandbox based on an Android emulator, allowing for <strong>mobile operations</strong> such as tapping, swiping, inputting text, and taking screenshots.</p>
+<img src="https://img.alicdn.com/imgextra/i4/O1CN01yPnBC21vOi45fLy7V_!!6000000006163-2-tps-544-865.png" alt="Mobile Sandbox" height="500">
 <ul>
 <li><p><strong>Prerequisites</strong></p>
 <ul class="simple">
@@ -861,7 +862,7 @@ When running on an ARM64/aarch64 architecture (e.g., Apple M-series chips), you 
     <span class="c1"># By default, pulls &#39;agentscope/runtime-sandbox-mobile:latest&#39; from DockerHub</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span> <span class="c1"># List all available tools</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_get_screen_resolution</span><span class="p">())</span> <span class="c1"># Get the screen resolution</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_tap</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">1000</span><span class="p">))</span> <span class="c1"># Tap at coordinate (500, 1000)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_tap</span><span class="p">([</span><span class="mi">500</span><span class="p">,</span> <span class="mi">1000</span><span class="p">]))</span> <span class="c1"># Tap at coordinate (500, 1000)</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_input_text</span><span class="p">(</span><span class="s2">&quot;Hello from AgentScope!&quot;</span><span class="p">))</span> <span class="c1"># Input text</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_key_event</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span> <span class="c1"># Sends a HOME key event (KeyCode: 3)</span>
     <span class="n">screenshot_result</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">mobile_get_screenshot</span><span class="p">()</span> <span class="c1"># Get the current screenshot</span>
@@ -1358,7 +1359,7 @@ When running on an ARM64/aarch64 architecture (e.g., Apple M-series chips), you 
 <td><p>Get the screen resolution of the mobile device</p></td>
 </tr>
 <tr class="row-even"><td><p></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">mobile_tap(x:</span> <span class="pre">int,</span> <span class="pre">y:</span> <span class="pre">int)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mobile_tap(coordinate:</span> <span class="pre">List[int])</span></code></p></td>
 <td><p>Tap at a specific coordinate on the screen</p></td>
 </tr>
 <tr class="row-odd"><td><p></p></td>

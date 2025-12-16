@@ -1259,7 +1259,7 @@ x = pixels from the left edge, y = pixels from the top edge.</p></li>
 <dl class="py class">
 <dt class="sig sig-object py">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.sandbox.</span></span><span class="sig-name descname"><span class="pre">MobileSandbox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sandbox_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bearer_token</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sandbox_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">SandboxType.MOBILE</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/sandbox/box/mobile/mobile_sandbox.html#MobileSandbox"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Sandbox</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">MobileMixin</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sandbox</span></code></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1274,8 +1274,7 @@ x = pixels from the left edge, y = pixels from the top edge.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sandbox_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bearer_token</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sandbox_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">SandboxType.MOBILE</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/sandbox/box/mobile/mobile_sandbox.html#MobileSandbox.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><p>Initialize the sandbox interface.</p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>sandbox_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
@@ -1323,14 +1322,11 @@ Examples: ‘tap’, ‘swipe’, ‘input_text’, ‘key_event’,
 
 <dl class="py method">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">mobile_tap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/sandbox/box/mobile/mobile_sandbox.html#MobileSandbox.mobile_tap"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="sig-name descname"><span class="pre">mobile_tap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coordinate</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/sandbox/box/mobile/mobile_sandbox.html#MobileSandbox.mobile_tap"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Tap a specific coordinate on the screen.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The x-coordinate in pixels from the left edge.</p></li>
-<li><p><strong>y</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The y-coordinate in pixels from the top edge.</p></li>
-</ul>
+<dd class="field-odd"><p><strong>coordinate</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em>) – The screen coordinates for the tap location.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1343,9 +1339,9 @@ from a start point to an end point.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>start</strong> (<em>Optional</em><em>[</em><em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em><em>]</em>) – The starting coordinates [x, y] in pixels.</p></li>
-<li><p><strong>end</strong> (<em>Optional</em><em>[</em><em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em><em>]</em>) – The ending coordinates [x, y] in pixels.</p></li>
-<li><p><strong>duration</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – The duration of the swipe in milliseconds.</p></li>
+<li><p><strong>start</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em>) – The starting coordinates [x, y] in pixels.</p></li>
+<li><p><strong>end</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em>) – The ending coordinates [x, y] in pixels.</p></li>
+<li><p><strong>duration</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em>) – The duration of the swipe in milliseconds.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1368,7 +1364,7 @@ from a start point to an end point.</p>
 <dd><p>Send an Android key event to the device.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>code</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The key event code (e.g., 3 for HOME) or a
+<dd class="field-odd"><p><strong>code</strong> (<em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em>) – The key event code (e.g., 3 for HOME) or a
 string representation (e.g., ‘HOME’, ‘BACK’).</p>
 </dd>
 </dl>

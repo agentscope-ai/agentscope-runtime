@@ -864,6 +864,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </div>
 <ul>
 <li><p><strong>移动端沙箱（Mobile Sandbox）</strong>: 基于 Android 模拟器的沙箱，可进行移动端操作，如点击、滑动、输入文本和截屏等。</p>
+<img src="https://img.alicdn.com/imgextra/i4/O1CN01yPnBC21vOi45fLy7V_!!6000000006163-2-tps-544-865.png" alt="Mobile Sandbox" height="500">
 <ul>
 <li><p><strong>运行环境要求</strong></p>
 <ul class="simple">
@@ -894,7 +895,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
     <span class="c1"># 默认从 DockerHub 拉取 &#39;agentscope/runtime-sandbox-mobile:latest&#39; 镜像</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span> <span class="c1"># 列出所有可用工具</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_get_screen_resolution</span><span class="p">())</span> <span class="c1"># 获取屏幕分辨率</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_tap</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">1000</span><span class="p">))</span> <span class="c1"># 在坐标 (500, 1000) 处进行点击</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_tap</span><span class="p">([</span><span class="mi">500</span><span class="p">,</span> <span class="mi">1000</span><span class="p">]))</span> <span class="c1"># 在坐标 (500, 1000) 处进行点击</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_input_text</span><span class="p">(</span><span class="s2">&quot;Hello from AgentScope!&quot;</span><span class="p">))</span> <span class="c1"># 输入文本</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_key_event</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span> <span class="c1"># 发送 HOME 按键事件 (KeyCode: 3)</span>
     <span class="n">screenshot_result</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">mobile_get_screenshot</span><span class="p">()</span> <span class="c1"># 获取当前屏幕截图</span>
@@ -1391,7 +1392,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <td><p>获取移动设备的屏幕分辨率</p></td>
 </tr>
 <tr class="row-even"><td><p></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">mobile_tap(x:</span> <span class="pre">int,</span> <span class="pre">y:</span> <span class="pre">int)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mobile_tap(coordinate:</span> <span class="pre">List[int])</span></code></p></td>
 <td><p>在屏幕上的特定坐标处进行点击</p></td>
 </tr>
 <tr class="row-odd"><td><p></p></td>
