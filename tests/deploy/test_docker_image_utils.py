@@ -132,7 +132,7 @@ class TestDockerfileGenerator:
         generator = DockerfileGenerator()
         dockerfile_content = generator.generate_dockerfile_content(config)
 
-        assert "FROM python:3.10-slim-bookworm" in dockerfile_content
+        assert "python:3.10-slim-bookworm" in dockerfile_content
         assert "EXPOSE 8000" in dockerfile_content
 
     def test_generate_dockerfile_with_env_vars(self):
@@ -169,7 +169,7 @@ class TestDockerfileGenerator:
 
         with open(dockerfile_path, "r", encoding="utf-8") as f:
             content = f.read()
-            assert "FROM python:3.10-slim-bookworm" in content
+            assert "python:3.10-slim-bookworm" in content
 
 
 class TestDockerImageBuilder:

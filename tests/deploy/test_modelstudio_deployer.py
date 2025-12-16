@@ -48,8 +48,10 @@ async def test_deploy_build_only_generates_wheel_without_upload(
     )
 
     # Stub wrapper generation and wheel build
-    wrapper_dir = tmp_path / "wrapper"
-    wrapper_dir.mkdir()
+    wrapper_dir = (
+        tmp_path / ".b" / "deploy_starter" / "user_bundle" / "user_app"
+    )
+    wrapper_dir.mkdir(parents=True)
     fake_wheel = wrapper_dir / "dist" / "pkg-0.0.1-py3-none-any.whl"
     fake_wheel.parent.mkdir(parents=True, exist_ok=True)
     fake_wheel.write_bytes(b"wheel-bytes")

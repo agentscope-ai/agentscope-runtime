@@ -7,6 +7,7 @@ import logging
 import os
 import time
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, List, Any, Union, Tuple
 
@@ -34,7 +35,9 @@ from pydantic import BaseModel, Field
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .local_deployer import LocalDeployManager
+from .state import Deployment
 from .utils.detached_app import get_bundle_entry_script
+from .utils.package import generate_build_directory
 from .utils.wheel_packager import (
     default_deploy_name,
     generate_wrapper_project,
@@ -284,6 +287,7 @@ class AgentRunDeployManager(DeployManager):
         oss_config: Optional[OSSConfig] = None,
         agentrun_config: Optional[AgentRunConfig] = None,
         build_root: Optional[Union[str, Path]] = None,
+        state_manager=None,
     ):
         """Initialize AgentRun deployment manager.
 
@@ -291,8 +295,9 @@ class AgentRunDeployManager(DeployManager):
             oss_config: OSS configuration for artifact storage. If None, loads from environment.
             agentrun_config: AgentRun service configuration. If None, loads from environment.
             build_root: Root directory for build artifacts. If None, uses parent directory of current working directory.
+            state_manager: Deployment state manager. If None, creates a new instance.
         """
-        super().__init__()
+        super().__init__(state_manager=state_manager)
         self.oss_config = oss_config or OSSConfig.from_env()
         self.agentrun_config = agentrun_config or AgentRunConfig.from_env()
         self.build_root = (
@@ -422,18 +427,19 @@ class AgentRunDeployManager(DeployManager):
             )
 
         name = deploy_name or default_deploy_name()
-        proj_root = project_dir.resolve()
+
+        # Generate build directory with platform-aware naming
+        # proj_root = project_dir.resolve()
         if isinstance(self.build_root, Path):
             effective_build_root = self.build_root.resolve()
         else:
             if self.build_root:
                 effective_build_root = Path(self.build_root).resolve()
             else:
-                effective_build_root = (
-                    proj_root.parent / ".agentscope_runtime_builds"
-                ).resolve()
+                # Use centralized directory generation function
+                effective_build_root = generate_build_directory("agentrun")
 
-        build_dir = effective_build_root / f"build-{int(time.time())}"
+        build_dir = effective_build_root
         build_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info("Generating wrapper project: %s", name)
@@ -448,6 +454,7 @@ class AgentRunDeployManager(DeployManager):
         logger.info("Building wheel package from: %s", wrapper_project_dir)
         wheel_path = build_wheel(wrapper_project_dir)
         logger.info("Wheel package created: %s", wheel_path)
+
         return wheel_path, name
 
     def _generate_env_file(
@@ -566,9 +573,14 @@ class AgentRunDeployManager(DeployManager):
             FileNotFoundError: If specified files/directories don't exist.
         """
         if not agentrun_id:
-            if not runner and not project_dir and not external_whl_path:
+            if (
+                not app
+                and not runner
+                and not project_dir
+                and not external_whl_path
+            ):
                 raise ValueError(
-                    "Must provide either runner, project_dir, or external_whl_path",
+                    "Must provide either app, runner, project_dir, or external_whl_path",
                 )
         try:
             if runner or app:
@@ -585,6 +597,7 @@ class AgentRunDeployManager(DeployManager):
                     protocol_adapters=protocol_adapters,
                     requirements=requirements,
                     extra_packages=extra_packages,
+                    platform="agentrun",
                     **kwargs,
                 )
                 if project_dir:
@@ -667,21 +680,50 @@ class AgentRunDeployManager(DeployManager):
                 environment=environment,
             )
 
+            # Use base class UUID deploy_id (already set in __init__)
+            deploy_id = self.deploy_id
+            agent_runtime_id = agentrun_deploy_result["agent_runtime_id"]
+            endpoint_url = agentrun_deploy_result.get(
+                "agent_runtime_public_endpoint_url",
+                "",
+            )
+            console_url = (
+                f"https://functionai.console.aliyun.com/{self.agentrun_config.region_id}/"
+                f"agent/infra/agent-runtime/agent-detail?id={agent_runtime_id}"
+            )
+
+            # Save deployment to state manager
+            deployment = Deployment(
+                id=deploy_id,
+                platform="agentrun",
+                url=console_url,
+                status="running",
+                created_at=datetime.now().isoformat(),
+                agent_source=kwargs.get("agent_source"),
+                config={
+                    "agent_runtime_id": agent_runtime_id,
+                    "agent_runtime_endpoint_url": endpoint_url,
+                    "resource_name": name,
+                    "wheel_path": str(wheel_path),
+                    "artifact_url": oss_result.get("presigned_url", ""),
+                    "region_id": self.agentrun_config.region_id,
+                },
+            )
+            self.state_manager.save(deployment)
+
             # Return deployment results
             logger.info(
                 "Deployment completed successfully. Agent runtime ID: %s",
-                agentrun_deploy_result["agent_runtime_id"],
+                agent_runtime_id,
             )
             return {
                 "message": "Agent deployed successfully to AgentRun",
-                "agentrun_id": agentrun_deploy_result["agent_runtime_id"],
-                "agentrun_endpoint_url": agentrun_deploy_result[
-                    "agent_runtime_public_endpoint_url"
-                ],
+                "agentrun_id": agent_runtime_id,
+                "agentrun_endpoint_url": endpoint_url,
                 "wheel_path": str(wheel_path),
-                "artifact_url": oss_result["presigned_url"],
-                "url": f'https://functionai.console.aliyun.com/{self.agentrun_config.region_id}/agent/runtime/agent-detail-code/{agentrun_deploy_result["agent_runtime_id"]}',
-                "deploy_id": agentrun_deploy_result["agent_runtime_id"],
+                "artifact_url": oss_result.get("presigned_url", ""),
+                "url": console_url,
+                "deploy_id": deploy_id,
                 "resource_name": name,
             }
 
@@ -867,7 +909,6 @@ ls -lh /output/{zip_filename}
             from alibabacloud_oss_v2.credentials import (
                 StaticCredentialsProvider,
             )
-            import datetime
         except ImportError as e:
             logger.error(
                 "OSS SDK not available. Install with: pip install alibabacloud-oss-v2",
@@ -2544,4 +2585,87 @@ ls -lh /output/{zip_filename}
                 "success": False,
                 "error": str(e),
                 "message": f"Exception occurred while publishing agent runtime version: {str(e)}",
+            }
+
+    async def stop(self, deploy_id: str, **kwargs) -> Dict[str, Any]:
+        """Stop AgentRun deployment by deleting it.
+
+        Args:
+            deploy_id: AgentRun runtime ID (agent_runtime_id)
+            **kwargs: Additional parameters
+
+        Returns:
+            Dict with success status, message, and details
+        """
+        try:
+            # Try to get deployment info from state for context
+            deployment_info = None
+            deployment = None
+            try:
+                deployment = self.state_manager.get(deploy_id)
+                if deployment:
+                    deployment_info = {
+                        "url": deployment.url
+                        if hasattr(deployment, "url")
+                        else None,
+                        "resource_name": getattr(
+                            deployment,
+                            "resource_name",
+                            None,
+                        ),
+                    }
+                    logger.debug(
+                        f"Fetched deployment info from state: {deployment_info}",
+                    )
+            except Exception as e:
+                logger.debug(
+                    f"Could not fetch deployment info from state: {e}",
+                )
+
+            logger.info(f"Stopping AgentRun deployment: {deploy_id}")
+
+            # Get agent_runtime_id from deployment config
+            agent_runtime_id = None
+            if deployment and deployment.config:
+                agent_runtime_id = deployment.config.get("agent_runtime_id")
+
+            if not agent_runtime_id:
+                # Fallback: try using deploy_id as agent_runtime_id for backward compatibility
+                agent_runtime_id = deploy_id
+                logger.warning(
+                    f"Could not find agent_runtime_id in deployment config, "
+                    f"using deploy_id as fallback: {deploy_id}",
+                )
+
+            # Use the existing delete method with agent_runtime_id
+            result = await self.delete(agent_runtime_id)
+
+            if result.get("success"):
+                # Remove from state manager on successful deletion
+                try:
+                    self.state_manager.update_status(deploy_id, "stopped")
+                except KeyError:
+                    logger.debug(
+                        f"Deployment {deploy_id} not found in state (already removed)",
+                    )
+
+                return {
+                    "success": True,
+                    "message": f"AgentRun deployment {deploy_id} deleted successfully",
+                    "details": result,
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": f"Failed to delete AgentRun deployment: {result.get('message', 'Unknown error')}",
+                    "details": result,
+                }
+        except Exception as e:
+            logger.error(
+                f"Failed to stop AgentRun deployment {deploy_id}: {e}",
+            )
+            return {
+                "success": False,
+                "message": f"Failed to stop AgentRun deployment: {e}",
+                "details": {"deploy_id": deploy_id, "error": str(e)},
             }

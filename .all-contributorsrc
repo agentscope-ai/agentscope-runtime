@@ -254,6 +254,16 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "M4n5ter",
+      "name": "Wang",
+      "avatar_url": "https://avatars.githubusercontent.com/u/68144809?v=4",
+      "profile": "https://m4n5ter.github.io",
+      "contributions": [
+        "code",
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,

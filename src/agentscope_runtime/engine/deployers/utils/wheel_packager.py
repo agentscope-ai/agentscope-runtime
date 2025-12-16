@@ -22,12 +22,15 @@ import sys
 import time
 import uuid
 from pathlib import Path
-from typing import List, Tuple
+import os
+from typing import List, Tuple, Optional, Union
+from .detached_app import _parse_pyproject_toml, append_project_requirements
 
-try:
-    import tomllib  # Python 3.11+
-except ImportError:  # pragma: no cover - fallback on older Pythons
-    tomllib = None  # type: ignore
+
+def get_user_bundle_appdir(build_root: Path, user_project_dir: Path) -> Path:
+    return (
+        build_root / "deploy_starter" / "user_bundle" / user_project_dir.name
+    )
 
 
 def _read_text_file_lines(file_path: Path) -> List[str]:
@@ -62,72 +65,6 @@ def _parse_requirements_txt(req_path: Path) -> Tuple[List[str], List[str]]:
             standard_requirements.append(line)
 
     return standard_requirements, local_wheel_paths
-
-
-def _parse_pyproject_toml(pyproject_path: Path) -> List[str]:
-    deps: List[str] = []
-    if not pyproject_path.is_file():
-        return deps
-    text = pyproject_path.read_text(encoding="utf-8")
-
-    try:
-        # Prefer stdlib tomllib (Python 3.11+)
-        if tomllib is None:
-            raise RuntimeError("tomllib not available")
-        data = tomllib.loads(text)
-        # PEP 621
-        proj = data.get("project") or {}
-        deps.extend(proj.get("dependencies") or [])
-        # Poetry fallback
-        poetry = (data.get("tool") or {}).get("poetry") or {}
-        poetry_deps = poetry.get("dependencies") or {}
-        for name, spec in poetry_deps.items():
-            if name.lower() == "python":
-                continue
-            if isinstance(spec, str):
-                deps.append(f"{name}{spec if spec.strip() else ''}")
-            elif isinstance(spec, dict):
-                version = spec.get("version")
-                if version:
-                    deps.append(f"{name}{version}")
-                else:
-                    deps.append(name)
-    except Exception:
-        # Minimal non-toml parser fallback: try to extract a dependencies = [ ... ] list
-        block_match = re.search(
-            r"dependencies\s*=\s*\[(.*?)\]",
-            text,
-            re.S | re.I,
-        )
-        if block_match:
-            block = block_match.group(1)
-            for m in re.finditer(r"['\"]([^'\"]+)['\"]", block):
-                deps.append(m.group(1))
-        # Poetry fallback: very limited, heuristic
-        poetry_block = re.search(
-            r"\[tool\.poetry\.dependencies\](.*?)\n\[",
-            text,
-            re.S,
-        )
-        if poetry_block:
-            for line in poetry_block.group(1).splitlines():
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                if ":" in line:
-                    # name = "^1.2.3"
-                    m = re.match(
-                        r"([A-Za-z0-9_.-]+)\s*=\s*['\"]([^'\"]+)['\"]",
-                        line,
-                    )
-                    if m and m.group(1).lower() != "python":
-                        deps.append(f"{m.group(1)}{m.group(2)}")
-                else:
-                    # name without version
-                    name = line.split("#")[0].strip()
-                    if name and name.lower() != "python":
-                        deps.append(name)
-    return deps
 
 
 def _gather_user_dependencies(
@@ -211,6 +148,7 @@ def generate_wrapper_project(
     start_cmd: str,
     deploy_name: str,
     telemetry_enabled: bool = True,
+    requirements: Optional[Union[str, List[str]]] = None,
 ) -> Tuple[Path, Path]:
     """
     Create a wrapper project under build_root, embedding user project under
@@ -221,9 +159,8 @@ def generate_wrapper_project(
     # 1) Copy user project into wrapper under deploy_starter/user_bundle/<project_basename>
     # Put user code inside the deploy_starter package so wheel includes it and preserves project folder name
     project_basename = user_project_dir.name
-    bundle_app_dir = (
-        wrapper_dir / "deploy_starter" / "user_bundle" / project_basename
-    )
+    bundle_app_dir = get_user_bundle_appdir(wrapper_dir, user_project_dir)
+
     ignore = shutil.ignore_patterns(
         ".git",
         ".venv",
@@ -245,16 +182,6 @@ def generate_wrapper_project(
     )
 
     # 2) Dependencies
-    _, local_wheels = _gather_user_dependencies(user_project_dir)
-
-    # Copy local wheel files to wrapper project
-    if local_wheels:
-        wheels_dir = wrapper_dir / "deploy_starter" / "wheels"
-        wheels_dir.mkdir(parents=True, exist_ok=True)
-        for wheel_file in local_wheels:
-            dest = wheels_dir / wheel_file.name
-            shutil.copy2(wheel_file, dest)
-
     wrapper_deps = [
         "pyyaml",
         "alibabacloud-oss-v2",
@@ -267,6 +194,30 @@ def generate_wrapper_project(
         "jinja2",
         "psutil",
     ]
+
+    _, local_wheels = _gather_user_dependencies(user_project_dir)
+
+    # gather
+    append_project_requirements(
+        build_root,
+        additional_requirements=requirements,
+        use_local_runtime=os.getenv("USE_LOCAL_RUNTIME", "False") == "True",
+    )
+    _, project_wheels = _gather_user_dependencies(build_root)
+
+    local_wheels.extend(project_wheels)
+
+    # Copy local wheel files to wrapper project
+    if local_wheels:
+        wheels_dir = wrapper_dir / "deploy_starter" / "wheels"
+        wheels_dir.mkdir(parents=True, exist_ok=True)
+        for wheel_file in local_wheels:
+            dest = wheels_dir / wheel_file.name
+            shutil.copy2(wheel_file, dest)
+    else:
+        # if not use local wheel, make sure the agentscope-runtime will be installed
+        wrapper_deps.append("agentscope_runtime")
+
     # De-duplicate while preserving order
     seen = set()
     standard_reqs, local_wheel_paths = _parse_requirements_txt(
@@ -279,9 +230,6 @@ def generate_wrapper_project(
         if key and key not in seen:
             seen.add(key)
             install_requires.append(pkg)
-
-    req_content = "\n".join(install_requires) + "\n"
-    req_content += "\n".join(local_wheel_paths) + "\n"
 
     # 3) Packaging metadata
     unique_suffix = uuid.uuid4().hex[:8]
@@ -309,28 +257,7 @@ def read_config():
         return yaml.safe_load(f) or {{}}
 
 
-def install_local_wheels():
-    \"\"\"Install local wheel files if they exist.\"\"\"
-    wheels_dir = Path(__file__).resolve().parent / 'wheels'
-    if wheels_dir.exists() and wheels_dir.is_dir():
-        wheel_files = list(wheels_dir.glob('*.whl'))
-        if wheel_files:
-            print(f'[deploy_starter] Installing {{len(wheel_files)}} local wheel(s)...')
-            for wheel in wheel_files:
-                try:
-                    subprocess.run(
-                        ['pip', 'install', '--no-deps', str(wheel)],
-                        check=True,
-                        capture_output=True,
-                    )
-                    print(f'[deploy_starter] Installed: {{wheel.name}}')
-                except subprocess.CalledProcessError as e:
-                    print(f'[deploy_starter] Warning: Failed to install {{wheel.name}}: {{e}}', file=sys.stderr)
-
-
 def main():
-    # Install local wheels first
-    install_local_wheels()
 
     cfg = read_config()
     subdir = cfg.get('APP_SUBDIR_NAME')
@@ -419,22 +346,76 @@ APP_SUBDIR_NAME: "{project_basename}"
 
     setup_py = f"""
 from setuptools import setup, find_packages
-import os
-import subprocess
-import sys
+from setuptools.command.build_py import build_py
+import zipfile
+import shutil
 from pathlib import Path
-from setuptools import setup, find_packages
-from setuptools.command.install import install
+from email.parser import Parser
+import tempfile
 
-def run():
-    # Step 1: Install all .whl files in the ./wheel/ directory (relative to setup.py)
-    wheel_dir = Path(__file__).parent / "wheel"
-    if wheel_dir.is_dir():
-        whl_files = sorted(wheel_dir.glob("*.whl"))
-        if whl_files:
-            for whl in whl_files:
-                # Use the same Python interpreter to avoid env issues
-                subprocess.check_call([sys.executable, "-m", "pip", "install", str(whl)])
+
+class BuildPyWithWheelMerge(build_py):
+    \"\"\"Merge bundled wheel packages into the final wheel at build time\"\"\"
+
+    def run(self):
+        build_py.run(self)
+        self._merge_wheels()
+
+    def _merge_wheels(self):
+        \"\"\"Extract and merge all wheel files from the wheels directory\"\"\"
+        wheels_dir = Path("deploy_starter/wheels")
+        if not wheels_dir.exists():
+            return
+
+        whl_files = list(wheels_dir.glob("*.whl"))
+        if not whl_files:
+            return
+
+        print(f"\\n{{'='*60}}\\nMerging {{len(whl_files)}} wheel(s)...\\n{{'='*60}}\\n")
+
+        for whl_file in whl_files:
+            self._extract_wheel(whl_file, Path(self.build_lib))
+
+        print(f"{{'='*60}}\\nMerge completed!\\n{{'='*60}}\\n")
+
+    def _extract_wheel(self, whl_path, build_lib):
+        \"\"\"Extract wheel contents to build directory\"\"\"
+        with tempfile.TemporaryDirectory() as tmpdir, zipfile.ZipFile(whl_path) as zf:
+            zf.extractall(tmpdir)
+
+            for item in Path(tmpdir).iterdir():
+                if item.suffix in ['.dist-info', '.egg-info']:
+                    continue
+
+                dest = build_lib / item.name
+                if dest.exists():
+                    shutil.rmtree(dest) if dest.is_dir() else dest.unlink()
+
+                shutil.copytree(item, dest) if item.is_dir() else shutil.copy2(item, dest)
+                print(f"  Merged: {{item.name}}")
+
+
+def extract_wheel_dependencies():
+    \"\"\"Extract dependency declarations from wheel files\"\"\"
+    deps = []
+    wheels_dir = Path("deploy_starter/wheels")
+
+    if not wheels_dir.exists():
+        return deps
+
+    for whl in wheels_dir.glob("*.whl"):
+        try:
+            with zipfile.ZipFile(whl) as zf:
+                metadata_file = next((f for f in zf.namelist() if f.endswith('/METADATA')), None)
+                if metadata_file:
+                    content = zf.read(metadata_file).decode('utf-8')
+                    metadata = Parser().parsestr(content)
+                    deps.extend([v.split(';')[0].strip() for k, v in metadata.items()
+                               if k == 'Requires-Dist' and v.split(';')[0].strip() not in deps])
+        except Exception as e:
+            print(f"Warning: Failed to extract deps from {{whl.name}}: {{e}}")
+
+    return deps
 
 
 setup(
@@ -442,7 +423,10 @@ setup(
     version='{version}',
     packages=find_packages(),
     include_package_data=True,
-    install_requires={install_requires!r},
+    install_requires={install_requires!r} + extract_wheel_dependencies(),
+    cmdclass={{
+        'build_py': BuildPyWithWheelMerge,
+    }},
 )
 """
     _write_file(wrapper_dir / "setup.py", setup_py)

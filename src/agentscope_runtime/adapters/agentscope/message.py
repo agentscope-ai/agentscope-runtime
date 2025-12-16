@@ -374,9 +374,10 @@ def message_to_agentscope_msg(
 
         if message.type in (
             MessageType.PLUGIN_CALL,
+            MessageType.MCP_TOOL_CALL,
             MessageType.FUNCTION_CALL,
         ):
-            # convert PLUGIN_CALL, FUNCTION_CALL to ToolUseBlock
+            # convert CALL to ToolUseBlock
             tool_args = None
             for cnt in reversed(message.content):
                 if hasattr(cnt, "data"):
@@ -398,10 +399,10 @@ def message_to_agentscope_msg(
             ]
         elif message.type in (
             MessageType.PLUGIN_CALL_OUTPUT,
+            MessageType.MCP_TOOL_CALL_OUTPUT,
             MessageType.FUNCTION_CALL_OUTPUT,
         ):
-            # convert PLUGIN_CALL_OUTPUT, FUNCTION_CALL_OUTPUT to
-            # ToolResultBlock
+            # convert CALL_OUTPUT to ToolResultBlock
             out = None
             raw_output = ""
             for cnt in reversed(message.content):
@@ -426,6 +427,22 @@ def message_to_agentscope_msg(
             if isinstance(blk, list):
                 if not all(is_valid_block(item) for item in blk):
                     try:
+                        # Try to convert MCP content list to blocks
+                        call_tool_result = {
+                            "content": blk,
+                            "structuredContent": None,
+                            "isError": False,
+                        }
+                        blk = MCPClientBase._convert_mcp_content_to_as_blocks(
+                            CallToolResult.model_validate(
+                                call_tool_result,
+                            ).content,
+                        )
+                    except Exception:
+                        blk = raw_output
+            elif isinstance(blk, dict):
+                if not is_valid_block(blk):
+                    try:
                         # Try to convert to MCP CallToolResult then to blocks
                         blk = CallToolResult.model_validate(blk)
                         blk = MCPClientBase._convert_mcp_content_to_as_blocks(
@@ -433,9 +450,6 @@ def message_to_agentscope_msg(
                         )
                     except Exception:
                         blk = raw_output
-            elif isinstance(blk, dict):
-                if not is_valid_block(blk):
-                    blk = raw_output
             else:
                 blk = raw_output
 

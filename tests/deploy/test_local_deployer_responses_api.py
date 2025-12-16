@@ -110,7 +110,7 @@ async def _local_deploy():
 
     # Create responses adapter
     responses_adapter = ResponseAPIDefaultAdapter()
-
+    deploy_id = ""
     deploy_manager = LocalDeployManager(host="localhost", port=server_port)
     try:
         deployment_info = await agent_app.deploy(
@@ -118,7 +118,7 @@ async def _local_deploy():
             endpoint_path=f"/{server_endpoint}",
             protocol_adapters=[responses_adapter],
         )
-
+        deploy_id = deployment_info["deploy_id"]
         print("✅ Service deployed successfully!")
         print(f"   URL: {deployment_info['url']}")
         print(f"   Endpoint: {deployment_info['url']}/{server_endpoint}")
@@ -131,15 +131,15 @@ async def _local_deploy():
         # This block will be executed when you press Ctrl+C.
         print("\nShutdown signal received. Stopping the service...")
         if deploy_manager.is_running:
-            await deploy_manager.stop()
+            await deploy_manager.stop(deploy_id)
         print("✅ Service stopped.")
     except Exception as e:
         print(f"An error occurred: {e}")
         if deploy_manager.is_running:
-            await deploy_manager.stop()
+            await deploy_manager.stop(deploy_id)
     finally:
         if deploy_manager.is_running:
-            await deploy_manager.stop()
+            await deploy_manager.stop(deploy_id)
         print("✅ Service stopped after test.")
 
 

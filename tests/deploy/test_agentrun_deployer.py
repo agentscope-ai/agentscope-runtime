@@ -290,7 +290,8 @@ async def test_deploy_invalid_inputs_raise(
     # Missing runner, project_dir, and external_whl_path
     with pytest.raises(
         ValueError,
-        match="Must provide either runner, project_dir, or external_whl_path",
+        match="Must provide either app, runner, project_dir, "
+        "or external_whl_path",
     ):
         await deployer.deploy(
             project_dir=None,
@@ -530,6 +531,9 @@ async def test_delete_agent_runtime(
     deployer.client.delete_agent_runtime_async = AsyncMock(
         return_value=mock_response,
     )
+    deployer._poll_agent_runtime_status = AsyncMock(
+        return_value={"status": "READY", "status_reason": "Deleted"},
+    )
 
     # Test delete
     result = await deployer.delete(agent_runtime_id="runtime-to-delete")
@@ -617,6 +621,10 @@ def test_agentrun_config_ensure_valid():
 
 def test_oss_config_from_env(monkeypatch: pytest.MonkeyPatch):
     """Test loading OSSConfig from environment variables."""
+    # Clear any existing OSS env vars first
+    monkeypatch.delenv("OSS_ACCESS_KEY_ID", raising=False)
+    monkeypatch.delenv("OSS_ACCESS_KEY_SECRET", raising=False)
+
     monkeypatch.setenv("ALIBABA_CLOUD_ACCESS_KEY_ID", "oss_ak")
     monkeypatch.setenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET", "oss_sk")
     monkeypatch.setenv("OSS_REGION", "cn-shanghai")

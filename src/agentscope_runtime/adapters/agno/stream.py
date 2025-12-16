@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=too-many-branches,too-many-statements
 import json
 
 from typing import AsyncIterator, Union
@@ -9,9 +10,9 @@ from agno.run.agent import (
     RunCompletedEvent,
     RunContentCompletedEvent,
     RunStartedEvent,
-    ReasoningStartedEvent,
-    ReasoningStepEvent,
-    ReasoningCompletedEvent,
+    # ReasoningStartedEvent,  # Not support now
+    # ReasoningStepEvent,
+    # ReasoningCompletedEvent,
     ToolCallStartedEvent,
     ToolCallCompletedEvent,
 )
@@ -33,19 +34,38 @@ async def adapt_agno_message_stream(
 ) -> AsyncIterator[Union[Message, Content]]:
     rb = ResponseBuilder()
     mb = None
-    rmb = None
+    cb = None
+    mb_type = None
+
+    should_start_new_message = True
 
     async for event in source_stream:
         if isinstance(event, RunStartedEvent):
-            # Placeholder
-            pass
+            should_start_new_message = True
         elif isinstance(event, RunCompletedEvent):
             # Placeholder
             return
         elif isinstance(event, RunContentEvent):
-            if mb is None:
+            if event.reasoning_content:
+                message_type = MessageType.REASONING
+                content = event.reasoning_content
+            else:
+                message_type = MessageType.MESSAGE
+                content = event.content
+
+            if message_type != mb_type:
+                # Complete previous message
+                should_start_new_message = True
+                mb_type = message_type
+                if cb is not None:
+                    yield cb.complete()
+                if mb is not None:
+                    yield mb.complete()
+
+            if should_start_new_message:
+                should_start_new_message = False
                 mb = rb.create_message_builder(
-                    message_type=MessageType.MESSAGE,
+                    message_type=message_type,
                     role="assistant",
                 )
                 yield mb.get_message_data()
@@ -53,29 +73,13 @@ async def adapt_agno_message_stream(
                 cb = mb.create_content_builder(
                     content_type="text",
                 )
-            yield cb.add_text_delta(event.content)
+            yield cb.add_text_delta(content)
         elif isinstance(event, RunContentCompletedEvent):
             yield cb.complete()
             yield mb.complete()
             mb = None
-        elif isinstance(event, ReasoningStartedEvent):
-            pass
-        elif isinstance(event, ReasoningStepEvent):
-            if rmb is None:
-                rmb = rb.create_message_builder(
-                    message_type=MessageType.REASONING,
-                    role="assistant",
-                )
-                yield rmb.get_message_data()
-
-                rcb = rmb.create_content_builder(
-                    content_type="text",
-                )
-            yield rcb.add_text_delta(event.content)
-        elif isinstance(event, ReasoningCompletedEvent):
-            yield rcb.complete()
-            yield rmb.complete()
-            rmb = None
+            cb = None
+            should_start_new_message = True
         elif isinstance(event, ToolCallStartedEvent):
             json_str = json.dumps(event.tool.tool_args, ensure_ascii=False)
             data = DataContent(
@@ -93,6 +97,8 @@ async def adapt_agno_message_stream(
             )
             # No stream tool call
             yield message.completed()
+
+            should_start_new_message = True
         elif isinstance(event, ToolCallCompletedEvent):
             try:
                 json_str = json.dumps(event.tool.result, ensure_ascii=False)
@@ -112,3 +118,5 @@ async def adapt_agno_message_stream(
                 content=[data],
             )
             yield message.completed()
+
+            should_start_new_message = True

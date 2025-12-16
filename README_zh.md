@@ -588,7 +588,7 @@ limitations under the License.
 
 ## 贡献者 ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-25-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-26-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 
@@ -631,6 +631,7 @@ limitations under the License.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/XiuShenAl"><img src="https://avatars.githubusercontent.com/u/242360128?v=4?s=100" width="100px;" alt="XiuShenAl"/><br /><sub><b>XiuShenAl</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=XiuShenAl" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=XiuShenAl" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/k-farruh"><img src="https://avatars.githubusercontent.com/u/33511681?v=4?s=100" width="100px;" alt="Farruh Kushnazarov"/><br /><sub><b>Farruh Kushnazarov</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=k-farruh" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/fengxsong"><img src="https://avatars.githubusercontent.com/u/7008971?v=4?s=100" width="100px;" alt="fengxsong"/><br /><sub><b>fengxsong</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Afengxsong" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://m4n5ter.github.io"><img src="https://avatars.githubusercontent.com/u/68144809?v=4?s=100" width="100px;" alt="Wang"/><br /><sub><b>Wang</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=M4n5ter" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3AM4n5ter" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
   <tfoot>

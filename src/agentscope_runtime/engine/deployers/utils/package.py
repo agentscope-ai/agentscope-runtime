@@ -16,7 +16,6 @@ import inspect
 import logging
 import os
 import shutil
-import tempfile
 import zipfile
 from pathlib import Path
 from typing import Optional, List, Tuple, Union
@@ -29,6 +28,44 @@ logger = logging.getLogger(__name__)
 DEPLOYMENT_ZIP = "deployment.zip"
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 DEFAULT_ENTRYPOINT_FILE = "runtime_main.py"
+
+# Default workspace for build artifacts
+DEFAULT_BUILD_WORKSPACE = Path(os.getcwd()) / ".agentscope_runtime" / "builds"
+
+
+def generate_build_directory(
+    platform: str = "unknown",
+    workspace: Optional[Path] = None,
+) -> Path:
+    """
+    Generate a platform-aware build directory with timestamp and random suffix.
+
+    Args:
+        platform: Deployment platform (k8s, modelstudio, agentrun, local, etc.)
+        workspace: Custom workspace directory (defaults to
+                DEFAULT_BUILD_WORKSPACE)
+
+    Returns:
+        Path: Generated build directory path
+
+    Example:
+        >>> build_dir = generate_build_directory("modelstudio")
+        >>> # Returns: .agentscope_runtime/builds/modelstudio_20251207_xxx
+    """
+    import random
+    import time
+
+    if workspace is None:
+        workspace = DEFAULT_BUILD_WORKSPACE
+
+    workspace.mkdir(parents=True, exist_ok=True)
+
+    # Generate timestamp-based name with random suffix
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    random_suffix = "".join(random.choices("0123456789abcdef", k=6))
+    build_name = f"{platform}_{timestamp}_{random_suffix}"
+
+    return workspace / build_name
 
 
 def _get_template_env() -> Environment:
@@ -254,7 +291,7 @@ def _auto_detect_entrypoint(project_dir: str) -> str:
     - app.py
     - main.py
     - __main__.py
-    - run.py
+    - chat.py
     - runner.py
 
     Args:
@@ -270,7 +307,7 @@ def _auto_detect_entrypoint(project_dir: str) -> str:
         "app.py",
         "main.py",
         "__main__.py",
-        "run.py",
+        "chat.py",
         "runner.py",
     ]
 
@@ -432,6 +469,7 @@ def _get_default_ignore_patterns() -> List[str]:
         ".vscode",
         "*.log",
         "logs",
+        ".agentscope_runtime",  # Ignore build workspace
     ]
 
 
@@ -547,6 +585,8 @@ def package(
     host: str = "0.0.0.0",
     port: int = 8090,
     extra_parameters: Optional[List[RuntimeParameter]] = None,
+    requirements: Optional[List[str]] = None,
+    platform: str = "unknown",
     **kwargs,
 ) -> Tuple[str, ProjectInfo]:
     """
@@ -562,6 +602,13 @@ def package(
     2. Generate a new main.py that imports and runs the app/runner
     3. Package the project with the generated main.py as entrypoint
 
+    Build directory naming:
+    - When output_dir=None (default), creates workspace directory with
+                platform-aware naming
+    - Directory format: cwd/.agentscope_runtime/builds/<platform>_
+                 <timestamp>_<code>/
+    - Explicit output_dir uses the provided path
+
     Args:
         app: AgentApp instance (for object-style deployment)
         runner: Runner instance (for object-style deployment)
@@ -570,6 +617,8 @@ def package(
         host: Default host for the service (default: "0.0.0.0")
         port: Default port for the service (default: 8090)
         extra_parameters: Additional runtime parameters to expose via CLI
+        requirements: Additional pip requirements
+        platform: Deployment platform (k8s, modelstudio, agentrun, local)
         **kwargs: Additional keyword arguments (ignored)
 
     Returns:
@@ -597,7 +646,7 @@ def package(
         ...         help="Number of worker threads"
         ...     ),
         ... ]
-        >>> package(app=my_app, extra_parameters=extra_params)
+        >>> package(app=my_app, extra_parameters=extra_params, platform="k8s")
     """
     # Determine project info and target object
     target_obj = None
@@ -613,9 +662,10 @@ def package(
 
     logger.info(f"Packaging project from: {project_info.project_dir}")
 
-    # Create output directory
+    # Create output directory with platform-aware naming
     if output_dir is None:
-        output_dir = tempfile.mkdtemp(prefix="agentscope_package_")
+        output_dir = str(generate_build_directory(platform))
+        os.makedirs(output_dir, exist_ok=True)
     else:
         os.makedirs(output_dir, exist_ok=True)
 

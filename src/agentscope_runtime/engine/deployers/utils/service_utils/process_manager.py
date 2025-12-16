@@ -19,6 +19,8 @@ class ProcessManager:
             shutdown_timeout: Timeout in seconds for graceful shutdown
         """
         self.shutdown_timeout = shutdown_timeout
+        self._log_file = None
+        self._log_file_handle = None
 
     async def start_detached_process(
         self,
@@ -47,7 +49,25 @@ class ProcessManager:
             if env:
                 process_env.update(env)
 
-            # Start detached process
+            # Create log file path with timestamp and child process PID
+            # We'll update the filename after process starts
+            log_dir = "/tmp/agentscope_runtime_logs"
+            os.makedirs(log_dir, exist_ok=True)
+
+            # Use a temporary name first, will rename after getting PID
+            import time
+
+            timestamp = time.strftime("%Y%m%d_%H%M%S")
+            temp_log_file = os.path.join(
+                log_dir,
+                f"process_temp_{timestamp}_{os.getpid()}.log",
+            )
+
+            # Open log file (don't use 'with' to keep it open for the
+            # subprocess)
+            log_f = open(temp_log_file, "w", encoding="utf-8")
+
+            # Start detached process with log file
             process = subprocess.Popen(
                 [
                     "python",
@@ -57,22 +77,63 @@ class ProcessManager:
                     "--port",
                     str(port),
                 ],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stdout=log_f,
+                stderr=subprocess.STDOUT,  # Redirect stderr to stdout
                 stdin=subprocess.DEVNULL,
                 start_new_session=True,  # Create new process group
                 env=process_env,
                 cwd=os.path.dirname(script_path),
             )
 
+            # Rename log file with actual process PID
+            log_file = os.path.join(log_dir, f"process_{process.pid}.log")
+            log_f.close()  # Close temp file
+            os.rename(temp_log_file, log_file)
+
+            # Reopen with the correct name
+            log_f = open(log_file, "a", encoding="utf-8")
+
+            # Store log file path and handle for later retrieval
+            self._log_file = log_file
+            self._log_file_handle = log_f
+
             # Verify process started successfully
-            await asyncio.sleep(0.1)  # Give process time to start
+            await asyncio.sleep(
+                0.5,
+            )  # Give process time to start and write logs
             if process.poll() is not None:
-                raise RuntimeError("Process failed to start")
+                # Process failed to start, wait a bit more for logs to be
+                # flushed
+                await asyncio.sleep(0.2)
+                # Read logs and print them
+                logs = self.get_process_logs(max_lines=50)
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.error(
+                    f"Process failed to start immediately.\n\n"
+                    f"Process logs:\n{logs}",
+                )
+                raise RuntimeError(
+                    "Process failed to start. Check logs above.",
+                )
 
             return process.pid
 
+        except RuntimeError:
+            # Re-raise RuntimeError with logs already included
+            raise
         except Exception as e:
+            # For other exceptions, try to include logs if available
+            if self._log_file:
+                logs = self.get_process_logs(max_lines=50)
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.error(
+                    f"Failed to start detached process: {e}\n\n"
+                    f"Process logs:\n{logs}",
+                )
             raise RuntimeError(f"Failed to start detached process: {e}") from e
 
     async def stop_process_gracefully(
@@ -125,6 +186,9 @@ class ProcessManager:
             raise RuntimeError(
                 f"Failed to terminate process {pid}: {e}",
             ) from e
+        finally:
+            # Close log file handle if open
+            self._close_log_file()
 
     def is_process_running(self, pid: int) -> bool:
         """Check if a process is running.
@@ -270,6 +334,92 @@ class ProcessManager:
             await asyncio.sleep(0.5)
 
         return False
+
+    def get_process_logs(self, max_lines: int = 50) -> str:
+        """Get the last N lines of process logs.
+
+        Args:
+            max_lines: Maximum number of lines to return
+
+        Returns:
+            Log content as string
+        """
+        if not self._log_file or not os.path.exists(self._log_file):
+            return "No log file available"
+
+        try:
+            # Flush the log file handle if it's still open
+            if self._log_file_handle and not self._log_file_handle.closed:
+                self._log_file_handle.flush()
+
+            with open(self._log_file, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+                if not lines:
+                    return (
+                        "Log file is empty (process may not have written "
+                        "any output yet)"
+                    )
+                # Return last N lines
+                return "".join(lines[-max_lines:])
+        except Exception as e:
+            return f"Failed to read log file: {e}"
+
+    def _close_log_file(self):
+        """Close log file handle if open."""
+        if self._log_file_handle and not self._log_file_handle.closed:
+            try:
+                self._log_file_handle.close()
+            except Exception:
+                pass  # Ignore errors when closing
+
+    def cleanup_log_file(self, keep_file: bool = False):
+        """Clean up log file.
+
+        Args:
+            keep_file: If True, keep the log file on disk but close the handle.
+                      If False, delete the log file.
+        """
+        self._close_log_file()
+
+        if not keep_file and self._log_file and os.path.exists(self._log_file):
+            try:
+                os.remove(self._log_file)
+            except Exception:
+                pass  # Ignore cleanup errors
+
+        self._log_file = None
+        self._log_file_handle = None
+
+    @staticmethod
+    def cleanup_old_logs(max_age_hours: int = 24):
+        """Clean up old log files.
+
+        Args:
+            max_age_hours: Remove log files older than this many hours
+        """
+        import time
+
+        log_dir = "/tmp/agentscope_runtime_logs"
+        if not os.path.exists(log_dir):
+            return
+
+        current_time = time.time()
+        max_age_seconds = max_age_hours * 3600
+
+        try:
+            for filename in os.listdir(log_dir):
+                if filename.startswith("process_") and filename.endswith(
+                    ".log",
+                ):
+                    filepath = os.path.join(log_dir, filename)
+                    try:
+                        file_age = current_time - os.path.getmtime(filepath)
+                        if file_age > max_age_seconds:
+                            os.remove(filepath)
+                    except Exception:
+                        pass  # Ignore errors for individual files
+        except Exception:
+            pass  # Ignore errors during cleanup
 
     @staticmethod
     def _normalize_host_for_check(host: str) -> str:

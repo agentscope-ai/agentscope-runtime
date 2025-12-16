@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import os
 import types
 import platform
 import subprocess
@@ -26,6 +27,8 @@ from ..schemas.agent_schemas import AgentRequest
 from ...version import __version__
 
 logger = logging.getLogger(__name__)
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", "8080"))
 
 
 class AgentApp(BaseApp):
@@ -203,8 +206,8 @@ class AgentApp(BaseApp):
 
     def run(
         self,
-        host="0.0.0.0",
-        port=8090,
+        host=HOST,
+        port=PORT,
         web_ui=False,
         **kwargs,
     ):
@@ -224,7 +227,7 @@ class AgentApp(BaseApp):
 
         Args:
             host (str): Host address to bind to. Default "0.0.0.0".
-            port (int): Port number to serve the application on. Default 8090.
+            port (int): Port number to serve the application on. Default 8080.
             web_ui (bool): If True, launches the Agentscope Web UI in a
                 separate process, pointing it to the API endpoint. This
                 allows interactive use via browser. Default False.
@@ -233,7 +236,7 @@ class AgentApp(BaseApp):
 
         Example:
             >>> app = AgentApp(app_name="MyAgent")
-            >>> app.run(host="127.0.0.1", port=8000, web_ui=True)
+            >>> app.chat(host="127.0.0.1", port=8080, web_ui=True)
         """
         # Build runner
         self._build_runner()
