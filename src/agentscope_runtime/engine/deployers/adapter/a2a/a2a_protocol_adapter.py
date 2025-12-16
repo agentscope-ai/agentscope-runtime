@@ -6,9 +6,10 @@ This module provides the default A2A (Agent-to-Agent) protocol adapter
 implementation for FastAPI applications. It handles agent card configuration,
 wellknown endpoint setup, and task management.
 """
+import os
 import logging
 from typing import Any, Callable, Dict, List, Optional, Union
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urljoin
 
 from a2a.server.apps import A2AFastAPIApplication
 from a2a.server.request_handlers import DefaultRequestHandler
@@ -24,7 +25,11 @@ from a2a.types import (
 from fastapi import FastAPI
 from pydantic import ConfigDict
 
+from agentscope_runtime.engine.deployers.utils.net_utils import (
+    get_first_non_loopback_ip,
+)
 from agentscope_runtime.version import __version__ as runtime_version
+
 from .a2a_agent_adapter import A2AExecutor
 from .a2a_registry import (
     A2ARegistry,
@@ -48,6 +53,7 @@ DEFAULT_TASK_TIMEOUT = 60
 DEFAULT_TASK_EVENT_TIMEOUT = 10
 DEFAULT_TRANSPORT = "JSONRPC"
 DEFAULT_INPUT_OUTPUT_MODES = ["text"]
+PORT = int(os.getenv("PORT", "8080"))
 
 
 # pylint: disable=too-many-branches,too-many-statements
@@ -58,9 +64,13 @@ def extract_config_params(
 ) -> Dict[str, Any]:
     """Extract parameters from AgentCardWithRuntimeConfig.
 
-    Handles both dict and object types, with priority given to
-    a2a_config values over fallback parameters.
-    Auto-creates registry from env if not specified.
+    Args:
+        agent_name: Fallback agent name
+        agent_description: Fallback agent description
+        a2a_config: Configuration as dict or AgentCardWithRuntimeConfig object
+
+    Returns:
+        Dictionary of extracted parameters
     """
 
     params: Dict[str, Any] = {}
@@ -157,6 +167,8 @@ class AgentCardWithRuntimeConfig(AgentCard):
     """
 
     # Runtime-specific fields (not part of AgentCard protocol)
+    host: Optional[str] = None
+    port: int = PORT
     registry: Optional[List[A2ARegistry]] = None
     task_timeout: Optional[int] = DEFAULT_TASK_TIMEOUT
     task_event_timeout: Optional[int] = DEFAULT_TASK_EVENT_TIMEOUT
@@ -202,6 +214,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         self,
         agent_name: str,
         agent_description: str,
+        host: Optional[str] = None,
+        port: int = PORT,
         registry: Optional[Union[A2ARegistry, List[A2ARegistry]]] = None,
         # AgentCard configuration
         card_url: Optional[str] = None,
@@ -228,6 +242,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         Args:
             agent_name: Agent name used in card
             agent_description: Agent description used in card
+            host: Host address to expose A2A endpoints on
+            port: Port to expose A2A endpoints on (default: PORT)
             registry: Optional A2A registry or list of registry instances
                 for service discovery. If None, registry operations
                 will be skipped.
@@ -255,6 +271,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         self._agent_name = agent_name
         self._agent_description = agent_description
         self._json_rpc_path = kwargs.get("json_rpc_path", A2A_JSON_RPC_URL)
+        self._host = host or get_first_non_loopback_ip()
+        self._port = port
 
         # Convert registry to list for uniform handling
         # Registry is optional: if None, skip registry operations
@@ -393,32 +411,17 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         """Build DeployProperties from runtime configuration.
 
         Args:
-            **kwargs: Additional arguments
+            **kwargs: Additional runtime properties
 
         Returns:
             DeployProperties instance
         """
-        host = None
-        port = None
-
-        # Inline _get_json_rpc_url() logic
-        base = self._card_url or "http://127.0.0.1:8000"
-        base_with_slash = base.rstrip("/") + "/"
-        json_rpc_url = urljoin(
-            base_with_slash,
-            self._json_rpc_path.lstrip("/"),
-        )
-        if json_rpc_url:
-            parsed = urlparse(json_rpc_url)
-            host = parsed.hostname
-            port = parsed.port
-
-        excluded_keys = {"host", "port", "path"}
+        excluded_keys = {"host", "port"}
         extra = {k: v for k, v in kwargs.items() if k not in excluded_keys}
 
         return DeployProperties(
-            host=host,
-            port=port,
+            host=self._host,
+            port=self._port,
             extra=extra,
         )
 
@@ -426,8 +429,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         self,
         app: FastAPI,
     ) -> List[A2ATransportsProperties]:
-        """Build A2ATransportsProperties list from agent card and
-        runtime config.
+        """Build A2ATransportsProperties list from agent card and runtime
+        config.
 
         Args:
             app: FastAPI application instance
@@ -437,47 +440,21 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         """
         transports_list = []
 
-        # Build primary transport from card URL
-        base = self._card_url or "http://127.0.0.1:8000"
-        base_with_slash = base.rstrip("/") + "/"
-        json_rpc_url = urljoin(
-            base_with_slash,
+        path = getattr(app, "root_path", "")
+        json_rpc = urljoin(
+            path.rstrip("/") + "/",
             self._json_rpc_path.lstrip("/"),
         )
 
-        if json_rpc_url:
-            parsed = urlparse(json_rpc_url)
-            path = getattr(app, "root_path", "") or ""
-            support_tls = parsed.scheme == "https"
-
-            primary_transport = A2ATransportsProperties(
-                host=parsed.hostname,
-                port=parsed.port,
-                path=path,
-                support_tls=support_tls,
-                extra={},
-                transport_type="grpc",
-            )
-            transports_list.append(primary_transport)
-
-        # Add additional interfaces if configured
-        if self._additional_interfaces:
-            for interface in self._additional_interfaces:
-                if hasattr(interface, "url"):
-                    parsed = urlparse(interface.url)
-                    transport = A2ATransportsProperties(
-                        host=parsed.hostname,
-                        port=parsed.port,
-                        path=parsed.path or "",
-                        support_tls=parsed.scheme == "https",
-                        extra={},
-                        transport_type=getattr(
-                            interface,
-                            "transport",
-                            "grpc",
-                        ),
-                    )
-                    transports_list.append(transport)
+        default_transport = A2ATransportsProperties(
+            host=self._host,
+            port=self._port,
+            path=json_rpc,
+            support_tls=False,
+            extra={},
+            transport_type=DEFAULT_TRANSPORT,
+        )
+        transports_list.append(default_transport)
 
         return transports_list
 
@@ -533,11 +510,6 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         app: Optional[FastAPI] = None,  # pylint: disable=unused-argument
     ) -> AgentCard:
         """Build and return AgentCard with configured options.
-
-        Constructs an AgentCard with all configured options, applying defaults
-        where user values are not provided. Some fields like capabilities,
-        protocol_version, etc. are set based on runtime implementation and
-        cannot be overridden by users.
 
         Args:
             app: Optional FastAPI app instance

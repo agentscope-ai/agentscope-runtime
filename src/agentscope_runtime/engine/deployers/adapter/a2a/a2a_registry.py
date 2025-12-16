@@ -42,9 +42,9 @@ class DeployProperties:
     """Deployment runtime properties used when registering services.
 
     Attributes:
-        host: Optional server host.
-        port: Optional server port.
-        extra: Additional runtime properties.
+        host: Optional server host
+        port: Optional server port
+        extra: Additional runtime properties
     """
 
     host: Optional[str] = None
@@ -57,12 +57,12 @@ class A2ATransportsProperties:
     """A2A transport properties for multi-transport support.
 
     Attributes:
-        port: Transport port.
-        host: Transport host.
-        path: Transport path.
-        support_tls: Whether TLS is supported.
-        extra: Additional transport properties.
-        transport_type: Type of transport (e.g., "http", "grpc").
+        host: Transport host
+        port: Transport port
+        path: Transport path
+        support_tls: Whether TLS is supported
+        extra: Additional transport properties
+        transport_type: Type of transport (e.g., "JSONRPC", "HTTP")
     """
 
     host: Optional[str] = None
@@ -70,7 +70,7 @@ class A2ATransportsProperties:
     path: Optional[str] = None
     support_tls: Optional[bool] = False
     extra: Dict[str, Any] = field(default_factory=dict)
-    transport_type: str = "grpc"
+    transport_type: str = "JSONRPC"
 
 
 class A2ARegistry(ABC):
@@ -98,7 +98,7 @@ class A2ARegistry(ABC):
         """Register an agent/service.
 
         Args:
-            agent_card: Agent card of this agent.
+            agent_card: Agent card of this agent
             deploy_properties: Deploy properties include interface information
                 such as address, port, etc.
             a2a_transports_properties: Multiple transports for A2A Server,

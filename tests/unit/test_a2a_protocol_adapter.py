@@ -9,9 +9,7 @@ Tests cover:
 - A2ATransportsProperties building
 - Registry integration with transports
 """
-from unittest.mock import MagicMock
-
-from a2a.types import AgentCard, AgentCapabilities, AgentInterface
+from a2a.types import AgentCard, AgentCapabilities
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -184,7 +182,8 @@ class TestA2ATransportsPropertiesBuilding:
         adapter = A2AFastAPIDefaultAdapter(
             agent_name="test_agent",
             agent_description="Test description",
-            card_url="http://localhost:8080",
+            host="localhost",
+            port=8080,
         )
 
         app = FastAPI()
@@ -195,20 +194,23 @@ class TestA2ATransportsPropertiesBuilding:
 
         # Should have at least one transport
         assert len(transports) >= 1
-        # Primary transport should be based on card URL
+        # Primary transport should use configured host and port
         assert transports[0].host == "localhost"
         assert transports[0].port == 8080
         assert transports[0].support_tls is False
-        assert transports[0].transport_type == "grpc"
+        assert transports[0].transport_type == "JSONRPC"
+        # Path should be the JSON-RPC path
+        assert transports[0].path == "/a2a"
 
-    def test_build_a2a_transports_properties_with_https(
+    def test_build_a2a_transports_properties_with_custom_host_port(
         self,
     ):
-        """Test transport properties with HTTPS URL."""
+        """Test transport properties with custom host and port."""
         adapter = A2AFastAPIDefaultAdapter(
             agent_name="test_agent",
             agent_description="Test description",
-            card_url="https://secure.example.com:8443",
+            host="secure.example.com",
+            port=8443,
         )
 
         app = FastAPI()
@@ -217,10 +219,10 @@ class TestA2ATransportsPropertiesBuilding:
             app=app,
         )
 
-        # Should detect TLS from https scheme
+        # Should use configured host and port
         assert transports[0].host == "secure.example.com"
         assert transports[0].port == 8443
-        assert transports[0].support_tls is True
+        assert transports[0].support_tls is False  # TLS is not auto-detected
 
     def test_build_a2a_transports_properties_with_root_path(
         self,
@@ -229,7 +231,8 @@ class TestA2ATransportsPropertiesBuilding:
         adapter = A2AFastAPIDefaultAdapter(
             agent_name="test_agent",
             agent_description="Test description",
-            card_url="http://localhost:8080",
+            host="localhost",
+            port=8080,
         )
 
         app = FastAPI(root_path="/api/v1")
@@ -238,66 +241,76 @@ class TestA2ATransportsPropertiesBuilding:
             app=app,
         )
 
-        # Should include root path
-        assert transports[0].path == "/api/v1"
+        # Should combine root path with JSON-RPC path
+        assert transports[0].path == "/api/v1/a2a"
 
-    def test_build_a2a_transports_properties_with_additional_interfaces(
+    def test_build_a2a_transports_properties_with_empty_root_path(
         self,
     ):
-        """Test building transports with additional interfaces."""
-        # Create mock additional interfaces
-        interface1 = MagicMock(spec=AgentInterface)
-        interface1.url = "http://alt.example.com:9090/path1"
-        interface1.transport = "http"
-
-        interface2 = MagicMock(spec=AgentInterface)
-        interface2.url = "https://alt2.example.com:9091/path2"
-        interface2.transport = "grpc"
-
+        """Test transport properties with empty root_path."""
         adapter = A2AFastAPIDefaultAdapter(
             agent_name="test_agent",
             agent_description="Test description",
-            card_url="http://localhost:8080",
-            additional_interfaces=[interface1, interface2],
+            host="localhost",
+            port=8080,
         )
 
-        app = FastAPI()
+        app = FastAPI(root_path="")
 
         transports = adapter._build_a2a_transports_properties(
             app=app,
         )
 
-        # Should have primary + 2 additional transports
-        assert len(transports) == 3
+        # Should use JSON-RPC path when root_path is empty
+        assert transports[0].path == "/a2a"
 
-        # Check additional transports
-        assert transports[1].host == "alt.example.com"
-        assert transports[1].port == 9090
-        assert transports[1].path == "/path1"
-        assert transports[1].transport_type == "http"
-
-        assert transports[2].host == "alt2.example.com"
-        assert transports[2].port == 9091
-        assert transports[2].path == "/path2"
-        assert transports[2].support_tls is True
-        assert transports[2].transport_type == "grpc"
-
-    def test_build_deploy_properties_without_path(
+    def test_build_deploy_properties(
         self,
     ):
-        """Test _build_deploy_properties no longer includes path."""
+        """Test _build_deploy_properties includes host, port, and extra."""
         adapter = A2AFastAPIDefaultAdapter(
             agent_name="test_agent",
             agent_description="Test description",
-            card_url="http://localhost:8080",
+            host="localhost",
+            port=8080,
         )
 
-        deploy_props = adapter._build_deploy_properties()
+        deploy_props = adapter._build_deploy_properties(
+            region="us-west-1",
+            environment="production",
+        )
 
-        # DeployProperties should not have path field
+        # DeployProperties should have host, port, and extra fields
         assert deploy_props.host == "localhost"
         assert deploy_props.port == 8080
+        assert deploy_props.extra == {
+            "region": "us-west-1",
+            "environment": "production",
+        }
+        # DeployProperties should not have path field
         assert not hasattr(deploy_props, "path") or deploy_props.path is None
+
+    def test_build_deploy_properties_excludes_host_port_from_extra(
+        self,
+    ):
+        """Test _build_deploy_properties excludes host/port from extra."""
+        adapter = A2AFastAPIDefaultAdapter(
+            agent_name="test_agent",
+            agent_description="Test description",
+            host="localhost",
+            port=8080,
+        )
+
+        deploy_props = adapter._build_deploy_properties(
+            host="should-be-ignored",
+            port=9999,
+            region="us-east-1",
+        )
+
+        # Host and port in kwargs should be excluded from extra
+        assert deploy_props.host == "localhost"  # From adapter config
+        assert deploy_props.port == 8080  # From adapter config
+        assert deploy_props.extra == {"region": "us-east-1"}
 
 
 class TestRegistryIntegrationWithTransports:

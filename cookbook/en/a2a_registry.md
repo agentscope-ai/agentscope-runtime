@@ -2,7 +2,7 @@
 
 ## Overview
 
-A2A Registry is a service registration and discovery mechanism provided by AgentScope Runtime for the A2A (Agent-to-Agent) protocol. Through Registry, you can register your agent services to service discovery systems (such as Nacos, etc.), enabling other agents or clients to dynamically discover and invoke your services.
+A2A Registry is a service registration and discovery mechanism provided by AgentScope Runtime for the A2A (Agent-to-Agent) protocol. Through Registry, you can register agent services to centralized agent registries (such as Nacos, etc.), enabling other agents or clients to dynamically discover and invoke agent services.
 
 ## Core Concepts
 

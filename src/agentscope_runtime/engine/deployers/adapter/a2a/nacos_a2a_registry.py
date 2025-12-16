@@ -139,78 +139,19 @@ class NacosRegistry(A2ARegistry):
             )
             return
 
-        # If no transports provided, use deploy_properties as fallback
-        if not a2a_transports_properties:
-            host = deploy_properties.host or "127.0.0.1"
-            port = deploy_properties.port
-            path = ""
-
-            if port is None:
-                logger.warning(
-                    "[NacosRegistry] Port not specified in deploy_properties, "
-                    "skipping endpoint registration",
-                )
-                return
-
-            logger.info(
-                "[NacosRegistry] Registering agent=%s at %s:%s%s "
-                "(using deploy_properties)",
-                agent_card.name,
-                host,
-                port,
-                path,
-            )
-
-            self._start_register_task(
-                agent_card=agent_card,
-                host=host,
-                port=port,
-                path=path,
-            )
-            return
-
-        # Register each transport separately
-        for idx, transport in enumerate(a2a_transports_properties):
-            # Priority: use transport values, fallback to deploy_properties
-            host = transport.host or deploy_properties.host or "127.0.0.1"
-            port = transport.port or deploy_properties.port
-            path = transport.path or ""
-
-            if port is None:
-                logger.warning(
-                    "[NacosRegistry] Port not specified for transport #%d, "
-                    "skipping this transport",
-                    idx,
-                )
-                continue
-
-            logger.info(
-                (
-                    "[NacosRegistry] Registering agent=%s transport "
-                    "#%d at %s:%s%s (type=%s, tls=%s)"
-                ),
-                agent_card.name,
-                idx,
-                host,
-                port,
-                path,
-                transport.transport_type,
-                transport.support_tls,
-            )
-
-            self._start_register_task(
-                agent_card=agent_card,
-                host=host,
-                port=port,
-                path=path,
-            )
+        self._start_register_task(
+            agent_card=agent_card,
+            deploy_properties=deploy_properties,
+            a2a_transports_properties=a2a_transports_properties,
+        )
 
     def _start_register_task(
         self,
         agent_card: AgentCard,
-        host: str,
-        port: int,
-        path: str,
+        deploy_properties: DeployProperties,
+        a2a_transports_properties: Optional[
+            List[A2ATransportsProperties]
+        ] = None,
     ) -> None:
         """Start background Nacos registration task.
 
@@ -259,9 +200,8 @@ class NacosRegistry(A2ARegistry):
                 self._register_task = loop.create_task(
                     self._register_to_nacos(
                         agent_card=agent_card,
-                        host=host,
-                        port=port,
-                        path=path,
+                        deploy_properties=deploy_properties,
+                        a2a_transports_properties=a2a_transports_properties,
                     ),
                 )
                 logger.info(
@@ -290,9 +230,10 @@ class NacosRegistry(A2ARegistry):
                     asyncio.run(
                         self._register_to_nacos(
                             agent_card=agent_card,
-                            host=host,
-                            port=port,
-                            path=path,
+                            deploy_properties=deploy_properties,
+                            a2a_transports_properties=(
+                                a2a_transports_properties
+                            ),
                         ),
                     )
                     with self._registration_lock:
@@ -359,13 +300,14 @@ class NacosRegistry(A2ARegistry):
         settings = get_registry_settings()
         return _build_nacos_client_config(settings)
 
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches,too-many-statements
     async def _register_to_nacos(
         self,
         agent_card: AgentCard,
-        host: str,
-        port: int,
-        path: str,
+        deploy_properties: DeployProperties,
+        a2a_transports_properties: Optional[
+            List[A2ATransportsProperties]
+        ] = None,
     ) -> None:
         """Register agent to Nacos.
 
@@ -383,9 +325,9 @@ class NacosRegistry(A2ARegistry):
 
         Args:
             agent_card: The A2A agent card to register
-            host: Server host address
-            port: Server port
-            path: Application path
+            deploy_properties: Deployment properties
+            a2a_transports_properties: Optional list of transport
+                configurations
 
         Raises:
             asyncio.CancelledError: If the registration task is cancelled
@@ -436,24 +378,31 @@ class NacosRegistry(A2ARegistry):
                 return
 
             # Register agent endpoint
-            endpoint_param = RegisterAgentEndpointParam(
-                agent_name=agent_card.name,
-                version=agent_card.version,
-                address=host,
-                port=port,
-                path=path,
-            )
-            await self._nacos_ai_service.register_agent_endpoint(
-                endpoint_param,
-            )
-            logger.info(
-                "[NacosRegistry] Agent endpoint registered: "
-                "agent=%s, address=%s:%s, path=%s",
-                agent_card.name,
-                host,
-                port,
-                path,
-            )
+            if a2a_transports_properties:
+                for transport in a2a_transports_properties:
+                    host = transport.host or deploy_properties.host
+                    port = transport.port or deploy_properties.port
+                    endpoint_param = RegisterAgentEndpointParam(
+                        agent_name=agent_card.name,
+                        version=agent_card.version,
+                        address=host,
+                        port=port,
+                        path=transport.path,
+                        support_tls=transport.support_tls,
+                        transport=transport.transport_type,
+                    )
+
+                    await self._nacos_ai_service.register_agent_endpoint(
+                        endpoint_param,
+                    )
+                    logger.info(
+                        "[NacosRegistry] Agent endpoint registered: "
+                        "agent=%s, address=%s:%s, path=%s",
+                        agent_card.name,
+                        host,
+                        port,
+                        transport.path,
+                    )
 
             with self._registration_lock:
                 if self._registration_status == RegistrationStatus.IN_PROGRESS:
