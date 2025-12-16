@@ -17,18 +17,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def _coerce_timedelta_seconds(value: Any, default_seconds: float) -> timedelta:
+def _coerce_timedelta(value: Any, default: timedelta) -> timedelta:
     """Normalize timeout values to timedelta for MCP client compatibility."""
     if value is None:
-        return timedelta(seconds=default_seconds)
+        return default
     if isinstance(value, timedelta):
         return value
-    if isinstance(value, int | float):
-        return timedelta(seconds=float(value))
     try:
         return timedelta(seconds=float(value))
     except (TypeError, ValueError):
-        return timedelta(seconds=default_seconds)
+        return default
 
 
 class MCPSessionHandler:
@@ -72,13 +70,13 @@ class MCPSessionHandler:
                         streamablehttp_client(
                             url=self.config["url"],
                             headers=self.config.get("headers"),
-                            timeout=_coerce_timedelta_seconds(
+                            timeout=_coerce_timedelta(
                                 self.config.get("timeout"),
-                                default_seconds=30,
+                                default=timedelta(seconds=30),
                             ),
-                            sse_read_timeout=_coerce_timedelta_seconds(
+                            sse_read_timeout=_coerce_timedelta(
                                 self.config.get("sse_read_timeout"),
-                                default_seconds=60 * 5,
+                                default=timedelta(seconds=60 * 5),
                             ),
                         ),
                     )
