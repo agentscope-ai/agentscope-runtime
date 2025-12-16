@@ -115,11 +115,12 @@ class MobileSandbox(MobileMixin, Sandbox):
                     " that appear to be missing or not loaded.\n\n"
                     "To fix this, please run the following commands"
                     " on your Linux host:\n\n"
-                    "## install required kernel modules\n"
+                    "## Install required kernel modules\n"
                     "sudo apt update"
                     " && sudo apt install -y linux-modules-extra-`uname -r`\n"
                     "sudo modprobe binder_linux"
                     ' devices="binder,hwbinder,vndbinder"\n'
+                    "## (Optional) Load the ashmem driver for older kernels\n"
                     "sudo modprobe ashmem_linux\n"
                     "=================================================="
                 )
