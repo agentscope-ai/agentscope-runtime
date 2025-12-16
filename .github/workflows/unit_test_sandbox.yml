@@ -4,11 +4,9 @@ on:
   push:
     branches:
       - 'main'
-      - 'dev'
   pull_request:
     branches:
       - 'main'
-      - 'dev'
 
 jobs:
   test:
@@ -30,6 +28,14 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+
+      - name: Attempt to load Android kernel modules
+        run: |
+          sudo apt-get update -y && sudo apt-get install -y linux-modules-extra-$(uname -r) || echo "WARNING: apt-get install failed, but continuing."
+          sudo modprobe binder_linux devices="binder,hwbinder,vndbinder" || echo "INFO: modprobe binder_linux failed as expected."
+          sudo modprobe ashmem_linux || echo "INFO: modprobe ashmem_linux failed as expected."
+          lsmod | grep -E "binder|ashmem" || echo "INFO: No 'binder' or 'ashmem' modules found in lsmod output."
+
       - name: Pull Docker images
         run: |
           DOCKER_IMAGES=(
@@ -37,6 +43,7 @@ jobs:
             "agentscope/runtime-sandbox-gui:latest"
             "agentscope/runtime-sandbox-browser:latest"
             "agentscope/runtime-sandbox-filesystem:latest"
+            "agentscope/runtime-sandbox-mobile:latest"
           )
 
           for img in "${DOCKER_IMAGES[@]}"; do
@@ -69,7 +76,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          coverage run -m pytest tests/sandbox/test_sandbox.py tests/sandbox/test_sandbox_service.py
+          coverage run -m pytest tests/sandbox/test_sandbox.py tests/sandbox/test_tool.py
 
       - name: Generate coverage report
         run: |
