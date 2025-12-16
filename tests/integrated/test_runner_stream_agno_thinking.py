@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=unused-argument
 import os
 
 import pytest
@@ -94,7 +95,7 @@ class MyRunner(Runner):
         await self.sandbox_service.stop()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope="function")
 async def test_runner_sample1():
     from dotenv import load_dotenv
 
@@ -168,7 +169,7 @@ async def test_runner_sample1():
     assert "杭州" in final_text or "hangzhou" in final_text.lower()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope="function")
 async def test_runner_sample2():
     from dotenv import load_dotenv
 
