@@ -373,12 +373,8 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             )
             url = f"{base_url}/{json_rpc}"
 
-        # Initialize from agent_card dict or empty
-        card_kwargs = (
-            dict(self._a2a_config.agent_card)
-            if isinstance(self._a2a_config.agent_card, dict)
-            else {}
-        )
+        # Initialize from agent_card
+        card_kwargs = {}
 
         # Set required fields
         card_kwargs["name"] = self._get_agent_card_field(
