@@ -29,8 +29,8 @@ The `agent_card` field can be an `AgentCard` object or dictionary, containing th
 
 **2. Runtime Fields**
 
-- `host`: Host address for the external service. If not specified, the runtime automatically obtains the public IP of the current deployment machine.
-- `port`: Port that the external service listens on. Defaults to `8080`.
+- `host`: Host address for the agent to register with the Registry agent registry center. If not specified, the runtime automatically obtains the first non-loopback IP address from all network interfaces of the current deployment machine.
+- `port`: Port for the agent to register with the Registry agent registry center. Defaults to `8080`.
 - `registry`: Registry instance or list, used to register the agent service to centralized agent registries such as Nacos.
 - `task_timeout`: Timeout in seconds for a task to complete. Defaults to `60`.
 - `task_event_timeout`: Timeout in seconds for task events. Defaults to `10`.
@@ -197,7 +197,7 @@ a2a_adapter = A2AFastAPIDefaultAdapter(
     agent_name="MyAgent",
     agent_description="My agent description",
     a2a_config=AgentCardWithRuntimeConfig(
-    registry=[nacos_registry],
+        registry=[nacos_registry],
         # ...
     ),
 )
@@ -220,6 +220,10 @@ await agent_app.deploy(
 **Configuration Priority**: The `registry` explicitly specified via `a2a_config` has the highest priority. If not specified, it will be automatically created from environment variables. The `protocol_adapters` passed via the `deploy` method will override the adapter configured in `AgentApp`.
 
 ## Nacos Registry Usage Guide
+
+Nacos is a dynamic service discovery, configuration management, and AI agent management platform that makes it easy to build AI Agent applications.
+Nacos implemented Agent registry capability in version 3.1.0, supporting distributed registration, discovery, and version management for A2A agents.
+> Note: The prerequisite for using NacosAgentCardResolver is that a Nacos server version 3.1.0 or higher has been deployed.
 
 Before using Nacos Registry, you need to install and start the Nacos server. Here are the quick start steps:
 

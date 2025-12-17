@@ -29,9 +29,9 @@
 
 **2. Runtime 运行时字段**
 
-- `host`：对外服务绑定的主机地址，未指定时会自动获取当前部署机器的外网 IP；
-- `port`：对外服务端口，默认 `8080`；
-- `registry`：Registry 实例或列表，用于将 Agent 服务注册到 Nacos 等注册中心；
+- `host`：Agent 向 Registry 智能体注册中心注册的主机地址，未指定时会自动获取当前部署机器的所有网卡中首个非回环 IP 地址；
+- `port`：Agent 向 Registry 智能体注册中心注册的端口，默认 `8080`；
+- `registry`：Registry 实例或列表，用于将 Agent 服务注册到 Nacos 等智能体注册中心；
 - `task_timeout`：任务完成的超时时间（秒），默认 `60`；
 - `task_event_timeout`：任务事件的超时时间（秒），默认 `10`；
 - `wellknown_path`：AgentCard 对外暴露的路径，默认 `"/.wellknown/agent-card.json"`。
@@ -219,6 +219,10 @@ await agent_app.deploy(
 **配置优先级**：通过 `a2a_config` 显式指定的 `registry` 优先级最高，如果未指定则从环境变量自动创建。通过 `deploy` 方法传入的 `protocol_adapters` 会覆盖 `AgentApp` 中配置的 adapter。
 
 ## Nacos Registry 使用指南
+
+Nacos 是一个易于构建 AI Agent 应用的动态服务发现、配置管理和AI智能体管理平台。
+Nacos 在3.1.0版本中实现了 Agent 注册中心能力，支持A2A 智能体的分布式注册、发现和版本管理。
+> 注意：使用 NacosAgentCardResolver的前提是已经部署了 3.1.0 版本以上的 Nacos 服务端。
 
 在使用 Nacos Registry 之前，需要先安装并启动 Nacos 服务器。以下是快速开始步骤：
 
