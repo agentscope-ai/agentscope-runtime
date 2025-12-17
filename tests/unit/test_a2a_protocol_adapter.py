@@ -100,7 +100,10 @@ class TestAgentCardConfiguration:
 
         assert card.name == "test_agent"
         assert card.description == "Test description"
-        assert card.skills == []
+        # Check default skills contain dialog skill
+        assert len(card.skills) == 1
+        assert card.skills[0].id == "dialog"
+        assert card.skills[0].name == "Natural Language Dialog Skill"
         assert "text" in card.default_input_modes
         assert "text" in card.default_output_modes
 
@@ -114,6 +117,7 @@ class TestAgentCardConfiguration:
             capabilities=AgentCapabilities(
                 streaming=False,
                 push_notifications=False,
+                state_transition_history=False,
             ),
             default_input_modes=["text"],
             default_output_modes=["text"],
@@ -258,6 +262,7 @@ class TestSerializationFallbackLogic:
             capabilities=AgentCapabilities(
                 streaming=False,
                 push_notifications=False,
+                state_transition_history=False,
             ),
             default_input_modes=["text"],
             default_output_modes=["text"],

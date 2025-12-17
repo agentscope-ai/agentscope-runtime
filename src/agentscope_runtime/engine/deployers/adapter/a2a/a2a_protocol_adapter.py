@@ -17,6 +17,7 @@ from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import (
     AgentCapabilities,
     AgentCard,
+    AgentSkill,
 )
 from fastapi import FastAPI
 from pydantic import ConfigDict, BaseModel, field_validator
@@ -410,7 +411,21 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         )
         card_kwargs["skills"] = self._get_agent_card_field(
             "skills",
-            [],
+            [
+                AgentSkill(
+                    id="dialog",
+                    name="Natural Language Dialog Skill",
+                    description=(
+                        "Enables natural language conversation and dialogue "
+                        "with users"
+                    ),
+                    tags=["natural language", "dialog", "conversation"],
+                    examples=[
+                        "Hello, how are you?",
+                        "Can you help me with something?",
+                    ],
+                ),
+            ],
         )
         # Runtime-managed AgentCard fields: user values are ignored
         if self._get_agent_card_field("capabilities") is not None:
@@ -421,6 +436,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         card_kwargs["capabilities"] = AgentCapabilities(
             streaming=False,
             push_notifications=False,
+            state_transition_history=False,
         )
 
         if self._get_agent_card_field("protocol_version") is not None:
