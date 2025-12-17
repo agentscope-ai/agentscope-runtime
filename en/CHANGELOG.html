@@ -632,6 +632,80 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <section id="changelog">
 <h1><span class="section-number">9. </span>CHANGELOG<a class="headerlink" href="#changelog" title="Link to this heading">¶</a></h1>
+<section id="v1-0-2">
+<h2>v1.0.2<a class="headerlink" href="#v1-0-2" title="Link to this heading">¶</a></h2>
+<p>This update for <strong>AgentScope Runtime v1.0.2</strong> introduces support for <strong>LangGraph</strong> and <strong>Agno</strong> under the v1.x framework, optimizes tool invocation, enhances the mobile sandbox UI, and includes multiple compatibility and stability fixes.
+Improvements have also been made to the CLI tools, MCP Tool call handling, and unified business exception management.</p>
+<section id="added">
+<h3>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>LangGraph Support</strong>: Native compatibility with the LangGraph framework.</p></li>
+<li><p><strong>Multi-framework Support Extension</strong>: Added support for the Agno framework in v1.x.</p></li>
+<li><p><strong>Mobile Sandbox UI</strong>: Support for displaying the mobile sandbox screen in the WebUI.</p></li>
+<li><p><strong>CLI Tools</strong>: New command-line execution and management capabilities.</p></li>
+<li><p><strong>Unified Business Exceptions</strong>: Introduced a unified business exception class.</p></li>
+<li><p><strong>MCP Tool Call/Output Handling</strong>: Added adapters for MCP tool invocation and output.</p></li>
+</ul>
+</section>
+<section id="changed">
+<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Optimized support for streaming tool calls and outputs.</p></li>
+<li><p>Improved <code class="docutils literal notranslate"><span class="pre">adapt_agentscope_message_stream</span></code> to better handle non-JSON outputs.</p></li>
+<li><p>Updated <code class="docutils literal notranslate"><span class="pre">.npmrc</span></code> to disable package-lock and adjusted peer dependency configurations.</p></li>
+</ul>
+</section>
+<section id="fixed">
+<h3>Fixed<a class="headerlink" href="#fixed" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Added missing <strong>LangChain</strong> dependencies (including <code class="docutils literal notranslate"><span class="pre">langchain_openai</span></code>).</p></li>
+<li><p>Fixed LangGraph unit tests.</p></li>
+<li><p>Introduced <strong>per-function event loop</strong> in tests to resolve “Event loop is closed” errors under Agno.</p></li>
+<li><p>Fixed type mismatch issue in <code class="docutils literal notranslate"><span class="pre">streamable_http</span></code> timeout within the sandbox MCP.</p></li>
+<li><p>Fixed OSS configuration errors in AgentRun scenarios.</p></li>
+</ul>
+</section>
+<section id="documentation">
+<h3>Documentation<a class="headerlink" href="#documentation" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Updated community QR code.</p></li>
+<li><p>Minor documentation refinements and error corrections.</p></li>
+</ul>
+</section>
+</section>
+<section id="v1-0-1">
+<h2>v1.0.1<a class="headerlink" href="#v1-0-1" title="Link to this heading">¶</a></h2>
+<p><strong>AgentScope Runtime v1.0.1</strong> focused on stability fixes, developer experience improvements, runtime configuration enhancements, and compatibility support for Windows WebUI startup.
+It also introduced a <strong>Service Factory</strong> mechanism, differentiation of tool invocation types, and dependency updates to support AgentScope 1.0.9.</p>
+<section id="id1">
+<h3>Added<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>Service Factory</strong> support for more flexible runtime service creation.</p></li>
+<li><p>Differentiation between <strong>Tool Call</strong> and <strong>MCP Tool Call</strong> within AgentScope.</p></li>
+</ul>
+</section>
+<section id="id2">
+<h3>Changed<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Implemented a new <strong>runtime config</strong> mechanism.</p></li>
+<li><p>Updated dependencies to support AgentScope 1.0.9.</p></li>
+</ul>
+</section>
+<section id="id3">
+<h3>Fixed<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Fixed message conversion logic in AgentScope.</p></li>
+<li><p>Fixed WebUI startup issues on Windows (<code class="docutils literal notranslate"><span class="pre">subprocess.Popen</span></code> + shell argument handling).</p></li>
+<li><p>Fixed issues related to Table Store.</p></li>
+</ul>
+</section>
+<section id="id4">
+<h3>Documentation<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Updated serverless deployment documentation.</p></li>
+</ul>
+</section>
+</section>
 <section id="v1-0-0">
 <h2>v1.0.0<a class="headerlink" href="#v1-0-0" title="Link to this heading">¶</a></h2>
 <p>On top of a solid foundation for <strong>efficient agent deployment</strong> and <strong>secure sandbox execution</strong>, <strong>AgentScope Runtime v1.0</strong> introduces a unified <strong>“Agent as API”</strong> development experience that covers the entire lifecycle of an agent — from local development to production deployment — while also expanding sandbox types, protocol compatibility, and built‑in tools.</p>
@@ -674,16 +748,16 @@ Through <code class="docutils literal notranslate"><span class="pre">AgentApp</s
 <li><p><strong>Rich built‑in toolset</strong> — Search, RAG, AIGC, payment, and production‑ready modules.</p></li>
 <li><p><strong>Flexible deployment modes</strong> — Local thread/process, Docker, Kubernetes, or managed cloud.</p></li>
 </ul>
-<section id="added">
-<h3>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h3>
+<section id="id5">
+<h3>Added<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Native short/long memory and agent state adapters integrated into the AgentScope Framework.</p></li>
 <li><p>New chat‑style Web UI.</p></li>
 <li><p>New sandbox types (mobile sandbox, AgentBay “shadowless” cloud sandbox).</p></li>
 </ul>
 </section>
-<section id="changed">
-<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">¶</a></h3>
+<section id="id6">
+<h3>Changed<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> no longer accepts <code class="docutils literal notranslate"><span class="pre">Agent</span></code> as a parameter;
 Users now define agent lifecycle and request logic with the <code class="docutils literal notranslate"><span class="pre">query</span></code>, <code class="docutils literal notranslate"><span class="pre">init</span></code>, and <code class="docutils literal notranslate"><span class="pre">shutdown</span></code> decorators.</p></li>
@@ -952,31 +1026,29 @@ Users must override the parent class methods: <code class="docutils literal notr
 </ul>
 </section>
 </section>
-<hr class="docutils" />
 <section id="v0-2-0">
 <h2>v0.2.0<a class="headerlink" href="#v0-2-0" title="Link to this heading">¶</a></h2>
 <p>Simplified agent deployment and ensured consistency between local development and production deployment.</p>
-<section id="id1">
-<h3>Added<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<section id="id7">
+<h3>Added<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Agent deployment support</strong> — Docker, Kubernetes, Alibaba Cloud Function Compute (FC).</p></li>
 <li><p><strong>Python SDK for deployed agents</strong> — Interact with deployed agents.</p></li>
 <li><p><strong>App‑style deployment mode</strong> — Package and deploy agents as applications.</p></li>
 </ul>
 </section>
-<section id="id2">
-<h3>Changed<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<section id="id8">
+<h3>Changed<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Unified K8S &amp; Docker client</strong> — Moved client to the common module to simplify maintenance.</p></li>
 </ul>
 </section>
 </section>
-<hr class="docutils" />
 <section id="v0-1-6">
 <h2>v0.1.6<a class="headerlink" href="#v0-1-6" title="Link to this heading">¶</a></h2>
 <p>Enhanced native support for all AgentScope features and improved sandbox interactivity &amp; extensibility.</p>
-<section id="id3">
-<h3>Added<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<section id="id9">
+<h3>Added<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>More message/event types</strong> — Extended Agent Framework to support multi‑modal messages and events.</p></li>
 <li><p><strong>Multi‑pool management</strong> — Sandbox Manager supports multiple sandbox pools.</p></li>
@@ -987,25 +1059,24 @@ Users must override the parent class methods: <code class="docutils literal notr
 </ul>
 </section>
 </section>
-<hr class="docutils" />
 <section id="v0-1-5">
 <h2>v0.1.5<a class="headerlink" href="#v0-1-5" title="Link to this heading">¶</a></h2>
 <p>Optimized dependency installation, removed obsolete LLM Agent modules, and enhanced sandbox client features.</p>
-<section id="id4">
-<h3>Added<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<section id="id10">
+<h3>Added<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>FC (AgentRun) sandbox client</strong> — Run sandbox in function compute environments.</p></li>
 <li><p><strong>Custom container image &amp; multi‑directory binding</strong> — Specify image name and bind multiple directories.</p></li>
 </ul>
 </section>
-<section id="id5">
-<h3>Changed<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<section id="id11">
+<h3>Changed<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Install option optimization</strong> — Made AgentScope and Sandbox base dependencies for simpler installation.</p></li>
 </ul>
 </section>
-<section id="id6">
-<h3>Removed<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<section id="id12">
+<h3>Removed<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>LLM Agent &amp; API</strong> — Deleted LLM Agent and related interfaces.</p></li>
 </ul>
@@ -1102,26 +1173,40 @@ Users must override the parent class methods: <code class="docutils literal notr
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">9. CHANGELOG</a><ul>
-<li><a class="reference internal" href="#v1-0-0">v1.0.0</a><ul>
+<li><a class="reference internal" href="#v1-0-2">v1.0.2</a><ul>
 <li><a class="reference internal" href="#added">Added</a></li>
 <li><a class="reference internal" href="#changed">Changed</a></li>
+<li><a class="reference internal" href="#fixed">Fixed</a></li>
+<li><a class="reference internal" href="#documentation">Documentation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#v1-0-1">v1.0.1</a><ul>
+<li><a class="reference internal" href="#id1">Added</a></li>
+<li><a class="reference internal" href="#id2">Changed</a></li>
+<li><a class="reference internal" href="#id3">Fixed</a></li>
+<li><a class="reference internal" href="#id4">Documentation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#v1-0-0">v1.0.0</a><ul>
+<li><a class="reference internal" href="#id5">Added</a></li>
+<li><a class="reference internal" href="#id6">Changed</a></li>
 <li><a class="reference internal" href="#breaking-changes">Breaking Changes</a></li>
 <li><a class="reference internal" href="#removed">Removed</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v0-2-0">v0.2.0</a><ul>
-<li><a class="reference internal" href="#id1">Added</a></li>
-<li><a class="reference internal" href="#id2">Changed</a></li>
+<li><a class="reference internal" href="#id7">Added</a></li>
+<li><a class="reference internal" href="#id8">Changed</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v0-1-6">v0.1.6</a><ul>
-<li><a class="reference internal" href="#id3">Added</a></li>
+<li><a class="reference internal" href="#id9">Added</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v0-1-5">v0.1.5</a><ul>
-<li><a class="reference internal" href="#id4">Added</a></li>
-<li><a class="reference internal" href="#id5">Changed</a></li>
-<li><a class="reference internal" href="#id6">Removed</a></li>
+<li><a class="reference internal" href="#id10">Added</a></li>
+<li><a class="reference internal" href="#id11">Changed</a></li>
+<li><a class="reference internal" href="#id12">Removed</a></li>
 </ul>
 </li>
 </ul>
