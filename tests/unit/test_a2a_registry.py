@@ -190,35 +190,6 @@ class TestGetRegistrySettings:
             os.unlink(env_file)
 
 
-class TestSplitRegistryTypes:
-    """Test registry type splitting logic.
-
-    Logic is now inlined in create_registry_from_env.
-    """
-
-    @pytest.mark.parametrize(
-        "raw,expected",
-        [
-            (None, []),
-            ("", []),
-            ("nacos", ["nacos"]),
-            ("nacos,consul", ["nacos", "consul"]),
-            ("nacos , consul , etcd", ["nacos", "consul", "etcd"]),
-            ("NACOS,Consul", ["nacos", "consul"]),
-            ("nacos,,consul,", ["nacos", "consul"]),
-        ],
-    )
-    def test_registry_type_splitting(self, raw, expected):
-        """Test registry type splitting with various inputs."""
-        # Test the inlined logic
-        types = (
-            [r.strip().lower() for r in raw.split(",") if r.strip()]
-            if raw
-            else []
-        )
-        assert types == expected
-
-
 class TestCreateRegistryFromEnv:
     """Test create_registry_from_env() factory function."""
 

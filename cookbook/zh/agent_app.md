@@ -78,8 +78,8 @@ agent_app.run(host="127.0.0.1", port=8090)
 
 `a2a_config` 支持配置两类字段：
 
-1. **AgentCard 协议字段**：技能、传输协议、输入输出模式等
-2. **Runtime 运行时字段**：服务注册与发现（Registry）、超时设置、服务端点等
+1. **AgentCard 协议字段**：通过 `agent_card` 字段传递，包含技能、传输协议、输入输出模式等
+2. **Runtime 运行时字段**：顶层字段，包含服务注册与发现（Registry）、超时设置、服务端点等
 
 **用法示例**
 
@@ -93,7 +93,14 @@ agent_app = AgentApp(
     app_name="MyAgent",
     app_description="My agent description",
     a2a_config=AgentCardWithRuntimeConfig(
-        skills=[...],  # Agent 技能列表
+        agent_card={
+            "name": "MyAgent",
+            "description": "My agent description",
+            "skills": [...],  # Agent 技能列表
+            "default_input_modes": ["text"],
+            "default_output_modes": ["text"],
+            # ... 其他协议字段
+        },
         registry=[...],  # 服务注册与发现
         task_timeout=120,  # 任务超时设置
         # ... 其他配置字段

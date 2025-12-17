@@ -15,7 +15,7 @@ from ..deployers import DeployManager
 from ..deployers.adapter.a2a import (
     A2AFastAPIDefaultAdapter,
     AgentCardWithRuntimeConfig,
-    extract_config_params,
+    extract_a2a_config,
 )
 from ..deployers.adapter.responses.response_api_protocol_adapter import (
     ResponseAPIDefaultAdapter,
@@ -78,34 +78,31 @@ class AgentApp(BaseApp):
             a2a_config: Optional A2A runtime configuration.
                 Can be:
                 - AgentCardWithRuntimeConfig (Recommended):
-                  Flattens all AgentCard protocol fields (name, description,
-                  url, version, skills, etc.) and adds runtime fields
-                  (registry, task_timeout, etc.) in a single configuration
-                  object.
+                  Contains agent_card (AgentCard object or dict) and runtime
+                  settings (host, port, registry, task_timeout, etc.).
                   Example:
-                    from a2a.types import (
-                        AgentCapabilities,
+                    from a2a.types import AgentCard, AgentCapabilities
+                    from agentscope_runtime.engine.deployers.adapter.a2a import (  # noqa: E501
+                        AgentCardWithRuntimeConfig,
                     )
-                    from agentscope_runtime.engine.deployers\
-                        .adapter.a2a import (
-                            AgentCardWithRuntimeConfig,
-                        )
                     config = AgentCardWithRuntimeConfig(
-                        name="MyAgent",
-                        card_version="1.0.0",
-                        description="My agent",
-                        card_url="http://localhost:8080",
-                        capabilities=AgentCapabilities(),
-                        default_input_modes=["text"],
-                        default_output_modes=["text"],
-                        skills=[],
+                        agent_card={
+                            "name": "MyAgent",
+                            "version": "1.0.0",
+                            "description": "My agent",
+                            "url": "http://localhost:8080",
+                            "capabilities": AgentCapabilities(),
+                            "default_input_modes": ["text"],
+                            "default_output_modes": ["text"],
+                            "skills": [],
+                        },
                         registry=[nacos_registry],
                         task_timeout=120,
                     )
 
-                - Dictionary with AgentCardWithRuntimeConfig fields
-                  (supports both AgentCard field names like "url"/"version"
-                  and runtime field names like "card_url"/"card_version")
+                - Dictionary: Can have AgentCard fields at top level or
+                  under "agent_card" key, plus runtime fields (host, port,
+                  registry, task_timeout, etc.)
             **kwargs: Additional keyword arguments passed to FastAPI app
         """
 
@@ -129,13 +126,13 @@ class AgentApp(BaseApp):
         self._framework_type: Optional[str] = None
 
         # Prepare A2A protocol adapter configuration
-        a2a_adapter_kwargs = extract_config_params(
+        a2a_config = extract_a2a_config(a2a_config=a2a_config)
+
+        a2a_protocol = A2AFastAPIDefaultAdapter(
             agent_name=app_name,
             agent_description=app_description,
-            a2a_config=a2a_config or {},
+            a2a_config=a2a_config,
         )
-
-        a2a_protocol = A2AFastAPIDefaultAdapter(**a2a_adapter_kwargs)
 
         response_protocol = ResponseAPIDefaultAdapter()
         self.protocol_adapters = [a2a_protocol, response_protocol]

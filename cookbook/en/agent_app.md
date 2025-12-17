@@ -78,8 +78,8 @@ Extend the configuration of the agent's A2A (Agent-to-Agent) protocol informatio
 
 `a2a_config` supports configuring two types of fields:
 
-1. **AgentCard protocol fields**: Skills, transport protocols, input/output modes, etc.
-2. **Runtime fields**: Service registration and discovery (Registry), timeout settings, service endpoints, etc.
+1. **AgentCard protocol fields**: Passed through the `agent_card` field, containing skills, transport protocols, input/output modes, etc.
+2. **Runtime fields**: Top-level fields, containing service registration and discovery (Registry), timeout settings, service endpoints, etc.
 
 **Example**
 
@@ -93,9 +93,15 @@ agent_app = AgentApp(
     app_name="MyAgent",
     app_description="My agent description",
     a2a_config=AgentCardWithRuntimeConfig(
-        skills=[...],  # Agent skills list
-        preferred_transport="JSONRPC",  # Transport protocol
-        registry=[...],  # Service registration and discovery (optional)
+        agent_card={
+            "name": "MyAgent",
+            "description": "My agent description",
+            "skills": [...],  # Agent skills list
+            "default_input_modes": ["text"],
+            "default_output_modes": ["text"],
+            # ... other protocol fields
+        },
+        registry=[...],  # Service registration and discovery
         task_timeout=120,  # Task timeout settings
         # ... other configuration fields
     ),

@@ -481,61 +481,14 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             )
 
     @pytest.mark.asyncio
-    async def test_register_to_nacos_with_none_transports(
+    @pytest.mark.parametrize("transports", [None, []])
+    async def test_register_to_nacos_without_transports(
         self,
         mock_nacos_sdk,
         agent_card,
+        transports,
     ):
-        """Test _register_to_nacos() with None transports - only publishes
-        card."""
-        with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a"
-            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
-            True,
-        ):
-            _ensure_nacos_ai_service_method()
-
-            registry = NacosRegistry(
-                nacos_client_config=mock_nacos_sdk["client_config"],
-            )
-
-            with registry._registration_lock:
-                registry._registration_status = RegistrationStatus.IN_PROGRESS
-
-            mock_service = mock_nacos_sdk["ai_service"]
-
-            with patch(
-                "agentscope_runtime.engine.deployers.adapter.a2a"
-                ".nacos_a2a_registry.NacosAIService.create_ai_service",
-                new_callable=AsyncMock,
-            ) as mock_create:
-                mock_create.return_value = mock_service
-
-                with patch(
-                    "agentscope_runtime.engine.deployers.adapter"
-                    ".a2a.nacos_a2a_registry.ReleaseAgentCardParam",
-                    MagicMock,
-                ):
-                    await registry._register_to_nacos(
-                        agent_card=agent_card,
-                        a2a_transports_properties=None,
-                    )
-
-                # Should publish agent card but not register endpoint
-                mock_service.release_agent_card.assert_called_once()
-                mock_service.register_agent_endpoint.assert_not_called()
-                assert (
-                    registry._registration_status
-                    == RegistrationStatus.COMPLETED
-                )
-
-    @pytest.mark.asyncio
-    async def test_register_to_nacos_with_empty_transports(
-        self,
-        mock_nacos_sdk,
-        agent_card,
-    ):
-        """Test _register_to_nacos() with empty transports list - only
+        """Test _register_to_nacos() with None or empty transports - only
         publishes card."""
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
@@ -567,7 +520,7 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 ):
                     await registry._register_to_nacos(
                         agent_card=agent_card,
-                        a2a_transports_properties=[],
+                        a2a_transports_properties=transports,
                     )
 
                 # Should publish agent card but not register endpoint
@@ -787,8 +740,22 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 registry._registration_status == RegistrationStatus.CANCELLED
             )
 
-    def test_get_client_config_from_env(self, mock_nacos_sdk):
-        """Test _get_client_config() loading from environment."""
+    @pytest.mark.parametrize(
+        "server_addr,username,password",
+        [
+            ("test.nacos.com:8848", "user", "pass"),
+            ("localhost:8848", None, None),
+        ],
+    )
+    def test_get_client_config_from_env(
+        self,
+        mock_nacos_sdk,
+        server_addr,
+        username,
+        password,
+    ):
+        """Test _get_client_config() loading from environment
+        with/without auth."""
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
             ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
@@ -801,9 +768,9 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 ".a2a_registry.get_registry_settings",
             ) as mock_get_settings:
                 mock_settings = MagicMock()
-                mock_settings.NACOS_SERVER_ADDR = "test.nacos.com:8848"
-                mock_settings.NACOS_USERNAME = "user"
-                mock_settings.NACOS_PASSWORD = "pass"
+                mock_settings.NACOS_SERVER_ADDR = server_addr
+                mock_settings.NACOS_USERNAME = username
+                mock_settings.NACOS_PASSWORD = password
                 mock_settings.NACOS_NAMESPACE_ID = None
                 mock_settings.NACOS_ACCESS_KEY = None
                 mock_settings.NACOS_SECRET_KEY = None
@@ -970,10 +937,9 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             )
 
     @pytest.mark.asyncio
-    async def test_cleanup_with_nacos_service_close(
+    async def test_cleanup_with_nacos_service_shutdown(
         self,
         mock_nacos_sdk,
-        agent_card,
     ):
         """Test cleanup() properly shuts down NacosAIService."""
         with patch(
@@ -986,34 +952,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             # Mock a service with shutdown method
             mock_service = AsyncMock()
             mock_service.shutdown = AsyncMock()
-            registry._nacos_ai_service = mock_service
-
-            await registry.cleanup()
-
-            # Verify shutdown was called
-            mock_service.shutdown.assert_called_once()
-            assert registry._nacos_ai_service is None
-
-    @pytest.mark.asyncio
-    async def test_cleanup_with_nacos_service_shutdown(
-        self,
-        mock_nacos_sdk,
-        agent_card,
-    ):
-        """Test cleanup() using shutdown method."""
-        with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a"
-            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
-            True,
-        ):
-            registry = NacosRegistry()
-
-            # Create a custom mock service with shutdown method
-            class MockNacosService:
-                def __init__(self):
-                    self.shutdown = AsyncMock()
-
-            mock_service = MockNacosService()
             registry._nacos_ai_service = mock_service
 
             await registry.cleanup()
@@ -1122,38 +1060,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 captured_calls[0]["a2a_transports_properties"][2].host
                 == "host3.com"
             )
-
-    def test_get_client_config_without_auth(self, mock_nacos_sdk):
-        """Test _get_client_config() without authentication."""
-        with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a"
-            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
-            True,
-        ):
-            registry = NacosRegistry()
-
-            with patch(
-                "agentscope_runtime.engine.deployers.adapter.a2a"
-                ".a2a_registry.get_registry_settings",
-            ) as mock_get_settings:
-                mock_settings = MagicMock()
-                mock_settings.NACOS_SERVER_ADDR = "localhost:8848"
-                mock_settings.NACOS_USERNAME = None
-                mock_settings.NACOS_PASSWORD = None
-                mock_settings.NACOS_NAMESPACE_ID = None
-                mock_settings.NACOS_ACCESS_KEY = None
-                mock_settings.NACOS_SECRET_KEY = None
-                mock_get_settings.return_value = mock_settings
-
-                # Mock _build_nacos_client_config
-                with patch(
-                    "agentscope_runtime.engine.deployers.adapter.a2a"
-                    ".a2a_registry._build_nacos_client_config",
-                    return_value=mock_nacos_sdk["client_config"],
-                ) as mock_build_config:
-                    config = registry._get_client_config()
-                    assert config is not None
-                    mock_build_config.assert_called_once()
 
     def test_get_client_config_with_provided_config(self, mock_nacos_sdk):
         """Test _get_client_config() returns provided config."""
@@ -1295,12 +1201,14 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 == "/api/v2"
             )
 
-    def test_register_with_empty_transports_list(
+    @pytest.mark.parametrize("transports", [None, []])
+    def test_register_without_transports(
         self,
         mock_nacos_sdk,
         agent_card,
+        transports,
     ):
-        """Test register() with empty transports list - no endpoint
+        """Test register() with None or empty transports - no endpoint
         registration."""
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
@@ -1323,16 +1231,16 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             registry._start_register_task = mock_start_register_task
 
-            # Register with empty list
+            # Register with None or empty list
             registry.register(
                 agent_card,
-                [],  # Empty transports
+                transports,
             )
 
             # Should still call start_register_task, but no endpoints will be
             # registered
             assert len(captured_calls) == 1
-            assert captured_calls[0]["a2a_transports_properties"] == []
+            assert captured_calls[0]["a2a_transports_properties"] == transports
 
     def test_register_with_transport_missing_port(
         self,
@@ -1381,42 +1289,3 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             # Should still call start_register_task, but transport will be
             # skipped during actual registration due to missing port
             assert len(captured_calls) == 1
-
-    def test_register_with_none_transports(
-        self,
-        mock_nacos_sdk,
-        agent_card,
-    ):
-        """Test register() with None transports - no endpoint registration."""
-        with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a"
-            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
-            True,
-        ):
-            registry = NacosRegistry()
-
-            captured_calls = []
-
-            def mock_start_register_task(
-                agent_card,
-                a2a_transports_properties=None,
-            ):
-                captured_calls.append(
-                    {
-                        "a2a_transports_properties": a2a_transports_properties,
-                    },
-                )
-
-            registry._start_register_task = mock_start_register_task
-
-            # Register with None transports (backward compatibility)
-            # With the null check in business code, None will skip endpoint
-            # registration but agent card will still be published
-            registry.register(
-                agent_card,
-                None,
-            )
-
-            # Should capture the call
-            assert len(captured_calls) == 1
-            assert captured_calls[0]["a2a_transports_properties"] is None

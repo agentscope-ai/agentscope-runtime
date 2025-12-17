@@ -2,7 +2,7 @@
 from .a2a_protocol_adapter import (
     A2AFastAPIDefaultAdapter,
     AgentCardWithRuntimeConfig,
-    extract_config_params,
+    extract_a2a_config,
 )
 from .a2a_registry import (
     A2ARegistry,
@@ -19,7 +19,7 @@ from .a2a_registry import (
 __all__ = [
     "A2AFastAPIDefaultAdapter",
     "AgentCardWithRuntimeConfig",
-    "extract_config_params",
+    "extract_a2a_config",
     "A2ARegistry",
     "A2ARegistrySettings",
     "get_registry_settings",

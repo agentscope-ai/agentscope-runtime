@@ -13,8 +13,12 @@
 
 **1. AgentCard 协议字段**
 
-- `card_url`：Agent 服务的完整 URL，默认情况下可根据 `host` / `port` 自动推导；
-- `card_version`：Agent 版本号，默认使用运行时代码版本；
+`agent_card` 字段可以是 `AgentCard` 对象或字典，包含以下协议字段：
+
+- `name`：Agent 名称；
+- `description`：Agent 描述；
+- `url`：Agent 服务的完整 URL，默认情况下可根据 `host` / `port` 自动推导；
+- `version`：Agent 版本号，默认使用运行时代码版本；
 - `preferred_transport`：首选传输协议，例如 `"JSONRPC"`；
 - `additional_interfaces`：额外的传输接口列表；
 - `skills`：Agent 能力 / 技能列表；
@@ -81,12 +85,14 @@ Runtime 支持三种方式配置 Registry：
 在构造 `AgentApp` 时，通过 `a2a_config` 参数的 `registry` 字段指定 Registry 实例或列表：
 
 ```python
+from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.deployers.adapter.a2a import (
     AgentCardWithRuntimeConfig,
 )
 from agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry import (
     NacosRegistry,
 )
+from a2a.types import AgentSkill
 from v2.nacos import ClientConfigBuilder
 
 # 创建 Nacos Registry 实例
@@ -102,7 +108,14 @@ nacos_registry = NacosRegistry(nacos_client_config=nacos_config)
 # 在 a2a_config 中配置 registry
 # 方式1：使用 AgentCardWithRuntimeConfig 对象
 a2a_config = AgentCardWithRuntimeConfig(
+    agent_card={
+        "name": "MyAgent",
+        "description": "My agent description",
+        # ...
+    },
     registry=[nacos_registry],  # 可以是单个实例或列表
+    task_timeout=60,
+    # ...
 )
 
 agent_app = AgentApp(
@@ -111,9 +124,13 @@ agent_app = AgentApp(
     a2a_config=a2a_config,
 )
 
-# 方式2：使用字典形式（支持 name/description 字段）
+# 方式2：使用字典形式
 a2a_config_dict = {
+    "name": "MyAgent",
+    "description": "My agent description",
     "registry": [nacos_registry],
+    "task_timeout": 60,
+    # ...
 }
 
 agent_app = AgentApp(
@@ -162,16 +179,22 @@ agent_app = AgentApp(
 
 **A2AFastAPIDefaultAdapter 参数说明：**
 
-- `agent_name`（必需）：智能体名称，用于 Agent Card
-- `agent_description`（必需）：智能体描述，用于 Agent Card
-- `host`（可选）：服务的主机地址。如果不传，默认会调用 `get_first_non_loopback_ip()` 自动获取当前部署机器的公网地址
-- `port`（可选）：服务的端口号。如果不传，默认为 8080
-- `registry`（可选）：Registry 实例或 Registry 列表，用于服务注册与发现
+- `agent_name`（必需）：智能体名称，用于 Agent Card（如果 `a2a_config.agent_card` 中未指定 `name`，则使用此参数）
+- `agent_description`（必需）：智能体描述，用于 Agent Card（如果 `a2a_config.agent_card` 中未指定 `description`，则使用此参数）
+- `a2a_config`（可选）：`AgentCardWithRuntimeConfig` 对象，包含 AgentCard 协议字段和运行时配置
+  - `agent_card`：AgentCard 对象或字典，包含协议字段（name, description, skills 等）
+  - `host`：服务的主机地址，如果不传，默认会调用 `get_first_non_loopback_ip()` 自动获取当前部署机器的公网地址
+  - `port`：服务的端口号，如果不传，默认为 8080
+  - `registry`：Registry 实例或 Registry 列表，用于服务注册与发现
+  - `task_timeout`：任务完成的超时时间（秒），默认 60
+  - `task_event_timeout`：任务事件的超时时间（秒），默认 10
+  - `wellknown_path`：AgentCard 对外暴露的路径，默认 `"/.wellknown/agent-card.json"`
 
 ```python
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.deployers.adapter.a2a import (
     A2AFastAPIDefaultAdapter,
+    AgentCardWithRuntimeConfig,
 )
 from agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry import (
     NacosRegistry,
@@ -191,7 +214,10 @@ nacos_registry = NacosRegistry(nacos_client_config=nacos_config)
 a2a_adapter = A2AFastAPIDefaultAdapter(
     agent_name="MyAgent",
     agent_description="My agent description",
-    registry=[nacos_registry],
+    a2a_config=AgentCardWithRuntimeConfig(
+        registry=[nacos_registry],
+        # ...
+    ),
 )
 
 # 创建 AgentApp
@@ -323,6 +349,7 @@ custom_registry = MyCustomRegistry()
 # 在 a2a_config 中使用
 a2a_config = AgentCardWithRuntimeConfig(
     registry=[custom_registry],
+    # ...
 )
 
 agent_app = AgentApp(

@@ -68,7 +68,7 @@ class TestAgentAppRegistryIntegration:
         try:
             mock_registry = MockRegistry("test")
 
-            # Patch where extract_config_params calls create_registry_from_env
+            # Patch where extract_a2a_config calls create_registry_from_env
             with patch(
                 "agentscope_runtime.engine.deployers.adapter.a2a"
                 ".a2a_protocol_adapter.create_registry_from_env",
@@ -94,76 +94,32 @@ class TestAgentAppRegistryIntegration:
 
     def test_agent_app_with_registry_from_a2a_config(self):
         """Test AgentApp initialization with registry from a2a_config."""
-        mock_registry = MockRegistry("test")
+        test_cases = [
+            (MockRegistry("test"), 1),
+            ([MockRegistry("test1"), MockRegistry("test2")], 2),
+        ]
 
-        app = AgentApp(
-            app_name="test_agent",
-            app_description="Test agent",
-            a2a_config={
-                "registry": mock_registry,
-            },
-        )
+        for registry_input, expected_count in test_cases:
+            app = AgentApp(
+                app_name="test_agent",
+                app_description="Test agent",
+                a2a_config={"registry": registry_input},
+            )
 
-        # Verify registry was passed to adapter
-        a2a_adapter = None
-        for adapter in app.protocol_adapters:
-            if hasattr(adapter, "_registry"):
-                a2a_adapter = adapter
-                break
+            # Verify registry was passed to adapter
+            a2a_adapter = None
+            for adapter in app.protocol_adapters:
+                if hasattr(adapter, "_registry"):
+                    a2a_adapter = adapter
+                    break
 
-        if a2a_adapter:
-            assert len(a2a_adapter._registry) > 0
-            assert a2a_adapter._registry[0] is mock_registry
-
-    def test_agent_app_with_registry_list_from_a2a_config(self):
-        """Test AgentApp initialization with list of registry instances
-        from a2a_config."""
-        mock_registry1 = MockRegistry("test1")
-        mock_registry2 = MockRegistry("test2")
-
-        # A2AFastAPIDefaultAdapter now supports list of registries
-        app = AgentApp(
-            app_name="test_agent",
-            app_description="Test agent",
-            a2a_config={
-                "registry": [mock_registry1, mock_registry2],
-            },
-        )
-
-        # Verify both registries were passed to adapter
-        a2a_adapter = None
-        for adapter in app.protocol_adapters:
-            if hasattr(adapter, "_registry"):
-                a2a_adapter = adapter
-                break
-
-        assert a2a_adapter is not None
-        assert len(a2a_adapter._registry) == 2
-        assert mock_registry1 in a2a_adapter._registry
-        assert mock_registry2 in a2a_adapter._registry
-
-    def test_registry_available_in_adapter(self):
-        """Test that registry is properly passed to adapter."""
-        mock_registry = MockRegistry("test")
-
-        app = AgentApp(
-            app_name="test_agent",
-            app_description="Test agent",
-            a2a_config={
-                "registry": mock_registry,
-            },
-        )
-
-        # Verify registry is available in adapter
-        a2a_adapter = None
-        for adapter in app.protocol_adapters:
-            if hasattr(adapter, "_registry"):
-                a2a_adapter = adapter
-                break
-
-        assert a2a_adapter is not None
-        assert len(a2a_adapter._registry) > 0
-        assert mock_registry in a2a_adapter._registry
+            assert a2a_adapter is not None
+            assert len(a2a_adapter._registry) == expected_count
+            if isinstance(registry_input, list):
+                for reg in registry_input:
+                    assert reg in a2a_adapter._registry
+            else:
+                assert registry_input in a2a_adapter._registry
 
     def test_registry_priority_a2a_config_over_env(self):
         """Test that registry from a2a_config takes priority over

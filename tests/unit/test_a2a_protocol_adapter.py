@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 
 from agentscope_runtime.engine.deployers.adapter.a2a import (
     A2AFastAPIDefaultAdapter,
+    AgentCardWithRuntimeConfig,
 )
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     A2ATransportsProperties,
@@ -57,10 +58,13 @@ class TestWellknownEndpointErrorHandling:
 
     def test_wellknown_endpoint_with_custom_path(self):
         """Test wellknown endpoint with custom path."""
+        a2a_config = AgentCardWithRuntimeConfig(
+            wellknown_path="/custom/agent.json",
+        )
         adapter = A2AFastAPIDefaultAdapter(
             agent_name="test_agent",
             agent_description="Test agent",
-            wellknown_path="/custom/agent.json",
+            a2a_config=a2a_config,
         )
 
         app = FastAPI()
@@ -98,14 +102,74 @@ class TestAgentCardConfiguration:
         assert "text" in card.default_input_modes
         assert "text" in card.default_output_modes
 
+    def test_get_agent_card_with_agent_card_object(self):
+        """Test get_agent_card with agent_card as AgentCard object."""
+        agent_card_obj = AgentCard(
+            name="object_agent",
+            description="Object description",
+            version="2.0.0",
+            url="http://example.com",
+            capabilities=AgentCapabilities(
+                streaming=False,
+                push_notifications=False,
+            ),
+            default_input_modes=["text"],
+            default_output_modes=["text"],
+            skills=[],
+        )
+        a2a_config = AgentCardWithRuntimeConfig(
+            agent_card=agent_card_obj,
+        )
+        adapter = A2AFastAPIDefaultAdapter(
+            agent_name="fallback_agent",
+            agent_description="Fallback description",
+            a2a_config=a2a_config,
+        )
+
+        card = adapter.get_agent_card()
+
+        # Should return the AgentCard object directly
+        assert card is agent_card_obj
+        assert card.name == "object_agent"
+        assert card.description == "Object description"
+        assert card.version == "2.0.0"
+
+    def test_agent_name_description_priority(self):
+        """Test that agent_card name/description takes priority over
+        parameters."""
+        a2a_config = AgentCardWithRuntimeConfig(
+            agent_card={
+                "name": "card_name",
+                "description": "card_description",
+            },
+        )
+        adapter = A2AFastAPIDefaultAdapter(
+            agent_name="param_name",
+            agent_description="param_description",
+            a2a_config=a2a_config,
+        )
+
+        # Should use agent_card values
+        assert adapter._agent_name == "card_name"
+        assert adapter._agent_description == "card_description"
+
+        card = adapter.get_agent_card()
+        assert card.name == "card_name"
+        assert card.description == "card_description"
+
     def test_get_agent_card_with_custom_values(self):
         """Test get_agent_card with custom configuration."""
+        a2a_config = AgentCardWithRuntimeConfig(
+            agent_card={
+                "version": "2.0.0",
+                "default_input_modes": ["text", "image"],
+                "default_output_modes": ["text", "audio"],
+            },
+        )
         adapter = A2AFastAPIDefaultAdapter(
             agent_name="custom_agent",
             agent_description="Custom description",
-            card_version="2.0.0",
-            default_input_modes=["text", "image"],
-            default_output_modes=["text", "audio"],
+            a2a_config=a2a_config,
         )
 
         card = adapter.get_agent_card()
@@ -119,10 +183,15 @@ class TestAgentCardConfiguration:
 
     def test_get_agent_card_with_provider(self):
         """Test get_agent_card with provider configuration."""
+        a2a_config = AgentCardWithRuntimeConfig(
+            agent_card={
+                "provider": "Test Organization",
+            },
+        )
         adapter = A2AFastAPIDefaultAdapter(
             agent_name="test_agent",
             agent_description="Test description",
-            provider="Test Organization",
+            a2a_config=a2a_config,
         )
 
         card = adapter.get_agent_card()
@@ -132,71 +201,36 @@ class TestAgentCardConfiguration:
         assert hasattr(card.provider, "organization")
         assert card.provider.organization == "Test Organization"
 
-    def test_get_agent_card_url_configuration(self):
-        """Test get_agent_card URL configuration."""
-        adapter = A2AFastAPIDefaultAdapter(
-            agent_name="test_agent",
-            agent_description="Test description",
-            card_url="https://example.com/agent",
-        )
+    def test_get_agent_card_url_with_different_host_formats(self):
+        """Test get_agent_card URL generation with different host formats."""
+        test_cases = [
+            ("http://localhost", 8080, "http://localhost:8080/a2a"),
+            ("https://example.com", 8443, "https://example.com:8443/a2a"),
+            ("localhost", 8080, "http://localhost:8080/a2a"),
+        ]
 
-        card = adapter.get_agent_card()
-
-        assert card.url == "https://example.com/agent"
-
-    def test_get_agent_card_url_with_http_host(self):
-        """Test get_agent_card URL with host starting with http://."""
-        adapter = A2AFastAPIDefaultAdapter(
-            agent_name="test_agent",
-            agent_description="Test description",
-            host="http://localhost",
-            port=8080,
-        )
-
-        app = FastAPI()
-        card = adapter.get_agent_card(app=app)
-
-        # Should preserve http:// protocol and append port and path
-        assert card.url == "http://localhost:8080/a2a"
-
-    def test_get_agent_card_url_with_https_host(self):
-        """Test get_agent_card URL with host starting with https://."""
-        adapter = A2AFastAPIDefaultAdapter(
-            agent_name="test_agent",
-            agent_description="Test description",
-            host="https://example.com",
-            port=8443,
-        )
-
-        app = FastAPI()
-        card = adapter.get_agent_card(app=app)
-
-        # Should preserve https:// protocol and append port and path
-        assert card.url == "https://example.com:8443/a2a"
-
-    def test_get_agent_card_url_with_host_no_protocol(self):
-        """Test get_agent_card URL with host without protocol prefix."""
-        adapter = A2AFastAPIDefaultAdapter(
-            agent_name="test_agent",
-            agent_description="Test description",
-            host="localhost",
-            port=8080,
-        )
-
-        app = FastAPI()
-        card = adapter.get_agent_card(app=app)
-
-        # Should add http:// protocol prefix
-        assert card.url == "http://localhost:8080/a2a"
+        for host, port, expected_url in test_cases:
+            a2a_config = AgentCardWithRuntimeConfig(host=host, port=port)
+            adapter = A2AFastAPIDefaultAdapter(
+                agent_name="test_agent",
+                agent_description="Test description",
+                a2a_config=a2a_config,
+            )
+            app = FastAPI()
+            card = adapter.get_agent_card(app=app)
+            assert card.url == expected_url
 
     def test_get_agent_card_url_with_root_path(self):
         """Test get_agent_card URL with root_path and protocol handling."""
         # Test with http:// host and root_path
+        a2a_config = AgentCardWithRuntimeConfig(
+            host="http://example.com",
+            port=8080,
+        )
         adapter = A2AFastAPIDefaultAdapter(
             agent_name="test_agent",
             agent_description="Test description",
-            host="http://example.com",
-            port=8080,
+            a2a_config=a2a_config,
         )
 
         app = FastAPI(root_path="/api/v1")
@@ -237,94 +271,54 @@ class TestSerializationFallbackLogic:
 class TestA2ATransportsPropertiesBuilding:
     """Test building A2ATransportsProperties from agent card and config."""
 
-    def test_build_a2a_transports_properties_basic(
+    def test_build_a2a_transports_properties_with_host_port(
         self,
     ):
-        """Test _build_a2a_transports_properties with basic configuration."""
-        adapter = A2AFastAPIDefaultAdapter(
-            agent_name="test_agent",
-            agent_description="Test description",
-            host="localhost",
-            port=8080,
-        )
+        """Test _build_a2a_transports_properties with different host/port."""
+        test_cases = [
+            ("localhost", 8080),
+            ("secure.example.com", 8443),
+        ]
 
-        app = FastAPI()
+        for host, port in test_cases:
+            a2a_config = AgentCardWithRuntimeConfig(host=host, port=port)
+            adapter = A2AFastAPIDefaultAdapter(
+                agent_name="test_agent",
+                agent_description="Test description",
+                a2a_config=a2a_config,
+            )
+            app = FastAPI()
+            transports = adapter._build_a2a_transports_properties(app=app)
 
-        transports = adapter._build_a2a_transports_properties(
-            app=app,
-        )
-
-        # Should have at least one transport
-        assert len(transports) >= 1
-        # Primary transport should use configured host and port
-        assert transports[0].host == "localhost"
-        assert transports[0].port == 8080
-        assert transports[0].support_tls is False
-        assert transports[0].transport_type == "JSONRPC"
-        # Path should be the JSON-RPC path
-        assert transports[0].path == "/a2a"
-
-    def test_build_a2a_transports_properties_with_custom_host_port(
-        self,
-    ):
-        """Test transport properties with custom host and port."""
-        adapter = A2AFastAPIDefaultAdapter(
-            agent_name="test_agent",
-            agent_description="Test description",
-            host="secure.example.com",
-            port=8443,
-        )
-
-        app = FastAPI()
-
-        transports = adapter._build_a2a_transports_properties(
-            app=app,
-        )
-
-        # Should use configured host and port
-        assert transports[0].host == "secure.example.com"
-        assert transports[0].port == 8443
-        assert transports[0].support_tls is False  # TLS is not auto-detected
+            assert len(transports) >= 1
+            assert transports[0].host == host
+            assert transports[0].port == port
+            assert transports[0].support_tls is False
+            assert transports[0].transport_type == "JSONRPC"
+            assert transports[0].path == "/a2a"
 
     def test_build_a2a_transports_properties_with_root_path(
         self,
     ):
-        """Test transport properties includes app root_path."""
-        adapter = A2AFastAPIDefaultAdapter(
-            agent_name="test_agent",
-            agent_description="Test description",
-            host="localhost",
-            port=8080,
-        )
+        """Test transport properties with different root_path values."""
+        test_cases = [
+            ("/api/v1", "/api/v1/a2a"),
+            ("", "/a2a"),
+        ]
 
-        app = FastAPI(root_path="/api/v1")
-
-        transports = adapter._build_a2a_transports_properties(
-            app=app,
-        )
-
-        # Should combine root path with JSON-RPC path
-        assert transports[0].path == "/api/v1/a2a"
-
-    def test_build_a2a_transports_properties_with_empty_root_path(
-        self,
-    ):
-        """Test transport properties with empty root_path."""
-        adapter = A2AFastAPIDefaultAdapter(
-            agent_name="test_agent",
-            agent_description="Test description",
-            host="localhost",
-            port=8080,
-        )
-
-        app = FastAPI(root_path="")
-
-        transports = adapter._build_a2a_transports_properties(
-            app=app,
-        )
-
-        # Should use JSON-RPC path when root_path is empty
-        assert transports[0].path == "/a2a"
+        for root_path, expected_path in test_cases:
+            a2a_config = AgentCardWithRuntimeConfig(
+                host="localhost",
+                port=8080,
+            )
+            adapter = A2AFastAPIDefaultAdapter(
+                agent_name="test_agent",
+                agent_description="Test description",
+                a2a_config=a2a_config,
+            )
+            app = FastAPI(root_path=root_path)
+            transports = adapter._build_a2a_transports_properties(app=app)
+            assert transports[0].path == expected_path
 
 
 class TestRegistryIntegrationWithTransports:
@@ -362,11 +356,16 @@ class TestRegistryIntegrationWithTransports:
 
         mock_registry = MockRegistry()
 
+        a2a_config = AgentCardWithRuntimeConfig(
+            registry=mock_registry,
+            agent_card={
+                "url": "http://localhost:8080",
+            },
+        )
         adapter = A2AFastAPIDefaultAdapter(
             agent_name="test_agent",
             agent_description="Test description",
-            registry=mock_registry,
-            card_url="http://localhost:8080",
+            a2a_config=a2a_config,
         )
 
         app = FastAPI()
@@ -419,11 +418,16 @@ class TestRegistryIntegrationWithTransports:
         mock_registry1 = MockRegistry("registry1")
         mock_registry2 = MockRegistry("registry2")
 
+        a2a_config = AgentCardWithRuntimeConfig(
+            registry=[mock_registry1, mock_registry2],
+            agent_card={
+                "url": "http://localhost:8080",
+            },
+        )
         adapter = A2AFastAPIDefaultAdapter(
             agent_name="test_agent",
             agent_description="Test description",
-            registry=[mock_registry1, mock_registry2],
-            card_url="http://localhost:8080",
+            a2a_config=a2a_config,
         )
 
         app = FastAPI()
