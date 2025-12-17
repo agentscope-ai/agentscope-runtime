@@ -25,7 +25,6 @@ from agentscope_runtime.engine.deployers.adapter.a2a import (
 )
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     A2ATransportsProperties,
-    DeployProperties,
 )
 
 NacosRegistry = nacos_a2a_registry.NacosRegistry
@@ -76,15 +75,6 @@ def agent_card():
         defaultInputModes=["text"],
         defaultOutputModes=["text"],
         skills=[],
-    )
-
-
-@pytest.fixture
-def deploy_properties():
-    """Create test DeployProperties."""
-    return DeployProperties(
-        host="localhost",
-        port=8080,
     )
 
 
@@ -153,7 +143,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
     def test_register_without_sdk(
         self,
         agent_card,
-        deploy_properties,
     ):
         """Test register() when SDK is not available."""
         with patch(
@@ -165,7 +154,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             # Should not raise, just return early
             registry.register(
                 agent_card,
-                deploy_properties,
             )
             assert registry._registration_status == RegistrationStatus.PENDING
 
@@ -181,15 +169,10 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             True,
         ):
             registry = NacosRegistry()
-            deploy_props_no_port = DeployProperties(
-                host="localhost",
-                port=None,
-            )
             # When a2a_transports_properties is None, it will cause error in
             # _register_to_nacos when iterating. So we pass empty list instead.
             registry.register(
                 agent_card,
-                deploy_props_no_port,
                 [],  # Empty list instead of None
             )
             # Registration task may start, but endpoint registration will be
@@ -206,7 +189,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         self,
         mock_nacos_sdk,
         agent_card,
-        deploy_properties,
     ):
         """Test register() when shutdown is already requested."""
         with patch(
@@ -218,7 +200,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry._shutdown_event.set()
             registry.register(
                 agent_card,
-                deploy_properties,
             )
             assert (
                 registry._registration_status == RegistrationStatus.CANCELLED
@@ -229,7 +210,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         self,
         mock_nacos_sdk,
         agent_card,
-        deploy_properties,
     ):
         """Test register() with a running event loop."""
         with patch(
@@ -246,7 +226,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             # Mock the _register_to_nacos method to avoid actual Nacos calls
             async def mock_register_to_nacos(
                 agent_card,
-                deploy_properties,
                 a2a_transports_properties=None,
             ):
                 task_started.set()  # Signal that task has started
@@ -265,7 +244,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             registry.register(
                 agent_card,
-                deploy_properties,
             )
 
             # Wait for task to start
@@ -287,7 +265,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         self,
         mock_nacos_sdk,
         agent_card,
-        deploy_properties,
     ):
         """Test register() without a running event loop (thread-based)."""
         with patch(
@@ -300,7 +277,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             # Mock the _register_to_nacos method
             async def mock_register_to_nacos(
                 agent_card,
-                deploy_properties,
                 a2a_transports_properties=None,
             ):
                 await asyncio.sleep(0.01)
@@ -324,7 +300,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             registry.register(
                 agent_card,
-                deploy_properties,
             )
 
             # Wait for thread to start
@@ -365,7 +340,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         self,
         mock_nacos_sdk,
         agent_card,
-        deploy_properties,
     ):
         """Test wait_for_registration() with task-based registration."""
         with patch(
@@ -377,7 +351,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             async def mock_register_to_nacos(
                 agent_card,
-                deploy_properties,
                 a2a_transports_properties=None,
             ):
                 await asyncio.sleep(0.05)
@@ -389,7 +362,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry._register_to_nacos = mock_register_to_nacos
             registry.register(
                 agent_card,
-                deploy_properties,
             )
 
             # Wait for task to be created
@@ -403,7 +375,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         self,
         mock_nacos_sdk,
         agent_card,
-        deploy_properties,
     ):
         """Test wait_for_registration() with timeout."""
         with patch(
@@ -415,7 +386,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             async def mock_register_to_nacos(
                 agent_card,
-                deploy_properties,
                 a2a_transports_properties=None,
             ):
                 await asyncio.sleep(10.0)  # Long-running task
@@ -423,7 +393,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry._register_to_nacos = mock_register_to_nacos
             registry.register(
                 agent_card,
-                deploy_properties,
             )
 
             await asyncio.sleep(0.01)
@@ -441,7 +410,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         self,
         mock_nacos_sdk,
         agent_card,
-        deploy_properties,
     ):
         """Test cleanup() with an active task."""
         with patch(
@@ -453,7 +421,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             async def mock_register_to_nacos(
                 agent_card,
-                deploy_properties,
                 a2a_transports_properties=None,
             ):
                 await asyncio.sleep(1.0)  # Long-running task
@@ -461,7 +428,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry._register_to_nacos = mock_register_to_nacos
             registry.register(
                 agent_card,
-                deploy_properties,
             )
 
             await asyncio.sleep(0.01)
@@ -481,7 +447,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         self,
         mock_nacos_sdk,
         agent_card,
-        deploy_properties,
     ):
         """Test cleanup() with wait_for_completion=True."""
         with patch(
@@ -493,7 +458,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             async def mock_register_to_nacos(
                 agent_card,
-                deploy_properties,
                 a2a_transports_properties=None,
             ):
                 await asyncio.sleep(0.05)
@@ -505,7 +469,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             registry._register_to_nacos = mock_register_to_nacos
             registry.register(
                 agent_card,
-                deploy_properties,
             )
 
             await asyncio.sleep(0.01)
@@ -555,10 +518,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 ):
                     await registry._register_to_nacos(
                         agent_card=agent_card,
-                        deploy_properties=DeployProperties(
-                            host="localhost",
-                            port=8080,
-                        ),
                         a2a_transports_properties=None,
                     )
 
@@ -608,10 +567,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 ):
                     await registry._register_to_nacos(
                         agent_card=agent_card,
-                        deploy_properties=DeployProperties(
-                            host="localhost",
-                            port=8080,
-                        ),
                         a2a_transports_properties=[],
                     )
 
@@ -667,10 +622,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 ):
                     await registry._register_to_nacos(
                         agent_card=agent_card,
-                        deploy_properties=DeployProperties(
-                            host="localhost",
-                            port=8080,
-                        ),
                         a2a_transports_properties=[
                             A2ATransportsProperties(
                                 host="localhost",
@@ -708,10 +659,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             await registry._register_to_nacos(
                 agent_card=agent_card,
-                deploy_properties=DeployProperties(
-                    host="localhost",
-                    port=8080,
-                ),
                 a2a_transports_properties=[
                     A2ATransportsProperties(
                         host="localhost",
@@ -773,10 +720,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 ):
                     await registry._register_to_nacos(
                         agent_card=agent_card,
-                        deploy_properties=DeployProperties(
-                            host="localhost",
-                            port=8080,
-                        ),
                         a2a_transports_properties=[
                             A2ATransportsProperties(
                                 host="localhost",
@@ -828,10 +771,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 with pytest.raises(asyncio.CancelledError):
                     await registry._register_to_nacos(
                         agent_card=agent_card,
-                        deploy_properties=DeployProperties(
-                            host="localhost",
-                            port=8080,
-                        ),
                         a2a_transports_properties=[
                             A2ATransportsProperties(
                                 host="localhost",
@@ -889,7 +828,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         self,
         mock_nacos_sdk,
         agent_card,
-        deploy_properties,
     ):
         """Test that duplicate registrations are prevented."""
         with patch(
@@ -908,7 +846,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             # Try to register again
             registry.register(
                 agent_card,
-                deploy_properties,
             )
 
             # Should not create a new task or thread when already in progress
@@ -955,10 +892,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             ):
                 await registry._register_to_nacos(
                     agent_card=agent_card,
-                    deploy_properties=DeployProperties(
-                        host="localhost",
-                        port=8080,
-                    ),
                     a2a_transports_properties=[
                         A2ATransportsProperties(
                             host="localhost",
@@ -1020,10 +953,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 ):
                     await registry._register_to_nacos(
                         agent_card=agent_card,
-                        deploy_properties=DeployProperties(
-                            host="localhost",
-                            port=8080,
-                        ),
                         a2a_transports_properties=[
                             A2ATransportsProperties(
                                 host="localhost",
@@ -1119,53 +1048,10 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             # Service should still be cleared
             assert registry._nacos_ai_service is None
 
-    def test_register_with_default_host(
-        self,
-        mock_nacos_sdk,
-        agent_card,
-    ):
-        """Test register() uses default host when not
-        specified."""
-        with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a"
-            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
-            True,
-        ):
-            registry = NacosRegistry()
-
-            deploy_props_no_host = DeployProperties(
-                host=None,
-                port=8080,
-            )
-
-            # Mock _start_register_task to capture parameters
-            captured_args = {}
-
-            def mock_start_register_task(
-                agent_card,
-                deploy_properties,
-                a2a_transports_properties=None,
-            ):
-                captured_args["deploy_properties"] = deploy_properties
-                captured_args[
-                    "a2a_transports_properties"
-                ] = a2a_transports_properties
-
-            registry._start_register_task = mock_start_register_task
-
-            registry.register(
-                agent_card,
-                deploy_props_no_host,
-            )
-
-            # Should capture deploy_properties
-            assert captured_args.get("deploy_properties") is not None
-
     def test_register_with_multiple_transports(
         self,
         mock_nacos_sdk,
         agent_card,
-        deploy_properties,
     ):
         """Test register() with multiple transports calls register for each."""
         with patch(
@@ -1206,12 +1092,10 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             def mock_start_register_task(
                 agent_card,
-                deploy_properties,
                 a2a_transports_properties=None,
             ):
                 captured_calls.append(
                     {
-                        "deploy_properties": deploy_properties,
                         "a2a_transports_properties": a2a_transports_properties,
                     },
                 )
@@ -1220,7 +1104,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             registry.register(
                 agent_card,
-                deploy_properties,
                 transports,
             )
 
@@ -1353,7 +1236,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         self,
         mock_nacos_sdk,
         agent_card,
-        deploy_properties,
         a2a_transports_properties,
     ):
         """Test register() with a2a_transports_properties list."""
@@ -1369,12 +1251,10 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             def mock_start_register_task(
                 agent_card,
-                deploy_properties,
                 a2a_transports_properties=None,
             ):
                 captured_calls.append(
                     {
-                        "deploy_properties": deploy_properties,
                         "a2a_transports_properties": a2a_transports_properties,
                     },
                 )
@@ -1384,7 +1264,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             # Register with transports list
             registry.register(
                 agent_card,
-                deploy_properties,
                 a2a_transports_properties,
             )
 
@@ -1416,79 +1295,10 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 == "/api/v2"
             )
 
-    def test_register_with_transports_priority_over_deploy_props(
-        self,
-        mock_nacos_sdk,
-        agent_card,
-    ):
-        """Test that transport properties take priority over deploy
-        properties."""
-        with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a"
-            ".nacos_a2a_registry._NACOS_SDK_AVAILABLE",
-            True,
-        ):
-            registry = NacosRegistry()
-
-            # Deploy properties as fallback
-            deploy_props = DeployProperties(
-                host="fallback.host",
-                port=9090,
-            )
-
-            # Transport with partial values (should use fallback for missing)
-            transports = [
-                A2ATransportsProperties(
-                    host="transport.host",
-                    port=None,  # Should fallback to deploy_props
-                    path="/transport",
-                    support_tls=False,
-                    extra={},
-                    transport_type="grpc",
-                ),
-            ]
-
-            captured_calls = []
-
-            def mock_start_register_task(
-                agent_card,
-                deploy_properties,
-                a2a_transports_properties=None,
-            ):
-                captured_calls.append(
-                    {
-                        "deploy_properties": deploy_properties,
-                        "a2a_transports_properties": a2a_transports_properties,
-                    },
-                )
-
-            registry._start_register_task = mock_start_register_task
-
-            registry.register(
-                agent_card,
-                deploy_props,
-                transports,
-            )
-
-            # Should use transport host but fallback port
-            assert len(captured_calls) == 1
-            assert (
-                captured_calls[0]["a2a_transports_properties"][0].host
-                == "transport.host"
-            )
-            assert (
-                captured_calls[0]["a2a_transports_properties"][0].port is None
-            )  # None in transport
-            assert (
-                captured_calls[0]["a2a_transports_properties"][0].path
-                == "/transport"
-            )
-
     def test_register_with_empty_transports_list(
         self,
         mock_nacos_sdk,
         agent_card,
-        deploy_properties,
     ):
         """Test register() with empty transports list - no endpoint
         registration."""
@@ -1503,12 +1313,10 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             def mock_start_register_task(
                 agent_card,
-                deploy_properties,
                 a2a_transports_properties=None,
             ):
                 captured_calls.append(
                     {
-                        "deploy_properties": deploy_properties,
                         "a2a_transports_properties": a2a_transports_properties,
                     },
                 )
@@ -1518,7 +1326,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             # Register with empty list
             registry.register(
                 agent_card,
-                deploy_properties,
                 [],  # Empty transports
             )
 
@@ -1531,7 +1338,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         self,
         mock_nacos_sdk,
         agent_card,
-        deploy_properties,
     ):
         """Test register() skips transport when port is missing."""
         with patch(
@@ -1541,13 +1347,7 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         ):
             registry = NacosRegistry()
 
-            # Deploy properties without port
-            deploy_props_no_port = DeployProperties(
-                host="localhost",
-                port=None,
-            )
-
-            # Transports also without port
+            # Transports without port
             transports = [
                 A2ATransportsProperties(
                     host="localhost",
@@ -1563,12 +1363,10 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             def mock_start_register_task(
                 agent_card,
-                deploy_properties,
                 a2a_transports_properties=None,
             ):
                 captured_calls.append(
                     {
-                        "deploy_properties": deploy_properties,
                         "a2a_transports_properties": a2a_transports_properties,
                     },
                 )
@@ -1577,7 +1375,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             registry.register(
                 agent_card,
-                deploy_props_no_port,
                 transports,
             )
 
@@ -1589,7 +1386,6 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
         self,
         mock_nacos_sdk,
         agent_card,
-        deploy_properties,
     ):
         """Test register() with None transports - no endpoint registration."""
         with patch(
@@ -1603,12 +1399,10 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             def mock_start_register_task(
                 agent_card,
-                deploy_properties,
                 a2a_transports_properties=None,
             ):
                 captured_calls.append(
                     {
-                        "deploy_properties": deploy_properties,
                         "a2a_transports_properties": a2a_transports_properties,
                     },
                 )
@@ -1620,12 +1414,9 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
             # registration but agent card will still be published
             registry.register(
                 agent_card,
-                deploy_properties,
                 None,
             )
 
             # Should capture the call
             assert len(captured_calls) == 1
-            assert captured_calls[0]["deploy_properties"].host == "localhost"
-            assert captured_calls[0]["deploy_properties"].port == 8080
             assert captured_calls[0]["a2a_transports_properties"] is None

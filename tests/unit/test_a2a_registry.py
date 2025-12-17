@@ -4,7 +4,6 @@
 
 Tests cover:
 - A2ARegistry abstract base class
-- DeployProperties dataclass
 - A2ARegistrySettings configuration
 - get_registry_settings() function
 - create_registry_from_env() factory function
@@ -18,7 +17,6 @@ import pytest
 from a2a.types import AgentCard
 
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
-    DeployProperties,
     A2ARegistrySettings,
     get_registry_settings,
     create_registry_from_env,
@@ -48,7 +46,6 @@ class MockRegistry(A2ARegistry):
     def __init__(self, name: str = "mock"):
         self._name = name
         self.registered_cards = []
-        self.registered_properties = []
 
     def registry_name(self) -> str:
         return self._name
@@ -56,10 +53,9 @@ class MockRegistry(A2ARegistry):
     def register(
         self,
         agent_card: AgentCard,
-        deploy_properties: DeployProperties,
+        a2a_transports_properties=None,
     ) -> None:
         self.registered_cards.append(agent_card)
-        self.registered_properties.append(deploy_properties)
 
 
 class TestA2ARegistry:
@@ -89,34 +85,10 @@ class TestA2ARegistry:
             defaultOutputModes=["text"],
             skills=[],
         )
-        deploy_props = DeployProperties(host="localhost", port=8080)
 
-        registry.register(agent_card, deploy_props)
+        registry.register(agent_card)
         assert len(registry.registered_cards) == 1
         assert registry.registered_cards[0].name == "test_agent"
-        assert len(registry.registered_properties) == 1
-
-
-class TestDeployProperties:
-    """Test DeployProperties dataclass."""
-
-    def test_default_values(self):
-        """Test DeployProperties with default values."""
-        props = DeployProperties()
-        assert props.host is None
-        assert props.port is None
-        assert props.extra == {}
-
-    def test_custom_values(self):
-        """Test DeployProperties with custom values."""
-        props = DeployProperties(
-            host="example.com",
-            port=9090,
-            extra={"key": "value"},
-        )
-        assert props.host == "example.com"
-        assert props.port == 9090
-        assert props.extra == {"key": "value"}
 
 
 class TestA2ARegistrySettings:
@@ -453,63 +425,9 @@ class TestCreateRegistryFromEnv:
         finally:
             a2a_registry._registry_settings = original_settings
 
-    def test_single_registry_returns_instance(self):
-        """Test that single registry returns instance, not list."""
-        from agentscope_runtime.engine.deployers.adapter.a2a import (
-            a2a_registry,
-        )
-
-        original_settings = a2a_registry._registry_settings
-        a2a_registry._registry_settings = None
-
-        try:
-            # This test would require a working Nacos SDK or
-            # more complex mocking. For now, we test the logic
-            # path
-            with patch.dict(
-                os.environ,
-                {
-                    "A2A_REGISTRY_ENABLED": "true",
-                    "A2A_REGISTRY_TYPE": "nacos",
-                },
-                clear=False,
-            ):
-                # Mock _create_nacos_registry_from_settings to
-                # return None (simulating SDK not available)
-                with patch(
-                    "agentscope_runtime.engine.deployers.adapter"
-                    ".a2a.a2a_registry"
-                    "._create_nacos_registry_from_settings",
-                    return_value=None,
-                ):
-                    result = create_registry_from_env()
-                    assert result is None
-        finally:
-            a2a_registry._registry_settings = original_settings
-
 
 class TestCreateNacosRegistryFromSettings:
     """Test _create_nacos_registry_from_settings() helper function."""
-
-    def test_nacos_sdk_import_error(self):
-        """Test when Nacos SDK import fails."""
-        from agentscope_runtime.engine.deployers.adapter.a2a import (
-            a2a_registry,
-        )
-
-        settings = A2ARegistrySettings()
-
-        # Mock the import at the point where it happens in the function
-        def mock_import(name, *args, **kwargs):
-            if "nacos_a2a_registry" in name or "v2.nacos" in name:
-                raise ImportError("No module named 'v2.nacos'")
-            return __import__(name, *args, **kwargs)
-
-        with patch("builtins.__import__", side_effect=mock_import):
-            result = a2a_registry._create_nacos_registry_from_settings(
-                settings,
-            )
-            assert result is None
 
     def test_nacos_registry_build_error(self):
         """Test when Nacos registry build fails."""
@@ -636,7 +554,7 @@ class TestOptionalDependencyHandling:
     """Test optional dependency handling mechanism."""
 
     def test_nacos_sdk_not_installed(self):
-        """Test behavior when Nacos SDK is not installed."""
+        """Test behavior when Nacos SDK is not installed or import fails."""
         from agentscope_runtime.engine.deployers.adapter.a2a import (
             a2a_registry,
         )
@@ -703,21 +621,15 @@ class TestOptionalDependencyHandling:
 class TestRegistrySettingsValidation:
     """Test A2ARegistrySettings validation and edge cases."""
 
-    def test_registry_enabled_false_string(self):
-        """Test A2A_REGISTRY_ENABLED with false string value."""
+    @pytest.mark.parametrize(
+        "env_value",
+        ["false", "0", "False", "FALSE"],
+    )
+    def test_registry_enabled_false_values(self, env_value):
+        """Test A2A_REGISTRY_ENABLED with various false string values."""
         with patch.dict(
             os.environ,
-            {"A2A_REGISTRY_ENABLED": "false"},
-            clear=False,
-        ):
-            settings = A2ARegistrySettings()
-            assert settings.A2A_REGISTRY_ENABLED is False
-
-    def test_registry_enabled_0_string(self):
-        """Test A2A_REGISTRY_ENABLED with '0' string value."""
-        with patch.dict(
-            os.environ,
-            {"A2A_REGISTRY_ENABLED": "0"},
+            {"A2A_REGISTRY_ENABLED": env_value},
             clear=False,
         ):
             settings = A2ARegistrySettings()
@@ -809,10 +721,8 @@ class TestErrorHandlingInRegistration:
             skills=[],
         )
 
-        deploy_props = DeployProperties(port=8080)
-
         # Should not raise even with minimal card
-        registry.register(minimal_card, deploy_props)
+        registry.register(minimal_card)
         assert len(registry.registered_cards) == 1
 
     def test_registry_with_empty_transports(self):
@@ -832,9 +742,6 @@ class TestErrorHandlingInRegistration:
             skills=[],
         )
 
-        deploy_props = DeployProperties(host="localhost", port=8080)
-
         # Register
-        registry.register(agent_card, deploy_props)
+        registry.register(agent_card)
         assert len(registry.registered_cards) == 1
-        assert registry.registered_properties[0] == deploy_props

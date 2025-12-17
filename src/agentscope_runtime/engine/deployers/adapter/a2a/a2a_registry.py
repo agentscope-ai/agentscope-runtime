@@ -27,7 +27,6 @@ if TYPE_CHECKING:
 
 __all__ = [
     "A2ARegistry",
-    "DeployProperties",
     "A2ATransportsProperties",
     "A2ARegistrySettings",
     "get_registry_settings",
@@ -35,21 +34,6 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class DeployProperties:
-    """Deployment runtime properties used when registering services.
-
-    Attributes:
-        host: Optional server host
-        port: Optional server port
-        extra: Additional runtime properties
-    """
-
-    host: Optional[str] = None
-    port: Optional[int] = None
-    extra: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -90,7 +74,6 @@ class A2ARegistry(ABC):
     def register(
         self,
         agent_card: AgentCard,
-        deploy_properties: DeployProperties,
         a2a_transports_properties: Optional[
             List[A2ATransportsProperties]
         ] = None,
@@ -99,8 +82,6 @@ class A2ARegistry(ABC):
 
         Args:
             agent_card: Agent card of this agent
-            deploy_properties: Deploy properties include interface information
-                such as address, port, etc.
             a2a_transports_properties: Multiple transports for A2A Server,
                 and each transport might include different configs.
 

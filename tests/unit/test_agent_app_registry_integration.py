@@ -15,7 +15,6 @@ from unittest.mock import patch
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     A2ARegistry,
-    DeployProperties,
 )
 
 
@@ -33,7 +32,6 @@ class MockRegistry(A2ARegistry):
     def register(
         self,
         agent_card,
-        deploy_properties: DeployProperties,
         a2a_transports_properties=None,
     ) -> None:
         self.registered = True

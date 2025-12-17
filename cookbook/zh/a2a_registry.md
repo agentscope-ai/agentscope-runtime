@@ -47,19 +47,11 @@ A2A Registry 采用可扩展的插件式架构，用于将 Agent 服务注册到
 定义了所有 Registry 实现必须遵循的接口：
 
 - `registry_name()`：返回标识该 Registry 的短名称（如 `"nacos"`）；
-- `register(agent_card, deploy_properties, a2a_transports_properties)`：执行实际的注册逻辑。
+- `register(agent_card, a2a_transports_properties)`：执行实际的注册逻辑。
 
 Runtime 会在注册过程中捕获并记录异常，确保 Registry 失败不会阻塞 Agent 服务的启动。
 
-**2. DeployProperties**
-
-封装部署相关的运行时信息：
-
-- `host`：服务监听地址；
-- `port`：服务监听端口；
-- `extra`：额外的运行时属性（如标签或环境元数据），用于扩展。
-
-**3. A2ATransportsProperties**
+**2. A2ATransportsProperties**
 
 描述一个或多个 A2A 传输协议：
 
@@ -76,7 +68,7 @@ Runtime 会在注册过程中捕获并记录异常，确保 Registry 失败不�
 
 1. **Agent Card 发布**：将智能体的元数据（名称、版本、技能等）发布到注册中心，使其他智能体能够发现和了解该智能体的能力。
 
-2. **Endpoint 注册**：注册智能体的服务端点信息（host、port、path），包括部署配置和传输协议配置，使其他智能体能够连接到该服务。
+2. **Endpoint 注册**：注册智能体的服务端点信息（host、port、path），包括传输协议配置，使其他智能体能够连接到该服务。
 
 3. **后台异步执行**：注册过程在后台异步执行，不阻塞应用启动。如果某个 Registry 注册失败，Runtime 会记录警告日志，但不会影响 Agent 服务的正常启动。
 
@@ -268,7 +260,6 @@ startup.cmd -m standalone
 ```python
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     A2ARegistry,
-    DeployProperties,
     A2ATransportsProperties,
 )
 from a2a.types import AgentCard
@@ -287,7 +278,6 @@ class MyCustomRegistry(A2ARegistry):
     def register(
         self,
         agent_card: AgentCard,
-        deploy_properties: DeployProperties,
         a2a_transports_properties: Optional[
             List[A2ATransportsProperties]
         ] = None,
@@ -295,12 +285,19 @@ class MyCustomRegistry(A2ARegistry):
 
         try:
             # 构建注册信息
-            service_info = {
-                "agent_name": agent_card.name,
-                "agent_version": agent_card.version,
-                "host": deploy_properties.host,
-                "port": deploy_properties.port,
-            }
+            if a2a_transports_properties and len(a2a_transports_properties) > 0:
+                transport = a2a_transports_properties[0]
+                service_info = {
+                    "agent_name": agent_card.name,
+                    "agent_version": agent_card.version,
+                    "host": transport.host,
+                    "port": transport.port,
+                }
+            else:
+                service_info = {
+                    "agent_name": agent_card.name,
+                    "agent_version": agent_card.version,
+                }
 
             # 执行注册逻辑
             logger.info(f"[MyCustomRegistry] Registering: {service_info}")

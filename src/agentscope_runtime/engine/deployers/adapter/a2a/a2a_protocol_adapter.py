@@ -34,7 +34,6 @@ from .a2a_agent_adapter import A2AExecutor
 from .a2a_registry import (
     A2ARegistry,
     A2ATransportsProperties,
-    DeployProperties,
     create_registry_from_env,
 )
 
@@ -304,14 +303,12 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
             self._register_with_all_registries(
                 agent_card=agent_card,
                 app=app,
-                **kwargs,
             )
 
     def _register_with_all_registries(
         self,
         agent_card: AgentCard,
         app: FastAPI,
-        **kwargs: Any,
     ) -> None:
         """Register agent with all configured registry instances.
 
@@ -320,9 +317,7 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         Args:
             agent_card: The generated AgentCard
             app: FastAPI application instance
-            **kwargs: Additional arguments
         """
-        deploy_properties = self._build_deploy_properties(**kwargs)
         a2a_transports_properties = self._build_a2a_transports_properties(
             app=app,
         )
@@ -336,7 +331,6 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                 )
                 registry.register(
                     agent_card=agent_card,
-                    deploy_properties=deploy_properties,
                     a2a_transports_properties=a2a_transports_properties,
                 )
                 logger.info(
@@ -351,27 +345,6 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
                     str(e),
                     exc_info=True,
                 )
-
-    def _build_deploy_properties(
-        self,
-        **kwargs: Any,
-    ) -> DeployProperties:
-        """Build DeployProperties from runtime configuration.
-
-        Args:
-            **kwargs: Additional runtime properties
-
-        Returns:
-            DeployProperties instance
-        """
-        excluded_keys = {"host", "port"}
-        extra = {k: v for k, v in kwargs.items() if k not in excluded_keys}
-
-        return DeployProperties(
-            host=self._host,
-            port=self._port,
-            extra=extra,
-        )
 
     def _build_a2a_transports_properties(
         self,

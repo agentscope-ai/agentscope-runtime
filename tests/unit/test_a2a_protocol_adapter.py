@@ -326,54 +326,6 @@ class TestA2ATransportsPropertiesBuilding:
         # Should use JSON-RPC path when root_path is empty
         assert transports[0].path == "/a2a"
 
-    def test_build_deploy_properties(
-        self,
-    ):
-        """Test _build_deploy_properties includes host, port, and extra."""
-        adapter = A2AFastAPIDefaultAdapter(
-            agent_name="test_agent",
-            agent_description="Test description",
-            host="localhost",
-            port=8080,
-        )
-
-        deploy_props = adapter._build_deploy_properties(
-            region="us-west-1",
-            environment="production",
-        )
-
-        # DeployProperties should have host, port, and extra fields
-        assert deploy_props.host == "localhost"
-        assert deploy_props.port == 8080
-        assert deploy_props.extra == {
-            "region": "us-west-1",
-            "environment": "production",
-        }
-        # DeployProperties should not have path field
-        assert not hasattr(deploy_props, "path") or deploy_props.path is None
-
-    def test_build_deploy_properties_excludes_host_port_from_extra(
-        self,
-    ):
-        """Test _build_deploy_properties excludes host/port from extra."""
-        adapter = A2AFastAPIDefaultAdapter(
-            agent_name="test_agent",
-            agent_description="Test description",
-            host="localhost",
-            port=8080,
-        )
-
-        deploy_props = adapter._build_deploy_properties(
-            host="should-be-ignored",
-            port=9999,
-            region="us-east-1",
-        )
-
-        # Host and port in kwargs should be excluded from extra
-        assert deploy_props.host == "localhost"  # From adapter config
-        assert deploy_props.port == 8080  # From adapter config
-        assert deploy_props.extra == {"region": "us-east-1"}
-
 
 class TestRegistryIntegrationWithTransports:
     """Test registry integration with A2ATransportsProperties."""
@@ -400,11 +352,10 @@ class TestRegistryIntegrationWithTransports:
             def register(
                 self,
                 agent_card,
-                deploy_properties,
                 a2a_transports_properties=None,
             ):
                 self.register_called = True
-                self.register_args = (agent_card, deploy_properties)
+                self.register_args = (agent_card,)
                 self.register_kwargs = {
                     "a2a_transports_properties": a2a_transports_properties,
                 }
@@ -458,7 +409,6 @@ class TestRegistryIntegrationWithTransports:
             def register(
                 self,
                 agent_card,
-                deploy_properties,
                 a2a_transports_properties=None,
             ):
                 self.register_called = True

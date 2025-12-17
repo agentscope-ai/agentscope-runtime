@@ -47,19 +47,11 @@ Core components:
 Defines the interface that all registry implementations must follow:
 
 - `registry_name()`: returns a short name identifying the registry (for example, `"nacos"`);
-- `register(agent_card, deploy_properties, a2a_transports_properties)`: performs the actual registration logic.
+- `register(agent_card, a2a_transports_properties)`: performs the actual registration logic.
 
 The runtime catches and logs exceptions during registration so that registry failures do not block the agent service from starting.
 
-**2. DeployProperties**
-
-Encapsulates deployment-related runtime information:
-
-- `host`: service listen address;
-- `port`: service listen port;
-- `extra`: additional runtime attributes for extension (such as labels or environment metadata).
-
-**3. A2ATransportsProperties**
+**2. A2ATransportsProperties**
 
 Describes one or more A2A transport protocols:
 
@@ -76,7 +68,7 @@ When `AgentApp` starts, the Registry registration flow is as follows:
 
 1. **Agent Card publishing**: Publish the agent's metadata (name, version, skills, etc.) to the registry, enabling other agents to discover and understand the agent's capabilities.
 
-2. **Endpoint registration**: Register the agent's service endpoint information (host, port, path), including deployment configuration and transport protocol configuration, enabling other agents to connect to the service.
+2. **Endpoint registration**: Register the agent's service endpoint information (host, port, path), including transport protocol configuration, enabling other agents to connect to the service.
 
 3. **Asynchronous background execution**: The registration process executes asynchronously in the background and does not block application startup. If a Registry registration fails, the Runtime logs a warning but does not affect the normal startup of the agent service.
 
@@ -268,7 +260,6 @@ The following is a simple custom Registry implementation example:
 ```python
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     A2ARegistry,
-    DeployProperties,
     A2ATransportsProperties,
 )
 from a2a.types import AgentCard
@@ -287,7 +278,6 @@ class MyCustomRegistry(A2ARegistry):
     def register(
         self,
         agent_card: AgentCard,
-        deploy_properties: DeployProperties,
         a2a_transports_properties: Optional[
             List[A2ATransportsProperties]
         ] = None,
@@ -295,12 +285,19 @@ class MyCustomRegistry(A2ARegistry):
 
         try:
             # Build registration information
-            service_info = {
-                "agent_name": agent_card.name,
-                "agent_version": agent_card.version,
-                "host": deploy_properties.host,
-                "port": deploy_properties.port,
-            }
+            if a2a_transports_properties and len(a2a_transports_properties) > 0:
+                transport = a2a_transports_properties[0]
+                service_info = {
+                    "agent_name": agent_card.name,
+                    "agent_version": agent_card.version,
+                    "host": transport.host,
+                    "port": transport.port,
+                }
+            else:
+                service_info = {
+                    "agent_name": agent_card.name,
+                    "agent_version": agent_card.version,
+                }
 
             # Perform registration logic
             logger.info(f"[MyCustomRegistry] Registering: {service_info}")
