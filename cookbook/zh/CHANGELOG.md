@@ -11,7 +11,7 @@
 - **多框架支持扩展**：在 v1.x 中加入对 Agno 框架的支持。
 - **移动端沙箱 UI**：支持在 WebUI 中展示移动端沙箱画面。
 - **CLI 工具**：新增命令行执行与管理功能。
-- **统一业务异常**：引入统一的业务异常类
+- **统一业务异常**：引入统一的业务异常类。
 - **MCP Tool Call/Output 处理**：新增 MCP 工具调用与输出的适配。
 
 ### Changed
@@ -25,7 +25,7 @@
 - **LangChain** 依赖补充（含 `langchain_openai`）。
 - 修复 LangGraph 单元测试。
 - 测试中引入 **per-function event loop** 以解决 Agno 下 "Event loop is closed" 错误。
-- 修复 沙箱中`streamable_http` 超时类型不匹配问题。
+- 修复沙箱中MCP`streamable_http` 超时类型不匹配问题。
 - 修复 OSS 配置在 AgentRun 场景下的异常。
 
 ### Documentation

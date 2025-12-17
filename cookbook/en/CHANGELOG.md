@@ -17,7 +17,7 @@ Improvements have also been made to the CLI tools, MCP Tool call handling, and u
 ### Changed
 
 - Optimized support for streaming tool calls and outputs.
-- Improved `adapt_agentscope_message_stream` to better handle non‑JSON outputs.
+- Improved `adapt_agentscope_message_stream` to better handle non-JSON outputs.
 - Updated `.npmrc` to disable package-lock and adjusted peer dependency configurations.
 
 ### Fixed
@@ -25,7 +25,7 @@ Improvements have also been made to the CLI tools, MCP Tool call handling, and u
 - Added missing **LangChain** dependencies (including `langchain_openai`).
 - Fixed LangGraph unit tests.
 - Introduced **per-function event loop** in tests to resolve "Event loop is closed" errors under Agno.
-- Fixed type mismatch issue in `streamable_http` timeout within the sandbox.
+- Fixed type mismatch issue in `streamable_http` timeout within the sandbox MCP.
 - Fixed OSS configuration errors in AgentRun scenarios.
 
 ### Documentation
