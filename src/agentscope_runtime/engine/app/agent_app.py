@@ -5,7 +5,7 @@ import types
 import platform
 import subprocess
 import shlex
-from typing import Optional, Callable, List, Dict, Any, Union
+from typing import Optional, Callable, List
 
 import uvicorn
 from pydantic import BaseModel
@@ -51,12 +51,7 @@ class AgentApp(BaseApp):
         backend_url: Optional[str] = None,
         runner: Optional[Runner] = None,
         enable_embedded_worker: bool = False,
-        a2a_config: Optional[
-            Union[
-                "AgentCardWithRuntimeConfig",
-                Dict[str, Any],
-            ]
-        ] = None,
+        a2a_config: Optional["AgentCardWithRuntimeConfig"] = None,
         **kwargs,
     ):
         """
@@ -76,11 +71,10 @@ class AgentApp(BaseApp):
             runner: Optional runner instance
             enable_embedded_worker: Whether to enable embedded worker
             a2a_config: Optional A2A runtime configuration.
-                Can be:
-                - AgentCardWithRuntimeConfig (Recommended):
-                  Contains agent_card (AgentCard object or dict) and runtime
-                  settings (host, port, registry, task_timeout, etc.).
-                  Example:
+                Must be an ``AgentCardWithRuntimeConfig`` instance, which
+                contains ``agent_card`` (AgentCard object or dict) and runtime
+                settings (host, port, registry, task_timeout, etc.).
+                Example:
                     from a2a.types import AgentCard, AgentCapabilities
                     from agentscope_runtime.engine.deployers.adapter.a2a import (  # noqa: E501
                         AgentCardWithRuntimeConfig,
@@ -99,10 +93,6 @@ class AgentApp(BaseApp):
                         registry=[nacos_registry],
                         task_timeout=120,
                     )
-
-                - Dictionary: Can have AgentCard fields at top level or
-                  under "agent_card" key, plus runtime fields (host, port,
-                  registry, task_timeout, etc.)
             **kwargs: Additional keyword arguments passed to FastAPI app
         """
 

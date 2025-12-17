@@ -4,10 +4,7 @@
 
 In the `AgentApp` constructor, we introduce an optional parameter `a2a_config` to extend the configuration of the agent's A2A protocol information and runtime-related fields.
 
-Its supported types are:
-
-- `AgentCardWithRuntimeConfig` (recommended): wraps AgentCard protocol fields and runtime fields into a single data structure for unified management.
-- `Dict[str, Any]`: has exactly the same field set as `AgentCardWithRuntimeConfig`, and is suitable for dynamic construction from configuration files.
+Its type is `AgentCardWithRuntimeConfig`, which wraps AgentCard protocol fields and runtime fields into a single data structure for unified management.
 
 The fields in `AgentCardWithRuntimeConfig` fall into two categories:
 
@@ -107,7 +104,6 @@ nacos_config = (
 nacos_registry = NacosRegistry(nacos_client_config=nacos_config)
 
 # Configure registry in a2a_config
-# Method 1: Using AgentCardWithRuntimeConfig object
 a2a_config = AgentCardWithRuntimeConfig(
     agent_card={
         "name": "MyAgent",
@@ -123,21 +119,6 @@ agent_app = AgentApp(
     app_name="MyAgent",
     app_description="My agent description",
     a2a_config=a2a_config,
-)
-
-# Method 2: Using dictionary form
-a2a_config_dict = {
-    "name": "MyAgent",
-    "description": "My agent description",
-    "registry": [nacos_registry],
-    "task_timeout": 60,
-    # ...
-}
-
-agent_app = AgentApp(
-    app_name="MyAgent",
-    app_description="My agent description",
-    a2a_config=a2a_config_dict,
 )
 ```
 
@@ -216,7 +197,7 @@ a2a_adapter = A2AFastAPIDefaultAdapter(
     agent_name="MyAgent",
     agent_description="My agent description",
     a2a_config=AgentCardWithRuntimeConfig(
-        registry=[nacos_registry],
+    registry=[nacos_registry],
         # ...
     ),
 )

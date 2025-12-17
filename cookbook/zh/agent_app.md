@@ -72,7 +72,7 @@ agent_app.run(host="127.0.0.1", port=8090)
 
 **关键参数**
 
-- `a2a_config`：可选参数，支持 `AgentCardWithRuntimeConfig` 对象或字典形式
+- `a2a_config`：可选参数，支持 `AgentCardWithRuntimeConfig` 对象
 
 **配置内容**
 

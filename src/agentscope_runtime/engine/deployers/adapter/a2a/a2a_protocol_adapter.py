@@ -53,72 +53,21 @@ AGENT_VERSION = "1.0.0"
 
 
 def extract_a2a_config(
-    a2a_config: Optional[
-        Union["AgentCardWithRuntimeConfig", Dict[str, Any]]
-    ] = None,
+    a2a_config: Optional["AgentCardWithRuntimeConfig"] = None,
 ) -> "AgentCardWithRuntimeConfig":
     """Normalize a2a_config to AgentCardWithRuntimeConfig object.
 
-    Converts dict input to AgentCardWithRuntimeConfig. If dict has AgentCard
-    fields at top level, extracts them into agent_card field. Sets up
+    Ensures a non-null ``AgentCardWithRuntimeConfig`` instance and sets up
     environment-based registry fallback if registry is not provided.
 
     Args:
-        a2a_config: Configuration as dict or AgentCardWithRuntimeConfig.
-            - If dict: Can have AgentCard fields at top level
-              (extracted to agent_card) or under "agent_card" key, plus runtime
-              fields (host, port, registry, etc.)
-            - If AgentCardWithRuntimeConfig: Returned as-is
+        a2a_config: Optional AgentCardWithRuntimeConfig instance.
 
     Returns:
         Normalized AgentCardWithRuntimeConfig object.
     """
     if a2a_config is None:
-        a2a_config = {}
-
-    if isinstance(a2a_config, dict):
-        a2a_config_dict = dict(a2a_config)
-
-        # Extract agent_card: use existing "agent_card" key, or extract
-        # AgentCard fields from top level into agent_card dict
-        if "agent_card" in a2a_config_dict:
-            agent_card = a2a_config_dict.pop("agent_card")
-        else:
-            # Extract AgentCard protocol fields from top level
-            agent_card_dict = {}
-            agent_card_fields = [
-                "name",
-                "description",
-                "url",
-                "preferred_transport",
-                "additional_interfaces",
-                "version",
-                "skills",
-                "default_input_modes",
-                "default_output_modes",
-                "provider",
-                "documentation_url",
-                "icon_url",
-                "security_schemes",
-                "security",
-            ]
-            for field in agent_card_fields:
-                if field in a2a_config_dict:
-                    agent_card_dict[field] = a2a_config_dict.pop(field)
-            agent_card = agent_card_dict if agent_card_dict else None
-
-        # Remaining fields are runtime config (host, port, registry, etc.)
-        # Normalize registry: convert single registry to list
-        if (
-            "registry" in a2a_config_dict
-            and a2a_config_dict["registry"] is not None
-        ):
-            registry = a2a_config_dict["registry"]
-            if not isinstance(registry, list):
-                a2a_config_dict["registry"] = [registry]
-
-        a2a_config_dict["agent_card"] = agent_card
-        a2a_config = AgentCardWithRuntimeConfig(**a2a_config_dict)
+        a2a_config = AgentCardWithRuntimeConfig()
 
     # Fallback to environment registry if not provided
     if a2a_config.registry is None:
@@ -369,52 +318,6 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
 
         return transports_list
 
-    def _normalize_provider(
-        self,
-        provider: Optional[Union[str, Dict[str, Any], Any]],
-    ) -> Dict[str, Any]:
-        """Normalize provider to dict format with organization and url.
-
-        Args:
-            provider: Provider as string, dict, or AgentProvider object
-
-        Returns:
-            Normalized provider dict
-        """
-        if provider is None:
-            return {"organization": "", "url": ""}
-
-        if isinstance(provider, str):
-            return {"organization": provider, "url": ""}
-
-        if isinstance(provider, dict):
-            provider_dict = dict(provider)
-            if "organization" not in provider_dict:
-                provider_dict["organization"] = provider_dict.get("name", "")
-            if "url" not in provider_dict:
-                provider_dict["url"] = ""
-            return provider_dict
-
-        try:
-            organization = getattr(
-                provider,
-                "organization",
-                None,
-            ) or getattr(
-                provider,
-                "name",
-                "",
-            )
-            url = getattr(provider, "url", "")
-            return {"organization": organization, "url": url}
-        except Exception:
-            logger.debug(
-                "[A2A] Unable to normalize provider of type %s",
-                type(provider),
-                exc_info=True,
-            )
-            return {"organization": "", "url": ""}
-
     def _get_agent_card_field(
         self,
         field_name: str,
@@ -454,8 +357,6 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         Returns:
             Configured AgentCard instance
         """
-        if isinstance(self._a2a_config.agent_card, AgentCard):
-            return self._a2a_config.agent_card
 
         # Generate URL if not provided
         url = self._get_agent_card_field("url")
@@ -495,35 +396,80 @@ class A2AFastAPIDefaultAdapter(ProtocolAdapter):
         )
 
         # Set defaults for required fields
-        card_kwargs.setdefault(
-            "capabilities",
-            AgentCapabilities(streaming=False, push_notifications=False),
+        card_kwargs["preferred_transport"] = self._get_agent_card_field(
+            "preferred_transport",
+            DEFAULT_TRANSPORT,
         )
-        card_kwargs.setdefault("skills", [])
-        card_kwargs.setdefault(
+        card_kwargs["additional_interfaces"] = self._get_agent_card_field(
+            "additional_interfaces",
+            [],
+        )
+        card_kwargs["default_input_modes"] = self._get_agent_card_field(
             "default_input_modes",
             DEFAULT_INPUT_OUTPUT_MODES,
         )
-        card_kwargs.setdefault(
+        card_kwargs["default_output_modes"] = self._get_agent_card_field(
             "default_output_modes",
             DEFAULT_INPUT_OUTPUT_MODES,
         )
-        card_kwargs.setdefault("preferred_transport", DEFAULT_TRANSPORT)
-        card_kwargs.setdefault("additional_interfaces", [])
+        card_kwargs["skills"] = self._get_agent_card_field(
+            "skills",
+            [],
+        )
+        # Runtime-managed AgentCard fields: user values are ignored
+        if self._get_agent_card_field("capabilities") is not None:
+            logger.warning(
+                "[A2A] Ignoring user-provided AgentCard.capabilities; "
+                "runtime controls this field.",
+            )
+        card_kwargs["capabilities"] = AgentCapabilities(
+            streaming=False,
+            push_notifications=False,
+        )
+
+        if self._get_agent_card_field("protocol_version") is not None:
+            logger.warning(
+                "[A2A] Ignoring user-provided AgentCard.protocol_version; "
+                "runtime controls this field.",
+            )
+
+        if (
+            self._get_agent_card_field(
+                "supports_authenticated_extended_card",
+            )
+            is not None
+        ):
+            logger.warning(
+                "[A2A] Ignoring user-provided "
+                "AgentCard.supports_authenticated_extended_card; "
+                "runtime controls this field.",
+            )
+
+        if self._get_agent_card_field("signatures") is not None:
+            logger.warning(
+                "[A2A] Ignoring user-provided AgentCard.signatures; "
+                "runtime controls this field.",
+            )
 
         # Add optional fields
-        provider = self._get_agent_card_field("provider")
-        if provider:
-            card_kwargs["provider"] = self._normalize_provider(provider)
-
         for field in [
+            "provider",
             "documentation_url",
             "icon_url",
             "security_schemes",
             "security",
         ]:
             value = self._get_agent_card_field(field)
-            if value is not None:
+            if value is None:
+                continue
+            # Backward compatibility: allow simple string provider and map it
+            # to AgentProvider.organization
+            if field == "provider" and isinstance(value, str):
+                card_kwargs[field] = {
+                    "organization": value,
+                    "url": url,
+                }
+            else:
                 card_kwargs[field] = value
 
         return AgentCard(**card_kwargs)

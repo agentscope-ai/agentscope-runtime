@@ -13,6 +13,9 @@ import os
 from unittest.mock import patch
 
 from agentscope_runtime.engine.app import AgentApp
+from agentscope_runtime.engine.deployers.adapter.a2a import (
+    AgentCardWithRuntimeConfig,
+)
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     A2ARegistry,
 )
@@ -100,10 +103,13 @@ class TestAgentAppRegistryIntegration:
         ]
 
         for registry_input, expected_count in test_cases:
+            a2a_config = AgentCardWithRuntimeConfig(
+                registry=registry_input,
+            )
             app = AgentApp(
                 app_name="test_agent",
                 app_description="Test agent",
-                a2a_config={"registry": registry_input},
+                a2a_config=a2a_config,
             )
 
             # Verify registry was passed to adapter
@@ -140,12 +146,13 @@ class TestAgentAppRegistryIntegration:
                 ".a2a_protocol_adapter.create_registry_from_env",
                 return_value=mock_registry_env,
             ):
+                a2a_config = AgentCardWithRuntimeConfig(
+                    registry=mock_registry_config,
+                )
                 app = AgentApp(
                     app_name="test_agent",
                     app_description="Test agent",
-                    a2a_config={
-                        "registry": mock_registry_config,
-                    },
+                    a2a_config=a2a_config,
                 )
 
                 # Verify config registry is used, not env registry
@@ -201,3 +208,23 @@ class TestAgentAppRegistryIntegration:
                     pass  # Just verify no crash
         finally:
             a2a_registry._registry_settings = original_settings
+
+    def test_agent_app_uses_given_a2a_config_instance(self):
+        """AgentApp should use the provided A2A config instance."""
+        provided_a2a_config = AgentCardWithRuntimeConfig()
+
+        app = AgentApp(
+            app_name="test_agent",
+            app_description="Test agent",
+            a2a_config=provided_a2a_config,
+        )
+
+        a2a_adapter = None
+        for adapter in app.protocol_adapters:
+            if hasattr(adapter, "_a2a_config"):
+                a2a_adapter = adapter
+                break
+
+        assert a2a_adapter is not None
+        # extract_a2a_config should not replace a non-None config instance
+        assert a2a_adapter._a2a_config is provided_a2a_config

@@ -4,10 +4,7 @@
 
 在 `AgentApp` 的构造函数中，我们新增了可选参数 `a2a_config`，用于扩展配置 Agent 的 A2A 协议信息和运行时相关字段。
 
-其类型为：
-
-- `AgentCardWithRuntimeConfig`（推荐）：将 AgentCard 协议字段与运行时字段封装到一个数据结构中统一管理；
-- `Dict[str, Any]`：字段与 `AgentCardWithRuntimeConfig` 完全一致，适合从配置文件等动态构造。
+其类型为 `AgentCardWithRuntimeConfig` 将 AgentCard 协议字段与运行时字段封装到一个数据结构中统一管理。
 
 `AgentCardWithRuntimeConfig`中的字段分为两类：
 
@@ -106,7 +103,6 @@ nacos_config = (
 nacos_registry = NacosRegistry(nacos_client_config=nacos_config)
 
 # 在 a2a_config 中配置 registry
-# 方式1：使用 AgentCardWithRuntimeConfig 对象
 a2a_config = AgentCardWithRuntimeConfig(
     agent_card={
         "name": "MyAgent",
@@ -122,21 +118,6 @@ agent_app = AgentApp(
     app_name="MyAgent",
     app_description="My agent description",
     a2a_config=a2a_config,
-)
-
-# 方式2：使用字典形式
-a2a_config_dict = {
-    "name": "MyAgent",
-    "description": "My agent description",
-    "registry": [nacos_registry],
-    "task_timeout": 60,
-    # ...
-}
-
-agent_app = AgentApp(
-    app_name="MyAgent",
-    app_description="My agent description",
-    a2a_config=a2a_config_dict,
 )
 ```
 

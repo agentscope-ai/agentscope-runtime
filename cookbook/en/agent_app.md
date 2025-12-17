@@ -72,7 +72,7 @@ Extend the configuration of the agent's A2A (Agent-to-Agent) protocol informatio
 
 **Key parameter**
 
-- `a2a_config`: Optional parameter, supports `AgentCardWithRuntimeConfig` object or dictionary form
+- `a2a_config`: Optional parameter, supports `AgentCardWithRuntimeConfig` object.
 
 **Configuration content**
 

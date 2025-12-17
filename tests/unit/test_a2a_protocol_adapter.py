@@ -9,13 +9,15 @@ Tests cover:
 - A2ATransportsProperties building
 - Registry integration with transports
 """
+from unittest.mock import patch
+
 from a2a.types import AgentCard, AgentCapabilities
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
 from agentscope_runtime.engine.deployers.adapter.a2a import (
     A2AFastAPIDefaultAdapter,
     AgentCardWithRuntimeConfig,
+    extract_a2a_config,
 )
 from agentscope_runtime.engine.deployers.adapter.a2a.a2a_registry import (
     A2ATransportsProperties,
@@ -128,8 +130,9 @@ class TestAgentCardConfiguration:
 
         card = adapter.get_agent_card()
 
-        # Should return the AgentCard object directly
-        assert card is agent_card_obj
+        # Should build AgentCard based on the provided object
+        assert isinstance(card, AgentCard)
+        assert card is not agent_card_obj
         assert card.name == "object_agent"
         assert card.description == "Object description"
         assert card.version == "2.0.0"
@@ -456,3 +459,34 @@ class TestRegistryIntegrationWithTransports:
         ]
         assert isinstance(transports2, list)
         assert len(transports2) >= 1
+
+
+class TestExtractA2AConfig:
+    """Test extract_a2a_config helper behavior."""
+
+    def test_extract_a2a_config_with_none_returns_default(self):
+        """When None, should return default config without registry."""
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".a2a_protocol_adapter.create_registry_from_env",
+            return_value=None,
+        ):
+            result = extract_a2a_config(a2a_config=None)
+
+        assert isinstance(result, AgentCardWithRuntimeConfig)
+        assert result.registry is None
+
+    def test_extract_a2a_config_uses_env_registry_when_missing(self):
+        """When registry is None, use registry from environment."""
+        mock_registry = object()
+
+        with patch(
+            "agentscope_runtime.engine.deployers.adapter.a2a"
+            ".a2a_protocol_adapter.create_registry_from_env",
+            return_value=mock_registry,
+        ):
+            config = AgentCardWithRuntimeConfig()
+            result = extract_a2a_config(a2a_config=config)
+
+        # Registry should be set from environment
+        assert result.registry == mock_registry
