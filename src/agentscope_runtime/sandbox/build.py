@@ -70,7 +70,7 @@ def build_image(
         f" {DOCKER_PLATFORMS}"
     )
 
-    auto_build = os.getenv("AUTO_BUILD").lower() == "true"
+    auto_build = os.getenv("AUTO_BUILD", "false").lower() == "true"
 
     platform_tag = ""
     if platform_choice == "linux/arm64":
