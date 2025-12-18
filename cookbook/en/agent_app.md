@@ -196,27 +196,6 @@ curl http://localhost:8090/
 
 ------
 
-## Middleware Extensions
-
-**Purpose**
-
-Inject logic before or after handling each request—for logging, auth, rate limiting, etc.
-
-```{code-cell}
-@app.middleware("http")
-async def custom_logger(request, call_next):
-    print(f"Request: {request.method} {request.url}")
-    response = await call_next(request)
-    return response
-```
-
-AgentApp ships with:
-
-- Request logging middleware
-- Built-in CORS support
-
-------
-
 ## Celery Asynchronous Task Queue (Optional)
 
 **Purpose**

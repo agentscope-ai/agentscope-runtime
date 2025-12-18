@@ -199,29 +199,6 @@ curl http://localhost:8090/
 
 ------
 
-## 中间件扩展
-
-**功能**
-
-在请求进入或完成时执行额外逻辑（例如日志、鉴权、限流）。
-
-**用法示例**
-
-```{code-cell}
-@app.middleware("http")
-async def custom_logger(request, call_next):
-    print(f"收到请求: {request.method} {request.url}")
-    response = await call_next(request)
-    return response
-```
-
-AgentApp 内置：
-
-- 请求日志中间件
-- CORS（跨域）支持
-
-------
-
 ## Celery 异步任务队列（可选）
 
 **功能**
