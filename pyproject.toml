@@ -90,6 +90,7 @@ ext = [
     "alibabacloud-credentials",
     "PyYAML",
     "agno>=2.3.8",
+    "nacos-sdk-python>=3.0.0",
 ]
 
 [tool.pytest.ini_options]

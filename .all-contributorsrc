@@ -264,6 +264,25 @@
         "code",
         "bug"
       ]
+    },
+    {
+      "login": "qiacheng7",
+      "name": "qiacheng7",
+      "avatar_url": "https://avatars.githubusercontent.com/u/223075252?v=4",
+      "profile": "https://github.com/qiacheng7",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    },
+    {
+      "login": "xieyxclack",
+      "name": "Yuexiang XIE",
+      "avatar_url": "https://avatars.githubusercontent.com/u/31954383?v=4",
+      "profile": "https://xieyxclack.github.io/",
+      "contributions": [
+        "review"
+      ]
     }
   ],
   "contributorsPerLine": 7,

@@ -282,6 +282,7 @@ class Runner:
 
             stream_adapter = identity_stream_adapter
 
+        error = None
         try:
             async for event in stream_adapter(
                 source_stream=self._call_handler_streaming(
@@ -301,8 +302,6 @@ class Runner:
                 e = UnknownAgentException(original_exception=e)
             error = Error(code=e.code, message=e.message)
             logger.error(f"{error.model_dump()}: {traceback.format_exc()}")
-            yield seq_gen.yield_with_sequence(response.failed(error))
-            return
 
         # Obtain token usage
         try:
@@ -312,4 +311,7 @@ class Runner:
             # Avoid empty message
             pass
 
-        yield seq_gen.yield_with_sequence(response.completed())
+        if error:
+            yield seq_gen.yield_with_sequence(response.failed(error))
+        else:
+            yield seq_gen.yield_with_sequence(response.completed())

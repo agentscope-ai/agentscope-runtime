@@ -143,7 +143,7 @@ Its responsibilities include:
 - Initializing and binding the **Agent** and **Runner**, delegating requests to the runtime for processing
 - Providing standardized **HTTP API endpoints** (including health checks)
 - Supporting **Server-Sent Events (SSE)** as well as standard JSON responses
-- Allowing registration of middlewares, task queues (Celery), and custom routes
+- Allowing registration of task queues (Celery) and custom routes
 - Managing the application lifecycle (supports `before_start` / `after_finish` hooks)
 
 #### 3. Runner
