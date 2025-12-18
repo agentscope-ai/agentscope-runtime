@@ -510,6 +510,7 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/demohouse.html">Reference: Demo House</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../en/a2a_registry.html">A2A Registry - Service Registration and Discovery</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/ut.html">Reference: Tests</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/langgraph_guidelines.html">LangGraph Integration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../en/agno_guidelines.html">Agno Integration Guide</a></li>
@@ -575,6 +576,7 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../zh/a2a_registry.html">A2A Registry - 服务注册与发现</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/ut.html">参考: 测试用例</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/langgraph_guidelines.html">LangGraph 集成指南</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../zh/agno_guidelines.html">Agno 集成指南</a></li>
@@ -639,7 +641,11 @@ body.preview-active {
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base_app</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseApp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..deployers</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeployManager</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..deployers.adapter.a2a</span><span class="w"> </span><span class="kn">import</span> <span class="n">A2AFastAPIDefaultAdapter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..deployers.adapter.a2a</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">A2AFastAPIDefaultAdapter</span><span class="p">,</span>
+    <span class="n">AgentCardWithRuntimeConfig</span><span class="p">,</span>
+    <span class="n">extract_a2a_config</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..deployers.adapter.responses.response_api_protocol_adapter</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ResponseAPIDefaultAdapter</span><span class="p">,</span>
 <span class="p">)</span>
@@ -678,14 +684,49 @@ body.preview-active {
         <span class="n">backend_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">runner</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Runner</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">enable_embedded_worker</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">a2a_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;AgentCardWithRuntimeConfig&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize the AgentApp.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            *args: Variable length argument list.</span>
-<span class="sd">            **kwargs: Arbitrary keyword arguments.</span>
+<span class="sd">            app_name: Name of the agent application</span>
+<span class="sd">            app_description: Description of the agent application</span>
+<span class="sd">            endpoint_path: API endpoint path for processing requests</span>
+<span class="sd">            response_type: Type of response (default: &quot;sse&quot;)</span>
+<span class="sd">            stream: Whether to enable streaming responses</span>
+<span class="sd">            request_model: Request model class</span>
+<span class="sd">            before_start: Callback function to execute before starting</span>
+<span class="sd">            after_finish: Callback function to execute after finishing</span>
+<span class="sd">            broker_url: URL for message broker</span>
+<span class="sd">            backend_url: URL for backend service</span>
+<span class="sd">            runner: Optional runner instance</span>
+<span class="sd">            enable_embedded_worker: Whether to enable embedded worker</span>
+<span class="sd">            a2a_config: Optional A2A runtime configuration.</span>
+<span class="sd">                Must be an ``AgentCardWithRuntimeConfig`` instance, which</span>
+<span class="sd">                contains ``agent_card`` (AgentCard object or dict) and runtime</span>
+<span class="sd">                settings (host, port, registry, task_timeout, etc.).</span>
+<span class="sd">                Example:</span>
+<span class="sd">                    from a2a.types import AgentCard, AgentCapabilities</span>
+<span class="sd">                    from agentscope_runtime.engine.deployers.adapter.a2a import (  # noqa: E501</span>
+<span class="sd">                        AgentCardWithRuntimeConfig,</span>
+<span class="sd">                    )</span>
+<span class="sd">                    config = AgentCardWithRuntimeConfig(</span>
+<span class="sd">                        agent_card={</span>
+<span class="sd">                            &quot;name&quot;: &quot;MyAgent&quot;,</span>
+<span class="sd">                            &quot;version&quot;: &quot;1.0.0&quot;,</span>
+<span class="sd">                            &quot;description&quot;: &quot;My agent&quot;,</span>
+<span class="sd">                            &quot;url&quot;: &quot;http://localhost:8080&quot;,</span>
+<span class="sd">                            &quot;capabilities&quot;: AgentCapabilities(),</span>
+<span class="sd">                            &quot;default_input_modes&quot;: [&quot;text&quot;],</span>
+<span class="sd">                            &quot;default_output_modes&quot;: [&quot;text&quot;],</span>
+<span class="sd">                            &quot;skills&quot;: [],</span>
+<span class="sd">                        },</span>
+<span class="sd">                        registry=[nacos_registry],</span>
+<span class="sd">                        task_timeout=120,</span>
+<span class="sd">                    )</span>
+<span class="sd">            **kwargs: Additional keyword arguments passed to FastAPI app</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span> <span class="o">=</span> <span class="n">endpoint_path</span>
@@ -707,9 +748,13 @@ body.preview-active {
         <span class="bp">self</span><span class="o">.</span><span class="n">_shutdown_handler</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_framework_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
+        <span class="c1"># Prepare A2A protocol adapter configuration</span>
+        <span class="n">a2a_config</span> <span class="o">=</span> <span class="n">extract_a2a_config</span><span class="p">(</span><span class="n">a2a_config</span><span class="o">=</span><span class="n">a2a_config</span><span class="p">)</span>
+
         <span class="n">a2a_protocol</span> <span class="o">=</span> <span class="n">A2AFastAPIDefaultAdapter</span><span class="p">(</span>
             <span class="n">agent_name</span><span class="o">=</span><span class="n">app_name</span><span class="p">,</span>
             <span class="n">agent_description</span><span class="o">=</span><span class="n">app_description</span><span class="p">,</span>
+            <span class="n">a2a_config</span><span class="o">=</span><span class="n">a2a_config</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">response_protocol</span> <span class="o">=</span> <span class="n">ResponseAPIDefaultAdapter</span><span class="p">()</span>
@@ -728,8 +773,8 @@ body.preview-active {
         <span class="p">)</span></div>
 
 
-        <span class="c1"># Store custom endpoints and tasks for deployment</span>
-        <span class="c1"># but don&#39;t add them to FastAPI here - let FastAPIAppFactory handle it</span>
+        <span class="c1"># Store custom endpoints for deployment</span>
+        <span class="c1"># FastAPIAppFactory will handle adding them to FastAPI</span>
 
 <div class="viewcode-block" id="AgentApp.init">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.app.agent_app.AgentApp.init">[docs]</a>
@@ -991,7 +1036,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-12-17</div>
+              Last updated on 2025-12-18</div>
           </div>
           <div class="right-details">
             <div class="icons">

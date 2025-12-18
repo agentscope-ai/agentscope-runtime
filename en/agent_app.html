@@ -511,6 +511,7 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="demohouse.html">Reference: Demo House</a></li>
+<li class="toctree-l2"><a class="reference internal" href="a2a_registry.html">A2A Registry - Service Registration and Discovery</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ut.html">Reference: Tests</a></li>
 <li class="toctree-l2"><a class="reference internal" href="langgraph_guidelines.html">LangGraph Integration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="agno_guidelines.html">Agno Integration Guide</a></li>
@@ -576,6 +577,7 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zh/demohouse.html">参考: Demo 展示厅</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../zh/a2a_registry.html">A2A Registry - 服务注册与发现</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zh/ut.html">参考: 测试用例</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zh/langgraph_guidelines.html">LangGraph 集成指南</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zh/agno_guidelines.html">Agno 集成指南</a></li>
@@ -678,6 +680,53 @@ In its initial state, the service only provides:</p>
 </div>
 </div>
 </div>
+</section>
+<hr class="docutils" />
+<section id="a2a-extension-field-configuration">
+<h2>A2A Extension Field Configuration<a class="headerlink" href="#a2a-extension-field-configuration" title="Link to this heading">¶</a></h2>
+<p><strong>What it does</strong></p>
+<p>Extend the configuration of the agent’s A2A (Agent-to-Agent) protocol information and runtime-related fields through the <code class="docutils literal notranslate"><span class="pre">a2a_config</span></code> parameter.</p>
+<p><strong>Key parameter</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">a2a_config</span></code>: Optional parameter, supports <code class="docutils literal notranslate"><span class="pre">AgentCardWithRuntimeConfig</span></code> object.</p></li>
+</ul>
+<p><strong>Configuration content</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">a2a_config</span></code> supports configuring two types of fields:</p>
+<ol class="arabic simple">
+<li><p><strong>AgentCard protocol fields</strong>: Passed through the <code class="docutils literal notranslate"><span class="pre">agent_card</span></code> field, containing skills, transport protocols, input/output modes, etc.</p></li>
+<li><p><strong>Runtime fields</strong>: Top-level fields, containing service registration and discovery (Registry), timeout settings, service endpoints, etc.</p></li>
+</ol>
+<p><strong>Example</strong></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.adapter.a2a</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AgentCardWithRuntimeConfig</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
+    <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;MyAgent&quot;</span><span class="p">,</span>
+    <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;My agent description&quot;</span><span class="p">,</span>
+    <span class="n">a2a_config</span><span class="o">=</span><span class="n">AgentCardWithRuntimeConfig</span><span class="p">(</span>
+        <span class="n">agent_card</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;MyAgent&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;My agent description&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;skills&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">...</span><span class="p">],</span>  <span class="c1"># Agent skills list</span>
+            <span class="s2">&quot;default_input_modes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;default_output_modes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
+            <span class="c1"># ... other protocol fields</span>
+        <span class="p">},</span>
+        <span class="n">registry</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>  <span class="c1"># Service registration and discovery</span>
+        <span class="n">task_timeout</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>  <span class="c1"># Task timeout settings</span>
+        <span class="c1"># ... other configuration fields</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>Detailed documentation</strong></p>
+<p>For complete field descriptions, configuration methods, and usage examples, please refer to the <a class="reference internal" href="a2a_registry.html"><span class="doc">A2A Registry - Service Registration and Discovery</span></a> documentation.</p>
 </section>
 <hr class="docutils" />
 <section id="streaming-output-sse">
@@ -1208,7 +1257,7 @@ See <a class="reference internal" href="advanced_deployment.html"><span class="d
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-12-17</div>
+              Last updated on 2025-12-18</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -1245,6 +1294,7 @@ See <a class="reference internal" href="advanced_deployment.html"><span class="d
             <ul>
 <li><a class="reference internal" href="#">Simple Deployment</a><ul>
 <li><a class="reference internal" href="#initialization-and-basic-run">Initialization and Basic Run</a></li>
+<li><a class="reference internal" href="#a2a-extension-field-configuration">A2A Extension Field Configuration</a></li>
 <li><a class="reference internal" href="#streaming-output-sse">Streaming Output (SSE)</a></li>
 <li><a class="reference internal" href="#lifecycle-hooks">Lifecycle Hooks</a><ul>
 <li><a class="reference internal" href="#method-1-pass-callables-as-parameters">Method 1: Pass Callables as Parameters</a></li>

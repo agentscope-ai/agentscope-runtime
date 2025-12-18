@@ -510,6 +510,7 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/demohouse.html">Reference: Demo House</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../en/a2a_registry.html">A2A Registry - Service Registration and Discovery</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/ut.html">Reference: Tests</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/langgraph_guidelines.html">LangGraph Integration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../en/agno_guidelines.html">Agno Integration Guide</a></li>
@@ -575,6 +576,7 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/demohouse.html">参考: Demo 展示厅</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/a2a_registry.html">A2A Registry - 服务注册与发现</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/ut.html">参考: 测试用例</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/langgraph_guidelines.html">LangGraph 集成指南</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../../../zh/agno_guidelines.html">Agno 集成指南</a></li>
@@ -626,94 +628,511 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <h1>Source code for agentscope_runtime.engine.deployers.adapter.a2a.a2a_protocol_adapter</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">posixpath</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">A2A Protocol Adapter for FastAPI</span>
+
+<span class="sd">This module provides the default A2A (Agent-to-Agent) protocol adapter</span>
+<span class="sd">implementation for FastAPI applications. It handles agent card configuration,</span>
+<span class="sd">wellknown endpoint setup, and task management.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">urljoin</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">a2a.server.apps</span><span class="w"> </span><span class="kn">import</span> <span class="n">A2AFastAPIApplication</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">a2a.server.request_handlers</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefaultRequestHandler</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">a2a.server.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryTaskStore</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">a2a.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentCard</span><span class="p">,</span> <span class="n">AgentCapabilities</span><span class="p">,</span> <span class="n">AgentSkill</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">a2a.types</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AgentCapabilities</span><span class="p">,</span>
+    <span class="n">AgentCard</span><span class="p">,</span>
+    <span class="n">AgentSkill</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigDict</span><span class="p">,</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">field_validator</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.utils.net_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_first_non_loopback_ip</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.version</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span> <span class="k">as</span> <span class="n">runtime_version</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.a2a_agent_adapter</span><span class="w"> </span><span class="kn">import</span> <span class="n">A2AExecutor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.a2a_registry</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">A2ARegistry</span><span class="p">,</span>
+    <span class="n">A2ATransportsProperties</span><span class="p">,</span>
+    <span class="n">create_registry_from_env</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># NOTE: Do NOT import NacosRegistry at module import time to avoid</span>
+<span class="c1"># forcing an optional dependency on environments that don&#39;t have nacos</span>
+<span class="c1"># SDK installed. Registry is optional: users must explicitly provide a</span>
+<span class="c1"># registry instance if needed.</span>
+<span class="c1"># from .nacos_a2a_registry import NacosRegistry</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..protocol_adapter</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProtocolAdapter</span>
 
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
 <span class="n">A2A_JSON_RPC_URL</span> <span class="o">=</span> <span class="s2">&quot;/a2a&quot;</span>
+<span class="n">DEFAULT_WELLKNOWN_PATH</span> <span class="o">=</span> <span class="s2">&quot;/.wellknown/agent-card.json&quot;</span>
+<span class="n">DEFAULT_TASK_TIMEOUT</span> <span class="o">=</span> <span class="mi">60</span>
+<span class="n">DEFAULT_TASK_EVENT_TIMEOUT</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">DEFAULT_TRANSPORT</span> <span class="o">=</span> <span class="s2">&quot;JSONRPC&quot;</span>
+<span class="n">DEFAULT_INPUT_OUTPUT_MODES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
+<span class="n">PORT</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;PORT&quot;</span><span class="p">,</span> <span class="s2">&quot;8080&quot;</span><span class="p">))</span>
+<span class="n">AGENT_VERSION</span> <span class="o">=</span> <span class="s2">&quot;1.0.0&quot;</span>
+
+
+<div class="viewcode-block" id="extract_a2a_config">
+<a class="viewcode-back" href="../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.adapter.a2a.a2a_protocol_adapter.extract_a2a_config">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_a2a_config</span><span class="p">(</span>
+    <span class="n">a2a_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;AgentCardWithRuntimeConfig&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;AgentCardWithRuntimeConfig&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalize a2a_config to AgentCardWithRuntimeConfig object.</span>
+
+<span class="sd">    Ensures a non-null ``AgentCardWithRuntimeConfig`` instance and sets up</span>
+<span class="sd">    environment-based registry fallback if registry is not provided.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        a2a_config: Optional AgentCardWithRuntimeConfig instance.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Normalized AgentCardWithRuntimeConfig object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">a2a_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">a2a_config</span> <span class="o">=</span> <span class="n">AgentCardWithRuntimeConfig</span><span class="p">()</span>
+
+    <span class="c1"># Fallback to environment registry if not provided</span>
+    <span class="k">if</span> <span class="n">a2a_config</span><span class="o">.</span><span class="n">registry</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">env_registry</span> <span class="o">=</span> <span class="n">create_registry_from_env</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">env_registry</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">a2a_config</span><span class="o">.</span><span class="n">registry</span> <span class="o">=</span> <span class="n">env_registry</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;[A2A] Using registry from environment variables&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">a2a_config</span></div>
+
+
+
+<div class="viewcode-block" id="AgentCardWithRuntimeConfig">
+<a class="viewcode-back" href="../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.adapter.a2a.a2a_protocol_adapter.AgentCardWithRuntimeConfig">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AgentCardWithRuntimeConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runtime configuration wrapper for AgentCard.</span>
+
+<span class="sd">    Combines AgentCard (protocol fields) with runtime-specific settings</span>
+<span class="sd">    (host, port, registry, timeouts, etc.) in a single configuration object.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        agent_card: AgentCard object or dict containing protocol fields</span>
+<span class="sd">            (name, description, url, version, skills, etc.)</span>
+<span class="sd">        host: Host address for A2A endpoints (default: auto-detected)</span>
+<span class="sd">        port: Port for A2A endpoints (default: from PORT env var or 8080)</span>
+<span class="sd">        registry: List of A2A registry instances for service discovery</span>
+<span class="sd">        task_timeout: Task completion timeout in seconds (default: 60)</span>
+<span class="sd">        task_event_timeout: Task event timeout in seconds (default: 10)</span>
+<span class="sd">        wellknown_path: Wellknown endpoint path</span>
+<span class="sd">            (default: /.wellknown/agent-card.json)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">agent_card</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">AgentCard</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">host</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">PORT</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">A2ARegistry</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">A2ARegistry</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">task_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_TASK_TIMEOUT</span>
+    <span class="n">task_event_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_TASK_EVENT_TIMEOUT</span>
+    <span class="n">wellknown_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_WELLKNOWN_PATH</span>
+
+<div class="viewcode-block" id="AgentCardWithRuntimeConfig.normalize_registry">
+<a class="viewcode-back" href="../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.adapter.a2a.a2a_protocol_adapter.AgentCardWithRuntimeConfig.normalize_registry">[docs]</a>
+    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;registry&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">normalize_registry</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Normalize registry to list format.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">v</span>
+        <span class="c1"># Single registry instance -&gt; convert to list</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">v</span><span class="p">]</span></div>
+
+
+    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span>
+        <span class="n">arbitrary_types_allowed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">extra</span><span class="o">=</span><span class="s2">&quot;allow&quot;</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
 
 
 <div class="viewcode-block" id="A2AFastAPIDefaultAdapter">
 <a class="viewcode-back" href="../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.adapter.a2a.a2a_protocol_adapter.A2AFastAPIDefaultAdapter">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">A2AFastAPIDefaultAdapter</span><span class="p">(</span><span class="n">ProtocolAdapter</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Default A2A protocol adapter for FastAPI applications.</span>
+
+<span class="sd">    Provides comprehensive configuration options for A2A protocol including</span>
+<span class="sd">    agent card settings, task timeouts, wellknown endpoints, and transport</span>
+<span class="sd">    configurations. All configuration items have sensible defaults but can</span>
+<span class="sd">    be overridden by users.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
 <div class="viewcode-block" id="A2AFastAPIDefaultAdapter.__init__">
 <a class="viewcode-back" href="../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.adapter.a2a.a2a_protocol_adapter.A2AFastAPIDefaultAdapter.__init__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_name</span><span class="p">,</span> <span class="n">agent_description</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">agent_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">agent_description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">a2a_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AgentCardWithRuntimeConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize A2A protocol adapter.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent_name: Agent name</span>
+<span class="sd">                (fallback if not in a2a_config.agent_card)</span>
+<span class="sd">            agent_description: Agent description</span>
+<span class="sd">                (fallback if not in a2a_config.agent_card)</span>
+<span class="sd">            a2a_config: Runtime configuration with AgentCard and runtime</span>
+<span class="sd">                settings</span>
+<span class="sd">            **kwargs: Additional arguments for parent class</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_agent_name</span> <span class="o">=</span> <span class="n">agent_name</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_agent_description</span> <span class="o">=</span> <span class="n">agent_description</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_json_rpc_path</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;json_rpc_path&quot;</span><span class="p">,</span> <span class="n">A2A_JSON_RPC_URL</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_base_url</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;base_url&quot;</span><span class="p">)</span></div>
+
+        <span class="k">if</span> <span class="n">a2a_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">a2a_config</span> <span class="o">=</span> <span class="n">AgentCardWithRuntimeConfig</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_a2a_config</span> <span class="o">=</span> <span class="n">a2a_config</span>
+
+        <span class="c1"># Extract name/description from agent_card, fallback to parameters</span>
+        <span class="n">agent_card_name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">agent_card_description</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">a2a_config</span><span class="o">.</span><span class="n">agent_card</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a2a_config</span><span class="o">.</span><span class="n">agent_card</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">agent_card_name</span> <span class="o">=</span> <span class="n">a2a_config</span><span class="o">.</span><span class="n">agent_card</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+                <span class="n">agent_card_description</span> <span class="o">=</span> <span class="n">a2a_config</span><span class="o">.</span><span class="n">agent_card</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                    <span class="s2">&quot;description&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a2a_config</span><span class="o">.</span><span class="n">agent_card</span><span class="p">,</span> <span class="n">AgentCard</span><span class="p">):</span>
+                <span class="n">agent_card_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">a2a_config</span><span class="o">.</span><span class="n">agent_card</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="n">agent_card_description</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+                    <span class="n">a2a_config</span><span class="o">.</span><span class="n">agent_card</span><span class="p">,</span>
+                    <span class="s2">&quot;description&quot;</span><span class="p">,</span>
+                    <span class="kc">None</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_agent_name</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">agent_card_name</span> <span class="k">if</span> <span class="n">agent_card_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">agent_name</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_agent_description</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">agent_card_description</span>
+            <span class="k">if</span> <span class="n">agent_card_description</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">agent_description</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_host</span> <span class="o">=</span> <span class="n">a2a_config</span><span class="o">.</span><span class="n">host</span> <span class="ow">or</span> <span class="n">get_first_non_loopback_ip</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_port</span> <span class="o">=</span> <span class="n">a2a_config</span><span class="o">.</span><span class="n">port</span>
+
+        <span class="c1"># Normalize registry to list</span>
+        <span class="n">registry</span> <span class="o">=</span> <span class="n">a2a_config</span><span class="o">.</span><span class="n">registry</span>
+        <span class="k">if</span> <span class="n">registry</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_registry</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">A2ARegistry</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">registry</span><span class="p">,</span> <span class="n">A2ARegistry</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_registry</span> <span class="o">=</span> <span class="p">[</span><span class="n">registry</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">registry</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">A2ARegistry</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">registry</span><span class="p">):</span>
+                <span class="n">error_msg</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;[A2A] Invalid registry list: all items must be &quot;</span>
+                    <span class="s2">&quot;A2ARegistry instances&quot;</span>
+                <span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_registry</span> <span class="o">=</span> <span class="n">registry</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task_timeout</span> <span class="o">=</span> <span class="n">a2a_config</span><span class="o">.</span><span class="n">task_timeout</span> <span class="ow">or</span> <span class="n">DEFAULT_TASK_TIMEOUT</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task_event_timeout</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">a2a_config</span><span class="o">.</span><span class="n">task_event_timeout</span> <span class="ow">or</span> <span class="n">DEFAULT_TASK_EVENT_TIMEOUT</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wellknown_path</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">a2a_config</span><span class="o">.</span><span class="n">wellknown_path</span> <span class="ow">or</span> <span class="n">DEFAULT_WELLKNOWN_PATH</span>
+        <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="A2AFastAPIDefaultAdapter.add_endpoint">
 <a class="viewcode-back" href="../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.adapter.a2a.a2a_protocol_adapter.A2AFastAPIDefaultAdapter.add_endpoint">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">add_endpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_endpoint</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">,</span>
+        <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add A2A protocol endpoints to FastAPI application.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            app: FastAPI application instance</span>
+<span class="sd">            func: Agent execution function</span>
+<span class="sd">            **kwargs: Additional arguments for registry registration</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">request_handler</span> <span class="o">=</span> <span class="n">DefaultRequestHandler</span><span class="p">(</span>
             <span class="n">agent_executor</span><span class="o">=</span><span class="n">A2AExecutor</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">func</span><span class="p">),</span>
             <span class="n">task_store</span><span class="o">=</span><span class="n">InMemoryTaskStore</span><span class="p">(),</span>
         <span class="p">)</span>
 
-        <span class="n">agent_card</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_agent_card</span><span class="p">(</span>
-            <span class="n">agent_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_agent_name</span><span class="p">,</span>
-            <span class="n">agent_description</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_agent_description</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="n">agent_card</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_agent_card</span><span class="p">(</span><span class="n">app</span><span class="o">=</span><span class="n">app</span><span class="p">)</span>
 
         <span class="n">server</span> <span class="o">=</span> <span class="n">A2AFastAPIApplication</span><span class="p">(</span>
             <span class="n">agent_card</span><span class="o">=</span><span class="n">agent_card</span><span class="p">,</span>
             <span class="n">http_handler</span><span class="o">=</span><span class="n">request_handler</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="n">server</span><span class="o">.</span><span class="n">add_routes_to_app</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">rpc_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_json_rpc_path</span><span class="p">)</span></div>
+        <span class="n">server</span><span class="o">.</span><span class="n">add_routes_to_app</span><span class="p">(</span>
+            <span class="n">app</span><span class="p">,</span>
+            <span class="n">rpc_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_json_rpc_path</span><span class="p">,</span>
+            <span class="n">agent_card_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wellknown_path</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_registry</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_register_with_all_registries</span><span class="p">(</span>
+                <span class="n">agent_card</span><span class="o">=</span><span class="n">agent_card</span><span class="p">,</span>
+                <span class="n">app</span><span class="o">=</span><span class="n">app</span><span class="p">,</span>
+            <span class="p">)</span></div>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_get_json_rpc_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="n">base</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base_url</span> <span class="ow">or</span> <span class="s2">&quot;http://127.0.0.1:8000&quot;</span>
-        <span class="k">return</span> <span class="n">posixpath</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-            <span class="n">base</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">),</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_register_with_all_registries</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">agent_card</span><span class="p">:</span> <span class="n">AgentCard</span><span class="p">,</span>
+        <span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Register agent with all configured registry instances.</span>
+
+<span class="sd">        Registration failures are logged but do not block startup.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent_card: The generated AgentCard</span>
+<span class="sd">            app: FastAPI application instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">a2a_transports_properties</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_a2a_transports_properties</span><span class="p">(</span>
+            <span class="n">app</span><span class="o">=</span><span class="n">app</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">registry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_registry</span><span class="p">:</span>
+            <span class="n">registry_name</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">registry_name</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">&quot;[A2A] Registering with registry: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">registry_name</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">registry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
+                    <span class="n">agent_card</span><span class="o">=</span><span class="n">agent_card</span><span class="p">,</span>
+                    <span class="n">a2a_transports_properties</span><span class="o">=</span><span class="n">a2a_transports_properties</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">&quot;[A2A] Successfully registered with registry: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">registry_name</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;[A2A] Failed to register with registry </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">. &quot;</span>
+                    <span class="s2">&quot;This will not block runtime startup.&quot;</span><span class="p">,</span>
+                    <span class="n">registry_name</span><span class="p">,</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                    <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_a2a_transports_properties</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">A2ATransportsProperties</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build A2ATransportsProperties from runtime configuration.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            app: FastAPI application instance</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of A2ATransportsProperties instances</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">transports_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">path</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="s2">&quot;root_path&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">json_rpc</span> <span class="o">=</span> <span class="n">urljoin</span><span class="p">(</span>
+            <span class="n">path</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_json_rpc_path</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">),</span>
         <span class="p">)</span>
+
+        <span class="n">default_transport</span> <span class="o">=</span> <span class="n">A2ATransportsProperties</span><span class="p">(</span>
+            <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="p">,</span>
+            <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_port</span><span class="p">,</span>
+            <span class="n">path</span><span class="o">=</span><span class="n">json_rpc</span><span class="p">,</span>
+            <span class="n">support_tls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">extra</span><span class="o">=</span><span class="p">{},</span>
+            <span class="n">transport_type</span><span class="o">=</span><span class="n">DEFAULT_TRANSPORT</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">transports_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">default_transport</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">transports_list</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_agent_card_field</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">default</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract field from agent_card (dict or AgentCard object).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            field_name: Field name to retrieve</span>
+<span class="sd">            default: Default value if not found</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Field value or default</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">agent_card</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_a2a_config</span><span class="o">.</span><span class="n">agent_card</span>
+        <span class="k">if</span> <span class="n">agent_card</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">default</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">agent_card</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">agent_card</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field_name</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># AgentCard object</span>
+            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">agent_card</span><span class="p">,</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
 
 <div class="viewcode-block" id="A2AFastAPIDefaultAdapter.get_agent_card">
 <a class="viewcode-back" href="../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.adapter.a2a.a2a_protocol_adapter.A2AFastAPIDefaultAdapter.get_agent_card">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_agent_card</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">agent_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">agent_description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">app</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FastAPI</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># pylint: disable=unused-argument</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentCard</span><span class="p">:</span>
-        <span class="n">capabilities</span> <span class="o">=</span> <span class="n">AgentCapabilities</span><span class="p">(</span>
-            <span class="n">streaming</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-            <span class="n">push_notifications</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build AgentCard from configuration.</span>
+
+<span class="sd">        Constructs AgentCard from agent_card field (dict or AgentCard),</span>
+<span class="sd">        filling missing fields with defaults and computed values.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            app: FastAPI app instance (for URL generation)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Configured AgentCard instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Generate URL if not provided</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_agent_card_field</span><span class="p">(</span><span class="s2">&quot;url&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">url</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="s2">&quot;root_path&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">json_rpc</span> <span class="o">=</span> <span class="n">urljoin</span><span class="p">(</span>
+                <span class="n">path</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_json_rpc_path</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">),</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+            <span class="n">base_url</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_port</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span><span class="s2">&quot;http://&quot;</span><span class="p">,</span> <span class="s2">&quot;https://&quot;</span><span class="p">))</span>
+                <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;http://</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_port</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_url</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">json_rpc</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="c1"># Initialize from agent_card</span>
+        <span class="n">card_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Set required fields</span>
+        <span class="n">card_kwargs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_agent_card_field</span><span class="p">(</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_agent_name</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">skill</span> <span class="o">=</span> <span class="n">AgentSkill</span><span class="p">(</span>
-            <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;dialog&quot;</span><span class="p">,</span>
-            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Natural Language Dialog Skill&quot;</span><span class="p">,</span>
-            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Enables natural language conversation and dialogue &quot;</span>
-            <span class="s2">&quot;with users&quot;</span><span class="p">,</span>
-            <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;natural language&quot;</span><span class="p">,</span> <span class="s2">&quot;dialog&quot;</span><span class="p">,</span> <span class="s2">&quot;conversation&quot;</span><span class="p">],</span>
-            <span class="n">examples</span><span class="o">=</span><span class="p">[</span>
-                <span class="s2">&quot;Hello, how are you?&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;Can you help me with something?&quot;</span><span class="p">,</span>
-            <span class="p">],</span>
+        <span class="n">card_kwargs</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_agent_card_field</span><span class="p">(</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_agent_description</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">card_kwargs</span><span class="p">[</span><span class="s2">&quot;url&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">url</span>
+        <span class="n">card_kwargs</span><span class="p">[</span><span class="s2">&quot;version&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_agent_card_field</span><span class="p">(</span>
+            <span class="s2">&quot;version&quot;</span><span class="p">,</span>
+            <span class="n">AGENT_VERSION</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">AgentCard</span><span class="p">(</span>
-            <span class="n">capabilities</span><span class="o">=</span><span class="n">capabilities</span><span class="p">,</span>
-            <span class="n">skills</span><span class="o">=</span><span class="p">[</span><span class="n">skill</span><span class="p">],</span>
-            <span class="n">name</span><span class="o">=</span><span class="n">agent_name</span><span class="p">,</span>
-            <span class="n">description</span><span class="o">=</span><span class="n">agent_description</span><span class="p">,</span>
-            <span class="n">default_input_modes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
-            <span class="n">default_output_modes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
-            <span class="n">url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_json_rpc_url</span><span class="p">(),</span>
-            <span class="n">version</span><span class="o">=</span><span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span>
-        <span class="p">)</span></div>
+        <span class="c1"># Set defaults for required fields</span>
+        <span class="n">card_kwargs</span><span class="p">[</span><span class="s2">&quot;preferred_transport&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_agent_card_field</span><span class="p">(</span>
+            <span class="s2">&quot;preferred_transport&quot;</span><span class="p">,</span>
+            <span class="n">DEFAULT_TRANSPORT</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">card_kwargs</span><span class="p">[</span><span class="s2">&quot;additional_interfaces&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_agent_card_field</span><span class="p">(</span>
+            <span class="s2">&quot;additional_interfaces&quot;</span><span class="p">,</span>
+            <span class="p">[],</span>
+        <span class="p">)</span>
+        <span class="n">card_kwargs</span><span class="p">[</span><span class="s2">&quot;default_input_modes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_agent_card_field</span><span class="p">(</span>
+            <span class="s2">&quot;default_input_modes&quot;</span><span class="p">,</span>
+            <span class="n">DEFAULT_INPUT_OUTPUT_MODES</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">card_kwargs</span><span class="p">[</span><span class="s2">&quot;default_output_modes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_agent_card_field</span><span class="p">(</span>
+            <span class="s2">&quot;default_output_modes&quot;</span><span class="p">,</span>
+            <span class="n">DEFAULT_INPUT_OUTPUT_MODES</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">card_kwargs</span><span class="p">[</span><span class="s2">&quot;skills&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_agent_card_field</span><span class="p">(</span>
+            <span class="s2">&quot;skills&quot;</span><span class="p">,</span>
+            <span class="p">[</span>
+                <span class="n">AgentSkill</span><span class="p">(</span>
+                    <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;dialog&quot;</span><span class="p">,</span>
+                    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Natural Language Dialog Skill&quot;</span><span class="p">,</span>
+                    <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                        <span class="s2">&quot;Enables natural language conversation and dialogue &quot;</span>
+                        <span class="s2">&quot;with users&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;natural language&quot;</span><span class="p">,</span> <span class="s2">&quot;dialog&quot;</span><span class="p">,</span> <span class="s2">&quot;conversation&quot;</span><span class="p">],</span>
+                    <span class="n">examples</span><span class="o">=</span><span class="p">[</span>
+                        <span class="s2">&quot;Hello, how are you?&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;Can you help me with something?&quot;</span><span class="p">,</span>
+                    <span class="p">],</span>
+                <span class="p">),</span>
+            <span class="p">],</span>
+        <span class="p">)</span>
+        <span class="c1"># Runtime-managed AgentCard fields: user values are ignored</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_agent_card_field</span><span class="p">(</span><span class="s2">&quot;capabilities&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;[A2A] Ignoring user-provided AgentCard.capabilities; &quot;</span>
+                <span class="s2">&quot;runtime controls this field.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">card_kwargs</span><span class="p">[</span><span class="s2">&quot;capabilities&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">AgentCapabilities</span><span class="p">(</span>
+            <span class="n">streaming</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">push_notifications</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">state_transition_history</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_agent_card_field</span><span class="p">(</span><span class="s2">&quot;protocol_version&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;[A2A] Ignoring user-provided AgentCard.protocol_version; &quot;</span>
+                <span class="s2">&quot;runtime controls this field.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_agent_card_field</span><span class="p">(</span>
+                <span class="s2">&quot;supports_authenticated_extended_card&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;[A2A] Ignoring user-provided &quot;</span>
+                <span class="s2">&quot;AgentCard.supports_authenticated_extended_card; &quot;</span>
+                <span class="s2">&quot;runtime controls this field.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_agent_card_field</span><span class="p">(</span><span class="s2">&quot;signatures&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;[A2A] Ignoring user-provided AgentCard.signatures; &quot;</span>
+                <span class="s2">&quot;runtime controls this field.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Add optional fields</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="s2">&quot;provider&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;documentation_url&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;icon_url&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;security_schemes&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;security&quot;</span><span class="p">,</span>
+        <span class="p">]:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_agent_card_field</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="c1"># Backward compatibility: allow simple string provider and map it</span>
+            <span class="c1"># to AgentProvider.organization</span>
+            <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="s2">&quot;provider&quot;</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">card_kwargs</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;organization&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span>
+                    <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">card_kwargs</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="k">return</span> <span class="n">AgentCard</span><span class="p">(</span><span class="o">**</span><span class="n">card_kwargs</span><span class="p">)</span></div>
 </div>
 
 </pre></div>
@@ -733,7 +1152,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-12-17</div>
+              Last updated on 2025-12-18</div>
           </div>
           <div class="right-details">
             <div class="icons">

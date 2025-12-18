@@ -511,6 +511,7 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="../en/tracing.html">Tracing Method Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../en/protocol.html">Agent API Protocol Specification</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../en/demohouse.html">Reference: Demo House</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../en/a2a_registry.html">A2A Registry - Service Registration and Discovery</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../en/ut.html">Reference: Tests</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../en/langgraph_guidelines.html">LangGraph Integration Guide</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../en/agno_guidelines.html">Agno Integration Guide</a></li>
@@ -576,6 +577,7 @@ body.preview-active {
 <li class="toctree-l2"><a class="reference internal" href="tracing.html">执行轨迹追踪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="protocol.html">参考: Agent API 协议规范</a></li>
 <li class="toctree-l2"><a class="reference internal" href="demohouse.html">参考: Demo 展示厅</a></li>
+<li class="toctree-l2"><a class="reference internal" href="a2a_registry.html">A2A Registry - 服务注册与发现</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ut.html">参考: 测试用例</a></li>
 <li class="toctree-l2"><a class="reference internal" href="langgraph_guidelines.html">LangGraph 集成指南</a></li>
 <li class="toctree-l2"><a class="reference internal" href="agno_guidelines.html">Agno 集成指南</a></li>
@@ -678,6 +680,53 @@ body.preview-active {
 </div>
 </div>
 </div>
+</section>
+<hr class="docutils" />
+<section id="a2a">
+<h2>A2A 扩展字段配置<a class="headerlink" href="#a2a" title="Link to this heading">¶</a></h2>
+<p><strong>功能</strong></p>
+<p>通过 <code class="docutils literal notranslate"><span class="pre">a2a_config</span></code> 参数扩展配置 Agent 的 A2A（Agent-to-Agent）协议信息和运行时相关字段。</p>
+<p><strong>关键参数</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">a2a_config</span></code>：可选参数，支持 <code class="docutils literal notranslate"><span class="pre">AgentCardWithRuntimeConfig</span></code> 对象</p></li>
+</ul>
+<p><strong>配置内容</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">a2a_config</span></code> 支持配置两类字段：</p>
+<ol class="arabic simple">
+<li><p><strong>AgentCard 协议字段</strong>：通过 <code class="docutils literal notranslate"><span class="pre">agent_card</span></code> 字段传递，包含技能、传输协议、输入输出模式等</p></li>
+<li><p><strong>Runtime 运行时字段</strong>：顶层字段，包含服务注册与发现（Registry）、超时设置、服务端点等</p></li>
+</ol>
+<p><strong>用法示例</strong></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.adapter.a2a</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AgentCardWithRuntimeConfig</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
+    <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;MyAgent&quot;</span><span class="p">,</span>
+    <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;My agent description&quot;</span><span class="p">,</span>
+    <span class="n">a2a_config</span><span class="o">=</span><span class="n">AgentCardWithRuntimeConfig</span><span class="p">(</span>
+        <span class="n">agent_card</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;MyAgent&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;My agent description&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;skills&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">...</span><span class="p">],</span>  <span class="c1"># Agent 技能列表</span>
+            <span class="s2">&quot;default_input_modes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;default_output_modes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
+            <span class="c1"># ... 其他协议字段</span>
+        <span class="p">},</span>
+        <span class="n">registry</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>  <span class="c1"># 服务注册与发现</span>
+        <span class="n">task_timeout</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>  <span class="c1"># 任务超时设置</span>
+        <span class="c1"># ... 其他配置字段</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>详细说明</strong></p>
+<p>完整的字段说明、配置方法和使用示例，请参考 <a class="reference internal" href="a2a_registry.html"><span class="doc">A2A Registry - 服务注册与发现</span></a> 文档。</p>
 </section>
 <hr class="docutils" />
 <section id="sse">
@@ -1214,7 +1263,7 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-12-17</div>
+              Last updated on 2025-12-18</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -1251,6 +1300,7 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
             <ul>
 <li><a class="reference internal" href="#">简单部署</a><ul>
 <li><a class="reference internal" href="#id2">初始化与基本运行</a></li>
+<li><a class="reference internal" href="#a2a">A2A 扩展字段配置</a></li>
 <li><a class="reference internal" href="#sse">流式输出（SSE）</a></li>
 <li><a class="reference internal" href="#id3">生命周期钩子</a><ul>
 <li><a class="reference internal" href="#id4">方式1：使用参数传递</a></li>
