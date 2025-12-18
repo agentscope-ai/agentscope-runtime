@@ -590,7 +590,7 @@ limitations under the License.
 
 ## 贡献者 ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-27-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-28-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 
@@ -635,6 +635,7 @@ limitations under the License.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/fengxsong"><img src="https://avatars.githubusercontent.com/u/7008971?v=4?s=100" width="100px;" alt="fengxsong"/><br /><sub><b>fengxsong</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Afengxsong" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://m4n5ter.github.io"><img src="https://avatars.githubusercontent.com/u/68144809?v=4?s=100" width="100px;" alt="Wang"/><br /><sub><b>Wang</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=M4n5ter" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3AM4n5ter" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/qiacheng7"><img src="https://avatars.githubusercontent.com/u/223075252?v=4?s=100" width="100px;" alt="qiacheng7"/><br /><sub><b>qiacheng7</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=qiacheng7" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=qiacheng7" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://xieyxclack.github.io/"><img src="https://avatars.githubusercontent.com/u/31954383?v=4?s=100" width="100px;" alt="Yuexiang XIE"/><br /><sub><b>Yuexiang XIE</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/pulls?q=is%3Apr+reviewed-by%3Axieyxclack" title="Reviewed Pull Requests">👀</a></td>
     </tr>
   </tbody>
   <tfoot>
