@@ -70,6 +70,8 @@ def build_image(
         f" {DOCKER_PLATFORMS}"
     )
 
+    auto_build = os.getenv("AUTO_BUILD").lower() == "true"
+
     platform_tag = ""
     if platform_choice == "linux/arm64":
         platform_tag = "-arm64"
@@ -108,10 +110,13 @@ def build_image(
 
     # Check if the image already exists
     if image_name in images or f"{image_name}dev" in images:
-        choice = input(
-            f"Image {image_name}dev|{image_name} already exists. Do "
-            f"you want to overwrite it? (y/N): ",
-        )
+        if auto_build:
+            choice = "y"
+        else:
+            choice = input(
+                f"Image {image_name}dev|{image_name} already exists. Do "
+                f"you want to overwrite it? (y/N): ",
+            )
         if choice.lower() != "y":
             logger.info("Exiting without overwriting the existing image.")
             return
@@ -220,9 +225,13 @@ def build_image(
         logger.error("Health checks failed.")
         subprocess.run(["docker", "stop", container_id], check=True)
 
-    choice = input(
-        f"Do you want to delete the dev image {image_name}dev? (" f"y/N): ",
-    )
+    if auto_build:
+        choice = "y"
+    else:
+        choice = input(
+            f"Do you want to delete the dev image {image_name}dev? ("
+            f"y/N): ",
+        )
     if choice.lower() == "y":
         subprocess.run(
             ["docker", "rmi", "-f", f"{image_name}dev"],
