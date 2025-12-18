@@ -860,29 +860,6 @@ curl<span class="w"> </span>http://localhost:8090/
 </div>
 </section>
 <hr class="docutils" />
-<section id="id7">
-<h2>中间件扩展<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h2>
-<p><strong>功能</strong></p>
-<p>在请求进入或完成时执行额外逻辑（例如日志、鉴权、限流）。</p>
-<p><strong>用法示例</strong></p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">&quot;http&quot;</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">custom_logger</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;收到请求: </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">response</span>
-</pre></div>
-</div>
-</div>
-</div>
-<p>AgentApp 内置：</p>
-<ul class="simple">
-<li><p>请求日志中间件</p></li>
-<li><p>CORS（跨域）支持</p></li>
-</ul>
-</section>
-<hr class="docutils" />
 <section id="celery">
 <h2>Celery 异步任务队列（可选）<a class="headerlink" href="#celery" title="Link to this heading">¶</a></h2>
 <p><strong>功能</strong></p>
@@ -922,12 +899,12 @@ curl<span class="w"> </span>http://localhost:8090/
 </div>
 </section>
 <hr class="docutils" />
-<section id="id8">
-<h2>自定义查询处理<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h2>
+<section id="id7">
+<h2>自定义查询处理<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h2>
 <p><strong>功能</strong></p>
 <p>使用 <code class="docutils literal notranslate"><span class="pre">&#64;app.query()</span></code> 装饰器可以完全自定义查询处理逻辑，实现更灵活的控制，包括状态管理、会话历史管理等。</p>
-<section id="id9">
-<h3>基本用法<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
+<section id="id8">
+<h3>基本用法<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
@@ -998,8 +975,8 @@ curl<span class="w"> </span>http://localhost:8090/
 </div>
 </div>
 </section>
-<section id="id10">
-<h3>关键特性<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
+<section id="id9">
+<h3>关键特性<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
 <ol class="arabic simple">
 <li><p><strong>框架支持</strong>：<code class="docutils literal notranslate"><span class="pre">framework</span></code> 参数支持 <code class="docutils literal notranslate"><span class="pre">&quot;agentscope&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;autogen&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;agno&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;langgraph&quot;</span></code> 等</p></li>
 <li><p><strong>函数签名</strong>：</p>
@@ -1190,8 +1167,8 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 </div>
 </section>
 <hr class="docutils" />
-<section id="id11">
-<h2>部署到本地或远程<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h2>
+<section id="id10">
+<h2>部署到本地或远程<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h2>
 <p><strong>功能</strong></p>
 <p>通过 <code class="docutils literal notranslate"><span class="pre">deploy()</span></code> 方法统一部署到不同运行环境。</p>
 <p><strong>用法示例</strong></p>
@@ -1308,17 +1285,16 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 </ul>
 </li>
 <li><a class="reference internal" href="#id6">健康检查接口</a></li>
-<li><a class="reference internal" href="#id7">中间件扩展</a></li>
 <li><a class="reference internal" href="#celery">Celery 异步任务队列（可选）</a></li>
-<li><a class="reference internal" href="#id8">自定义查询处理</a><ul>
-<li><a class="reference internal" href="#id9">基本用法</a></li>
-<li><a class="reference internal" href="#id10">关键特性</a></li>
+<li><a class="reference internal" href="#id7">自定义查询处理</a><ul>
+<li><a class="reference internal" href="#id8">基本用法</a></li>
+<li><a class="reference internal" href="#id9">关键特性</a></li>
 <li><a class="reference internal" href="#agentapp">完整示例：带状态管理的 AgentApp</a></li>
 <li><a class="reference internal" href="#v0-agent">与 V0 版本 Agent 参数方式的区别</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#app-endpoint">通过 <code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint</span></code> 自定义接口</a></li>
-<li><a class="reference internal" href="#id11">部署到本地或远程</a></li>
+<li><a class="reference internal" href="#id10">部署到本地或远程</a></li>
 </ul>
 </li>
 </ul>

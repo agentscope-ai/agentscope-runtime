@@ -858,28 +858,6 @@ curl<span class="w"> </span>http://localhost:8090/
 </div>
 </section>
 <hr class="docutils" />
-<section id="middleware-extensions">
-<h2>Middleware Extensions<a class="headerlink" href="#middleware-extensions" title="Link to this heading">¶</a></h2>
-<p><strong>Purpose</strong></p>
-<p>Inject logic before or after handling each request—for logging, auth, rate limiting, etc.</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">&quot;http&quot;</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">custom_logger</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Request: </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">response</span>
-</pre></div>
-</div>
-</div>
-</div>
-<p>AgentApp ships with:</p>
-<ul class="simple">
-<li><p>Request logging middleware</p></li>
-<li><p>Built-in CORS support</p></li>
-</ul>
-</section>
-<hr class="docutils" />
 <section id="celery-asynchronous-task-queue-optional">
 <h2>Celery Asynchronous Task Queue (Optional)<a class="headerlink" href="#celery-asynchronous-task-queue-optional" title="Link to this heading">¶</a></h2>
 <p><strong>Purpose</strong></p>
@@ -1302,7 +1280,6 @@ See <a class="reference internal" href="advanced_deployment.html"><span class="d
 </ul>
 </li>
 <li><a class="reference internal" href="#health-check-endpoints">Health Check Endpoints</a></li>
-<li><a class="reference internal" href="#middleware-extensions">Middleware Extensions</a></li>
 <li><a class="reference internal" href="#celery-asynchronous-task-queue-optional">Celery Asynchronous Task Queue (Optional)</a></li>
 <li><a class="reference internal" href="#custom-query-handling">Custom Query Handling</a><ul>
 <li><a class="reference internal" href="#basic-usage">Basic Usage</a></li>
