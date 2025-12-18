@@ -7,6 +7,13 @@ on:
         description: "Image type, e.g., base"
         required: true
         default: "base"
+        type: choice
+        options:
+          - "base"
+          - "gui"
+          - "browser"
+          - "filesystem"
+          - "mobile"
       platform:
         description: "Docker architecture platform (used for multi-arch builds)"
         required: true
@@ -26,7 +33,12 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+        python-version: [ '3.10' ]
+
     environment: prod
 
     steps:
@@ -62,10 +74,18 @@ jobs:
           username: ${{ env.ALIYUN_ACR_USERNAME }}
           password: ${{ env.ALIYUN_ACR_PASSWORD }}
 
-      - name: Set up Python
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Update setuptools
         run: |
@@ -90,7 +110,7 @@ jobs:
           if [ "$SINGLE" = "true" ]; then
             PLATFORM_INPUT="linux/amd64"
           fi
-          python src/agentscope_runtime/sandbox/build_script.py \
+          runtime-sandbox-builder \
             "${{ github.event.inputs.build_type }}" \
             --platform "$PLATFORM_INPUT"
 
