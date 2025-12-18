@@ -14,6 +14,7 @@ from agentscope_runtime.sandbox import (
     BrowserSandbox,
     FilesystemSandbox,
     GuiSandbox,
+    MobileSandbox,
 )
 
 
@@ -52,6 +53,11 @@ def test_local_sandbox(env):
     with GuiSandbox() as box:
         print(box.list_tools())
         print(box.computer_use(action="get_cursor_position"))
+
+    with MobileSandbox() as box:
+        print(box.list_tools())
+        print(box.mobile_get_screen_resolution())
+        print(box.mobile_tap([360, 150]))
 
 
 def test_remote_sandbox(env):
@@ -115,6 +121,11 @@ def test_remote_sandbox(env):
         with GuiSandbox(base_url="http://localhost:8000") as box:
             print(box.list_tools())
             print(box.computer_use(action="get_cursor_position"))
+
+        with MobileSandbox(base_url="http://localhost:8000") as box:
+            print(box.list_tools())
+            print(box.mobile_get_screen_resolution())
+            print(box.mobile_tap([360, 150]))
 
     except Exception as e:
         print(f"Error occurred: {e}")

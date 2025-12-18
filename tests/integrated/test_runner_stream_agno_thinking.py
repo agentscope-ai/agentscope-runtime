@@ -83,7 +83,7 @@ class MyRunner(Runner):
         await self.sandbox_service.stop()
 
 
-@pytest.mark.asyncio(scope="function")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_runner_sample1():
     from dotenv import load_dotenv
 
@@ -157,7 +157,7 @@ async def test_runner_sample1():
     assert "杭州" in final_text or "hangzhou" in final_text.lower()
 
 
-@pytest.mark.asyncio(scope="function")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_runner_sample2():
     from dotenv import load_dotenv
 

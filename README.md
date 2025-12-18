@@ -68,7 +68,7 @@ Welcome to join our community on
 
 | [Discord](https://discord.gg/eYMpfnkG8h)                     | DingTalk                                                     |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| <img src="https://gw.alicdn.com/imgextra/i1/O1CN01hhD1mu1Dd3BWVUvxN_!!6000000000238-2-tps-400-400.png" width="100" height="100"> | <img src="https://img.alicdn.com/imgextra/i1/O1CN01LxzZha1thpIN2cc2E_!!6000000005934-2-tps-497-477.png" width="100" height="100"> |
+| <img src="https://gw.alicdn.com/imgextra/i1/O1CN01hhD1mu1Dd3BWVUvxN_!!6000000000238-2-tps-400-400.png" width="100" height="100"> | <img src="https://img.alicdn.com/imgextra/i4/O1CN014mhqFq1ZlgNuYjxrz_!!6000000003235-2-tps-400-400.png" width="100" height="100"> |
 
 ---
 
@@ -333,6 +333,8 @@ with FilesystemSandbox() as box:
 
 Provides a **sandboxed Android emulator environment** that allows executing various mobile operations, such as tapping, swiping, inputting text, and taking screenshots.
 
+<img src="https://img.alicdn.com/imgextra/i4/O1CN01yPnBC21vOi45fLy7V_!!6000000006163-2-tps-544-865.png" alt="Mobile Sandbox" height="500">
+
 ##### Prerequisites
 
 - **Linux Host**:
@@ -354,7 +356,7 @@ with MobileSandbox() as box:
     # By default, pulls 'agentscope/runtime-sandbox-mobile:latest' from DockerHub
     print(box.list_tools()) # List all available tools
     print(box.mobile_get_screen_resolution()) # Get the screen resolution
-    print(box.mobile_tap(x=500, y=1000)) # Tap at coordinate (500, 1000)
+    print(box.mobile_tap([500, 1000])) # Tap at coordinate (500, 1000)
     print(box.mobile_input_text("Hello from AgentScope!")) # Input text
     print(box.mobile_key_event(3)) # Sends a HOME key event (KeyCode: 3)
     screenshot_result = box.mobile_get_screenshot() # Get the current screenshot
