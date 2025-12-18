@@ -117,7 +117,8 @@ async def multi_turn_rag_example():
 
     print("Context-based answer:", result.rag_result["answer"])
 
-asyncio.run(multi_turn_rag_example())
+
+asyncio.chat(multi_turn_rag_example())
 ```
 
 ### Multimodal RAG Example
@@ -141,7 +142,8 @@ async def multimodal_rag_example():
 
     print("Multimodal analysis result:", result.rag_result["answer"])
 
-asyncio.run(multimodal_rag_example())
+
+asyncio.chat(multimodal_rag_example())
 ```
 
 ## 🏗️ RAG Architecture Features

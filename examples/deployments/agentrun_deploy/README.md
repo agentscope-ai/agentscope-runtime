@@ -516,7 +516,7 @@ After successful deployment:
 ## Additional Resources
 
 - **AgentRun Console**: [https://functionai.console.aliyun.com/cn-hangzhou/agent/](https://functionai.console.aliyun.com/cn-hangzhou/agent/)
-- **AgentScope Runtime**: [https://github.com/modelscope/agentscope](https://github.com/modelscope/agentscope)
+- **AgentScope Runtime**: [https://github.com/agentscope-ai/agentscope-runtime](https://github.com/agentscope-ai/agentscope-runtime)
 - **DashScope API**: [https://dashscope.aliyun.com/](https://dashscope.aliyun.com/)
 
 This example provides a complete workflow for deploying AgentScope Runtime agents to Alibaba Cloud AgentRun with serverless, production-ready configurations.

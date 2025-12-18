@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=not-callable,too-many-statements
+# pylint: disable=not-callable,too-many-statements,too-many-branches
 import asyncio
 import logging
 import inspect
@@ -29,6 +29,7 @@ from .schemas.agent_schemas import (
     SequenceNumberGenerator,
     Error,
 )
+from .schemas.exception import AppBaseException, UnknownAgentException
 from .tracing import TraceType
 from .tracing.wrapper import trace
 from .tracing.message_util import (
@@ -296,11 +297,9 @@ class Runner:
                     response.add_new_message(event)
                 yield seq_gen.yield_with_sequence(event)
         except Exception as e:
-            # TODO: fix code
-            error = Error(
-                code="500",
-                message=f"Error happens in `query_handler`: {e}",
-            )
+            if not isinstance(e, AppBaseException):
+                e = UnknownAgentException(original_exception=e)
+            error = Error(code=e.code, message=e.message)
             logger.error(f"{error.model_dump()}: {traceback.format_exc()}")
             yield seq_gen.yield_with_sequence(response.failed(error))
             return

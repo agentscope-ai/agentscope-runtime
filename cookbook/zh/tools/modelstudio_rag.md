@@ -96,6 +96,7 @@ asyncio.run(rag_query_example())
 ```
 
 ### 多轮对话RAG示例
+
 ```python
 async def multi_turn_rag_example():
     conversation_history = [
@@ -116,10 +117,12 @@ async def multi_turn_rag_example():
 
     print("基于上下文的回答:", result.rag_result["answer"])
 
-asyncio.run(multi_turn_rag_example())
+
+asyncio.chat(multi_turn_rag_example())
 ```
 
 ### 多模态RAG示例
+
 ```python
 async def multimodal_rag_example():
     result = await rag.arun({
@@ -139,7 +142,8 @@ async def multimodal_rag_example():
 
     print("多模态分析结果:", result.rag_result["answer"])
 
-asyncio.run(multimodal_rag_example())
+
+asyncio.chat(multimodal_rag_example())
 ```
 
 ## 🏗️ RAG架构特点

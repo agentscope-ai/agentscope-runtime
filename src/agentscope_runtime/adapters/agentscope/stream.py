@@ -6,6 +6,7 @@ import json
 from typing import AsyncIterator, Tuple, List, Union
 from urllib.parse import urlparse
 
+from agentscope import setup_logger
 from agentscope.message import Msg
 
 from ...engine.schemas.agent_schemas import (
@@ -21,6 +22,8 @@ from ...engine.schemas.agent_schemas import (
     FunctionCallOutput,
     MessageType,
 )
+
+setup_logger("ERROR")
 
 
 def _update_obj_attrs(obj, **attrs):

@@ -14,7 +14,7 @@ kernelspec:
 
 # Reference: Full Deployment Example
 
-This tutorial shows how to build and deploy a *Reason + Act (ReAct)* agent with AgentScope Runtime and the [**AgentScope framework**](https://github.com/modelscope/agentscope).
+This tutorial shows how to build and deploy a *Reason + Act (ReAct)* agent with AgentScope Runtime and the [**AgentScope framework**](https://github.com/agentscope-ai/agentscope).
 
 ```{note}
 The ReAct paradigm interleaves reasoning traces with task-specific actions, which is especially effective for tool-use scenarios. Combining AgentScope's `ReActAgent` with AgentScope Runtime gives you both smart decision-making and safe tool execution.

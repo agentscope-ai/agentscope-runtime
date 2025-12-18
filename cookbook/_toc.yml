@@ -34,17 +34,18 @@ parts:
       - file: en/react_agent.md
   - file: en/use.md
     sections:
-    - file: en/call.md
-    - file: en/webui.md
-    - file: en/tracing.md
-    - file: en/protocol.md
-    - file: en/demohouse.md
-    - file: en/ut.md
-    - file: en/langgraph_guidelines.md
-    - file: en/agno_guidelines.md
+      - file: en/call.md
+      - file: en/webui.md
+      - file: en/cli.md
+      - file: en/tracing.md
+      - file: en/protocol.md
+      - file: en/demohouse.md
+      - file: en/ut.md
+      - file: en/langgraph_guidelines.md
+      - file: en/agno_guidelines.md
   - file: en/contribute.md
     sections:
-    - file: en/README.md
+      - file: en/README.md
   - file: en/CHANGELOG.md
 
 - caption: API Reference
@@ -97,6 +98,7 @@ parts:
     sections:
       - file: zh/call.md
       - file: zh/webui.md
+      - file: zh/cli.md
       - file: zh/tracing.md
       - file: zh/protocol.md
       - file: zh/demohouse.md
