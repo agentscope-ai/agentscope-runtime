@@ -311,13 +311,6 @@ class Runner:
             # Avoid empty message
             pass
 
-        if response.usage is None:
-            response.usage = {
-                "input_tokens": 0,
-                "output_tokens": 0,
-                "details": [],
-            }
-
         if error:
             yield seq_gen.yield_with_sequence(response.failed(error))
         else:
