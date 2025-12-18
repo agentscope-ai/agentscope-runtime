@@ -30,6 +30,11 @@ on:
         options:
           - "true"
           - "false"
+      tag:
+        description: "Custom image tag (default: current date)"
+        required: false
+        default: ""
+        type: string
 
 jobs:
   build:
@@ -117,7 +122,10 @@ jobs:
           ALIYUN_ACR_USERNAME: ${{ secrets.ALIYUN_ACR_USERNAME }}
           ALIYUN_ACR_PASSWORD: ${{ secrets.ALIYUN_ACR_PASSWORD }}
         run: |
-          DATE_TAG=$(date +%Y%m%d)
+          TAG_INPUT="${{ github.event.inputs.tag }}"
+          if [ -z "$TAG_INPUT" ]; then
+            TAG_INPUT=$(date +%Y%m%d)
+          fi
           SINGLE="${{ github.event.inputs.single_arch }}"
           ARCH_TAG="${{ github.event.inputs.platform }}"
           if [ "$SINGLE" = "true" ]; then
@@ -128,24 +136,24 @@ jobs:
 
           if [ -n "$DOCKER_USERNAME" ] && [ -n "$DOCKER_PASSWORD" ]; then
             if [ "$SINGLE" = "true" ]; then
-              docker tag "$IMAGE_BASE" "docker.io/${IMAGE_NAME}:${DATE_TAG}"
-              docker push "docker.io/${IMAGE_NAME}:${DATE_TAG}"
+              docker tag "$IMAGE_BASE" "docker.io/${IMAGE_NAME}:${TAG_INPUT}"
+              docker push "docker.io/${IMAGE_NAME}:${TAG_INPUT}"
             else
               ARCH_SUFFIX=$(echo "$ARCH_TAG" | tr '/' '-')
-              docker tag "$IMAGE_BASE" "docker.io/${IMAGE_NAME}:${DATE_TAG}-${ARCH_SUFFIX}"
-              docker push "docker.io/${IMAGE_NAME}:${DATE_TAG}-${ARCH_SUFFIX}"
+              docker tag "$IMAGE_BASE" "docker.io/${IMAGE_NAME}:${TAG_INPUT}-${ARCH_SUFFIX}"
+              docker push "docker.io/${IMAGE_NAME}:${TAG_INPUT}-${ARCH_SUFFIX}"
             fi
           fi
 
           if [ -n "$ALIYUN_ACR_USERNAME" ] && [ -n "$ALIYUN_ACR_PASSWORD" ]; then
             REGISTRY="agentscope-registry.ap-southeast-1.cr.aliyuncs.com"
             if [ "$SINGLE" = "true" ]; then
-              docker tag "$IMAGE_BASE" "${REGISTRY}/${IMAGE_NAME}:${DATE_TAG}"
-              docker push "${REGISTRY}/${IMAGE_NAME}:${DATE_TAG}"
+              docker tag "$IMAGE_BASE" "${REGISTRY}/${IMAGE_NAME}:${TAG_INPUT}"
+              docker push "${REGISTRY}/${IMAGE_NAME}:${TAG_INPUT}"
             else
               ARCH_SUFFIX=$(echo "$ARCH_TAG" | tr '/' '-')
-              docker tag "$IMAGE_BASE" "${REGISTRY}/${IMAGE_NAME}:${DATE_TAG}-${ARCH_SUFFIX}"
-              docker push "${REGISTRY}/${IMAGE_NAME}:${DATE_TAG}-${ARCH_SUFFIX}"
+              docker tag "$IMAGE_BASE" "${REGISTRY}/${IMAGE_NAME}:${TAG_INPUT}-${ARCH_SUFFIX}"
+              docker push "${REGISTRY}/${IMAGE_NAME}:${TAG_INPUT}-${ARCH_SUFFIX}"
             fi
           fi
 
@@ -155,12 +163,15 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         if: ${{ github.event.inputs.single_arch == 'false' && env.DOCKER_USERNAME != '' && env.DOCKER_PASSWORD != '' }}
         run: |
-          DATE_TAG=$(date +%Y%m%d)
+          TAG_INPUT="${{ github.event.inputs.tag }}"
+          if [ -z "$TAG_INPUT" ]; then
+            TAG_INPUT=$(date +%Y%m%d)
+          fi
           IMAGE_BASE=$(python -c "from src.agentscope_runtime.sandbox.registry import SandboxRegistry; print(SandboxRegistry.get_image_by_type('${{ github.event.inputs.build_type }}'))")
           IMAGE_NAME="${IMAGE_BASE%%:*}"
-          AMD_TAG="docker.io/${IMAGE_NAME}:${DATE_TAG}-linux-amd64"
-          ARM_TAG="docker.io/${IMAGE_NAME}:${DATE_TAG}-linux-arm64"
-          COMMON_TAG="docker.io/${IMAGE_NAME}:${DATE_TAG}"
+          AMD_TAG="docker.io/${IMAGE_NAME}:${TAG_INPUT}-linux-amd64"
+          ARM_TAG="docker.io/${IMAGE_NAME}:${TAG_INPUT}-linux-arm64"
+          COMMON_TAG="docker.io/${IMAGE_NAME}:${TAG_INPUT}"
 
           if docker manifest inspect "$AMD_TAG" >/dev/null 2>&1 && docker manifest inspect "$ARM_TAG" >/dev/null 2>&1; then
             echo "Creating multi-arch manifest for $COMMON_TAG"
@@ -176,13 +187,16 @@ jobs:
           ALIYUN_ACR_PASSWORD: ${{ secrets.ALIYUN_ACR_PASSWORD }}
         if: ${{ github.event.inputs.single_arch == 'false' && env.ALIYUN_ACR_USERNAME != '' && env.ALIYUN_ACR_PASSWORD != '' }}
         run: |
-          DATE_TAG=$(date +%Y%m%d)
+          TAG_INPUT="${{ github.event.inputs.tag }}"
+          if [ -z "$TAG_INPUT" ]; then
+            TAG_INPUT=$(date +%Y%m%d)
+          fi
           IMAGE_BASE=$(python -c "from src.agentscope_runtime.sandbox.registry import SandboxRegistry; print(SandboxRegistry.get_image_by_type('${{ github.event.inputs.build_type }}'))")
           IMAGE_NAME="${IMAGE_BASE%%:*}"
           REG="agentscope-registry.ap-southeast-1.cr.aliyuncs.com"
-          AMD_TAG="${REG}/${IMAGE_NAME}:${DATE_TAG}-linux-amd64"
-          ARM_TAG="${REG}/${IMAGE_NAME}:${DATE_TAG}-linux-arm64"
-          COMMON_TAG="${REG}/${IMAGE_NAME}:${DATE_TAG}"
+          AMD_TAG="${REG}/${IMAGE_NAME}:${TAG_INPUT}-linux-amd64"
+          ARM_TAG="${REG}/${IMAGE_NAME}:${TAG_INPUT}-linux-arm64"
+          COMMON_TAG="${REG}/${IMAGE_NAME}:${TAG_INPUT}"
 
           if docker manifest inspect "$AMD_TAG" >/dev/null 2>&1 && docker manifest inspect "$ARM_TAG" >/dev/null 2>&1; then
             echo "Creating multi-arch manifest for $COMMON_TAG"
