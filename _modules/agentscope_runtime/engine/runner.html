@@ -939,6 +939,7 @@ body.preview-active {
 
             <span class="n">stream_adapter</span> <span class="o">=</span> <span class="n">identity_stream_adapter</span>
 
+        <span class="n">error</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">async</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">stream_adapter</span><span class="p">(</span>
                 <span class="n">source_stream</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_call_handler_streaming</span><span class="p">(</span>
@@ -958,8 +959,6 @@ body.preview-active {
                 <span class="n">e</span> <span class="o">=</span> <span class="n">UnknownAgentException</span><span class="p">(</span><span class="n">original_exception</span><span class="o">=</span><span class="n">e</span><span class="p">)</span>
             <span class="n">error</span> <span class="o">=</span> <span class="n">Error</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="n">e</span><span class="o">.</span><span class="n">code</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">error</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">yield</span> <span class="n">seq_gen</span><span class="o">.</span><span class="n">yield_with_sequence</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">failed</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
-            <span class="k">return</span>
 
         <span class="c1"># Obtain token usage</span>
         <span class="k">try</span><span class="p">:</span>
@@ -969,7 +968,10 @@ body.preview-active {
             <span class="c1"># Avoid empty message</span>
             <span class="k">pass</span>
 
-        <span class="k">yield</span> <span class="n">seq_gen</span><span class="o">.</span><span class="n">yield_with_sequence</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">completed</span><span class="p">())</span></div>
+        <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">seq_gen</span><span class="o">.</span><span class="n">yield_with_sequence</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">failed</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">seq_gen</span><span class="o">.</span><span class="n">yield_with_sequence</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">completed</span><span class="p">())</span></div>
 </div>
 
 </pre></div>
