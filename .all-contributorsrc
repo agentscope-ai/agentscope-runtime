@@ -264,6 +264,16 @@
         "code",
         "bug"
       ]
+    },
+    {
+      "login": "qiacheng7",
+      "name": "qiacheng7",
+      "avatar_url": "https://avatars.githubusercontent.com/u/223075252?v=4",
+      "profile": "https://github.com/qiacheng7",
+      "contributions": [
+        "code",
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
