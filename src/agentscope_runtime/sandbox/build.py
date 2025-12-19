@@ -72,10 +72,6 @@ def build_image(
 
     auto_build = os.getenv("AUTO_BUILD", "false").lower() == "true"
 
-    platform_tag = ""
-    if platform_choice == "linux/arm64":
-        platform_tag = "-arm64"
-
     buildx_enable = platform_choice != get_platform()
 
     if dockerfile_path is None:
@@ -95,7 +91,7 @@ def build_image(
     secret_token = "secret_token123"
 
     # Add platform tag
-    image_name = SandboxRegistry.get_image_by_type(build_type) + platform_tag
+    image_name = SandboxRegistry.get_image_by_type(build_type)
 
     logger.info(f"Building Docker image {image_name}...")
 
