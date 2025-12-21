@@ -26,7 +26,8 @@ class MemoryNode(BaseModel):
     content: str = Field(..., description="Content of the memory node")
     event: Optional[str] = Field(
         None,
-        description="Events associated with the memory node. eg. ADD, DELETE, UPDATE",
+        description="Events associated with the memory node. "
+        "e.g. ADD, DELETE, UPDATE",
     )
     old_content: Optional[str] = Field(
         None,

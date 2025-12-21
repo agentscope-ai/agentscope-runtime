@@ -7,6 +7,7 @@ import time
 import uuid
 from datetime import datetime
 from typing import List, Tuple
+from openai import AsyncOpenAI
 
 from agentscope_runtime.tools.modelstudio_memory import (
     AddMemory,
@@ -28,10 +29,9 @@ from agentscope_runtime.tools.modelstudio_memory import (
     MemoryNotFoundError,
     MemoryValidationError,
 )
-from openai import AsyncOpenAI
 
-# ===== 配置日志，过滤掉冗长的调试信息 =====
-# 从环境变量读取日志级别，默认为 WARNING
+# ===== Configure logging to filter out verbose debug messages =====
+# Read log level from environment variable, default to WARNING
 LOG_LEVEL = os.getenv("LOG_LEVEL", "WARNING").upper()
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL, logging.WARNING),
@@ -42,7 +42,8 @@ logging.basicConfig(
     ),
 )
 
-# 特别禁用某些组件的详细日志（除非明确设置为 DEBUG）
+# Disable verbose logging for certain components
+# (unless explicitly set to DEBUG)
 if LOG_LEVEL != "DEBUG":
     logging.getLogger("agentscope_bricks").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -95,18 +96,18 @@ def print_error(message: str) -> None:
 
 
 def format_api_error(error: MemoryAPIError) -> str:
-    """格式化 API 错误信息以便显示"""
+    """Format API error information for display"""
     parts = []
 
-    # 提取错误消息主体（不包括 __str__ 方法添加的额外信息）
-    error_message = str(error).split(' | ', maxsplit=1)[0]
-    parts.append(f"错误信息: {error_message}")
+    # Extract error message body (excluding extra info added by __str__ method)
+    error_message = str(error).split(" | ", maxsplit=1)[0]
+    parts.append(f"Error: {error_message}")
 
     if error.error_code:
-        parts.append(f"错误代码: {error.error_code}")
+        parts.append(f"Error Code: {error.error_code}")
 
     if error.status_code:
-        parts.append(f"HTTP 状态码: {error.status_code}")
+        parts.append(f"HTTP Status: {error.status_code}")
 
     if error.request_id:
         parts.append(f"Request ID: {error.request_id}")
@@ -117,32 +118,34 @@ def format_api_error(error: MemoryAPIError) -> str:
 async def step_create_profile_schema(
     create_profile_schema: CreateProfileSchema,
 ) -> str:
-    """创建用户画像 Schema"""
-    print_info("用户画像 Schema 用于定义用户有哪些字段（如年龄、爱好）。")
+    """Create user profile schema"""
+    print_info(
+        "User profile schema defines user attributes (e.g., age, hobbies).",
+    )
     print("")
 
     payload = CreateProfileSchemaInput(
-        name="用户画像（示例）",
-        description="用于演示的用户基础画像 Schema",
+        name="User Profile (Demo)",
+        description="Demo user profile schema",
         attributes=[
             ProfileAttribute(name="年龄", description="用户年龄"),
             ProfileAttribute(name="爱好", description="兴趣偏好"),
         ],
     )
 
-    # 展示示例参数
-    print_info("请求参数：")
-    print_info(f"  · Schema 名称：{payload.name}")
-    print_info(f"  · Schema 描述：{payload.description}")
-    print_info("  · 字段定义：")
+    # Display example parameters
+    print_info("Request parameters:")
+    print_info(f"  · Schema name: {payload.name}")
+    print_info(f"  · Schema description: {payload.description}")
+    print_info("  · Attributes:")
     for idx, attr in enumerate(payload.attributes, start=1):
         print_info(f"      [{idx}] {attr.name} - {attr.description}")
     print("")
 
     result = await create_profile_schema.arun(payload)
-    print_success("✓ 已创建用户画像 Schema")
-    print_info(f"  Schema ID：{result.profile_schema_id}")
-    print_info(f"  请求ID：{result.request_id}")
+    print_success("✓ Profile schema created")
+    print_info(f"  Schema ID: {result.profile_schema_id}")
+    print_info(f"  Request ID: {result.request_id}")
     print("")
 
     return result.profile_schema_id
@@ -170,10 +173,12 @@ async def step_add_memory(
     end_user_id: str,
     profile_schema_id: str,
 ) -> List[str]:
-    """添加对话记忆到记忆服务"""
-    print_info("我们将一段对话提交到记忆服务，服务会自动完成两件事：")
-    print_info("  1️⃣  抽取并保存记忆条目（memory nodes）")
-    print_info("  2️⃣  从对话中提取用户画像信息（年龄、爱好等）")
+    """Add conversation memory to the memory service"""
+    print_info(
+        "We'll submit a conversation to the memory service.",
+    )
+    print_info("  1️⃣  Extract and save memory nodes")
+    print_info("  2️⃣  Extract user profile information (age, hobbies, etc.)")
     print("")
 
     now_ts = int(time.time())
@@ -184,52 +189,47 @@ async def step_add_memory(
         timestamp=now_ts,
         profile_schema=profile_schema_id,
         meta_data={
-            "location_name": "杭州",
+            "location_name": "Hangzhou",
             "geo_coordinate": "120.1551,30.2741",
-            "customized_key": "customized_value"
+            "customized_key": "customized_value",
         },
     )
 
-    # 展示示例参数
-    print_info("📥 请求参数：")
-    print_info(f"  · 用户ID：{payload.user_id}")
-    print_info(f"  · Profile Schema ID：{truncate(profile_schema_id, 50)}")
+    # Display example parameters
+    print_info("📥 Request parameters:")
+    print_info(f"  · User ID: {payload.user_id}")
+    print_info(f"  · Profile Schema ID: {truncate(profile_schema_id, 50)}")
 
-    # 格式化时间戳
+    # Format timestamp
     timestamp_str = time.strftime(
         "%Y-%m-%d %H:%M:%S",
         time.localtime(payload.timestamp),
     )
-    print_info(f"  · 时间戳：{timestamp_str}")
-    print_info(f"  · 对话消息数：{len(payload.messages)} 条")
+    print_info(f"  · Timestamp: {timestamp_str}")
+    print_info(f"  · Message count: {len(payload.messages)}")
     print("")
 
-    print_info("💬 对话内容（注意画像信息）：")
+    print_info("💬 Conversation content (note profile information):")
     for idx, m in enumerate(payload.messages, start=1):
         role_icon = "👤" if m.role == "user" else "🤖"
         content_str = str(m.content)
-
-        # 突出显示包含画像信息的对话
-        if "30岁" in content_str or "踢球" in content_str:
-            print(f"  {role_icon} [{m.role}] {truncate(content_str, 100)} 🎯")
-        else:
-            print(f"  {role_icon} [{m.role}] {truncate(content_str, 100)}")
+        print(f"  {role_icon} [{m.role}] {truncate(content_str, 100)}")
     print("")
-    print_info("  🎯 = 包含可提取的画像信息（年龄、爱好）")
+    print_info("  🎯 = Contains extractable profile information (age, hobbies)")
     print("")
 
     add_result = await add_memory.arun(payload)
 
-    # 调试：打印返回结果类型
+    # Debug: Print return result type
     print_info(
-        f"🔍 调试信息：memory_nodes 类型 = {type(add_result.memory_nodes)}",
+        f"🔍 Debug info: memory_nodes type = {type(add_result.memory_nodes)}",
     )
 
-    # 兼容处理：如果 memory_nodes 不是列表，转换为列表
+    # Compatibility handling: convert memory_nodes to list if not already
     if isinstance(add_result.memory_nodes, list):
         memory_nodes_list = add_result.memory_nodes
     else:
-        # 如果是单个对象，包装成列表
+        # If single object, wrap in list
         memory_nodes_list = (
             [add_result.memory_nodes] if add_result.memory_nodes else []
         )
@@ -239,10 +239,10 @@ async def step_add_memory(
     ]
 
     if node_ids:
-        print_success(f"✓ 成功新增 {len(node_ids)} 条记忆条目")
-        print_info(f"  请求ID：{add_result.request_id}")
+        print_success(f"✓ Successfully added {len(node_ids)} memory nodes")
+        print_info(f"  Request ID: {add_result.request_id}")
         print("")
-        print_info("📝 生成的记忆条目：")
+        print_info("📝 Generated memory nodes:")
         print("")
         for idx, node in enumerate(memory_nodes_list, start=1):
             print(f"  [{idx}] Content: {truncate(node.content, 100)}")
@@ -255,7 +255,9 @@ async def step_add_memory(
                 print("")
         print("")
     else:
-        print_warn("⚠ 未返回任何记忆条目 ID，稍后删除步骤将跳过。")
+        print_warn(
+            "⚠ No memory node IDs returned, deletion step will be skipped.",
+        )
 
     return node_ids
 
@@ -266,8 +268,10 @@ async def step_list_memory(
     page_num: int = 1,
     page_size: int = 10,
 ) -> List[str]:
-    """列出用户的所有记忆条目（分页）"""
-    print_info("列出该用户当前保存的所有记忆条目（分页查询）。")
+    """List all memory nodes for a user (paginated)"""
+    print_info(
+        "List all memory nodes currently saved for this user.",
+    )
     print("")
 
     payload = ListMemoryInput(
@@ -276,11 +280,11 @@ async def step_list_memory(
         page_size=page_size,
     )
 
-    # 展示示例参数
-    print_info("请求参数：")
-    print_info(f"  · 用户ID：{payload.user_id}")
-    print_info(f"  · 页码：{payload.page_num}")
-    print_info(f"  · 每页数量：{payload.page_size}")
+    # Display example parameters
+    print_info("Request parameters:")
+    print_info(f"  · User ID: {payload.user_id}")
+    print_info(f"  · Page number: {payload.page_num}")
+    print_info(f"  · Page size: {payload.page_size}")
     print("")
 
     result = await list_memory.arun(payload)
@@ -290,19 +294,23 @@ async def step_list_memory(
         else 1
     )
 
-    print_success(f"✓ 列表获取成功 (请求ID: {result.request_id})")
+    print_success(
+        f"✓ List retrieved successfully (Request ID: {result.request_id})",
+    )
     print_info(
-        f"📊 分页信息：第 \
-        {result.page_num}/{total_pages} 页，\
-        每页 {result.page_size} 条，共 {result.total} 条",
+        f"📊 Pagination: Page \
+        {result.page_num}/{total_pages}, \
+        {result.page_size} per page, {result.total} total",
     )
     print("")
 
     if not result.memory_nodes:
-        print_info("(当前页无记忆条目)")
+        print_info("(No memory nodes on this page)")
         return []
 
-    print_info(f"📝 记忆条目列表（当前页共 {len(result.memory_nodes)} 条）：")
+    print_info(
+        f"📝 Memory node list ({len(result.memory_nodes)} on this page):",
+    )
     print("")
 
     existing_ids = []
@@ -322,16 +330,18 @@ async def step_search_memory_with_llm(
     llm_client: AsyncOpenAI,
     end_user_id: str,
 ) -> Tuple[List[str], str]:
-    """检索记忆并使用大模型生成个性化回答"""
+    """Search memories and generate personalized response using LLM"""
     user_query = "今天和明天需要提醒我做什么？"
 
     print_info(
-        "我们将用一个自然语言问题来检索相关记忆，然后让大模型基于这些记忆生成个性化回答。",
+        "We'll use a natural language query to search relevant memories, "
+        "then let the LLM generate a personalized answer "
+        "based on these memories.",
     )
     print("")
 
-    # 1. 检索记忆
-    print_info("🔍 第一步：检索相关记忆")
+    # 1. Search memories
+    print_info("🔍 Step 1: Search relevant memories")
     payload = SearchMemoryInput(
         user_id=end_user_id,
         messages=[Message(role="user", content=user_query)],
@@ -339,21 +349,23 @@ async def step_search_memory_with_llm(
         min_score=0,
     )
 
-    print_info("检索参数：")
-    print_info(f"  · 用户ID：{payload.user_id}")
-    print_info(f"  · 用户问题：{user_query}")
-    print_info(f"  · 返回条数：top_k={payload.top_k}")
-    print_info(f"  · 最低分数：min_score={payload.min_score}")
+    print_info("Search parameters:")
+    print_info(f"  · User ID: {payload.user_id}")
+    print_info(f"  · User query: {user_query}")
+    print_info(f"  · Top K: {payload.top_k}")
+    print_info(f"  · Min score: {payload.min_score}")
     print("")
 
     search_result = await search_memory.arun(payload)
-    print_success(f"✓ 检索完成 (请求ID: {search_result.request_id})")
+    print_success(
+        f"✓ Search completed (Request ID: {search_result.request_id})",
+    )
 
     if not search_result.memory_nodes:
-        print_warn("未找到相关记忆条目")
+        print_warn("No relevant memory nodes found")
         return [], user_query
 
-    print_info(f"找到 {len(search_result.memory_nodes)} 条相关记忆：")
+    print_info(f"Found {len(search_result.memory_nodes)} relevant memories:")
     print("")
 
     hit_ids = []
@@ -366,8 +378,11 @@ async def step_search_memory_with_llm(
     print("─" * 70)
     print("")
 
-    # 2. 使用大模型生成回答
-    print_info("🤖 第二步：基于检索到的记忆，让大模型生成个性化回答")
+    # 2. Generate response using LLM
+    print_info(
+        "🤖 Step 2: Generate personalized answer using LLM "
+        "based on retrieved memories",
+    )
     print("")
 
     context_lines = [
@@ -386,10 +401,10 @@ async def step_search_memory_with_llm(
 
     model_name = "qwen-max"
 
-    print_info(f"模型：{model_name}（流式输出）")
-    print_info(f"问题：{user_query}")
+    print_info(f"Model: {model_name} (streaming)")
+    print_info(f"Query: {user_query}")
     print("")
-    print_success("模型回答：")
+    print_success("Model response:")
     print("")
     print("  ", end="")
 
@@ -417,8 +432,8 @@ async def step_get_user_profile(
     schema_id: str,
     end_user_id: str,
 ) -> None:
-    """获取并展示用户画像信息"""
-    print_info("🎯 用户画像功能展示")
+    """Retrieve and display user profile information"""
+    print_info("🎯 User Profile Feature Demo")
     print("")
     print_info(
         "💡 说明：记忆服务会自动从对话中提取用户信息，填充到画像字段中。",
@@ -429,57 +444,61 @@ async def step_get_user_profile(
 
     payload = GetUserProfileInput(schema_id=schema_id, user_id=end_user_id)
 
-    # 展示示例参数
-    print_info("📥 请求参数：")
-    print_info(f"  · Schema ID：{truncate(payload.schema_id, 50)}")
-    print_info(f"  · 用户ID：{payload.user_id}")
+    # Display example parameters
+    print_info("📥 Request parameters:")
+    print_info(f"  · Schema ID: {truncate(payload.schema_id, 50)}")
+    print_info(f"  · User ID: {payload.user_id}")
     print("")
 
     result = await get_user_profile.arun(payload)
-    print_success(f"✓ 已获取用户画像 (请求ID: {result.request_id})")
+    print_success(
+        f"✓ User profile retrieved (Request ID: {result.request_id})",
+    )
     print("")
 
-    # 显示 Schema 信息
-    print_info("📋 Schema 信息：")
-    schema_name = result.profile.schema_name or "(未设置)"
-    schema_desc = result.profile.schema_description or "(未设置)"
-    print_info(f"  名称: {schema_name}")
-    print_info(f"  描述: {schema_desc}")
+    # Display schema information
+    print_info("📋 Schema information:")
+    schema_name = result.profile.schema_name or "(Not set)"
+    schema_desc = result.profile.schema_description or "(Not set)"
+    print_info(f"  Name: {schema_name}")
+    print_info(f"  Description: {schema_desc}")
     print("")
 
-    # 显示用户画像
+    # Display user profile
     if result.profile.attributes:
         print_info(
-            f"👤 用户画像（共 {len(result.profile.attributes)} 个字段）：",
+            f"👤 User profile ({len(result.profile.attributes)} fields):",
         )
         print("")
 
         for idx, attr in enumerate(result.profile.attributes, start=1):
-            value_display = attr.value if attr.value else "(暂未提取)"
+            value_display = attr.value if attr.value else "(Not extracted yet)"
 
             print_info(f"  [{idx}] {attr.name}")
-            print_info(f"      值: {value_display}")
+            print_info(f"      Value: {value_display}")
             print_info(f"      ID: {attr.id}")
 
-            # 分隔线（最后一个除外）
+            # Separator (except for last item)
             if idx < len(result.profile.attributes):
                 print("")
 
         print("")
 
-        # 如果有字段被填充，添加说明
+        # If any fields are filled, add note
         has_values = any(attr.value for attr in result.profile.attributes)
         if has_values:
             print_success(
-                "💡 提示：上述画像信息是记忆服务自动从对话中提取的！",
+                "💡 Tip: The above profile information was automatically "
+                "extracted from conversations by the memory service!",
             )
         else:
             print_info(
-                "💡 提示：画像字段暂未填充，随着更多对话的积累，会逐步完善。",
+                "💡 Tip: Profile fields not yet populated. "
+                "They will be filled as more conversations accumulate.",
             )
         print("")
     else:
-        print_info("(暂无画像字段)")
+        print_info("(No profile fields)")
         print("")
 
 
@@ -488,21 +507,23 @@ async def step_delete_memory(
     end_user_id: str,
     node_ids: List[str],
 ) -> None:
-    """删除指定的记忆条目"""
-    print_info("删除刚才新增的记忆条目，演示数据清理功能。")
+    """Delete specified memory nodes"""
+    print_info(
+        "Delete the memory nodes we just added to demonstrate data cleanup.",
+    )
     print("")
 
     if not node_ids:
-        print_warn("⚠ 没有可删除的条目，跳过该步骤。")
+        print_warn("⚠ No nodes to delete, skipping this step.")
         return
 
-    # 展示示例参数
-    print_info("请求参数：")
-    print_info(f"  · 用户ID：{end_user_id}")
-    print_info(f"  · 待删除条目数：{len(node_ids)}")
+    # Display example parameters
+    print_info("Request parameters:")
+    print_info(f"  · User ID: {end_user_id}")
+    print_info(f"  · Nodes to delete: {len(node_ids)}")
     print("")
 
-    print_info(f"🗑️  正在删除 {len(node_ids)} 条记忆...")
+    print_info(f"🗑️  Deleting {len(node_ids)} memory nodes...")
     print("")
 
     for idx, node_id in enumerate(node_ids, start=1):
@@ -510,27 +531,27 @@ async def step_delete_memory(
             DeleteMemoryInput(user_id=end_user_id, memory_node_id=node_id),
         )
         print_success(
-            f"  ✓ [{idx}/{len(node_ids)}] 已删除：{truncate(node_id, 50)}",
+            f"  ✓ [{idx}/{len(node_ids)}] Deleted: {truncate(node_id, 50)}",
         )
-        print_info(f"      请求ID：{result.request_id}")
+        print_info(f"      Request ID: {result.request_id}")
 
     print("")
-    print_success(f"✓ 全部删除完成，共删除 {len(node_ids)} 条记忆")
+    print_success(f"✓ All deletions completed, {len(node_ids)} nodes deleted")
 
 
-async def main() -> None:
+async def main() -> None:  # pylint: disable=too-many-statements
     # Required envs
     dashscope_api_key = require_env("DASHSCOPE_API_KEY")
-    
+
     # Generate random user ID if not set
     end_user_id = get_env("END_USER_ID", "")
     if not end_user_id:
         mmdd = datetime.now().strftime("%m%d")
         user_uuid = str(uuid.uuid4())[:8]
         end_user_id = f"modelstudio_memory_user_{mmdd}_{user_uuid}"
-        print_info(f"用户ID: {end_user_id}")
+        print_info(f"User ID: {end_user_id}")
         print("")
-    
+
     llm_base_url = get_env(
         "LLM_BASE_URL",
         "https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -543,8 +564,8 @@ async def main() -> None:
     delete_memory = DeleteMemory()
     create_profile_schema = CreateProfileSchema()
     get_user_profile = GetUserProfile()
-    
-    # 使用 OpenAI SDK 初始化客户端
+
+    # Initialize OpenAI client
     llm_client = AsyncOpenAI(
         api_key=dashscope_api_key,
         base_url=llm_base_url,
@@ -559,10 +580,11 @@ async def main() -> None:
             MemoryAuthenticationError,
             MemoryValidationError,
         ) as e:
-            print_error("❌ 创建用户画像 Schema 失败：")
+            print_error("❌ Failed to create profile schema:")
             print_error(f"    {format_api_error(e)}")
             print_error(
-                "\n💡 建议：请检查 API Key 是否正确，或查看 Request ID 联系技术支持",
+                "\n💡 Tip: Please check if your API Key is correct, "
+                "or contact support with the Request ID",
             )
             return
 
@@ -578,16 +600,17 @@ async def main() -> None:
             MemoryAuthenticationError,
             MemoryValidationError,
         ) as e:
-            print_error("❌ 添加记忆失败：")
+            print_error("❌ Failed to add memory:")
             print_error(f"    {format_api_error(e)}")
             print_error(
-                "\n💡 建议：请检查参数是否正确，或查看 Request ID 联系技术支持",
+                "\n💡 Tip: Please check if your parameters are correct, "
+                "or contact support with the Request ID",
             )
             return
 
         # Wait for consistency
         print("")
-        print_info("⏳ 等待记忆生成（3秒）...")
+        print_info("⏳ Waiting for memory generation (3 seconds)...")
         await asyncio.sleep(3)
         print("")
 
@@ -600,9 +623,9 @@ async def main() -> None:
             MemoryAuthenticationError,
             MemoryValidationError,
         ) as e:
-            print_error("❌ 列出记忆失败：")
+            print_error("❌ Failed to list memory:")
             print_error(f"    {format_api_error(e)}")
-            # 非关键步骤，可以继续
+            # Non-critical step, can continue
 
         print_section("Demo 3: Search Memory + LLM Answer")
         try:
@@ -616,18 +639,23 @@ async def main() -> None:
             MemoryAuthenticationError,
             MemoryValidationError,
         ) as e:
-            print_error("❌ 搜索记忆失败：")
+            print_error("❌ Failed to search memory:")
             print_error(f"    {format_api_error(e)}")
-            # 非关键步骤，可以继续
+            # Non-critical step, can continue
 
-        # 等待用户画像提取完成
+        # Wait for profile extraction to complete
         print("")
-        print_info("⏳ 等待用户画像提取完成（2秒）...")
-        print_info("   记忆服务正在从对话中提取用户信息（年龄、爱好等）...")
+        print_info(
+            "⏳ Waiting for profile extraction to complete (2 seconds)...",
+        )
+        print_info(
+            "   Memory service is extracting user info "
+            "from conversations (age, hobbies, etc.)...",
+        )
         await asyncio.sleep(2)
         print("")
 
-        print_section("Demo 4: Get User Profile (展示自动提取的用户画像)")
+        print_section("Demo 4: Get User Profile (show auto-extracted profile)")
         try:
             await step_get_user_profile(
                 get_user_profile,
@@ -640,9 +668,9 @@ async def main() -> None:
             MemoryValidationError,
             MemoryNotFoundError,
         ) as e:
-            print_error("❌ 获取用户画像失败：")
+            print_error("❌ Failed to get user profile:")
             print_error(f"    {format_api_error(e)}")
-            # 非关键步骤，可以继续
+            # Non-critical step, can continue
 
         print_section("Demo 5: Delete Memory")
         try:
@@ -652,17 +680,17 @@ async def main() -> None:
             MemoryAuthenticationError,
             MemoryValidationError,
         ) as e:
-            print_error("❌ 删除记忆失败：")
+            print_error("❌ Failed to delete memory:")
             print_error(f"    {format_api_error(e)}")
-            # 非关键步骤，可以继续
+            # Non-critical step, can continue
 
         # Wait for consistency
         print("")
-        print_info("⏳ 等待删除生效（2秒）...")
+        print_info("⏳ Waiting for deletion to take effect (2 seconds)...")
         await asyncio.sleep(2)
         print("")
 
-        print_section("Demo 6: List Memory Again (验证删除)")
+        print_section("Demo 6: List Memory Again (verify deletion)")
         try:
             await step_list_memory(list_memory, end_user_id)
         except (
@@ -670,18 +698,18 @@ async def main() -> None:
             MemoryAuthenticationError,
             MemoryValidationError,
         ) as e:
-            print_error("❌ 列出记忆失败：")
+            print_error("❌ Failed to list memory:")
             print_error(f"    {format_api_error(e)}")
 
         print("")
         print("=" * 70)
-        print_success("🎉 所有演示步骤已完成！")
+        print_success("🎉 All demo steps completed!")
         print("=" * 70)
 
     finally:
-        # 清理资源：关闭所有 HTTP 连接
+        # Cleanup: close all HTTP connections
         print("")
-        print_info("🔄 正在清理资源...")
+        print_info("🔄 Cleaning up resources...")
         await add_memory.close()
         await search_memory.close()
         await list_memory.close()
@@ -689,7 +717,7 @@ async def main() -> None:
         await create_profile_schema.close()
         await get_user_profile.close()
         await llm_client.close()
-        print_info("✓ 资源清理完成")
+        print_info("✓ Resource cleanup completed")
 
 
 if __name__ == "__main__":
