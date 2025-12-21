@@ -47,22 +47,14 @@ class MemoryAPIError(Exception):
 class MemoryAuthenticationError(MemoryAPIError):
     """Raised when authentication fails (401, 403)."""
 
-    pass
-
 
 class MemoryNotFoundError(MemoryAPIError):
     """Raised when a memory node is not found (404)."""
-
-    pass
 
 
 class MemoryValidationError(MemoryAPIError):
     """Raised when input validation fails (400)."""
 
-    pass
-
 
 class MemoryNetworkError(MemoryAPIError):
     """Raised when network communication fails."""
-
-    pass

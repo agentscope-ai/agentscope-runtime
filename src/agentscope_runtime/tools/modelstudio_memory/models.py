@@ -24,6 +24,14 @@ class MemoryNode(BaseModel):
         description="Unique identifier for the memory node",
     )
     content: str = Field(..., description="Content of the memory node")
+    event: Optional[str] = Field(
+        None,
+        description="Events associated with the memory node. eg. ADD, DELETE, UPDATE",
+    )
+    old_content: Optional[str] = Field(
+        None,
+        description="Old content of the memory node",
+    )
 
 
 # ==================== Add Memory ====================
@@ -35,7 +43,6 @@ class AddMemoryInput(BaseModel):
         ...,
         description="Conversation messages to be stored as memory",
     )
-    timestamp: int = Field(..., description="Timestamp of the memory")
     meta_data: Optional[Dict[str, Any]] = Field(
         None,
         description="Optional metadata",

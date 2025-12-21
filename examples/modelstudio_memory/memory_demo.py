@@ -4,6 +4,8 @@ import logging
 import os
 import sys
 import time
+import uuid
+from datetime import datetime
 from typing import List, Tuple
 
 from agentscope_runtime.tools.modelstudio_memory import (
@@ -26,8 +28,7 @@ from agentscope_runtime.tools.modelstudio_memory import (
     MemoryNotFoundError,
     MemoryValidationError,
 )
-from agentscope_bricks.models.llm import BaseLLM
-from agentscope_bricks.utils.schemas.oai_llm import Parameters
+from openai import AsyncOpenAI
 
 # ===== 配置日志，过滤掉冗长的调试信息 =====
 # 从环境变量读取日志级别，默认为 WARNING
@@ -185,6 +186,7 @@ async def step_add_memory(
         meta_data={
             "location_name": "杭州",
             "geo_coordinate": "120.1551,30.2741",
+            "customized_key": "customized_value"
         },
     )
 
@@ -200,11 +202,6 @@ async def step_add_memory(
     )
     print_info(f"  · 时间戳：{timestamp_str}")
     print_info(f"  · 对话消息数：{len(payload.messages)} 条")
-
-    # 格式化元数据
-    location = payload.meta_data.get("location_name")
-    coordinate = payload.meta_data.get("geo_coordinate")
-    print_info(f"  · 元数据：位置={location}, 坐标={coordinate}")
     print("")
 
     print_info("💬 对话内容（注意画像信息）：")
@@ -248,8 +245,12 @@ async def step_add_memory(
         print_info("📝 生成的记忆条目：")
         print("")
         for idx, node in enumerate(memory_nodes_list, start=1):
-            print(f"  [{idx}] {truncate(node.content, 100)}")
+            print(f"  [{idx}] Content: {truncate(node.content, 100)}")
             print(f"      ID: {node.memory_node_id}")
+            print(f"      Event: {node.event}")
+            if node.old_content:
+                print(f"      Old content: {truncate(node.old_content, 100)}")
+
             if idx < len(memory_nodes_list):
                 print("")
         print("")
@@ -318,7 +319,7 @@ async def step_list_memory(
 
 async def step_search_memory_with_llm(
     search_memory: SearchMemory,
-    llm: BaseLLM,
+    llm_client: AsyncOpenAI,
     end_user_id: str,
 ) -> Tuple[List[str], str]:
     """检索记忆并使用大模型生成个性化回答"""
@@ -383,7 +384,6 @@ async def step_search_memory_with_llm(
         {"role": "user", "content": user_query},
     ]
 
-    params = Parameters(stream=True, stream_options={"include_usage": True})
     model_name = "qwen-max"
 
     print_info(f"模型：{model_name}（流式输出）")
@@ -393,16 +393,18 @@ async def step_search_memory_with_llm(
     print("")
     print("  ", end="")
 
-    async for chunk in llm.astream(
+    stream = await llm_client.chat.completions.create(
         model=model_name,
         messages=messages,
-        parameters=params,
-    ):
+        stream=True,
+        stream_options={"include_usage": True},
+    )
+
+    async for chunk in stream:
         if chunk.choices:
-            delta = getattr(chunk.choices[0], "delta", None)
-            if delta is not None:
-                text = str(delta)
-                print(text, end="", flush=True)
+            delta = chunk.choices[0].delta
+            if delta.content:
+                print(delta.content, end="", flush=True)
 
     print("")
     print("")
@@ -518,8 +520,21 @@ async def step_delete_memory(
 
 async def main() -> None:
     # Required envs
-    require_env("DASHSCOPE_API_KEY")
-    end_user_id = get_env("END_USER_ID", "demo_user_test_001")
+    dashscope_api_key = require_env("DASHSCOPE_API_KEY")
+    
+    # Generate random user ID if not set
+    end_user_id = get_env("END_USER_ID", "")
+    if not end_user_id:
+        mmdd = datetime.now().strftime("%m%d")
+        user_uuid = str(uuid.uuid4())[:8]
+        end_user_id = f"modelstudio_memory_user_{mmdd}_{user_uuid}"
+        print_info(f"用户ID: {end_user_id}")
+        print("")
+    
+    llm_base_url = get_env(
+        "LLM_BASE_URL",
+        "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    )
 
     # Initialize components
     add_memory = AddMemory()
@@ -528,7 +543,12 @@ async def main() -> None:
     delete_memory = DeleteMemory()
     create_profile_schema = CreateProfileSchema()
     get_user_profile = GetUserProfile()
-    llm = BaseLLM()
+    
+    # 使用 OpenAI SDK 初始化客户端
+    llm_client = AsyncOpenAI(
+        api_key=dashscope_api_key,
+        base_url=llm_base_url,
+    )
 
     try:
         print_section("Demo 0: Create Profile Schema")
@@ -588,7 +608,7 @@ async def main() -> None:
         try:
             _hits, _query = await step_search_memory_with_llm(
                 search_memory,
-                llm,
+                llm_client,
                 end_user_id,
             )
         except (
@@ -668,6 +688,7 @@ async def main() -> None:
         await delete_memory.close()
         await create_profile_schema.close()
         await get_user_profile.close()
+        await llm_client.close()
         print_info("✓ 资源清理完成")
 
 
