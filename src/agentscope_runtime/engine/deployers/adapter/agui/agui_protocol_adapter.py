@@ -1,0 +1,132 @@
+# -*- coding: utf-8 -*-
+import asyncio
+import json
+import logging
+import traceback
+from typing import Any, AsyncGenerator, Callable, Optional
+from uuid import uuid4
+
+from ag_ui.core import RunAgentInput
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
+
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest, Event
+
+from .agui_adapter_utils import (
+    AGUIAdapter,
+    AGUIEvent,
+    AGUIEventType,
+    RunErrorEvent,
+)
+from ..protocol_adapter import ProtocolAdapter
+
+logger = logging.getLogger(__name__)
+
+AGUI_ENDPOINT_PATH = "/agui"
+SSE_HEADERS = {
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+    "X-Accel-Buffering": "no",
+}
+
+
+class AGUIDefaultAdapter(ProtocolAdapter):
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self._execution_func: Optional[
+            Callable[[AgentRequest], AsyncGenerator[Event, None]]
+        ] = None
+        self._max_concurrent_requests = kwargs.get(
+            "max_concurrent_requests",
+            100,
+        )
+        self._semaphore = asyncio.Semaphore(self._max_concurrent_requests)
+
+    async def _handle_requests(
+        self,
+        agent_run_input: RunAgentInput,
+    ) -> StreamingResponse:
+        """
+        Handle AG-UI streaming request.
+        """
+        await self._semaphore.acquire()
+        request_id = f"agui_{uuid4()}"
+        logger.info("[AGUI] start request_id=%s", request_id)
+        try:
+            return StreamingResponse(
+                self._generate_stream_response(
+                    request=agent_run_input,
+                ),
+                media_type="text/event-stream",
+                headers=SSE_HEADERS,
+            )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(
+                f"Unexpected error in _handle_requests: {e}\n"
+                f"{traceback.format_exc()}",
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error",
+            ) from e
+        finally:
+            self._semaphore.release()
+            logger.info("[AGUI] end request_id=%s", request_id)
+
+    def as_sse_data(self, event: AGUIEvent) -> str:
+        data = event.model_dump(mode="json", exclude_none=True)
+        return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+    async def _generate_stream_response(
+        self,
+        request: RunAgentInput,
+    ):
+        assert self._execution_func is not None
+        adapter = AGUIAdapter(
+            thread_id=request.thread_id,
+            run_id=request.run_id,
+        )
+        try:
+            agent_request = adapter.convert_agui_request_to_agent_request(
+                request,
+            )
+            async for event in self._execution_func(agent_request):
+                agui_events = adapter.convert_agent_event_to_agui_events(event)
+                for agui_event in agui_events:
+                    yield self.as_sse_data(agui_event)
+
+                if not adapter.run_finished_emitted:
+                    yield self.as_sse_data(
+                        adapter.build_run_event(
+                            event_type=AGUIEventType.RUN_FINISHED,
+                        ),
+                    )
+
+        except Exception as e:
+            logger.error(
+                f"AG-UI stream failed: {e}\n{traceback.format_exc()}",
+            )
+
+            error_event = RunErrorEvent(
+                message=f"Unexpected stream error: {e}",
+                code="unexpected_stream_error",
+            ).model_dump(
+                mode="json",
+                exclude_none=True,
+            )
+            yield f"data: {json.dumps(error_event, ensure_ascii=False)}\n\n"
+            return
+
+    def add_endpoint(self, app: FastAPI, func, **kwargs) -> Any:
+        """
+        Add AG-UI endpoint to FastAPI app.
+        """
+        self._execution_func = func
+        app.add_api_route(
+            AGUI_ENDPOINT_PATH,
+            self._handle_requests,
+            methods=["POST", "OPTIONS"],
+        )
+        return app
