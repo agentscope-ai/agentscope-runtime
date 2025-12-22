@@ -40,6 +40,7 @@ parts:
       - file: en/tracing.md
       - file: en/protocol.md
       - file: en/demohouse.md
+      - file: en/a2a_registry.md
       - file: en/ut.md
       - file: en/langgraph_guidelines.md
       - file: en/agno_guidelines.md
@@ -102,6 +103,7 @@ parts:
       - file: zh/tracing.md
       - file: zh/protocol.md
       - file: zh/demohouse.md
+      - file: zh/a2a_registry.md
       - file: zh/ut.md
       - file: zh/langgraph_guidelines.md
       - file: zh/agno_guidelines.md

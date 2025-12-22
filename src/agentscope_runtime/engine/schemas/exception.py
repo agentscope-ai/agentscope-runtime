@@ -578,3 +578,27 @@ class UnknownAgentException(AgentRuntimeErrorException):
             message,
             details,
         )
+
+
+class ModelQuotaExceededException(AgentRuntimeErrorException):
+    """Model quota exceeded"""
+
+    def __init__(
+        self,
+        model_name: str,
+        details: Optional[Dict[str, Any]] = None,
+    ):
+        message = f"Model quota exceeded: {model_name}"
+        super().__init__("MODEL_QUOTA_EXCEEDED", message, details)
+
+
+class ModelContextLengthExceededException(AgentRuntimeErrorException):
+    """Model context length exceeded"""
+
+    def __init__(
+        self,
+        model_name: str,
+        details: Optional[Dict[str, Any]] = None,
+    ):
+        message = f"Model context length exceeded: {model_name}"
+        super().__init__("MODEL_CONTEXT_LENGTH_EXCEEDED", message, details)

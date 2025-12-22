@@ -64,6 +64,56 @@ agent_app.run(host="127.0.0.1", port=8090)
 
 ------
 
+## A2A 扩展字段配置
+
+**功能**
+
+通过 `a2a_config` 参数扩展配置 Agent 的 A2A（Agent-to-Agent）协议信息和运行时相关字段。
+
+**关键参数**
+
+- `a2a_config`：可选参数，支持 `AgentCardWithRuntimeConfig` 对象
+
+**配置内容**
+
+`a2a_config` 支持配置两类字段：
+
+1. **AgentCard 协议字段**：通过 `agent_card` 字段传递，包含技能、传输协议、输入输出模式等
+2. **Runtime 运行时字段**：顶层字段，包含服务注册与发现（Registry）、超时设置、服务端点等
+
+**用法示例**
+
+```{code-cell}
+from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.deployers.adapter.a2a import (
+    AgentCardWithRuntimeConfig,
+)
+
+agent_app = AgentApp(
+    app_name="MyAgent",
+    app_description="My agent description",
+    a2a_config=AgentCardWithRuntimeConfig(
+        agent_card={
+            "name": "MyAgent",
+            "description": "My agent description",
+            "skills": [...],  # Agent 技能列表
+            "default_input_modes": ["text"],
+            "default_output_modes": ["text"],
+            # ... 其他协议字段
+        },
+        registry=[...],  # 服务注册与发现
+        task_timeout=120,  # 任务超时设置
+        # ... 其他配置字段
+    ),
+)
+```
+
+**详细说明**
+
+完整的字段说明、配置方法和使用示例，请参考 {doc}`a2a_registry` 文档。
+
+------
+
 ## 流式输出（SSE）
 
 **功能**
