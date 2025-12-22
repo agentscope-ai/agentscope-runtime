@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import sessionApi from './sessionApi';
 import { useLocalStorageState } from 'ahooks';
 import defaultConfig from './OptionsPanel/defaultConfig';
+import Weather from '../Cards/Weather';
 
 export default function () {
   const [optionsConfig, setOptionsConfig] = useLocalStorageState('agent-scope-runtime-webui-options', {
@@ -22,6 +23,7 @@ export default function () {
 
 
     return {
+      
       ...optionsConfig,
       session: {
         multiple: true,
@@ -31,7 +33,10 @@ export default function () {
         ...optionsConfig.theme,
         rightHeader,
       },
-    };
+      customToolRenderConfig: {
+        'weather search mock': Weather,
+      },
+    } as unknown as IAgentScopeRuntimeWebUIOptions
   }, [optionsConfig]);
 
 
@@ -39,7 +44,7 @@ export default function () {
 
   return <div style={{ height: '100vh' }}>
     <AgentScopeRuntimeWebUI
-      options={options as unknown as IAgentScopeRuntimeWebUIOptions}
+      options={options}
     />
   </div>;
 }
