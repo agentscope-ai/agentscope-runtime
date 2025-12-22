@@ -218,7 +218,11 @@ class AGUIAdapter:
         self,
         thread_id: Optional[str] = None,
         run_id: Optional[str] = None,
+        threadId: Optional[str] = None,
+        runId: Optional[str] = None,
     ) -> None:
+        thread_id = thread_id or threadId
+        run_id = run_id or runId
         self.thread_id = thread_id or f"thread_{uuid4()}"
         self.run_id = run_id or f"run_{uuid4()}"
         self._run_started_emitted = False
@@ -294,6 +298,16 @@ class AGUIAdapter:
         events: List[AGUIEvent] = []
         events.extend(self._ensure_run_started_event())
 
+        # Process message content
+        if message_event.content:
+            for content in message_event.content:
+                # Set the msg_id on the content if it's not set
+                if not content.msg_id:
+                    content.msg_id = message_event.id
+                # Convert each content item to AGUI events
+                events.extend(self._convert_content_event(content))
+
+        # Process message completion status
         if message_event.status in {RunStatus.Completed}:
             agui_message_ids = self._message_id_to_agui_message_id_mapping[
                 message_event.id
@@ -332,15 +346,19 @@ class AGUIAdapter:
         if response_event.status == RunStatus.Created:
             events.extend(self._ensure_run_started_event())
         elif response_event.status in {RunStatus.Failed, RunStatus.Rejected}:
-            error_payload = (
-                response_event.error.model_dump()
-                if getattr(response_event, "error", None)
-                else {"message": "agent run failed"}
-            )
+            if getattr(response_event, "error", None):
+                error_dict = response_event.error.model_dump()
+                message = error_dict.get("message", "agent run failed")
+                code = error_dict.get("code", "unknown_error")
+            else:
+                message = "agent run failed"
+                code = "unknown_error"
+
             events.append(
                 self.build_run_event(
                     AGUIEventType.RUN_ERROR,
-                    error=error_payload,
+                    message=message,
+                    code=code,
                 ),
             )
         elif response_event.status in {RunStatus.Completed}:
@@ -463,9 +481,11 @@ class AGUIAdapter:
             # calls events
             try:
                 tool_call = ToolCall.model_validate(content.data)
-                _ensure_agui_tool_call_message_started(
-                    agui_msg_id=agui_msg_id,
-                    tool_call=tool_call,
+                events.extend(
+                    _ensure_agui_tool_call_message_started(
+                        agui_msg_id=agui_msg_id,
+                        tool_call=tool_call,
+                    ),
                 )
                 events.append(
                     ToolCallArgsEvent(
@@ -527,7 +547,6 @@ class AGUIAdapter:
         if event_type == AGUIEventType.RUN_ERROR:
             return RunErrorEvent(
                 run_id=self.run_id,
-                thread_id=self.thread_id,
                 **kwargs,
             )
         raise ValueError(f"Unsupported run event type: {event_type}")

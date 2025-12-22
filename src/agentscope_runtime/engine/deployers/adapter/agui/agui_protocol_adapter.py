@@ -54,26 +54,28 @@ class AGUIDefaultAdapter(ProtocolAdapter):
         logger.info("[AGUI] start request_id=%s", request_id)
         try:
             return StreamingResponse(
-                self._generate_stream_response(
-                    request=agent_run_input,
+                self._stream_with_semaphore(
+                    agent_run_input,
+                    request_id,
                 ),
                 media_type="text/event-stream",
                 headers=SSE_HEADERS,
             )
         except HTTPException:
+            self._semaphore.release()
+            logger.info("[AGUI] end request_id=%s", request_id)
             raise
         except Exception as e:
             logger.error(
                 f"Unexpected error in _handle_requests: {e}\n"
                 f"{traceback.format_exc()}",
             )
+            self._semaphore.release()
+            logger.info("[AGUI] end request_id=%s", request_id)
             raise HTTPException(
                 status_code=500,
                 detail="Internal server error",
             ) from e
-        finally:
-            self._semaphore.release()
-            logger.info("[AGUI] end request_id=%s", request_id)
 
     def as_sse_data(self, event: AGUIEvent) -> str:
         data = event.model_dump(mode="json", exclude_none=True)
@@ -97,13 +99,14 @@ class AGUIDefaultAdapter(ProtocolAdapter):
                 for agui_event in agui_events:
                     yield self.as_sse_data(agui_event)
 
-                if not adapter.run_finished_emitted:
-                    yield self.as_sse_data(
-                        adapter.build_run_event(
-                            event_type=AGUIEventType.RUN_FINISHED,
-                        ),
-                    )
-
+            if not adapter.run_finished_emitted:
+                # pylint: disable=protected-access
+                adapter._run_finished_emitted = True
+                yield self.as_sse_data(
+                    adapter.build_run_event(
+                        event_type=AGUIEventType.RUN_FINISHED,
+                    ),
+                )
         except Exception as e:
             logger.error(
                 f"AG-UI stream failed: {e}\n{traceback.format_exc()}",
@@ -118,6 +121,18 @@ class AGUIDefaultAdapter(ProtocolAdapter):
             )
             yield f"data: {json.dumps(error_event, ensure_ascii=False)}\n\n"
             return
+
+    async def _stream_with_semaphore(
+        self,
+        request: RunAgentInput,
+        request_id: str,
+    ):
+        try:
+            async for chunk in self._generate_stream_response(request):
+                yield chunk
+        finally:
+            self._semaphore.release()
+            logger.info("[AGUI] end request_id=%s", request_id)
 
     def add_endpoint(self, app: FastAPI, func, **kwargs) -> Any:
         """
