@@ -576,16 +576,41 @@ if __name__ == "__main__":
 
 ```bash
 # Ensure environment variables are set
+# More env settings, please refer to the table below
 export ALIBABA_CLOUD_ACCESS_KEY_ID="your-access-key-id"
 export ALIBABA_CLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
-export ALIBABA_CLOUD_REGION_ID="cn-hangzhou"  # or other regions
+export AGENT_RUN_REGION_ID="cn-hangzhou"  # or other regions
 
 # OSS configuration (for storing build artifacts)
 export OSS_ACCESS_KEY_ID="your-oss-access-key-id"
 export OSS_ACCESS_KEY_SECRET="your-oss-access-key-secret"
-export OSS_ENDPOINT="oss-cn-hangzhou.aliyuncs.com"
+export OSS_REGION="cn-hangzhou"
 export OSS_BUCKET_NAME="your-bucket-name"
 ```
+
+You can set the following environment variables or `AgentRunConfig` to customize the deployment:
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `ALIBABA_CLOUD_ACCESS_KEY_ID` | Yes | - | Alibaba Cloud Access Key ID |
+| `ALIBABA_CLOUD_ACCESS_KEY_SECRET` | Yes | - | Alibaba Cloud Access Key Secret |
+| `AGENT_RUN_REGION_ID` | No | `cn-hangzhou` | Region ID for AgentRun service |
+| `AGENT_RUN_ENDPOINT` | No | `agentrun.{region_id}.aliyuncs.com` | AgentRun service endpoint |
+| `AGENT_RUN_LOG_STORE` | No | - | Log store name (requires log_project to be set) |
+| `AGENT_RUN_LOG_PROJECT` | No | - | Log project name (requires log_store to be set) |
+| `AGENT_RUN_NETWORK_MODE` | No | `PUBLIC` | Network mode: `PUBLIC`/`PRIVATE`/`PUBLIC_AND_PRIVATE` |
+| `AGENT_RUN_VPC_ID` | Conditional | - | VPC ID (required if network_mode is `PRIVATE`) |
+| `AGENT_RUN_SECURITY_GROUP_ID` | Conditional | - | Security Group ID (required if network_mode is `PRIVATE`) |
+| `AGENT_RUN_VSWITCH_IDS` | Conditional | - | VSwitch IDs in JSON array format (required if network_mode is `PRIVATE`) |
+| `AGENT_RUN_CPU` | No | `2.0` | CPU allocation in cores |
+| `AGENT_RUN_MEMORY` | No | `2048` | Memory allocation in MB |
+| `AGENT_RUN_EXECUTION_ROLE_ARN` | No | - | Execution role ARN for permissions |
+| `AGENT_RUN_SESSION_CONCURRENCY_LIMIT` | No | `200` | Session concurrency limit |
+| `AGENT_RUN_SESSION_IDLE_TIMEOUT_SECONDS` | No | `600` | Session idle timeout in seconds |
+| `OSS_ACCESS_KEY_ID` | No | `ALIBABA_CLOUD_ACCESS_KEY_ID` | OSS Access Key ID (falls back to Alibaba Cloud credentials) |
+| `OSS_ACCESS_KEY_SECRET` | No | `ALIBABA_CLOUD_ACCESS_KEY_SECRET` | OSS Access Key Secret (falls back to Alibaba Cloud credentials) |
+| `OSS_REGION` | No | `cn-hangzhou` | OSS region |
+| `OSS_BUCKET_NAME` | Yes | - | OSS bucket name for storing build artifacts |
 
 ### Implementation
 
@@ -610,7 +635,7 @@ async def deploy_to_agentrun():
         oss_config=OSSConfig(
             access_key_id=os.environ.get("OSS_ACCESS_KEY_ID"),
             access_key_secret=os.environ.get("OSS_ACCESS_KEY_SECRET"),
-            endpoint=os.environ.get("OSS_ENDPOINT"),
+            region=os.environ.get("OSS_REGION"),
             bucket_name=os.environ.get("OSS_BUCKET_NAME"),
         ),
         agentrun_config=AgentRunConfig(
@@ -660,7 +685,7 @@ OSS configuration for storing build artifacts:
 OSSConfig(
     access_key_id="your-access-key-id",
     access_key_secret="your-access-key-secret",
-    endpoint="oss-cn-hangzhou.aliyuncs.com",
+    region="cn-hangzhou",
     bucket_name="your-bucket-name",
 )
 ```

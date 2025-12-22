@@ -3,13 +3,15 @@
 import copy
 import json
 
-from typing import AsyncIterator, Tuple, List
+from typing import AsyncIterator, Tuple, List, Union
 from urllib.parse import urlparse
 
+from agentscope import setup_logger
 from agentscope.message import Msg
 
 from ...engine.schemas.agent_schemas import (
     Message,
+    Content,
     TextContent,
     ImageContent,
     AudioContent,
@@ -21,6 +23,8 @@ from ...engine.schemas.agent_schemas import (
     MessageType,
 )
 
+setup_logger("ERROR")
+
 
 def _update_obj_attrs(obj, **attrs):
     for key, value in attrs.items():
@@ -31,7 +35,7 @@ def _update_obj_attrs(obj, **attrs):
 
 async def adapt_agentscope_message_stream(
     source_stream: AsyncIterator[Tuple[Msg, bool]],
-) -> AsyncIterator[Message]:
+) -> AsyncIterator[Union[Message, Content]]:
     # Initialize variables to avoid uncaught errors
     msg_id = None
     last_content = ""

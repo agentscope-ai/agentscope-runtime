@@ -1,0 +1,21 @@
+# ModelStudio Deployment Configuration Example
+# Usage: agentscope deploy modelstudio /path/to/source --config modelstudio_deploy_config.yaml
+
+# Deployment name
+name: "friday-agent"
+
+# Entrypoint (optional, will auto-detect if not specified)
+# entrypoint: "app.py"
+
+# Skip upload (for testing package build only)
+skip_upload: false
+
+# Environment variables
+environment:
+  PYTHONPATH: "/app"
+  LOG_LEVEL: "INFO"
+  DASHSCOPE_API_KEY: "${DASHSCOPE_API_KEY}"
+  # Required for ModelStudio
+  ALIBABA_CLOUD_ACCESS_KEY_ID: "${ALIBABA_CLOUD_ACCESS_KEY_ID}"
+  ALIBABA_CLOUD_ACCESS_KEY_SECRET: "${ALIBABA_CLOUD_ACCESS_KEY_SECRET}"
+  MODELSTUDIO_WORKSPACE_ID: "${MODELSTUDIO_WORKSPACE_ID}"

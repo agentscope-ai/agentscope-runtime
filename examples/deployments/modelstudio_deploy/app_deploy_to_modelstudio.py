@@ -174,7 +174,7 @@ async def deploy_app_to_modelstudio():
     # 4. Deployment configuration
     deployment_config = {
         # Basic configuration
-        "deploy_name": "agent-app-example-2",
+        "deploy_name": "agent-app-example-3",
         "telemetry_enabled": True,
         # Dependencies configuration
         "requirements": [

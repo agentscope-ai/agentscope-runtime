@@ -97,6 +97,7 @@ asyncio.run(basic_search_example())
 ```
 
 ### Multi-strategy Search Example
+
 ```python
 async def multi_strategy_search_example():
     # Academic search
@@ -126,10 +127,12 @@ async def multi_strategy_search_example():
     print("Academic search results:", academic_result.search_result)
     print("News search results:", news_result.search_result)
 
-asyncio.run(multi_strategy_search_example())
+
+asyncio.chat(multi_strategy_search_example())
 ```
 
 ### Advanced Search Configuration Example
+
 ```python
 async def advanced_search_example():
     result = await search.arun({
@@ -158,7 +161,8 @@ async def advanced_search_example():
     print("Comprehensive search results:", result.search_result)
     print("Search statistics:", result.search_info)
 
-asyncio.run(advanced_search_example())
+
+asyncio.chat(advanced_search_example())
 ```
 
 ## 🔍 Supported Search Strategies

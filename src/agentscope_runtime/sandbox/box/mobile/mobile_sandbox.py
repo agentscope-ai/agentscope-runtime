@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import logging
-import os
+import subprocess
 import platform
 from typing import Optional, List, Union
+from urllib.parse import urlencode, urljoin
 
 from agentscope_runtime.sandbox.box.sandbox import Sandbox
 
@@ -14,8 +15,34 @@ from ...constant import TIMEOUT
 logger = logging.getLogger(__name__)
 
 
+class MobileMixin:
+    @property
+    def mobile_url(self):
+        if not self.manager_api.check_health(identity=self.sandbox_id):
+            raise RuntimeError(f"Sandbox {self.sandbox_id} is not healthy")
+
+        info = self.get_info()
+        # 'path' and 'remote_path' are conceptually different:
+        # 'path' is used for local URLs,
+        # 'remote_path' for remote URLs. In this implementation,
+        # both point to "/websockify/".
+        # If the endpoints diverge in the future,
+        # update these values accordingly.
+        path = "/websockify/"
+        remote_path = "/websockify/"
+        params = {"password": info["runtime_token"]}
+
+        if self.base_url is None:
+            return urljoin(info["url"], path) + "?" + urlencode(params)
+
+        return (
+            f"{self.base_url}/desktop/{self.sandbox_id}{remote_path}"
+            f"?{urlencode(params)}"
+        )
+
+
 class HostPrerequisiteError(Exception):
-    """Custom exception raised when host prerequisites
+    """Exception raised when host prerequisites
     for MobileSandbox are not met."""
 
 
@@ -27,7 +54,7 @@ class HostPrerequisiteError(Exception):
     description="Mobile Sandbox",
     runtime_config={"privileged": True},
 )
-class MobileSandbox(Sandbox):
+class MobileSandbox(MobileMixin, Sandbox):
     _host_check_done = False
 
     def __init__(  # pylint: disable=useless-parent-delegation
@@ -38,7 +65,7 @@ class MobileSandbox(Sandbox):
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.MOBILE,
     ):
-        if not self.__class__._host_check_done:
+        if base_url is None and not self.__class__._host_check_done:
             self._check_host_readiness()
             self.__class__._host_check_done = True
 
@@ -65,36 +92,80 @@ class MobileSandbox(Sandbox):
                 "=========================================================",
             )
 
-        if platform.system() == "Linux":
-            required_devices = [
-                "/dev/binder",
-                "/dev/hwbinder",
-                "/dev/vndbinder",
-                "/dev/ashmem",
-            ]
+        os_type = platform.system()
+        if os_type == "Linux":
+            try:
+                result = subprocess.run(
+                    ["lsmod"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                loaded_modules = result.stdout
+            except (FileNotFoundError, subprocess.CalledProcessError):
+                loaded_modules = ""
+                logger.warning(
+                    "Could not execute 'lsmod' to verify kernel modules.",
+                )
 
-            missing_devices = [
-                dev for dev in required_devices if not os.path.exists(dev)
-            ]
-
-            if missing_devices:
+            if "binder_linux" not in loaded_modules:
                 error_message = (
-                    f"\n========== HOST PREREQUISITE FAILED ==========\n"
-                    f"MobileSandbox requires specific kernel \
-                        modules on the host machine.\n"
-                    f"The following required device files are missing:\n"
-                    f"  - {', '.join(missing_devices)}\n\n"
-                    "To fix this, please run the following \
-                        commands on your Linux host:\n\n"
-                    "1. Install extra kernel modules:\n"
-                    "   sudo apt update && \
-                        sudo apt install -y linux-modules-extra-`uname -r`\n\n"
-                    "2. Load modules and create device nodes:\n"
-                    '   sudo modprobe binder_linux devices=\
-                        "binder,hwbinder,vndbinder"\n'
-                    "   sudo modprobe ashmem_linux\n\n"
-                    "After running these commands, verify with:\n"
-                    "   ls -l /dev/binder* /dev/ashmem\n"
+                    "\n========== HOST PREREQUISITE FAILED ==========\n"
+                    "MobileSandbox requires specific kernel modules"
+                    " that appear to be missing or not loaded.\n\n"
+                    "To fix this, please run the following commands"
+                    " on your Linux host:\n\n"
+                    "## Install required kernel modules\n"
+                    "sudo apt update"
+                    " && sudo apt install -y linux-modules-extra-`uname -r`\n"
+                    "sudo modprobe binder_linux"
+                    ' devices="binder,hwbinder,vndbinder"\n'
+                    "## (Optional) Load the ashmem driver for older kernels\n"
+                    "sudo modprobe ashmem_linux\n"
+                    "=================================================="
+                )
+                raise HostPrerequisiteError(error_message)
+
+        if os_type == "Windows":
+            try:
+                result = subprocess.run(
+                    ["wsl", "lsmod"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    encoding="utf-8",
+                )
+                loaded_modules = result.stdout
+            except (FileNotFoundError, subprocess.CalledProcessError):
+                loaded_modules = ""
+                logger.warning(
+                    "Could not execute 'wsl lsmod' to verify kernel modules.",
+                )
+
+            if "binder_linux" not in loaded_modules:
+                error_message = (
+                    "\n========== HOST PREREQUISITE FAILED ==========\n"
+                    "MobileSandbox on Windows requires Docker Desktop "
+                    "with the WSL 2 backend.\n"
+                    "The required kernel modules seem to be missing "
+                    "in your WSL 2 environment.\n\n"
+                    "To fix this, please follow these steps:\n\n"
+                    "1. **Ensure Docker Desktop is using WSL 2**:\n"
+                    "   - Open Docker Desktop -> Settings -> General.\n"
+                    "   - Make sure 'Use the WSL 2 based engine' "
+                    "is checked.\n\n"
+                    "2. **Ensure WSL is installed and updated**:\n"
+                    "   - Open PowerShell or Command Prompt "
+                    "as Administrator.\n"
+                    "   - Run: wsl --install\n"
+                    "   - Run: wsl --update\n"
+                    "   (An update usually installs a recent Linux kernel "
+                    "with the required modules.)\n\n"
+                    "3. **Verify manually (Optional)**:\n"
+                    "   - After updating, run 'wsl lsmod | findstr binder' "
+                    "in your terminal.\n"
+                    "   - If it shows 'binder_linux', "
+                    "the issue should be resolved.\n"
                     "=================================================="
                 )
                 raise HostPrerequisiteError(error_message)
@@ -157,14 +228,17 @@ class MobileSandbox(Sandbox):
         """Get the screen resolution of the connected mobile device."""
         return self.call_tool("adb", {"action": "get_screen_resolution"})
 
-    def mobile_tap(self, x: int, y: int):
+    def mobile_tap(self, coordinate: List[int]):
         """Tap a specific coordinate on the screen.
 
         Args:
-            x (int): The x-coordinate in pixels from the left edge.
-            y (int): The y-coordinate in pixels from the top edge.
+            coordinate (List[int]):
+                The screen coordinates for the tap location.
         """
-        return self.call_tool("adb", {"action": "tap", "coordinate": [x, y]})
+        return self.call_tool(
+            "adb",
+            {"action": "tap", "coordinate": coordinate},
+        )
 
     def mobile_swipe(
         self,
@@ -177,11 +251,11 @@ class MobileSandbox(Sandbox):
         from a start point to an end point.
 
         Args:
-            start (Optional[List[int]]):
+            start (List[int]):
                 The starting coordinates [x, y] in pixels.
-            end (Optional[List[int]]):
+            end (List[int]):
                 The ending coordinates [x, y] in pixels.
-            duration (int, optional):
+            duration (Optional[int]):
                 The duration of the swipe in milliseconds.
         """
         return self.call_tool(
@@ -206,7 +280,7 @@ class MobileSandbox(Sandbox):
         """Send an Android key event to the device.
 
         Args:
-            code (int | str): The key event code (e.g., 3 for HOME) or a
+            code (Union[int, str]): The key event code (e.g., 3 for HOME) or a
                               string representation (e.g., 'HOME', 'BACK').
         """
         return self.call_tool("adb", {"action": "key_event", "code": code})

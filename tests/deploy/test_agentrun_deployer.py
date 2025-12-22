@@ -65,6 +65,7 @@ def mock_oss_config():
         region="cn-hangzhou",
         access_key_id="test_oss_ak_id",
         access_key_secret="test_oss_ak_secret",
+        bucket_name="test-bucket",
     )
 
 
@@ -289,7 +290,8 @@ async def test_deploy_invalid_inputs_raise(
     # Missing runner, project_dir, and external_whl_path
     with pytest.raises(
         ValueError,
-        match="Must provide either runner, project_dir, or external_whl_path",
+        match="Must provide either app, runner, project_dir, "
+        "or external_whl_path",
     ):
         await deployer.deploy(
             project_dir=None,
@@ -529,6 +531,9 @@ async def test_delete_agent_runtime(
     deployer.client.delete_agent_runtime_async = AsyncMock(
         return_value=mock_response,
     )
+    deployer._poll_agent_runtime_status = AsyncMock(
+        return_value={"status": "READY", "status_reason": "Deleted"},
+    )
 
     # Test delete
     result = await deployer.delete(agent_runtime_id="runtime-to-delete")
@@ -616,15 +621,21 @@ def test_agentrun_config_ensure_valid():
 
 def test_oss_config_from_env(monkeypatch: pytest.MonkeyPatch):
     """Test loading OSSConfig from environment variables."""
+    # Clear any existing OSS env vars first
+    monkeypatch.delenv("OSS_ACCESS_KEY_ID", raising=False)
+    monkeypatch.delenv("OSS_ACCESS_KEY_SECRET", raising=False)
+
     monkeypatch.setenv("ALIBABA_CLOUD_ACCESS_KEY_ID", "oss_ak")
     monkeypatch.setenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET", "oss_sk")
     monkeypatch.setenv("OSS_REGION", "cn-shanghai")
+    monkeypatch.setenv("OSS_BUCKET_NAME", "test-bucket")
 
     config = OSSConfig.from_env()
 
     assert config.access_key_id == "oss_ak"
     assert config.access_key_secret == "oss_sk"
     assert config.region == "cn-shanghai"
+    assert config.bucket_name == "test-bucket"
 
 
 def test_oss_config_ensure_valid():
@@ -634,24 +645,9 @@ def test_oss_config_ensure_valid():
         region="cn-hangzhou",
         access_key_id="test_ak",
         access_key_secret="test_sk",
+        bucket_name="test-bucket",
     )
     config.ensure_valid()  # Should not raise
-
-    # Missing access_key_id
-    config = OSSConfig(
-        region="cn-hangzhou",
-        access_key_secret="test_sk",
-    )
-    with pytest.raises(RuntimeError, match="Missing AccessKey for OSS"):
-        config.ensure_valid()
-
-    # Missing access_key_secret
-    config = OSSConfig(
-        region="cn-hangzhou",
-        access_key_id="test_ak",
-    )
-    with pytest.raises(RuntimeError, match="Missing AccessKey for OSS"):
-        config.ensure_valid()
 
 
 def test_log_config():

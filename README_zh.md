@@ -6,6 +6,7 @@
 [![PyPI](https://img.shields.io/pypi/v/agentscope-runtime?label=PyPI&color=brightgreen&logo=python)](https://pypi.org/project/agentscope-runtime/)
 [![Downloads](https://static.pepy.tech/badge/agentscope-runtime)](https://pepy.tech/project/agentscope-runtime)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg?logo=python&label=Python)](https://python.org)
+[![Last Commit](https://img.shields.io/github/last-commit/agentscope-ai/agentscope-runtime)](https://github.com/agentscope-ai/agentscope-runtime)
 [![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=License)](LICENSE)
 [![Code Style](https://img.shields.io/badge/code%20style-black-black.svg?logo=python&label=CodeStyle)](https://github.com/psf/black)
 [![GitHub Stars](https://img.shields.io/github/stars/agentscope-ai/agentscope-runtime?style=flat&logo=github&color=yellow&label=Stars)](https://github.com/agentscope-ai/agentscope-runtime/stargazers)
@@ -49,7 +50,15 @@
 
 > [!NOTE]
 >
-> **关于框架无关**：当前，AgentScope Runtime 支持 **AgentScope** 框架。未来我们计划扩展支持更多智能体开发框架。
+> **关于框架无关**：当前，AgentScope Runtime 支持 **AgentScope** 框架。未来我们计划扩展支持更多智能体开发框架。该表格展示了目前版本针对不同框架的适配器（adapter）支持情况，不同框架在各功能上的支持程度有所差异：
+>
+> | 框架 / 功能项                                                | 消息 / 事件 | 工具 | 服务 |
+> | ------------------------------------------------------------ | ----------- | ---- | ---- |
+> | AgentScope                                                   | ✅           | ✅    | ✅    |
+> | [LangGraph](https://runtime.agentscope.io/zh/langgraph_guidelines.html) | ✅           | 🚧    | 🚧    |
+> | AutoGen                                                      | 🚧           | ✅    | 🚧    |
+> | Microsoft Agent Framework                                    | 🚧           | 🚧    | 🚧    |
+> | [Agno](https://runtime.agentscope.io/zh/agno_guidelines.html) | 🧪           | ✅    | 🚧    |
 
 ---
 
@@ -59,7 +68,7 @@
 
 | [Discord](https://discord.gg/eYMpfnkG8h)                     | 钉钉群                                                       |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| <img src="https://gw.alicdn.com/imgextra/i1/O1CN01hhD1mu1Dd3BWVUvxN_!!6000000000238-2-tps-400-400.png" width="100" height="100"> | <img src="https://img.alicdn.com/imgextra/i1/O1CN01LxzZha1thpIN2cc2E_!!6000000005934-2-tps-497-477.png" width="100" height="100"> |
+| <img src="https://gw.alicdn.com/imgextra/i1/O1CN01hhD1mu1Dd3BWVUvxN_!!6000000000238-2-tps-400-400.png" width="100" height="100"> | <img src="https://img.alicdn.com/imgextra/i4/O1CN014mhqFq1ZlgNuYjxrz_!!6000000003235-2-tps-400-400.png" width="100" height="100"> |
 
 ---
 
@@ -325,6 +334,8 @@ with FilesystemSandbox() as box:
 
 提供一个**沙箱化的 Android 模拟器环境**，允许执行各种移动端操作，如点击、滑动、输入文本和截屏等。
 
+<img src="https://img.alicdn.com/imgextra/i4/O1CN01yPnBC21vOi45fLy7V_!!6000000006163-2-tps-544-865.png" alt="Mobile Sandbox" height="500">
+
 ##### 运行环境要求
 
 - **Linux 主机**:
@@ -348,7 +359,7 @@ with MobileSandbox() as box:
     # 默认从 DockerHub 拉取 'agentscope/runtime-sandbox-mobile:latest' 镜像
     print(box.list_tools()) # 列出所有可用工具
     print(box.mobile_get_screen_resolution()) # 获取屏幕分辨率
-    print(box.mobile_tap(x=500, y=1000)) # 在坐标 (500, 1000) 处进行点击
+    print(box.mobile_tap([500, 1000])) # 在坐标 (500, 1000) 处进行点击
     print(box.mobile_input_text("Hello from AgentScope!")) # 输入文本
     print(box.mobile_key_event(3)) # 发送 HOME 按键事件 (KeyCode: 3)
     screenshot_result = box.mobile_get_screenshot() # 获取当前屏幕截图
@@ -579,7 +590,7 @@ limitations under the License.
 
 ## 贡献者 ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-25-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-28-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 
@@ -622,6 +633,9 @@ limitations under the License.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/XiuShenAl"><img src="https://avatars.githubusercontent.com/u/242360128?v=4?s=100" width="100px;" alt="XiuShenAl"/><br /><sub><b>XiuShenAl</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=XiuShenAl" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=XiuShenAl" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/k-farruh"><img src="https://avatars.githubusercontent.com/u/33511681?v=4?s=100" width="100px;" alt="Farruh Kushnazarov"/><br /><sub><b>Farruh Kushnazarov</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=k-farruh" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/fengxsong"><img src="https://avatars.githubusercontent.com/u/7008971?v=4?s=100" width="100px;" alt="fengxsong"/><br /><sub><b>fengxsong</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Afengxsong" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://m4n5ter.github.io"><img src="https://avatars.githubusercontent.com/u/68144809?v=4?s=100" width="100px;" alt="Wang"/><br /><sub><b>Wang</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=M4n5ter" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3AM4n5ter" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/qiacheng7"><img src="https://avatars.githubusercontent.com/u/223075252?v=4?s=100" width="100px;" alt="qiacheng7"/><br /><sub><b>qiacheng7</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=qiacheng7" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=qiacheng7" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://xieyxclack.github.io/"><img src="https://avatars.githubusercontent.com/u/31954383?v=4?s=100" width="100px;" alt="Yuexiang XIE"/><br /><sub><b>Yuexiang XIE</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/pulls?q=is%3Apr+reviewed-by%3Axieyxclack" title="Reviewed Pull Requests">👀</a></td>
     </tr>
   </tbody>
   <tfoot>

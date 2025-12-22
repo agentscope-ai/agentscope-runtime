@@ -172,6 +172,8 @@ with BrowserSandbox() as box:
 
 * **Mobile Sandbox**: A sandbox based on an Android emulator, allowing for **mobile operations** such as tapping, swiping, inputting text, and taking screenshots.
 
+  <img src="https://img.alicdn.com/imgextra/i4/O1CN01yPnBC21vOi45fLy7V_!!6000000006163-2-tps-544-865.png" alt="Mobile Sandbox" height="500">
+
   - **Prerequisites**
 
     - **Linux Host**:
@@ -196,7 +198,7 @@ with MobileSandbox() as box:
     # By default, pulls 'agentscope/runtime-sandbox-mobile:latest' from DockerHub
     print(box.list_tools()) # List all available tools
     print(box.mobile_get_screen_resolution()) # Get the screen resolution
-    print(box.mobile_tap(x=500, y=1000)) # Tap at coordinate (500, 1000)
+    print(box.mobile_tap([500, 1000])) # Tap at coordinate (500, 1000)
     print(box.mobile_input_text("Hello from AgentScope!")) # Input text
     print(box.mobile_key_event(3)) # Sends a HOME key event (KeyCode: 3)
     screenshot_result = box.mobile_get_screenshot() # Get the current screenshot
@@ -524,7 +526,7 @@ await main()
 |                        | `browser_handle_dialog(accept: bool, promptText: str)`       | Handle browser dialogs (alert, confirm, prompt)              |
 | **Computer Use Tools** | `computer_use(action: str, coordinate: list, text: str)`     | Use a mouse and keyboard to interact with a desktop GUI, supporting actions like moving the cursor, clicking, typing, and taking screenshots |
 | **Mobile Tools**   | `mobile_get_screen_resolution()`                                   | Get the screen resolution of the mobile device                     |
-|                    | `mobile_tap(x: int, y: int)`                                       | Tap at a specific coordinate on the screen                         |
+|                    | `mobile_tap(coordinate: List[int])`                                       | Tap at a specific coordinate on the screen                         |
 |                    | `mobile_swipe(start: List[int], end: List[int], duration: int = None)` | Perform a swipe gesture on the screen from a start point to an end point |
 |                    | `mobile_input_text(text: str)`                                     | Input a text string into the currently focused UI element          |
 |                    | `mobile_key_event(code: int \| str)`                                | Send a key event to the device (e.g., HOME, BACK)                  |

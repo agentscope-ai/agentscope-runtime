@@ -294,8 +294,8 @@ refund_component = AlipayPaymentRefund()
 
 refund_query_component = AlipayRefundQuery()
 
-async def transaction_management_example():
 
+async def transaction_management_example():
     # Query payment status
 
     query_result = await query_component.arun({
@@ -332,7 +332,8 @@ async def transaction_management_example():
 
     print("Refund status:", refund_query_result.result)
 
-asyncio.run(transaction_management_example())
+
+asyncio.chat(transaction_management_example())
 
 ```
 
@@ -360,8 +361,8 @@ times_save = AlipaySubscribeTimesSave()
 
 check_or_init = AlipaySubscribeCheckOrInitialize()
 
-async def subscription_example():
 
+async def subscription_example():
     user_uuid = "user_12345"
 
     # Check subscription status
@@ -371,7 +372,6 @@ async def subscription_example():
     print(f"Subscription status: {status.subscribe_flag}")
 
     if status.subscribe_flag:
-
         print(f"Package info: {status.subscribe_package}")
 
     # If not subscribed, get subscription link
@@ -381,13 +381,11 @@ async def subscription_example():
         init_result = await initialize.arun({"uuid": user_uuid})
 
         if init_result.subscribe_url:
-
             print(f"Subscription link: {init_result.subscribe_url}")
 
     # Track usage after service use
 
     if status.subscribe_flag:
-
         times_result = await times_save.arun({
 
             "uuid": user_uuid,
@@ -398,8 +396,8 @@ async def subscription_example():
 
         print(f"Usage tracking result: {times_result.success}")
 
-async def one_step_subscription_example():
 
+async def one_step_subscription_example():
     user_uuid = "user_67890"
 
     # One-step subscription check or initialization
@@ -414,9 +412,10 @@ async def one_step_subscription_example():
 
         print(f"User not subscribed, subscription link: {result.subscribe_url}")
 
-asyncio.run(subscription_example())
 
-asyncio.run(one_step_subscription_example())
+asyncio.chat(subscription_example())
+
+asyncio.chat(one_step_subscription_example())
 
 ```
 

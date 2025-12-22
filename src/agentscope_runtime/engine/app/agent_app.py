@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import os
 import types
 import platform
 import subprocess
@@ -11,7 +12,11 @@ from pydantic import BaseModel
 
 from .base_app import BaseApp
 from ..deployers import DeployManager
-from ..deployers.adapter.a2a import A2AFastAPIDefaultAdapter
+from ..deployers.adapter.a2a import (
+    A2AFastAPIDefaultAdapter,
+    AgentCardWithRuntimeConfig,
+    extract_a2a_config,
+)
 from ..deployers.adapter.responses.response_api_protocol_adapter import (
     ResponseAPIDefaultAdapter,
 )
@@ -22,6 +27,8 @@ from ..schemas.agent_schemas import AgentRequest
 from ...version import __version__
 
 logger = logging.getLogger(__name__)
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", "8080"))
 
 
 class AgentApp(BaseApp):
@@ -44,14 +51,49 @@ class AgentApp(BaseApp):
         backend_url: Optional[str] = None,
         runner: Optional[Runner] = None,
         enable_embedded_worker: bool = False,
+        a2a_config: Optional["AgentCardWithRuntimeConfig"] = None,
         **kwargs,
     ):
         """
         Initialize the AgentApp.
 
         Args:
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
+            app_name: Name of the agent application
+            app_description: Description of the agent application
+            endpoint_path: API endpoint path for processing requests
+            response_type: Type of response (default: "sse")
+            stream: Whether to enable streaming responses
+            request_model: Request model class
+            before_start: Callback function to execute before starting
+            after_finish: Callback function to execute after finishing
+            broker_url: URL for message broker
+            backend_url: URL for backend service
+            runner: Optional runner instance
+            enable_embedded_worker: Whether to enable embedded worker
+            a2a_config: Optional A2A runtime configuration.
+                Must be an ``AgentCardWithRuntimeConfig`` instance, which
+                contains ``agent_card`` (AgentCard object or dict) and runtime
+                settings (host, port, registry, task_timeout, etc.).
+                Example:
+                    from a2a.types import AgentCard, AgentCapabilities
+                    from agentscope_runtime.engine.deployers.adapter.a2a import (  # noqa: E501
+                        AgentCardWithRuntimeConfig,
+                    )
+                    config = AgentCardWithRuntimeConfig(
+                        agent_card={
+                            "name": "MyAgent",
+                            "version": "1.0.0",
+                            "description": "My agent",
+                            "url": "http://localhost:8080",
+                            "capabilities": AgentCapabilities(),
+                            "default_input_modes": ["text"],
+                            "default_output_modes": ["text"],
+                            "skills": [],
+                        },
+                        registry=[nacos_registry],
+                        task_timeout=120,
+                    )
+            **kwargs: Additional keyword arguments passed to FastAPI app
         """
 
         self.endpoint_path = endpoint_path
@@ -73,9 +115,13 @@ class AgentApp(BaseApp):
         self._shutdown_handler: Optional[Callable] = None
         self._framework_type: Optional[str] = None
 
+        # Prepare A2A protocol adapter configuration
+        a2a_config = extract_a2a_config(a2a_config=a2a_config)
+
         a2a_protocol = A2AFastAPIDefaultAdapter(
             agent_name=app_name,
             agent_description=app_description,
+            a2a_config=a2a_config,
         )
 
         response_protocol = ResponseAPIDefaultAdapter()
@@ -93,8 +139,8 @@ class AgentApp(BaseApp):
             backend_url=backend_url,
         )
 
-        # Store custom endpoints and tasks for deployment
-        # but don't add them to FastAPI here - let FastAPIAppFactory handle it
+        # Store custom endpoints for deployment
+        # FastAPIAppFactory will handle adding them to FastAPI
 
     def init(self, func):
         """Register init hook (support async and sync functions)."""
@@ -150,8 +196,8 @@ class AgentApp(BaseApp):
 
     def run(
         self,
-        host="0.0.0.0",
-        port=8090,
+        host=HOST,
+        port=PORT,
         web_ui=False,
         **kwargs,
     ):
@@ -171,7 +217,7 @@ class AgentApp(BaseApp):
 
         Args:
             host (str): Host address to bind to. Default "0.0.0.0".
-            port (int): Port number to serve the application on. Default 8090.
+            port (int): Port number to serve the application on. Default 8080.
             web_ui (bool): If True, launches the Agentscope Web UI in a
                 separate process, pointing it to the API endpoint. This
                 allows interactive use via browser. Default False.
@@ -180,7 +226,7 @@ class AgentApp(BaseApp):
 
         Example:
             >>> app = AgentApp(app_name="MyAgent")
-            >>> app.run(host="127.0.0.1", port=8000, web_ui=True)
+            >>> app.chat(host="127.0.0.1", port=8080, web_ui=True)
         """
         # Build runner
         self._build_runner()

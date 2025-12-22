@@ -5,6 +5,7 @@ import os
 import pytest
 
 from langchain.agents import AgentState
+from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.constants import START
@@ -53,9 +54,9 @@ class MyLangGraphRunner(Runner):
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         )
 
-        def call_model(state: AgentState):
+        def call_model(state: AgentState, config: RunnableConfig):
             """Call the LLM to generate a joke about a topic"""
-            model_response = llm.invoke(state["messages"])
+            model_response = llm.invoke(state["messages"], config=config)
             return {"messages": model_response}
 
         workflow = StateGraph(AgentState)

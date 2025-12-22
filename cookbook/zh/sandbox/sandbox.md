@@ -204,6 +204,8 @@ with BrowserSandbox() as box:
 
 * **移动端沙箱（Mobile Sandbox）**: 基于 Android 模拟器的沙箱，可进行移动端操作，如点击、滑动、输入文本和截屏等。
 
+  <img src="https://img.alicdn.com/imgextra/i4/O1CN01yPnBC21vOi45fLy7V_!!6000000006163-2-tps-544-865.png" alt="Mobile Sandbox" height="500">
+
   - **运行环境要求**
 
     - **Linux 主机**:
@@ -228,7 +230,7 @@ with MobileSandbox() as box:
     # 默认从 DockerHub 拉取 'agentscope/runtime-sandbox-mobile:latest' 镜像
     print(box.list_tools()) # 列出所有可用工具
     print(box.mobile_get_screen_resolution()) # 获取屏幕分辨率
-    print(box.mobile_tap(x=500, y=1000)) # 在坐标 (500, 1000) 处进行点击
+    print(box.mobile_tap([500, 1000])) # 在坐标 (500, 1000) 处进行点击
     print(box.mobile_input_text("Hello from AgentScope!")) # 输入文本
     print(box.mobile_key_event(3)) # 发送 HOME 按键事件 (KeyCode: 3)
     screenshot_result = box.mobile_get_screenshot() # 获取当前屏幕截图
@@ -556,7 +558,7 @@ await main()
 |                    | `browser_handle_dialog(accept: bool, promptText: str)`       | 处理浏览器对话框（警告、确认、提示）                         |
 | **计算机操作工具** | `computer_use(action: str, coordinate: list, text: str)`     | 使用鼠标和键盘与桌面 GUI 互动，支持以下操作：移动光标、点击、输入文字以及截图 |
 | **移动端工具**     | `mobile_get_screen_resolution()`                                 | 获取移动设备的屏幕分辨率                                     |
-|                    | `mobile_tap(x: int, y: int)`                                     | 在屏幕上的特定坐标处进行点击                                 |
+|                    | `mobile_tap(coordinate: List[int])`                                     | 在屏幕上的特定坐标处进行点击                                 |
 |                    | `mobile_swipe(start: List[int], end: List[int], duration: int = None)` | 在屏幕上从起点到终点执行滑动操作                         |
 |                    | `mobile_input_text(text: str)`                                   | 在当前聚焦的UI元素中输入文本字符串                           |
 |                    | `mobile_key_event(code: int\|str)`                        | 向设备发送一个按键事件（如 HOME、BACK）                  |
