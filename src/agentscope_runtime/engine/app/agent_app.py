@@ -21,6 +21,7 @@ from ..deployers.adapter.a2a import (
 from ..deployers.adapter.responses.response_api_protocol_adapter import (
     ResponseAPIDefaultAdapter,
 )
+from ..deployers.adapter.agui import AGUIDefaultAdapter
 from ..deployers.utils.deployment_modes import DeploymentMode
 from ..deployers.utils.service_utils.fastapi_factory import FastAPIAppFactory
 from ..runner import Runner
@@ -129,7 +130,12 @@ class AgentApp(BaseApp):
         )
 
         response_protocol = ResponseAPIDefaultAdapter()
-        self.protocol_adapters = [a2a_protocol, response_protocol]
+        agui_protocol = AGUIDefaultAdapter()
+        self.protocol_adapters = [
+            a2a_protocol,
+            response_protocol,
+            agui_protocol,
+        ]
 
         self._app_kwargs = {
             "title": "Agent Service",
