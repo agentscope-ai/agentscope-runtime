@@ -23,7 +23,6 @@ export default function () {
 
 
     return {
-      
       ...optionsConfig,
       session: {
         multiple: true,

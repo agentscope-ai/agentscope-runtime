@@ -154,7 +154,6 @@ export default function Weather(props) {
   
   const current = data[0];
   const forecast = data.slice(1);
-
   return (
     <Card className={styles.container} bordered={false}>
       <div className={styles.header}>
