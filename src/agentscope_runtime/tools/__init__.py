@@ -72,6 +72,9 @@ from .generations.async_text_to_video_wan26 import (
 from .generations.fetch_wan import (
     WanVideoFetch,
 )
+from .generations.qwen_image_edit_new import (
+    QwenImageEditNew,
+)
 
 
 class McpServerMeta(BaseModel):
@@ -114,7 +117,11 @@ mcp_server_metas: Dict[str, McpServerMeta] = {
     ),
     "modelstudio_qwen_image": McpServerMeta(
         instructions="基于通义千问大模型的智能图像生成服务，提供高质量的图像处理和编辑功能",
-        components=[QwenImageGen, QwenImageEdit],
+        components=[
+            QwenImageGen,
+            QwenImageEdit,
+            QwenImageEditNew,
+        ],
     ),
     "modelstudio_web_search": McpServerMeta(
         instructions="提供实时互联网搜索服务，提供准确及时的信息检索功能",
