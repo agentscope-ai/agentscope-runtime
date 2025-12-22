@@ -15,15 +15,62 @@ class RedisSessionHistoryService(SessionHistoryService):
         self,
         redis_url: str = "redis://localhost:6379/0",
         redis_client: Optional[aioredis.Redis] = None,
+        socket_timeout: Optional[float] = 5.0,
+        socket_connect_timeout: Optional[float] = 5.0,
+        max_connections: Optional[int] = 50,
+        retry_on_timeout: bool = True,
+        ttl_seconds: Optional[int] = 3600,  # 1 hour in seconds
+        max_messages_per_session: Optional[int] = None,
+        health_check_interval: Optional[float] = 30.0,
+        socket_keepalive: bool = True,
     ):
+        """
+        Initialize RedisSessionHistoryService.
+
+        Args:
+            redis_url: Redis connection URL
+            redis_client: Optional pre-configured Redis client
+            socket_timeout: Socket timeout in seconds (default: 5.0)
+            socket_connect_timeout: Socket connect timeout in seconds
+            (default: 5.0)
+            max_connections: Maximum number of connections in the pool
+            (default: 50)
+            retry_on_timeout: Whether to retry on timeout (default: True)
+            ttl_seconds: Time-to-live in seconds for session data. I
+            f None, data never expires (default: 3600, i.e., 1 hour)
+            max_messages_per_session: Maximum number of messages per session.
+            If None, no limit (default: None)
+            health_check_interval: Interval in seconds for health checks on
+            idle connections (default: 30.0).
+                Connections idle longer than this will be checked before reuse.
+                Set to 0 to disable.
+            socket_keepalive: Enable TCP keepalive to prevent
+            silent disconnections (default: True)
+        """
         self._redis_url = redis_url
         self._redis = redis_client
+        self._socket_timeout = socket_timeout
+        self._socket_connect_timeout = socket_connect_timeout
+        self._max_connections = max_connections
+        self._retry_on_timeout = retry_on_timeout
+        self._ttl_seconds = ttl_seconds
+        self._max_messages_per_session = max_messages_per_session
+        self._health_check_interval = health_check_interval
+        self._socket_keepalive = socket_keepalive
 
     async def start(self):
+        """Starts the Redis connection with proper timeout and connection
+        pool settings."""
         if self._redis is None:
             self._redis = aioredis.from_url(
                 self._redis_url,
                 decode_responses=True,
+                socket_timeout=self._socket_timeout,
+                socket_connect_timeout=self._socket_connect_timeout,
+                max_connections=self._max_connections,
+                retry_on_timeout=self._retry_on_timeout,
+                health_check_interval=self._health_check_interval,
+                socket_keepalive=self._socket_keepalive,
             )
 
     async def stop(self):
@@ -32,6 +79,9 @@ class RedisSessionHistoryService(SessionHistoryService):
             self._redis = None
 
     async def health(self) -> bool:
+        """Checks the health of the service."""
+        if not self._redis:
+            return False
         try:
             pong = await self._redis.ping()
             return pong is True or pong == "PONG"
@@ -65,6 +115,11 @@ class RedisSessionHistoryService(SessionHistoryService):
 
         await self._redis.set(key, self._session_to_json(session))
         await self._redis.sadd(self._index_key(user_id), sid)
+
+        # Set TTL for the session key if configured
+        if self._ttl_seconds is not None:
+            await self._redis.expire(key, self._ttl_seconds)
+
         return session
 
     async def get_session(
@@ -78,8 +133,20 @@ class RedisSessionHistoryService(SessionHistoryService):
             session = Session(id=session_id, user_id=user_id)
             await self._redis.set(key, self._session_to_json(session))
             await self._redis.sadd(self._index_key(user_id), session_id)
+
+            # Set TTL for the session key if configured
+            if self._ttl_seconds is not None:
+                await self._redis.expire(key, self._ttl_seconds)
+
             return session
-        return self._session_from_json(session_json)
+
+        session = self._session_from_json(session_json)
+
+        # Refresh TTL when accessing the session
+        if self._ttl_seconds is not None:
+            await self._redis.expire(key, self._ttl_seconds)
+
+        return session
 
     async def delete_session(self, user_id: str, session_id: str):
         key = self._session_key(user_id, session_id)
@@ -128,8 +195,24 @@ class RedisSessionHistoryService(SessionHistoryService):
         if session_json:
             stored_session = self._session_from_json(session_json)
             stored_session.messages.extend(norm_message)
+
+            # Limit the number of messages per session to prevent memory issues
+            if self._max_messages_per_session is not None:
+                if (
+                    len(stored_session.messages)
+                    > self._max_messages_per_session
+                ):
+                    # Keep only the most recent messages
+                    stored_session.messages = stored_session.messages[
+                        -self._max_messages_per_session :
+                    ]
+
             await self._redis.set(key, self._session_to_json(stored_session))
             await self._redis.sadd(self._index_key(user_id), session_id)
+
+            # Set TTL for the session key if configured
+            if self._ttl_seconds is not None:
+                await self._redis.expire(key, self._ttl_seconds)
         else:
             print(
                 f"Warning: Session {session.id} not found in storage for "

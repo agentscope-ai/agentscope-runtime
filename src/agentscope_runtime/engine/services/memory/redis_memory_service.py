@@ -17,17 +17,63 @@ class RedisMemoryService(MemoryService):
         self,
         redis_url: str = "redis://localhost:6379/0",
         redis_client: Optional[aioredis.Redis] = None,
+        socket_timeout: Optional[float] = 5.0,
+        socket_connect_timeout: Optional[float] = 5.0,
+        max_connections: Optional[int] = 50,
+        retry_on_timeout: bool = True,
+        ttl_seconds: Optional[int] = 3600,  # 1 hour in seconds
+        max_messages_per_session: Optional[int] = None,
+        health_check_interval: Optional[float] = 30.0,
+        socket_keepalive: bool = True,
     ):
+        """
+        Initialize RedisMemoryService.
+
+        Args:
+            redis_url: Redis connection URL
+            redis_client: Optional pre-configured Redis client
+            socket_timeout: Socket timeout in seconds (default: 5.0)
+            socket_connect_timeout: Socket connect timeout in seconds
+             (default: 5.0)
+            max_connections: Maximum number of connections in the pool
+             (default: 50)
+            retry_on_timeout: Whether to retry on timeout (default: True)
+            ttl_seconds: Time-to-live in seconds for memory data.
+            If None, data never expires (default: 3600, i.e., 1 hour)
+            max_messages_per_session: Maximum number of messages per session.
+            If None, no limit (default: None)
+            health_check_interval: Interval in seconds for health checks
+             on idle connections (default: 30.0).
+                Connections idle longer than this will be checked before reuse.
+                Set to 0 to disable.
+            socket_keepalive: Enable TCP keepalive to prevent
+            silent disconnections (default: True)
+        """
         self._redis_url = redis_url
         self._redis = redis_client
         self._DEFAULT_SESSION_ID = "default"
+        self._socket_timeout = socket_timeout
+        self._socket_connect_timeout = socket_connect_timeout
+        self._max_connections = max_connections
+        self._retry_on_timeout = retry_on_timeout
+        self._ttl_seconds = ttl_seconds
+        self._max_messages_per_session = max_messages_per_session
+        self._health_check_interval = health_check_interval
+        self._socket_keepalive = socket_keepalive
 
     async def start(self) -> None:
-        """Starts the Redis connection."""
+        """Starts the Redis connection with proper timeout
+        and connection pool settings."""
         if self._redis is None:
             self._redis = aioredis.from_url(
                 self._redis_url,
                 decode_responses=True,
+                socket_timeout=self._socket_timeout,
+                socket_connect_timeout=self._socket_connect_timeout,
+                max_connections=self._max_connections,
+                retry_on_timeout=self._retry_on_timeout,
+                health_check_interval=self._health_check_interval,
+                socket_keepalive=self._socket_keepalive,
             )
 
     async def stop(self) -> None:
@@ -73,7 +119,18 @@ class RedisMemoryService(MemoryService):
         existing_json = await self._redis.hget(key, field)
         existing_msgs = self._deserialize(existing_json)
         all_msgs = existing_msgs + messages
+
+        # Limit the number of messages per session to prevent memory issues
+        if self._max_messages_per_session is not None:
+            if len(all_msgs) > self._max_messages_per_session:
+                # Keep only the most recent messages
+                all_msgs = all_msgs[-self._max_messages_per_session :]
+
         await self._redis.hset(key, field, self._serialize(all_msgs))
+
+        # Set TTL for the key if configured
+        if self._ttl_seconds is not None:
+            await self._redis.expire(key, self._ttl_seconds)
 
     async def search_memory(
         self,
@@ -96,27 +153,39 @@ class RedisMemoryService(MemoryService):
 
         keywords = set(query.lower().split())
 
-        all_msgs = []
-        hash_keys = await self._redis.hkeys(key)
-        for session_id in hash_keys:
-            msgs_json = await self._redis.hget(key, session_id)
-            msgs = self._deserialize(msgs_json)
-            all_msgs.extend(msgs)
-
+        # Process messages in batches to avoid loading all into memory at once
         matched_messages = []
-        for msg in all_msgs:
-            candidate_content = await self.get_query_text(msg)
-            if candidate_content:
-                msg_content_lower = candidate_content.lower()
-                if any(keyword in msg_content_lower for keyword in keywords):
-                    matched_messages.append(msg)
+        hash_keys = await self._redis.hkeys(key)
 
+        # Get top_k limit early to optimize memory usage
+        top_k = None
         if (
             filters
             and "top_k" in filters
             and isinstance(filters["top_k"], int)
         ):
-            return matched_messages[-filters["top_k"] :]
+            top_k = filters["top_k"]
+
+        # Process each session separately to reduce memory footprint
+        for session_id in hash_keys:
+            msgs_json = await self._redis.hget(key, session_id)
+            if not msgs_json:
+                continue
+            msgs = self._deserialize(msgs_json)
+
+            # Match messages in this session
+            for msg in msgs:
+                candidate_content = await self.get_query_text(msg)
+                if candidate_content:
+                    msg_content_lower = candidate_content.lower()
+                    if any(
+                        keyword in msg_content_lower for keyword in keywords
+                    ):
+                        matched_messages.append(msg)
+
+        # Apply top_k filter if specified
+        if top_k is not None:
+            return matched_messages[-top_k:]
 
         return matched_messages
 
@@ -134,18 +203,27 @@ class RedisMemoryService(MemoryService):
         filters: Optional[Dict[str, Any]] = None,
     ) -> list:
         key = self._user_key(user_id)
-        all_msgs = []
-        hash_keys = await self._redis.hkeys(key)
-        for session_id in sorted(hash_keys):
-            msgs_json = await self._redis.hget(key, session_id)
-            msgs = self._deserialize(msgs_json)
-            all_msgs.extend(msgs)
-
         page_num = filters.get("page_num", 1) if filters else 1
         page_size = filters.get("page_size", 10) if filters else 10
 
         start_index = (page_num - 1) * page_size
         end_index = start_index + page_size
+
+        # Optimize: Calculate which sessions we need to load
+        # For simplicity, we still load all but could be optimized further
+        # to only load sessions that contain the requested page range
+        all_msgs = []
+        hash_keys = await self._redis.hkeys(key)
+        for session_id in sorted(hash_keys):
+            msgs_json = await self._redis.hget(key, session_id)
+            if msgs_json:
+                msgs = self._deserialize(msgs_json)
+                all_msgs.extend(msgs)
+
+                # Early exit optimization: if we've loaded enough messages
+                # to cover the requested page, we can stop (but this assumes
+                # we need all previous messages for proper ordering)
+                # For now, we keep loading all for correctness
 
         return all_msgs[start_index:end_index]
 

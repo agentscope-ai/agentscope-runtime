@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=redefined-outer-name, protected-access
+import asyncio
 import pytest
 import pytest_asyncio
 import fakeredis.aioredis
@@ -27,7 +28,8 @@ def create_message(role: str, content: str) -> Message:
 @pytest_asyncio.fixture
 async def memory_service():
     fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
-    service = RedisMemoryService(redis_client=fake_redis)
+    # Set ttl_seconds=None to maintain the original test behavior (no TTL)
+    service = RedisMemoryService(redis_client=fake_redis, ttl_seconds=None)
     await service.start()
     # check redis
     healthy = await service.health()
@@ -242,3 +244,139 @@ async def test_operations_on_non_existent_user(
     # Should not raise any error
     await memory_service.delete_memory(user_id)
     await memory_service.delete_memory(user_id, "some_session")
+
+
+@pytest.mark.asyncio
+async def test_ttl_expiration():
+    """Test that memory data expires after TTL."""
+    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    # Use a short TTL for quick test completion
+    service = RedisMemoryService(
+        redis_client=fake_redis,
+        ttl_seconds=1,  # 1 second TTL
+    )
+    await service.start()
+
+    try:
+        user_id = "ttl_test_user"
+        await service.delete_user_memory(user_id)
+
+        # Add message
+        messages = [create_message(Role.USER, "this will expire")]
+        await service.add_memory(user_id, messages)
+
+        # Immediately verify data exists
+        retrieved = await service.search_memory(user_id, messages)
+        assert len(retrieved) == 1
+        assert retrieved[0].content[0].text == "this will expire"
+
+        # Verify key exists and has TTL
+        key = service._user_key(user_id)
+        ttl = await fake_redis.ttl(key)
+        assert ttl > 0, "Key should have a TTL set"
+        assert ttl <= 1, "TTL should be 1 second or less"
+
+        # Wait for TTL to expire (wait 1.5 seconds to ensure expiration)
+        await asyncio.sleep(1.5)
+
+        # Verify data has been deleted (key does not exist or has expired)
+        key_exists = await fake_redis.exists(key)
+        assert key_exists == 0, "Key should be expired and deleted"
+
+        # Verify search returns empty results
+        retrieved_after_expiry = await service.search_memory(user_id, messages)
+        assert len(retrieved_after_expiry) == 0, "Data should be expired"
+
+    finally:
+        await service.stop()
+
+
+@pytest.mark.asyncio
+async def test_ttl_refresh_on_write():
+    """Test that TTL is refreshed when new data is written."""
+    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    service = RedisMemoryService(
+        redis_client=fake_redis,
+        ttl_seconds=2,  # 2 seconds TTL
+    )
+    await service.start()
+
+    try:
+        user_id = "ttl_refresh_user"
+        await service.delete_user_memory(user_id)
+
+        key = service._user_key(user_id)
+
+        # First write
+        messages1 = [create_message(Role.USER, "first message")]
+        await service.add_memory(user_id, messages1)
+
+        # Check TTL
+        ttl1 = await fake_redis.ttl(key)
+        assert 0 < ttl1 <= 2
+
+        # Wait 1 second (TTL should decrease)
+        await asyncio.sleep(1.1)
+
+        # Second write (should refresh TTL)
+        messages2 = [create_message(Role.USER, "second message")]
+        await service.add_memory(user_id, messages2)
+
+        # Verify TTL is refreshed (should be close to 2 seconds)
+        ttl2 = await fake_redis.ttl(key)
+        assert 0 < ttl2 <= 2
+        # TTL should be refreshed, so it should be longer than
+        #  the remaining time after waiting
+        # Since we waited 1.1 seconds, if TTL was not refreshed,
+        #  remaining time should be < 1 second
+        # If refreshed, remaining time should be close to 2 seconds
+        assert ttl2 > 1.5, "TTL should be refreshed to close to 2 seconds"
+
+        # Verify both messages exist
+        all_messages = await service.search_memory(
+            user_id,
+            [create_message(Role.USER, "message")],
+        )
+        assert len(all_messages) == 2, "Both messages should exist"
+
+    finally:
+        await service.stop()
+
+
+@pytest.mark.asyncio
+async def test_ttl_disabled():
+    """Test that when ttl_seconds is None, data never expires."""
+    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    service = RedisMemoryService(
+        redis_client=fake_redis,
+        ttl_seconds=None,  # Disable TTL
+    )
+    await service.start()
+
+    try:
+        user_id = "no_ttl_user"
+        await service.delete_user_memory(user_id)
+
+        key = service._user_key(user_id)
+
+        # Add message
+        messages = [create_message(Role.USER, "this should not expire")]
+        await service.add_memory(user_id, messages)
+
+        # Verify key exists and has no TTL
+        # (TTL returns -1 when no expiration is set)
+        ttl = await fake_redis.ttl(key)
+        assert ttl == -1, "Key should not have TTL when ttl_seconds is None"
+
+        # Wait for a while
+        await asyncio.sleep(0.5)
+
+        # Verify data still exists
+        key_exists = await fake_redis.exists(key)
+        assert key_exists == 1, "Key should still exist without TTL"
+
+        retrieved = await service.search_memory(user_id, messages)
+        assert len(retrieved) == 1, "Data should still be available"
+
+    finally:
+        await service.stop()
