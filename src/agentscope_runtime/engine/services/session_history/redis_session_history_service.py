@@ -91,8 +91,9 @@ class RedisSessionHistoryService(SessionHistoryService):
     def _session_key(self, user_id: str, session_id: str):
         return f"session:{user_id}:{session_id}"
 
-    def _index_key(self, user_id: str):
-        return f"session_index:{user_id}"
+    def _session_pattern(self, user_id: str):
+        """Generate the pattern for scanning session keys for a user."""
+        return f"session:{user_id}:*"
 
     def _session_to_json(self, session: Session) -> str:
         return session.model_dump_json()
@@ -114,7 +115,6 @@ class RedisSessionHistoryService(SessionHistoryService):
         key = self._session_key(user_id, sid)
 
         await self._redis.set(key, self._session_to_json(session))
-        await self._redis.sadd(self._index_key(user_id), sid)
 
         # Set TTL for the session key if configured
         if self._ttl_seconds is not None:
@@ -130,15 +130,7 @@ class RedisSessionHistoryService(SessionHistoryService):
         key = self._session_key(user_id, session_id)
         session_json = await self._redis.get(key)
         if session_json is None:
-            session = Session(id=session_id, user_id=user_id)
-            await self._redis.set(key, self._session_to_json(session))
-            await self._redis.sadd(self._index_key(user_id), session_id)
-
-            # Set TTL for the session key if configured
-            if self._ttl_seconds is not None:
-                await self._redis.expire(key, self._ttl_seconds)
-
-            return session
+            return None
 
         session = self._session_from_json(session_json)
 
@@ -151,19 +143,33 @@ class RedisSessionHistoryService(SessionHistoryService):
     async def delete_session(self, user_id: str, session_id: str):
         key = self._session_key(user_id, session_id)
         await self._redis.delete(key)
-        await self._redis.srem(self._index_key(user_id), session_id)
 
     async def list_sessions(self, user_id: str) -> list[Session]:
-        idx_key = self._index_key(user_id)
-        session_ids = await self._redis.smembers(idx_key)
+        """List all sessions for a user by scanning session keys.
+
+        Uses SCAN to find all session:{user_id}:* keys. Expired sessions
+        naturally disappear as their keys expire, avoiding stale entries.
+        """
+        pattern = self._session_pattern(user_id)
         sessions = []
-        for sid in session_ids:
-            key = self._session_key(user_id, sid)
-            session_json = await self._redis.get(key)
-            if session_json:
-                session = self._session_from_json(session_json)
-                session.messages = []
-                sessions.append(session)
+        cursor = 0
+
+        while True:
+            cursor, keys = await self._redis.scan(
+                cursor,
+                match=pattern,
+                count=100,
+            )
+            for key in keys:
+                session_json = await self._redis.get(key)
+                if session_json:
+                    session = self._session_from_json(session_json)
+                    session.messages = []
+                    sessions.append(session)
+
+            if cursor == 0:
+                break
+
         return sessions
 
     async def append_message(
@@ -192,36 +198,35 @@ class RedisSessionHistoryService(SessionHistoryService):
         key = self._session_key(user_id, session_id)
 
         session_json = await self._redis.get(key)
-        if session_json:
-            stored_session = self._session_from_json(session_json)
-            stored_session.messages.extend(norm_message)
-
-            # Limit the number of messages per session to prevent memory issues
-            if self._max_messages_per_session is not None:
-                if (
-                    len(stored_session.messages)
-                    > self._max_messages_per_session
-                ):
-                    # Keep only the most recent messages
-                    stored_session.messages = stored_session.messages[
-                        -self._max_messages_per_session :
-                    ]
-
-            await self._redis.set(key, self._session_to_json(stored_session))
-            await self._redis.sadd(self._index_key(user_id), session_id)
-
-            # Set TTL for the session key if configured
-            if self._ttl_seconds is not None:
-                await self._redis.expire(key, self._ttl_seconds)
-        else:
-            print(
-                f"Warning: Session {session.id} not found in storage for "
-                f"append_message.",
+        if session_json is None:
+            raise RuntimeError(
+                f"Session {session_id} not found or has expired for user "
+                f"{user_id}. Previous memory/state has been lost. "
+                f"Please create a new session.",
             )
+
+        stored_session = self._session_from_json(session_json)
+        stored_session.messages.extend(norm_message)
+
+        # Limit the number of messages per session to prevent memory issues
+        if self._max_messages_per_session is not None:
+            if len(stored_session.messages) > self._max_messages_per_session:
+                # Keep only the most recent messages
+                stored_session.messages = stored_session.messages[
+                    -self._max_messages_per_session :
+                ]
+
+        await self._redis.set(key, self._session_to_json(stored_session))
+
+        # Set TTL for the session key if configured
+        if self._ttl_seconds is not None:
+            await self._redis.expire(key, self._ttl_seconds)
 
     async def delete_user_sessions(self, user_id: str) -> None:
         """
         Deletes all session history data for a specific user.
+
+        Uses SCAN to find all session keys for the user and deletes them.
 
         Args:
             user_id (str): The ID of the user whose session history data should
@@ -230,11 +235,17 @@ class RedisSessionHistoryService(SessionHistoryService):
         if not self._redis:
             raise RuntimeError("Redis connection is not available")
 
-        index_key = self._index_key(user_id)
-        session_ids = await self._redis.smembers(index_key)
+        pattern = self._session_pattern(user_id)
+        cursor = 0
 
-        for session_id in session_ids:
-            key = self._session_key(user_id, session_id)
-            await self._redis.delete(key)
+        while True:
+            cursor, keys = await self._redis.scan(
+                cursor,
+                match=pattern,
+                count=100,
+            )
+            if keys:
+                await self._redis.delete(*keys)
 
-        await self._redis.delete(index_key)
+            if cursor == 0:
+                break

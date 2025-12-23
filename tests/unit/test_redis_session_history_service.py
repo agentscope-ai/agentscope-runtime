@@ -118,25 +118,19 @@ async def test_get_session(
     assert refetched_session is not None
     assert refetched_session.messages == []
 
-    # Test getting a non-existent session (should create a new one)
+    # Test getting a non-existent session (should return None)
     non_existent_session = await session_history_service.get_session(
         user_id,
         "non_existent_id",
     )
-    assert non_existent_session is not None
-    assert non_existent_session.id == "non_existent_id"
-    assert non_existent_session.user_id == user_id
-    assert non_existent_session.messages == []
+    assert non_existent_session is None
 
-    # Test getting a session for a different user (should create a new one)
+    # Test getting a session for a different user (should return None)
     other_user_session = await session_history_service.get_session(
         "other_user",
         created_session.id,
     )
-    assert other_user_session is not None
-    assert other_user_session.id == created_session.id
-    assert other_user_session.user_id == "other_user"
-    assert other_user_session.messages == []
+    assert other_user_session is None
 
 
 @pytest.mark.asyncio
@@ -156,17 +150,12 @@ async def test_delete_session(
 
     await session_history_service.delete_session(user_id, session.id)
 
-    # Ensure session is deleted - get_session will create a new empty session
+    # Ensure session is deleted - get_session should return None
     retrieved_session = await session_history_service.get_session(
         user_id,
         session.id,
     )
-    assert retrieved_session is not None
-    assert retrieved_session.id == session.id
-    assert retrieved_session.user_id == user_id
-    assert (
-        retrieved_session.messages == []
-    )  # Should be empty as it's a new session
+    assert retrieved_session is None
 
     # Test deleting a non-existent session (should not raise error)
     await session_history_service.delete_session(user_id, "non_existent_id")
@@ -275,26 +264,19 @@ async def test_append_message(
     for i, msg in enumerate(stored_session.messages[2:]):
         assert msg.content == messages3[i].get("content")
 
-    # Test appending to a non-existent session
+    # Test appending to a non-existent session (should raise RuntimeError)
     non_existent_session = Session(
         id="non_existent",
         user_id=user_id,
         messages=[],
     )
-    # This should not raise an error, but print a warning.
-    await session_history_service.append_message(
-        non_existent_session,
-        message1,
-    )
-    # get_session will create a new session, not the one we tried to append to
-    retrieved_session = await session_history_service.get_session(
-        user_id,
-        "non_existent",
-    )
-    assert retrieved_session is not None
-    assert (
-        retrieved_session.messages == []
-    )  # Empty as it's a newly created session
+    # This should raise a RuntimeError indicating
+    # the session is missing/expired
+    with pytest.raises(RuntimeError, match="not found or has expired"):
+        await session_history_service.append_message(
+            non_existent_session,
+            message1,
+        )
 
 
 @pytest.mark.asyncio
@@ -347,12 +329,11 @@ async def test_ttl_expiration():
         key_exists = await fake_redis.exists(key)
         assert key_exists == 0, "Key should be expired and deleted"
 
-        # Verify get_session creates a new session after expiry
+        # Verify get_session returns None after expiry
         retrieved_after_expiry = await service.get_session(user_id, session.id)
-        assert retrieved_after_expiry is not None
         assert (
-            retrieved_after_expiry.messages == []
-        ), "Session should be empty after expiry"
+            retrieved_after_expiry is None
+        ), "Session should return None after expiry"
 
     finally:
         await service.stop()
