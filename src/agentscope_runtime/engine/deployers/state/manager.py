@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=too-many-nested-blocks
+
 """Deployment state management."""
 
 import json
@@ -7,11 +9,13 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
-
+import logging
 from agentscope_runtime.engine.deployers.state.schema import (
     Deployment,
     StateFileSchema,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class DeploymentStateManager:
@@ -112,11 +116,14 @@ class DeploymentStateManager:
                     ).items():
                         try:
                             # Try to validate individual deployment
-                            Deployment.from_dict(deploy_data)
-                            valid_deployments[deploy_id] = deploy_data
-                        except (TypeError, KeyError) as e:
+                            deployment = Deployment.from_dict(deploy_data)
+                            # Check if required fields are present
+                            if deployment.agent_source:
+                                valid_deployments[deploy_id] = deploy_data
+
+                        except (TypeError, KeyError, ValueError) as e:
                             # Skip invalid deployments but keep valid ones
-                            print(
+                            logger.warning(
                                 f"Warning: Skipping invalid deployment "
                                 f"{deploy_id} in state file: {e}",
                             )
@@ -236,6 +243,14 @@ class DeploymentStateManager:
         Args:
             deployment: Deployment instance to save
         """
+        # Issue a warning if required fields are missing
+        if not deployment.agent_source:
+            logger.warning(
+                f"Warning: Saving deployment {deployment.id} without "
+                f"agent_source. This indicates an incomplete deployment "
+                f"record.",
+            )
+
         state = self._read_state()
         state["deployments"][deployment.id] = deployment.to_dict()
         self._write_state(state)

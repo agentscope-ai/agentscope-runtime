@@ -69,6 +69,18 @@ def list_deployments(
             echo_info("No deployments found")
             return
 
+        # Filter out incomplete deployments (missing required fields like
+        # agent_source)
+        complete_deployments = []
+        for d in deployments:
+            # Check if the deployment has complete information
+            # A complete deployment should have agent_source and other
+            # required fields
+            if d.agent_source:  # Filter out deployments without agent_source
+                complete_deployments.append(d)
+
+        deployments = complete_deployments
+
         # Remove duplicates based on URL and platform combination, keeping
         # the most recent
         # Group deployments by URL and platform
