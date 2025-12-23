@@ -751,6 +751,8 @@ body.preview-active {
         <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">session_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Session</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Redis connection is not available&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">session_id</span> <span class="ow">and</span> <span class="n">session_id</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
             <span class="n">sid</span> <span class="o">=</span> <span class="n">session_id</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
@@ -775,12 +777,18 @@ body.preview-active {
         <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Session</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Redis connection is not available&quot;</span><span class="p">)</span>
         <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">session_id</span><span class="p">)</span>
         <span class="n">session_json</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">session_json</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
 
-        <span class="n">session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_from_json</span><span class="p">(</span><span class="n">session_json</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_from_json</span><span class="p">(</span><span class="n">session_json</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="c1"># Return None for corrupted session data</span>
+            <span class="k">return</span> <span class="kc">None</span>
 
         <span class="c1"># Refresh TTL when accessing the session</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttl_seconds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -792,6 +800,8 @@ body.preview-active {
 <div class="viewcode-block" id="RedisSessionHistoryService.delete_session">
 <a class="viewcode-back" href="../../../../../zh/api/engine.html#agentscope_runtime.engine.services.session_history.redis_session_history_service.RedisSessionHistoryService.delete_session">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Redis connection is not available&quot;</span><span class="p">)</span>
         <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">session_id</span><span class="p">)</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
 
@@ -804,6 +814,8 @@ body.preview-active {
 <span class="sd">        Uses SCAN to find all session:{user_id}:* keys. Expired sessions</span>
 <span class="sd">        naturally disappear as their keys expire, avoiding stale entries.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Redis connection is not available&quot;</span><span class="p">)</span>
         <span class="n">pattern</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_pattern</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
         <span class="n">sessions</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">cursor</span> <span class="o">=</span> <span class="mi">0</span>
@@ -817,9 +829,13 @@ body.preview-active {
             <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
                 <span class="n">session_json</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">session_json</span><span class="p">:</span>
-                    <span class="n">session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_from_json</span><span class="p">(</span><span class="n">session_json</span><span class="p">)</span>
-                    <span class="n">session</span><span class="o">.</span><span class="n">messages</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="n">sessions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_from_json</span><span class="p">(</span><span class="n">session_json</span><span class="p">)</span>
+                        <span class="n">session</span><span class="o">.</span><span class="n">messages</span> <span class="o">=</span> <span class="p">[]</span>
+                        <span class="n">sessions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                        <span class="c1"># Skip corrupted session data</span>
+                        <span class="k">continue</span>
 
             <span class="k">if</span> <span class="n">cursor</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">break</span>
@@ -839,6 +855,8 @@ body.preview-active {
             <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
         <span class="p">],</span>
     <span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Redis connection is not available&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
             <span class="n">message</span> <span class="o">=</span> <span class="p">[</span><span class="n">message</span><span class="p">]</span>
         <span class="n">norm_message</span> <span class="o">=</span> <span class="p">[]</span>
@@ -856,14 +874,24 @@ body.preview-active {
 
         <span class="n">session_json</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">session_json</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2"> not found or has expired for user &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">. Previous memory/state has been lost. &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;Please create a new session.&quot;</span><span class="p">,</span>
+            <span class="c1"># Session expired or not found, treat as a new session</span>
+            <span class="c1"># Create a new session with the current messages</span>
+            <span class="n">stored_session</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span>
+                <span class="nb">id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+                <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+                <span class="n">messages</span><span class="o">=</span><span class="n">norm_message</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
             <span class="p">)</span>
-
-        <span class="n">stored_session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_from_json</span><span class="p">(</span><span class="n">session_json</span><span class="p">)</span>
-        <span class="n">stored_session</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">norm_message</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">stored_session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_from_json</span><span class="p">(</span><span class="n">session_json</span><span class="p">)</span>
+                <span class="n">stored_session</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">norm_message</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="c1"># Session data corrupted, treat as a new session</span>
+                <span class="n">stored_session</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span>
+                    <span class="nb">id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+                    <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+                    <span class="n">messages</span><span class="o">=</span><span class="n">norm_message</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+                <span class="p">)</span>
 
         <span class="c1"># Limit the number of messages per session to prevent memory issues</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_messages_per_session</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>

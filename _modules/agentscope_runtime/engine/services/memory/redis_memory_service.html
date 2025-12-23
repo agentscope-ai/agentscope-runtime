@@ -781,12 +781,14 @@ body.preview-active {
 
 <div class="viewcode-block" id="RedisMemoryService.search_memory">
 <a class="viewcode-back" href="../../../../../zh/api/engine.html#agentscope_runtime.engine.services.memory.redis_memory_service.RedisMemoryService.search_memory">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_memory</span><span class="p">(</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_memory</span><span class="p">(</span>  <span class="c1"># pylint: disable=too-many-branches</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
         <span class="n">filters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Redis connection is not available&quot;</span><span class="p">)</span>
         <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="ow">not</span> <span class="n">messages</span>
@@ -820,7 +822,11 @@ body.preview-active {
             <span class="n">msgs_json</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hget</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">session_id</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">msgs_json</span><span class="p">:</span>
                 <span class="k">continue</span>
-            <span class="n">msgs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deserialize</span><span class="p">(</span><span class="n">msgs_json</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">msgs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deserialize</span><span class="p">(</span><span class="n">msgs_json</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="c1"># Skip corrupted message data</span>
+                <span class="k">continue</span>
 
             <span class="c1"># Match messages in this session</span>
             <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">msgs</span><span class="p">:</span>
@@ -840,9 +846,8 @@ body.preview-active {
 
         <span class="c1"># Refresh TTL on read to extend lifetime of actively used data,</span>
         <span class="c1"># if a TTL is configured and there is existing data for this key.</span>
-        <span class="n">ttl_seconds</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_ttl&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">ttl_seconds</span> <span class="ow">and</span> <span class="n">hash_keys</span><span class="p">:</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">expire</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">ttl_seconds</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttl_seconds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">hash_keys</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">expire</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttl_seconds</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">result</span></div>
 
@@ -865,6 +870,8 @@ body.preview-active {
         <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">filters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Redis connection is not available&quot;</span><span class="p">)</span>
         <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
         <span class="n">page_num</span> <span class="o">=</span> <span class="n">filters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;page_num&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">filters</span> <span class="k">else</span> <span class="mi">1</span>
         <span class="n">page_size</span> <span class="o">=</span> <span class="n">filters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;page_size&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="k">if</span> <span class="n">filters</span> <span class="k">else</span> <span class="mi">10</span>
@@ -880,8 +887,12 @@ body.preview-active {
         <span class="k">for</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">hash_keys</span><span class="p">):</span>
             <span class="n">msgs_json</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hget</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">session_id</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">msgs_json</span><span class="p">:</span>
-                <span class="n">msgs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deserialize</span><span class="p">(</span><span class="n">msgs_json</span><span class="p">)</span>
-                <span class="n">all_msgs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">msgs</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">msgs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deserialize</span><span class="p">(</span><span class="n">msgs_json</span><span class="p">)</span>
+                    <span class="n">all_msgs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">msgs</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+                    <span class="c1"># Skip corrupted message data</span>
+                    <span class="k">continue</span>
 
                 <span class="c1"># Early exit optimization: if we&#39;ve loaded enough messages</span>
                 <span class="c1"># to cover the requested page, we can stop (but this assumes</span>
@@ -890,7 +901,7 @@ body.preview-active {
 
         <span class="c1"># Refresh TTL on active use to keep memory alive,</span>
         <span class="c1"># mirroring get_session behavior</span>
-        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_ttl_seconds&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttl_seconds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">hash_keys</span><span class="p">:</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">expire</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttl_seconds</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">all_msgs</span><span class="p">[</span><span class="n">start_index</span><span class="p">:</span><span class="n">end_index</span><span class="p">]</span></div>
 
@@ -902,6 +913,8 @@ body.preview-active {
         <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">session_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Redis connection is not available&quot;</span><span class="p">)</span>
         <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">session_id</span><span class="p">:</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hdel</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">session_id</span><span class="p">)</span>
