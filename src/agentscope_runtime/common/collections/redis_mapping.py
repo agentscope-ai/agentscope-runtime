@@ -38,7 +38,10 @@ class RedisMapping(Mapping):
                 match=search_pattern,
             )
             for key in keys:
-                decoded_key = key.decode("utf-8")
+                if isinstance(key, bytes):
+                    decoded_key = key.decode("utf-8")
+                else:
+                    decoded_key = str(key)
                 yield self._strip_prefix(decoded_key)
 
             if cursor == 0:
