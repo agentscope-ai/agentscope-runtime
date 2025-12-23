@@ -107,27 +107,27 @@ async def adapt_ms_agent_framework_message_stream(
 
         new_blocks = []
         new_tool_blocks = []
-        if isinstance(msg.content, List):
-            for block in msg.content:
+        if isinstance(msg.contents, List):
+            for block in msg.contents:
                 if block.type != "function_call":
                     new_blocks.append(block)
                 else:
                     new_tool_blocks.append(block)
             if new_tool_blocks:
                 if tool_start:
-                    msg.content = new_tool_blocks
+                    msg.contents = new_tool_blocks
                 else:
-                    msg.content = new_blocks
+                    msg.contents = new_blocks
                     tool_start = True
 
             else:
-                msg.content = new_blocks
+                msg.contents = new_blocks
 
-        if not msg.content:
+        if not msg.contents:
             continue
 
         # msg content
-        content = msg.content
+        content = msg.contents
 
         for element in content:
             if isinstance(element, UsageContent):

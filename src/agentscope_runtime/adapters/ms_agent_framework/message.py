@@ -52,7 +52,7 @@ def message_to_ms_agent_framework_message(
     def _convert_one(message: Message) -> ChatMessage:
         result = {
             "author_name": getattr(message, "name", message.role),
-            "role": message.role,
+            "role": message.role or "assistant",
         }
         _id = getattr(message, "id")
 
@@ -95,6 +95,7 @@ def message_to_ms_agent_framework_message(
             MessageType.MCP_TOOL_CALL_OUTPUT,
             MessageType.FUNCTION_CALL_OUTPUT,
         ):
+            result["role"] = "tool"
             out = None
             for cnt in reversed(message.content):
                 if hasattr(cnt, "data"):
@@ -179,7 +180,7 @@ def message_to_ms_agent_framework_message(
             if metadata:
                 orig_id = metadata.get(
                     "original_id",
-                    orig_msg.id,
+                    orig_msg.message_id,
                 )
             else:
                 # In case metadata is not provided, use the original id
@@ -187,15 +188,15 @@ def message_to_ms_agent_framework_message(
 
             if orig_id not in grouped:
                 agentscope_msg = ChatMessage(
-                    name=orig_msg.name,
+                    author_name=orig_msg.author_name,
                     role=orig_msg.role,
-                    metadata=orig_msg.metadata,
-                    content=list(orig_msg.content),
+                    additional_properties=orig_msg.additional_properties,
+                    content=list(orig_msg.contents),
                 )
                 agentscope_msg.id = orig_id
                 grouped[orig_id] = agentscope_msg
             else:
-                grouped[orig_id].content.extend(orig_msg.content)
+                grouped[orig_id].content.extend(orig_msg.contents)
 
         return list(grouped.values())
     else:
