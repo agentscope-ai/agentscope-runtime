@@ -429,6 +429,7 @@ async def deploy_to_k8s():
         kube_config=K8sConfig(
             k8s_namespace="agentscope-runtime",
             kubeconfig_path=None,
+            service_type="LoadBalancer",  # 选项：LoadBalancer、ClusterIP、NodePort
         ),
         registry_config=RegistryConfig(
             registry_url="your-registry-url",
@@ -471,6 +472,26 @@ if __name__ == "__main__":
 - 容器化部署，支持自动扩展
 - 配置资源限制和健康检查
 - 可使用 `kubectl scale deployment` 进行扩展
+
+**服务类型配置**：
+- **`LoadBalancer`**（默认）：适合生产环境，通过云服务商的负载均衡器提供外部访问
+- **`ClusterIP`**：仅限集群内部访问。本地访问需使用 `kubectl port-forward deployment/<deployment-name> 8080:8080 -n agentscope-runtime`
+- **`NodePort`**：在每个节点上暴露静态端口（30000-32767）。通过 `http://<节点IP>:<节点端口>` 访问。适合开发环境
+
+**访问不同服务类型**：
+```bash
+# LoadBalancer：通过外部 IP 访问
+curl http://<external-ip>:8080/health
+
+# ClusterIP：使用端口转发
+kubectl port-forward deployment/agent-xxx 8080:8080 -n agentscope-runtime
+curl http://127.0.0.1:8080/health
+
+# NodePort：通过节点 IP 和分配的端口访问
+kubectl get nodes -o wide  # 获取节点 IP
+kubectl get svc -n agentscope-runtime  # 获取 NodePort
+curl http://<节点IP>:<节点端口>/health
+```
 
 
 ## 方法4：Serverless部署：ModelStudio

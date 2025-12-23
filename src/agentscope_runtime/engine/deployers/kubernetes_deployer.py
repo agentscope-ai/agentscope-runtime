@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=too-many-statements
+
 import logging
 import os
 from datetime import datetime
 from typing import Optional, Dict, List, Union, Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from agentscope_runtime.engine.deployers.state import Deployment
 from .adapter.protocol_adapter import ProtocolAdapter
@@ -33,6 +35,22 @@ class K8sConfig(BaseModel):
         description="Path to kubeconfig file. If not set, will try "
         "in-cluster config or default kubeconfig.",
     )
+    service_type: str = Field(
+        "LoadBalancer",
+        description="Kubernetes service type: LoadBalancer, ClusterIP, or "
+        "NodePort. Determines how the service is exposed.",
+    )
+
+    @field_validator("service_type")
+    @classmethod
+    def validate_service_type(cls, v: str) -> str:
+        """Validate service_type is one of the allowed values."""
+        allowed = ["LoadBalancer", "ClusterIP", "NodePort"]
+        if v not in allowed:
+            raise ValueError(
+                f"service_type must be one of {allowed}, got: {v}",
+            )
+        return v
 
 
 class BuildConfig(BaseModel):
@@ -251,6 +269,7 @@ class KubernetesDeployManager(DeployManager):
                 runtime_config=runtime_config or {},
                 replicas=replicas,
                 create_service=True,
+                service_type=self.kubeconfig.service_type,
             )
             if not _id:
                 import traceback
@@ -260,10 +279,50 @@ class KubernetesDeployManager(DeployManager):
                     f"{resource_name}, {traceback.format_exc()}",
                 )
 
-            if ports:
-                url = self.get_service_endpoint(ip, ports)
+            # Handle different service types for endpoint URL construction
+            service_type = self.kubeconfig.service_type
+
+            if (
+                service_type == "NodePort"
+                and ip
+                and ip.startswith("nodeport:")
+            ):
+                # Extract NodePort from the special format "nodeport:xxxxx"
+                node_port = int(ip.split(":", 1)[1])
+                # For NodePort, use the allocated port instead of the
+                # container port
+                url = self.get_service_endpoint(None, node_port)
+                logger.info(
+                    f"NodePort service created. Access via: "
+                    f"http://<node-ip>:{node_port}",
+                )
+            elif service_type == "ClusterIP":
+                # For ClusterIP, construct cluster-internal DNS name
+                cluster_dns = (
+                    f"http://{_id}.{self.kubeconfig.k8s_namespace}"
+                    f".svc.cluster.local:{port}"
+                )
+                # For local development, suggest using 127.0.0.1 with
+                # port-forward
+                url = f"http://127.0.0.1:{port}"
+                logger.info(
+                    f"ClusterIP service created. Cluster-internal DNS: "
+                    f"{cluster_dns}",
+                )
+                logger.info(
+                    f"For local access, run: kubectl port-forward "
+                    f"deployment/{_id} {port}:{port} -n "
+                    f"{self.kubeconfig.k8s_namespace}",
+                )
+                logger.info(
+                    f"Then access via: {url}",
+                )
             else:
-                url = self.get_service_endpoint(ip, port)
+                # LoadBalancer or default case
+                if ports:
+                    url = self.get_service_endpoint(ip, ports)
+                else:
+                    url = self.get_service_endpoint(ip, port)
 
             logger.info(f"Deployment {deploy_id} successful: {url}")
 

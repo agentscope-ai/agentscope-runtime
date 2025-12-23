@@ -434,6 +434,7 @@ async def deploy_to_k8s():
         kube_config=K8sConfig(
             k8s_namespace="agentscope-runtime",
             kubeconfig_path=None,
+            service_type="LoadBalancer",  # Options: LoadBalancer, ClusterIP, NodePort
         ),
         registry_config=RegistryConfig(
             registry_url="your-registry-url",
@@ -476,6 +477,26 @@ if __name__ == "__main__":
 - Containerized deployment with auto-scaling support
 - Resource limits and health checks configured
 - Can be scaled with `kubectl scale deployment`
+
+**Service Type Configuration**:
+- **`LoadBalancer`** (default): Best for production with external access via cloud provider's load balancer
+- **`ClusterIP`**: For internal cluster access only. Use `kubectl port-forward deployment/<deployment-name> 8080:8080 -n agentscope-runtime` to access locally
+- **`NodePort`**: Exposes service on each node at a static port (30000-32767). Access via `http://<node-ip>:<node-port>`. Useful for development environments
+
+**Accessing Different Service Types**:
+```bash
+# LoadBalancer: Access via external IP
+curl http://<external-ip>:8080/health
+
+# ClusterIP: Use port-forward
+kubectl port-forward deployment/agent-xxx 8080:8080 -n agentscope-runtime
+curl http://127.0.0.1:8080/health
+
+# NodePort: Access via node IP and allocated port
+kubectl get nodes -o wide  # Get node IP
+kubectl get svc -n agentscope-runtime  # Get NodePort
+curl http://<node-ip>:<node-port>/health
+```
 
 
 ## Method 4: Serverless Deployment: ModelStudio
