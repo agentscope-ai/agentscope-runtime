@@ -631,6 +631,9 @@ class Message(Event):
             new_content.index = len(self.content) - 1
             new_content.msg_id = self.id
             new_content.in_progress()
+
+            copy.index = new_content.index
+            copy.msg_id = new_content.msg_id
             return new_content
 
         # delta content
