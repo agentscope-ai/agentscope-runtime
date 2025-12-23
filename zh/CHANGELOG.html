@@ -634,12 +634,49 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <section id="changelog">
 <h1><span class="section-number">9. </span>CHANGELOG<a class="headerlink" href="#changelog" title="Link to this heading">¶</a></h1>
+<section id="v1-0-3">
+<h2>v1.0.3<a class="headerlink" href="#v1-0-3" title="Link to this heading">¶</a></h2>
+<p>AgentScope Runtime v1.0.3 在保持 v1.x 框架可扩展性与一致性的基础上，带来了 <strong>A2A 协议注册支持</strong>、更完整的异常与 Token 使用统计机制、新的天气组件与 UI 交互能力，以及多个 Sandbox、Redis、Agent 状态的修复与优化。同时改进了部署构建（Sandbox Image Building）、远程桌面自定义 URL 支持、PYPI 镜像配置等功能。</p>
+<section id="added">
+<h3>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>A2A Registry 支持</strong>
+新增对 Google A2A 协议的注册能力，可与 AgentScope-Runtime 原生集成，实现跨平台智能体注册与发现。</p></li>
+<li><p><strong>Token 使用统计（即使报错）</strong>
+新增功能可在模型调用过程中，即便抛出异常，也获取到本次调用的 Token 使用量，便于计费与调试。</p></li>
+<li><p><strong>Sandbox 镜像构建 Actions</strong>
+在 CI/CD 中新增构建 Sandbox 镜像的 GitHub Actions，方便分发与部署自动化。</p></li>
+</ul>
+</section>
+<section id="changed">
+<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>部署 PYPI 镜像配置优化</strong>
+<code class="docutils literal notranslate"><span class="pre">pypi_mirror</span></code> 改为可指定输入并默认为 <code class="docutils literal notranslate"><span class="pre">None</span></code>，便于自定义 Python 包源。</p></li>
+</ul>
+</section>
+<section id="fixed">
+<h3>Fixed<a class="headerlink" href="#fixed" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>RedisMapping 扫描键解析问题</strong>
+修复 <code class="docutils literal notranslate"><span class="pre">RedisMapping.scan</span></code> 在 <code class="docutils literal notranslate"><span class="pre">decode_responses</span></code> 模式下的键解析错误。</p></li>
+<li><p><strong>Redis 异步客户端关闭方式</strong>
+调整为使用 <code class="docutils literal notranslate"><span class="pre">aclose</span></code> 关闭 Redis 异步客户端，避免<code class="docutils literal notranslate"><span class="pre">warning</span></code>。</p></li>
+<li><p><strong>AgentBay 版本修复</strong>
+修复 <code class="docutils literal notranslate"><span class="pre">agentbay</span></code> 版本依赖问题，保证运行时一致性。</p></li>
+<li><p><strong>VNC 远程桌面自定义 URL 前缀支持</strong>
+支持 VNC Remote Desktop 使用自定义 URL 前缀，提升部署灵活性。</p></li>
+<li><p><strong>会话与记忆热修复</strong>
+新增 <code class="docutils literal notranslate"><span class="pre">Redis</span> <span class="pre">Session</span></code> 与 <code class="docutils literal notranslate"><span class="pre">Redis</span> <span class="pre">Memory</span></code> 过期时间。</p></li>
+</ul>
+</section>
+</section>
 <section id="v1-0-2">
 <h2>v1.0.2<a class="headerlink" href="#v1-0-2" title="Link to this heading">¶</a></h2>
 <p>本次更新为 AgentScope Runtime v1.0.2，带来了 LangGraph 与 Agno 在 v1.x 框架下的支持、工具调用优化、移动端沙箱 UI 增强，以及多个兼容性与稳定性修复。
 同时改进了 CLI 工具、MCP Tool 调用处理，并统一了业务异常管理。</p>
-<section id="added">
-<h3>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h3>
+<section id="id1">
+<h3>Added<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>LangGraph 支持</strong>：新增对 LangGraph 框架的原生兼容。</p></li>
 <li><p><strong>多框架支持扩展</strong>：在 v1.x 中加入对 Agno 框架的支持。</p></li>
@@ -649,16 +686,16 @@ body.preview-active {
 <li><p><strong>MCP Tool Call/Output 处理</strong>：新增 MCP 工具调用与输出的适配。</p></li>
 </ul>
 </section>
-<section id="changed">
-<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">¶</a></h3>
+<section id="id2">
+<h3>Changed<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>优化工具流式调用与输出的支持。</p></li>
 <li><p>改进 <code class="docutils literal notranslate"><span class="pre">adapt_agentscope_message_stream</span></code> 对非 JSON 输出的兼容处理。</p></li>
 <li><p>更新 <code class="docutils literal notranslate"><span class="pre">.npmrc</span></code> 以禁用 package-lock，并调整 peer dependency 配置。</p></li>
 </ul>
 </section>
-<section id="fixed">
-<h3>Fixed<a class="headerlink" href="#fixed" title="Link to this heading">¶</a></h3>
+<section id="id3">
+<h3>Fixed<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>LangChain</strong> 依赖补充（含 <code class="docutils literal notranslate"><span class="pre">langchain_openai</span></code>）。</p></li>
 <li><p>修复 LangGraph 单元测试。</p></li>
@@ -678,30 +715,30 @@ body.preview-active {
 <section id="v1-0-1">
 <h2>v1.0.1<a class="headerlink" href="#v1-0-1" title="Link to this heading">¶</a></h2>
 <p>AgentScope Runtime v1.0.1 主要包括稳定性修复、开发体验优化、运行时配置增强，以及 Windows WebUI 启动兼容性支持。同时引入服务工厂机制、工具调用类型区分，以及依赖更新对 AgentScope 1.0.9 的支持。</p>
-<section id="id1">
-<h3>Added<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<section id="id4">
+<h3>Added<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>服务工厂（Service Factory）</strong> 支持，更灵活创建运行时服务。</p></li>
 <li><p>在 AgentScope 内区分 <strong>Tool Call</strong> 与 <strong>MCP Tool Call</strong>。</p></li>
 </ul>
 </section>
-<section id="id2">
-<h3>Changed<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<section id="id5">
+<h3>Changed<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>引入新的 <strong>runtime config</strong> 运行时配置机制。</p></li>
 <li><p>更新依赖以支持 AgentScope 1.0.9。</p></li>
 </ul>
 </section>
-<section id="id3">
-<h3>Fixed<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<section id="id6">
+<h3>Fixed<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>修复 AgentScope 消息转换逻辑。</p></li>
 <li><p>修复 Windows 平台下 WebUI 启动问题（<code class="docutils literal notranslate"><span class="pre">subprocess.Popen</span></code> + shell 参数处理）。</p></li>
 <li><p>修复表格存储（Table Store）相关问题。</p></li>
 </ul>
 </section>
-<section id="id4">
-<h3>Documentation<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<section id="id7">
+<h3>Documentation<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>更新 serverless 部署文档。</p></li>
 </ul>
@@ -745,16 +782,16 @@ body.preview-active {
 <li><p><strong>丰富的内置工具集</strong>：面向生产的搜索、RAG、AIGC、支付等模块。</p></li>
 <li><p><strong>灵活的部署模式</strong>：支持本地线程/进程、Docker、Kubernetes、或托管云端部署。</p></li>
 </ul>
-<section id="id5">
-<h3>Added<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<section id="id8">
+<h3>Added<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>原生Short/Long Memory、智能体 State 适配器集成至 AgentScope Framework。</p></li>
 <li><p>新聊天式 Web UI。</p></li>
 <li><p>新增多种 Sandbox 类型（移动端沙箱、AgentBay无影云沙箱）。</p></li>
 </ul>
 </section>
-<section id="id6">
-<h3>Changed<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<section id="id9">
+<h3>Changed<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code>不再接受<code class="docutils literal notranslate"><span class="pre">Agent</span></code>作为入参数，用户需要通过<code class="docutils literal notranslate"><span class="pre">query</span></code>、<code class="docutils literal notranslate"><span class="pre">init</span></code>、<code class="docutils literal notranslate"><span class="pre">shutdown</span></code>装饰器自定义智能体应用的生命周期与请求逻辑。</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">Runner</span></code>不再接受<code class="docutils literal notranslate"><span class="pre">Agent</span></code>作为入参数，用户需要通过<code class="docutils literal notranslate"><span class="pre">query_handler</span></code>、<code class="docutils literal notranslate"><span class="pre">init_handler</span></code>、<code class="docutils literal notranslate"><span class="pre">shutdown_handler</span></code>自定义执行期的生命周期与请求逻辑。</p></li>
@@ -1022,16 +1059,16 @@ body.preview-active {
 <section id="v0-2-0">
 <h2>v0.2.0<a class="headerlink" href="#v0-2-0" title="Link to this heading">¶</a></h2>
 <p>简化 agent 部署，并确保本地开发与生产部署的一致性。</p>
-<section id="id7">
-<h3>Added<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
+<section id="id10">
+<h3>Added<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Agent 部署支持</strong>：可部署到 Docker、Kubernetes、以及阿里云函数计算（FC）。</p></li>
 <li><p><strong>Python SDK for Deployed Agent</strong>：用于与已部署 agent 交互。</p></li>
 <li><p><strong>类 App 部署模式</strong>：支持打包部署成应用形式。</p></li>
 </ul>
 </section>
-<section id="id8">
-<h3>Changed<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
+<section id="id11">
+<h3>Changed<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>统一 K8S &amp; Docker 客户端</strong>：将客户端移动到公共模块，简化维护。</p></li>
 </ul>
@@ -1040,8 +1077,8 @@ body.preview-active {
 <section id="v0-1-6">
 <h2>v0.1.6<a class="headerlink" href="#v0-1-6" title="Link to this heading">¶</a></h2>
 <p>提升对 AgentScope 全特性的原生支持，并增强 sandbox 的可交互性与可扩展性。</p>
-<section id="id9">
-<h3>Added<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
+<section id="id12">
+<h3>Added<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>更多消息/事件类型</strong>：扩展 Agent Framework 对多模态消息、事件的支持。</p></li>
 <li><p><strong>多 pool 管理</strong>：Sandbox Manager 支持管理多个 sandbox pool。</p></li>
@@ -1055,21 +1092,21 @@ body.preview-active {
 <section id="v0-1-5">
 <h2>v0.1.5<a class="headerlink" href="#v0-1-5" title="Link to this heading">¶</a></h2>
 <p>优化依赖安装，移除不再需要的 LLM Agent 模块，增强 sandbox 客户端功能。</p>
-<section id="id10">
-<h3>Added<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
+<section id="id13">
+<h3>Added<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>FC (AgentRun) Sandbox 客户端</strong>：支持在函数计算环境中运行 Sandbox。</p></li>
 <li><p><strong>自定义容器镜像与多目录绑定</strong>：可指定镜像名及绑定多个目录。</p></li>
 </ul>
 </section>
-<section id="id11">
-<h3>Changed<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
+<section id="id14">
+<h3>Changed<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>安装选项优化</strong>：将 AgentScope 和 Sandbox 作为基础依赖，简化安装。</p></li>
 </ul>
 </section>
-<section id="id12">
-<h3>Removed<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
+<section id="id15">
+<h3>Removed<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>LLM Agent &amp; API</strong>：删除 LLM Agent 及相关接口。</p></li>
 </ul>
@@ -1166,40 +1203,46 @@ body.preview-active {
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">9. CHANGELOG</a><ul>
-<li><a class="reference internal" href="#v1-0-2">v1.0.2</a><ul>
+<li><a class="reference internal" href="#v1-0-3">v1.0.3</a><ul>
 <li><a class="reference internal" href="#added">Added</a></li>
 <li><a class="reference internal" href="#changed">Changed</a></li>
 <li><a class="reference internal" href="#fixed">Fixed</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#v1-0-2">v1.0.2</a><ul>
+<li><a class="reference internal" href="#id1">Added</a></li>
+<li><a class="reference internal" href="#id2">Changed</a></li>
+<li><a class="reference internal" href="#id3">Fixed</a></li>
 <li><a class="reference internal" href="#documentation">Documentation</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v1-0-1">v1.0.1</a><ul>
-<li><a class="reference internal" href="#id1">Added</a></li>
-<li><a class="reference internal" href="#id2">Changed</a></li>
-<li><a class="reference internal" href="#id3">Fixed</a></li>
-<li><a class="reference internal" href="#id4">Documentation</a></li>
+<li><a class="reference internal" href="#id4">Added</a></li>
+<li><a class="reference internal" href="#id5">Changed</a></li>
+<li><a class="reference internal" href="#id6">Fixed</a></li>
+<li><a class="reference internal" href="#id7">Documentation</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v1-0-0">v1.0.0</a><ul>
-<li><a class="reference internal" href="#id5">Added</a></li>
-<li><a class="reference internal" href="#id6">Changed</a></li>
+<li><a class="reference internal" href="#id8">Added</a></li>
+<li><a class="reference internal" href="#id9">Changed</a></li>
 <li><a class="reference internal" href="#breaking-changes">Breaking Changes</a></li>
 <li><a class="reference internal" href="#removed">Removed</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v0-2-0">v0.2.0</a><ul>
-<li><a class="reference internal" href="#id7">Added</a></li>
-<li><a class="reference internal" href="#id8">Changed</a></li>
+<li><a class="reference internal" href="#id10">Added</a></li>
+<li><a class="reference internal" href="#id11">Changed</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v0-1-6">v0.1.6</a><ul>
-<li><a class="reference internal" href="#id9">Added</a></li>
+<li><a class="reference internal" href="#id12">Added</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v0-1-5">v0.1.5</a><ul>
-<li><a class="reference internal" href="#id10">Added</a></li>
-<li><a class="reference internal" href="#id11">Changed</a></li>
-<li><a class="reference internal" href="#id12">Removed</a></li>
+<li><a class="reference internal" href="#id13">Added</a></li>
+<li><a class="reference internal" href="#id14">Changed</a></li>
+<li><a class="reference internal" href="#id15">Removed</a></li>
 </ul>
 </li>
 </ul>
