@@ -2,7 +2,7 @@
 from collections import defaultdict
 from enum import Enum
 import logging
-from typing import Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 from uuid import uuid4
 
 from ag_ui.core import RunAgentInput
@@ -49,6 +49,9 @@ from ....schemas.agent_schemas import (
     TextContent,
     ToolCall,
 )
+
+if TYPE_CHECKING:
+    from .agui_protocol_adapter import FlexibleRunAgentInput
 
 logger = logging.getLogger(__name__)
 
@@ -239,10 +242,12 @@ class AGUIAdapter:
 
     def convert_agui_request_to_agent_request(
         self,
-        agui_request: RunAgentInput,
+        agui_request: Union[RunAgentInput, "FlexibleRunAgentInput"],
     ) -> AgentRequest:
         """
         Convert an AG-UI request payload to an AgentRequest.
+
+        Accepts both RunAgentInput and FlexibleRunAgentInput.
         """
 
         if (
@@ -464,6 +469,10 @@ class AGUIAdapter:
                             message_id=agui_msg_id,
                         ),
                     )
+
+                    self._agui_message_status[
+                        agui_msg_id
+                    ] = AGUI_MESSAGE_STATUS.COMPLETED
                 elif (
                     self._agui_message_status[agui_msg_id]
                     == AGUI_MESSAGE_STATUS.CREATED
@@ -474,6 +483,9 @@ class AGUIAdapter:
                             delta=content.text,
                         ),
                     )
+                    self._agui_message_status[
+                        agui_msg_id
+                    ] = AGUI_MESSAGE_STATUS.COMPLETED
                 else:
                     logger.warning("AG UI message stream is completed")
         elif isinstance(content, DataContent):

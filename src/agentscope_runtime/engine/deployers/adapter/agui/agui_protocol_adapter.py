@@ -3,12 +3,13 @@ import asyncio
 import json
 import logging
 import traceback
-from typing import Any, AsyncGenerator, Callable, Optional
+from typing import Any, AsyncGenerator, Callable, List, Optional
 from uuid import uuid4
 
-from ag_ui.core import RunAgentInput
+from ag_ui.core.types import Context, Message, Tool
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest, Event
 
@@ -30,6 +31,32 @@ SSE_HEADERS = {
 }
 
 
+class FlexibleRunAgentInput(BaseModel):
+    """
+    Flexible input for running an agent with optional fields.
+
+    This is a custom model that relaxes the required constraints from
+    the original ag_ui.RunAgentInput, making state, tools, context,
+    and forwarded_props optional for better API flexibility.
+
+    Supports both snake_case (thread_id) and camelCase (threadId) field names.
+    """
+
+    thread_id: str = Field(..., alias="threadId")
+    run_id: str = Field(..., alias="runId")
+    parent_run_id: Optional[str] = Field(None, alias="parentRunId")
+    state: Any = None
+    messages: List[Message] = Field(default_factory=list)
+    tools: List[Tool] = Field(default_factory=list)
+    context: List[Context] = Field(default_factory=list)
+    forwarded_props: Any = Field(None, alias="forwardedProps")
+
+    model_config = {
+        "extra": "allow",
+        "populate_by_name": True,
+    }
+
+
 class AGUIDefaultAdapter(ProtocolAdapter):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -44,7 +71,7 @@ class AGUIDefaultAdapter(ProtocolAdapter):
 
     async def _handle_requests(
         self,
-        agent_run_input: RunAgentInput,
+        agent_run_input: FlexibleRunAgentInput,
     ) -> StreamingResponse:
         """
         Handle AG-UI streaming request.
@@ -83,7 +110,7 @@ class AGUIDefaultAdapter(ProtocolAdapter):
 
     async def _generate_stream_response(
         self,
-        request: RunAgentInput,
+        request: FlexibleRunAgentInput,
     ):
         assert self._execution_func is not None
         adapter = AGUIAdapter(
@@ -124,7 +151,7 @@ class AGUIDefaultAdapter(ProtocolAdapter):
 
     async def _stream_with_semaphore(
         self,
-        request: RunAgentInput,
+        request: FlexibleRunAgentInput,
         request_id: str,
     ):
         try:
@@ -142,6 +169,6 @@ class AGUIDefaultAdapter(ProtocolAdapter):
         app.add_api_route(
             AGUI_ENDPOINT_PATH,
             self._handle_requests,
-            methods=["POST", "OPTIONS"],
+            methods=["POST"],
         )
         return app

@@ -1,14 +1,5 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=redefined-outer-name, protected-access
-"""
-Integration tests for AG-UI Protocol support.
-
-Tests cover:
-- End-to-end AG-UI request/response flow
-- Integration with AgentApp
-- Real streaming scenarios
-- Complete message conversion workflows
-"""
 import json
 
 import pytest
