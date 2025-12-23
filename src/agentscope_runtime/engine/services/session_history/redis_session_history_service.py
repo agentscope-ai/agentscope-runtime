@@ -215,6 +215,10 @@ class RedisSessionHistoryService(SessionHistoryService):
                 stored_session.messages = stored_session.messages[
                     -self._max_messages_per_session :
                 ]
+                # Keep the in-memory session in sync with the stored session
+                session.messages = session.messages[
+                    -self._max_messages_per_session :
+                ]
 
         await self._redis.set(key, self._session_to_json(stored_session))
 
