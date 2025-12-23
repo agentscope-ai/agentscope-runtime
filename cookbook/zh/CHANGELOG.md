@@ -15,7 +15,7 @@ AgentScope Runtime v1.0.3 在保持 v1.x 框架可扩展性与一致性的基础
 
 ### Changed
 
-- **部署PYPI 镜像配置优化**
+- **部署 PYPI 镜像配置优化**
   `pypi_mirror` 改为可指定输入并默认为 `None`，便于自定义 Python 包源。
 
 ### Fixed
