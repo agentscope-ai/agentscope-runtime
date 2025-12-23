@@ -1,0 +1,209 @@
+name: Manual Build Sandbox Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_types:
+        description: "Comma separated image types (e.g., base,gui,browser)"
+        required: true
+        default: "base,gui"
+        type: string
+      platform:
+        description: "Docker architecture platform (used for multi-arch builds)"
+        required: true
+        default: "linux/amd64"
+        type: choice
+        options:
+          - linux/amd64
+          - linux/arm64
+      single_arch:
+        description: "Single architecture build (forces amd64, no multi-arch manifest merge)"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      tag:
+        description: "Custom image tag (default: current date)"
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+        python-version: [ '3.10' ]
+    environment: prod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to DockerHub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        if: ${{ env.DOCKER_USERNAME != '' && env.DOCKER_PASSWORD != '' }}
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
+
+      - name: Log in to Aliyun ACR
+        env:
+          ALIYUN_ACR_USERNAME: ${{ secrets.ALIYUN_ACR_USERNAME }}
+          ALIYUN_ACR_PASSWORD: ${{ secrets.ALIYUN_ACR_PASSWORD }}
+        if: ${{ env.ALIYUN_ACR_USERNAME != '' && env.ALIYUN_ACR_PASSWORD != '' }}
+        uses: docker/login-action@v3
+        with:
+          registry: agentscope-registry.ap-southeast-1.cr.aliyuncs.com
+          username: ${{ env.ALIYUN_ACR_USERNAME }}
+          password: ${{ env.ALIYUN_ACR_PASSWORD }}
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Update setuptools
+        run: |
+          pip install --upgrade pip
+          pip install setuptools==78.1.1 wheel==0.45.1
+
+      - name: Set PYTHONPATH
+        run: |
+          echo "PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/src" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          export PIP_DEFAULT_TIMEOUT=300
+          pip install -q -e ".[dev,ext]"
+
+      - name: Run build script for all types
+        env:
+          AUTO_BUILD: "true"
+        run: |
+          TAG_INPUT="${{ github.event.inputs.tag }}"
+          if [ -z "$TAG_INPUT" ]; then
+            TAG_INPUT=$(date +%Y%m%d)
+          fi
+          PLATFORM_INPUT="${{ github.event.inputs.platform }}"
+          SINGLE="${{ github.event.inputs.single_arch }}"
+          if [ "$SINGLE" = "true" ]; then
+            PLATFORM_INPUT="linux/amd64"
+          fi
+          IFS=',' read -ra TYPES <<< "${{ github.event.inputs.build_types }}"
+          for TYPE in "${TYPES[@]}"; do
+            runtime-sandbox-builder "$TYPE" --platform "$PLATFORM_INPUT"
+          done
+
+      - name: Tag & Push Images
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          ALIYUN_ACR_USERNAME: ${{ secrets.ALIYUN_ACR_USERNAME }}
+          ALIYUN_ACR_PASSWORD: ${{ secrets.ALIYUN_ACR_PASSWORD }}
+        run: |
+          TAG_INPUT="${{ github.event.inputs.tag }}"
+          if [ -z "$TAG_INPUT" ]; then
+            TAG_INPUT=$(date +%Y%m%d)
+          fi
+          SINGLE="${{ github.event.inputs.single_arch }}"
+          ARCH_TAG="${{ github.event.inputs.platform }}"
+          if [ "$SINGLE" = "true" ]; then
+            ARCH_TAG="linux/amd64"
+          fi
+          IFS=',' read -ra TYPES <<< "${{ github.event.inputs.build_types }}"
+          for TYPE in "${TYPES[@]}"; do
+            IMAGE_BASE=$(python -c "from src.agentscope_runtime.sandbox.registry import SandboxRegistry; print(SandboxRegistry.get_image_by_type('$TYPE'))")
+            IMAGE_NAME="${IMAGE_BASE%%:*}"
+            if [ -n "$DOCKER_USERNAME" ] && [ -n "$DOCKER_PASSWORD" ]; then
+              if [ "$SINGLE" = "true" ]; then
+                docker tag "$IMAGE_BASE" "docker.io/${IMAGE_NAME}:${TAG_INPUT}"
+                docker push "docker.io/${IMAGE_NAME}:${TAG_INPUT}"
+              else
+                ARCH_SUFFIX=$(echo "$ARCH_TAG" | tr '/' '-')
+                docker tag "$IMAGE_BASE" "docker.io/${IMAGE_NAME}:${TAG_INPUT}-${ARCH_SUFFIX}"
+                docker push "docker.io/${IMAGE_NAME}:${TAG_INPUT}-${ARCH_SUFFIX}"
+              fi
+            fi
+            if [ -n "$ALIYUN_ACR_USERNAME" ] && [ -n "$ALIYUN_ACR_PASSWORD" ]; then
+              REGISTRY="agentscope-registry.ap-southeast-1.cr.aliyuncs.com"
+              if [ "$SINGLE" = "true" ]; then
+                docker tag "$IMAGE_BASE" "${REGISTRY}/${IMAGE_NAME}:${TAG_INPUT}"
+                docker push "${REGISTRY}/${IMAGE_NAME}:${TAG_INPUT}"
+              else
+                ARCH_SUFFIX=$(echo "$ARCH_TAG" | tr '/' '-')
+                docker tag "$IMAGE_BASE" "${REGISTRY}/${IMAGE_NAME}:${TAG_INPUT}-${ARCH_SUFFIX}"
+                docker push "${REGISTRY}/${IMAGE_NAME}:${TAG_INPUT}-${ARCH_SUFFIX}"
+              fi
+            fi
+          done
+
+      - name: Create Multi-arch Manifest for DockerHub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        if: ${{ github.event.inputs.single_arch == 'false' && env.DOCKER_USERNAME != '' && env.DOCKER_PASSWORD != '' }}
+        run: |
+          TAG_INPUT="${{ github.event.inputs.tag }}"
+          if [ -z "$TAG_INPUT" ]; then
+            TAG_INPUT=$(date +%Y%m%d)
+          fi
+          IFS=',' read -ra TYPES <<< "${{ github.event.inputs.build_types }}"
+          for TYPE in "${TYPES[@]}"; do
+            IMAGE_BASE=$(python -c "from src.agentscope_runtime.sandbox.registry import SandboxRegistry; print(SandboxRegistry.get_image_by_type('$TYPE'))")
+            IMAGE_NAME="${IMAGE_BASE%%:*}"
+            AMD_TAG="docker.io/${IMAGE_NAME}:${TAG_INPUT}-linux-amd64"
+            ARM_TAG="docker.io/${IMAGE_NAME}:${TAG_INPUT}-linux-arm64"
+            COMMON_TAG="docker.io/${IMAGE_NAME}:${TAG_INPUT}"
+            if docker manifest inspect "$AMD_TAG" >/dev/null 2>&1 && docker manifest inspect "$ARM_TAG" >/dev/null 2>&1; then
+              docker manifest create "$COMMON_TAG" --amend "$AMD_TAG" --amend "$ARM_TAG"
+              docker manifest push "$COMMON_TAG"
+            else
+              echo "Missing architecture image in DockerHub, skipping manifest creation."
+            fi
+          done
+
+      - name: Create Multi-arch Manifest for Aliyun ACR
+        env:
+          ALIYUN_ACR_USERNAME: ${{ secrets.ALIYUN_ACR_USERNAME }}
+          ALIYUN_ACR_PASSWORD: ${{ secrets.ALIYUN_ACR_PASSWORD }}
+        if: ${{ github.event.inputs.single_arch == 'false' && env.ALIYUN_ACR_USERNAME != '' && env.ALIYUN_ACR_PASSWORD != '' }}
+        run: |
+          TAG_INPUT="${{ github.event.inputs.tag }}"
+          if [ -z "$TAG_INPUT" ]; then
+            TAG_INPUT=$(date +%Y%m%d)
+          fi
+          REG="agentscope-registry.ap-southeast-1.cr.aliyuncs.com"
+          IFS=',' read -ra TYPES <<< "${{ github.event.inputs.build_types }}"
+          for TYPE in "${TYPES[@]}"; do
+            IMAGE_BASE=$(python -c "from src.agentscope_runtime.sandbox.registry import SandboxRegistry; print(SandboxRegistry.get_image_by_type('$TYPE'))")
+            IMAGE_NAME="${IMAGE_BASE%%:*}"
+            AMD_TAG="${REG}/${IMAGE_NAME}:${TAG_INPUT}-linux-amd64"
+            ARM_TAG="${REG}/${IMAGE_NAME}:${TAG_INPUT}-linux-arm64"
+            COMMON_TAG="${REG}/${IMAGE_NAME}:${TAG_INPUT}"
+            if docker manifest inspect "$AMD_TAG" >/dev/null 2>&1 && docker manifest inspect "$ARM_TAG" >/dev/null 2>&1; then
+              docker manifest create "$COMMON_TAG" --amend "$AMD_TAG" --amend "$ARM_TAG"
+              docker manifest push "$COMMON_TAG"
+            else
+              echo "Missing architecture image in Aliyun ACR, skipping manifest creation."
+            fi
+          done
