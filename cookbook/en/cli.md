@@ -579,6 +579,7 @@ agentscope deploy k8s SOURCE [OPTIONS]
 | `--deploy-timeout` | integer | `300` | Deployment timeout in seconds |
 | `--health-check` | flag | `None` | Enable/disable health check |
 | `--platform` | string | `"linux/amd64"` | Target platform (e.g., 'linux/amd64', 'linux/arm64') |
+| `--pypi-mirror` | string | `None` | PyPI mirror URL for pip package installation (e.g., 'https://pypi.tuna.tsinghua.edu.cn/simple'). If not specified, uses pip default |
 
 ##### Prerequisites
 

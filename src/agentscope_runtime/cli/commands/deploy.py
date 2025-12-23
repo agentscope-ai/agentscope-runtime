@@ -828,6 +828,13 @@ def agentrun(
     help="Target platform (e.g., 'linux/amd64', 'linux/arm64')",
     default="linux/amd64",
 )
+@click.option(
+    "--pypi-mirror",
+    help="PyPI mirror URL for pip package installation (e.g., "
+    "https://pypi.tuna.tsinghua.edu.cn/simple). If not specified, "
+    "uses pip default.",
+    default=None,
+)
 def k8s(
     source: str,
     name: str,
@@ -854,6 +861,7 @@ def k8s(
     deploy_timeout: int,
     health_check: bool,
     platform: str,
+    pypi_mirror: str,
 ):
     """
     Deploy to Kubernetes/ACK.
@@ -898,6 +906,7 @@ def k8s(
             "deploy_timeout": deploy_timeout,
             "health_check": health_check,
             "platform": platform,
+            "pypi_mirror": pypi_mirror,
         }
         merged_config = _merge_config(config_dict, cli_params)
 
@@ -918,6 +927,7 @@ def k8s(
         deploy_timeout = merged_config.get("deploy_timeout", 300)
         health_check = merged_config.get("health_check", True)
         platform = merged_config.get("platform")
+        pypi_mirror = merged_config.get("pypi_mirror")
 
         # Handle requirements (can be comma-separated string, list, or file
         # path)
@@ -1033,6 +1043,8 @@ def k8s(
             deploy_params["health_check"] = health_check
         if platform:
             deploy_params["platform"] = platform
+        if pypi_mirror:
+            deploy_params["pypi_mirror"] = pypi_mirror
 
         # Add agent_source for state saving
         deploy_params["agent_source"] = abs_source
