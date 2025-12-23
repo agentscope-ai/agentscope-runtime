@@ -792,6 +792,7 @@ body.preview-active {
         <span class="n">image_tag</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;latest&quot;</span><span class="p">,</span>
         <span class="n">push_to_registry</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">use_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">pypi_mirror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -818,6 +819,7 @@ body.preview-active {
 <span class="sd">            mount_dir: Mount directory</span>
 <span class="sd">            runtime_config: K8s runtime configuration</span>
 <span class="sd">            use_cache: Enable build cache (default: True)</span>
+<span class="sd">            pypi_mirror: PyPI mirror URL for pip package installation</span>
 <span class="sd">            # Backward compatibility</span>
 <span class="sd">            image_name: Image name</span>
 <span class="sd">            image_tag: Image tag</span>
@@ -857,6 +859,7 @@ body.preview-active {
                     <span class="n">protocol_adapters</span><span class="o">=</span><span class="n">protocol_adapters</span><span class="p">,</span>
                     <span class="n">custom_endpoints</span><span class="o">=</span><span class="n">custom_endpoints</span><span class="p">,</span>
                     <span class="n">use_cache</span><span class="o">=</span><span class="n">use_cache</span><span class="p">,</span>
+                    <span class="n">pypi_mirror</span><span class="o">=</span><span class="n">pypi_mirror</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">built_image_name</span><span class="p">:</span>

@@ -652,7 +652,8 @@ body.preview-active {
     <span class="n">startup_command</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">health_check_endpoint</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/health&quot;</span>
     <span class="n">custom_template</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">platform</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+    <span class="n">platform</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">pypi_mirror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 
@@ -707,8 +708,7 @@ body.preview-active {
 <span class="s2"># Install Python dependencies</span>
 <span class="s2">RUN pip install --no-cache-dir --upgrade pip</span>
 <span class="s2">RUN if [ -f requirements.txt ]; then </span><span class="se">\\</span>
-<span class="s2">        pip install --no-cache-dir -r requirements.txt </span><span class="se">\\</span>
-<span class="s2">        -i https://pypi.tuna.tsinghua.edu.cn/simple; fi</span>
+<span class="s2">        pip install --no-cache-dir -r requirements.txt</span><span class="si">{pypi_mirror_flag}</span><span class="s2">; fi</span>
 
 <span class="s2"># Create non-root user for security</span>
 <span class="s2">RUN adduser --disabled-password --gecos &#39;&#39; </span><span class="si">{user}</span><span class="s2"> &amp;&amp; </span><span class="se">\\</span>
@@ -775,6 +775,11 @@ body.preview-active {
                 <span class="sa">f</span><span class="s1">&#39;&quot;--port&quot;, &quot;</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s1">&quot;]&#39;</span>
             <span class="p">)</span>
 
+        <span class="c1"># Prepare PyPI mirror flag</span>
+        <span class="n">pypi_mirror_flag</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">pypi_mirror</span><span class="p">:</span>
+            <span class="n">pypi_mirror_flag</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; -i </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">pypi_mirror</span><span class="si">}</span><span class="s2">&quot;</span>
+
         <span class="c1"># Format template with configuration values</span>
         <span class="n">content</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
             <span class="n">base_image</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">base_image</span><span class="p">,</span>
@@ -786,6 +791,7 @@ body.preview-active {
             <span class="n">env_vars_section</span><span class="o">=</span><span class="n">env_vars_section</span><span class="p">,</span>
             <span class="n">startup_command_section</span><span class="o">=</span><span class="n">startup_command_section</span><span class="p">,</span>
             <span class="n">platform</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">platform</span><span class="p">,</span>
+            <span class="n">pypi_mirror_flag</span><span class="o">=</span><span class="n">pypi_mirror_flag</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">content</span></div>
