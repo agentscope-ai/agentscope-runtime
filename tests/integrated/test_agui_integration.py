@@ -10,9 +10,10 @@ import aiohttp
 import pytest
 
 from agentscope.agent import ReActAgent
+from agentscope.message import TextBlock
 from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
-from agentscope.tool import Toolkit, execute_python_code
+from agentscope.tool import ToolResponse, Toolkit, execute_python_code
 from agentscope.pipeline import stream_printing_messages
 
 from agentscope_runtime.engine import AgentApp
@@ -32,6 +33,24 @@ PORT = 8091
 
 def run_app():
     """Start AgentApp with AG-UI endpoint and real LLM."""
+
+    async def get_weather(location: str) -> ToolResponse:
+        """Get the weather for a location.
+
+        Args:
+            location (str): The location to get the weather for.
+
+        """
+        return ToolResponse(
+            content=[
+                TextBlock(
+                    type="text",
+                    text=f"The weather in {location} is sunny with a "
+                    "temperature of 25°C.",
+                ),
+            ],
+        )
+
     agent_app = AgentApp(
         app_name="Friday",
         app_description="A helpful assistant for AG-UI testing",
@@ -67,16 +86,17 @@ def run_app():
 
         toolkit = Toolkit()
         toolkit.register_tool_function(execute_python_code)
+        toolkit.register_tool_function(get_weather)
 
         agent = ReActAgent(
             name="Friday",
             model=DashScopeChatModel(
-                "qwen-turbo",
+                "qwen-max",
                 api_key=os.getenv("DASHSCOPE_API_KEY"),
                 enable_thinking=False,
                 stream=True,
             ),
-            sys_prompt="You're a helpful assistant named Friday.",
+            sys_prompt="You're a helpful assistant.",
             toolkit=toolkit,
             memory=AgentScopeSessionHistoryMemory(
                 service=self.session_service,
@@ -307,3 +327,72 @@ class TestAGUIIntegration:
                 assert (
                     "Bob" in response_text or "bob" in response_text.lower()
                 ), "Agent should remember and mention Bob"
+
+    async def test_tool_call(
+        self,
+        start_app,
+    ):  # pylint: disable=unused-argument
+        """Test tool call through AG-UI."""
+        url = f"http://localhost:{PORT}/agui"
+        custom_thread_id = "test_thread_1"
+        custom_run_id = "test_run_1"
+        request_data = {
+            "threadId": custom_thread_id,
+            "runId": custom_run_id,
+            "messages": [
+                {
+                    "id": "msg_1",
+                    "role": "user",
+                    "content": "北京的天气如何?",
+                },
+            ],
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=request_data) as resp:
+                assert resp.status == 200
+                assert (
+                    resp.headers["content-type"]
+                    == "text/event-stream; charset=utf-8"
+                )
+
+                # Parse SSE events
+                events = []
+                async for line in resp.content:
+                    line_str = line.decode("utf-8").strip()
+                    if line_str.startswith("data: "):
+                        data_str = line_str[6:]
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            event_data = json.loads(data_str)
+                            events.append(event_data)
+                        except json.JSONDecodeError:
+                            continue
+        assert len(events) >= 3, "Should have at least 3 events"
+
+        tool_call_start_events = [
+            e for e in events if e["type"] == "TOOL_CALL_START"
+        ]
+        assert (
+            len(tool_call_start_events) > 0
+        ), "Should have TOOL_CALL_START event"
+
+        tool_call_args_events = [
+            e for e in events if e["type"] == "TOOL_CALL_ARGS"
+        ]
+        assert (
+            len(tool_call_args_events) > 0
+        ), "Should have TOOL_CALL_ARGS event"
+
+        tool_call_end_events = [
+            e for e in events if e["type"] == "TOOL_CALL_END"
+        ]
+        assert len(tool_call_end_events) > 0, "Should have TOOL_CALL_END event"
+
+        tool_call_result_event = [
+            e for e in events if e["type"] == "TOOL_CALL_RESULT"
+        ]
+        assert (
+            len(tool_call_result_event) == 1
+        ), "Should have exactly one TOOL_CALL_RESULT event"

@@ -2,7 +2,7 @@
 from collections import defaultdict
 from enum import Enum
 import logging
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
 from uuid import uuid4
 
 from ag_ui.core import RunAgentInput
@@ -18,6 +18,7 @@ from ag_ui.core.events import (
     ToolCallArgsEvent,
     ToolCallEndEvent,
     ToolCallStartEvent,
+    ToolCallResultEvent,
 )
 from ag_ui.core.types import (
     AssistantMessage,
@@ -30,7 +31,7 @@ from ag_ui.core.types import (
     ActivityMessage,
     Message as AGUIMessage,
 )
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from ....schemas.agent_schemas import (
     AgentRequest,
@@ -48,6 +49,7 @@ from ....schemas.agent_schemas import (
     RunStatus,
     TextContent,
     ToolCall,
+    ToolCallOutput,
 )
 
 if TYPE_CHECKING:
@@ -302,16 +304,6 @@ class AGUIAdapter:
     ) -> List[AGUIEvent]:
         events: List[AGUIEvent] = []
         events.extend(self._ensure_run_started_event())
-
-        # Process message content
-        if message_event.content:
-            for content in message_event.content:
-                # Set the msg_id on the content if it's not set
-                if not content.msg_id:
-                    content.msg_id = message_event.id
-                # Convert each content item to AGUI events
-                events.extend(self._convert_content_event(content))
-
         # Process message completion status
         if message_event.status in {RunStatus.Completed}:
             agui_message_ids = self._message_id_to_agui_message_id_mapping[
@@ -428,6 +420,13 @@ class AGUIAdapter:
                 ),
             ]
 
+        if content.index is None:
+            logger.warning("Content Index is Null")
+            logger.warning(
+                "Content: %s",
+                content.model_dump(exclude_none=True),
+            )
+
         content_index = (
             content.index
             if content.index is not None
@@ -496,25 +495,56 @@ class AGUIAdapter:
             # currently, Agent API Protocol does not support streaming tool
             # calls events
             try:
-                tool_call = ToolCall.model_validate(content.data)
-                events.extend(
-                    _ensure_agui_tool_call_message_started(
-                        agui_msg_id=agui_msg_id,
-                        tool_call=tool_call,
-                    ),
-                )
-                events.append(
-                    ToolCallArgsEvent(
-                        tool_call_id=tool_call.call_id,
-                        delta=tool_call.arguments,
-                    ),
-                )
+                if agui_msg_id in self._agui_message_status:
+                    logger.warning(
+                        "AG UI message stream is completed for the "
+                        "tool call content: %s",
+                        content.data,
+                    )
+                elif content.status == RunStatus.Completed:
+                    X = Union[ToolCall, ToolCallOutput]
+                    ta = TypeAdapter(X)
+                    val = ta.validate_python(content.data)
 
-                events.append(
-                    ToolCallEndEvent(
-                        tool_call_id=tool_call.call_id,
-                    ),
-                )
+                    logger.warning(
+                        "Generate ToolCall Event from content: %s",
+                        content.model_dump(exclude_none=True),
+                    )
+
+                    if isinstance(val, ToolCall):
+                        events.extend(
+                            _ensure_agui_tool_call_message_started(
+                                agui_msg_id=agui_msg_id,
+                                tool_call=val,
+                            ),
+                        )
+                        events.append(
+                            ToolCallArgsEvent(
+                                tool_call_id=val.call_id,
+                                delta=val.arguments,
+                            ),
+                        )
+
+                        events.append(
+                            ToolCallEndEvent(
+                                tool_call_id=val.call_id,
+                            ),
+                        )
+
+                        self._agui_message_status[
+                            agui_msg_id
+                        ] = AGUI_MESSAGE_STATUS.COMPLETED
+                    else:
+                        val = cast(ToolCallOutput, val)
+                        events.append(
+                            ToolCallResultEvent(
+                                message_id=agui_msg_id,
+                                tool_call_id=val.call_id,
+                                content=val.output,
+                                role=Role.TOOL,
+                            ),
+                        )
+
             except ValidationError as e:
                 logger.info(
                     "Invalid tool call data, just ignore the event: %s, "
