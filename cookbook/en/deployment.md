@@ -24,6 +24,7 @@ Most deployments follow these stages:
 - Access to at least one LLM provider (DashScope, OpenAI, or self-hosted inference).
 - Permissions for the target platform (local machine, Docker, Kubernetes, etc.).
 - Access grants for tool/sandbox resources such as browser automation, file systems, or bespoke services.
+- (Optional) Custom PyPI mirror URL if deploying in regions with restricted or slow access to the default PyPI index. This can significantly speed up Docker image builds, especially in China or corporate networks.
 
 ## Section Guide
 

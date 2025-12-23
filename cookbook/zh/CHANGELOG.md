@@ -1,5 +1,36 @@
 # CHANGELOG
 
+## v1.0.3
+
+AgentScope Runtime v1.0.3 在保持 v1.x 框架可扩展性与一致性的基础上，带来了 **A2A 协议注册支持**、更完整的异常与 Token 使用统计机制、新的天气组件与 UI 交互能力，以及多个 Sandbox、Redis、Agent 状态的修复与优化。同时改进了部署构建（Sandbox Image Building）、远程桌面自定义 URL 支持、PYPI 镜像配置等功能。
+
+### Added
+
+- **A2A Registry 支持**
+  新增对 Google A2A 协议的注册能力，可与 AgentScope-Runtime 原生集成，实现跨平台智能体注册与发现。
+- **Token 使用统计（即使报错）**
+  新增功能可在模型调用过程中，即便抛出异常，也获取到本次调用的 Token 使用量，便于计费与调试。
+- **Sandbox 镜像构建 Actions**
+  在 CI/CD 中新增构建 Sandbox 镜像的 GitHub Actions，方便分发与部署自动化。
+
+### Changed
+
+- **部署 PYPI 镜像配置优化**
+  `pypi_mirror` 改为可指定输入并默认为 `None`，便于自定义 Python 包源。
+
+### Fixed
+
+- **RedisMapping 扫描键解析问题**
+  修复 `RedisMapping.scan` 在 `decode_responses` 模式下的键解析错误。
+- **Redis 异步客户端关闭方式**
+  调整为使用 `aclose` 关闭 Redis 异步客户端，避免`warning`。
+- **AgentBay 版本修复**
+  修复 `agentbay` 版本依赖问题，保证运行时一致性。
+- **VNC 远程桌面自定义 URL 前缀支持**
+  支持 VNC Remote Desktop 使用自定义 URL 前缀，提升部署灵活性。
+- **会话与记忆热修复**
+  新增 `Redis Session` 与 `Redis Memory` 过期时间。
+
 ## v1.0.2
 
 本次更新为 AgentScope Runtime v1.0.2，带来了 LangGraph 与 Agno 在 v1.x 框架下的支持、工具调用优化、移动端沙箱 UI 增强，以及多个兼容性与稳定性修复。

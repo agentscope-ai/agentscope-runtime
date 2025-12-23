@@ -43,13 +43,10 @@ class StateServiceFactory(ServiceFactory[StateService]):
 
 StateServiceFactory.register_backend(
     "in_memory",
-    lambda **kwargs: InMemoryStateService(),
+    InMemoryStateService,
 )
 
 StateServiceFactory.register_backend(
     "redis",
-    lambda **kwargs: RedisStateService(
-        redis_url=kwargs.get("redis_url", "redis://localhost:6379/0"),
-        redis_client=kwargs.get("redis_client"),
-    ),
+    RedisStateService,
 )

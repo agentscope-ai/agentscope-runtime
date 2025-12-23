@@ -578,6 +578,7 @@ agentscope deploy k8s SOURCE [OPTIONS]
 | `--deploy-timeout` | integer | `300` | 部署超时时间（秒） |
 | `--health-check` | flag | `None` | 启用/禁用健康检查 |
 | `--platform` | string | `"linux/amd64"` | 目标平台（例如 'linux/amd64'、'linux/arm64'） |
+| `--pypi-mirror` | string | `None` | PyPI 镜像源 URL，用于 pip 包安装（例如 'https://pypi.tuna.tsinghua.edu.cn/simple'）。如果未指定，使用 pip 默认源 |
 
 ##### 前置要求
 

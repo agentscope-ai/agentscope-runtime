@@ -40,6 +40,7 @@ class ImageConfig(BaseModel):
     port: int = 8000
     env_vars: Dict[str, str] = Field(default_factory=lambda: {})
     startup_command: Optional[str] = None
+    pypi_mirror: Optional[str] = None
 
     # Runtime configuration
     host: str = "0.0.0.0"  # Container-friendly default
@@ -218,6 +219,7 @@ class ImageFactory:
                 env_vars=config.env_vars,
                 startup_command=startup_command,
                 platform=config.platform,
+                pypi_mirror=config.pypi_mirror,
             )
 
             dockerfile_path = self.dockerfile_generator.create_dockerfile(
@@ -314,6 +316,7 @@ class ImageFactory:
         embed_task_processor: bool = True,
         extra_startup_args: Optional[Dict[str, Union[str, int, bool]]] = None,
         use_cache: bool = True,
+        pypi_mirror: Optional[str] = None,
         **kwargs,
     ) -> str:
         """
@@ -339,6 +342,7 @@ class ImageFactory:
             embed_task_processor: Whether to embed task processor
             extra_startup_args: Additional startup arguments
             use_cache: Enable build cache (default: True)
+            pypi_mirror: PyPI mirror URL for pip package installation
             **kwargs: Additional configuration options
 
         Returns:
@@ -373,6 +377,7 @@ class ImageFactory:
             host=host,
             embed_task_processor=embed_task_processor,
             extra_startup_args=extra_startup_args or {},
+            pypi_mirror=pypi_mirror,
             **kwargs,
         )
 

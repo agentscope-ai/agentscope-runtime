@@ -106,6 +106,8 @@ class RedisSessionHistoryService(SessionHistoryService):
         user_id: str,
         session_id: Optional[str] = None,
     ) -> Session:
+        if not self._redis:
+            raise RuntimeError("Redis connection is not available")
         if session_id and session_id.strip():
             sid = session_id.strip()
         else:
@@ -127,12 +129,18 @@ class RedisSessionHistoryService(SessionHistoryService):
         user_id: str,
         session_id: str,
     ) -> Optional[Session]:
+        if not self._redis:
+            raise RuntimeError("Redis connection is not available")
         key = self._session_key(user_id, session_id)
         session_json = await self._redis.get(key)
         if session_json is None:
             return None
 
-        session = self._session_from_json(session_json)
+        try:
+            session = self._session_from_json(session_json)
+        except Exception:
+            # Return None for corrupted session data
+            return None
 
         # Refresh TTL when accessing the session
         if self._ttl_seconds is not None:
@@ -141,6 +149,8 @@ class RedisSessionHistoryService(SessionHistoryService):
         return session
 
     async def delete_session(self, user_id: str, session_id: str):
+        if not self._redis:
+            raise RuntimeError("Redis connection is not available")
         key = self._session_key(user_id, session_id)
         await self._redis.delete(key)
 
@@ -150,6 +160,8 @@ class RedisSessionHistoryService(SessionHistoryService):
         Uses SCAN to find all session:{user_id}:* keys. Expired sessions
         naturally disappear as their keys expire, avoiding stale entries.
         """
+        if not self._redis:
+            raise RuntimeError("Redis connection is not available")
         pattern = self._session_pattern(user_id)
         sessions = []
         cursor = 0
@@ -163,9 +175,13 @@ class RedisSessionHistoryService(SessionHistoryService):
             for key in keys:
                 session_json = await self._redis.get(key)
                 if session_json:
-                    session = self._session_from_json(session_json)
-                    session.messages = []
-                    sessions.append(session)
+                    try:
+                        session = self._session_from_json(session_json)
+                        session.messages = []
+                        sessions.append(session)
+                    except Exception:
+                        # Skip corrupted session data
+                        continue
 
             if cursor == 0:
                 break
@@ -182,6 +198,8 @@ class RedisSessionHistoryService(SessionHistoryService):
             List[Dict[str, Any]],
         ],
     ):
+        if not self._redis:
+            raise RuntimeError("Redis connection is not available")
         if not isinstance(message, list):
             message = [message]
         norm_message = []
@@ -199,14 +217,24 @@ class RedisSessionHistoryService(SessionHistoryService):
 
         session_json = await self._redis.get(key)
         if session_json is None:
-            raise RuntimeError(
-                f"Session {session_id} not found or has expired for user "
-                f"{user_id}. Previous memory/state has been lost. "
-                f"Please create a new session.",
+            # Session expired or not found, treat as a new session
+            # Create a new session with the current messages
+            stored_session = Session(
+                id=session_id,
+                user_id=user_id,
+                messages=norm_message.copy(),
             )
-
-        stored_session = self._session_from_json(session_json)
-        stored_session.messages.extend(norm_message)
+        else:
+            try:
+                stored_session = self._session_from_json(session_json)
+                stored_session.messages.extend(norm_message)
+            except Exception:
+                # Session data corrupted, treat as a new session
+                stored_session = Session(
+                    id=session_id,
+                    user_id=user_id,
+                    messages=norm_message.copy(),
+                )
 
         # Limit the number of messages per session to prevent memory issues
         if self._max_messages_per_session is not None:

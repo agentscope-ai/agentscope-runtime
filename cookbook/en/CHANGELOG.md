@@ -1,5 +1,36 @@
 # CHANGELOG
 
+## v1.0.3
+
+On the basis of maintaining the extensibility and consistency of the v1.x framework, **AgentScope Runtime v1.0.3** brings **A2A protocol registry support**, a more complete error handling and token usage statistics mechanism, a new weather component with enhanced UI interaction capabilities, as well as multiple fixes and optimizations for Sandbox, Redis, and Agent states. It also improves deployment build (Sandbox Image Building), remote desktop custom URL support, PYPI mirror configuration, and other features.
+
+### Added
+
+- **A2A Registry Support**
+  Added registration capability for the Google A2A protocol, natively integrated with AgentScope-Runtime, enabling cross-platform agent registration and discovery.
+- **Token Usage Statistics (even on errors)**
+  Introduced a function to collect token usage during model calls, even if an exception is thrown, helping with billing and debugging.
+- **Sandbox Image Building Actions**
+  Added GitHub Actions for building Sandbox images within CI/CD, making distribution and deployment automation easier.
+
+### Changed
+
+- **Optimized PYPI Mirror Configuration for Deployment**
+  `pypi_mirror` can now be explicitly specified and defaults to `None`, allowing customization of Python package sources.
+
+### Fixed
+
+- **RedisMapping Key Parsing Issue**
+  Fixed incorrect key parsing in `RedisMapping.scan` when running in `decode_responses` mode.
+- **Redis Async Client Shutdown Method**
+  Updated to use `aclose` to close the Redis async client to avoid warnings.
+- **AgentBay Version Fix**
+  Resolved dependency version issues with `agentbay` to ensure runtime consistency.
+- **Custom URL Prefix Support for VNC Remote Desktop**
+  Added support for using a custom URL prefix in VNC Remote Desktop, improving deployment flexibility.
+- **Session and Memory Hotfix**
+  Added expiration time for `Redis Session` and `Redis Memory`.
+
 ## v1.0.2
 
 This update for **AgentScope Runtime v1.0.2** introduces support for **LangGraph** and **Agno** under the v1.x framework, optimizes tool invocation, enhances the mobile sandbox UI, and includes multiple compatibility and stability fixes.

@@ -144,6 +144,7 @@ class KubernetesDeployManager(DeployManager):
         image_tag: str = "latest",
         push_to_registry: bool = False,
         use_cache: bool = True,
+        pypi_mirror: Optional[str] = None,
         **kwargs,
     ) -> Dict[str, Any]:
         """
@@ -170,6 +171,7 @@ class KubernetesDeployManager(DeployManager):
             mount_dir: Mount directory
             runtime_config: K8s runtime configuration
             use_cache: Enable build cache (default: True)
+            pypi_mirror: PyPI mirror URL for pip package installation
             # Backward compatibility
             image_name: Image name
             image_tag: Image tag
@@ -209,6 +211,7 @@ class KubernetesDeployManager(DeployManager):
                     protocol_adapters=protocol_adapters,
                     custom_endpoints=custom_endpoints,
                     use_cache=use_cache,
+                    pypi_mirror=pypi_mirror,
                     **kwargs,
                 )
                 if not built_image_name:

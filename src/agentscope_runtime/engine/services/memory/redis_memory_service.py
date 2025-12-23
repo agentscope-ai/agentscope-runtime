@@ -133,12 +133,14 @@ class RedisMemoryService(MemoryService):
         if self._ttl_seconds is not None:
             await self._redis.expire(key, self._ttl_seconds)
 
-    async def search_memory(
+    async def search_memory(  # pylint: disable=too-many-branches
         self,
         user_id: str,
         messages: list,
         filters: Optional[Dict[str, Any]] = None,
     ) -> list:
+        if not self._redis:
+            raise RuntimeError("Redis connection is not available")
         key = self._user_key(user_id)
         if (
             not messages
@@ -172,7 +174,11 @@ class RedisMemoryService(MemoryService):
             msgs_json = await self._redis.hget(key, session_id)
             if not msgs_json:
                 continue
-            msgs = self._deserialize(msgs_json)
+            try:
+                msgs = self._deserialize(msgs_json)
+            except Exception:
+                # Skip corrupted message data
+                continue
 
             # Match messages in this session
             for msg in msgs:
@@ -192,9 +198,8 @@ class RedisMemoryService(MemoryService):
 
         # Refresh TTL on read to extend lifetime of actively used data,
         # if a TTL is configured and there is existing data for this key.
-        ttl_seconds = getattr(self, "_ttl", None)
-        if ttl_seconds and hash_keys:
-            await self._redis.expire(key, ttl_seconds)
+        if self._ttl_seconds is not None and hash_keys:
+            await self._redis.expire(key, self._ttl_seconds)
 
         return result
 
@@ -211,6 +216,8 @@ class RedisMemoryService(MemoryService):
         user_id: str,
         filters: Optional[Dict[str, Any]] = None,
     ) -> list:
+        if not self._redis:
+            raise RuntimeError("Redis connection is not available")
         key = self._user_key(user_id)
         page_num = filters.get("page_num", 1) if filters else 1
         page_size = filters.get("page_size", 10) if filters else 10
@@ -226,8 +233,12 @@ class RedisMemoryService(MemoryService):
         for session_id in sorted(hash_keys):
             msgs_json = await self._redis.hget(key, session_id)
             if msgs_json:
-                msgs = self._deserialize(msgs_json)
-                all_msgs.extend(msgs)
+                try:
+                    msgs = self._deserialize(msgs_json)
+                    all_msgs.extend(msgs)
+                except json.JSONDecodeError:
+                    # Skip corrupted message data
+                    continue
 
                 # Early exit optimization: if we've loaded enough messages
                 # to cover the requested page, we can stop (but this assumes
@@ -236,7 +247,7 @@ class RedisMemoryService(MemoryService):
 
         # Refresh TTL on active use to keep memory alive,
         # mirroring get_session behavior
-        if getattr(self, "_ttl_seconds", None):
+        if self._ttl_seconds is not None and hash_keys:
             await self._redis.expire(key, self._ttl_seconds)
         return all_msgs[start_index:end_index]
 
@@ -245,6 +256,8 @@ class RedisMemoryService(MemoryService):
         user_id: str,
         session_id: Optional[str] = None,
     ) -> None:
+        if not self._redis:
+            raise RuntimeError("Redis connection is not available")
         key = self._user_key(user_id)
         if session_id:
             await self._redis.hdel(key, session_id)

@@ -111,7 +111,8 @@
             // Supports: /desktop/{sandbox_id}/... or /custom/prefix/desktop/{sandbox_id}/...
             const desktopIndex = pathParts.indexOf('desktop');
             if (desktopIndex !== -1 && pathParts.length > desktopIndex + 1) {
-                return pathParts[desktopIndex + 1];
+                // Return null if sandbox_id is empty (e.g., /desktop/ or /desktop//)
+                return pathParts[desktopIndex + 1] || null;
             }
             return null;
         }
@@ -120,9 +121,12 @@
             // Extract the path prefix up to and including /desktop/{sandbox_id}
             // This preserves any custom URL prefix for reverse proxy deployments
             const currentPath = window.location.pathname;
-            const desktopMatch = currentPath.match(/(.*)\/desktop\/([^\/]+)/);
+            // Use non-greedy matching (.*?) to find the FIRST occurrence of /desktop/
+            // This ensures consistency with getSandboxIdFromPath() which uses indexOf()
+            const desktopMatch = currentPath.match(/(.*?)\/desktop\/([^\/]+)/);
             if (desktopMatch) {
-                return desktopMatch[1] + '/desktop/' + desktopMatch[2];
+                // Use the passed sandbox_id parameter for consistency
+                return desktopMatch[1] + '/desktop/' + sandbox_id;
             }
             // Fallback to simple path
             return '/desktop/' + sandbox_id;

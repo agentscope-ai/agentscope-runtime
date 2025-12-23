@@ -22,6 +22,7 @@ class DockerfileConfig(BaseModel):
     health_check_endpoint: str = "/health"
     custom_template: Optional[str] = None
     platform: Optional[str] = None
+    pypi_mirror: Optional[str] = None
 
 
 class DockerfileGenerator:
@@ -73,8 +74,7 @@ COPY . {working_dir}/
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip
 RUN if [ -f requirements.txt ]; then \\
-        pip install --no-cache-dir -r requirements.txt \\
-        -i https://pypi.tuna.tsinghua.edu.cn/simple; fi
+        pip install --no-cache-dir -r requirements.txt{pypi_mirror_flag}; fi
 
 # Create non-root user for security
 RUN adduser --disabled-password --gecos '' {user} && \\
@@ -136,6 +136,11 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \\
                 f'"--port", "{config.port}"]'
             )
 
+        # Prepare PyPI mirror flag
+        pypi_mirror_flag = ""
+        if config.pypi_mirror:
+            pypi_mirror_flag = f" -i {config.pypi_mirror}"
+
         # Format template with configuration values
         content = template.format(
             base_image=config.base_image,
@@ -147,6 +152,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \\
             env_vars_section=env_vars_section,
             startup_command_section=startup_command_section,
             platform=config.platform,
+            pypi_mirror_flag=pypi_mirror_flag,
         )
 
         return content

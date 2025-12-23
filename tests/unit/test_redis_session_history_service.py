@@ -264,19 +264,25 @@ async def test_append_message(
     for i, msg in enumerate(stored_session.messages[2:]):
         assert msg.content == messages3[i].get("content")
 
-    # Test appending to a non-existent session (should raise RuntimeError)
+    # Test appending to a non-existent session (should create new session)
     non_existent_session = Session(
         id="non_existent",
         user_id=user_id,
         messages=[],
     )
-    # This should raise a RuntimeError indicating
-    # the session is missing/expired
-    with pytest.raises(RuntimeError, match="not found or has expired"):
-        await session_history_service.append_message(
-            non_existent_session,
-            message1,
-        )
+    # This should not raise an error, but create a new session
+    await session_history_service.append_message(
+        non_existent_session,
+        message1,
+    )
+    # Verify the session was created with the message
+    retrieved_session = await session_history_service.get_session(
+        user_id,
+        "non_existent",
+    )
+    assert retrieved_session is not None
+    assert len(retrieved_session.messages) == 1
+    assert retrieved_session.messages[0].content == message1.get("content")
 
 
 @pytest.mark.asyncio

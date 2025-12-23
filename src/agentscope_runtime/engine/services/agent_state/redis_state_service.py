@@ -159,4 +159,8 @@ class RedisStateService(StateService):
         if self._ttl_seconds is not None:
             await self._redis.expire(key, self._ttl_seconds)
 
-        return json.loads(state_json)
+        try:
+            return json.loads(state_json)
+        except json.JSONDecodeError:
+            # Return None for corrupted state data instead of raising exception
+            return None
