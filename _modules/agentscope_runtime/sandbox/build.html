@@ -707,9 +707,7 @@ body.preview-active {
         <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">DOCKER_PLATFORMS</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="p">)</span>
 
-    <span class="n">platform_tag</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">platform_choice</span> <span class="o">==</span> <span class="s2">&quot;linux/arm64&quot;</span><span class="p">:</span>
-        <span class="n">platform_tag</span> <span class="o">=</span> <span class="s2">&quot;-arm64&quot;</span>
+    <span class="n">auto_build</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;AUTO_BUILD&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;true&quot;</span>
 
     <span class="n">buildx_enable</span> <span class="o">=</span> <span class="n">platform_choice</span> <span class="o">!=</span> <span class="n">get_platform</span><span class="p">()</span>
 
@@ -730,7 +728,7 @@ body.preview-active {
     <span class="n">secret_token</span> <span class="o">=</span> <span class="s2">&quot;secret_token123&quot;</span>
 
     <span class="c1"># Add platform tag</span>
-    <span class="n">image_name</span> <span class="o">=</span> <span class="n">SandboxRegistry</span><span class="o">.</span><span class="n">get_image_by_type</span><span class="p">(</span><span class="n">build_type</span><span class="p">)</span> <span class="o">+</span> <span class="n">platform_tag</span>
+    <span class="n">image_name</span> <span class="o">=</span> <span class="n">SandboxRegistry</span><span class="o">.</span><span class="n">get_image_by_type</span><span class="p">(</span><span class="n">build_type</span><span class="p">)</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Building Docker image </span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
 
@@ -745,10 +743,13 @@ body.preview-active {
 
     <span class="c1"># Check if the image already exists</span>
     <span class="k">if</span> <span class="n">image_name</span> <span class="ow">in</span> <span class="n">images</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">dev&quot;</span> <span class="ow">in</span> <span class="n">images</span><span class="p">:</span>
-        <span class="n">choice</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Image </span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">dev|</span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2"> already exists. Do &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;you want to overwrite it? (y/N): &quot;</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">auto_build</span><span class="p">:</span>
+            <span class="n">choice</span> <span class="o">=</span> <span class="s2">&quot;y&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">choice</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Image </span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">dev|</span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2"> already exists. Do &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;you want to overwrite it? (y/N): &quot;</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="n">choice</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Exiting without overwriting the existing image.&quot;</span><span class="p">)</span>
             <span class="k">return</span>
@@ -793,73 +794,65 @@ body.preview-active {
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Docker image </span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">dev built successfully.&quot;</span><span class="p">)</span>
 
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Start to build image </span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
-
-    <span class="c1"># Run the container with port mapping and environment variable</span>
-    <span class="n">free_port</span> <span class="o">=</span> <span class="n">find_free_port</span><span class="p">(</span><span class="mi">8080</span><span class="p">,</span> <span class="mi">8090</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">buildx_enable</span><span class="p">:</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-            <span class="p">[</span>
-                <span class="s2">&quot;docker&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;run&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;-d&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;-p&quot;</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">free_port</span><span class="si">}</span><span class="s2">:80&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;-e&quot;</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;SECRET_TOKEN=</span><span class="si">{</span><span class="n">secret_token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">dev&quot;</span><span class="p">,</span>
-            <span class="p">],</span>
-            <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="k">if</span> <span class="n">buildx_enable</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;Cross-platform build detected; &quot;</span>
+            <span class="s2">&quot;skipping health checks and tagging the final image directly.&quot;</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-            <span class="p">[</span>
-                <span class="s2">&quot;docker&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;run&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;--platform&quot;</span><span class="p">,</span>
-                <span class="n">platform_choice</span><span class="p">,</span>
-                <span class="s2">&quot;-d&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;-p&quot;</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">free_port</span><span class="si">}</span><span class="s2">:80&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;-e&quot;</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;SECRET_TOKEN=</span><span class="si">{</span><span class="n">secret_token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">dev&quot;</span><span class="p">,</span>
-            <span class="p">],</span>
-            <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="n">container_id</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running container </span><span class="si">{</span><span class="n">container_id</span><span class="si">}</span><span class="s2"> on port </span><span class="si">{</span><span class="n">free_port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="c1"># Check health endpoints</span>
-    <span class="n">fastapi_health_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;http://localhost:</span><span class="si">{</span><span class="n">free_port</span><span class="si">}</span><span class="s2">/fastapi/healthz&quot;</span>
-
-    <span class="c1"># Check health for FASTAPI</span>
-    <span class="n">fastapi_healthy</span> <span class="o">=</span> <span class="n">check_health</span><span class="p">(</span><span class="n">fastapi_health_url</span><span class="p">,</span> <span class="n">secret_token</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">fastapi_healthy</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Health checks passed.&quot;</span><span class="p">)</span>
         <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-            <span class="p">[</span><span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;commit&quot;</span><span class="p">,</span> <span class="n">container_id</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;tag&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">dev&quot;</span><span class="p">,</span> <span class="n">image_name</span><span class="p">],</span>
             <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Docker image </span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2"> committed successfully.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;stop&quot;</span><span class="p">,</span> <span class="n">container_id</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;rm&quot;</span><span class="p">,</span> <span class="n">container_id</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Docker image </span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2"> tagged successfully.&quot;</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Health checks failed.&quot;</span><span class="p">)</span>
-        <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;stop&quot;</span><span class="p">,</span> <span class="n">container_id</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Start to build image </span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
 
-    <span class="n">choice</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Do you want to delete the dev image </span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">dev? (&quot;</span> <span class="sa">f</span><span class="s2">&quot;y/N): &quot;</span><span class="p">,</span>
-    <span class="p">)</span>
+        <span class="c1"># Run the container with port mapping and environment variable</span>
+        <span class="n">free_port</span> <span class="o">=</span> <span class="n">find_free_port</span><span class="p">(</span><span class="mi">8080</span><span class="p">,</span> <span class="mi">8090</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="s2">&quot;docker&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;run&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;-d&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;-p&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">free_port</span><span class="si">}</span><span class="s2">:80&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;-e&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;SECRET_TOKEN=</span><span class="si">{</span><span class="n">secret_token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">dev&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">container_id</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running container </span><span class="si">{</span><span class="n">container_id</span><span class="si">}</span><span class="s2"> on port </span><span class="si">{</span><span class="n">free_port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Check health endpoints</span>
+        <span class="n">fastapi_health_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;http://localhost:</span><span class="si">{</span><span class="n">free_port</span><span class="si">}</span><span class="s2">/fastapi/healthz&quot;</span>
+        <span class="n">fastapi_healthy</span> <span class="o">=</span> <span class="n">check_health</span><span class="p">(</span><span class="n">fastapi_health_url</span><span class="p">,</span> <span class="n">secret_token</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">fastapi_healthy</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Health checks passed.&quot;</span><span class="p">)</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                <span class="p">[</span><span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;commit&quot;</span><span class="p">,</span> <span class="n">container_id</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">],</span>
+                <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Docker image </span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2"> committed successfully.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;stop&quot;</span><span class="p">,</span> <span class="n">container_id</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;rm&quot;</span><span class="p">,</span> <span class="n">container_id</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Health checks failed.&quot;</span><span class="p">)</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;stop&quot;</span><span class="p">,</span> <span class="n">container_id</span><span class="p">],</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">auto_build</span><span class="p">:</span>
+        <span class="n">choice</span> <span class="o">=</span> <span class="s2">&quot;y&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">choice</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Do you want to delete the dev image </span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">dev? (&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;y/N): &quot;</span><span class="p">,</span>
+        <span class="p">)</span>
     <span class="k">if</span> <span class="n">choice</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span>
         <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
             <span class="p">[</span><span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;rmi&quot;</span><span class="p">,</span> <span class="s2">&quot;-f&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">dev&quot;</span><span class="p">],</span>
