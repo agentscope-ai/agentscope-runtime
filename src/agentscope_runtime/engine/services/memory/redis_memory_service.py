@@ -40,8 +40,9 @@ class RedisMemoryService(MemoryService):
             retry_on_timeout: Whether to retry on timeout (default: True)
             ttl_seconds: Time-to-live in seconds for memory data.
             If None, data never expires (default: 3600, i.e., 1 hour)
-            max_messages_per_session: Maximum number of messages per session.
-            If None, no limit (default: None)
+            max_messages_per_session: Maximum number of messages stored per
+             session_id field within a user's Redis memory hash.
+             If None, no limit (default: None)
             health_check_interval: Interval in seconds for health checks
              on idle connections (default: 30.0).
                 Connections idle longer than this will be checked before reuse.
