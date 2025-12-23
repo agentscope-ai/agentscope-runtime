@@ -487,7 +487,11 @@ class AGUIAdapter:
                         agui_msg_id
                     ] = AGUI_MESSAGE_STATUS.COMPLETED
                 else:
-                    logger.warning("AG UI message stream is completed")
+                    logger.warning(
+                        "AG UI message stream is completed for the "
+                        "text content: %s",
+                        content.text,
+                    )
         elif isinstance(content, DataContent):
             # currently, Agent API Protocol does not support streaming tool
             # calls events
