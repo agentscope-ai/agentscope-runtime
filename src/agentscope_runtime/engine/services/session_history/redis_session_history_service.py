@@ -28,7 +28,7 @@ class RedisSessionHistoryService(SessionHistoryService):
 
     async def stop(self):
         if self._redis:
-            await self._redis.close()
+            await self._redis.aclose()
             self._redis = None
 
     async def health(self) -> bool:

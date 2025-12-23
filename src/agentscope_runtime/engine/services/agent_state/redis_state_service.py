@@ -38,7 +38,7 @@ class RedisStateService(StateService):
     async def stop(self) -> None:
         """Close the Redis connection."""
         if self._redis:
-            await self._redis.close()
+            await self._redis.aclose()
             self._redis = None
         self._health = False
 
