@@ -151,7 +151,6 @@ export default function Weather(props) {
 
 
   if (!data?.length) return null;
-  
   const current = data[0];
   const forecast = data.slice(1);
   return (
