@@ -36,8 +36,8 @@ class RedisSessionHistoryService(SessionHistoryService):
             max_connections: Maximum number of connections in the pool
             (default: 50)
             retry_on_timeout: Whether to retry on timeout (default: True)
-            ttl_seconds: Time-to-live in seconds for session data. I
-            f None, data never expires (default: 3600, i.e., 1 hour)
+            ttl_seconds: Time-to-live in seconds for session data.
+            If None, data never expires (default: 3600, i.e., 1 hour)
             max_messages_per_session: Maximum number of messages per session.
             If None, no limit (default: None)
             health_check_interval: Interval in seconds for health checks on
