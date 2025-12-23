@@ -225,6 +225,9 @@ class RedisMemoryService(MemoryService):
                 # we need all previous messages for proper ordering)
                 # For now, we keep loading all for correctness
 
+        # Refresh TTL on active use to keep memory alive, mirroring get_session behavior
+        if getattr(self, "_ttl_seconds", None):
+            await self._redis.expire(key, self._ttl_seconds)
         return all_msgs[start_index:end_index]
 
     async def delete_memory(
