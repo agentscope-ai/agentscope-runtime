@@ -79,34 +79,10 @@ def list_deployments(
             if d.agent_source:  # Filter out deployments without agent_source
                 complete_deployments.append(d)
 
-        deployments = complete_deployments
-
-        # Remove duplicates based on URL and platform combination, keeping
-        # the most recent
-        # Group deployments by URL and platform
-        deployment_groups = {}
-        for d in deployments:
-            key = (d.url, d.platform)
-            if key not in deployment_groups:
-                deployment_groups[key] = []
-            deployment_groups[key].append(d)
-
-        # From each group, keep only the most recent deployment
-        unique_deployments = []
-        for group in deployment_groups.values():
-            # Sort by created_at to get the most recent
-            sorted_group = sorted(
-                group,
-                key=lambda x: x.created_at,
-                reverse=True,
-            )
-            # Keep only the most recent one
-            unique_deployments.append(sorted_group[0])
-
         # Sort the final list by created_at (newest first) to maintain
         # consistency
         deployments = sorted(
-            unique_deployments,
+            complete_deployments,
             key=lambda x: x.created_at,
             reverse=True,
         )
