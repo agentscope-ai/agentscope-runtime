@@ -29,6 +29,7 @@ class TestK8sConfig:
         config = K8sConfig()
         assert config.k8s_namespace == "agentscope-runtime"
         assert config.kubeconfig_path is None
+        assert config.service_type == "LoadBalancer"
 
     def test_k8s_config_creation(self):
         """Test K8sConfig creation with custom values."""
@@ -38,6 +39,25 @@ class TestK8sConfig:
         )
         assert config.k8s_namespace == "custom-namespace"
         assert config.kubeconfig_path == "/path/to/kubeconfig"
+
+    def test_k8s_config_with_service_type(self):
+        """Test K8sConfig with different service types."""
+        # Test ClusterIP
+        config_clusterip = K8sConfig(service_type="ClusterIP")
+        assert config_clusterip.service_type == "ClusterIP"
+
+        # Test NodePort
+        config_nodeport = K8sConfig(service_type="NodePort")
+        assert config_nodeport.service_type == "NodePort"
+
+        # Test LoadBalancer (explicit)
+        config_lb = K8sConfig(service_type="LoadBalancer")
+        assert config_lb.service_type == "LoadBalancer"
+
+    def test_k8s_config_invalid_service_type(self):
+        """Test K8sConfig with invalid service type."""
+        with pytest.raises(ValueError, match="service_type must be one of"):
+            K8sConfig(service_type="InvalidType")
 
 
 class TestBuildConfigK8s:

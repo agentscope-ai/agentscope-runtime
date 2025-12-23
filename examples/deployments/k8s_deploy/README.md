@@ -61,12 +61,36 @@ registry_config = RegistryConfig(
 k8s_config = K8sConfig(
     k8s_namespace="agentscope-runtime",
     kubeconfig_path="your-kubeconfig-local-path",
+    service_type="LoadBalancer",  # Options: LoadBalancer, ClusterIP, NodePort
 )
 ```
 
 - **`k8s_namespace`**: Kubernetes namespace where resources will be deployed
   - Creates the namespace if it doesn't exist
 - **`kubeconfig_path`**: Path to kubeconfig file (None uses default kubectl config at your local require kubectrl running)
+- **`service_type`**: Kubernetes service type for exposing the deployment (default: LoadBalancer)
+  - **`LoadBalancer`**: Exposes the service externally via a cloud provider's load balancer. Best for production deployments requiring external access.
+  - **`ClusterIP`**: Creates an internal IP only accessible within the cluster. Use this for internal-only services or when using `kubectl port-forward` for access.
+  - **`NodePort`**: Exposes the service on each node's IP at a static port (30000-32767). Useful for development or when LoadBalancer is not available.
+
+#### Service Type Examples
+
+**For production with external access:**
+```python
+k8s_config = K8sConfig(service_type="LoadBalancer")
+```
+
+**For internal cluster communication only:**
+```python
+k8s_config = K8sConfig(service_type="ClusterIP")
+# Access via: kubectl port-forward deployment/agent-xxx 8080:8080
+```
+
+**For development or local clusters:**
+```python
+k8s_config = K8sConfig(service_type="NodePort")
+# Access via: http://<node-ip>:<node-port>
+```
 
 ### Runtime Configuration
 

@@ -7,6 +7,12 @@ namespace: "agentscope-runtime"
 replicas: 1
 port: 8080
 
+# Service type configuration
+# - LoadBalancer: External access via cloud provider (default)
+# - ClusterIP: Internal cluster access only, requires port-forward
+# - NodePort: Access via node IP and allocated port
+service_type: "LoadBalancer"
+
 # Docker image settings
 image_name: "agent_app"
 image_tag: "linux-amd64-1"

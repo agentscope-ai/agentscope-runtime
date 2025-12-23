@@ -563,6 +563,7 @@ agentscope deploy k8s SOURCE [OPTIONS]
 | `--kube-config-path` | `-c` | path | `None` | kubeconfig 文件路径 |
 | `--replicas` | integer | `1` | Pod 副本数量 |
 | `--port` | integer | `8080` | 容器端口 |
+| `--service-type` | choice | `"LoadBalancer"` | 服务类型：`LoadBalancer`、`ClusterIP`、`NodePort` |
 | `--image-name` | string | `"agent_app"` | Docker 镜像名称 |
 | `--image-tag` | string | `"linux-amd64"` | Docker 镜像标签 |
 | `--registry-url` | string | `"localhost"` | 远程注册表 URL |
@@ -588,7 +589,7 @@ agentscope deploy k8s SOURCE [OPTIONS]
 ##### 示例
 
 ```bash
-# 基本部署
+# 使用 LoadBalancer 的基本部署（默认）
 export USE_LOCAL_RUNTIME=True
 agentscope deploy k8s app_agent.py \
   --image-name agent_app \
@@ -596,6 +597,19 @@ agentscope deploy k8s app_agent.py \
   --image-tag linux-amd64-4 \
   --registry-url your-registry.com \
   --push
+
+# 使用 ClusterIP 部署（仅集群内部访问）
+agentscope deploy k8s app_agent.py \
+  --service-type ClusterIP \
+  --env DASHSCOPE_API_KEY=sk-xxx
+# 访问方式：kubectl port-forward deployment/agent-xxx 8080:8080 -n agentscope-runtime
+# 然后访问：http://127.0.0.1:8080
+
+# 使用 NodePort 部署（开发/测试环境）
+agentscope deploy k8s app_agent.py \
+  --service-type NodePort \
+  --env DASHSCOPE_API_KEY=sk-xxx
+# 访问方式：http://<节点IP>:<节点端口>
 
 # 自定义命名空间和资源
 agentscope deploy k8s app_agent.py \
@@ -605,6 +619,11 @@ agentscope deploy k8s app_agent.py \
   --memory-limit 4Gi \
   --env DASHSCOPE_API_KEY=sk-xxx
 ```
+
+**服务类型选择：**
+- **`LoadBalancer`**（默认）：适合生产环境部署，需要通过云服务商的负载均衡器对外提供访问
+- **`ClusterIP`**：仅限集群内部访问。本地开发需要使用 `kubectl port-forward` 进行端口转发
+- **`NodePort`**：在每个节点的 IP 上暴露静态端口（30000-32767）。适合开发环境或无法使用 LoadBalancer 的场景
 
 **注意：** `USE_LOCAL_RUNTIME=True` 使用本地 agentscope runtime 而不是 PyPI 版本。
 

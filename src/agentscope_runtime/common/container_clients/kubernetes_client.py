@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=too-many-branches,too-many-statements
+# pylint:disable=too-many-nested-blocks
+
 import time
 import hashlib
 import traceback
@@ -815,10 +817,24 @@ class KubernetesClient(BaseClient):
 
         return deployment_spec
 
-    def _create_loadbalancer_service(self, deployment_name, port_list):
-        """Create a LoadBalancer service for the deployment."""
+    def _create_service(
+        self,
+        deployment_name,
+        port_list,
+        service_type="LoadBalancer",
+    ):
+        """Create a Kubernetes service for the deployment.
+
+        Args:
+            deployment_name: Name of the deployment
+            port_list: List of port configurations
+            service_type: Type of service (LoadBalancer, ClusterIP, NodePort)
+
+        Returns:
+            Tuple of (success, service_name)
+        """
         try:
-            service_name = f"{deployment_name}-lb-service"
+            service_name = f"{deployment_name}-service"
             selector = {"app": deployment_name}
 
             # Construct multi-port configuration
@@ -838,7 +854,7 @@ class KubernetesClient(BaseClient):
             service_spec = client.V1ServiceSpec(
                 selector=selector,
                 ports=service_ports,
-                type="LoadBalancer",
+                type=service_type,
             )
 
             service = client.V1Service(
@@ -858,12 +874,13 @@ class KubernetesClient(BaseClient):
             )
 
             logger.debug(
-                f"LoadBalancer service '{service_name}' created successfully",
+                f"Service '{service_name}' ({service_type}) created "
+                f"successfully",
             )
             return True, service_name
         except Exception as e:
             logger.error(
-                f"Failed to create LoadBalancer service for deployment "
+                f"Failed to create {service_type} service for deployment "
                 f"{deployment_name}: "
                 f"{e}, {traceback.format_exc()}",
             )
@@ -879,9 +896,10 @@ class KubernetesClient(BaseClient):
         runtime_config=None,
         replicas=1,
         create_service=True,
+        service_type="LoadBalancer",
     ) -> Tuple[str, list, str] | Tuple[None, None, None]:
         """
-        Create a new Kubernetes Deployment with LoadBalancer service.
+        Create a new Kubernetes Deployment with service.
 
         Args:
             image: Container image name
@@ -891,10 +909,12 @@ class KubernetesClient(BaseClient):
             environment: Environment variables dictionary
             runtime_config: Runtime configuration dictionary
             replicas: Number of replicas for the deployment
-            create_service: Whether to create LoadBalancer service
+            create_service: Whether to create service
+            service_type: Type of service to create (LoadBalancer, ClusterIP,
+                NodePort)
 
         Returns:
-            Tuple of (deployment_name, ports, load_balancer_ip)
+            Tuple of (deployment_name, ports, service_ip)
         """
         if not name:
             name = f"deploy-{hashlib.md5(image.encode()).hexdigest()[:8]}"
@@ -941,9 +961,9 @@ class KubernetesClient(BaseClient):
             )
 
             service_info = None
-            load_balancer_ip = None
+            service_ip = None
 
-            # Create LoadBalancer service if requested and ports are specified
+            # Create service if requested and ports are specified
             if create_service and ports:
                 parsed_ports = []
                 for port_spec in ports:
@@ -955,21 +975,30 @@ class KubernetesClient(BaseClient):
                     (
                         service_created,
                         service_name,
-                    ) = self._create_loadbalancer_service(
+                    ) = self._create_service(
                         name,
                         parsed_ports,
+                        service_type,
                     )
                     if service_created:
                         service_info = {
                             "name": service_name,
-                            "type": "LoadBalancer",
+                            "type": service_type,
                             "ports": [p["port"] for p in parsed_ports],
                         }
-                        # Wait a bit and try to get LoadBalancer IP
+                        # Wait a bit and try to get service IP/endpoint
                         time.sleep(2)
-                        load_balancer_ip = self._get_loadbalancer_ip(
-                            service_name,
-                        )
+                        if service_type == "LoadBalancer":
+                            service_ip = self._get_loadbalancer_ip(
+                                service_name,
+                            )
+                        elif service_type == "ClusterIP":
+                            service_ip = self._get_cluster_ip(service_name)
+                        elif service_type == "NodePort":
+                            # For NodePort, we'll return the node port info
+                            node_port = self._get_node_port(service_name)
+                            if node_port:
+                                service_ip = f"nodeport:{node_port}"
 
             # Wait for deployment to be ready
             if not self.wait_for_deployment_ready(name, timeout=120):
@@ -983,7 +1012,7 @@ class KubernetesClient(BaseClient):
             return (
                 name,
                 service_info["ports"] if service_info else [],
-                load_balancer_ip or "",
+                service_ip or "",
             )
 
         except Exception as e:
@@ -1045,20 +1074,63 @@ class KubernetesClient(BaseClient):
         )
         return None
 
+    def _get_cluster_ip(self, service_name):
+        """Get ClusterIP from service spec."""
+        try:
+            service = self.v1.read_namespaced_service(
+                name=service_name,
+                namespace=self.namespace,
+            )
+            return service.spec.cluster_ip
+        except Exception as e:
+            logger.error(f"Failed to get ClusterIP: {e}")
+            return None
+
+    def _get_node_port(self, service_name):
+        """Get allocated NodePort from service."""
+        try:
+            service = self.v1.read_namespaced_service(
+                name=service_name,
+                namespace=self.namespace,
+            )
+            # Return first port's nodePort
+            if service.spec.ports and len(service.spec.ports) > 0:
+                return service.spec.ports[0].node_port
+            return None
+        except Exception as e:
+            logger.error(f"Failed to get NodePort: {e}")
+            return None
+
+    def _get_node_external_ip(self):
+        """Get external IP of any available node."""
+        try:
+            nodes = self.v1.list_node()
+            for node in nodes.items:
+                for address in node.status.addresses:
+                    if address.type == "ExternalIP":
+                        return address.address
+            # Fallback to InternalIP if no ExternalIP
+            for node in nodes.items:
+                for address in node.status.addresses:
+                    if address.type == "InternalIP":
+                        return address.address
+            return "127.0.0.1"
+        except Exception as e:
+            logger.error(f"Failed to get node IP: {e}")
+            return "127.0.0.1"
+
     def remove_deployment(self, deployment_name, remove_service=True):
         """Remove a Kubernetes Deployment and optionally its service."""
         try:
-            # Remove associated LoadBalancer service first if requested
+            # Remove associated service first if requested
             if remove_service:
-                service_name = f"{deployment_name}-lb-service"
+                service_name = f"{deployment_name}-service"
                 try:
                     self.v1.delete_namespaced_service(
                         name=service_name,
                         namespace=self.namespace,
                     )
-                    logger.debug(
-                        f"Removed LoadBalancer service {service_name}",
-                    )
+                    logger.debug(f"Removed service {service_name}")
                 except ApiException as e:
                     if e.status != 404:
                         logger.warning(

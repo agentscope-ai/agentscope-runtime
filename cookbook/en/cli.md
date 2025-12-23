@@ -564,6 +564,7 @@ agentscope deploy k8s SOURCE [OPTIONS]
 | `--kube-config-path` | `-c` | path | `None` | Path to kubeconfig file |
 | `--replicas` | integer | `1` | Number of pod replicas |
 | `--port` | integer | `8080` | Container port |
+| `--service-type` | choice | `"LoadBalancer"` | Service type: `LoadBalancer`, `ClusterIP`, `NodePort` |
 | `--image-name` | string | `"agent_app"` | Docker image name |
 | `--image-tag` | string | `"linux-amd64"` | Docker image tag |
 | `--registry-url` | string | `"localhost"` | Remote registry URL |
@@ -589,7 +590,7 @@ agentscope deploy k8s SOURCE [OPTIONS]
 ##### Examples
 
 ```bash
-# Basic deployment
+# Basic deployment with LoadBalancer (default)
 export USE_LOCAL_RUNTIME=True
 agentscope deploy k8s app_agent.py \
   --image-name agent_app \
@@ -597,6 +598,19 @@ agentscope deploy k8s app_agent.py \
   --image-tag linux-amd64-4 \
   --registry-url your-registry.com \
   --push
+
+# Deploy with ClusterIP (internal-only access)
+agentscope deploy k8s app_agent.py \
+  --service-type ClusterIP \
+  --env DASHSCOPE_API_KEY=sk-xxx
+# Access via: kubectl port-forward deployment/agent-xxx 8080:8080 -n agentscope-runtime
+# Then visit: http://127.0.0.1:8080
+
+# Deploy with NodePort (development/testing)
+agentscope deploy k8s app_agent.py \
+  --service-type NodePort \
+  --env DASHSCOPE_API_KEY=sk-xxx
+# Access via: http://<node-ip>:<node-port>
 
 # Custom namespace and resources
 agentscope deploy k8s app_agent.py \
@@ -606,6 +620,11 @@ agentscope deploy k8s app_agent.py \
   --memory-limit 4Gi \
   --env DASHSCOPE_API_KEY=sk-xxx
 ```
+
+**Service Type Selection:**
+- **`LoadBalancer`** (default): Best for production deployments requiring external access via cloud provider's load balancer
+- **`ClusterIP`**: For internal-only access within the cluster. Requires `kubectl port-forward` for local development
+- **`NodePort`**: Exposes service on each node's IP at a static port (30000-32767). Good for development or when LoadBalancer is unavailable
 
 **Note:** `USE_LOCAL_RUNTIME=True` uses local agentscope runtime instead of PyPI version.
 

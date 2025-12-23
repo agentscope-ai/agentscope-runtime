@@ -828,6 +828,12 @@ def agentrun(
     help="Target platform (e.g., 'linux/amd64', 'linux/arm64')",
     default="linux/amd64",
 )
+@click.option(
+    "--service-type",
+    help="Kubernetes service type",
+    type=click.Choice(["LoadBalancer", "ClusterIP", "NodePort"]),
+    default="LoadBalancer",
+)
 def k8s(
     source: str,
     name: str,
@@ -854,6 +860,7 @@ def k8s(
     deploy_timeout: int,
     health_check: bool,
     platform: str,
+    service_type: str,
 ):
     """
     Deploy to Kubernetes/ACK.
@@ -898,6 +905,7 @@ def k8s(
             "deploy_timeout": deploy_timeout,
             "health_check": health_check,
             "platform": platform,
+            "service_type": service_type,
         }
         merged_config = _merge_config(config_dict, cli_params)
 
@@ -918,6 +926,7 @@ def k8s(
         deploy_timeout = merged_config.get("deploy_timeout", 300)
         health_check = merged_config.get("health_check", True)
         platform = merged_config.get("platform")
+        service_type = merged_config.get("service_type", "LoadBalancer")
 
         # Handle requirements (can be comma-separated string, list, or file
         # path)
@@ -979,6 +988,7 @@ def k8s(
         k8s_config = K8sConfig(
             k8s_namespace=namespace,
             kubeconfig_path=kube_config_path,
+            service_type=service_type,
         )
         registry_config = RegistryConfig(
             registry_url=registry_url,
@@ -1049,6 +1059,57 @@ def k8s(
         echo_info(f"URL: {url}")
         echo_info(f"Namespace: {namespace}")
         echo_info(f"Replicas: {replicas}")
+
+        # Add service-type specific instructions
+        if service_type == "ClusterIP":
+            echo_info("")
+            echo_info("=== ClusterIP Service Access Instructions ===")
+            echo_info(
+                "This service is only accessible within the cluster or via "
+                "port-forward.",
+            )
+            echo_info(
+                "To access locally, run the following command in another "
+                "terminal:",
+            )
+            echo_info(
+                f"  kubectl port-forward deployment/{resource_name} {port}:"
+                f"{port} -n {namespace}",
+            )
+            echo_info(f"Then access via: {url}")
+            echo_info(
+                f"Cluster-internal DNS: http://{resource_name}."
+                f"{namespace}.svc.cluster.local:{port}",
+            )
+        elif service_type == "NodePort":
+            echo_info("")
+            echo_info("=== NodePort Service Access Instructions ===")
+            echo_info(
+                "This service is accessible via NodePort.",
+            )
+            echo_info(f"Access URL: {url}")
+            echo_info(
+                "To get the node IP in cloud environments, run:",
+            )
+            echo_info(
+                "  kubectl get nodes -o wide",
+            )
+            echo_info(
+                "Then access via: http://<NODE-IP>:<NODE-PORT>",
+            )
+        elif service_type == "LoadBalancer":
+            echo_info("")
+            echo_info("=== LoadBalancer Service Access Instructions ===")
+            echo_info(
+                "This service is accessible via external LoadBalancer.",
+            )
+            echo_info(f"Access URL: {url}")
+            echo_info(
+                "If the LoadBalancer IP is pending, run:",
+            )
+            echo_info(
+                f"  kubectl get svc {resource_name}-service -n {namespace}",
+            )
 
     except Exception as e:
         echo_error(f"Deployment failed: {e}")

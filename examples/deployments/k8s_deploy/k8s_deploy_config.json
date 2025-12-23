@@ -3,6 +3,7 @@
   "namespace": "agentscope-runtime",
   "replicas": 1,
   "port": 8080,
+  "service_type": "LoadBalancer",
   "image_name": "agent_app",
   "image_tag": "linux-amd64-1",
   "base_image": "python:3.10-slim-bookworm",

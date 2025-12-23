@@ -155,6 +155,11 @@ async def deploy_app_to_k8s():
     k8s_config = K8sConfig(
         k8s_namespace="agentscope-runtime",
         kubeconfig_path=None,
+        # Service type configuration:
+        # - LoadBalancer: External access via cloud provider (default)
+        # - ClusterIP: Internal cluster access only, requires port-forward
+        # - NodePort: Access via node IP and allocated port
+        # service_type="ClusterIP",  # Uncomment for cluster-internal access
     )
 
     port = 8080
