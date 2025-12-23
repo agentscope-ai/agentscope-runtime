@@ -5788,7 +5788,7 @@ If round_id is provided: return that round’s state.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.services.agent_state.redis_state_service.</span></span><span class="sig-name descname"><span class="pre">RedisStateService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">redis_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'redis://localhost:6379/0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redis_client</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/agent_state/redis_state_service.html#RedisStateService"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.services.agent_state.redis_state_service.</span></span><span class="sig-name descname"><span class="pre">RedisStateService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">redis_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'redis://localhost:6379/0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redis_client</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_connect_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_connections</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_on_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl_seconds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">health_check_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_keepalive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/agent_state/redis_state_service.html#RedisStateService"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">StateService</span></code></p>
 <p>Redis-based implementation of StateService.</p>
 <p>Stores agent states in Redis using a hash per (user_id, session_id),
@@ -5798,17 +5798,42 @@ with round_id as the hash field and serialized state as the value.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>redis_url</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
 <li><p><strong>redis_client</strong> (<em>Redis</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>socket_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>socket_connect_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>max_connections</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>retry_on_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>)</p></li>
+<li><p><strong>ttl_seconds</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>health_check_interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>socket_keepalive</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>)</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">redis_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'redis://localhost:6379/0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redis_client</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/agent_state/redis_state_service.html#RedisStateService.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><dl class="field-list simple">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">redis_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'redis://localhost:6379/0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redis_client</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_connect_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_connections</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_on_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl_seconds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">health_check_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_keepalive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/agent_state/redis_state_service.html#RedisStateService.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Initialize RedisStateService.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>redis_url</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
-<li><p><strong>redis_client</strong> (<em>Redis</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>redis_url</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Redis connection URL</p></li>
+<li><p><strong>redis_client</strong> (<em>Redis</em><em> | </em><em>None</em>) – Optional pre-configured Redis client</p></li>
+<li><p><strong>socket_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>) – Socket timeout in seconds (default: 5.0)</p></li>
+<li><p><strong>socket_connect_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>) – Socket connect timeout in seconds</p></li>
+<li><p><strong>(</strong><strong>default</strong> (<em>silent disconnections</em>) – 5.0)</p></li>
+<li><p><strong>max_connections</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>) – Maximum number of connections in the pool</p></li>
+<li><p><strong>(</strong><strong>default</strong> – <ol class="arabic simple" start="50">
+<li></li>
+</ol>
+</p></li>
+<li><p><strong>retry_on_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Whether to retry on timeout (default: True)</p></li>
+<li><p><strong>ttl_seconds</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>) – Time-to-live in seconds for state data. If None,</p></li>
+<li><p><strong>(</strong><strong>default</strong> – 3600, i.e., 1 hour)</p></li>
+<li><p><strong>health_check_interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>) – Interval in seconds for health checks on</p></li>
+<li><p><strong>(</strong><strong>default</strong> – 30.0).
+Connections idle longer than this will be checked before reuse.
+Set to 0 to disable.</p></li>
+<li><p><strong>socket_keepalive</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Enable TCP keepalive to prevent</p></li>
+<li><p><strong>(</strong><strong>default</strong> – True)</p></li>
 </ul>
 </dd>
 </dl>
@@ -5817,7 +5842,8 @@ with round_id as the hash field and serialized state as the value.</p>
 <dl class="py method">
 <dt class="sig sig-object py">
 <em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/agent_state/redis_state_service.html#RedisStateService.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><p>Initialize the Redis connection.</p>
+<dd><p>Starts the Redis connection with proper timeout and connection
+pool settings.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>None</p>
@@ -5828,7 +5854,7 @@ with round_id as the hash field and serialized state as the value.</p>
 <dl class="py method">
 <dt class="sig sig-object py">
 <em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/agent_state/redis_state_service.html#RedisStateService.stop"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><p>Close the Redis connection.</p>
+<dd><p>Closes the Redis connection.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>None</p>
@@ -5839,7 +5865,7 @@ with round_id as the hash field and serialized state as the value.</p>
 <dl class="py method">
 <dt class="sig sig-object py">
 <em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">health</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/agent_state/redis_state_service.html#RedisStateService.health"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><p>Service health check.</p>
+<dd><p>Checks the health of the service.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
@@ -6305,7 +6331,7 @@ or all the memory items for a given user.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.services.memory.redis_memory_service.</span></span><span class="sig-name descname"><span class="pre">RedisMemoryService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">redis_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'redis://localhost:6379/0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redis_client</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/memory/redis_memory_service.html#RedisMemoryService"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.services.memory.redis_memory_service.</span></span><span class="sig-name descname"><span class="pre">RedisMemoryService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">redis_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'redis://localhost:6379/0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redis_client</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_connect_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_connections</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_on_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl_seconds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_messages_per_session</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">health_check_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_keepalive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/memory/redis_memory_service.html#RedisMemoryService"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">MemoryService</span></code></p>
 <p>A Redis-based implementation of the memory service.</p>
 <dl class="field-list simple">
@@ -6313,17 +6339,47 @@ or all the memory items for a given user.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>redis_url</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
 <li><p><strong>redis_client</strong> (<em>Redis</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>socket_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>socket_connect_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>max_connections</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>retry_on_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>)</p></li>
+<li><p><strong>ttl_seconds</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>max_messages_per_session</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>health_check_interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>socket_keepalive</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>)</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">redis_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'redis://localhost:6379/0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redis_client</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/memory/redis_memory_service.html#RedisMemoryService.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><dl class="field-list simple">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">redis_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'redis://localhost:6379/0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redis_client</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_connect_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_connections</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_on_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl_seconds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_messages_per_session</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">health_check_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_keepalive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/memory/redis_memory_service.html#RedisMemoryService.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Initialize RedisMemoryService.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>redis_url</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
-<li><p><strong>redis_client</strong> (<em>Redis</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>redis_url</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Redis connection URL</p></li>
+<li><p><strong>redis_client</strong> (<em>Redis</em><em> | </em><em>None</em>) – Optional pre-configured Redis client</p></li>
+<li><p><strong>socket_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>) – Socket timeout in seconds (default: 5.0)</p></li>
+<li><p><strong>socket_connect_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>) – Socket connect timeout in seconds
+(default: 5.0)</p></li>
+<li><p><strong>max_connections</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>) – Maximum number of connections in the pool
+(default: 50)</p></li>
+<li><p><strong>retry_on_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Whether to retry on timeout (default: True)</p></li>
+<li><p><strong>ttl_seconds</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>) – Time-to-live in seconds for memory data.</p></li>
+<li><p><strong>None</strong> (<em>If</em>) – 3600, i.e., 1 hour)</p></li>
+<li><p><strong>(</strong><strong>default</strong> (<em>silent disconnections</em>) – 3600, i.e., 1 hour)</p></li>
+<li><p><strong>max_messages_per_session</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>) – Maximum number of messages stored per
+session_id field within a user’s Redis memory hash.
+If None, no limit (default: None)</p></li>
+<li><p><strong>health_check_interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>) – <p>Interval in seconds for health checks
+on idle connections (default: 30.0).</p>
+<blockquote>
+<div><p>Connections idle longer than this will be checked before reuse.
+Set to 0 to disable.</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>socket_keepalive</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Enable TCP keepalive to prevent</p></li>
+<li><p><strong>(</strong><strong>default</strong> – True)</p></li>
 </ul>
 </dd>
 </dl>
@@ -6332,7 +6388,8 @@ or all the memory items for a given user.</p>
 <dl class="py method">
 <dt class="sig sig-object py">
 <em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/memory/redis_memory_service.html#RedisMemoryService.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><p>Starts the Redis connection.</p>
+<dd><p>Starts the Redis connection with proper timeout
+and connection pool settings.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>None</p>
@@ -7114,24 +7171,54 @@ session’s history.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.services.session_history.redis_session_history_service.</span></span><span class="sig-name descname"><span class="pre">RedisSessionHistoryService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">redis_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'redis://localhost:6379/0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redis_client</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/session_history/redis_session_history_service.html#RedisSessionHistoryService"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.services.session_history.redis_session_history_service.</span></span><span class="sig-name descname"><span class="pre">RedisSessionHistoryService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">redis_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'redis://localhost:6379/0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redis_client</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_connect_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_connections</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_on_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl_seconds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_messages_per_session</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">health_check_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_keepalive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/session_history/redis_session_history_service.html#RedisSessionHistoryService"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">SessionHistoryService</span></code></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>redis_url</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
 <li><p><strong>redis_client</strong> (<em>Redis</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>socket_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>socket_connect_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>max_connections</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>retry_on_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>)</p></li>
+<li><p><strong>ttl_seconds</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>max_messages_per_session</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>health_check_interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>socket_keepalive</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>)</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">redis_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'redis://localhost:6379/0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redis_client</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/session_history/redis_session_history_service.html#RedisSessionHistoryService.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><dl class="field-list simple">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">redis_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'redis://localhost:6379/0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redis_client</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_connect_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_connections</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_on_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl_seconds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_messages_per_session</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">health_check_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">socket_keepalive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/session_history/redis_session_history_service.html#RedisSessionHistoryService.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Initialize RedisSessionHistoryService.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>redis_url</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
-<li><p><strong>redis_client</strong> (<em>Redis</em><em> | </em><em>None</em>)</p></li>
+<li><p><strong>redis_url</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Redis connection URL</p></li>
+<li><p><strong>redis_client</strong> (<em>Redis</em><em> | </em><em>None</em>) – Optional pre-configured Redis client</p></li>
+<li><p><strong>socket_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>) – Socket timeout in seconds (default: 5.0)</p></li>
+<li><p><strong>socket_connect_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>) – Socket connect timeout in seconds</p></li>
+<li><p><strong>(</strong><strong>default</strong> (<em>silent disconnections</em>) – 5.0)</p></li>
+<li><p><strong>max_connections</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>) – Maximum number of connections in the pool</p></li>
+<li><p><strong>(</strong><strong>default</strong> – <ol class="arabic simple" start="50">
+<li></li>
+</ol>
+</p></li>
+<li><p><strong>retry_on_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Whether to retry on timeout (default: True)</p></li>
+<li><p><strong>ttl_seconds</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>) – Time-to-live in seconds for session data.</p></li>
+<li><p><strong>None</strong> (<em>If</em>) – 3600, i.e., 1 hour)</p></li>
+<li><p><strong>(</strong><strong>default</strong> – 3600, i.e., 1 hour)</p></li>
+<li><p><strong>max_messages_per_session</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>) – Maximum number of messages per session.</p></li>
+<li><p><strong>None</strong> – None)</p></li>
+<li><p><strong>(</strong><strong>default</strong> – None)</p></li>
+<li><p><strong>health_check_interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>) – Interval in seconds for health checks on</p></li>
+<li><p><strong>(</strong><strong>default</strong> – 30.0).
+Connections idle longer than this will be checked before reuse.
+Set to 0 to disable.</p></li>
+<li><p><strong>socket_keepalive</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Enable TCP keepalive to prevent</p></li>
+<li><p><strong>(</strong><strong>default</strong> – True)</p></li>
 </ul>
 </dd>
 </dl>
@@ -7140,8 +7227,8 @@ session’s history.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py">
 <em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/session_history/redis_session_history_service.html#RedisSessionHistoryService.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><p>Starts the service, initializing any necessary resources or
-connections.</p>
+<dd><p>Starts the Redis connection with proper timeout and connection
+pool settings.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -7155,11 +7242,8 @@ connections.</p>
 <em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">health</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/session_history/redis_session_history_service.html#RedisSessionHistoryService.health"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Checks the health of the service.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>True if the service is healthy, False otherwise.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -7222,16 +7306,15 @@ return None in concrete implementations.</p>
 <dl class="py method">
 <dt class="sig sig-object py">
 <em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_sessions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">user_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/session_history/redis_session_history_service.html#RedisSessionHistoryService.list_sessions"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><p>Lists all sessions for a given user.</p>
+<dd><p>List all sessions for a user by scanning session keys.</p>
+<p>Uses SCAN to find all session:{user_id}:* keys. Expired sessions
+naturally disappear as their keys expire, avoiding stale entries.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>user_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The identifier for the user.</p>
+<dd class="field-odd"><p><strong>user_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A list of Session objects.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a>[<em>Session</em>]</p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a>[<em>Session</em>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -7255,6 +7338,7 @@ dictionary format and Message objects.</p></li>
 <dt class="sig sig-object py">
 <em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">delete_user_sessions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">user_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/services/session_history/redis_session_history_service.html#RedisSessionHistoryService.delete_user_sessions"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Deletes all session history data for a specific user.</p>
+<p>Uses SCAN to find all session keys for the user and deletes them.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>user_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – The ID of the user whose session history data should
@@ -9548,7 +9632,7 @@ parameters should return the same result.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">BaseResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object='response'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status='created'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at=1766481881</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">completed_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#BaseResponse"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">BaseResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object='response'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status='created'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at=1766482317</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">completed_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#BaseResponse"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -9644,7 +9728,7 @@ parameters should return the same result.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">AgentResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object='response'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status='created'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at=1766481881</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">completed_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#AgentResponse"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.engine.schemas.agent_schemas.</span></span><span class="sig-name descname"><span class="pre">AgentResponse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object='response'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status='created'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at=1766482317</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">completed_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usage=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/engine/schemas/agent_schemas.html#AgentResponse"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseResponse</span></code></p>
 <p>agent response</p>
 <dl class="field-list simple">

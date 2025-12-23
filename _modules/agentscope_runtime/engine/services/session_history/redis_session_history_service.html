@@ -648,18 +648,65 @@ body.preview-active {
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">redis_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;redis://localhost:6379/0&quot;</span><span class="p">,</span>
         <span class="n">redis_client</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">aioredis</span><span class="o">.</span><span class="n">Redis</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">socket_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span>
+        <span class="n">socket_connect_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span>
+        <span class="n">max_connections</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="n">retry_on_timeout</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">ttl_seconds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3600</span><span class="p">,</span>  <span class="c1"># 1 hour in seconds</span>
+        <span class="n">max_messages_per_session</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">health_check_interval</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">,</span>
+        <span class="n">socket_keepalive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize RedisSessionHistoryService.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            redis_url: Redis connection URL</span>
+<span class="sd">            redis_client: Optional pre-configured Redis client</span>
+<span class="sd">            socket_timeout: Socket timeout in seconds (default: 5.0)</span>
+<span class="sd">            socket_connect_timeout: Socket connect timeout in seconds</span>
+<span class="sd">            (default: 5.0)</span>
+<span class="sd">            max_connections: Maximum number of connections in the pool</span>
+<span class="sd">            (default: 50)</span>
+<span class="sd">            retry_on_timeout: Whether to retry on timeout (default: True)</span>
+<span class="sd">            ttl_seconds: Time-to-live in seconds for session data.</span>
+<span class="sd">            If None, data never expires (default: 3600, i.e., 1 hour)</span>
+<span class="sd">            max_messages_per_session: Maximum number of messages per session.</span>
+<span class="sd">            If None, no limit (default: None)</span>
+<span class="sd">            health_check_interval: Interval in seconds for health checks on</span>
+<span class="sd">            idle connections (default: 30.0).</span>
+<span class="sd">                Connections idle longer than this will be checked before reuse.</span>
+<span class="sd">                Set to 0 to disable.</span>
+<span class="sd">            socket_keepalive: Enable TCP keepalive to prevent</span>
+<span class="sd">            silent disconnections (default: True)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_redis_url</span> <span class="o">=</span> <span class="n">redis_url</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span> <span class="o">=</span> <span class="n">redis_client</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span> <span class="o">=</span> <span class="n">redis_client</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_socket_timeout</span> <span class="o">=</span> <span class="n">socket_timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_socket_connect_timeout</span> <span class="o">=</span> <span class="n">socket_connect_timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_connections</span> <span class="o">=</span> <span class="n">max_connections</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_retry_on_timeout</span> <span class="o">=</span> <span class="n">retry_on_timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ttl_seconds</span> <span class="o">=</span> <span class="n">ttl_seconds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_messages_per_session</span> <span class="o">=</span> <span class="n">max_messages_per_session</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_health_check_interval</span> <span class="o">=</span> <span class="n">health_check_interval</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_socket_keepalive</span> <span class="o">=</span> <span class="n">socket_keepalive</span></div>
 
 
 <div class="viewcode-block" id="RedisSessionHistoryService.start">
 <a class="viewcode-back" href="../../../../../zh/api/engine.html#agentscope_runtime.engine.services.session_history.redis_session_history_service.RedisSessionHistoryService.start">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Starts the Redis connection with proper timeout and connection</span>
+<span class="sd">        pool settings.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span> <span class="o">=</span> <span class="n">aioredis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_redis_url</span><span class="p">,</span>
                 <span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">socket_timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_socket_timeout</span><span class="p">,</span>
+                <span class="n">socket_connect_timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_socket_connect_timeout</span><span class="p">,</span>
+                <span class="n">max_connections</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_max_connections</span><span class="p">,</span>
+                <span class="n">retry_on_timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_retry_on_timeout</span><span class="p">,</span>
+                <span class="n">health_check_interval</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_health_check_interval</span><span class="p">,</span>
+                <span class="n">socket_keepalive</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_socket_keepalive</span><span class="p">,</span>
             <span class="p">)</span></div>
 
 
@@ -674,6 +721,9 @@ body.preview-active {
 <div class="viewcode-block" id="RedisSessionHistoryService.health">
 <a class="viewcode-back" href="../../../../../zh/api/engine.html#agentscope_runtime.engine.services.session_history.redis_session_history_service.RedisSessionHistoryService.health">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks the health of the service.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">pong</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>
             <span class="k">return</span> <span class="n">pong</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">pong</span> <span class="o">==</span> <span class="s2">&quot;PONG&quot;</span>
@@ -684,8 +734,9 @@ body.preview-active {
     <span class="k">def</span><span class="w"> </span><span class="nf">_session_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;session:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_index_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;session_index:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_session_pattern</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate the pattern for scanning session keys for a user.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;session:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">:*&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_session_to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">session</span><span class="o">.</span><span class="n">model_dump_json</span><span class="p">()</span>
@@ -709,7 +760,11 @@ body.preview-active {
         <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">sid</span><span class="p">)</span>
 
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_to_json</span><span class="p">(</span><span class="n">session</span><span class="p">))</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">sadd</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_index_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span> <span class="n">sid</span><span class="p">)</span>
+
+        <span class="c1"># Set TTL for the session key if configured</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttl_seconds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">expire</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttl_seconds</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">session</span></div>
 
 
@@ -723,34 +778,52 @@ body.preview-active {
         <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">session_id</span><span class="p">)</span>
         <span class="n">session_json</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">session_json</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">session</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_to_json</span><span class="p">(</span><span class="n">session</span><span class="p">))</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">sadd</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_index_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span> <span class="n">session_id</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">session</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_from_json</span><span class="p">(</span><span class="n">session_json</span><span class="p">)</span></div>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_from_json</span><span class="p">(</span><span class="n">session_json</span><span class="p">)</span>
+
+        <span class="c1"># Refresh TTL when accessing the session</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttl_seconds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">expire</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttl_seconds</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">session</span></div>
 
 
 <div class="viewcode-block" id="RedisSessionHistoryService.delete_session">
 <a class="viewcode-back" href="../../../../../zh/api/engine.html#agentscope_runtime.engine.services.session_history.redis_session_history_service.RedisSessionHistoryService.delete_session">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">session_id</span><span class="p">)</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">srem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_index_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span> <span class="n">session_id</span><span class="p">)</span></div>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="RedisSessionHistoryService.list_sessions">
 <a class="viewcode-back" href="../../../../../zh/api/engine.html#agentscope_runtime.engine.services.session_history.redis_session_history_service.RedisSessionHistoryService.list_sessions">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_sessions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Session</span><span class="p">]:</span>
-        <span class="n">idx_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
-        <span class="n">session_ids</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">smembers</span><span class="p">(</span><span class="n">idx_key</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List all sessions for a user by scanning session keys.</span>
+
+<span class="sd">        Uses SCAN to find all session:{user_id}:* keys. Expired sessions</span>
+<span class="sd">        naturally disappear as their keys expire, avoiding stale entries.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_pattern</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
         <span class="n">sessions</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">sid</span> <span class="ow">in</span> <span class="n">session_ids</span><span class="p">:</span>
-            <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">sid</span><span class="p">)</span>
-            <span class="n">session_json</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">session_json</span><span class="p">:</span>
-                <span class="n">session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_from_json</span><span class="p">(</span><span class="n">session_json</span><span class="p">)</span>
-                <span class="n">session</span><span class="o">.</span><span class="n">messages</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="n">sessions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">cursor</span><span class="p">,</span> <span class="n">keys</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span>
+                <span class="n">cursor</span><span class="p">,</span>
+                <span class="n">match</span><span class="o">=</span><span class="n">pattern</span><span class="p">,</span>
+                <span class="n">count</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+                <span class="n">session_json</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">session_json</span><span class="p">:</span>
+                    <span class="n">session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_from_json</span><span class="p">(</span><span class="n">session_json</span><span class="p">)</span>
+                    <span class="n">session</span><span class="o">.</span><span class="n">messages</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">sessions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">cursor</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">break</span>
+
         <span class="k">return</span> <span class="n">sessions</span></div>
 
 
@@ -782,16 +855,33 @@ body.preview-active {
         <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">session_id</span><span class="p">)</span>
 
         <span class="n">session_json</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">session_json</span><span class="p">:</span>
-            <span class="n">stored_session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_from_json</span><span class="p">(</span><span class="n">session_json</span><span class="p">)</span>
-            <span class="n">stored_session</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">norm_message</span><span class="p">)</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_to_json</span><span class="p">(</span><span class="n">stored_session</span><span class="p">))</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">sadd</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_index_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span> <span class="n">session_id</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Warning: Session </span><span class="si">{</span><span class="n">session</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> not found in storage for &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;append_message.&quot;</span><span class="p">,</span>
-            <span class="p">)</span></div>
+        <span class="k">if</span> <span class="n">session_json</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2"> not found or has expired for user &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">. Previous memory/state has been lost. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Please create a new session.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">stored_session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_from_json</span><span class="p">(</span><span class="n">session_json</span><span class="p">)</span>
+        <span class="n">stored_session</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">norm_message</span><span class="p">)</span>
+
+        <span class="c1"># Limit the number of messages per session to prevent memory issues</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_messages_per_session</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">stored_session</span><span class="o">.</span><span class="n">messages</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_messages_per_session</span><span class="p">:</span>
+                <span class="c1"># Keep only the most recent messages</span>
+                <span class="n">stored_session</span><span class="o">.</span><span class="n">messages</span> <span class="o">=</span> <span class="n">stored_session</span><span class="o">.</span><span class="n">messages</span><span class="p">[</span>
+                    <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_max_messages_per_session</span> <span class="p">:</span>
+                <span class="p">]</span>
+                <span class="c1"># Keep the in-memory session in sync with the stored session</span>
+                <span class="n">session</span><span class="o">.</span><span class="n">messages</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">messages</span><span class="p">[</span>
+                    <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_max_messages_per_session</span> <span class="p">:</span>
+                <span class="p">]</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_to_json</span><span class="p">(</span><span class="n">stored_session</span><span class="p">))</span>
+
+        <span class="c1"># Set TTL for the session key if configured</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttl_seconds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">expire</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttl_seconds</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="RedisSessionHistoryService.delete_user_sessions">
@@ -800,6 +890,8 @@ body.preview-active {
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Deletes all session history data for a specific user.</span>
 
+<span class="sd">        Uses SCAN to find all session keys for the user and deletes them.</span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            user_id (str): The ID of the user whose session history data should</span>
 <span class="sd">             be deleted</span>
@@ -807,14 +899,20 @@ body.preview-active {
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Redis connection is not available&quot;</span><span class="p">)</span>
 
-        <span class="n">index_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
-        <span class="n">session_ids</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">smembers</span><span class="p">(</span><span class="n">index_key</span><span class="p">)</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_pattern</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="mi">0</span>
 
-        <span class="k">for</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="n">session_ids</span><span class="p">:</span>
-            <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">session_id</span><span class="p">)</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">cursor</span><span class="p">,</span> <span class="n">keys</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span>
+                <span class="n">cursor</span><span class="p">,</span>
+                <span class="n">match</span><span class="o">=</span><span class="n">pattern</span><span class="p">,</span>
+                <span class="n">count</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">keys</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="o">*</span><span class="n">keys</span><span class="p">)</span>
 
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">index_key</span><span class="p">)</span></div>
+            <span class="k">if</span> <span class="n">cursor</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">break</span></div>
 </div>
 
 </pre></div>

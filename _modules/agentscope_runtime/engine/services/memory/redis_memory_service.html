@@ -650,20 +650,67 @@ body.preview-active {
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">redis_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;redis://localhost:6379/0&quot;</span><span class="p">,</span>
         <span class="n">redis_client</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">aioredis</span><span class="o">.</span><span class="n">Redis</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">socket_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span>
+        <span class="n">socket_connect_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span>
+        <span class="n">max_connections</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="n">retry_on_timeout</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">ttl_seconds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3600</span><span class="p">,</span>  <span class="c1"># 1 hour in seconds</span>
+        <span class="n">max_messages_per_session</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">health_check_interval</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">,</span>
+        <span class="n">socket_keepalive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize RedisMemoryService.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            redis_url: Redis connection URL</span>
+<span class="sd">            redis_client: Optional pre-configured Redis client</span>
+<span class="sd">            socket_timeout: Socket timeout in seconds (default: 5.0)</span>
+<span class="sd">            socket_connect_timeout: Socket connect timeout in seconds</span>
+<span class="sd">             (default: 5.0)</span>
+<span class="sd">            max_connections: Maximum number of connections in the pool</span>
+<span class="sd">             (default: 50)</span>
+<span class="sd">            retry_on_timeout: Whether to retry on timeout (default: True)</span>
+<span class="sd">            ttl_seconds: Time-to-live in seconds for memory data.</span>
+<span class="sd">            If None, data never expires (default: 3600, i.e., 1 hour)</span>
+<span class="sd">            max_messages_per_session: Maximum number of messages stored per</span>
+<span class="sd">             session_id field within a user&#39;s Redis memory hash.</span>
+<span class="sd">             If None, no limit (default: None)</span>
+<span class="sd">            health_check_interval: Interval in seconds for health checks</span>
+<span class="sd">             on idle connections (default: 30.0).</span>
+<span class="sd">                Connections idle longer than this will be checked before reuse.</span>
+<span class="sd">                Set to 0 to disable.</span>
+<span class="sd">            socket_keepalive: Enable TCP keepalive to prevent</span>
+<span class="sd">            silent disconnections (default: True)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_redis_url</span> <span class="o">=</span> <span class="n">redis_url</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span> <span class="o">=</span> <span class="n">redis_client</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_DEFAULT_SESSION_ID</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_DEFAULT_SESSION_ID</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_socket_timeout</span> <span class="o">=</span> <span class="n">socket_timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_socket_connect_timeout</span> <span class="o">=</span> <span class="n">socket_connect_timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_connections</span> <span class="o">=</span> <span class="n">max_connections</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_retry_on_timeout</span> <span class="o">=</span> <span class="n">retry_on_timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ttl_seconds</span> <span class="o">=</span> <span class="n">ttl_seconds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_messages_per_session</span> <span class="o">=</span> <span class="n">max_messages_per_session</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_health_check_interval</span> <span class="o">=</span> <span class="n">health_check_interval</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_socket_keepalive</span> <span class="o">=</span> <span class="n">socket_keepalive</span></div>
 
 
 <div class="viewcode-block" id="RedisMemoryService.start">
 <a class="viewcode-back" href="../../../../../zh/api/engine.html#agentscope_runtime.engine.services.memory.redis_memory_service.RedisMemoryService.start">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Starts the Redis connection.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Starts the Redis connection with proper timeout</span>
+<span class="sd">        and connection pool settings.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span> <span class="o">=</span> <span class="n">aioredis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_redis_url</span><span class="p">,</span>
                 <span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">socket_timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_socket_timeout</span><span class="p">,</span>
+                <span class="n">socket_connect_timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_socket_connect_timeout</span><span class="p">,</span>
+                <span class="n">max_connections</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_max_connections</span><span class="p">,</span>
+                <span class="n">retry_on_timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_retry_on_timeout</span><span class="p">,</span>
+                <span class="n">health_check_interval</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_health_check_interval</span><span class="p">,</span>
+                <span class="n">socket_keepalive</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_socket_keepalive</span><span class="p">,</span>
             <span class="p">)</span></div>
 
 
@@ -718,7 +765,18 @@ body.preview-active {
         <span class="n">existing_json</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hget</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span>
         <span class="n">existing_msgs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deserialize</span><span class="p">(</span><span class="n">existing_json</span><span class="p">)</span>
         <span class="n">all_msgs</span> <span class="o">=</span> <span class="n">existing_msgs</span> <span class="o">+</span> <span class="n">messages</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hset</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_serialize</span><span class="p">(</span><span class="n">all_msgs</span><span class="p">))</span></div>
+
+        <span class="c1"># Limit the number of messages per session to prevent memory issues</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_messages_per_session</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_msgs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_messages_per_session</span><span class="p">:</span>
+                <span class="c1"># Keep only the most recent messages</span>
+                <span class="n">all_msgs</span> <span class="o">=</span> <span class="n">all_msgs</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_max_messages_per_session</span> <span class="p">:]</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hset</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_serialize</span><span class="p">(</span><span class="n">all_msgs</span><span class="p">))</span>
+
+        <span class="c1"># Set TTL for the key if configured</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttl_seconds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">expire</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttl_seconds</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="RedisMemoryService.search_memory">
@@ -744,29 +802,49 @@ body.preview-active {
 
         <span class="n">keywords</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
 
-        <span class="n">all_msgs</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">hash_keys</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hkeys</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="n">hash_keys</span><span class="p">:</span>
-            <span class="n">msgs_json</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hget</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">session_id</span><span class="p">)</span>
-            <span class="n">msgs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deserialize</span><span class="p">(</span><span class="n">msgs_json</span><span class="p">)</span>
-            <span class="n">all_msgs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">msgs</span><span class="p">)</span>
-
+        <span class="c1"># Process messages in batches to avoid loading all into memory at once</span>
         <span class="n">matched_messages</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">all_msgs</span><span class="p">:</span>
-            <span class="n">candidate_content</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_query_text</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">candidate_content</span><span class="p">:</span>
-                <span class="n">msg_content_lower</span> <span class="o">=</span> <span class="n">candidate_content</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-                <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">keyword</span> <span class="ow">in</span> <span class="n">msg_content_lower</span> <span class="k">for</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="n">keywords</span><span class="p">):</span>
-                    <span class="n">matched_messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">hash_keys</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hkeys</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 
+        <span class="c1"># Get top_k limit early to optimize memory usage</span>
+        <span class="n">top_k</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="n">filters</span>
             <span class="ow">and</span> <span class="s2">&quot;top_k&quot;</span> <span class="ow">in</span> <span class="n">filters</span>
             <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filters</span><span class="p">[</span><span class="s2">&quot;top_k&quot;</span><span class="p">],</span> <span class="nb">int</span><span class="p">)</span>
         <span class="p">):</span>
-            <span class="k">return</span> <span class="n">matched_messages</span><span class="p">[</span><span class="o">-</span><span class="n">filters</span><span class="p">[</span><span class="s2">&quot;top_k&quot;</span><span class="p">]</span> <span class="p">:]</span>
+            <span class="n">top_k</span> <span class="o">=</span> <span class="n">filters</span><span class="p">[</span><span class="s2">&quot;top_k&quot;</span><span class="p">]</span>
 
-        <span class="k">return</span> <span class="n">matched_messages</span></div>
+        <span class="c1"># Process each session separately to reduce memory footprint</span>
+        <span class="k">for</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="n">hash_keys</span><span class="p">:</span>
+            <span class="n">msgs_json</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hget</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">session_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">msgs_json</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">msgs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deserialize</span><span class="p">(</span><span class="n">msgs_json</span><span class="p">)</span>
+
+            <span class="c1"># Match messages in this session</span>
+            <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">msgs</span><span class="p">:</span>
+                <span class="n">candidate_content</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_query_text</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">candidate_content</span><span class="p">:</span>
+                    <span class="n">msg_content_lower</span> <span class="o">=</span> <span class="n">candidate_content</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
+                        <span class="n">keyword</span> <span class="ow">in</span> <span class="n">msg_content_lower</span> <span class="k">for</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="n">keywords</span>
+                    <span class="p">):</span>
+                        <span class="n">matched_messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="c1"># Apply top_k filter if specified</span>
+        <span class="k">if</span> <span class="n">top_k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">matched_messages</span><span class="p">[</span><span class="o">-</span><span class="n">top_k</span><span class="p">:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">matched_messages</span>
+
+        <span class="c1"># Refresh TTL on read to extend lifetime of actively used data,</span>
+        <span class="c1"># if a TTL is configured and there is existing data for this key.</span>
+        <span class="n">ttl_seconds</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_ttl&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ttl_seconds</span> <span class="ow">and</span> <span class="n">hash_keys</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">expire</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">ttl_seconds</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span></div>
 
 
 <div class="viewcode-block" id="RedisMemoryService.get_query_text">
@@ -788,19 +866,32 @@ body.preview-active {
         <span class="n">filters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
         <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
-        <span class="n">all_msgs</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">hash_keys</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hkeys</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">hash_keys</span><span class="p">):</span>
-            <span class="n">msgs_json</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hget</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">session_id</span><span class="p">)</span>
-            <span class="n">msgs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deserialize</span><span class="p">(</span><span class="n">msgs_json</span><span class="p">)</span>
-            <span class="n">all_msgs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">msgs</span><span class="p">)</span>
-
         <span class="n">page_num</span> <span class="o">=</span> <span class="n">filters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;page_num&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">filters</span> <span class="k">else</span> <span class="mi">1</span>
         <span class="n">page_size</span> <span class="o">=</span> <span class="n">filters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;page_size&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="k">if</span> <span class="n">filters</span> <span class="k">else</span> <span class="mi">10</span>
 
         <span class="n">start_index</span> <span class="o">=</span> <span class="p">(</span><span class="n">page_num</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">page_size</span>
         <span class="n">end_index</span> <span class="o">=</span> <span class="n">start_index</span> <span class="o">+</span> <span class="n">page_size</span>
 
+        <span class="c1"># Optimize: Calculate which sessions we need to load</span>
+        <span class="c1"># For simplicity, we still load all but could be optimized further</span>
+        <span class="c1"># to only load sessions that contain the requested page range</span>
+        <span class="n">all_msgs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">hash_keys</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hkeys</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">hash_keys</span><span class="p">):</span>
+            <span class="n">msgs_json</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hget</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">session_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">msgs_json</span><span class="p">:</span>
+                <span class="n">msgs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deserialize</span><span class="p">(</span><span class="n">msgs_json</span><span class="p">)</span>
+                <span class="n">all_msgs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">msgs</span><span class="p">)</span>
+
+                <span class="c1"># Early exit optimization: if we&#39;ve loaded enough messages</span>
+                <span class="c1"># to cover the requested page, we can stop (but this assumes</span>
+                <span class="c1"># we need all previous messages for proper ordering)</span>
+                <span class="c1"># For now, we keep loading all for correctness</span>
+
+        <span class="c1"># Refresh TTL on active use to keep memory alive,</span>
+        <span class="c1"># mirroring get_session behavior</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_ttl_seconds&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">expire</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttl_seconds</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">all_msgs</span><span class="p">[</span><span class="n">start_index</span><span class="p">:</span><span class="n">end_index</span><span class="p">]</span></div>
 
 
