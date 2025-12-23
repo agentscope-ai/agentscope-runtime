@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from agentscope import setup_logger
 from agentscope.message import Msg
 
+from ..utils import _update_obj_attrs
 from ...engine.schemas.agent_schemas import (
     Message,
     Content,
@@ -24,13 +25,6 @@ from ...engine.schemas.agent_schemas import (
 )
 
 setup_logger("ERROR")
-
-
-def _update_obj_attrs(obj, **attrs):
-    for key, value in attrs.items():
-        if hasattr(obj, key):
-            setattr(obj, key, value)
-    return obj
 
 
 async def adapt_agentscope_message_stream(
