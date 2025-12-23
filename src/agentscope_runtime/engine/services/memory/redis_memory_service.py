@@ -185,10 +185,17 @@ class RedisMemoryService(MemoryService):
 
         # Apply top_k filter if specified
         if top_k is not None:
-            return matched_messages[-top_k:]
+            result = matched_messages[-top_k:]
+        else:
+            result = matched_messages
 
-        return matched_messages
+        # Refresh TTL on read to extend lifetime of actively used data,
+        # if a TTL is configured and there is existing data for this key.
+        ttl_seconds = getattr(self, "_ttl", None)
+        if ttl_seconds and hash_keys:
+            await self._redis.expire(key, ttl_seconds)
 
+        return result
     async def get_query_text(self, message: Message) -> str:
         if message:
             if message.type == MessageType.MESSAGE:
