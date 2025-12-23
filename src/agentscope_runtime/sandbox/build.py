@@ -70,9 +70,7 @@ def build_image(
         f" {DOCKER_PLATFORMS}"
     )
 
-    platform_tag = ""
-    if platform_choice == "linux/arm64":
-        platform_tag = "-arm64"
+    auto_build = os.getenv("AUTO_BUILD", "false").lower() == "true"
 
     buildx_enable = platform_choice != get_platform()
 
@@ -93,7 +91,7 @@ def build_image(
     secret_token = "secret_token123"
 
     # Add platform tag
-    image_name = SandboxRegistry.get_image_by_type(build_type) + platform_tag
+    image_name = SandboxRegistry.get_image_by_type(build_type)
 
     logger.info(f"Building Docker image {image_name}...")
 
@@ -108,10 +106,13 @@ def build_image(
 
     # Check if the image already exists
     if image_name in images or f"{image_name}dev" in images:
-        choice = input(
-            f"Image {image_name}dev|{image_name} already exists. Do "
-            f"you want to overwrite it? (y/N): ",
-        )
+        if auto_build:
+            choice = "y"
+        else:
+            choice = input(
+                f"Image {image_name}dev|{image_name} already exists. Do "
+                f"you want to overwrite it? (y/N): ",
+            )
         if choice.lower() != "y":
             logger.info("Exiting without overwriting the existing image.")
             return
@@ -156,73 +157,65 @@ def build_image(
 
     logger.info(f"Docker image {image_name}dev built successfully.")
 
-    logger.info(f"Start to build image {image_name}.")
-
-    # Run the container with port mapping and environment variable
-    free_port = find_free_port(8080, 8090)
-
-    if not buildx_enable:
-        result = subprocess.run(
-            [
-                "docker",
-                "run",
-                "-d",
-                "-p",
-                f"{free_port}:80",
-                "-e",
-                f"SECRET_TOKEN={secret_token}",
-                f"{image_name}dev",
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
+    if buildx_enable:
+        logger.warning(
+            "Cross-platform build detected; "
+            "skipping health checks and tagging the final image directly.",
         )
-    else:
-        result = subprocess.run(
-            [
-                "docker",
-                "run",
-                "--platform",
-                platform_choice,
-                "-d",
-                "-p",
-                f"{free_port}:80",
-                "-e",
-                f"SECRET_TOKEN={secret_token}",
-                f"{image_name}dev",
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-    container_id = result.stdout.strip()
-    logger.info(f"Running container {container_id} on port {free_port}")
-
-    # Check health endpoints
-    fastapi_health_url = f"http://localhost:{free_port}/fastapi/healthz"
-
-    # Check health for FASTAPI
-    fastapi_healthy = check_health(fastapi_health_url, secret_token)
-
-    if fastapi_healthy:
-        logger.info("Health checks passed.")
         subprocess.run(
-            ["docker", "commit", container_id, f"{image_name}"],
+            ["docker", "tag", f"{image_name}dev", image_name],
             check=True,
         )
-        logger.info(
-            f"Docker image {image_name} committed successfully.",
-        )
-        subprocess.run(["docker", "stop", container_id], check=True)
-        subprocess.run(["docker", "rm", container_id], check=True)
+        logger.info(f"Docker image {image_name} tagged successfully.")
     else:
-        logger.error("Health checks failed.")
-        subprocess.run(["docker", "stop", container_id], check=True)
+        logger.info(f"Start to build image {image_name}.")
 
-    choice = input(
-        f"Do you want to delete the dev image {image_name}dev? (" f"y/N): ",
-    )
+        # Run the container with port mapping and environment variable
+        free_port = find_free_port(8080, 8090)
+        result = subprocess.run(
+            [
+                "docker",
+                "run",
+                "-d",
+                "-p",
+                f"{free_port}:80",
+                "-e",
+                f"SECRET_TOKEN={secret_token}",
+                f"{image_name}dev",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        container_id = result.stdout.strip()
+        logger.info(f"Running container {container_id} on port {free_port}")
+
+        # Check health endpoints
+        fastapi_health_url = f"http://localhost:{free_port}/fastapi/healthz"
+        fastapi_healthy = check_health(fastapi_health_url, secret_token)
+
+        if fastapi_healthy:
+            logger.info("Health checks passed.")
+            subprocess.run(
+                ["docker", "commit", container_id, f"{image_name}"],
+                check=True,
+            )
+            logger.info(
+                f"Docker image {image_name} committed successfully.",
+            )
+            subprocess.run(["docker", "stop", container_id], check=True)
+            subprocess.run(["docker", "rm", container_id], check=True)
+        else:
+            logger.error("Health checks failed.")
+            subprocess.run(["docker", "stop", container_id], check=True)
+
+    if auto_build:
+        choice = "y"
+    else:
+        choice = input(
+            f"Do you want to delete the dev image {image_name}dev? ("
+            f"y/N): ",
+        )
     if choice.lower() == "y":
         subprocess.run(
             ["docker", "rmi", "-f", f"{image_name}dev"],
