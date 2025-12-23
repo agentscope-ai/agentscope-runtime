@@ -54,6 +54,27 @@ class FlexibleRunAgentInput(BaseModel):
     model_config = {
         "extra": "allow",
         "populate_by_name": True,
+        "json_schema_extra": {
+            "example": {
+                "threadId": "thread_123",
+                "runId": "run_456",
+                "messages": [
+                    {
+                        "id": "msg_1",
+                        "role": "system",
+                        "content": "You are a helpful assistant.",
+                    },
+                    {
+                        "id": "msg_2",
+                        "role": "user",
+                        "content": "Hello",
+                    },
+                ],
+                "tools": [],
+                "context": [],
+                "forwardedProps": None,
+            },
+        },
     }
 
 
