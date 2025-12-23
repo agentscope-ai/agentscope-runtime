@@ -197,6 +197,7 @@ class RedisMemoryService(MemoryService):
             await self._redis.expire(key, ttl_seconds)
 
         return result
+
     async def get_query_text(self, message: Message) -> str:
         if message:
             if message.type == MessageType.MESSAGE:
@@ -233,7 +234,8 @@ class RedisMemoryService(MemoryService):
                 # we need all previous messages for proper ordering)
                 # For now, we keep loading all for correctness
 
-        # Refresh TTL on active use to keep memory alive, mirroring get_session behavior
+        # Refresh TTL on active use to keep memory alive,
+        # mirroring get_session behavior
         if getattr(self, "_ttl_seconds", None):
             await self._redis.expire(key, self._ttl_seconds)
         return all_msgs[start_index:end_index]
