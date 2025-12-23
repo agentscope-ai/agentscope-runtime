@@ -75,7 +75,7 @@ ext = [
     "alibabacloud-fc20230330>=4.4.0",
     "tablestore-for-agent-memory>=1.1.0",
     "langchain-community>=0.3.27",
-    "wuying-agentbay-sdk>=0.5.0",
+    "wuying-agentbay-sdk>=0.5.0,<0.13.0",
     "alipay-sdk-python",
     "cryptography",
     "gunicorn>=20.0.0",
