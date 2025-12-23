@@ -132,7 +132,7 @@ async def adapt_ms_agent_framework_message_stream(
         for element in content:
             if isinstance(element, UsageContent):
                 # TODO: consider keeping the same format with as
-                usage = element.details
+                usage = element.details.to_dict()
 
             elif isinstance(element, MSTextContent):  # Text
                 text = element.text
@@ -374,3 +374,45 @@ async def adapt_ms_agent_framework_message_stream(
 
             else:
                 raise ValueError(f"Unknown element type: {type(element)}")
+
+    if (
+        text_delta_content is not None
+        and text_delta_content.status == "in_progress"
+    ):
+        yield text_delta_content.completed()
+
+    if (
+        data_delta_content is not None
+        and data_delta_content.status == "in_progress"
+    ):
+        yield data_delta_content.completed()
+
+    if message is not None and message.status == "in_progress":
+        message = _update_obj_attrs(
+            message,
+            usage=usage,
+        )
+
+        yield message.completed()
+
+    if (
+        reasoning_message is not None
+        and reasoning_message.status == "in_progress"
+    ):
+        reasoning_message = _update_obj_attrs(
+            reasoning_message,
+            usage=usage,
+        )
+
+        yield reasoning_message.completed()
+
+    if (
+        plugin_call_message is not None
+        and plugin_call_message.status == "in_progress"
+    ):
+        plugin_call_message = _update_obj_attrs(
+            plugin_call_message,
+            usage=usage,
+        )
+
+        yield plugin_call_message.completed()

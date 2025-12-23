@@ -83,7 +83,7 @@ def message_to_ms_agent_framework_message(
                         break
             if tool_args is None:
                 tool_args = {}
-            result["content"] = [
+            result["contents"] = [
                 FunctionCallContent(
                     call_id=message.content[0].data["call_id"],
                     name=message.content[0].data.get("name"),
@@ -109,14 +109,14 @@ def message_to_ms_agent_framework_message(
                 out = ""
             blk = out
 
-            result["content"] = [
+            result["contents"] = [
                 FunctionResultContent(
                     call_id=message.content[0].data["call_id"],
                     result=blk,
                 ),
             ]
         elif message.type in (MessageType.REASONING,):
-            result["content"] = [
+            result["contents"] = [
                 TextReasoningContent(
                     text=message.content[0].text,
                 ),
@@ -163,7 +163,7 @@ def message_to_ms_agent_framework_message(
                             json_str = str(value)
                         msg_content.append(MSTextContent(text=json_str))
 
-            result["content"] = msg_content
+            result["contents"] = msg_content
         _msg = ChatMessage(**result)
         return _msg
 
@@ -187,16 +187,16 @@ def message_to_ms_agent_framework_message(
                 orig_id = msg.id
 
             if orig_id not in grouped:
-                agentscope_msg = ChatMessage(
+                ms_msg = ChatMessage(
                     author_name=orig_msg.author_name,
                     role=orig_msg.role,
                     additional_properties=orig_msg.additional_properties,
-                    content=list(orig_msg.contents),
+                    contents=list(orig_msg.contents),
                 )
-                agentscope_msg.id = orig_id
-                grouped[orig_id] = agentscope_msg
+                ms_msg.message_id = orig_id
+                grouped[orig_id] = ms_msg
             else:
-                grouped[orig_id].content.extend(orig_msg.contents)
+                grouped[orig_id].contents.extend(orig_msg.contents)
 
         return list(grouped.values())
     else:
