@@ -54,11 +54,11 @@
 >
 > | 框架 / 功能项                                                | 消息 / 事件 | 工具 | 服务 |
 > | ------------------------------------------------------------ | ----------- | ---- | ---- |
-> | AgentScope                                                   | ✅           | ✅    | ✅    |
+> | [AgentScope](https://github.com/agentscope-ai/agentscope)    | ✅           | ✅    | ✅    |
 > | [LangGraph](https://runtime.agentscope.io/zh/langgraph_guidelines.html) | ✅           | 🚧    | 🚧    |
 > | AutoGen                                                      | 🚧           | ✅    | 🚧    |
-> | Microsoft Agent Framework                                    | 🚧           | 🚧    | 🚧    |
-> | [Agno](https://runtime.agentscope.io/zh/agno_guidelines.html) | 🧪           | ✅    | 🚧    |
+> | [Microsoft Agent Framework](https://github.com/microsoft/agent-framework) | ✅           | ✅    | 🚧    |
+> | [Agno](https://runtime.agentscope.io/zh/agno_guidelines.html) | ✅           | ✅    | 🚧    |
 
 ---
 

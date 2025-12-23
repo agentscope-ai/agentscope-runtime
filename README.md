@@ -54,10 +54,10 @@
 >
 > | Framework/Feature                                            | Message/Event | Tool | Service |
 > | ------------------------------------------------------------ | ------------- | ---- | ------- |
-> | AgentScope                                                   | ✅             | ✅    | ✅       |
+> | [AgentScope](https://github.com/agentscope-ai/agentscope)    | ✅             | ✅    | ✅       |
 > | [LangGraph](https://runtime.agentscope.io/en/langgraph_guidelines.html) | ✅             | 🚧    | 🚧       |
 > | AutoGen                                                      | 🚧             | ✅    | 🚧       |
-> | Microsoft Agent Framework                                    | 🚧             | 🚧    | 🚧       |
+> | [Microsoft Agent Framework](https://github.com/microsoft/agent-framework) | ✅             | ✅    | 🚧       |
 > | [Agno](https://runtime.agentscope.io/en/agno_guidelines.html) | ✅             | ✅    | 🚧       |
 
 ---
