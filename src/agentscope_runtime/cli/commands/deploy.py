@@ -972,6 +972,7 @@ def k8s(
 
         if image_pull_policy and "image_pull_policy" not in runtime_config:
             runtime_config["image_pull_policy"] = image_pull_policy
+        runtime_config["service_type"] = service_type
 
         # Validate source
         abs_source, source_type = _validate_source(source)
@@ -988,7 +989,6 @@ def k8s(
         k8s_config = K8sConfig(
             k8s_namespace=namespace,
             kubeconfig_path=kube_config_path,
-            service_type=service_type,
         )
         registry_config = RegistryConfig(
             registry_url=registry_url,

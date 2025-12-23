@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=too-many-statements
+# pylint:disable=too-many-statements, too-many-branches
 
 import logging
 import os
 from datetime import datetime
 from typing import Optional, Dict, List, Union, Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from agentscope_runtime.engine.deployers.state import Deployment
 from .adapter.protocol_adapter import ProtocolAdapter
@@ -35,22 +35,6 @@ class K8sConfig(BaseModel):
         description="Path to kubeconfig file. If not set, will try "
         "in-cluster config or default kubeconfig.",
     )
-    service_type: str = Field(
-        "LoadBalancer",
-        description="Kubernetes service type: LoadBalancer, ClusterIP, or "
-        "NodePort. Determines how the service is exposed.",
-    )
-
-    @field_validator("service_type")
-    @classmethod
-    def validate_service_type(cls, v: str) -> str:
-        """Validate service_type is one of the allowed values."""
-        allowed = ["LoadBalancer", "ClusterIP", "NodePort"]
-        if v not in allowed:
-            raise ValueError(
-                f"service_type must be one of {allowed}, got: {v}",
-            )
-        return v
 
 
 class BuildConfig(BaseModel):
@@ -259,6 +243,14 @@ class KubernetesDeployManager(DeployManager):
 
             logger.info(f"Building kubernetes deployment for {deploy_id}")
 
+            if not runtime_config:
+                service_type = "LoadBalancer"
+            else:
+                service_type = runtime_config.get(
+                    "service_type",
+                    "LoadBalancer",
+                )
+
             # Create Deployment
             _id, ports, ip = self.k8s_client.create_deployment(
                 image=built_image_name,
@@ -269,7 +261,7 @@ class KubernetesDeployManager(DeployManager):
                 runtime_config=runtime_config or {},
                 replicas=replicas,
                 create_service=True,
-                service_type=self.kubeconfig.service_type,
+                service_type=service_type,  # type: ignore[arg-type]
             )
             if not _id:
                 import traceback
@@ -280,8 +272,6 @@ class KubernetesDeployManager(DeployManager):
                 )
 
             # Handle different service types for endpoint URL construction
-            service_type = self.kubeconfig.service_type
-
             if (
                 service_type == "NodePort"
                 and ip

@@ -7,7 +7,7 @@ import hashlib
 import traceback
 import logging
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Literal
 
 from kubernetes import client
 from kubernetes import config as k8s_config
@@ -896,7 +896,11 @@ class KubernetesClient(BaseClient):
         runtime_config=None,
         replicas=1,
         create_service=True,
-        service_type="LoadBalancer",
+        service_type: Literal[
+            "LoadBalancer",
+            "ClusterIP",
+            "NodePort",
+        ] = "LoadBalancer",
     ) -> Tuple[str, list, str] | Tuple[None, None, None]:
         """
         Create a new Kubernetes Deployment with service.
@@ -916,6 +920,7 @@ class KubernetesClient(BaseClient):
         Returns:
             Tuple of (deployment_name, ports, service_ip)
         """
+
         if not name:
             name = f"deploy-{hashlib.md5(image.encode()).hexdigest()[:8]}"
 
