@@ -23,7 +23,7 @@ class RedisStateService(StateService):
         redis_client: Optional[aioredis.Redis] = None,
         socket_timeout: Optional[float] = 5.0,
         socket_connect_timeout: Optional[float] = 5.0,
-        max_connections: Optional[int] = 50,
+        max_connections: Optional[int] = None,
         retry_on_timeout: bool = True,
         ttl_seconds: Optional[int] = 3600,  # 1 hour in seconds
         health_check_interval: Optional[float] = 30.0,
@@ -39,7 +39,7 @@ class RedisStateService(StateService):
             socket_connect_timeout: Socket connect timeout in seconds
             (default: 5.0)
             max_connections: Maximum number of connections in the pool
-            (default: 50)
+            (default: None)
             retry_on_timeout: Whether to retry on timeout (default: True)
             ttl_seconds: Time-to-live in seconds for state data. If None,
             data never expires (default: 3600, i.e., 1 hour)
