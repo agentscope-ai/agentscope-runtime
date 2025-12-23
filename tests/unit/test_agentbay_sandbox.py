@@ -252,7 +252,7 @@ class TestAgentbaySandbox:
                 mock_create_session_result
             )
 
-            with patch("agentbay.session_params.CreateSessionParams"):
+            with patch("agentbay.CreateSessionParams"):
                 sandbox = AgentbaySandbox(api_key="test-key")
                 assert sandbox._sandbox_id == "test-session-123"
 
@@ -266,7 +266,7 @@ class TestAgentbaySandbox:
             mock_agentbay_class.return_value = mock_agentbay_client
             mock_agentbay_client.create.return_value = failed_result
 
-            with patch("agentbay.session_params.CreateSessionParams"):
+            with patch("agentbay.CreateSessionParams"):
                 sandbox = AgentbaySandbox(
                     api_key="test-key",
                     sandbox_id="existing",
