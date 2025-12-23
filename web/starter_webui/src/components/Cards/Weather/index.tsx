@@ -1,24 +1,23 @@
 // @ts-nocheck
-import { createStyles } from 'antd-style';
-import { Sun, Cloud, CloudRain } from 'lucide-react';
-import { Card, Typography } from 'antd';
-import dayjs from 'dayjs';
-import { useMemo } from 'react';
+import { createStyles } from "antd-style";
+import { Sun, Cloud, CloudRain } from "lucide-react";
+import { Card, Typography } from "antd";
+import dayjs from "dayjs";
+import { useMemo } from "react";
 
 interface IWeatherData {
   location: string;
-  weather: 'sunny' | 'rainy' | 'cloudy';
+  weather: "sunny" | "rainy" | "cloudy";
   temperature: number;
   date: string;
 }
-
 
 const useStyles = createStyles(({ token, css }) => ({
   container: css`
     width: 100%;
     max-width: 320px;
     border-radius: 20px;
-    background: linear-gradient(135deg, #6B73FF 0%, #000DFF 100%);
+    background: linear-gradient(135deg, #6b73ff 0%, #000dff 100%);
     color: white;
     overflow: hidden;
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
@@ -69,7 +68,7 @@ const useStyles = createStyles(({ token, css }) => ({
   mainIcon: css`
     font-size: 48px;
     margin-bottom: 16px;
-    filter: drop-shadow(0 4px 4px rgba(0,0,0,0.2));
+    filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.2));
   `,
   condition: css`
     font-size: 16px;
@@ -89,7 +88,7 @@ const useStyles = createStyles(({ token, css }) => ({
     align-items: center;
     padding: 12px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    
+
     &:last-child {
       border-bottom: none;
       padding-bottom: 4px;
@@ -114,16 +113,22 @@ const useStyles = createStyles(({ token, css }) => ({
     width: 40px;
     text-align: right;
     color: white !important;
-  `
+  `,
 }));
 
-const WeatherIcon = ({ type, className }: { type: string, className?: string }) => {
+const WeatherIcon = ({
+  type,
+  className,
+}: {
+  type: string;
+  className?: string;
+}) => {
   switch (type) {
-    case 'sunny':
+    case "sunny":
       return <Sun className={className} />;
-    case 'rainy':
+    case "rainy":
       return <CloudRain className={className} />;
-    case 'cloudy':
+    case "cloudy":
       return <Cloud className={className} />;
     default:
       return <Sun className={className} />;
@@ -132,10 +137,14 @@ const WeatherIcon = ({ type, className }: { type: string, className?: string }) 
 
 const getWeatherLabel = (type: string) => {
   switch (type) {
-    case 'sunny': return '晴朗';
-    case 'rainy': return '雨天';
-    case 'cloudy': return '多云';
-    default: return type;
+    case "sunny":
+      return "晴朗";
+    case "rainy":
+      return "雨天";
+    case "cloudy":
+      return "多云";
+    default:
+      return type;
   }
 };
 
@@ -145,10 +154,9 @@ export default function Weather(props) {
     try {
       return JSON.parse(JSON.parse(props.data.content[1].data.output));
     } catch (error) {
-      return []
+      return [];
     }
-  }, props.data)
-
+  }, props.data);
 
   if (!data?.length) return null;
   const current = data[0];
@@ -157,10 +165,12 @@ export default function Weather(props) {
     <Card className={styles.container} bordered={false}>
       <div className={styles.header}>
         <div>
-          <Typography.Text className={styles.location}>{current.location}</Typography.Text>
+          <Typography.Text className={styles.location}>
+            {current.location}
+          </Typography.Text>
           <br />
           <Typography.Text className={styles.date}>
-            {dayjs(current.date).format('MM月DD日 dddd')}
+            {dayjs(current.date).format("MM月DD日 dddd")}
           </Typography.Text>
         </div>
       </div>
@@ -168,7 +178,9 @@ export default function Weather(props) {
       <div className={styles.mainWeather}>
         <WeatherIcon type={current.weather} className={styles.mainIcon} />
         <div className={styles.tempContainer}>
-          <Typography.Text className={styles.temperature}>{current.temperature}</Typography.Text>
+          <Typography.Text className={styles.temperature}>
+            {current.temperature}
+          </Typography.Text>
           <Typography.Text className={styles.degree}>°C</Typography.Text>
         </div>
         <Typography.Text className={styles.condition}>
@@ -180,7 +192,7 @@ export default function Weather(props) {
         {forecast.map((item, index) => (
           <div key={index} className={styles.forecastItem}>
             <Typography.Text className={styles.forecastDay}>
-              {dayjs(item.date).format('ddd')}
+              {dayjs(item.date).format("ddd")}
             </Typography.Text>
             <WeatherIcon type={item.weather} className={styles.forecastIcon} />
             <Typography.Text className={styles.forecastTemp}>
