@@ -296,7 +296,7 @@ python -m pip install asyncio -i https://mirrors.aliyun.com/pypi/simple/
 
 
 ```python
-from agentscope_runtime.sandbox.box.cloud_api.cloud_computer_sandbox import CloudComputerSandbox
+from agentscope_runtime.sandbox import CloudComputerSandbox
 
 sandbox = CloudComputerSandbox(
     desktop_id="your_desktop_id"
@@ -318,7 +318,7 @@ print(f"screenshot result: {result_screenshot}")
 ### 4. 直接使用云手机沙箱
 
 ```python
-from agentscope_runtime.sandbox.box.cloud_api.cloud_phone_sandbox import CloudPhoneSandbox
+from agentscope_runtime.sandbox import CloudPhoneSandbox
 
 sandbox = CloudPhoneSandbox(
     instance_id="your_instance_id"

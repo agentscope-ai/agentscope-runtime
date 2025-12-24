@@ -5,10 +5,10 @@ import logging
 from pathlib import Path
 from dotenv import load_dotenv
 from agentscope_runtime.sandbox.enums import SandboxType
-from agentscope_runtime.sandbox.box.cloud_api.cloud_computer_sandbox import (
+from agentscope_runtime.sandbox import (
     CloudComputerSandbox,
 )
-from agentscope_runtime.sandbox.box.cloud_api.cloud_phone_sandbox import (
+from agentscope_runtime.sandbox import (
     CloudPhoneSandbox,
 )
 from agentscope_runtime.engine.services.sandbox import SandboxService

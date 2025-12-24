@@ -246,6 +246,89 @@ with AgentbaySandbox(
 - Automatic session lifecycle management
 - Direct API communication with cloud service
 
+
+
+**CloudApiSandbox (CloudComputerSandbox/CloudPhoneSandbox)**: A GUI sandbox environment built on Alibaba Cloud's Cloud Desktop and Cloud Phone API services, allowing users to remotely control cloud environments (currently only supports Windows desktop environment or Android environment).
+* Note: Since it involves related cloud resources, you need to create Cloud Desktop and Cloud Phone instances in the Alibaba Cloud console before use, as well as configure the corresponding environment variables. See the documentation below for details.
+* [ CloudApi Sandbox Detailed Usage Documentation](../../../examples/cloud_api_sandbox/README.md)
+```{code-cell}
+from agentscope_runtime.sandbox import CloudComputerSandbox
+
+sandbox = CloudComputerSandbox(
+    desktop_id="your_desktop_id"
+)
+
+# Run PowerShell command
+result = sandbox.call_tool("run_shell_command", {"command": "echo Hello World"})
+print(result["output"])
+
+# Screenshot
+result_screenshot = sandbox.call_tool(
+                "screenshot",
+                {"file_name": "screenshot.png"},
+            )
+print(f"screenshot result: {result_screenshot}")
+```
+```{code-cell}
+from agentscope_runtime.sandbox import CloudPhoneSandbox
+
+sandbox = CloudPhoneSandbox(
+    instance_id="your_instance_id"
+)
+
+# Click screen coordinates
+result = sandbox.call_tool(
+                "click",
+                {
+                    "x1": 151,
+                    "y1": 404,
+                    "x2": 151,
+                    "y2": 404,
+                    "width": 716,
+                    "height": 1280
+                }
+            )
+
+# Screenshot
+result_screenshot = sandbox.call_tool(
+                "screenshot",
+                {"file_name": "screenshot.png"},
+            )
+print(f"screenshot result: {result_screenshot}")
+```
+
+**CloudApi Sandbox Features:**：
+- No local Docker required, fully cloud-based
+- Supports multiple environment types (currently supports Windows desktop environment or Android environment only)
+- Remotely control cloud resource lifecycle and management
+- Direct API communication with cloud services
+
+
+**E2B Desktop Sandbox (E2bSandBox)**: A GUI sandbox environment built on E2B cloud desktop services, allowing users to remotely control desktop environments on the cloud (Linux).
+* Note: Before use, you need to configure the E2B_API_KEY environment variable. For detailed acquisition methods and usage, refer to the documentation below.
+* [ E2B Sandbox Detailed Usage Documentation](../../../examples/e2b_sandbox/README.md)
+```{code-cell}
+import os
+from agentscope_runtime.sandbox import E2bSandBox
+
+sandbox = E2bSandBox()
+
+# Run shell command
+result = sandbox.call_tool("run_shell_command", {"command": "echo Hello World"})
+print(result["output"])
+
+# Screenshot
+result_screenshot = sandbox.call_tool(
+                "screenshot",
+                {"file_path": f"{os.getcwd()}/screenshot.png"},
+            )
+print(f"screenshot result: {result_screenshot}")
+```
+**E2B Sandbox Features:**：
+- No local Docker required, fully cloud-based
+- Automatic resource lifecycle management
+- Direct API communication with cloud services
+
 ```{note}
 More sandbox types are under development—stay tuned!
 ```

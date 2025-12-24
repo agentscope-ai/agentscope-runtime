@@ -116,7 +116,8 @@ pip install "agentscope-runtime[ext]"
 ### 2. 直接使用 E2B 桌面沙箱
 
 ```python
-from agentscope_runtime.sandbox.box.e2b.e2b_sandbox import E2bSandBox
+import os
+from agentscope_runtime.sandbox import E2bSandBox
 
 sandbox = E2bSandBox()
 

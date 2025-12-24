@@ -24,7 +24,7 @@ In the course of agent execution, typical roles of the sandbox service include:
 - **Connecting to existing environments**: In multi-turn conversations, connect the agent to a previously created sandbox to continue operations.
 - **Tool invocation**: Provide callable methods (such as `browser_navigate`, `browser_take_screenshot`, etc.) that can be registered as tools in an agent.
 - **Releasing environments**: Release the corresponding environment resources when the session ends or requirements change.
-- **Multi-type support**: Supports different types of sandboxes (`BASE`, `BROWSER`, `CODE`, `AGENTBAY`, etc.).
+- **Multi-type support**: Supports different types of sandboxes (`BASE`, `BROWSER`, `CODE`, `AGENTBAY`, `CLOUD_COMPUTER`,`CLOUD_PHONE`,`E2B` etc.).
 
 In different implementations, sandbox services mainly differ in:
 **running modes** (embedded/remote), **supported types**, **management methods**, and **extensibility**.
@@ -87,17 +87,20 @@ for tool in [
 
 ### Supported Sandbox Types
 
-| Type Value   | Description                                  | Common Usage Examples                                        |
-| ------------ | -------------------------------------------- | ------------------------------------------------------------ |
-| `DUMMY`      | Null implementation / placeholder sandbox    | Test workflows, simulate sandbox APIs without actual execution |
-| `BASE`       | Basic sandbox environment                    | General tool execution environment                           |
-| `BROWSER`    | Browser sandbox                              | Web navigation, screenshots, data crawling                   |
-| `FILESYSTEM` | File system sandbox                          | Reading/writing files in a secure, isolated file system       |
-| `GUI`        | Graphical interface sandbox                  | Interacting with GUI apps (clicking, typing, screenshots)    |
-| `MOBILE`     | Mobile device emulation sandbox              | Simulating mobile app operations and touch interactions      |
-| `APPWORLD`   | App world emulation sandbox                  | Simulating cross-app interactions in a virtual environment   |
-| `BFCL`       | BFCL (domain-specific execution environment) | Running business process scripts (depends on implementation) |
-| `AGENTBAY`   | Session-based AgentBay sandbox               | Dedicated for multi-agent collaboration or complex task orchestration |
+| Type Value       | Description                                  | Common Usage Examples                                        |
+|------------------|----------------------------------------------| ------------------------------------------------------------ |
+| `DUMMY`          | Null implementation / placeholder sandbox    | Test workflows, simulate sandbox APIs without actual execution |
+| `BASE`           | Basic sandbox environment                    | General tool execution environment                           |
+| `BROWSER`        | Browser sandbox                              | Web navigation, screenshots, data crawling                   |
+| `FILESYSTEM`     | File system sandbox                          | Reading/writing files in a secure, isolated file system       |
+| `GUI`            | Graphical interface sandbox                  | Interacting with GUI apps (clicking, typing, screenshots)    |
+| `MOBILE`         | Mobile device emulation sandbox              | Simulating mobile app operations and touch interactions      |
+| `APPWORLD`       | App world emulation sandbox                  | Simulating cross-app interactions in a virtual environment   |
+| `BFCL`           | BFCL (domain-specific execution environment) | Running business process scripts (depends on implementation) |
+| `AGENTBAY`       | Session-based AgentBay sandbox               | Dedicated for multi-agent collaboration or complex task orchestration |
+| `CLOUD_COMPUTER` | Cloud computer sandbox                       | Dedicated for multi-agent collaboration or complex task orchestration |
+| `CLOUD_PHONE`    | Cloud phone sandbox                          | Dedicated for multi-agent collaboration or complex task orchestration |
+| `E2B`            | E2B sandbox                                  | Dedicated for multi-agent collaboration or complex task orchestration |
 
 ## Example: Switching Running Modes
 

@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 from dotenv import load_dotenv
 from agentscope_runtime.sandbox.enums import SandboxType
-from agentscope_runtime.sandbox.box.e2b.e2b_sandbox import (
+from agentscope_runtime.sandbox import (
     E2bSandBox,
 )
 from agentscope_runtime.engine.services.sandbox import SandboxService

@@ -78,6 +78,34 @@ Sandbox模块提供了隔离环境以安全地运行代码。
    :no-index:
 ```
 
+### CloudPhoneSandbox
+```{eval-rst}
+.. autoclass:: agentscope_runtime.sandbox.CloudPhoneSandbox
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+```
+
+### CloudComputerSandbox
+```{eval-rst}
+.. autoclass:: agentscope_runtime.sandbox.CloudComputerSandbox
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+```
+
+### E2bSandBox
+```{eval-rst}
+.. autoclass:: agentscope_runtime.sandbox.E2bSandBox
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+```
+
+
 ## 自定义与示例
 ```{eval-rst}
 .. automodule:: agentscope_runtime.sandbox.custom.custom_sandbox
