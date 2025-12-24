@@ -64,6 +64,56 @@ agent_app.run(host="127.0.0.1", port=8090)
 
 ------
 
+## A2A Extension Field Configuration
+
+**What it does**
+
+Extend the configuration of the agent's A2A (Agent-to-Agent) protocol information and runtime-related fields through the `a2a_config` parameter.
+
+**Key parameter**
+
+- `a2a_config`: Optional parameter, supports `AgentCardWithRuntimeConfig` object.
+
+**Configuration content**
+
+`a2a_config` supports configuring two types of fields:
+
+1. **AgentCard protocol fields**: Passed through the `agent_card` field, containing skills, transport protocols, input/output modes, etc.
+2. **Runtime fields**: Top-level fields, containing service registration and discovery (Registry), timeout settings, service endpoints, etc.
+
+**Example**
+
+```{code-cell}
+from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.deployers.adapter.a2a import (
+    AgentCardWithRuntimeConfig,
+)
+
+agent_app = AgentApp(
+    app_name="MyAgent",
+    app_description="My agent description",
+    a2a_config=AgentCardWithRuntimeConfig(
+        agent_card={
+            "name": "MyAgent",
+            "description": "My agent description",
+            "skills": [...],  # Agent skills list
+            "default_input_modes": ["text"],
+            "default_output_modes": ["text"],
+            # ... other protocol fields
+        },
+        registry=[...],  # Service registration and discovery
+        task_timeout=120,  # Task timeout settings
+        # ... other configuration fields
+    ),
+)
+```
+
+**Detailed documentation**
+
+For complete field descriptions, configuration methods, and usage examples, please refer to the {doc}`a2a_registry` documentation.
+
+------
+
 ## Streaming Output (SSE)
 
 **Purpose**
@@ -92,9 +142,12 @@ curl -N \
 
 ```bash
 data: {"sequence_number":0,"object":"response","status":"created", ... }
-data: {"sequence_number":2,"object":"content","status":"in_progress","text":"Hello" }
-data: {"sequence_number":3,"object":"content","status":"in_progress","text":" world!" }
-data: {"sequence_number":4,"object":"message","status":"completed","text":"Hello world!" }
+data: {"sequence_number":1,"object":"response","status":"in_progress", ... }
+data: {"sequence_number":2,"object":"message","status":"in_progress", ... }
+data: {"sequence_number":3,"object":"content","status":"in_progress","text":"Hello" }
+data: {"sequence_number":4,"object":"content","status":"in_progress","text":" World!" }
+data: {"sequence_number":5,"object":"message","status":"completed","text":"Hello World!" }
+data: {"sequence_number":6,"object":"response","status":"completed", ... }
 ```
 
 ------
@@ -190,27 +243,6 @@ curl http://localhost:8090/readiness
 curl http://localhost:8090/liveness
 curl http://localhost:8090/
 ```
-
-------
-
-## Middleware Extensions
-
-**Purpose**
-
-Inject logic before or after handling each request—for logging, auth, rate limiting, etc.
-
-```{code-cell}
-@app.middleware("http")
-async def custom_logger(request, call_next):
-    print(f"Request: {request.method} {request.url}")
-    response = await call_next(request)
-    return response
-```
-
-AgentApp ships with:
-
-- Request logging middleware
-- Built-in CORS support
 
 ------
 
@@ -507,3 +539,6 @@ await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```
 
 See {doc}`advanced_deployment` for additional deployers (Kubernetes, ModelStudio, AgentRun, etc.) and more configuration tips.
+
+AgentScope Runtime provides serverless deployment options, including deploying agents to ModelStudio(FC) and AgentRun.
+See {doc}`advanced_deployment` for more configuration details about ModelStudio and AgentRun.

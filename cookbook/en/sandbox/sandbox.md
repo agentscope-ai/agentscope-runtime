@@ -14,12 +14,12 @@ kernelspec:
 
 # Sandbox
 
-AgentScope Runtime's Sandbox is a versatile tool that provides a **secure** and **isolated** environment for a wide range of operations, including tool execution, browser automation, and file system operations. This tutorial will empower you to set up the tool sandbox dependency and run tools in an environment that you can tailor to your specific needs.
+AgentScope Runtime's Sandbox is a versatile tool that provides a **secure** and **isolated** environment for a wide range of operations, including tool execution, browser automation, and file system operations. This tutorial will empower you to set up the tool sandbox dependency and run tools in an environment tailored to your specific needs.
 
 ## Prerequisites
 
 ```{note}
-The current sandbox environment utilizes Docker for default isolation. In addition, we offer support for Kubernetes (K8s) as a remote service backend. Looking ahead, we plan to incorporate more third-party hosting solutions in future releases.
+The current sandbox environment utilises Docker for default isolation. In addition, we offer support for Kubernetes (K8S) as a remote service backend. Looking ahead, we plan to incorporate more third-party hosting solutions in future releases.
 ```
 
 
@@ -107,9 +107,9 @@ If you prefer to build the Docker images yourself or need custom modifications, 
 
 ### Create a Sandbox
 
-The previous section introduced tool-centered usage methods, while this section introduces sandbox-centered usage methods.
+The previous section introduced tool-centred usage methods, while this section introduces sandbox-centred usage methods.
 
-You can create different types of sandboxes via `sandbox` sdk:
+You can create different types of sandboxes via the `sandbox` SDK:
 
 * **Base Sandbox**: Use for running **Python code** or **shell commands** in an isolated environment.
 
@@ -172,6 +172,8 @@ with BrowserSandbox() as box:
 
 * **Mobile Sandbox**: A sandbox based on an Android emulator, allowing for **mobile operations** such as tapping, swiping, inputting text, and taking screenshots.
 
+  <img src="https://img.alicdn.com/imgextra/i4/O1CN01yPnBC21vOi45fLy7V_!!6000000006163-2-tps-544-865.png" alt="Mobile Sandbox" height="500">
+
   - **Prerequisites**
 
     - **Linux Host**:
@@ -196,7 +198,7 @@ with MobileSandbox() as box:
     # By default, pulls 'agentscope/runtime-sandbox-mobile:latest' from DockerHub
     print(box.list_tools()) # List all available tools
     print(box.mobile_get_screen_resolution()) # Get the screen resolution
-    print(box.mobile_tap(x=500, y=1000)) # Tap at coordinate (500, 1000)
+    print(box.mobile_tap([500, 1000])) # Tap at coordinate (500, 1000)
     print(box.mobile_input_text("Hello from AgentScope!")) # Input text
     print(box.mobile_key_event(3)) # Sends a HOME key event (KeyCode: 3)
     screenshot_result = box.mobile_get_screenshot() # Get the current screenshot
@@ -250,7 +252,7 @@ More sandbox types are under development—stay tuned!
 
 ### Add MCP Server to Sandbox
 
-MCP (Model Context Protocol) is a standardized protocol that enables AI applications to connect to external data sources and tools securely. By integrating MCP servers into your sandbox, you can extend the sandbox's capabilities with specialized tools and services without compromising security.
+MCP (Model Context Protocol) is a standardised protocol that enables AI applications to securely connect to external data sources and tools. By integrating MCP servers into your sandbox, you can extend the sandbox's capabilities with specialised tools and services without compromising security.
 
 The sandbox supports integrating MCP servers via the `add_mcp_servers` method. Once added, you can discover available tools using `list_tools` and execute them with `call_tool`. Here's an example of adding a time server that provides timezone-aware time functions:
 
@@ -297,7 +299,7 @@ Remote deployment is beneficial for:
 For more advanced usage of sandbox-server, please refer to {doc}`advanced` for detailed instructions.
 ```
 
-You can start the sandbox server on your local machine or different machines for convenient remote access. You should start a sandbox server via:
+You can start the sandbox server on your local machine or on different machines for convenient remote access. You should start a sandbox server via:
 
 ```bash
 runtime-sandbox-server
@@ -313,7 +315,7 @@ with BaseSandbox(base_url="http://your_IP_address:8000") as box:
 
 ### Expose Sandbox as an MCP Server
 
-Configure the local Sandbox Runtime as an MCP server named `sandbox`, so it can be invoked by MCP-compatible clients to safely execute command from sandbox via a remote sandbox server `http://127.0.0.1:8000`.
+Configure the local Sandbox Runtime as an MCP server named `sandbox`, so it can be invoked by MCP-compatible clients to safely execute commands from the sandbox via a remote sandbox server `http://127.0.0.1:8000`.
 
 ```json
 {
@@ -346,7 +348,7 @@ The `runtime-sandbox-mcp` command accepts the following arguments:
 
 ### Managing Sandboxes with `SandboxService`
 
-`SandboxService` provides a unified sandbox management interface, allowing management of sandbox environments for different user sessions through `session_id` and `user_id`. Using `SandboxService` lets you better control the lifecycle of a sandbox and enables sandbox reuse.
+`SandboxService` provides a unified sandbox management interface, enabling management of sandbox environments across different user sessions via `session_id` and `user_id`. Using `SandboxService` lets you better control a sandbox's lifecycle and enables sandbox reuse.
 
 ```{code-cell}
 from agentscope_runtime.engine.services.sandbox import SandboxService
@@ -524,7 +526,7 @@ await main()
 |                        | `browser_handle_dialog(accept: bool, promptText: str)`       | Handle browser dialogs (alert, confirm, prompt)              |
 | **Computer Use Tools** | `computer_use(action: str, coordinate: list, text: str)`     | Use a mouse and keyboard to interact with a desktop GUI, supporting actions like moving the cursor, clicking, typing, and taking screenshots |
 | **Mobile Tools**   | `mobile_get_screen_resolution()`                                   | Get the screen resolution of the mobile device                     |
-|                    | `mobile_tap(x: int, y: int)`                                       | Tap at a specific coordinate on the screen                         |
+|                    | `mobile_tap(coordinate: List[int])`                                       | Tap at a specific coordinate on the screen                         |
 |                    | `mobile_swipe(start: List[int], end: List[int], duration: int = None)` | Perform a swipe gesture on the screen from a start point to an end point |
 |                    | `mobile_input_text(text: str)`                                     | Input a text string into the currently focused UI element          |
 |                    | `mobile_key_event(code: int \| str)`                                | Send a key event to the device (e.g., HOME, BACK)                  |

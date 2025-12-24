@@ -64,6 +64,56 @@ agent_app.run(host="127.0.0.1", port=8090)
 
 ------
 
+## A2A 扩展字段配置
+
+**功能**
+
+通过 `a2a_config` 参数扩展配置 Agent 的 A2A（Agent-to-Agent）协议信息和运行时相关字段。
+
+**关键参数**
+
+- `a2a_config`：可选参数，支持 `AgentCardWithRuntimeConfig` 对象
+
+**配置内容**
+
+`a2a_config` 支持配置两类字段：
+
+1. **AgentCard 协议字段**：通过 `agent_card` 字段传递，包含技能、传输协议、输入输出模式等
+2. **Runtime 运行时字段**：顶层字段，包含服务注册与发现（Registry）、超时设置、服务端点等
+
+**用法示例**
+
+```{code-cell}
+from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.deployers.adapter.a2a import (
+    AgentCardWithRuntimeConfig,
+)
+
+agent_app = AgentApp(
+    app_name="MyAgent",
+    app_description="My agent description",
+    a2a_config=AgentCardWithRuntimeConfig(
+        agent_card={
+            "name": "MyAgent",
+            "description": "My agent description",
+            "skills": [...],  # Agent 技能列表
+            "default_input_modes": ["text"],
+            "default_output_modes": ["text"],
+            # ... 其他协议字段
+        },
+        registry=[...],  # 服务注册与发现
+        task_timeout=120,  # 任务超时设置
+        # ... 其他配置字段
+    ),
+)
+```
+
+**详细说明**
+
+完整的字段说明、配置方法和使用示例，请参考 {doc}`a2a_registry` 文档。
+
+------
+
 ## 流式输出（SSE）
 
 **功能**
@@ -91,9 +141,12 @@ curl -N \
 
 ```bash
 data: {"sequence_number":0,"object":"response","status":"created", ... }
-data: {"sequence_number":2,"object":"content","status":"in_progress","text":"Hello" }
-data: {"sequence_number":3,"object":"content","status":"in_progress","text":" world!" }
-data: {"sequence_number":4,"object":"message","status":"completed","text":"Hello world!" }
+data: {"sequence_number":1,"object":"response","status":"in_progress", ... }
+data: {"sequence_number":2,"object":"message","status":"in_progress", ... }
+data: {"sequence_number":3,"object":"content","status":"in_progress","text":"Hello" }
+data: {"sequence_number":4,"object":"content","status":"in_progress","text":" World!" }
+data: {"sequence_number":5,"object":"message","status":"completed","text":"Hello World!" }
+data: {"sequence_number":6,"object":"response","status":"completed", ... }
 ```
 
 ------
@@ -193,29 +246,6 @@ curl http://localhost:8090/readiness
 curl http://localhost:8090/liveness
 curl http://localhost:8090/
 ```
-
-------
-
-## 中间件扩展
-
-**功能**
-
-在请求进入或完成时执行额外逻辑（例如日志、鉴权、限流）。
-
-**用法示例**
-
-```{code-cell}
-@app.middleware("http")
-async def custom_logger(request, call_next):
-    print(f"收到请求: {request.method} {request.url}")
-    response = await call_next(request)
-    return response
-```
-
-AgentApp 内置：
-
-- 请求日志中间件
-- CORS（跨域）支持
 
 ------
 
@@ -513,3 +543,6 @@ await app.deploy(LocalDeployManager(host="0.0.0.0", port=8091))
 ```
 
 更多部署选项和详细说明，请参考 {doc}`advanced_deployment` 文档。
+
+AgentScope Runtime 提供了Serverless的部署方案，您可以将您的Agent部署到 ModelStudio(FC) 或 AgentRun 上。
+参考 {doc}`advanced_deployment` 文档，查看ModelStudio和AgentRun部署部分获取更多配置详情.

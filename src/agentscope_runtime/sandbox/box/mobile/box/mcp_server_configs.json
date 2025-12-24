@@ -3,7 +3,7 @@
     "adb-control": {
       "command": "/usr/bin/node",
       "args": [
-        "/app/node_app/dist/index.js"
+        "/app/node_app/index.js"
       ]
     }
   }

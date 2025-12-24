@@ -28,7 +28,7 @@ class ImageConfig(BaseModel):
     # Package configuration
     requirements: Optional[List[str]] = None
     extra_packages: Optional[List[str]] = None
-    build_context_dir: str = "/tmp/k8s_build"
+    build_context_dir: Optional[str] = None
     endpoint_path: str = "/process"
     protocol_adapters: Optional[List] = None  # New: protocol adapters
     custom_endpoints: Optional[
@@ -40,6 +40,7 @@ class ImageConfig(BaseModel):
     port: int = 8000
     env_vars: Dict[str, str] = Field(default_factory=lambda: {})
     startup_command: Optional[str] = None
+    pypi_mirror: Optional[str] = None
 
     # Runtime configuration
     host: str = "0.0.0.0"  # Container-friendly default
@@ -171,6 +172,8 @@ class ImageFactory:
         app,
         runner: Optional[Runner],
         config: ImageConfig,
+        entrypoint: Optional[str] = None,
+        use_cache: bool = True,
     ) -> str:
         """
         Build a complete Docker image for the Runner.
@@ -181,9 +184,15 @@ class ImageFactory:
         3. Build Docker image
         4. Optionally push to registry
 
+        All temporary files are created in cwd/.agentscope_runtime/ by default.
+
         Args:
+            app: Agent app object
             runner: Runner object containing agent and managers
             config: Configuration for the image building process
+            entrypoint: Entrypoint specification (e.g., "app.py" or
+                "app.py:handler")
+            use_cache: Enable build cache (default: True)
 
         Returns:
             str: Full image name (with registry if pushed)
@@ -209,6 +218,8 @@ class ImageFactory:
                 port=config.port,
                 env_vars=config.env_vars,
                 startup_command=startup_command,
+                platform=config.platform,
+                pypi_mirror=config.pypi_mirror,
             )
 
             dockerfile_path = self.dockerfile_generator.create_dockerfile(
@@ -222,10 +233,13 @@ class ImageFactory:
             project_dir, _ = build_detached_app(
                 app=app,
                 runner=runner,
+                entrypoint=entrypoint,
                 requirements=config.requirements,
                 extra_packages=config.extra_packages,
                 output_dir=config.build_context_dir,
                 dockerfile_path=dockerfile_path,
+                use_cache=use_cache,
+                platform="k8s",
             )
             is_updated = True
             logger.info(f"Project packaged: {project_dir}")
@@ -260,6 +274,15 @@ class ImageFactory:
                     config=build_config,
                     source_updated=is_updated,
                 )
+                logger.info(f"Image built: {full_image_name}")
+
+                # make sure tag the image if not push
+                registry_full_name = self.image_builder.tag_image(
+                    full_image_name,
+                    config.registry_config,
+                )
+                logger.info(f"Image tag to: {registry_full_name}")
+
                 logger.info(f"Image built locally: {full_image_name}")
 
             return full_image_name
@@ -276,6 +299,7 @@ class ImageFactory:
         self,
         app=None,
         runner: Optional[Runner] = None,
+        entrypoint: Optional[str] = None,
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
         base_image: str = "python:3.10-slim-bookworm",
@@ -291,14 +315,20 @@ class ImageFactory:
         host: str = "0.0.0.0",
         embed_task_processor: bool = True,
         extra_startup_args: Optional[Dict[str, Union[str, int, bool]]] = None,
+        use_cache: bool = True,
+        pypi_mirror: Optional[str] = None,
         **kwargs,
     ) -> str:
         """
         Simplified interface for building Runner images.
 
+        All temporary files are created in cwd/.agentscope_runtime/ by default.
+
         Args:
             app: agent app object
             runner: Runner object
+            entrypoint: Entrypoint specification (e.g., "app.py" or
+                    "app.py:handler")
             requirements: Python requirements
             extra_packages: Additional files to include
             base_image: Docker base image
@@ -311,6 +341,8 @@ class ImageFactory:
             host: Host to bind to (default: 0.0.0.0 for containers)
             embed_task_processor: Whether to embed task processor
             extra_startup_args: Additional startup arguments
+            use_cache: Enable build cache (default: True)
+            pypi_mirror: PyPI mirror URL for pip package installation
             **kwargs: Additional configuration options
 
         Returns:
@@ -345,10 +377,11 @@ class ImageFactory:
             host=host,
             embed_task_processor=embed_task_processor,
             extra_startup_args=extra_startup_args or {},
+            pypi_mirror=pypi_mirror,
             **kwargs,
         )
 
-        return self._build_image(app, runner, config)
+        return self._build_image(app, runner, config, entrypoint, use_cache)
 
     def cleanup(self):
         """Clean up all temporary resources"""

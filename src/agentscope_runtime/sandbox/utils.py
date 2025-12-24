@@ -75,6 +75,8 @@ def dynamic_import(ext: str):
     if os.path.isfile(ext):
         module_name = os.path.splitext(os.path.basename(ext))[0]
         spec = importlib.util.spec_from_file_location(module_name, ext)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Failed to import module from file: {ext}")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module

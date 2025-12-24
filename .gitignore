@@ -58,12 +58,14 @@ Desktop.ini
 *$py.class
 uv.lock
 venv/
+.venv/
 
 # Logs
 logs/
 *.log
 /tests/integrated/test_bailian_fc_deploy/.agentdev_builds/
 /tests/integrated/test_bailian_fc_deploy/.agentscope_runtime_builds/
+.agentscope_runtime/
 
 # vibe coding
 .claude

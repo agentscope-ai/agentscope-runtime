@@ -21,29 +21,68 @@ class RedisStateService(StateService):
         self,
         redis_url: str = "redis://localhost:6379/0",
         redis_client: Optional[aioredis.Redis] = None,
+        socket_timeout: Optional[float] = 5.0,
+        socket_connect_timeout: Optional[float] = 5.0,
+        max_connections: Optional[int] = None,
+        retry_on_timeout: bool = True,
+        ttl_seconds: Optional[int] = 3600,  # 1 hour in seconds
+        health_check_interval: Optional[float] = 30.0,
+        socket_keepalive: bool = True,
     ):
+        """
+        Initialize RedisStateService.
+
+        Args:
+            redis_url: Redis connection URL
+            redis_client: Optional pre-configured Redis client
+            socket_timeout: Socket timeout in seconds (default: 5.0)
+            socket_connect_timeout: Socket connect timeout in seconds
+            (default: 5.0)
+            max_connections: Maximum number of connections in the pool
+            (default: None)
+            retry_on_timeout: Whether to retry on timeout (default: True)
+            ttl_seconds: Time-to-live in seconds for state data. If None,
+            data never expires (default: 3600, i.e., 1 hour)
+            health_check_interval: Interval in seconds for health checks on
+            idle connections (default: 30.0).
+                Connections idle longer than this will be checked before reuse.
+                Set to 0 to disable.
+            socket_keepalive: Enable TCP keepalive to prevent
+            silent disconnections (default: True)
+        """
         self._redis_url = redis_url
         self._redis = redis_client
-        self._health = False
+        self._socket_timeout = socket_timeout
+        self._socket_connect_timeout = socket_connect_timeout
+        self._max_connections = max_connections
+        self._retry_on_timeout = retry_on_timeout
+        self._ttl_seconds = ttl_seconds
+        self._health_check_interval = health_check_interval
+        self._socket_keepalive = socket_keepalive
 
     async def start(self) -> None:
-        """Initialize the Redis connection."""
+        """Starts the Redis connection with proper timeout and connection
+        pool settings."""
         if self._redis is None:
             self._redis = aioredis.from_url(
                 self._redis_url,
                 decode_responses=True,
+                socket_timeout=self._socket_timeout,
+                socket_connect_timeout=self._socket_connect_timeout,
+                max_connections=self._max_connections,
+                retry_on_timeout=self._retry_on_timeout,
+                health_check_interval=self._health_check_interval,
+                socket_keepalive=self._socket_keepalive,
             )
-        self._health = True
 
     async def stop(self) -> None:
-        """Close the Redis connection."""
+        """Closes the Redis connection."""
         if self._redis:
-            await self._redis.close()
+            await self._redis.aclose()
             self._redis = None
-        self._health = False
 
     async def health(self) -> bool:
-        """Service health check."""
+        """Checks the health of the service."""
         if not self._redis:
             return False
         try:
@@ -81,6 +120,11 @@ class RedisStateService(StateService):
                 round_id = 1
 
         await self._redis.hset(key, round_id, json.dumps(state))
+
+        # Set TTL for the state key if configured
+        if self._ttl_seconds is not None:
+            await self._redis.expire(key, self._ttl_seconds)
+
         return round_id
 
     async def export_state(
@@ -110,4 +154,13 @@ class RedisStateService(StateService):
 
         if state_json is None:
             return None
-        return json.loads(state_json)
+
+        # Refresh TTL when accessing the state
+        if self._ttl_seconds is not None:
+            await self._redis.expire(key, self._ttl_seconds)
+
+        try:
+            return json.loads(state_json)
+        except json.JSONDecodeError:
+            # Return None for corrupted state data instead of raising exception
+            return None

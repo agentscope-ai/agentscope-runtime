@@ -6,6 +6,7 @@
 [![PyPI](https://img.shields.io/pypi/v/agentscope-runtime?label=PyPI&color=brightgreen&logo=python)](https://pypi.org/project/agentscope-runtime/)
 [![Downloads](https://static.pepy.tech/badge/agentscope-runtime)](https://pepy.tech/project/agentscope-runtime)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg?logo=python&label=Python)](https://python.org)
+[![Last Commit](https://img.shields.io/github/last-commit/agentscope-ai/agentscope-runtime)](https://github.com/agentscope-ai/agentscope-runtime)
 [![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=License)](LICENSE)
 [![Code Style](https://img.shields.io/badge/code%20style-black-black.svg?logo=python&label=CodeStyle)](https://github.com/psf/black)
 [![GitHub Stars](https://img.shields.io/github/stars/agentscope-ai/agentscope-runtime?style=flat&logo=github&color=yellow&label=Stars)](https://github.com/agentscope-ai/agentscope-runtime/stargazers)
@@ -49,7 +50,15 @@
 
 > [!NOTE]
 >
-> **About Framework-Agnostic**: Currently, AgentScope Runtime supports the **AgentScope** framework. We plan to extend compatibility to more agent development frameworks in the future.
+> **About Framework-Agnostic**: Currently, AgentScope Runtime supports the **AgentScope** framework. We plan to extend compatibility to more agent development frameworks in the future. This table shows the current version’s adapter support for different frameworks. The level of support for each functionality varies across frameworks:
+>
+> | Framework/Feature                                            | Message/Event | Tool | Service |
+> | ------------------------------------------------------------ | ------------- | ---- | ------- |
+> | AgentScope                                                   | ✅             | ✅    | ✅       |
+> | [LangGraph](https://runtime.agentscope.io/en/langgraph_guidelines.html) | ✅             | 🚧    | 🚧       |
+> | AutoGen                                                      | 🚧             | ✅    | 🚧       |
+> | Microsoft Agent Framework                                    | 🚧             | 🚧    | 🚧       |
+> | [Agno](https://runtime.agentscope.io/en/agno_guidelines.html) | ✅             | ✅    | 🚧       |
 
 ---
 
@@ -59,7 +68,7 @@ Welcome to join our community on
 
 | [Discord](https://discord.gg/eYMpfnkG8h)                     | DingTalk                                                     |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| <img src="https://gw.alicdn.com/imgextra/i1/O1CN01hhD1mu1Dd3BWVUvxN_!!6000000000238-2-tps-400-400.png" width="100" height="100"> | <img src="https://img.alicdn.com/imgextra/i1/O1CN01LxzZha1thpIN2cc2E_!!6000000005934-2-tps-497-477.png" width="100" height="100"> |
+| <img src="https://gw.alicdn.com/imgextra/i1/O1CN01hhD1mu1Dd3BWVUvxN_!!6000000000238-2-tps-400-400.png" width="100" height="100"> | <img src="https://img.alicdn.com/imgextra/i4/O1CN014mhqFq1ZlgNuYjxrz_!!6000000003235-2-tps-400-400.png" width="100" height="100"> |
 
 ---
 
@@ -236,9 +245,11 @@ You’ll see output streamed in **Server-Sent Events (SSE)** format:
 ```bash
 data: {"sequence_number":0,"object":"response","status":"created", ... }
 data: {"sequence_number":1,"object":"response","status":"in_progress", ... }
-data: {"sequence_number":2,"object":"content","status":"in_progress","text":"The" }
-data: {"sequence_number":3,"object":"content","status":"in_progress","text":" capital of France is Paris." }
-data: {"sequence_number":4,"object":"message","status":"completed","text":"The capital of France is Paris." }
+data: {"sequence_number":2,"object":"message","status":"in_progress", ... }
+data: {"sequence_number":3,"object":"content","status":"in_progress","text":"The" }
+data: {"sequence_number":4,"object":"content","status":"in_progress","text":" capital of France is Paris." }
+data: {"sequence_number":5,"object":"message","status":"completed","text":"The capital of France is Paris." }
+data: {"sequence_number":6,"object":"response","status":"completed", ... }
 ```
 
 ### Sandbox Example
@@ -322,6 +333,8 @@ with FilesystemSandbox() as box:
 
 Provides a **sandboxed Android emulator environment** that allows executing various mobile operations, such as tapping, swiping, inputting text, and taking screenshots.
 
+<img src="https://img.alicdn.com/imgextra/i4/O1CN01yPnBC21vOi45fLy7V_!!6000000006163-2-tps-544-865.png" alt="Mobile Sandbox" height="500">
+
 ##### Prerequisites
 
 - **Linux Host**:
@@ -343,7 +356,7 @@ with MobileSandbox() as box:
     # By default, pulls 'agentscope/runtime-sandbox-mobile:latest' from DockerHub
     print(box.list_tools()) # List all available tools
     print(box.mobile_get_screen_resolution()) # Get the screen resolution
-    print(box.mobile_tap(x=500, y=1000)) # Tap at coordinate (500, 1000)
+    print(box.mobile_tap([500, 1000])) # Tap at coordinate (500, 1000)
     print(box.mobile_input_text("Hello from AgentScope!")) # Input text
     print(box.mobile_key_event(3)) # Sends a HOME key event (KeyCode: 3)
     screenshot_result = box.mobile_get_screenshot() # Get the current screenshot
@@ -419,6 +432,22 @@ agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-ba
 
 ---
 
+#### Serverless Sandbox Deployment
+
+AgentScope Runtime also supports serverless deployment, which is suitable for running sandboxes in a serverless environment,
+[Alibaba Cloud Function Compute (FC)](https://help.aliyun.com/zh/functioncompute/fc/) or [Alibaba Cloud AgentRun](https://docs.agent.run/).
+
+First, please refer to the [documentation](https://runtime.agentscope.io/en/sandbox/advanced.html#optional-function-compute-fc-settings) to configure the serverless environment variables.
+Make `CONTAINER_DEPLOYMENT` to `fc` or `agentrun` to enable serverless deployment.
+
+Then, start a sandbox server, use the `--config` option to specify a serverless environment setup:
+
+```bash
+# This command will load the settings defined in the `custom.env` file
+runtime-sandbox-server --config fc.env
+```
+After the server starts, you can access the sandbox server at baseurl `http://localhost:8000` and invoke sandbox tools described above.
+
 ## 📚 Cookbook
 
 - **[📖 Cookbook](https://runtime.agentscope.io/en/intro.html)**: Comprehensive tutorials
@@ -469,6 +498,40 @@ response = client.responses.create(
 print(response)
 ```
 
+Besides, `DeployManager` also supports serverless deployments, such as deploying your agent app
+to [ModelStudio](https://bailian.console.aliyun.com/?admin=1&tab=doc#/doc/?type=app&url=2983030)
+or [AgentRun](https://docs.agent.run/).
+
+```python
+from agentscope_runtime.engine.deployers import ModelStudioDeployManager
+# Create deployment manager
+deployer = ModelstudioDeployManager(
+    oss_config=OSSConfig(
+        access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+        access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+    ),
+    modelstudio_config=ModelstudioConfig(
+        workspace_id=os.environ.get("MODELSTUDIO_WORKSPACE_ID"),
+        access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+        access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+        dashscope_api_key=os.environ.get("DASHSCOPE_API_KEY"),
+    ),
+)
+
+# Deploy to ModelStudio
+result = await app.deploy(
+    deployer,
+    deploy_name="agent-app-example",
+    telemetry_enabled=True,
+    requirements=["agentscope", "fastapi", "uvicorn"],
+    environment={
+        "PYTHONPATH": "/app",
+        "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+    },
+)
+```
+
+For more advanced serverless deployment guides, please refer to the [documentation](https://runtime.agentscope.io/en/advanced_deployment.html#method-4-modelstudio-deployment).
 
 ---
 
@@ -519,7 +582,7 @@ limitations under the License.
 
 ## Contributors ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-23-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-29-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/emoji-key/)):
@@ -559,6 +622,14 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/e
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/iSample"><img src="https://avatars.githubusercontent.com/u/12894421?v=4?s=100" width="100px;" alt="iSample"/><br /><sub><b>iSample</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=iSample" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=iSample" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/XiuShenAl"><img src="https://avatars.githubusercontent.com/u/242360128?v=4?s=100" width="100px;" alt="XiuShenAl"/><br /><sub><b>XiuShenAl</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=XiuShenAl" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=XiuShenAl" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/k-farruh"><img src="https://avatars.githubusercontent.com/u/33511681?v=4?s=100" width="100px;" alt="Farruh Kushnazarov"/><br /><sub><b>Farruh Kushnazarov</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=k-farruh" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/fengxsong"><img src="https://avatars.githubusercontent.com/u/7008971?v=4?s=100" width="100px;" alt="fengxsong"/><br /><sub><b>fengxsong</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3Afengxsong" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://m4n5ter.github.io"><img src="https://avatars.githubusercontent.com/u/68144809?v=4?s=100" width="100px;" alt="Wang"/><br /><sub><b>Wang</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=M4n5ter" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3AM4n5ter" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/qiacheng7"><img src="https://avatars.githubusercontent.com/u/223075252?v=4?s=100" width="100px;" alt="qiacheng7"/><br /><sub><b>qiacheng7</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=qiacheng7" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=qiacheng7" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://xieyxclack.github.io/"><img src="https://avatars.githubusercontent.com/u/31954383?v=4?s=100" width="100px;" alt="Yuexiang XIE"/><br /><sub><b>Yuexiang XIE</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/pulls?q=is%3Apr+reviewed-by%3Axieyxclack" title="Reviewed Pull Requests">👀</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/RTsama"><img src="https://avatars.githubusercontent.com/u/100779257?v=4?s=100" width="100px;" alt="RTsama"/><br /><sub><b>RTsama</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3ARTsama" title="Bug reports">🐛</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=RTsama" title="Code">💻</a></td>
     </tr>
   </tbody>
   <tfoot>

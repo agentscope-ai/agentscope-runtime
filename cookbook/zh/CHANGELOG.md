@@ -1,5 +1,93 @@
 # CHANGELOG
 
+## v1.0.3
+
+AgentScope Runtime v1.0.3 在保持 v1.x 框架可扩展性与一致性的基础上，带来了 **A2A 协议注册支持**、更完整的异常与 Token 使用统计机制、新的天气组件与 UI 交互能力，以及多个 Sandbox、Redis、Agent 状态的修复与优化。同时改进了部署构建（Sandbox Image Building）、远程桌面自定义 URL 支持、PYPI 镜像配置等功能。
+
+### Added
+
+- **A2A Registry 支持**
+  新增对 Google A2A 协议的注册能力，可与 AgentScope-Runtime 原生集成，实现跨平台智能体注册与发现。
+- **Token 使用统计（即使报错）**
+  新增功能可在模型调用过程中，即便抛出异常，也获取到本次调用的 Token 使用量，便于计费与调试。
+- **Sandbox 镜像构建 Actions**
+  在 CI/CD 中新增构建 Sandbox 镜像的 GitHub Actions，方便分发与部署自动化。
+
+### Changed
+
+- **部署 PYPI 镜像配置优化**
+  `pypi_mirror` 改为可指定输入并默认为 `None`，便于自定义 Python 包源。
+
+### Fixed
+
+- **RedisMapping 扫描键解析问题**
+  修复 `RedisMapping.scan` 在 `decode_responses` 模式下的键解析错误。
+- **Redis 异步客户端关闭方式**
+  调整为使用 `aclose` 关闭 Redis 异步客户端，避免`warning`。
+- **AgentBay 版本修复**
+  修复 `agentbay` 版本依赖问题，保证运行时一致性。
+- **VNC 远程桌面自定义 URL 前缀支持**
+  支持 VNC Remote Desktop 使用自定义 URL 前缀，提升部署灵活性。
+- **会话与记忆热修复**
+  新增 `Redis Session` 与 `Redis Memory` 过期时间。
+
+## v1.0.2
+
+本次更新为 AgentScope Runtime v1.0.2，带来了 LangGraph 与 Agno 在 v1.x 框架下的支持、工具调用优化、移动端沙箱 UI 增强，以及多个兼容性与稳定性修复。
+同时改进了 CLI 工具、MCP Tool 调用处理，并统一了业务异常管理。
+
+### Added
+
+- **LangGraph 支持**：新增对 LangGraph 框架的原生兼容。
+- **多框架支持扩展**：在 v1.x 中加入对 Agno 框架的支持。
+- **移动端沙箱 UI**：支持在 WebUI 中展示移动端沙箱画面。
+- **CLI 工具**：新增命令行执行与管理功能。
+- **统一业务异常**：引入统一的业务异常类。
+- **MCP Tool Call/Output 处理**：新增 MCP 工具调用与输出的适配。
+
+### Changed
+
+- 优化工具流式调用与输出的支持。
+- 改进 `adapt_agentscope_message_stream` 对非 JSON 输出的兼容处理。
+- 更新 `.npmrc` 以禁用 package-lock，并调整 peer dependency 配置。
+
+### Fixed
+
+- **LangChain** 依赖补充（含 `langchain_openai`）。
+- 修复 LangGraph 单元测试。
+- 测试中引入 **per-function event loop** 以解决 Agno 下 "Event loop is closed" 错误。
+- 修复沙箱中MCP`streamable_http` 超时类型不匹配问题。
+- 修复 OSS 配置在 AgentRun 场景下的异常。
+
+### Documentation
+
+- 更新社区二维码。
+- 文档微调与错误修正。
+
+## v1.0.1
+
+AgentScope Runtime v1.0.1 主要包括稳定性修复、开发体验优化、运行时配置增强，以及 Windows WebUI 启动兼容性支持。同时引入服务工厂机制、工具调用类型区分，以及依赖更新对 AgentScope 1.0.9 的支持。
+
+### Added
+
+- **服务工厂（Service Factory）** 支持，更灵活创建运行时服务。
+- 在 AgentScope 内区分 **Tool Call** 与 **MCP Tool Call**。
+
+### Changed
+
+- 引入新的 **runtime config** 运行时配置机制。
+- 更新依赖以支持 AgentScope 1.0.9。
+
+### Fixed
+
+- 修复 AgentScope 消息转换逻辑。
+- 修复 Windows 平台下 WebUI 启动问题（`subprocess.Popen` + shell 参数处理）。
+- 修复表格存储（Table Store）相关问题。
+
+### Documentation
+
+- 更新 serverless 部署文档。
+
 ## v1.0.0
 
 AgentScope Runtime v1.0 在高效智能体部署与安全沙箱执行的坚实基础上，推出了统一的 “Agent 作为 API” 开发体验，覆盖完整智能体从本地开发到生产部署的生命周期，并扩展了更多沙箱类型、协议兼容性与更丰富的内置工具集。
@@ -249,8 +337,8 @@ AgentScope Runtime v1.0 在高效智能体部署与安全沙箱执行的坚实�
 
      # v1.0
      with BaseSandbox() as sandbox():
-     		print(sandbox.run_ipython_cell(code="print('hello world')"))
-     		print(sandbox.run_shell_command(command="whoami"))
+         print(sandbox.run_ipython_cell(code="print('hello world')"))
+         print(sandbox.run_shell_command(command="whoami"))
      ```
 
      ```python
@@ -297,8 +385,6 @@ AgentScope Runtime v1.0 在高效智能体部署与安全沙箱执行的坚实�
 - `AgentScopeAgent`、`AutoGenAgent`、`LangGraphAgent`、`AgnoAgent` 已被移除，相关逻辑迁移到 `AgentApp` 内的`query`、`init`、`shutdown`装饰器中以供用户白盒化开发。
 - `SandboxTool`和`MCPTool`抽象已被移除，现在通过`sandbox_tool_adapter`适配不同框架
 
-------
-
 ## v0.2.0
 
 简化 agent 部署，并确保本地开发与生产部署的一致性。
@@ -313,8 +399,6 @@ AgentScope Runtime v1.0 在高效智能体部署与安全沙箱执行的坚实�
 
 - **统一 K8S & Docker 客户端**：将客户端移动到公共模块，简化维护。
 
-------
-
 ## v0.1.6
 
 提升对 AgentScope 全特性的原生支持，并增强 sandbox 的可交互性与可扩展性。
@@ -327,8 +411,6 @@ AgentScope Runtime v1.0 在高效智能体部署与安全沙箱执行的坚实�
 - **内置浏览器 Sandbox 前端**：基于 Web 的 sandbox 双控界面。
 - **异步方法与并行执行**：支持大规模并发处理。
 - **E2B SDK 兼容**：Sandbox 服务支持与 E2B SDK 对接。
-
-------
 
 ## v0.1.5
 

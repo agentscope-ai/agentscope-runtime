@@ -144,7 +144,7 @@ flowchart LR
 - 初始化并绑定 **Agent** 和 **Runner**，将请求委托给运行时处理
 - 提供标准化的 **HTTP API 接口**（含健康检查）
 - 支持 **Server-Sent Events (SSE)** 以及标准 JSON 响应
-- 允许注册中间件、任务队列（Celery）以及自定义路由
+- 允许注册任务队列（Celery）以及自定义路由
 - 管理应用生命周期（支持 `before_start` / `after_finish` 钩子）
 
 #### 3. Runner

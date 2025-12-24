@@ -18,7 +18,7 @@ kernelspec:
 
 `EnvironmentManager` provides lifecycle and access to sandboxed environments and tools through `SandboxService`.
 
-Default behavior wires a `SandboxService` instance which manages environment creation, connection, and release.
+By default, a `SandboxService` instance is wired, which manages environment creation, connection, and release.
 
 ## Basic Usage
 
@@ -45,11 +45,11 @@ In the future, `EnvironmentManager` will support not only `sandbox_service` but 
 
 ## Sandbox Service
 
-The **Sandbox Service** is designed to manage and provide access to sandboxed tool execution (see {doc}`sandbox` for details) sandboxes for different users and sessions. Sandboxes are organized by a composite key of session ID and user ID, allowing isolated execution contexts for each user session. The service supports multiple sandbox types and can automatically provision the required sandboxes based on the tools being used.
+The **Sandbox Service** is designed to manage and provide access to sandboxed tool execution (see {doc}`sandbox` for details) sandboxes for different users and sessions. Sandboxes are organised by a composite key of session ID and user ID, allowing isolated execution contexts for each user session. The service supports multiple sandbox types and can automatically provision the required sandboxes based on the tools being used.
 
 ### Service Overview
 
-The Sandbox Service provides a unified interface for sandbox management with support for different sandbox types like code execution, file operations, and other specialized sandboxes. The following is an example to initialize a sandbox service:
+The Sandbox Service provides a unified interface for sandbox management, supporting sandbox types such as code execution, file operations, and other specialised sandboxes. The following is an example to initialise a sandbox service:
 
 ```{code-cell}
 from agentscope_runtime.engine.services.sandbox_service import SandboxService
@@ -57,7 +57,7 @@ from agentscope_runtime.engine.services.sandbox_service import SandboxService
 # Create and start the sandbox service
 sandbox_service = SandboxService()
 
-# Or with remote sandbox service
+# Or with a remote sandbox service
 # sandbox_service = SandboxService(
 #     base_url="http://sandbox-server:8000",
 #     bearer_token="your-auth-token"
@@ -68,7 +68,7 @@ sandbox_service = SandboxService()
 
 #### Connecting to Sandboxes
 
-The `connect` method allows you to connect to sandbox sandboxes for a specific user session:
+The `connect` method allows you to connect to the sandbox for a specific user session:
 
 ```{code-cell}
 # Connect with specific sandbox types

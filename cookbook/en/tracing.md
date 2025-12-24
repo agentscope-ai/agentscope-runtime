@@ -70,11 +70,11 @@ result = await stream_query("user123", {"query": "test"}, tools=[])
 print("Result:", result)
 ```
 
-Notice that for the method with a generator as the result, especially in the LLM generating case, the trace will only record the first and last generator result to avoid recording redundant logs.
+Notice that, for the method with a generator as the result, especially in the LLM-generating case, the trace will only record the first and last generator results to avoid redundant logs.
 
 ## Usage Pattern 2: Context Manager-Based Tracing
 
-To have more precise control, you can use a context manager. This method allows you to manually control when tracing starts and stops, as well as add custom logging during execution.
+To have more precise control, you can use a context manager. This method allows you to manually control when tracing starts and stops, and to add custom logging during execution.
 
 ### Basic Context Manager Usage
 
@@ -106,9 +106,9 @@ with tracer.event(
 
 ## Handler Types
 
-Currently, we only provide a default local log tracer; more handlers will be supported, such as langfuse. The user could fulfill a custom handler based on their preference.
+Currently, we only provide a default local log tracer; additional handlers, such as langfuse, will be supported. The user could fulfill a custom handler based on their preference.
 
-Meanwhile, the user could add multiple handlers at the same time in one trace.
+Meanwhile, the user could add multiple handlers to a single trace.
 
 ### Multiple Handlers
 

@@ -236,6 +236,63 @@
         "code",
         "doc"
       ]
+    },
+    {
+      "login": "k-farruh",
+      "name": "Farruh Kushnazarov",
+      "avatar_url": "https://avatars.githubusercontent.com/u/33511681?v=4",
+      "profile": "https://github.com/k-farruh",
+      "contributions": [
+        "doc"
+      ]
+    },
+    {
+      "login": "fengxsong",
+      "name": "fengxsong",
+      "avatar_url": "https://avatars.githubusercontent.com/u/7008971?v=4",
+      "profile": "https://github.com/fengxsong",
+      "contributions": [
+        "bug"
+      ]
+    },
+    {
+      "login": "M4n5ter",
+      "name": "Wang",
+      "avatar_url": "https://avatars.githubusercontent.com/u/68144809?v=4",
+      "profile": "https://m4n5ter.github.io",
+      "contributions": [
+        "code",
+        "bug"
+      ]
+    },
+    {
+      "login": "qiacheng7",
+      "name": "qiacheng7",
+      "avatar_url": "https://avatars.githubusercontent.com/u/223075252?v=4",
+      "profile": "https://github.com/qiacheng7",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    },
+    {
+      "login": "xieyxclack",
+      "name": "Yuexiang XIE",
+      "avatar_url": "https://avatars.githubusercontent.com/u/31954383?v=4",
+      "profile": "https://xieyxclack.github.io/",
+      "contributions": [
+        "review"
+      ]
+    },
+    {
+      "login": "RTsama",
+      "name": "RTsama",
+      "avatar_url": "https://avatars.githubusercontent.com/u/100779257?v=4",
+      "profile": "https://github.com/RTsama",
+      "contributions": [
+        "bug",
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,

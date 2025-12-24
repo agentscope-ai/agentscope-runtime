@@ -1,0 +1,27 @@
+# AgentRun Deployment Configuration Example
+# Usage: agentscope deploy agentrun /path/to/source --config agentrun_deploy_config.yaml
+
+# Deployment name
+name: "friday-agent"
+
+# Entrypoint (optional, will auto-detect if not specified)
+# entrypoint: "app.py"
+
+# Skip upload (for testing package build only)
+skip_upload: false
+
+# Cloud region
+region: "cn-hangzhou"
+
+# Resource allocation
+cpu: 2.0  # cores
+memory: 2048  # MB
+
+# Environment variables
+environment:
+  PYTHONPATH: "/app"
+  LOG_LEVEL: "INFO"
+  DASHSCOPE_API_KEY: "${DASHSCOPE_API_KEY}"
+  # Required for AgentRun
+  ALIBABA_CLOUD_ACCESS_KEY_ID: "${ALIBABA_CLOUD_ACCESS_KEY_ID}"
+  ALIBABA_CLOUD_ACCESS_KEY_SECRET: "${ALIBABA_CLOUD_ACCESS_KEY_SECRET}"

@@ -1,6 +1,6 @@
 [project]
 name = "agentscope-runtime"
-version = "1.0.0b2"
+version = "1.0.4a1"
 description = "A production-ready runtime framework for agent applications, providing secure sandboxed execution environments and scalable deployment solutions with multi-framework support."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -11,7 +11,7 @@ dependencies = [
     "openai",
     "pydantic>=2.11.7",
     "requests>=2.32.4",
-    "agentscope>=1.0.6",
+    "agentscope>=1.0.9",
     "docker>=7.1.0",
     "redis>=6.0.0",
     "oss2>=2.19.1",
@@ -26,6 +26,8 @@ dependencies = [
     "dashscope>=1.25.0",
     "jsonref",
     "asgiref",
+    "click>=8.0.0",
+    "rich>=13.0.0",
 ]
 
 [tool.setuptools]
@@ -40,6 +42,7 @@ requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
+agentscope = "agentscope_runtime.cli.cli:main"
 runtime-sandbox-mcp = "agentscope_runtime.sandbox.mcp_server:main"
 runtime-sandbox-server = "agentscope_runtime.sandbox.manager.server.app:main"
 runtime-sandbox-builder = "agentscope_runtime.sandbox.build:main"
@@ -58,11 +61,13 @@ dev = [
     "sphinx-autoapi>=3.6.0",
     "pytest-mock>=3.15.1",
     "sphinxcontrib-mermaid>=1.2.3",
-    "langgraph>=0.4.0",
-    "autogen-agentchat>=0.7.0",
 ]
 
 ext = [
+    "langchain>=1.1.3",
+    "langchain_openai>=1.0.1",
+    "langgraph>=1.0.4",
+    "autogen-agentchat>=0.7.0",
     "reme-ai>=0.2.0.2",
     "mem0ai>=0.1.117",
     "alibabacloud-agentrun20250910>=2.0.1",
@@ -70,7 +75,7 @@ ext = [
     "alibabacloud-fc20230330>=4.4.0",
     "tablestore-for-agent-memory>=1.1.0",
     "langchain-community>=0.3.27",
-    "wuying-agentbay-sdk>=0.5.0",
+    "wuying-agentbay-sdk>=0.5.0,<0.13.0",
     "alipay-sdk-python",
     "cryptography",
     "gunicorn>=20.0.0",
@@ -84,6 +89,8 @@ ext = [
     "wheel",
     "alibabacloud-credentials",
     "PyYAML",
+    "agno>=2.3.8",
+    "nacos-sdk-python>=3.0.0",
     "aiohttp",
     "alibabacloud_ecd20200930",
     "alibabacloud_eds_aic20230930",
@@ -91,3 +98,7 @@ ext = [
     "e2b-desktop>=2.0.0",
     "trio"
 ]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

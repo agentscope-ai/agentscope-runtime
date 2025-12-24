@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=not-callable
+# pylint: disable=not-callable,too-many-statements,too-many-branches
 import asyncio
 import logging
 import inspect
@@ -29,6 +29,7 @@ from .schemas.agent_schemas import (
     SequenceNumberGenerator,
     Error,
 )
+from .schemas.exception import AppBaseException, UnknownAgentException
 from .tracing import TraceType
 from .tracing.wrapper import trace
 from .tracing.message_util import (
@@ -216,21 +217,22 @@ class Runner:
         if isinstance(request, dict):
             request = AgentRequest(**request)
 
+        # Assign session ID
+        request.session_id = request.session_id or str(uuid.uuid4())
+
+        # Assign user ID
+        request.user_id = request.user_id or request.session_id
+
         seq_gen = SequenceNumberGenerator()
 
         # Initial response
         response = AgentResponse(id=request.id)
+        response.session_id = request.session_id
         yield seq_gen.yield_with_sequence(response)
 
         # Set to in-progress status
         response.in_progress()
         yield seq_gen.yield_with_sequence(response)
-
-        # Assign session ID
-        request.session_id = request.session_id or str(uuid.uuid4())
-
-        # Assign user ID
-        request.user_id = request.session_id or request.session_id
 
         query_kwargs = {
             "request": request,
@@ -250,6 +252,26 @@ class Runner:
             kwargs.update(
                 {"msgs": message_to_agentscope_msg(request.input)},
             )
+        elif self.framework_type == "langgraph":
+            from ..adapters.langgraph.stream import (
+                adapt_langgraph_message_stream,
+            )
+            from ..adapters.langgraph.message import message_to_langgraph_msg
+
+            stream_adapter = adapt_langgraph_message_stream
+            kwargs.update(
+                {"msgs": message_to_langgraph_msg(request.input)},
+            )
+        elif self.framework_type == "agno":
+            from ..adapters.agno.stream import (
+                adapt_agno_message_stream,
+            )
+            from ..adapters.agno.message import message_to_agno_message
+
+            stream_adapter = adapt_agno_message_stream
+            kwargs.update(
+                {"msgs": await message_to_agno_message(request.input)},
+            )
         # TODO: support other frameworks
         else:
 
@@ -260,6 +282,7 @@ class Runner:
 
             stream_adapter = identity_stream_adapter
 
+        error = None
         try:
             async for event in stream_adapter(
                 source_stream=self._call_handler_streaming(
@@ -275,14 +298,10 @@ class Runner:
                     response.add_new_message(event)
                 yield seq_gen.yield_with_sequence(event)
         except Exception as e:
-            # TODO: fix code
-            error = Error(
-                code="500",
-                message=f"Error happens in `query_handler`: {e}",
-            )
+            if not isinstance(e, AppBaseException):
+                e = UnknownAgentException(original_exception=e)
+            error = Error(code=e.code, message=e.message)
             logger.error(f"{error.model_dump()}: {traceback.format_exc()}")
-            yield seq_gen.yield_with_sequence(response.failed(error))
-            return
 
         # Obtain token usage
         try:
@@ -292,4 +311,7 @@ class Runner:
             # Avoid empty message
             pass
 
-        yield seq_gen.yield_with_sequence(response.completed())
+        if error:
+            yield seq_gen.yield_with_sequence(response.failed(error))
+        else:
+            yield seq_gen.yield_with_sequence(response.completed())

@@ -470,12 +470,26 @@ class FastAPIAppFactory:
             }
 
         # Mode-specific endpoints
-        if mode == DeploymentMode.DETACHED_PROCESS:
-            FastAPIAppFactory._add_process_control_endpoints(app)
+        FastAPIAppFactory._add_process_control_endpoints(app)
 
     @staticmethod
     def _add_process_control_endpoints(app: FastAPI):
         """Add process control endpoints for detached mode."""
+
+        @app.post("/shutdown")
+        async def shutdown_process_simple():
+            """Gracefully shutdown the process (simple endpoint)."""
+            # Import here to avoid circular imports
+            import os
+            import signal
+
+            # Schedule shutdown after response
+            async def delayed_shutdown():
+                await asyncio.sleep(0.5)
+                os.kill(os.getpid(), signal.SIGTERM)
+
+            asyncio.create_task(delayed_shutdown())
+            return {"status": "shutting down"}
 
         @app.post("/admin/shutdown")
         async def shutdown_process():
@@ -693,9 +707,32 @@ class FastAPIAppFactory:
         parsing."""
         is_async_gen = inspect.isasyncgenfunction(handler)
 
+        # NOTE:
+        # -----
+        # FastAPI >= 0.123.5 uses Dependant.is_coroutine_callable, which in
+        # turn unwraps callables via inspect.unwrap() and then inspects the
+        # unwrapped target to decide whether it is a coroutine function /
+        # generator / async generator.
+        #
+        # If we decorate an async-generator handler with
+        # functools.wraps(handler), FastAPI will unwrap back to the original
+        # async-generator function and *misclassify* the endpoint as
+        # non-coroutine. It will then call our async wrapper *without awaiting
+        # it*, and later try to JSON-encode the resulting coroutine object,
+        # causing errors like:
+        # TypeError("'coroutine' object is not iterable")
+        #
+        # To avoid that, we deliberately do NOT use functools.wraps() here.
+        # Instead, we manually copy the key metadata (name, qualname, doc,
+        # module, and signature) from the original handler, but we do NOT set
+        # __wrapped__. This ensures:
+        #   * FastAPI sees the wrapper itself as the callable (an async def),
+        #     so Dependant.is_coroutine_callable is True, and it is properly
+        #     awaited.
+        #   * FastAPI still sees the correct signature for parameter parsing.
+
         if is_async_gen:
 
-            @functools.wraps(handler)
             async def wrapped_handler(*args, **kwargs):
                 async def generate():
                     try:
@@ -720,12 +757,8 @@ class FastAPIAppFactory:
                     media_type="text/event-stream",
                 )
 
-            wrapped_handler.__signature__ = inspect.signature(handler)
-            return wrapped_handler
-
         else:
 
-            @functools.wraps(handler)
             def wrapped_handler(*args, **kwargs):
                 def generate():
                     try:
@@ -748,8 +781,34 @@ class FastAPIAppFactory:
                     media_type="text/event-stream",
                 )
 
-            wrapped_handler.__signature__ = inspect.signature(handler)
-            return wrapped_handler
+        # Manually propagate essential metadata without creating a __wrapped__
+        # chain that would confuse FastAPI's unwrap logic.
+        wrapped_handler.__name__ = getattr(
+            handler,
+            "__name__",
+            wrapped_handler.__name__,
+        )
+        wrapped_handler.__qualname__ = getattr(
+            handler,
+            "__qualname__",
+            wrapped_handler.__qualname__,
+        )
+        wrapped_handler.__doc__ = getattr(
+            handler,
+            "__doc__",
+            wrapped_handler.__doc__,
+        )
+        wrapped_handler.__module__ = getattr(
+            handler,
+            "__module__",
+            wrapped_handler.__module__,
+        )
+        wrapped_handler.__signature__ = inspect.signature(handler)
+
+        # Make sure FastAPI doesn't see any stale __wrapped__ pointing back to
+        # the original async-generator; if present, remove it.
+
+        return wrapped_handler
 
     @staticmethod
     def _add_custom_endpoints(app: FastAPI):

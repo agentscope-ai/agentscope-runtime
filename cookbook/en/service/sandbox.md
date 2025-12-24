@@ -16,8 +16,7 @@ kernelspec:
 
 ## Overview
 
-The **Sandbox Service** provides isolated **tool execution environments** (sandboxes) for different users and sessions, allowing agents to use tools (such as browsers, code executors, etc.) in a controlled and secure environment.
-For more on sandboxes, see {doc}`../sandbox/sandbox`.
+The **Sandbox Service** provides isolated **tool execution environments** (sandboxes) for different users and sessions, allowing agents to use tools (such as browsers, code executors, etc.) in a controlled and secure environment. For more on sandboxes, see {doc}`../sandbox/sandbox`.
 
 In the course of agent execution, typical roles of the sandbox service include:
 
@@ -31,7 +30,7 @@ In different implementations, sandbox services mainly differ in:
 **running modes** (embedded/remote), **supported types**, **management methods**, and **extensibility**.
 
 ```{note}
-In business code, it is not recommended to directly implement the sandbox service and `SandboxManager`'s low-level management logic.
+In business code, it is not recommended to implement the sandbox service or `SandboxManager`'s low-level management logic directly.
 
 Instead, it is better to **use an adapter to bind sandbox methods to the agent framework’s tool module**:
 - Hide low-level sandbox API details
@@ -59,7 +58,7 @@ sandboxes = sandbox_service.connect(
     sandbox_types=["browser"],
 )
 
-# 3. Get tool methods and register into the Agent's Toolkit
+# 3. Get tool methods and register in the Agent's Toolkit
 toolkit = Toolkit()
 for tool in [
     sandboxes[0].browser_navigate,
@@ -93,7 +92,7 @@ for tool in [
 | `DUMMY`      | Null implementation / placeholder sandbox    | Test workflows, simulate sandbox APIs without actual execution |
 | `BASE`       | Basic sandbox environment                    | General tool execution environment                           |
 | `BROWSER`    | Browser sandbox                              | Web navigation, screenshots, data crawling                   |
-| `FILESYSTEM` | File system sandbox                          | Reading/writing files in a secure isolated file system       |
+| `FILESYSTEM` | File system sandbox                          | Reading/writing files in a secure, isolated file system       |
 | `GUI`        | Graphical interface sandbox                  | Interacting with GUI apps (clicking, typing, screenshots)    |
 | `MOBILE`     | Mobile device emulation sandbox              | Simulating mobile app operations and touch interactions      |
 | `APPWORLD`   | App world emulation sandbox                  | Simulating cross-app interactions in a virtual environment   |

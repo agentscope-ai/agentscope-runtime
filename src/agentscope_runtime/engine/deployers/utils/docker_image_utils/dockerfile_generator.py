@@ -21,6 +21,8 @@ class DockerfileConfig(BaseModel):
     startup_command: Optional[str] = None
     health_check_endpoint: str = "/health"
     custom_template: Optional[str] = None
+    platform: Optional[str] = None
+    pypi_mirror: Optional[str] = None
 
 
 class DockerfileGenerator:
@@ -31,7 +33,7 @@ class DockerfileGenerator:
 
     # Default Dockerfile template for Python applications
     DEFAULT_TEMPLATE = """# Use official Python runtime as base image
-FROM {base_image}
+FROM --platform={platform} {base_image}
 
 # Set working directory in container
 WORKDIR /app
@@ -43,14 +45,19 @@ ENV PYTHONUNBUFFERED=1
 # Configure package sources for better performance
 RUN rm -f /etc/apt/sources.list.d/*.list
 
-# 替换主源为阿里云
-RUN echo "deb https://mirrors.aliyun.com/debian/ bookworm main contrib " \\
-        "non-free non-free-firmware" > /etc/apt/sources.list && \\
-    echo "deb https://mirrors.aliyun.com/debian/ bookworm-updates main " \\
-         "contrib non-free non-free-firmware" >> /etc/apt/sources.list && \\
-    echo "deb https://mirrors.aliyun.com/debian-security/ " \\
-         "bookworm-security main contrib non-free " \\
+# add aliyun mirrors
+RUN echo "deb https://mirrors.aliyun.com/debian/ bookworm main contrib " \
+        "non-free non-free-firmware" > /etc/apt/sources.list && \
+    echo "deb https://mirrors.aliyun.com/debian/ bookworm-updates main " \
+         "contrib non-free non-free-firmware" >> /etc/apt/sources.list && \
+    echo "deb https://mirrors.aliyun.com/debian-security/ " \
+         "bookworm-security main contrib non-free " \
          "non-free-firmware" >> /etc/apt/sources.list
+
+# replace debian to aliyun
+RUN mkdir -p /etc/apt/sources.list.d && \
+    cat > /etc/apt/sources.list.d/debian.sources <<'EOF'
+EOF
 
 # Clean up package lists
 RUN rm -rf /var/lib/apt/lists/*
@@ -67,8 +74,7 @@ COPY . {working_dir}/
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip
 RUN if [ -f requirements.txt ]; then \\
-        pip install --no-cache-dir -r requirements.txt \\
-        -i https://pypi.tuna.tsinghua.edu.cn/simple; fi
+        pip install --no-cache-dir -r requirements.txt{pypi_mirror_flag}; fi
 
 # Create non-root user for security
 RUN adduser --disabled-password --gecos '' {user} && \\
@@ -130,6 +136,11 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \\
                 f'"--port", "{config.port}"]'
             )
 
+        # Prepare PyPI mirror flag
+        pypi_mirror_flag = ""
+        if config.pypi_mirror:
+            pypi_mirror_flag = f" -i {config.pypi_mirror}"
+
         # Format template with configuration values
         content = template.format(
             base_image=config.base_image,
@@ -140,6 +151,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \\
             additional_packages_section=additional_packages_section,
             env_vars_section=env_vars_section,
             startup_command_section=startup_command_section,
+            platform=config.platform,
+            pypi_mirror_flag=pypi_mirror_flag,
         )
 
         return content

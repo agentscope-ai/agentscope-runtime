@@ -107,10 +107,29 @@
 
         function getSandboxIdFromPath() {
             const pathParts = window.location.pathname.split('/');
-            if (pathParts.length >= 3 && pathParts[1] === 'desktop') {
-                return pathParts[2];
+            // Find 'desktop' anywhere in the path to support arbitrary URL prefixes
+            // Supports: /desktop/{sandbox_id}/... or /custom/prefix/desktop/{sandbox_id}/...
+            const desktopIndex = pathParts.indexOf('desktop');
+            if (desktopIndex !== -1 && pathParts.length > desktopIndex + 1) {
+                // Return null if sandbox_id is empty (e.g., /desktop/ or /desktop//)
+                return pathParts[desktopIndex + 1] || null;
             }
             return null;
+        }
+
+        function getWebSocketPath(sandbox_id) {
+            // Extract the path prefix up to and including /desktop/{sandbox_id}
+            // This preserves any custom URL prefix for reverse proxy deployments
+            const currentPath = window.location.pathname;
+            // Use non-greedy matching (.*?) to find the FIRST occurrence of /desktop/
+            // This ensures consistency with getSandboxIdFromPath() which uses indexOf()
+            const desktopMatch = currentPath.match(/(.*?)\/desktop\/([^\/]+)/);
+            if (desktopMatch) {
+                // Use the passed sandbox_id parameter for consistency
+                return desktopMatch[1] + '/desktop/' + sandbox_id;
+            }
+            // Fallback to simple path
+            return '/desktop/' + sandbox_id;
         }
 
         document.getElementById('sendCtrlAltDelButton')
@@ -141,7 +160,7 @@
             url += ':' + port;
         }
 
-        url += '/desktop/' + sandbox_id;
+        url += getWebSocketPath(sandbox_id);
 
         if (path && path !== 'websockify') {
             url += '?path=' + encodeURIComponent(path);

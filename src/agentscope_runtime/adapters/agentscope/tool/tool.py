@@ -9,9 +9,7 @@ from typing import (
 )
 
 from agentscope.tool import Toolkit, ToolResponse
-from agentscope.tool._registered_tool_function import (
-    RegisteredToolFunction,
-)
+from agentscope.tool._types import RegisteredToolFunction
 
 from agentscope_runtime.tools.base import Tool
 

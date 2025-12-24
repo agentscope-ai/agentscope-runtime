@@ -13,7 +13,7 @@ Runtime supports multiple consumption surfaces tailored to different roles:
 
 ## Preparation Checklist
 
-- Make sure the target `Agent App` is running and note its exposed ports plus auth policy.
+- Make sure the target `Agent App` is running and note its exposed ports plus the auth policy.
 - Configure the required API keys or auth modules so external traffic stays secure.
 - Plan the observability stack (tracing, logs, metrics) needed to troubleshoot calls.
 - Prepare sample requests, environment variables, and scripts that teammates can reuse.
@@ -67,11 +67,23 @@ Introduces runnable demo scenarios that help teams showcase, train, or validate 
 - Config files and runbooks for common business cases.
 - Tips on customizing roles, plugins, and front ends within DemoHouse.
 
-Dive deeper in {doc}`demohouse`.
+Dive deeper into {doc}`demohouse`.
+
+### A2A Registry - Service Registration and Discovery
+
+Introduces the service registration and discovery mechanism for the A2A (Agent-to-Agent) protocol. This section covers:
+
+- AgentApp extension field a2a_config
+- Registry architecture
+- Registry configuration methods
+- Nacos Registry usage guide
+- Custom Registry Implementations
+
+Perfect for developers who need to register agent services to centralized agent registries (such as Nacos). See {doc}`a2a_registry` for full documentation.
 
 ### Tests
 
-Explains the repository’s test samples, including:
+Explains the repository's test samples, including:
 
 - Unit tests
 - Integration tests

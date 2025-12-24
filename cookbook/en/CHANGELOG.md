@@ -1,5 +1,94 @@
 # CHANGELOG
 
+## v1.0.3
+
+On the basis of maintaining the extensibility and consistency of the v1.x framework, **AgentScope Runtime v1.0.3** brings **A2A protocol registry support**, a more complete error handling and token usage statistics mechanism, a new weather component with enhanced UI interaction capabilities, as well as multiple fixes and optimizations for Sandbox, Redis, and Agent states. It also improves deployment build (Sandbox Image Building), remote desktop custom URL support, PYPI mirror configuration, and other features.
+
+### Added
+
+- **A2A Registry Support**
+  Added registration capability for the Google A2A protocol, natively integrated with AgentScope-Runtime, enabling cross-platform agent registration and discovery.
+- **Token Usage Statistics (even on errors)**
+  Introduced a function to collect token usage during model calls, even if an exception is thrown, helping with billing and debugging.
+- **Sandbox Image Building Actions**
+  Added GitHub Actions for building Sandbox images within CI/CD, making distribution and deployment automation easier.
+
+### Changed
+
+- **Optimized PYPI Mirror Configuration for Deployment**
+  `pypi_mirror` can now be explicitly specified and defaults to `None`, allowing customization of Python package sources.
+
+### Fixed
+
+- **RedisMapping Key Parsing Issue**
+  Fixed incorrect key parsing in `RedisMapping.scan` when running in `decode_responses` mode.
+- **Redis Async Client Shutdown Method**
+  Updated to use `aclose` to close the Redis async client to avoid warnings.
+- **AgentBay Version Fix**
+  Resolved dependency version issues with `agentbay` to ensure runtime consistency.
+- **Custom URL Prefix Support for VNC Remote Desktop**
+  Added support for using a custom URL prefix in VNC Remote Desktop, improving deployment flexibility.
+- **Session and Memory Hotfix**
+  Added expiration time for `Redis Session` and `Redis Memory`.
+
+## v1.0.2
+
+This update for **AgentScope Runtime v1.0.2** introduces support for **LangGraph** and **Agno** under the v1.x framework, optimizes tool invocation, enhances the mobile sandbox UI, and includes multiple compatibility and stability fixes.
+Improvements have also been made to the CLI tools, MCP Tool call handling, and unified business exception management.
+
+### Added
+
+- **LangGraph Support**: Native compatibility with the LangGraph framework.
+- **Multi-framework Support Extension**: Added support for the Agno framework in v1.x.
+- **Mobile Sandbox UI**: Support for displaying the mobile sandbox screen in the WebUI.
+- **CLI Tools**: New command-line execution and management capabilities.
+- **Unified Business Exceptions**: Introduced a unified business exception class.
+- **MCP Tool Call/Output Handling**: Added adapters for MCP tool invocation and output.
+
+### Changed
+
+- Optimized support for streaming tool calls and outputs.
+- Improved `adapt_agentscope_message_stream` to better handle non-JSON outputs.
+- Updated `.npmrc` to disable package-lock and adjusted peer dependency configurations.
+
+### Fixed
+
+- Added missing **LangChain** dependencies (including `langchain_openai`).
+- Fixed LangGraph unit tests.
+- Introduced **per-function event loop** in tests to resolve "Event loop is closed" errors under Agno.
+- Fixed type mismatch issue in `streamable_http` timeout within the sandbox MCP.
+- Fixed OSS configuration errors in AgentRun scenarios.
+
+### Documentation
+
+- Updated community QR code.
+- Minor documentation refinements and error corrections.
+
+## v1.0.1
+
+**AgentScope Runtime v1.0.1** focused on stability fixes, developer experience improvements, runtime configuration enhancements, and compatibility support for Windows WebUI startup.
+It also introduced a **Service Factory** mechanism, differentiation of tool invocation types, and dependency updates to support AgentScope 1.0.9.
+
+### Added
+
+- **Service Factory** support for more flexible runtime service creation.
+- Differentiation between **Tool Call** and **MCP Tool Call** within AgentScope.
+
+### Changed
+
+- Implemented a new **runtime config** mechanism.
+- Updated dependencies to support AgentScope 1.0.9.
+
+### Fixed
+
+- Fixed message conversion logic in AgentScope.
+- Fixed WebUI startup issues on Windows (`subprocess.Popen` + shell argument handling).
+- Fixed issues related to Table Store.
+
+### Documentation
+
+- Updated serverless deployment documentation.
+
 ## v1.0.0
 
 On top of a solid foundation for **efficient agent deployment** and **secure sandbox execution**, **AgentScope Runtime v1.0** introduces a unified **"Agent as API"** development experience that covers the entire lifecycle of an agent — from local development to production deployment — while also expanding sandbox types, protocol compatibility, and built‑in tools.
@@ -258,8 +347,8 @@ These changes affect existing v0.x users and require manual adaptation:
 
      # v1.0
      with BaseSandbox() as sandbox():
-     		print(sandbox.run_ipython_cell(code="print('hello world')"))
-     		print(sandbox.run_shell_command(command="whoami"))
+         print(sandbox.run_ipython_cell(code="print('hello world')"))
+         print(sandbox.run_shell_command(command="whoami"))
      ```
 
      ```python
@@ -302,11 +391,9 @@ These changes affect existing v0.x users and require manual adaptation:
      ```
 
 ### Removed
-- `ContextManager`和`EnvironmentManager`已被移除，现在由Agent进行上下文管理
-- `AgentScopeAgent`、`AutoGenAgent`、`LangGraphAgent`、`AgnoAgent` 已被移除，相关逻辑迁移到 `AgentApp` 内的`query`、`init`、`shutdown`装饰器中以供用户白盒化开发。
-- `SandboxTool`和`MCPTool`抽象已被移除，现在通过`sandbox_tool_adapter`适配不同框架
-
-------
+- `ContextManager` and `EnvironmentManager` have been removed, and context management is now handled by the Agent.
+- `AgentScopeAgent`, `AutoGenAgent`, `LangGraphAgent`, and `AgnoAgent` have been removed, with the related logic migrated into the `query`, `init`, and `shutdown` decorators within `AgentApp` for user white-box development.
+- The `SandboxTool` and `MCPTool` abstractions have been removed, and different frameworks are now adapted via `sandbox_tool_adapter`.
 
 ## v0.2.0
 
@@ -322,8 +409,6 @@ Simplified agent deployment and ensured consistency between local development an
 
 - **Unified K8S & Docker client** — Moved client to the common module to simplify maintenance.
 
-------
-
 ## v0.1.6
 
 Enhanced native support for all AgentScope features and improved sandbox interactivity & extensibility.
@@ -336,8 +421,6 @@ Enhanced native support for all AgentScope features and improved sandbox interac
 - **Built‑in browser sandbox frontend** — Web‑based dual‑control sandbox UI.
 - **Async methods & parallel execution** — Support for large‑scale concurrency.
 - **E2B SDK compatibility** — Sandbox service can interface with E2B SDK.
-
-------
 
 ## v0.1.5
 

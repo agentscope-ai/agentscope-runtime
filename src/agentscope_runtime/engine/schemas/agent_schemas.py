@@ -27,6 +27,7 @@ class MessageType:
     MCP_APPROVAL_REQUEST = "mcp_approval_request"
     MCP_TOOL_CALL = "mcp_call"
     MCP_APPROVAL_RESPONSE = "mcp_approval_response"
+    MCP_TOOL_CALL_OUTPUT = "mcp_call_output"
     REASONING = "reasoning"
     HEARTBEAT = "heartbeat"
     ERROR = "error"
@@ -152,22 +153,35 @@ class FunctionCallOutput(BaseModel):
 
 
 class McpCall(BaseModel):
-    id: str
+    """
+    MCP TOOL CALL MESSAGE BODY
+    """
+
+    call_id: Optional[str] = None
     """The unique ID of the tool call."""
 
-    arguments: str
+    arguments: Optional[str] = None
     """A JSON string of the arguments passed to the tool."""
 
-    name: str
+    name: Optional[str] = None
     """The name of the tool that was run."""
 
-    server_label: str
+    server_label: Optional[str] = None
     """The label of the MCP server running the tool."""
 
-    error: Optional[str] = None
-    """The error from the tool call, if any."""
 
-    output: Optional[str] = None
+class McpCallOutput(BaseModel):
+    """
+    MCP TOOL CALL OUTPUT MESSAGE BODY
+    """
+
+    call_id: str
+    """The unique ID of the tool call."""
+
+    name: Optional[str] = None
+    """The name of the tool call."""
+
+    output: str
     """The output from the tool call."""
 
 
