@@ -21,7 +21,7 @@ from ..deployers.adapter.a2a import (
 from ..deployers.adapter.responses.response_api_protocol_adapter import (
     ResponseAPIDefaultAdapter,
 )
-from ..deployers.adapter.agui import AGUIDefaultAdapter
+from ..deployers.adapter.agui import AGUIDefaultAdapter, AGUIAdaptorConfig
 from ..deployers.utils.deployment_modes import DeploymentMode
 from ..deployers.utils.service_utils.fastapi_factory import FastAPIAppFactory
 from ..runner import Runner
@@ -54,6 +54,7 @@ class AgentApp(BaseApp):
         runner: Optional[Runner] = None,
         enable_embedded_worker: bool = False,
         a2a_config: Optional["AgentCardWithRuntimeConfig"] = None,
+        agui_config: Optional[AGUIAdaptorConfig] = None,
         **kwargs,
     ):
         """
@@ -98,6 +99,7 @@ class AgentApp(BaseApp):
                         registry=[nacos_registry],
                         task_timeout=120,
                     )
+            agui_config: Config for AGUI adaptor.
             **kwargs: Additional keyword arguments passed to FastAPI app
         """
 
@@ -130,7 +132,7 @@ class AgentApp(BaseApp):
         )
 
         response_protocol = ResponseAPIDefaultAdapter()
-        agui_protocol = AGUIDefaultAdapter()
+        agui_protocol = AGUIDefaultAdapter(config=agui_config)
         self.protocol_adapters = [
             a2a_protocol,
             response_protocol,
