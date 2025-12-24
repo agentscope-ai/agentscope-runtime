@@ -19,6 +19,13 @@ try:
 except ImportError:
     AgentRunDeployManager = None  # type: ignore
 
+try:
+    from .fc_deployer import (
+        FCDeployManager,
+    )
+except ImportError:
+    FCDeployManager = None  # type: ignore
+
 __all__ = [
     "DeployManager",
     "LocalDeployManager",
@@ -26,4 +33,5 @@ __all__ = [
     "ModelstudioDeployManager",
     "AgentRunDeployManager",
     "KnativeDeployManager",
+    "FCDeployManager",
 ]

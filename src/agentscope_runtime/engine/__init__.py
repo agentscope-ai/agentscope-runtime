@@ -14,6 +14,7 @@ if TYPE_CHECKING:
         KnativeDeployManager,
         ModelstudioDeployManager,
         AgentRunDeployManager,
+        FCDeployManager,
     )
 
 
@@ -26,5 +27,6 @@ install_lazy_loader(
         "KnativeDeployManager": ".deployers",
         "ModelstudioDeployManager": ".deployers",
         "AgentRunDeployManager": ".deployers",
+        "FCDeployManager": ".deployers",
     },
 )

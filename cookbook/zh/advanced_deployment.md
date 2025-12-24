@@ -14,20 +14,22 @@ kernelspec:
 
 # 高级部署
 
-章节演示了AgentScope Runtime中可用的六种高级部署方法，为不同场景提供生产就绪的解决方案：**本地守护进程**、**独立进程**、**Kubernetes部署**、**ModelStudio部署**、**AgentRun部署**和**Knative**。
+章节演示了AgentScope Runtime中可用的七种高级部署方法，为不同场景提供生产就绪的解决方案：**本地守护进程**、**独立进程**、**Kubernetes部署**、**ModelStudio部署**、**AgentRun部署**、**Knative**和**函数计算（Function Compute, FC）部署**。
 
 ## 部署方法概述
 
-AgentScope Runtime提供六种不同的部署方式，每种都针对特定的使用场景：
+AgentScope Runtime提供七种不同的部署方式，每种都针对特定的使用场景：
 
-| 部署类型 | 使用场景       | 扩展性 | 管理方式 | 资源隔离 |
-|---------|------------|--------|---------|---------|
-| **本地守护进程** | 开发与测试      | 单进程 | 手动 | 进程级 |
-| **独立进程** | 生产服务       | 单节点 | 自动化 | 进程级 |
-| **Kubernetes** | 企业与云端      | 单节点（将支持多节点） | 编排 | 容器级 |
-| **ModelStudio** | 百炼应用开发平台   | 云端管理 | 平台管理 | 容器级 |
-| **AgentRun** | AgentRun平台 | 云端管理 | 平台管理 | 容器级 |
-| **Knative** | 企业与云端 | 单节点（将支持多节点） | 编排 | 容器级 |
+| 部署类型                           | 使用场景       | 扩展性 | 管理方式 | 资源隔离 |
+|--------------------------------|------------|--------|---------|--------|
+| **本地守护进程**                     | 开发与测试      | 单进程 | 手动 | 进程级 |
+| **独立进程**                       | 生产服务       | 单节点 | 自动化 | 进程级 |
+| **Kubernetes**                 | 企业与云端      | 单节点（将支持多节点） | 编排 | 容器级 |
+| **ModelStudio**                | 百炼应用开发平台   | 云端管理 | 平台管理 | 容器级 |
+| **AgentRun**                   | AgentRun平台 | 云端管理 | 平台管理 | 容器级 |
+| **Knative**                    | 企业与云端 | 单节点（将支持多节点） | 编排 | 容器级 |
+| **函数计算(FC)** | 阿里云 Serverless | 云端管理 | 平台管理 | 微虚拟机级 |
+
 
 ### 部署模式（DeploymentMode）
 
@@ -814,3 +816,226 @@ if __name__ == "__main__":
 - 容器化 Serverless 部署
 - 支持基于请求自动弹性、缩容至 0
 - 配置资源限制和健康检查
+
+## 方法7：Serverless部署：函数计算（Function Compute, FC）
+
+**最适合**：阿里云用户，需要将智能体部署到函数计算（FC）服务，实现自动化的构建、上传和部署流程。FC 提供真正的 Serverless 体验，按量付费并自动扩缩容。
+
+### 特性
+- 阿里云函数计算的 Serverless 部署
+- 使用 Docker 自动构建和打包项目
+- OSS 集成用于制品存储
+- HTTP 触发器支持公网访问
+- 会话亲和性支持有状态应用
+- VPC 和日志配置支持
+- 按量付费模式
+
+### FC 部署前置条件
+
+```bash
+# 确保设置环境变量
+# 更多环境变量配置，请参考下面的表格
+export ALIBABA_CLOUD_ACCESS_KEY_ID="your-access-key-id"
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
+export FC_ACCOUNT_ID="your-fc-account-id"
+export FC_REGION_ID="cn-hangzhou"  # 或其他区域
+
+# OSS 配置（用于存储构建制品）
+export OSS_ACCESS_KEY_ID="your-oss-access-key-id"
+export OSS_ACCESS_KEY_SECRET="your-oss-access-key-secret"
+export OSS_REGION="cn-hangzhou"
+export OSS_BUCKET_NAME="your-bucket-name"
+```
+
+您可以设置以下环境变量或指定 `FCConfig` 来自定义部署：
+
+| 变量 | 必填 | 默认值 | 描述 |
+|-----|-----|-------|------|
+| `ALIBABA_CLOUD_ACCESS_KEY_ID` | 是 | - | 阿里云 Access Key ID |
+| `ALIBABA_CLOUD_ACCESS_KEY_SECRET` | 是 | - | 阿里云 Access Key Secret |
+| `FC_ACCOUNT_ID` | 是 | - | 阿里云账号 ID（用于 FC） |
+| `FC_REGION_ID` | 否 | `cn-hangzhou` | FC 服务的区域 ID |
+| `FC_LOG_STORE` | 否 | - | 日志存储名称（需同时设置 log_project） |
+| `FC_LOG_PROJECT` | 否 | - | 日志项目名称（需同时设置 log_store） |
+| `FC_VPC_ID` | 否 | - | VPC ID（用于私网访问） |
+| `FC_SECURITY_GROUP_ID` | 否 | - | 安全组 ID（设置 vpc_id 时必填） |
+| `FC_VSWITCH_IDS` | 否 | - | VSwitch ID 列表，JSON 数组格式（设置 vpc_id 时必填） |
+| `FC_CPU` | 否 | `2.0` | CPU 分配（核数） |
+| `FC_MEMORY` | 否 | `2048` | 内存分配（MB） |
+| `FC_DISK` | 否 | `512` | 磁盘分配（MB） |
+| `FC_EXECUTION_ROLE_ARN` | 否 | - | 执行角色 ARN（用于权限控制） |
+| `FC_SESSION_CONCURRENCY_LIMIT` | 否 | `200` | 每实例会话并发限制 |
+| `FC_SESSION_IDLE_TIMEOUT_SECONDS` | 否 | `3600` | 会话空闲超时时间（秒） |
+| `OSS_ACCESS_KEY_ID` | 否 | `ALIBABA_CLOUD_ACCESS_KEY_ID` | OSS Access Key ID（默认使用阿里云凭证） |
+| `OSS_ACCESS_KEY_SECRET` | 否 | `ALIBABA_CLOUD_ACCESS_KEY_SECRET` | OSS Access Key Secret（默认使用阿里云凭证） |
+| `OSS_REGION` | 否 | `cn-hangzhou` | OSS 区域 |
+| `OSS_BUCKET_NAME` | 是 | - | OSS 存储桶名称（用于存储构建制品） |
+
+### 实现
+
+使用 {ref}`通用智能体配置<zh-common-agent-setup>` 部分定义的智能体和端点：
+
+```{code-cell}
+# fc_deploy.py
+import asyncio
+import os
+from agentscope_runtime.engine.deployers.fc_deployer import (
+    FCDeployManager,
+    OSSConfig,
+    FCConfig,
+)
+from agent_app import app  # 导入已配置的 app
+
+async def deploy_to_fc():
+    """将 AgentApp 部署到阿里云函数计算（FC）"""
+
+    # 配置 OSS 和 FC
+    deployer = FCDeployManager(
+        oss_config=OSSConfig(
+            access_key_id=os.environ.get("OSS_ACCESS_KEY_ID"),
+            access_key_secret=os.environ.get("OSS_ACCESS_KEY_SECRET"),
+            region=os.environ.get("OSS_REGION", "cn-hangzhou"),
+            bucket_name=os.environ.get("OSS_BUCKET_NAME"),
+        ),
+        fc_config=FCConfig(
+            access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+            access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+            account_id=os.environ.get("FC_ACCOUNT_ID"),
+            region_id=os.environ.get("FC_REGION_ID", "cn-hangzhou"),
+        ),
+    )
+
+    # 执行部署
+    result = await app.deploy(
+        deployer,
+        deploy_name="agent-app-example",
+        requirements=["agentscope", "fastapi", "uvicorn"],
+        environment={
+            "PYTHONPATH": "/code",
+            "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+        },
+    )
+
+    print(f"✅ 部署到 FC：{result['url']}")
+    print(f"📍 函数名称：{result['function_name']}")
+    print(f"🔗 端点 URL：{result['endpoint_url']}")
+    print(f"📦 制品 URL：{result['artifact_url']}")
+    return result
+
+if __name__ == "__main__":
+    asyncio.run(deploy_to_fc())
+```
+
+**关键点**：
+- 使用 Docker 自动构建项目并创建可部署的 zip 包
+- 上传制品到 OSS 供 FC 拉取
+- 创建带 HTTP 触发器的 FC 函数，支持公网访问
+- 通过 `x-agentscope-runtime-session-id` 请求头支持会话亲和性
+- 支持更新现有部署（通过 `function_name` 参数）
+
+### 配置说明
+
+#### OSSConfig
+
+OSS 配置用于存储构建制品：
+
+```python
+OSSConfig(
+    access_key_id="your-access-key-id",
+    access_key_secret="your-access-key-secret",
+    region="cn-hangzhou",
+    bucket_name="your-bucket-name",
+)
+```
+
+#### FCConfig
+
+函数计算服务配置：
+
+```python
+FCConfig(
+    access_key_id="your-access-key-id",
+    access_key_secret="your-access-key-secret",
+    account_id="your-account-id",
+    region_id="cn-hangzhou",  # 支持的区域：cn-hangzhou, cn-beijing 等
+    cpu=2.0,  # CPU 核数
+    memory=2048,  # 内存 MB
+    disk=512,  # 磁盘 MB
+)
+```
+
+### 高级用法
+
+#### 更新现有函数
+
+```python
+result = await app.deploy(
+    deployer,
+    function_name="existing-function-name",  # 更新现有函数
+    # ... 其他参数
+)
+```
+
+#### 从项目目录部署
+
+```python
+result = await app.deploy(
+    deployer,
+    project_dir="/path/to/project",  # 项目目录
+    cmd="python main.py",  # 启动命令
+    deploy_name="my-agent-app",
+    # ... 其他参数
+)
+```
+
+### 测试部署的服务
+
+部署后，您可以使用 curl 测试端点：
+
+```bash
+# 健康检查
+curl https://<your-endpoint-url>/health
+
+# 测试同步端点（带会话亲和性）
+curl -X POST https://<your-endpoint-url>/sync \
+  -H "Content-Type: application/json" \
+  -H "x-agentscope-runtime-session-id: 123" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "你好，最近怎么样？"
+          }
+        ]
+      }
+    ],
+    "session_id": "123"
+  }'
+
+# 测试流式端点
+curl -X POST https://<your-endpoint-url>/stream_async \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -H "x-agentscope-runtime-session-id: 123" \
+  --no-buffer \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "给我讲个故事"
+          }
+        ]
+      }
+    ],
+    "session_id": "123"
+  }'
+```
+
+**注意**：`x-agentscope-runtime-session-id` 请求头启用会话亲和性，将具有相同会话 ID 的请求路由到同一 FC 实例，以支持有状态操作。
+

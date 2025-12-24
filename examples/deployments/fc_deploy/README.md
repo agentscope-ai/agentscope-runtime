@@ -1,24 +1,25 @@
-# AgentRun Deployment Example
+# FC Deployment Example
 
-This example demonstrates how to deploy an AgentScope Runtime agent to Alibaba Cloud AgentRun using the built-in AgentRun deployer.
+This example demonstrates how to deploy an AgentScope Runtime agent to Alibaba Cloud Function Compute (FC) using the built-in FC deployer.
 
 ## Overview
 
-The `app_deploy_to_agentrun.py` script shows how to:
+The `app_deploy_to_fc.py` script shows how to:
 - Configure OSS (Object Storage Service) for storing deployment artifacts
-- Set up AgentRun connection and configuration
-- Deploy an LLM agent to Alibaba Cloud AgentRun
+- Set up FC connection and configuration
+- Deploy an LLM agent to Alibaba Cloud Function Compute
 - Package and upload the agent application
-- Access the deployed service through AgentRun console
+- Access the deployed service through FC HTTP trigger
 
 ## Prerequisites
 
 Before running this example, ensure you have:
 
-1. **Alibaba Cloud Account**: Active Alibaba Cloud account with AgentRun service enabled
+1. **Alibaba Cloud Account**: Active Alibaba Cloud account with Function Compute service enabled
 2. **API Keys**: Required Alibaba Cloud credentials and DashScope API key
 3. **Python environment**: Python 3.10+ with agentscope-runtime installed
 4. **OSS Access**: Access to Alibaba Cloud Object Storage Service
+5. **Docker**: Docker Desktop installed for building deployment packages
 
 ## Setup
 
@@ -33,11 +34,18 @@ Before running this example, ensure you have:
    export ALIBABA_CLOUD_ACCESS_KEY_ID="your-access-key-id"
    export ALIBABA_CLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
 
+   # Required: FC Account ID
+   export FC_ACCOUNT_ID="your-fc-account-id"
+
    # Required: LLM API Key
    export DASHSCOPE_API_KEY="your-dashscope-api-key"
 
    # Optional: Region Configuration (default: cn-hangzhou)
-   export AGENT_RUN_REGION_ID="cn-hangzhou"
+   export FC_REGION_ID="cn-hangzhou"
+
+   # Optional: OSS Configuration
+   export OSS_REGION="cn-hangzhou"
+   export OSS_BUCKET_NAME="tmp-fc-deploy"
 
    # Optional: OSS-specific keys (will fallback to Alibaba Cloud keys if not set)
    export OSS_ACCESS_KEY_ID="your-oss-access-key-id"
@@ -61,40 +69,38 @@ oss_config = OSSConfig(
                                   os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID")),
     access_key_secret=os.environ.get("OSS_ACCESS_KEY_SECRET",
                                       os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET")),
+    region=os.environ.get("OSS_REGION", "cn-hangzhou"),
+    bucket_name=os.environ.get("OSS_BUCKET_NAME", "tmp-fc-deploy"),
 )
 ```
 
 - **OSS credentials**: Optional specific OSS credentials, falls back to Alibaba Cloud credentials
 - **Automatic fallback**: Uses main Alibaba Cloud credentials if OSS-specific ones aren't provided
 
-### AgentRun Configuration
+### FC Configuration
 
 ```python
-agentrun_config = AgentRunConfig(
+fc_config = FCConfig(
     access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
     access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
-    region_id=os.environ.get("AGENT_RUN_REGION_ID", "cn-hangzhou"),
-    endpoint=os.environ.get("AGENT_RUN_ENDPOINT"),
+    account_id=os.environ.get("FC_ACCOUNT_ID"),
+    region_id=os.environ.get("FC_REGION_ID", "cn-hangzhou"),
 )
 ```
 
-- **`access_key_id/secret`**: Alibaba Cloud credentials for AgentRun API access
+- **`access_key_id/secret`**: Alibaba Cloud credentials for FC API access
+- **`account_id`**: Your Alibaba Cloud account ID for FC
 - **`region_id`**: Alibaba Cloud region (default: cn-hangzhou)
-- **`endpoint`**: Custom endpoint URL (optional, defaults to agentrun.{region_id}.aliyuncs.com)
 
-### Network Configuration
+### VPC Configuration
 
 ```python
-# Network mode: PUBLIC, PRIVATE, or PUBLIC_AND_PRIVATE
-network_mode = os.environ.get("AGENT_RUN_NETWORK_MODE", "PUBLIC")
-
-# VPC Configuration (required if using PRIVATE network mode)
-vpc_id = os.environ.get("AGENT_RUN_VPC_ID")
-security_group_id = os.environ.get("AGENT_RUN_SECURITY_GROUP_ID")
-vswitch_ids = os.environ.get("AGENT_RUN_VSWITCH_IDS")  # JSON array format
+# VPC Configuration (optional, for private network deployment)
+vpc_id = os.environ.get("FC_VPC_ID")
+security_group_id = os.environ.get("FC_SECURITY_GROUP_ID")
+vswitch_ids = os.environ.get("FC_VSWITCH_IDS")  # JSON array format
 ```
 
-- **`network_mode`**: Defines network accessibility (PUBLIC/PRIVATE/PUBLIC_AND_PRIVATE)
 - **`vpc_id`**: VPC identifier for private network deployment
 - **`security_group_id`**: Security group for network access control
 - **`vswitch_ids`**: List of vSwitch IDs for high availability
@@ -103,36 +109,36 @@ vswitch_ids = os.environ.get("AGENT_RUN_VSWITCH_IDS")  # JSON array format
 
 ```python
 # CPU and Memory allocation
-cpu = float(os.environ.get("AGENT_RUN_CPU", "2.0"))  # in cores
-memory = int(os.environ.get("AGENT_RUN_MEMORY", "2048"))  # in MB
+cpu = float(os.environ.get("FC_CPU", "2.0"))  # in cores
+memory = int(os.environ.get("FC_MEMORY", "2048"))  # in MB
+disk = int(os.environ.get("FC_DISK", "512"))  # in MB
 ```
 
-- **`cpu`**: CPU cores allocated to the agent (default: 2.0)
-- **`memory`**: Memory in MB allocated to the agent (default: 2048)
+- **`cpu`**: CPU cores allocated to the function (default: 2.0)
+- **`memory`**: Memory in MB allocated to the function (default: 2048)
+- **`disk`**: Disk size in MB allocated to the function (default: 512)
 
 ### Log Configuration
 
 ```python
 # Optional log configuration
-log_store = os.environ.get("AGENT_RUN_LOG_STORE")
-log_project = os.environ.get("AGENT_RUN_LOG_PROJECT")
+log_store = os.environ.get("FC_LOG_STORE")
+log_project = os.environ.get("FC_LOG_PROJECT")
 ```
 
 - **`log_store`**: SLS log store name for application logs
 - **`log_project`**: SLS log project name for log management
 
-### Execution Configuration
+### Session Configuration
 
 ```python
-# Execution settings
-execution_role_arn = os.environ.get("AGENT_RUN_EXECUTION_ROLE_ARN")
-session_concurrency_limit = int(os.environ.get("AGENT_RUN_SESSION_CONCURRENCY_LIMIT", "1"))
-session_idle_timeout_seconds = int(os.environ.get("AGENT_RUN_SESSION_IDLE_TIMEOUT_SECONDS", "600"))
+# Session settings
+session_concurrency_limit = int(os.environ.get("FC_SESSION_CONCURRENCY_LIMIT", "200"))
+session_idle_timeout_seconds = int(os.environ.get("FC_SESSION_IDLE_TIMEOUT_SECONDS", "3600"))
 ```
 
-- **`execution_role_arn`**: RAM role ARN for resource access
-- **`session_concurrency_limit`**: Maximum concurrent sessions (default: 1)
-- **`session_idle_timeout_seconds`**: Session idle timeout in seconds (default: 600)
+- **`session_concurrency_limit`**: Maximum concurrent sessions per instance (default: 200)
+- **`session_idle_timeout_seconds`**: Session idle timeout in seconds (default: 3600)
 
 ### Deployment Configuration
 
@@ -162,7 +168,7 @@ deployment_config = {
 ```
 
 #### Basic Configuration
-- **`deploy_name`**: Name for the deployment in AgentRun
+- **`deploy_name`**: Name for the FC function
 - **`telemetry_enabled`**: Enable telemetry and monitoring
 
 #### Dependencies Configuration
@@ -170,20 +176,20 @@ deployment_config = {
 - **`extra_packages`**: Additional local Python files to include
 
 #### Environment Variables
-- **Runtime environment**: Configuration injected into the deployed service
+- **Runtime environment**: Configuration injected into the deployed function
 
 ## Running the Deployment
 
 1. **Customize the configuration**:
-   Edit `app_deploy_to_agentrun.py` to match your environment:
+   Edit `app_deploy_to_fc.py` to match your environment:
    - Update deployment name if needed
    - Adjust dependencies based on your agent requirements
    - The script creates an AgentScopeAgent automatically
 
 2. **Run the deployment**:
    ```bash
-   cd examples/deployments/agentrun_deploy
-   python app_deploy_to_agentrun.py
+   cd examples/deployments/fc_deploy
+   python app_deploy_to_fc.py
    ```
 
 3. **Choose deployment method**:
@@ -197,17 +203,18 @@ deployment_config = {
    - Deployment ID and status
    - Wheel package path
    - OSS artifact URL
-   - Resource name and AgentRuntime ID
-   - AgentRun console URL for management
+   - Resource name and Function Name
+   - FC console URL for management
+   - Endpoint URL for API access
 
 5. **Access the deployed service**:
-   After successful deployment, access your agent through AgentRun:
-   - Check deployment status in AgentRun console
+   After successful deployment, access your agent through FC HTTP trigger:
+   - Check deployment status in FC console
    - Use provided API endpoints for testing
 
 ## API Endpoints
 
-After successful deployment, the service provides the following endpoints through AgentRun:
+After successful deployment, the service provides the following endpoints through FC HTTP trigger:
 
 ### Basic Endpoints
 - `GET /health` - Health check
@@ -222,20 +229,20 @@ After successful deployment, the service provides the following endpoints throug
 
 ## Test Commands
 
-Once deployed, you can test using the provided URLs from AgentRun:
+Once deployed, you can test using the provided URLs from FC:
 
-Hint: AgentRun is session affinity, add X-Agentrun-Session-Id: <session-id> to the headers, the request will be bounded to a fixed instance
+**Hint**: FC supports session affinity. Add `x-agentscope-runtime-session-id: <session-id>` to the headers, and the request will be routed to a fixed instance.
 
 ### Health Check
 ```bash
-curl https://your-agentrun-url/health
+curl https://your-fc-endpoint-url/health
 ```
 
 ### Synchronous Request
 ```bash
-curl -X POST https://your-agentrun-url/sync \
+curl -X POST https://your-fc-endpoint-url/sync \
   -H "Content-Type: application/json" \
-  -H "X-Agentrun-Session-Id: 123" \
+  -H "x-agentscope-runtime-session-id: 123" \
   -d '{
     "input": [
       {
@@ -254,9 +261,9 @@ curl -X POST https://your-agentrun-url/sync \
 
 ### Asynchronous Request
 ```bash
-curl -X POST https://your-agentrun-url/async \
+curl -X POST https://your-fc-endpoint-url/async \
   -H "Content-Type: application/json" \
-  -H "X-Agentrun-Session-Id: 123" \
+  -H "x-agentscope-runtime-session-id: 123" \
   -d '{
     "input": [
       {
@@ -275,9 +282,9 @@ curl -X POST https://your-agentrun-url/async \
 
 ### Streaming Request
 ```bash
-curl -X POST https://your-agentrun-url/stream_async \
+curl -X POST https://your-fc-endpoint-url/stream_async \
   -H "Content-Type: application/json" \
-  -H "X-Agentrun-Session-Id: 123" \
+  -H "x-agentscope-runtime-session-id: 123" \
   -H "Accept: text/event-stream" \
   --no-buffer \
   -d '{
@@ -304,65 +311,74 @@ curl -X POST https://your-agentrun-url/stream_async \
 ALIBABA_CLOUD_ACCESS_KEY_ID="your-access-key-id"
 ALIBABA_CLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
 
+# FC Account ID
+FC_ACCOUNT_ID="your-fc-account-id"
+
 # LLM Service
 DASHSCOPE_API_KEY="your-dashscope-api-key"
 ```
 
 ### Optional Variables
 
-#### Region and Endpoint
+#### Region Configuration
 ```bash
-# Region Configuration (default: cn-hangzhou)
-AGENT_RUN_REGION_ID="cn-hangzhou"
-
-# Endpoint Configuration (default: agentrun.{region_id}.aliyuncs.com)
-AGENT_RUN_ENDPOINT="agentrun.cn-hangzhou.aliyuncs.com"
+# FC Region (default: cn-hangzhou)
+FC_REGION_ID="cn-hangzhou"
 ```
 
-#### OSS Credentials
+#### OSS Configuration
 ```bash
+# OSS Region (default: cn-hangzhou)
+OSS_REGION="cn-hangzhou"
+
+# OSS Bucket Name
+OSS_BUCKET_NAME="tmp-fc-deploy"
+
 # OSS-specific credentials (optional, fallback to Alibaba Cloud credentials)
 OSS_ACCESS_KEY_ID="your-oss-access-key-id"
 OSS_ACCESS_KEY_SECRET="your-oss-access-key-secret"
 ```
 
-#### Network Configuration
+#### VPC Configuration
 ```bash
-# Network mode: PUBLIC/PRIVATE/PUBLIC_AND_PRIVATE (default: PUBLIC)
-AGENT_RUN_NETWORK_MODE="PUBLIC"
-
-# VPC Configuration (required if network_mode is PRIVATE or PUBLIC_AND_PRIVATE)
-AGENT_RUN_VPC_ID="vpc-xxxxxx"
-AGENT_RUN_SECURITY_GROUP_ID="sg-xxxxxx"
-AGENT_RUN_VSWITCH_IDS='["vsw-xxxxxx", "vsw-yyyyyy"]'
+# VPC Configuration (optional, for private network deployment)
+FC_VPC_ID="vpc-xxxxxx"
+FC_SECURITY_GROUP_ID="sg-xxxxxx"
+FC_VSWITCH_IDS='["vsw-xxxxxx", "vsw-yyyyyy"]'
 ```
 
 #### Resource Configuration
 ```bash
 # CPU allocation in cores (default: 2.0)
-AGENT_RUN_CPU="2.0"
+FC_CPU="2.0"
 
 # Memory allocation in MB (default: 2048)
-AGENT_RUN_MEMORY="2048"
+FC_MEMORY="2048"
+
+# Disk allocation in MB (default: 512)
+FC_DISK="512"
 ```
 
 #### Log Configuration
 ```bash
 # If both log_store and log_project are provided, log_config will be created
-AGENT_RUN_LOG_STORE="your-log-store-name"
-AGENT_RUN_LOG_PROJECT="your-log-project-name"
+FC_LOG_STORE="your-log-store-name"
+FC_LOG_PROJECT="your-log-project-name"
+```
+
+#### Session Configuration
+```bash
+# Session concurrency limit per instance (default: 200)
+FC_SESSION_CONCURRENCY_LIMIT="200"
+
+# Session idle timeout in seconds (default: 3600)
+FC_SESSION_IDLE_TIMEOUT_SECONDS="3600"
 ```
 
 #### Execution Configuration
 ```bash
 # Execution role ARN (optional)
-AGENT_RUN_EXECUTION_ROLE_ARN="acs:ram::xxxxx:role/your-role-name"
-
-# Session concurrency limit (default: 1)
-AGENT_RUN_SESSION_CONCURRENCY_LIMIT="1"
-
-# Session idle timeout in seconds (default: 600)
-AGENT_RUN_SESSION_IDLE_TIMEOUT_SECONDS="600"
+FC_EXECUTION_ROLE_ARN="acs:ram::xxxxx:role/your-role-name"
 ```
 
 ## Troubleshooting
@@ -372,25 +388,27 @@ AGENT_RUN_SESSION_IDLE_TIMEOUT_SECONDS="600"
 1. **Missing Environment Variables**:
    The script will check for required variables and display missing ones:
    ```bash
-   ❌ Missing required environment vars: ALIBABA_CLOUD_ACCESS_KEY_ID, ALIBABA_CLOUD_ACCESS_KEY_SECRET
+   ❌ Missing required environment vars: ALIBABA_CLOUD_ACCESS_KEY_ID, FC_ACCOUNT_ID
    ```
 
-2. **Authentication Issues**:
+2. **Docker Not Available**:
+   FC deployment requires Docker for building packages:
+   ```bash
+   Docker is required for building. Install Docker Desktop: https://www.docker.com/products/docker-desktop
+   ```
+
+3. **Authentication Issues**:
    Verify your Alibaba Cloud credentials have proper permissions:
-   - AgentRun service access
+   - Function Compute service access
    - OSS read/write permissions
    - DashScope API access
 
-3. **Region Configuration**:
-   Ensure your selected region supports AgentRun service. Common regions:
+4. **Region Configuration**:
+   Ensure your selected region supports FC service. Common regions:
    - cn-hangzhou (default)
    - cn-shanghai
    - cn-beijing
-
-4. **Network Connectivity**:
-   - For PUBLIC mode: No additional configuration needed
-   - For PRIVATE mode: Ensure VPC, security group, and vSwitch are properly configured
-   - For PUBLIC_AND_PRIVATE mode: Both public and private endpoints will be available
+   - cn-shenzhen
 
 5. **Resource Limits**:
    Ensure your account has sufficient quota for:
@@ -401,7 +419,7 @@ AGENT_RUN_SESSION_IDLE_TIMEOUT_SECONDS="600"
 ### Logs and Debugging
 
 - Monitor deployment progress through script output
-- Check AgentRun console for deployment status
+- Check FC console for function status
 - Review error messages for specific configuration issues
 - Verify all required environment variables are set
 - If log configuration is provided, check SLS logs for runtime issues
@@ -484,11 +502,11 @@ load_dotenv(".env")
 
 ## Comparison with Other Deployment Methods
 
-| Feature | Daemon | Detached Process | Kubernetes | AgentRun |
-|---------|--------|------------------|------------|----------|
+| Feature | Daemon | Detached Process | Kubernetes | FC |
+|---------|--------|------------------|------------|-----|
 | Process Control | Blocking | Independent | Container | Serverless |
 | Scalability | Single | Single Node | Multi-node | Auto-scaling |
-| Resource Isolation | Process-level | Process-level | Container-level | Container-level |
+| Resource Isolation | Process-level | Process-level | Container-level | Function-level |
 | Management | Manual | API-based | Orchestrated | Fully-managed |
 | Monitoring | Manual | Limited | Full | Built-in Dashboard |
 | Cold Start | N/A | N/A | Fast | Optimized |
@@ -497,28 +515,27 @@ load_dotenv(".env")
 
 ## Files Structure
 
-- `app_deploy_to_agentrun.py`: Main deployment script with AgentApp and multiple endpoints
+- `app_deploy_to_fc.py`: Main deployment script with AgentApp and multiple endpoints
 - `.env`: Environment variables configuration file (create from .env.example)
 - `.env.example`: Template for environment variables
+- `others/`: Additional project files to include in deployment
 
 ## Next Steps
 
 After successful deployment:
 
-1. **Access AgentRun Console**: Use the provided URL to manage your deployment
+1. **Access FC Console**: Use the provided URL to manage your function
 2. **Test API Endpoints**: Use the curl commands provided in the deployment output
-3. **Configure Networking**: Set up VPC access if needed for private deployment
-4. **Monitor Performance**: Use AgentRun's built-in monitoring and metrics
+3. **Configure VPC**: Set up VPC access if needed for private deployment
+4. **Monitor Performance**: Use FC's built-in monitoring and metrics
 5. **Configure Logging**: Set up SLS log service for centralized logging
-6. **Adjust Resources**: Modify CPU and memory allocation based on usage patterns
-7. **Set Up Auto-scaling**: Configure session concurrency limits for optimal performance
+6. **Adjust Resources**: Modify CPU, memory, and disk allocation based on usage patterns
+7. **Set Up Session Affinity**: Configure session settings for optimal performance
 
 ## Additional Resources
 
-- **AgentRun Console**: [https://functionai.console.aliyun.com/cn-hangzhou/agent/](https://functionai.console.aliyun.com/cn-hangzhou/agent/)
+- **FC Console**: [https://fcnext.console.aliyun.com/](https://fcnext.console.aliyun.com/)
 - **AgentScope Runtime**: [https://github.com/agentscope-ai/agentscope-runtime](https://github.com/agentscope-ai/agentscope-runtime)
 - **DashScope API**: [https://dashscope.aliyun.com/](https://dashscope.aliyun.com/)
 
-This example provides a complete workflow for deploying AgentScope Runtime agents to Alibaba Cloud AgentRun with serverless, production-ready configurations.
-
-
+This example provides a complete workflow for deploying AgentScope Runtime agents to Alibaba Cloud Function Compute with serverless, production-ready configurations.

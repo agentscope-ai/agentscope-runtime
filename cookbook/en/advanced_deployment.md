@@ -14,20 +14,21 @@ kernelspec:
 
 # Advanced Deployment Guide
 
-This guide covers the six advanced deployment methods available in AgentScope Runtime, providing production-ready solutions for different scenarios: **Local Daemon**, **Detached Process**, **Kubernetes Deployment**, **ModelStudio Deployment**, **AgentRun Deployment**, and **Knative Deployment**.
+This guide covers the seven advanced deployment methods available in AgentScope Runtime, providing production-ready solutions for different scenarios: **Local Daemon**, **Detached Process**, **Kubernetes Deployment**, **ModelStudio Deployment**, **AgentRun Deployment**, **Knative Deployment** and **Function Compute (FC) Deployment**.
 
 ## Overview of Deployment Methods
 
-AgentScope Runtime offers six distinct deployment approaches, each tailored for specific use cases:
+AgentScope Runtime offers seven distinct deployment approaches, each tailored for specific use cases:
 
-| Deployment Type      | Use Case | Scalability | Management | Resource Isolation |
-|----------------------|----------|-------------|------------|-------------------|
-| **Local Daemon**     | Development & Testing | Single Process | Manual | Process-level |
-| **Detached Process** | Production Services | Single Node | Automated | Process-level |
-| **Kubernetes**       | Enterprise & Cloud | Single-node (multi-node support coming) | Orchestrated | Container-level |
-| **ModelStudio**      | Alibaba Cloud Platform | Cloud-managed | Platform-managed | Container-level |
-| **AgentRun**         | AgentRun Platform | Cloud-managed | Platform-managed | Container-level |
-| **Knative**          | Enterprise & Cloud | Single-node (multi-node support coming) | Orchestrated | Container-level |
+| Deployment Type           | Use Case | Scalability | Management | Resource Isolation |
+|---------------------------|----------|-------------|------------|-------------------|
+| **Local Daemon**          | Development & Testing | Single Process | Manual | Process-level |
+| **Detached Process**      | Production Services | Single Node | Automated | Process-level |
+| **Kubernetes**            | Enterprise & Cloud | Single-node (multi-node support coming) | Orchestrated | Container-level |
+| **ModelStudio**           | Alibaba Cloud Platform | Cloud-managed | Platform-managed | Container-level |
+| **AgentRun**              | AgentRun Platform | Cloud-managed | Platform-managed | Container-level |
+| **Knative**               | Enterprise & Cloud | Single-node (multi-node support coming) | Orchestrated | Container-level |
+| **Function Compute (FC)** | Alibaba Cloud Serverless | Cloud-managed | Platform-managed | MicroVM-level |
 
 ### Deployment Modes (DeploymentMode)
 
@@ -819,4 +820,226 @@ if __name__ == "__main__":
 - Containerized Serverless deployment
 - Provides automatic scaling from zero to thousands of instances, intelligent traffic routing
 - Resource limits and health checks configured
+
+## Method 7: Serverless Deployment: Function Compute (FC)
+
+**Best For**: Alibaba Cloud users who need to deploy agents to Function Compute (FC) service with automated build, upload, and deployment workflows. FC provides a true serverless experience with pay-per-use pricing and automatic scaling.
+
+### Features
+- Serverless deployment on Alibaba Cloud Function Compute
+- Automatic project building and packaging with Docker
+- OSS integration for artifact storage
+- HTTP trigger for public access
+- Session affinity support for stateful applications
+- VPC and logging configuration support
+- Pay-per-use pricing model
+
+### FC Deployment Prerequisites
+
+```bash
+# Ensure environment variables are set
+# More env settings, please refer to the table below
+export ALIBABA_CLOUD_ACCESS_KEY_ID="your-access-key-id"
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
+export FC_ACCOUNT_ID="your-fc-account-id"
+export FC_REGION_ID="cn-hangzhou"  # or other regions
+
+# OSS configuration (for storing build artifacts)
+export OSS_ACCESS_KEY_ID="your-oss-access-key-id"
+export OSS_ACCESS_KEY_SECRET="your-oss-access-key-secret"
+export OSS_REGION="cn-hangzhou"
+export OSS_BUCKET_NAME="your-bucket-name"
+```
+
+You can set the following environment variables or `FCConfig` to customize the deployment:
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `ALIBABA_CLOUD_ACCESS_KEY_ID` | Yes | - | Alibaba Cloud Access Key ID |
+| `ALIBABA_CLOUD_ACCESS_KEY_SECRET` | Yes | - | Alibaba Cloud Access Key Secret |
+| `FC_ACCOUNT_ID` | Yes | - | Alibaba Cloud Account ID for FC |
+| `FC_REGION_ID` | No | `cn-hangzhou` | Region ID for FC service |
+| `FC_LOG_STORE` | No | - | Log store name (requires log_project to be set) |
+| `FC_LOG_PROJECT` | No | - | Log project name (requires log_store to be set) |
+| `FC_VPC_ID` | No | - | VPC ID for private network access |
+| `FC_SECURITY_GROUP_ID` | No | - | Security Group ID (required if vpc_id is set) |
+| `FC_VSWITCH_IDS` | No | - | VSwitch IDs in JSON array format (required if vpc_id is set) |
+| `FC_CPU` | No | `2.0` | CPU allocation in cores |
+| `FC_MEMORY` | No | `2048` | Memory allocation in MB |
+| `FC_DISK` | No | `512` | Disk allocation in MB |
+| `FC_EXECUTION_ROLE_ARN` | No | - | Execution role ARN for permissions |
+| `FC_SESSION_CONCURRENCY_LIMIT` | No | `200` | Session concurrency limit per instance |
+| `FC_SESSION_IDLE_TIMEOUT_SECONDS` | No | `3600` | Session idle timeout in seconds |
+| `OSS_ACCESS_KEY_ID` | No | `ALIBABA_CLOUD_ACCESS_KEY_ID` | OSS Access Key ID (falls back to Alibaba Cloud credentials) |
+| `OSS_ACCESS_KEY_SECRET` | No | `ALIBABA_CLOUD_ACCESS_KEY_SECRET` | OSS Access Key Secret (falls back to Alibaba Cloud credentials) |
+| `OSS_REGION` | No | `cn-hangzhou` | OSS region |
+| `OSS_BUCKET_NAME` | Yes | - | OSS bucket name for storing build artifacts |
+
+### Implementation
+
+Using the agent and endpoints defined in the {ref}`Common Agent Setup<common-agent-setup>` section:
+
+```{code-cell}
+# fc_deploy.py
+import asyncio
+import os
+from agentscope_runtime.engine.deployers.fc_deployer import (
+    FCDeployManager,
+    OSSConfig,
+    FCConfig,
+)
+from agent_app import app  # Import configured app
+
+async def deploy_to_fc():
+    """Deploy AgentApp to Alibaba Cloud Function Compute (FC)"""
+
+    # Configure OSS and FC
+    deployer = FCDeployManager(
+        oss_config=OSSConfig(
+            access_key_id=os.environ.get("OSS_ACCESS_KEY_ID"),
+            access_key_secret=os.environ.get("OSS_ACCESS_KEY_SECRET"),
+            region=os.environ.get("OSS_REGION", "cn-hangzhou"),
+            bucket_name=os.environ.get("OSS_BUCKET_NAME"),
+        ),
+        fc_config=FCConfig(
+            access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
+            access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+            account_id=os.environ.get("FC_ACCOUNT_ID"),
+            region_id=os.environ.get("FC_REGION_ID", "cn-hangzhou"),
+        ),
+    )
+
+    # Execute deployment
+    result = await app.deploy(
+        deployer,
+        deploy_name="agent-app-example",
+        requirements=["agentscope", "fastapi", "uvicorn"],
+        environment={
+            "PYTHONPATH": "/code",
+            "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+        },
+    )
+
+    print(f"✅ Deployed to FC: {result['url']}")
+    print(f"📍 Function Name: {result['function_name']}")
+    print(f"🔗 Endpoint URL: {result['endpoint_url']}")
+    print(f"📦 Artifact URL: {result['artifact_url']}")
+    return result
+
+if __name__ == "__main__":
+    asyncio.run(deploy_to_fc())
+```
+
+**Key Points**:
+- Automatically builds project with Docker and creates a deployable zip package
+- Uploads artifacts to OSS for FC to pull
+- Creates FC function with HTTP trigger for public access
+- Supports session affinity via `x-agentscope-runtime-session-id` header
+- Supports updating existing deployments (via `function_name` parameter)
+
+### Configuration
+
+#### OSSConfig
+
+OSS configuration for storing build artifacts:
+
+```python
+OSSConfig(
+    access_key_id="your-access-key-id",
+    access_key_secret="your-access-key-secret",
+    region="cn-hangzhou",
+    bucket_name="your-bucket-name",
+)
+```
+
+#### FCConfig
+
+Function Compute service configuration:
+
+```python
+FCConfig(
+    access_key_id="your-access-key-id",
+    access_key_secret="your-access-key-secret",
+    account_id="your-account-id",
+    region_id="cn-hangzhou",  # Supported regions: cn-hangzhou, cn-beijing, etc.
+    cpu=2.0,  # CPU cores
+    memory=2048,  # Memory in MB
+    disk=512,  # Disk in MB
+)
+```
+
+### Advanced Usage
+
+#### Updating Existing Function
+
+```python
+result = await app.deploy(
+    deployer,
+    function_name="existing-function-name",  # Update existing function
+    # ... other parameters
+)
+```
+
+#### Deploying from Project Directory
+
+```python
+result = await app.deploy(
+    deployer,
+    project_dir="/path/to/project",  # Project directory
+    cmd="python main.py",  # Startup command
+    deploy_name="my-agent-app",
+    # ... other parameters
+)
+```
+
+### Testing the Deployed Service
+
+Once deployed, you can test the endpoints using curl:
+
+```bash
+# Health check
+curl https://<your-endpoint-url>/health
+
+# Test sync endpoint with session affinity
+curl -X POST https://<your-endpoint-url>/sync \
+  -H "Content-Type: application/json" \
+  -H "x-agentscope-runtime-session-id: 123" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello, how are you?"
+          }
+        ]
+      }
+    ],
+    "session_id": "123"
+  }'
+
+# Test streaming endpoint
+curl -X POST https://<your-endpoint-url>/stream_async \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -H "x-agentscope-runtime-session-id: 123" \
+  --no-buffer \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Tell me a story"
+          }
+        ]
+      }
+    ],
+    "session_id": "123"
+  }'
+```
+
+**Note**: The `x-agentscope-runtime-session-id` header enables session affinity, which routes requests with the same session ID to the same FC instance for stateful operations.
 
