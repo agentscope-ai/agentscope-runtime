@@ -23,7 +23,7 @@ from ..protocol_adapter import ProtocolAdapter
 
 logger = logging.getLogger(__name__)
 
-AGUI_ENDPOINT_PATH = "/agui"
+AGUI_ENDPOINT_PATH = "/ag-ui"
 SSE_HEADERS = {
     "Cache-Control": "no-cache",
     "Connection": "keep-alive",
@@ -191,5 +191,8 @@ class AGUIDefaultAdapter(ProtocolAdapter):
             AGUI_ENDPOINT_PATH,
             self._handle_requests,
             methods=["POST"],
+            tags=[
+                "ag-ui",
+            ],
         )
         return app
