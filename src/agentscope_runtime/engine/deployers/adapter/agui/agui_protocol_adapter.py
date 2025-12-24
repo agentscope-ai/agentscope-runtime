@@ -23,7 +23,6 @@ from ..protocol_adapter import ProtocolAdapter
 
 logger = logging.getLogger(__name__)
 
-AGUI_ENDPOINT_PATH = "/ag-ui"
 SSE_HEADERS = {
     "Cache-Control": "no-cache",
     "Connection": "keep-alive",
@@ -78,8 +77,24 @@ class FlexibleRunAgentInput(BaseModel):
     }
 
 
+class AGUIAdaptorConfig(BaseModel):
+    """
+    Configuration for AGUI adaptor.
+
+    Attributes:
+        route_path: The path of the AGUI endpoint.
+    """
+
+    route_path: str = Field(default="/ag-ui")
+
+
 class AGUIDefaultAdapter(ProtocolAdapter):
-    def __init__(self, **kwargs) -> None:
+    def __init__(
+        self,
+        config: Optional[AGUIAdaptorConfig] = None,
+        **kwargs,
+    ) -> None:
+        self.config = config or AGUIAdaptorConfig()
         super().__init__(**kwargs)
         self._execution_func: Optional[
             Callable[[AgentRequest], AsyncGenerator[Event, None]]
@@ -99,7 +114,11 @@ class AGUIDefaultAdapter(ProtocolAdapter):
         """
         await self._semaphore.acquire()
         request_id = f"agui_{uuid4()}"
-        logger.info("[AGUI] start request_id=%s", request_id)
+        logger.info(
+            "[AGUI] start request_id=%s, request=%s",
+            request_id,
+            agent_run_input.model_dump_json(by_alias=True, ensure_ascii=False),
+        )
         try:
             return StreamingResponse(
                 self._stream_with_semaphore(
@@ -126,7 +145,11 @@ class AGUIDefaultAdapter(ProtocolAdapter):
             ) from e
 
     def as_sse_data(self, event: AGUIEvent) -> str:
-        data = event.model_dump(mode="json", exclude_none=True)
+        data = event.model_dump(
+            mode="json",
+            exclude_none=True,
+            by_alias=True,
+        )
         return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
     async def _generate_stream_response(
@@ -188,7 +211,7 @@ class AGUIDefaultAdapter(ProtocolAdapter):
         """
         self._execution_func = func
         app.add_api_route(
-            AGUI_ENDPOINT_PATH,
+            self.config.route_path,
             self._handle_requests,
             methods=["POST"],
             tags=[

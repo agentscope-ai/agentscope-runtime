@@ -251,20 +251,18 @@ class AGUIAdapter:
 
         Accepts both RunAgentInput and FlexibleRunAgentInput.
         """
-
-        if (
-            agui_request.forwarded_props
-            or agui_request.context
-            or agui_request.tools
-        ):
-            logger.warning(
-                "Forwarded props, context, and tools are not supported "
-                "yet: %s",
-                agui_request.model_dump(exclude_none=True),
-            )
         converted_messages = convert_ag_ui_messages_to_agent_request_messages(
             agui_request.messages,
         )
+
+        user_id_fields = ["user_id", "userId"]
+
+        user_id = "default_user_id"
+        forward_props = agui_request.forwarded_props or {}
+        for user_id_field in user_id_fields:
+            if user_id_field in forward_props:
+                user_id = forward_props[user_id_field]
+                break
 
         agent_request = AgentRequest.model_validate(
             {
@@ -275,6 +273,7 @@ class AGUIAdapter:
                 "stream": True,  # AG-UI request is always in stream mode
                 "id": self.run_id,
                 "session_id": self.thread_id,
+                "user_id": user_id,
             },
         )
         return agent_request
