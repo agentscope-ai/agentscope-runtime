@@ -358,7 +358,7 @@ body.preview-active {
 </style>
 
 <script>
-    const VERSIONS = ["preview", "v1.0.2", "v1.0.1", "v1.0.0", "v0.2.0"];
+    const VERSIONS = ["preview", "v1.0.3", "v1.0.2", "v1.0.1", "v1.0.0", "v0.2.0"];
     const VERSION_PATTERN = /^\/(v\d+\.\d+\.\d+)\//;
 
     function populateVersionMenu() {
@@ -656,7 +656,7 @@ body.preview-active {
         <span class="n">redis_client</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">aioredis</span><span class="o">.</span><span class="n">Redis</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">socket_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span>
         <span class="n">socket_connect_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span>
-        <span class="n">max_connections</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="n">max_connections</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">retry_on_timeout</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">ttl_seconds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3600</span><span class="p">,</span>  <span class="c1"># 1 hour in seconds</span>
         <span class="n">health_check_interval</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">,</span>
@@ -672,7 +672,7 @@ body.preview-active {
 <span class="sd">            socket_connect_timeout: Socket connect timeout in seconds</span>
 <span class="sd">            (default: 5.0)</span>
 <span class="sd">            max_connections: Maximum number of connections in the pool</span>
-<span class="sd">            (default: 50)</span>
+<span class="sd">            (default: None)</span>
 <span class="sd">            retry_on_timeout: Whether to retry on timeout (default: True)</span>
 <span class="sd">            ttl_seconds: Time-to-live in seconds for state data. If None,</span>
 <span class="sd">            data never expires (default: 3600, i.e., 1 hour)</span>
@@ -831,7 +831,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2025-12-23</div>
+              Last updated on 2025-12-24</div>
           </div>
           <div class="right-details">
             <div class="icons">
