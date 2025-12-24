@@ -13,6 +13,7 @@ if TYPE_CHECKING:
         KubernetesDeployManager,
         ModelstudioDeployManager,
         AgentRunDeployManager,
+        FCDeployManager,
     )
 
 
@@ -24,5 +25,6 @@ install_lazy_loader(
         "KubernetesDeployManager": ".deployers",
         "ModelstudioDeployManager": ".deployers",
         "AgentRunDeployManager": ".deployers",
+        "FCDeployManager": ".deployers",
     },
 )
