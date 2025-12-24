@@ -44,6 +44,7 @@ parts:
       - file: en/ut.md
       - file: en/langgraph_guidelines.md
       - file: en/agno_guidelines.md
+      - file: en/ms_agent_framework_guidelines.md
   - file: en/contribute.md
     sections:
       - file: en/README.md
@@ -107,6 +108,7 @@ parts:
       - file: zh/ut.md
       - file: zh/langgraph_guidelines.md
       - file: zh/agno_guidelines.md
+      - file: zh/ms_agent_framework_guidelines.md
   - file: zh/contribute.md
     sections:
     - file: zh/README.md

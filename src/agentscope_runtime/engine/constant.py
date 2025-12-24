@@ -5,4 +5,5 @@ ALLOWED_FRAMEWORK_TYPES = [
     "autogen",
     "langgraph",
     "agno",
+    "ms_agent_framework",
 ]

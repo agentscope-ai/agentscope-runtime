@@ -91,6 +91,7 @@ ext = [
     "PyYAML",
     "agno>=2.3.8",
     "nacos-sdk-python>=3.0.0",
+    "agent-framework>=1.0.0b251120",
 ]
 
 [tool.pytest.ini_options]
