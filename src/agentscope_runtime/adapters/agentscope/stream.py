@@ -97,10 +97,9 @@ async def adapt_agentscope_message_stream(
                 else:
                     new_tool_blocks.append(block)
             if new_tool_blocks:
-                if tool_start:
+                if tool_start:  # Only for close the last msg
                     msg.content = new_tool_blocks
                 else:
-                    msg.content = new_blocks
                     tool_start = True
 
             else:
