@@ -4,7 +4,6 @@ import asyncio
 import logging
 import time
 from pathlib import Path
-import pytest
 from dotenv import load_dotenv
 from agentscope_runtime.sandbox.enums import SandboxType
 from agentscope_runtime.sandbox.box.e2b.e2b_sandbox import (
@@ -81,7 +80,6 @@ def test_e2b_sandbox_direct():
         return False
 
 
-@pytest.mark.anyio
 async def test_e2b_sandbox_service():
     """
     Test E2B sandbox via SandboxService and EnvironmentManager.

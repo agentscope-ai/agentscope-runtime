@@ -3,7 +3,6 @@ import os
 import asyncio
 import logging
 from pathlib import Path
-import pytest
 from dotenv import load_dotenv
 from agentscope_runtime.sandbox.enums import SandboxType
 from agentscope_runtime.sandbox.box.cloud_api.cloud_computer_sandbox import (
@@ -330,7 +329,6 @@ def test_cloud_phone_api_sandbox_direct():
         return False
 
 
-@pytest.mark.anyio
 async def test_cloud_pc_api_sandbox_service():
     """
     Test Cloud PC Api sandbox via SandboxService and EnvironmentManager.
@@ -387,7 +385,6 @@ async def test_cloud_pc_api_sandbox_service():
         return False
 
 
-@pytest.mark.anyio
 async def test_cloud_phone_api_sandbox_service():
     """
     Test Cloud Api sandbox via SandboxService and EnvironmentManager.
@@ -456,9 +453,9 @@ async def main():
 
     tests = [
         ("Cloud Api Sandbox Service", test_cloud_pc_api_sandbox_service),
-        # ("Cloud Api Sandbox Service", test_cloud_phone_api_sandbox_service),
-        # ("AgentBay Sandbox Direct", test_cloud_pc_api_sandbox_direct()),
-        # ("AgentBay Sandbox Direct", test_cloud_phone_api_sandbox_direct()),
+        ("Cloud Api Sandbox Service", test_cloud_phone_api_sandbox_service),
+        ("AgentBay Sandbox Direct", test_cloud_pc_api_sandbox_direct()),
+        ("AgentBay Sandbox Direct", test_cloud_phone_api_sandbox_direct()),
     ]
 
     results = []
