@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 import logging
-import subprocess
-import platform
 from typing import Optional, List, Union
 from urllib.parse import urlencode, urljoin
 
@@ -11,6 +9,7 @@ from ...utils import build_image_uri
 from ...registry import SandboxRegistry
 from ...enums import SandboxType
 from ...constant import TIMEOUT
+from .box.host_checker import check_mobile_sandbox_host_readiness
 
 logger = logging.getLogger(__name__)
 
@@ -209,6 +208,9 @@ class MobileSandbox(MobileMixin, Sandbox):
             bearer_token,
             sandbox_type,
         )
+
+    def _check_host_readiness(self) -> None:
+        check_mobile_sandbox_host_readiness()
 
     def adb_use(
         self,
