@@ -1,4 +1,4 @@
-# Cloud Computer & Cloud Phone API Sandbox Documentation
+# Cloud Computer & Cloud Phone API Sandbox
 
 ## Overview
 
@@ -28,24 +28,24 @@ Note: Since the current implementation of cloud computer tools depends on Python
 The temporary storage directory for screenshot tools on cloud computers is under the C drive, so make sure this disk exists.
 
 #### Command Line Tools
-- [run_shell_command](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/shared/routers/generic.py#L116-L191): Run commands in PowerShell
-- [run_ipython_cell](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/shared/routers/generic.py#L28-L109): Execute Python code
-- [write_file](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/examples/agentbay_sandbox/agentscope_use_agentbay_sandbox.py#L205-L224): Write files
-- [read_file](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/examples/agentbay_sandbox/agentscope_use_agentbay_sandbox.py#L226-L243): Read files
-- [remove_file](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/cloud_api/client/cloud_phone_wy.py#L1537-L1545): Delete files
+- `run_shell_command`: Run commands in PowerShell
+- `run_ipython_cell`: Execute Python code
+- `write_file`: Write files
+- `read_file`: Read files
+- `remove_file`: Delete files
 
 #### Input Simulation Tools
-- [press_key](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/cloud_api/client/cloud_computer_wy.py#L1503-L1518): Press keys
+- `press_key`: Press keys
 - `click`: Click screen coordinates
 - `right_click`: Right-click
 - `click_and_type`: Click and input text
 - `append_text`: Append text at specified position
-- [mouse_move](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/cloud_api/client/cloud_computer_wy.py#L1686-L1704): Mouse movement
-- [scroll](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/cloud_api/client/cloud_computer_wy.py#L1839-L1854): Scroll
-- [scroll_pos](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/cloud_api/client/cloud_computer_wy.py#L1815-L1837): Scroll at specified position
+- `mouse_move`: Mouse movement
+- `scroll`: Scroll
+- `scroll_pos`: Scroll at specified position
 
 #### System Control Tools
-- [screenshot](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/examples/custom_sandbox/box/third_party/steel-browser/ui/src/steel-client/services.gen.ts#L67-L78): Screenshot
+- `screenshot`: Screenshot
 - `go_home`: Return to desktop
 - `launch_app`: Launch applications
 
@@ -54,24 +54,24 @@ The temporary storage directory for screenshot tools on cloud computers is under
 Note: The current text input tool is implemented through ADBKeyboard input method combined with clipboard, so please ensure that your cloud phone has installed the ADBKeyboard.apk input method.
 
 #### Command Line Tools
-- [run_shell_command](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/shared/routers/generic.py#L116-L191): Run ADB Shell commands
+- `run_shell_command`: Run ADB Shell commands
 
 #### Input Simulation Tools
 - `click`: Click screen coordinates
 - `type_text`: Input text
-- [slide](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/cloud_api/client/cloud_phone_wy.py#L1261-L1271): Slide screen
+- `slide`: Slide screen
 
 #### Navigation Control Tools
 - `go_home`: Return to home screen
-- [back](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/cloud_api/client/cloud_phone_wy.py#L1273-L1277): Back button
-- [menu](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/cloud_api/client/cloud_phone_wy.py#L1286-L1290): Menu button
-- [enter](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/cloud_api/client/cloud_phone_wy.py#L1292-L1296): Enter key
+- `back`: Back button
+- `menu`: Menu button
+- `enter`: Enter key
 - `kill_front_app`: Kill foreground application
 
 #### System Tools
-- [screenshot](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/examples/custom_sandbox/box/third_party/steel-browser/ui/src/steel-client/services.gen.ts#L67-L78): Screenshot
-- [send_file](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/cloud_api/client/cloud_phone_wy.py#L823-L849): Send file to cloud phone
-- [remove_file](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/cloud_api/client/cloud_phone_wy.py#L1537-L1545): Delete files on cloud phone
+- `screenshot`: Screenshot
+- `send_file`: Send file to cloud phone
+- `remove_file`: Delete files on cloud phone
 
 #### Page Interaction
 Unlike agentbay which does not have related OpenAPI to query remote page links, interaction pages can be used with Wuying client, or refer to Wuying WEBsdk to build a front-end HTML page for page interaction.
@@ -84,15 +84,15 @@ Currently, Agentscope-Runtime's sandbox containers are based on Docker implement
 
 ### Core Idea:
 
-The core idea is to encapsulate Wuying Cloud Computer & Cloud Phone API into Cloud API Sandbox and integrate it into AgentScope-Runtime as another cloud sandbox option. Since Cloud API Sandbox does not depend on containers, we create a [CloudSandbox](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/cloud/cloud_sandbox.py#L18-L253) base class that inherits from [Sandbox](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/box/sandbox.py#L14-L170) class. This enables Agentscope-Runtime to support both traditional container sandboxes and cloud-native sandboxes, maintaining consistency with traditional container sandboxes as much as possible.
+The core idea is to encapsulate Wuying Cloud Computer & Cloud Phone API into Cloud API Sandbox and integrate it into AgentScope-Runtime as another cloud sandbox option. Since Cloud API Sandbox does not depend on containers, we create a CloudSandbox base class that inherits from Sandbox class. This enables Agentscope-Runtime to support both traditional container sandboxes and cloud-native sandboxes, maintaining consistency with traditional container sandboxes as much as possible.
 
 ### 1. Core Architecture Integration
 
-- **New Sandbox Types**: [SandboxType.CLOUD_COMPUTER](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/enums.py#L72-L72), [SandboxType.CLOUD_PHONE](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/enums.py#L73-L73) enumerations for creating Cloud API Sandbox, supporting dynamic enumeration extension;
+- **New Sandbox Types**: `SandboxType.CLOUD_COMPUTER`, `SandboxType.CLOUD_PHONE` enumerations for creating Cloud API Sandbox, supporting dynamic enumeration extension;
 - **CloudSandbox Base Class**: Abstract base class providing unified interface for cloud service sandbox, not dependent on container management, communicating directly through cloud APIs, supporting expansion for different cloud providers;
 - **CloudComputerSandbox Implementation**: Inherits from CloudSandbox, accesses cloud sandbox directly through WuYing Cloud Computer API, implementing complete tool mapping and error handling;
 - **CloudPhoneSandbox Implementation**: Inherits from CloudSandbox, accesses cloud sandbox directly through WuYing Cloud Phone API, implementing complete tool mapping and error handling;
-- **SandboxService Support**: Maintaining compatibility with existing [sandbox_service](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/engine/services/sandbox/sandbox_service.py#L0-L210) calling methods, specially handling Cloud API sandbox types, resource cleanup;
+- **SandboxService Support**: Maintaining compatibility with existing `sandbox_service` calling methods, specially handling Cloud API sandbox types, resource cleanup;
 
 ### 2. Class Hierarchy Structure
 
@@ -123,8 +123,8 @@ src/agentscope_runtime/sandbox/
 
 ### 4. Service Layer Integration
 
-- **Registration Mechanism**: Using [@SandboxRegistry.register](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/registry.py#L38-L89) decorator for registration
-- **Service Integration**: Special handling of [CLOUD_COMPUTER](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/enums.py#L72-L72), [CLOUD_PHONE](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/sandbox/enums.py#L73-L73) types in [SandboxService](file:///Users/zlh/PycharmProjects/1/agentscope-runtime/src/agentscope_runtime/engine/services/sandbox/sandbox_service.py#L10-L209)
+- **Registration Mechanism**: Using `@SandboxRegistry.register` decorator for registration
+- **Service Integration**: Special handling of `CLOUD_COMPUTER`, `CLOUD_PHONE` types in `SandboxService`
 - **Compatibility**: Maintaining full compatibility with existing sandbox interfaces
 - **Lifecycle Management**: Supporting creation, connection, and release of cloud resources
 
