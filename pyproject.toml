@@ -91,6 +91,12 @@ ext = [
     "PyYAML",
     "agno>=2.3.8",
     "nacos-sdk-python>=3.0.0",
+    "aiohttp",
+    "alibabacloud_ecd20200930",
+    "alibabacloud_eds_aic20230930",
+    "alibabacloud_appstream_center20210218",
+    "e2b-desktop>=2.0.0",
+    "trio"
 ]
 
 [tool.pytest.ini_options]

@@ -278,6 +278,88 @@ with AgentbaySandbox(
 - 自动管理会话生命周期
 - 通过 API 直接与云服务通信
 
+
+**CloudApi沙箱（CloudComputerSandbox/CloudPhoneSandbox）**：基于阿里云无影云电脑和无影云手机API服务构建的 GUI 沙箱环境，允许用户远程控制云上环境（目前仅支持Windows 桌面环境或 Android环境）。
+* 注意：由于涉及到相关的云资源，使用前需要先在阿里云控制台创建无影云电脑桌面和无影云手机实例，以及对应环境变量配置
+* 详细请参考：{doc}`cloud_api_sandbox`
+```{code-cell}
+from agentscope_runtime.sandbox import CloudComputerSandbox
+
+sandbox = CloudComputerSandbox(
+    desktop_id="your_desktop_id"
+)
+
+# 运行PowerShell命令
+result = sandbox.call_tool("run_shell_command", {"command": "echo Hello World"})
+print(result["output"])
+
+# 截图
+result_screenshot = sandbox.call_tool(
+                "screenshot",
+                {"file_name": "screenshot.png"},
+            )
+print(f"screenshot result: {result_screenshot}")
+```
+```{code-cell}
+from agentscope_runtime.sandbox import CloudPhoneSandbox
+
+sandbox = CloudPhoneSandbox(
+    instance_id="your_instance_id"
+)
+
+# 点击屏幕坐标
+result = sandbox.call_tool(
+                "click",
+                {
+                    "x1": 151,
+                    "y1": 404,
+                    "x2": 151,
+                    "y2": 404,
+                    "width": 716,
+                    "height": 1280
+                }
+            )
+
+# 截图
+result_screenshot = sandbox.call_tool(
+                "screenshot",
+                {"file_name": "screenshot.png"},
+            )
+print(f"screenshot result: {result_screenshot}")
+```
+
+**CloudApi沙箱特性**：
+- 无需本地 Docker，完全基于云服务
+- 支持多种环境类型（目前暂时支持Windows 桌面环境或 Android环境）
+- 可远程操控云资源生命周期，管理
+- 通过 API 直接与云服务通信
+
+
+**E2B桌面沙箱（E2bSandBox）**：是基于 E2B 云桌面服务构建的 GUI 沙箱环境，允许用户远程控制云上的桌面环境(linux)
+* 注意：使用前需要配置E2B_API_KEY环境变量,详细请参考：{doc}`e2b_sandbox`
+```{code-cell}
+import os
+from agentscope_runtime.sandbox import E2bSandBox
+
+sandbox = E2bSandBox()
+
+# 运行shell命令
+result = sandbox.call_tool("run_shell_command", {"command": "echo Hello World"})
+print(result["output"])
+
+# 截图
+result_screenshot = sandbox.call_tool(
+                "screenshot",
+                {"file_path": f"{os.getcwd()}/screenshot.png"},
+            )
+print(f"screenshot result: {result_screenshot}")
+```
+**E2B沙箱特性**：
+- 无需本地 Docker，完全基于云服务
+- 自动管理资源生命周期
+- 通过 API 直接与云服务通信
+
+
 ```{note}
 更多沙箱类型正在开发中，敬请期待！
 ```

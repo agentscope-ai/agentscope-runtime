@@ -13,6 +13,8 @@ parts:
       sections:
         - file: en/sandbox/advanced.md
         - file: en/sandbox/training_sandbox.md
+        - file: en/sandbox/cloud_api_sandbox.md
+        - file: en/sandbox/e2b_sandbox.md
         - file: en/sandbox/troubleshooting.md
     - file: en/tools/tools.md
       sections:
@@ -76,6 +78,8 @@ parts:
         sections:
           - file: zh/sandbox/advanced.md
           - file: zh/sandbox/training_sandbox.md
+          - file: zh/sandbox/cloud_api_sandbox.md
+          - file: zh/sandbox/e2b_sandbox.md
           - file: zh/sandbox/troubleshooting.md
       - file: zh/tools/tools.md
         sections:

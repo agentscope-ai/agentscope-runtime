@@ -11,6 +11,9 @@ from .box.training_box.training_box import TrainingSandbox
 from .box.cloud.cloud_sandbox import CloudSandbox
 from .box.mobile.mobile_sandbox import MobileSandbox
 from .box.agentbay.agentbay_sandbox import AgentbaySandbox
+from .box.cloud_api.cloud_phone_sandbox import CloudPhoneSandbox
+from .box.cloud_api.cloud_computer_sandbox import CloudComputerSandbox
+from .box.e2b.e2b_sandbox import E2bSandBox
 
 __all__ = [
     "BaseSandbox",
@@ -21,4 +24,7 @@ __all__ = [
     "CloudSandbox",
     "MobileSandbox",
     "AgentbaySandbox",
+    "CloudPhoneSandbox",
+    "CloudComputerSandbox",
+    "E2bSandBox",
 ]
