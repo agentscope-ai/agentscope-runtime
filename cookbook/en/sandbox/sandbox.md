@@ -249,8 +249,8 @@ with AgentbaySandbox(
 
 
 **CloudApiSandbox (CloudComputerSandbox/CloudPhoneSandbox)**: A GUI sandbox environment built on Alibaba Cloud's Cloud Desktop and Cloud Phone API services, allowing users to remotely control cloud environments (currently only supports Windows desktop environment or Android environment).
-* Note: Since it involves related cloud resources, you need to create Cloud Desktop and Cloud Phone instances in the Alibaba Cloud console before use, as well as configure the corresponding environment variables. See the documentation below for details.
-* [ CloudApi Sandbox Detailed Usage Documentation](../../../examples/cloud_api_sandbox/README.md)
+* Note: Since it involves related cloud resources, you need to create Cloud Desktop and Cloud Phone instances in the Alibaba Cloud console before use, as well as configure the corresponding environment variables. 
+* please refer to {doc}`cloud_api_sandbox` for details.
 ```{code-cell}
 from agentscope_runtime.sandbox import CloudComputerSandbox
 
@@ -305,8 +305,8 @@ print(f"screenshot result: {result_screenshot}")
 
 
 **E2B Desktop Sandbox (E2bSandBox)**: A GUI sandbox environment built on E2B cloud desktop services, allowing users to remotely control desktop environments on the cloud (Linux).
-* Note: Before use, you need to configure the E2B_API_KEY environment variable. For detailed acquisition methods and usage, refer to the documentation below.
-* [ E2B Sandbox Detailed Usage Documentation](../../../examples/e2b_sandbox/README.md)
+* Note: Before use, you need to configure the E2B_API_KEY environment variable. 
+* please refer to {doc}`e2b_sandbox` for details.
 ```{code-cell}
 import os
 from agentscope_runtime.sandbox import E2bSandBox

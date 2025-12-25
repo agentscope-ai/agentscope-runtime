@@ -280,8 +280,8 @@ with AgentbaySandbox(
 
 
 **CloudApi沙箱（CloudComputerSandbox/CloudPhoneSandbox）**：基于阿里云无影云电脑和无影云手机API服务构建的 GUI 沙箱环境，允许用户远程控制云上环境（目前仅支持Windows 桌面环境或 Android环境）。
-* 注意：由于涉及到相关的云资源，使用前需要先在阿里云控制台创建无影云电脑桌面和无影云手机实例，以及对应环境变量配置，详细参考下面文档
-* [ CloudApi 沙箱详细使用文档](../../../examples/cloud_api_sandbox/README_zh.md)
+* 注意：由于涉及到相关的云资源，使用前需要先在阿里云控制台创建无影云电脑桌面和无影云手机实例，以及对应环境变量配置
+* 详细请参考：{doc}`cloud_api_sandbox`
 ```{code-cell}
 from agentscope_runtime.sandbox import CloudComputerSandbox
 
@@ -336,8 +336,7 @@ print(f"screenshot result: {result_screenshot}")
 
 
 **E2B桌面沙箱（E2bSandBox）**：是基于 E2B 云桌面服务构建的 GUI 沙箱环境，允许用户远程控制云上的桌面环境(linux)
-* 注意：使用前需要配置E2B_API_KEY环境变量，详细获取方式，以及使用参考下面文档
-* [ E2B 沙箱详细使用文档](../../../examples/e2b_sandbox/README_zh.md)
+* 注意：使用前需要配置E2B_API_KEY环境变量,详细请参考：{doc}`e2b_sandbox`
 ```{code-cell}
 import os
 from agentscope_runtime.sandbox import E2bSandBox
