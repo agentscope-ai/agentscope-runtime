@@ -14,11 +14,11 @@ kernelspec:
 
 # 高级部署
 
-章节演示了AgentScope Runtime中可用的五种高级部署方法，为不同场景提供生产就绪的解决方案：**本地守护进程**、**独立进程**、**Kubernetes部署**、**ModelStudio部署**和**AgentRun部署**。
+章节演示了AgentScope Runtime中可用的六种高级部署方法，为不同场景提供生产就绪的解决方案：**本地守护进程**、**独立进程**、**Kubernetes部署**、**ModelStudio部署**、**AgentRun部署**和**Knative**。
 
 ## 部署方法概述
 
-AgentScope Runtime提供五种不同的部署方式，每种都针对特定的使用场景：
+AgentScope Runtime提供六种不同的部署方式，每种都针对特定的使用场景：
 
 | 部署类型 | 使用场景       | 扩展性 | 管理方式 | 资源隔离 |
 |---------|------------|--------|---------|---------|
@@ -27,7 +27,7 @@ AgentScope Runtime提供五种不同的部署方式，每种都针对特定的�
 | **Kubernetes** | 企业与云端      | 单节点（将支持多节点） | 编排 | 容器级 |
 | **ModelStudio** | 百炼应用开发平台   | 云端管理 | 平台管理 | 容器级 |
 | **AgentRun** | AgentRun平台 | 云端管理 | 平台管理 | 容器级 |
-
+| **Knative** | 企业与云端 | 单节点（将支持多节点） | 编排 | 容器级 |
 
 ### 部署模式（DeploymentMode）
 
@@ -720,3 +720,97 @@ result = await app.deploy(
 )
 ```
 
+## 方法6：Knative部署
+
+**最适合**：需要扩展性、高可用性和云原生 Serverless 容器编排的企业生产环境。
+
+### 特性
+- 基于容器的 Serverless 部署
+- 基于请求自动弹性、缩容至0
+- 云原生编排
+- 资源管理和限制
+- 健康检查和自动恢复
+
+### Knative 部署前置条件
+
+```bash
+# 确保Docker正在运行
+docker --version
+
+# 验证Kubernetes访问
+kubectl cluster-info
+
+# 检查镜像仓库访问（以阿里云为例）
+docker login your-registry
+
+# 检查 Knative Serving 已安装
+kubectl auth can-i create ksvc
+
+```
+
+### 实现
+
+使用 {ref}`通用智能体配置<zh-common-agent-setup>` 部分定义的智能体和端点：
+
+```{code-cell}
+# knative_deploy.py
+import asyncio
+import os
+from agentscope_runtime.engine.deployers.knative_deployer import (
+    KnativeDeployManager,
+    RegistryConfig,
+    K8sConfig,
+)
+from agent_app import app  # 导入已配置的 app
+
+async def deploy_to_knative():
+    """将 AgentApp 部署到 Knative"""
+
+    # 配置镜像仓库和 K8s 连接
+    deployer = KnativeDeployManager(
+        kube_config=K8sConfig(
+            k8s_namespace="agentscope-runtime",
+            kubeconfig_path=None,
+        ),
+        registry_config=RegistryConfig(
+            registry_url="your-registry-url",
+            namespace="agentscope-runtime",
+        ),
+    )
+
+    # 执行部署
+    result = await app.deploy(
+        deployer,
+        port="8080",
+        image_name="agent_app",
+        image_tag="v1.0",
+        requirements=["agentscope", "fastapi", "uvicorn"],
+        base_image="python:3.10-slim-bookworm",
+        environment={
+            "PYTHONPATH": "/app",
+            "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+        },
+        labels: {
+          "app":"agent-ksvc",
+        },
+        runtime_config={
+        "resources": {
+            "requests": {"cpu": "200m", "memory": "512Mi"},
+            "limits": {"cpu": "1000m", "memory": "2Gi"},
+        },
+        },
+        platform="linux/amd64",
+        push_to_registry=True,
+    )
+
+    print(f"✅ 部署成功：{result['url']}")
+    return result, deployer
+
+if __name__ == "__main__":
+    asyncio.run(deploy_to_knative())
+```
+
+**关键点**：
+- 容器化 Serverless 部署
+- 支持基于请求自动弹性、缩容至 0
+- 配置资源限制和健康检查

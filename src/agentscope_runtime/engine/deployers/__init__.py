@@ -8,6 +8,9 @@ from .kubernetes_deployer import (
 from .modelstudio_deployer import (
     ModelstudioDeployManager,
 )
+from .knative_deployer import (
+    KnativeDeployManager,
+)
 
 try:
     from .agentrun_deployer import (
@@ -22,4 +25,5 @@ __all__ = [
     "KubernetesDeployManager",
     "ModelstudioDeployManager",
     "AgentRunDeployManager",
+    "KnativeDeployManager",
 ]

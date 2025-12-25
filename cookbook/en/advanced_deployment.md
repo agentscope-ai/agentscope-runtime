@@ -14,19 +14,20 @@ kernelspec:
 
 # Advanced Deployment Guide
 
-This guide covers the five advanced deployment methods available in AgentScope Runtime, providing production-ready solutions for different scenarios: **Local Daemon**, **Detached Process**, **Kubernetes Deployment**, **ModelStudio Deployment**, and **AgentRun Deployment**.
+This guide covers the six advanced deployment methods available in AgentScope Runtime, providing production-ready solutions for different scenarios: **Local Daemon**, **Detached Process**, **Kubernetes Deployment**, **ModelStudio Deployment**, **AgentRun Deployment**, and **Knative Deployment**.
 
 ## Overview of Deployment Methods
 
-AgentScope Runtime offers five distinct deployment approaches, each tailored for specific use cases:
+AgentScope Runtime offers six distinct deployment approaches, each tailored for specific use cases:
 
-| Deployment Type | Use Case | Scalability | Management | Resource Isolation |
-|----------------|----------|-------------|------------|-------------------|
-| **Local Daemon** | Development & Testing | Single Process | Manual | Process-level |
+| Deployment Type      | Use Case | Scalability | Management | Resource Isolation |
+|----------------------|----------|-------------|------------|-------------------|
+| **Local Daemon**     | Development & Testing | Single Process | Manual | Process-level |
 | **Detached Process** | Production Services | Single Node | Automated | Process-level |
-| **Kubernetes** | Enterprise & Cloud | Single-node (multi-node support coming) | Orchestrated | Container-level |
-| **ModelStudio** | Alibaba Cloud Platform | Cloud-managed | Platform-managed | Container-level |
-| **AgentRun** | AgentRun Platform | Cloud-managed | Platform-managed | Container-level |
+| **Kubernetes**       | Enterprise & Cloud | Single-node (multi-node support coming) | Orchestrated | Container-level |
+| **ModelStudio**      | Alibaba Cloud Platform | Cloud-managed | Platform-managed | Container-level |
+| **AgentRun**         | AgentRun Platform | Cloud-managed | Platform-managed | Container-level |
+| **Knative**          | Enterprise & Cloud | Single-node (multi-node support coming) | Orchestrated | Container-level |
 
 ### Deployment Modes (DeploymentMode)
 
@@ -724,4 +725,98 @@ result = await app.deploy(
     # ... other parameters
 )
 ```
+
+## Method 6: Knative Deployment
+
+**Best for**: Enterprise production environments requiring scalability, high availability, and cloud-native serverless container orchestration.
+
+### Features
+- Container-based Serverless deployment
+- Provides automatic scaling from zero to thousands of instances, intelligent traffic routing
+- Cloud-native orchestration
+- Resource management and limits
+- Health checks and auto-recovery
+
+### Prerequisites for Kubernetes Deployment
+
+```bash
+# Ensure Docker is running
+docker --version
+
+# Verify Kubernetes access
+kubectl cluster-info
+
+# Check registry access (example with Aliyun)
+docker login  your-registry
+
+# Check Knative Serving installed
+kubectl auth can-i create ksvc
+```
+
+### Implementation
+
+Using the agent and endpoints defined in the {ref}`Common Agent Setup<common-agent-setup>` section:
+
+```{code-cell}
+# knative_deploy.py
+import asyncio
+import os
+from agentscope_runtime.engine.deployers.knative_deployer import (
+    KnativeDeployManager,
+    RegistryConfig,
+    K8sConfig,
+)
+from agent_app import app  # Import the configured app
+
+async def deploy_to_knative():
+    """Deploy AgentApp to Knative"""
+
+    # Configure registry and K8s connection
+    deployer = KnativeDeployManager(
+        kube_config=K8sConfig(
+            k8s_namespace="agentscope-runtime",
+            kubeconfig_path=None,
+        ),
+        registry_config=RegistryConfig(
+            registry_url="your-registry-url",
+            namespace="agentscope-runtime",
+        ),
+    )
+
+    # Deploy with configuration
+    result = await app.deploy(
+        deployer,
+        port="8080",
+        image_name="agent_app",
+        image_tag="v1.0",
+        requirements=["agentscope", "fastapi", "uvicorn"],
+        base_image="python:3.10-slim-bookworm",
+        environment={
+            "PYTHONPATH": "/app",
+            "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+        },
+        labels: {
+          "app":"agent-ksvc",
+        },
+        runtime_config={
+            "resources": {
+                "requests": {"cpu": "200m", "memory": "512Mi"},
+                "limits": {"cpu": "1000m", "memory": "2Gi"},
+            },
+        },
+        platform="linux/amd64",
+        push_to_registry=True,
+    )
+
+    print(f"✅ Deployed to: {result['url']}")
+    return result, deployer
+
+if __name__ == "__main__":
+    asyncio.run(deploy_to_knative())
+```
+
+**Key Points**:
+- Containerized Serverless deployment
+- Provides automatic scaling from zero to thousands of instances, intelligent traffic routing
+- Resource limits and health checks configured
 

@@ -1,0 +1,55 @@
+# Kubernetes Deployment Configuration Example
+# Usage: agentscope deploy k8s /path/to/source --config k8s_deploy_config.yaml
+
+# Basic deployment settings
+name: "friday-agent"
+namespace: "agentscope-runtime"
+port: 8080
+
+# Docker image settings
+image_name: "agent_app"
+image_tag: "linux-amd64-1"
+base_image: "python:3.10-slim-bookworm"
+platform: "linux/amd64"
+push_to_registry: true
+
+# Entrypoint (optional, will auto-detect if not specified)
+# entrypoint: "app.py"
+
+# Python dependencies
+requirements:
+  - "agentscope"
+  - "fastapi"
+  - "uvicorn"
+
+# Additional packages to include (optional)
+extra_packages:
+  - "/path/to/other_project.py"
+
+# Environment variables
+environment:
+  PYTHONPATH: "/app"
+  LOG_LEVEL: "INFO"
+  DASHSCOPE_API_KEY: "${DASHSCOPE_API_KEY}"  # Will be read from system env
+
+# Labels
+labels:
+   app: "agent-ksvc"
+
+# KService runtime configuration
+runtime_config:
+  # Resource limits
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+
+  # Image pull policy
+  image_pull_policy: "IfNotPresent"
+
+# Deployment settings
+deploy_timeout: 300
+health_check: true

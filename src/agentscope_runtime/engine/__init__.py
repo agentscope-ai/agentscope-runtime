@@ -11,6 +11,7 @@ if TYPE_CHECKING:
         DeployManager,
         LocalDeployManager,
         KubernetesDeployManager,
+        KnativeDeployManager,
         ModelstudioDeployManager,
         AgentRunDeployManager,
     )
@@ -22,6 +23,7 @@ install_lazy_loader(
         "DeployManager": ".deployers",
         "LocalDeployManager": ".deployers",
         "KubernetesDeployManager": ".deployers",
+        "KnativeDeployManager": ".deployers",
         "ModelstudioDeployManager": ".deployers",
         "AgentRunDeployManager": ".deployers",
     },

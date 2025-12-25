@@ -429,6 +429,7 @@ agentscope deploy PLATFORM SOURCE [OPTIONS]
 - `modelstudio`：阿里云 ModelStudio
 - `agentrun`：阿里云 AgentRun
 - `k8s`：Kubernetes/ACK
+- `knative`：Knative/ACK Knative
 
 #### 通用选项（所有平台）
 
@@ -602,6 +603,69 @@ agentscope deploy k8s app_agent.py \
 agentscope deploy k8s app_agent.py \
   --namespace production \
   --replicas 3 \
+  --cpu-limit 2 \
+  --memory-limit 4Gi \
+  --env DASHSCOPE_API_KEY=sk-xxx
+```
+
+**注意：** `USE_LOCAL_RUNTIME=True` 使用本地 agentscope runtime 而不是 PyPI 版本。
+
+#### 4.4. Knative 部署
+
+部署到 Knative/ACK Knative 集群。
+
+##### 命令语法
+
+```bash
+agentscope deploy knative SOURCE [OPTIONS]
+```
+
+##### 平台特定选项
+
+| 选项 | 类型 | 默认值 | 描述 |
+|------|------|--------|------|
+| `--namespace` | string | `"agentscope-runtime"` | Kubernetes 命名空间 |
+| `--kube-config-path` | `-c` | path | `None` | kubeconfig 文件路径 |
+| `--port` | integer | `8080` | 容器端口 |
+| `--image-name` | string | `"agent_app"` | Docker 镜像名称 |
+| `--image-tag` | string | `"linux-amd64"` | Docker 镜像标签 |
+| `--registry-url` | string | `"localhost"` | 远程注册表 URL |
+| `--registry-namespace` | string | `"agentscope-runtime"` | 远程注册表命名空间 |
+| `--push` | flag | `False` | 推送镜像到注册表 |
+| `--base-image` | string | `"python:3.10-slim-bookworm"` | 基础 Docker 镜像 |
+| `--requirements` | string | `None` | Python 依赖（逗号分隔或文件路径） |
+| `--cpu-request` | string | `"200m"` | CPU 资源请求（例如 '200m'、'1'） |
+| `--cpu-limit` | string | `"1000m"` | CPU 资源限制（例如 '1000m'、'2'） |
+| `--memory-request` | string | `"512Mi"` | 内存资源请求（例如 '512Mi'、'1Gi'） |
+| `--memory-limit` | string | `"2Gi"` | 内存资源限制（例如 '2Gi'、'4Gi'） |
+| `--image-pull-policy` | choice | `"IfNotPresent"` | 镜像拉取策略：`Always`、`IfNotPresent`、`Never` |
+| `--deploy-timeout` | integer | `300` | 部署超时时间（秒） |
+| `--health-check` | flag | `None` | 启用/禁用健康检查 |
+| `--platform` | string | `"linux/amd64"` | 目标平台（例如 'linux/amd64'、'linux/arm64'） |
+| `--pypi-mirror` | string | `None` | PyPI 镜像源 URL，用于 pip 包安装（例如 'https://pypi.tuna.tsinghua.edu.cn/simple'）。如果未指定，使用 pip 默认源 |
+
+##### 前置要求
+
+- Kubernetes 集群访问权限
+- 已安装 Docker（用于构建镜像）
+- 已配置 `kubectl`
+- 已部署 Knative
+
+##### 示例
+
+```bash
+# 基本部署
+export USE_LOCAL_RUNTIME=True
+agentscope deploy knative app_agent.py \
+  --image-name agent_app \
+  --env DASHSCOPE_API_KEY=sk-xxx \
+  --image-tag linux-amd64-4 \
+  --registry-url your-registry.com \
+  --push
+
+# 自定义命名空间和资源
+agentscope deploy knative app_agent.py \
+  --namespace production \
   --cpu-limit 2 \
   --memory-limit 4Gi \
   --env DASHSCOPE_API_KEY=sk-xxx
