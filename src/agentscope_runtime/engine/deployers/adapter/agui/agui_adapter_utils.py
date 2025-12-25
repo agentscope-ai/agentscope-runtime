@@ -2,7 +2,7 @@
 from collections import defaultdict
 from enum import Enum
 import logging
-from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 from uuid import uuid4
 
 from ag_ui.core import RunAgentInput
@@ -30,8 +30,9 @@ from ag_ui.core.types import (
     UserMessage,
     ActivityMessage,
     Message as AGUIMessage,
+    Tool as AGUITool,
 )
-from pydantic import TypeAdapter, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from ....schemas.agent_schemas import (
     AgentRequest,
@@ -42,12 +43,15 @@ from ....schemas.agent_schemas import (
     DataContent,
     FunctionCall,
     FunctionCallOutput,
+    FunctionTool,
+    FunctionParameters,
     ImageContent,
     Message,
     MessageType,
     Role,
     RunStatus,
     TextContent,
+    Tool,
     ToolCall,
     ToolCallOutput,
 )
@@ -59,7 +63,7 @@ logger = logging.getLogger(__name__)
 
 
 # pylint: disable=too-many-branches,too-many-statements,too-many-nested-blocks
-def convert_ag_ui_messages_to_agent_request_messages(
+def convert_ag_ui_messages_to_agent_api_messages(
     ag_ui_messages: List[AGUIMessage],
 ) -> List[Message]:
     """
@@ -251,7 +255,7 @@ class AGUIAdapter:
 
         Accepts both RunAgentInput and FlexibleRunAgentInput.
         """
-        converted_messages = convert_ag_ui_messages_to_agent_request_messages(
+        converted_messages = convert_ag_ui_messages_to_agent_api_messages(
             agui_request.messages,
         )
 
@@ -264,6 +268,14 @@ class AGUIAdapter:
                 user_id = forward_props[user_id_field]
                 break
 
+        if agui_request.tools:
+            tools = [
+                self.convert_ag_ui_tool(tool).model_dump()
+                for tool in agui_request.tools
+            ]
+        else:
+            tools = []
+
         agent_request = AgentRequest.model_validate(
             {
                 "input": [
@@ -274,9 +286,73 @@ class AGUIAdapter:
                 "id": self.run_id,
                 "session_id": self.thread_id,
                 "user_id": user_id,
+                "tools": tools,
             },
         )
         return agent_request
+
+    def convert_ag_ui_tool(self, ag_tool: AGUITool) -> Tool:
+        """
+        Convert an AG-UI Tool(name/description/parameters) into the Agent API
+         Tool.
+        """
+        params = ag_tool.parameters
+
+        if isinstance(params, BaseModel):
+            params = params.model_dump(
+                mode="json",
+                exclude_none=True,
+            )
+
+        if params is None:
+            params = {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            }
+
+        # If it's not a dict, we can't interpret it as JSON Schema; just wrap
+        # as-is
+        if not isinstance(params, dict):
+            return Tool(
+                type="function",
+                function=FunctionTool(
+                    name=ag_tool.name,
+                    description=ag_tool.description,
+                    parameters=params,  # preserve without crashing
+                ),
+            )
+
+        # Heuristic: try to construct FunctionParameters if it matches the
+        # expected shape
+        schema_type = params.get("type")
+        properties = params.get("properties")
+        required = params.get("required", None)
+
+        if schema_type == "object" and isinstance(properties, dict):
+            if required is not None and not (
+                isinstance(required, list)
+                and all(isinstance(x, str) for x in required)
+            ):
+                required = None
+
+            fp = FunctionParameters(
+                type="object",
+                properties=properties,
+                required=required,
+            )
+            converted_params: Union[FunctionParameters, Dict[str, Any]] = fp
+        else:
+            converted_params = params
+
+        return Tool(
+            type="function",
+            function=FunctionTool(
+                name=ag_tool.name,
+                description=ag_tool.description,
+                parameters=converted_params,
+            ),
+        )
 
     def convert_agent_event_to_agui_events(
         self,
@@ -357,6 +433,7 @@ class AGUIAdapter:
                     code=code,
                 ),
             )
+            self._run_finished_emitted = True
         elif response_event.status in {RunStatus.Completed}:
             self._run_finished_emitted = True
             events.append(
@@ -504,11 +581,6 @@ class AGUIAdapter:
                     X = Union[ToolCall, ToolCallOutput]
                     ta = TypeAdapter(X)
                     val = ta.validate_python(content.data)
-
-                    logger.warning(
-                        "Generate ToolCall Event from content: %s",
-                        content.model_dump(exclude_none=True),
-                    )
 
                     if isinstance(val, ToolCall):
                         events.extend(

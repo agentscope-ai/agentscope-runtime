@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
-from typing import List, Optional
+from typing import AsyncIterator, List, Optional
 
 from agentscope.agent import ReActAgent
 from agentscope.formatter import DashScopeChatFormatter
-from agentscope.message import TextBlock
+from agentscope.message import TextBlock, Msg
 from agentscope.model import OpenAIChatModel
 from agentscope.pipeline import stream_printing_messages
 from agentscope.tool import ToolResponse, Toolkit, execute_python_code
@@ -29,12 +29,11 @@ agent_app = AgentApp(
     app_name="Friday",
     app_description="A helpful assistant",
     agui_config=AGUIAdaptorConfig(
-        route_path="/agentic_chat/",
+        route_path="/ag-ui",
     ),
 )
 
 
-# Prepare a custom tool function
 async def get_weather(location: str) -> ToolResponse:
     """Get the weather for a location.
 
@@ -93,7 +92,12 @@ async def get_unseen_messages(
         session_id=session_id,
     )
 
-    seen_message_ids = [message.id for message in session.messages]
+    seen_message_ids = [message.id for message in session.messages] + [
+        message.metadata.get("original_id")
+        for message in session.messages
+        if message.metadata is not None
+    ]
+
     return [
         message for message in messages if message.id not in seen_message_ids
     ]
@@ -154,11 +158,24 @@ def create_stateful_agent(
 
 @agent_app.query(framework="agentscope")
 async def query_func(
-    runner,
-    msgs,
+    runner: Runner,
+    msgs: List[Msg],
     request: AgentRequest = None,
     **kwargs,  # pylint: disable=unused-argument
-):
+) -> AsyncIterator[tuple[Msg, bool]]:
+    """
+    Main entry point for agent execution.
+
+    Args:
+        runner: Runner instance
+        msgs: List of messages to process
+        request: AgentRequest instance
+        **kwargs: Additional keyword arguments
+
+    Returns:
+        Iterator[tuple[Msg, bool]]: Iterator of messages and last flag
+    """
+
     session_id = request.session_id
     user_id = request.user_id
 
@@ -168,6 +185,9 @@ async def query_func(
         user_id=user_id,
         messages=msgs,
     )
+
+    if not unseen_messages:
+        raise ValueError("No new messages to process in the request")
 
     # If state is provided in the request via AG-UI, use it directly.
     state = getattr(request, "state", None)
