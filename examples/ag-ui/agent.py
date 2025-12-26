@@ -9,9 +9,6 @@ from agentscope.model import OpenAIChatModel
 from agentscope.pipeline import stream_printing_messages
 from agentscope.tool import ToolResponse, Toolkit, execute_python_code
 
-from agentscope_runtime.adapters.agentscope.memory import (
-    AgentScopeSessionHistoryMemory,
-)
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.deployers.adapter.agui import AGUIAdaptorConfig
 from agentscope_runtime.engine.runner import Runner
@@ -20,10 +17,6 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
     Message,
 )
 from agentscope_runtime.engine.services.agent_state import InMemoryStateService
-from agentscope_runtime.engine.services.session_history import (
-    InMemorySessionHistoryService,
-    SessionHistoryService,
-)
 
 agent_app = AgentApp(
     app_name="Friday",
@@ -55,58 +48,46 @@ async def get_weather(location: str) -> ToolResponse:
 @agent_app.init
 async def init_func(runner: Runner):
     runner.state_service = InMemoryStateService()
-    runner.session_service = InMemorySessionHistoryService()
-
     await runner.state_service.start()
-    await runner.session_service.start()
 
 
 @agent_app.shutdown
 async def shutdown_func(runner: Runner):
     await runner.state_service.stop()
-    await runner.session_service.stop()
 
 
 async def get_unseen_messages(
-    session_service: SessionHistoryService,
-    messages: List[Message],
-    user_id: str,
-    session_id: str,
+    input_messages: List[Message],
+    memory_msgs: Optional[list[Msg]] = None,
 ) -> list[Message]:
     """
     By Default, AG-UI Client will send all messages to the agent.
-    This function is used to get the unseen messages from the session.
+    This function is used to get the unseen messages from the input message.
 
     Args:
-        session_service (SessionHistoryService): Session history service
-        messages (List[Message]): List of messages
-        user_id (str): User ID
-        session_id (str): Session ID
+        memory_msgs: list[Msg]: List of memory messages
+        input_messages: List[Message]: List of input messages
 
     Returns:
         list[Message]: List of unseen messages
 
     """
-    session = await session_service.get_session(
-        user_id=user_id,
-        session_id=session_id,
-    )
-
-    seen_message_ids = [message.id for message in session.messages] + [
+    memory_msgs = memory_msgs or []
+    seen_message_ids = [message.id for message in memory_msgs] + [
         message.metadata.get("original_id")
-        for message in session.messages
+        for message in memory_msgs
         if message.metadata is not None
+        and message.metadata.get("original_id") is not None
     ]
 
     return [
-        message for message in messages if message.id not in seen_message_ids
+        message
+        for message in input_messages
+        if message.id not in seen_message_ids
     ]
 
 
 def create_stateful_agent(
-    session_service: SessionHistoryService,
-    session_id: str,
-    user_id: str,
     state: Optional[dict] = None,
 ) -> ReActAgent:
     """
@@ -114,9 +95,6 @@ def create_stateful_agent(
     id, and state.
 
     Args:
-        session_service (SessionHistoryService): Session history service
-        session_id (str): Session ID
-        user_id (str): User ID
         state (Optional[dict]): State to load into the agent
 
     Returns:
@@ -141,11 +119,6 @@ def create_stateful_agent(
         ),
         sys_prompt="You're a helpful assistant named Friday.",
         toolkit=toolkit,
-        memory=AgentScopeSessionHistoryMemory(
-            service=session_service,
-            session_id=session_id,
-            user_id=user_id,
-        ),
         formatter=DashScopeChatFormatter(),
     )
     agent.set_console_output_enabled(enabled=False)
@@ -179,16 +152,6 @@ async def query_func(
     session_id = request.session_id
     user_id = request.user_id
 
-    unseen_messages = await get_unseen_messages(
-        session_service=runner.session_service,
-        session_id=session_id,
-        user_id=user_id,
-        messages=msgs,
-    )
-
-    if not unseen_messages:
-        raise ValueError("No new messages to process in the request")
-
     # If state is provided in the request via AG-UI, use it directly.
     state = getattr(request, "state", None)
     if not state:
@@ -197,11 +160,15 @@ async def query_func(
             user_id=user_id,
         )
     agent = create_stateful_agent(
-        runner.session_service,
-        session_id,
-        user_id,
         state=state,
     )
+
+    unseen_messages = await get_unseen_messages(
+        memory_msgs=await agent.memory.get_memory(),
+        input_messages=msgs,
+    )
+    if not unseen_messages:
+        raise ValueError("No new messages to process in the request")
 
     async for msg, last in stream_printing_messages(
         agents=[agent],

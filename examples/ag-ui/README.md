@@ -58,7 +58,7 @@ curl -X POST http://localhost:8080/ag-ui \
     "context": [],
     "messages": [
       {
-        "content": "北京今天的天气如何?",
+        "content": "北京今天的天气如何？",
         "id": "'$uuid'",
         "role": "user"
       }
@@ -138,11 +138,6 @@ data: {"type": "RUN_FINISHED", "threadId": "thread_123", "runId": "run_456"}
 - 检查环境变量 `DASHSCOPE_API_KEY` 是否正确设置
 - 确认 DashScope API Key 有效且有足够的额度
 
-### 问题：工具调用失败
-
-- 查看服务端日志，检查工具实现是否正确
-- 确认工具函数签名符合 AgentScope 的要求
-
 ### 添加自定义工具
 
 在 `agent.py` 中定义新的工具函数并注册：
@@ -156,7 +151,3 @@ async def your_custom_tool(param: str) -> ToolResponse:
 # 在 create_stateful_agent 中注册
 toolkit.register_tool_function(your_custom_tool)
 ```
-
-### 使用持久化存储Session
-
-替换 `InMemorySessionHistoryService` 和 `InMemoryStateService` 为持久化实现（如 Redis、数据库等）。
