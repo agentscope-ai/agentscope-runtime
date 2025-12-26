@@ -586,10 +586,11 @@ Protocol Adapters are used to convert between different protocols, enabling Agen
 
 ### Adapter Architecture
 
-AgentScope Runtime provides two built-in protocol adapters:
+AgentScope Runtime provides three built-in protocol adapters:
 
 - **A2A Protocol Adapter** (`A2AFastAPIDefaultAdapter`): Supports Agent-to-Agent protocol
 - **Response API Protocol Adapter** (`ResponseAPIDefaultAdapter`): Supports OpenAI Responses API protocol
+- **AG-UI Protocol Adapter** (`AGUIDefaultAdapter`): Supports AG-UI frontend framework protocol
 
 ### Using Built-in Adapters
 
@@ -599,6 +600,7 @@ AgentApp automatically registers built-in adapters by default:
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.deployers.adapter.a2a import A2AFastAPIDefaultAdapter
 from agentscope_runtime.engine.deployers.adapter.responses import ResponseAPIDefaultAdapter
+from agentscope_runtime.engine.deployers.adapter.agui import AGUIDefaultAdapter
 
 app = AgentApp(agent=agent)
 
@@ -612,6 +614,7 @@ app = AgentApp(
             agent_description="A helpful assistant",
         ),
         ResponseAPIDefaultAdapter(),
+        AGUIDefaultAdapter(),
     ],
 )
 ```
