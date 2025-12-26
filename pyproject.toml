@@ -28,6 +28,7 @@ dependencies = [
     "asgiref",
     "click>=8.0.0",
     "rich>=13.0.0",
+    "nacos-sdk-python>=3.0.2",
 ]
 
 [tool.setuptools]
@@ -90,7 +91,6 @@ ext = [
     "alibabacloud-credentials",
     "PyYAML",
     "agno>=2.3.8",
-    "nacos-sdk-python>=3.0.0",
 ]
 
 [tool.pytest.ini_options]
