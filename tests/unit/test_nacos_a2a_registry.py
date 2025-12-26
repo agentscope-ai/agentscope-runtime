@@ -765,7 +765,7 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
 
             with patch(
                 "agentscope_runtime.engine.deployers.adapter.a2a"
-                ".a2a_registry.get_registry_settings",
+                ".nacos_a2a_registry.get_nacos_settings",
             ) as mock_get_settings:
                 mock_settings = MagicMock()
                 mock_settings.NACOS_SERVER_ADDR = server_addr
@@ -780,7 +780,7 @@ class TestNacosRegistry:  # pylint: disable=too-many-public-methods
                 # ClientConfigBuilder
                 with patch(
                     "agentscope_runtime.engine.deployers.adapter.a2a"
-                    ".a2a_registry._build_nacos_client_config",
+                    ".nacos_a2a_registry._build_nacos_client_config",
                     return_value=mock_nacos_sdk["client_config"],
                 ) as mock_build_config:
                     config = registry._get_client_config()

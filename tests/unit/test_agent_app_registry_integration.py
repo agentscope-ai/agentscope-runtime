@@ -9,7 +9,6 @@ Tests cover:
 - Registry registration during deployment
 - Registry cleanup during shutdown
 """
-import os
 from unittest.mock import patch
 
 from agentscope_runtime.engine.app import AgentApp
@@ -62,19 +61,20 @@ class TestAgentAppRegistryIntegration:
     def test_agent_app_with_registry_from_env(self):
         """Test AgentApp initialization with registry from environment."""
         from agentscope_runtime.engine.deployers.adapter.a2a import (
-            a2a_registry,
+            nacos_a2a_registry,
         )
 
-        original_settings = a2a_registry._registry_settings
-        a2a_registry._registry_settings = None
+        original_settings = nacos_a2a_registry._nacos_settings
+        nacos_a2a_registry._nacos_settings = None
 
         try:
             mock_registry = MockRegistry("test")
 
-            # Patch where extract_a2a_config calls create_registry_from_env
+            # Patch where extract_a2a_config calls
+            # create_nacos_registry_from_env
             with patch(
                 "agentscope_runtime.engine.deployers.adapter.a2a"
-                ".a2a_protocol_adapter.create_registry_from_env",
+                ".nacos_a2a_registry.create_nacos_registry_from_env",
                 return_value=mock_registry,
             ):
                 app = AgentApp(
@@ -93,7 +93,7 @@ class TestAgentAppRegistryIntegration:
                 assert len(a2a_adapter._registry) > 0
                 assert a2a_adapter._registry[0] is mock_registry
         finally:
-            a2a_registry._registry_settings = original_settings
+            nacos_a2a_registry._nacos_settings = original_settings
 
     def test_agent_app_with_registry_from_a2a_config(self):
         """Test AgentApp initialization with registry from a2a_config."""
@@ -131,11 +131,11 @@ class TestAgentAppRegistryIntegration:
         """Test that registry from a2a_config takes priority over
         environment."""
         from agentscope_runtime.engine.deployers.adapter.a2a import (
-            a2a_registry,
+            nacos_a2a_registry,
         )
 
-        original_settings = a2a_registry._registry_settings
-        a2a_registry._registry_settings = None
+        original_settings = nacos_a2a_registry._nacos_settings
+        nacos_a2a_registry._nacos_settings = None
 
         try:
             mock_registry_env = MockRegistry("env")
@@ -143,7 +143,7 @@ class TestAgentAppRegistryIntegration:
 
             with patch(
                 "agentscope_runtime.engine.deployers.adapter.a2a"
-                ".a2a_protocol_adapter.create_registry_from_env",
+                ".nacos_a2a_registry.create_nacos_registry_from_env",
                 return_value=mock_registry_env,
             ):
                 a2a_config = AgentCardWithRuntimeConfig(
@@ -169,22 +169,23 @@ class TestAgentAppRegistryIntegration:
                 # Env registry should not be used when config provides one
                 assert mock_registry_env not in a2a_adapter._registry
         finally:
-            a2a_registry._registry_settings = original_settings
+            nacos_a2a_registry._nacos_settings = original_settings
 
     def test_agent_app_with_disabled_registry_env(self):
         """Test AgentApp when registry is disabled via environment."""
         from agentscope_runtime.engine.deployers.adapter.a2a import (
-            a2a_registry,
+            nacos_a2a_registry,
         )
 
-        original_settings = a2a_registry._registry_settings
-        a2a_registry._registry_settings = None
+        original_settings = nacos_a2a_registry._nacos_settings
+        nacos_a2a_registry._nacos_settings = None
 
         try:
-            with patch.dict(
-                os.environ,
-                {"A2A_REGISTRY_ENABLED": "false"},
-                clear=False,
+            # Mock create_nacos_registry_from_env to return None
+            with patch(
+                "agentscope_runtime.engine.deployers.adapter.a2a"
+                ".nacos_a2a_registry.create_nacos_registry_from_env",
+                return_value=None,
             ):
                 app = AgentApp(
                     app_name="test_agent",
@@ -207,7 +208,7 @@ class TestAgentAppRegistryIntegration:
                     # But explicit registry in a2a_config would still work
                     pass  # Just verify no crash
         finally:
-            a2a_registry._registry_settings = original_settings
+            nacos_a2a_registry._nacos_settings = original_settings
 
     def test_agent_app_uses_given_a2a_config_instance(self):
         """AgentApp should use the provided A2A config instance."""
