@@ -59,8 +59,10 @@ def extract_a2a_config(
 
     Registry resolution priority:
     1. Use registry from a2a_config if provided
-    2. Fallback to environment variables if a2a_config.registry is None
-    3. If neither is available, registry remains None (user doesn't want registry)
+    2. Fallback to environment variables if a2a_config.registry is
+       None
+    3. If neither is available, registry remains None (user doesn't
+       want registry)
 
     Args:
         a2a_config: Optional AgentCardWithRuntimeConfig instance.
@@ -75,6 +77,7 @@ def extract_a2a_config(
     if a2a_config.registry is None:
         try:
             from .nacos_a2a_registry import create_nacos_registry_from_env
+
             env_registry = create_nacos_registry_from_env()
             if env_registry is not None:
                 a2a_config.registry = env_registry

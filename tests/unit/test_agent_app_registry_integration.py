@@ -9,7 +9,6 @@ Tests cover:
 - Registry registration during deployment
 - Registry cleanup during shutdown
 """
-import os
 from unittest.mock import patch
 
 from agentscope_runtime.engine.app import AgentApp
@@ -71,7 +70,8 @@ class TestAgentAppRegistryIntegration:
         try:
             mock_registry = MockRegistry("test")
 
-            # Patch where extract_a2a_config calls create_nacos_registry_from_env
+            # Patch where extract_a2a_config calls
+            # create_nacos_registry_from_env
             with patch(
                 "agentscope_runtime.engine.deployers.adapter.a2a"
                 ".nacos_a2a_registry.create_nacos_registry_from_env",

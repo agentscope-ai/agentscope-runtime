@@ -17,8 +17,10 @@ from unittest.mock import patch, MagicMock
 import pytest
 from a2a.types import AgentCard
 
-from agentscope_runtime.engine.deployers.adapter.a2a import A2ARegistry
-from agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry import (
+from agentscope_runtime.engine.deployers.adapter.a2a import (
+    A2ARegistry,
+)
+from agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry import (  # noqa: E501
     NacosSettings,
     get_nacos_settings,
     create_nacos_registry_from_env,
@@ -146,14 +148,13 @@ class TestGetNacosSettings:
 
     def test_singleton_behavior(self, reset_registry_settings):
         """Test that get_nacos_settings returns a singleton."""
-        from agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry import (
-            _nacos_settings,
+        from agentscope_runtime.engine.deployers.adapter.a2a import (
+            nacos_a2a_registry,
         )
-        from agentscope_runtime.engine.deployers.adapter.a2a import nacos_a2a_registry
-        
+
         # Reset singleton
         nacos_a2a_registry._nacos_settings = None
-        
+
         settings1 = get_nacos_settings()
         settings2 = get_nacos_settings()
         assert settings1 is settings2
@@ -241,9 +242,7 @@ class TestCreateNacosRegistryFromEnv:
 
             # Mock NacosRegistry class
             mock_nacos_registry_instance = MagicMock()
-            mock_nacos_registry_instance.registry_name.return_value = (
-                "nacos"
-            )
+            mock_nacos_registry_instance.registry_name.return_value = "nacos"
             mock_nacos_registry_class = MagicMock(
                 return_value=mock_nacos_registry_instance,
             )
@@ -313,10 +312,15 @@ class TestCreateNacosRegistryFromSettings:
         sys.modules["v2.nacos"] = mock_v2_nacos
 
         try:
-            from agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry import (
-                _build_nacos_client_config,
+            # pylint: disable=import-outside-toplevel
+            from agentscope_runtime.engine.deployers.adapter.a2a import (
+                nacos_a2a_registry,
             )
-            
+
+            _build_nacos_client_config = (
+                nacos_a2a_registry._build_nacos_client_config
+            )
+
             # Should raise exception when build fails
             with pytest.raises(Exception, match="Build failed"):
                 _build_nacos_client_config(settings)
@@ -327,40 +331,45 @@ class TestCreateNacosRegistryFromSettings:
                 del sys.modules["v2.nacos"]
 
 
-
 class TestOptionalDependencyHandling:
     """Test optional dependency handling mechanism."""
 
     def test_nacos_sdk_not_installed(self):
-        """Test behavior when Nacos SDK is not installed or import fails."""
+        """Test behavior when Nacos SDK is not installed or import
+        fails."""
         settings = NacosSettings(
             NACOS_SERVER_ADDR="test.nacos.com:8848",
         )
 
         # Mock ImportError when trying to build client config
-        from agentscope_runtime.engine.deployers.adapter.a2a.nacos_a2a_registry import (
-            _build_nacos_client_config,
+        # pylint: disable=import-outside-toplevel
+        from agentscope_runtime.engine.deployers.adapter.a2a import (
+            nacos_a2a_registry,
         )
-        
+
+        _build_nacos_client_config = (
+            nacos_a2a_registry._build_nacos_client_config
+        )
+
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
-            ".nacos_a2a_registry.ClientConfigBuilder",
+            ".nacos_a2a_registry.__import__",
             side_effect=ImportError("No module named 'v2.nacos'"),
         ):
             # Should raise ImportError when SDK is not available
-            with pytest.raises(ImportError, match="No module named 'v2.nacos'"):
+            with pytest.raises(
+                ImportError,
+                match="Nacos SDK.*is not available",
+            ):
                 _build_nacos_client_config(settings)
 
     def test_nacos_unexpected_error_during_build(self):
-        """Test handling of unexpected errors during Nacos client config build."""
-        settings = NacosSettings(
-            NACOS_SERVER_ADDR="test.nacos.com:8848",
-        )
-
-        # Mock unexpected RuntimeError during import
+        """Test handling of unexpected errors during Nacos client
+        config build."""
+        # Mock unexpected RuntimeError during build
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
-            ".nacos_a2a_registry.ClientConfigBuilder",
+            ".nacos_a2a_registry._build_nacos_client_config",
             side_effect=RuntimeError("Unexpected initialization error"),
         ):
             # create_nacos_registry_from_env should catch and return None

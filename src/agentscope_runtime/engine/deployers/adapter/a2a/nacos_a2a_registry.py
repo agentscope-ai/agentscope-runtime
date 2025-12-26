@@ -90,7 +90,8 @@ _nacos_settings: Optional[NacosSettings] = None
 
 
 def get_nacos_settings() -> NacosSettings:
-    """Return a singleton Nacos settings instance, loading .env files if needed."""
+    """Return a singleton Nacos settings instance, loading .env files
+    if needed."""
     global _nacos_settings
 
     if _nacos_settings is None:
@@ -119,7 +120,7 @@ def _build_nacos_client_config(settings: NacosSettings) -> Any:
         )
         raise ImportError(
             "Nacos SDK (nacos-sdk-python) is not available. "
-            "Install it with: pip install nacos-sdk-python"
+            "Install it with: pip install nacos-sdk-python",
         ) from e
 
     builder = ClientConfigBuilder().server_address(settings.NACOS_SERVER_ADDR)
@@ -149,8 +150,12 @@ def _build_nacos_client_config(settings: NacosSettings) -> Any:
 def create_nacos_registry_from_env() -> Optional[A2ARegistry]:
     """Create a NacosRegistry instance from environment settings.
 
-    Returns None if the required nacos SDK is not available or construction fails.
+    Returns None if the required nacos SDK is not available or
+    construction fails.
     """
+    if not _NACOS_SDK_AVAILABLE:
+        return None
+
     try:
         nacos_settings = get_nacos_settings()
         nacos_client_config = _build_nacos_client_config(nacos_settings)
@@ -250,8 +255,8 @@ class NacosRegistry(A2ARegistry):
         """
         if not _NACOS_SDK_AVAILABLE:
             logger.warning(
-                "[NacosRegistry] Nacos SDK (nacos-sdk-python) is not available. "
-                "Install it with: pip install nacos-sdk-python",
+                "[NacosRegistry] Nacos SDK (nacos-sdk-python) is not "
+                "available. Install it with: pip install nacos-sdk-python",
             )
             return
 
