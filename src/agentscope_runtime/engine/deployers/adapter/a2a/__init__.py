@@ -6,9 +6,6 @@ from .a2a_protocol_adapter import (
 )
 from .a2a_registry import (
     A2ARegistry,
-    A2ARegistrySettings,
-    get_registry_settings,
-    create_registry_from_env,
 )
 
 # NOTE: NacosRegistry is NOT imported at module import time to avoid forcing
@@ -21,9 +18,6 @@ __all__ = [
     "AgentCardWithRuntimeConfig",
     "extract_a2a_config",
     "A2ARegistry",
-    "A2ARegistrySettings",
-    "get_registry_settings",
-    "create_registry_from_env",
     "NacosRegistry",  # pylint: disable=undefined-all-variable
 ]
 
@@ -49,8 +43,8 @@ def __getattr__(name: str):
             # Check if it's the v2.nacos dependency that's missing
             if "v2.nacos" in str(e) or "nacos" in str(e).lower():
                 raise ImportError(
-                    "NacosRegistry requires the 'v2-nacos' package. "
-                    "Install it with: pip install v2-nacos",
+                    "NacosRegistry requires the 'nacos-sdk-python' package. "
+                    "Install it with: pip install nacos-sdk-python",
                 ) from e
             # Re-raise other import errors as-is
             raise

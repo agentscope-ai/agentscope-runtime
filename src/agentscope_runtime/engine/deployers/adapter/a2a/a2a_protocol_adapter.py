@@ -31,7 +31,6 @@ from .a2a_agent_adapter import A2AExecutor
 from .a2a_registry import (
     A2ARegistry,
     A2ATransportsProperties,
-    create_registry_from_env,
 )
 
 # NOTE: Do NOT import NacosRegistry at module import time to avoid
@@ -58,8 +57,10 @@ def extract_a2a_config(
 ) -> "AgentCardWithRuntimeConfig":
     """Normalize a2a_config to AgentCardWithRuntimeConfig object.
 
-    Ensures a non-null ``AgentCardWithRuntimeConfig`` instance and sets up
-    environment-based registry fallback if registry is not provided.
+    Registry resolution priority:
+    1. Use registry from a2a_config if provided
+    2. Fallback to environment variables if a2a_config.registry is None
+    3. If neither is available, registry remains None (user doesn't want registry)
 
     Args:
         a2a_config: Optional AgentCardWithRuntimeConfig instance.
@@ -70,12 +71,17 @@ def extract_a2a_config(
     if a2a_config is None:
         a2a_config = AgentCardWithRuntimeConfig()
 
-    # Fallback to environment registry if not provided
+    # Try environment variables only if registry is not explicitly provided
     if a2a_config.registry is None:
-        env_registry = create_registry_from_env()
-        if env_registry is not None:
-            a2a_config.registry = env_registry
-            logger.debug("[A2A] Using registry from environment variables")
+        try:
+            from .nacos_a2a_registry import create_nacos_registry_from_env
+            env_registry = create_nacos_registry_from_env()
+            if env_registry is not None:
+                a2a_config.registry = env_registry
+                logger.debug("[A2A] Using registry from environment variables")
+        except ImportError:
+            # Nacos SDK not available, registry remains None
+            logger.debug("[A2A] Nacos registry not available")
 
     return a2a_config
 
