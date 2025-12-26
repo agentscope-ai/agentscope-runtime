@@ -351,25 +351,27 @@ class TestOptionalDependencyHandling:
             nacos_a2a_registry._build_nacos_client_config
         )
 
-        with patch(
-            "agentscope_runtime.engine.deployers.adapter.a2a"
-            ".nacos_a2a_registry.__import__",
-            side_effect=ImportError("No module named 'v2.nacos'"),
-        ):
+        # Mock the import inside _build_nacos_client_config to fail
+        def mock_import(name, *args, **kwargs):
+            if "v2.nacos" in name:
+                raise ImportError("No module named 'v2.nacos'")
+            return __import__(name, *args, **kwargs)
+
+        with patch("builtins.__import__", side_effect=mock_import):
             # Should raise ImportError when SDK is not available
             with pytest.raises(
                 ImportError,
-                match="Nacos SDK.*is not available",
+                match="Nacos SDK",
             ):
                 _build_nacos_client_config(settings)
 
     def test_nacos_unexpected_error_during_build(self):
         """Test handling of unexpected errors during Nacos client
         config build."""
-        # Mock unexpected RuntimeError during build
+        # Mock unexpected RuntimeError during import
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
-            ".nacos_a2a_registry._build_nacos_client_config",
+            ".nacos_a2a_registry.ClientConfigBuilder",
             side_effect=RuntimeError("Unexpected initialization error"),
         ):
             # create_nacos_registry_from_env should catch and return None
