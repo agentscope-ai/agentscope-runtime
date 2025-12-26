@@ -73,7 +73,12 @@ class ImageGeneration(Tool[ImageGenInput, ImageGenOutput]):
     """
 
     name: str = "modelstudio_image_gen"
-    description: str = "AI绘画（图像生成）服务，输入文本描述和图像分辨率，返回根据文本信息绘制的图片URL。"
+    description: str = (
+        "[版本: wan2.2] 通义万相文生图模型（wan2.2-t2i-flash）。"
+        "AI绘画服务，专注于快速生成概念图、插画、设计素材等。\n"
+        "此为轻量级 flash 版本，优先保障生成速度，适用于对响应时效要求高、画质要求适中的场景。\n"
+        "支持固定分辨率（如 1024×1024），提供正向/反向提示词、智能 prompt 改写功能。输入文本描述，返回生成图像的URL。\n"
+    )
 
     @trace(trace_type="AIGC", trace_name="image_generation")
     async def arun(self, args: ImageGenInput, **kwargs: Any) -> ImageGenOutput:

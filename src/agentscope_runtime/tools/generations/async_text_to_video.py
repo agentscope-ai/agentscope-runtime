@@ -84,8 +84,9 @@ class TextToVideoSubmit(
 
     name: str = "modelstudio_text_to_video_submit_task"
     description: str = (
-        "通义万相-文生视频模型的异步任务提交工具。可根据文本生成5秒无声视频，支持 480P、720P、1080P 多种分辨率档位，"
-        "并在各档位下提供多个具体尺寸选项，以适配不同业务场景。"
+        "[版本: wan2.2] 通义万相文生视频模型（wan2.2-t2v-plus）"
+        "异步任务提交工具。基于文本提示生成一段固定5秒的高清无声视频。\n"
+        "支持分辨率：480P、1080P；不支持音频、不支持口型同步、不支持超过5秒的视频。\n"
     )
 
     @trace(trace_type="AIGC", trace_name="text_to_video_submit")
