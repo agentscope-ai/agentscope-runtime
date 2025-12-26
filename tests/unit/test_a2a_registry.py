@@ -368,10 +368,10 @@ class TestOptionalDependencyHandling:
     def test_nacos_unexpected_error_during_build(self):
         """Test handling of unexpected errors during Nacos client
         config build."""
-        # Mock unexpected RuntimeError during import
+        # Mock unexpected RuntimeError during config build
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
-            ".nacos_a2a_registry.ClientConfigBuilder",
+            ".nacos_a2a_registry._build_nacos_client_config",
             side_effect=RuntimeError("Unexpected initialization error"),
         ):
             # create_nacos_registry_from_env should catch and return None
