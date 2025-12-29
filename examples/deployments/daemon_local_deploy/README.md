@@ -266,7 +266,7 @@ async def query_func(
 Then we could run the runtime by:
 
 ```python
-agent_app.chat(host="0.0.0.0", port=8080)
+agent_app.run(host="0.0.0.0", port=8080)
 ```
 
 or deploy runtime by
@@ -278,7 +278,7 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.chat(main())
+    asyncio.run(main())
     input("Press Enter to stop the server...")
 ```
 
