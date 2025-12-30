@@ -20,6 +20,7 @@
 [![DingTalk](https://img.shields.io/badge/DingTalk-Join_Us-orange.svg)](https://qr.dingtalk.com/action/joingroup?code=v1,k1,OmDlBXpjW+I2vWjKDsjvI9dhcXjGZi3bQiojOq3dlDw=&_dt_no_comment=1&origin=11)
 
 [[使用教程]](https://runtime.agentscope.io/zh/intro.html)
+[[体验WebUI]](http://webui.runtime.agentscope.io/)
 [[English README]](README.md)
 [[示例]](https://github.com/agentscope-ai/agentscope-samples)
 
