@@ -19,13 +19,13 @@ from a2a.types import (
     AgentCard,
     AgentSkill,
 )
+from a2a.utils import AGENT_CARD_WELL_KNOWN_PATH
 from fastapi import FastAPI
 from pydantic import ConfigDict, BaseModel, field_validator
 
 from agentscope_runtime.engine.deployers.utils.net_utils import (
     get_first_non_loopback_ip,
 )
-from agentscope_runtime.version import __version__ as runtime_version
 
 from .a2a_agent_adapter import A2AExecutor
 from .a2a_registry import (
@@ -43,7 +43,7 @@ from ..protocol_adapter import ProtocolAdapter
 logger = logging.getLogger(__name__)
 
 A2A_JSON_RPC_URL = "/a2a"
-DEFAULT_WELLKNOWN_PATH = "/.wellknown/agent-card.json"
+DEFAULT_WELLKNOWN_PATH = AGENT_CARD_WELL_KNOWN_PATH
 DEFAULT_TASK_TIMEOUT = 60
 DEFAULT_TASK_EVENT_TIMEOUT = 10
 DEFAULT_TRANSPORT = "JSONRPC"

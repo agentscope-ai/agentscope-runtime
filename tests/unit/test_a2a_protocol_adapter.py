@@ -44,7 +44,7 @@ class TestWellknownEndpointErrorHandling:
 
         # Test the endpoint
         client = TestClient(app)
-        response = client.get("/.wellknown/agent-card.json")
+        response = client.get("/.well-known/agent-card.json")
 
         # Should return 200 with agent card data
         assert response.status_code == 200
