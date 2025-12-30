@@ -1,117 +1,88 @@
-# 记忆组件 (Modelstudio Memory Components)
+# ModelStudio Memory - 对话记忆与用户画像
 
-本示例包含Modelstudio Memory相关组件，提供对话记忆存储、检索和用户画像管理功能。
+## 📖 什么是 ModelStudio Memory？
 
-## 📋 组件列表
+ModelStudio Memory 是一个**对话记忆管理服务**，让你的 AI 应用能够"记住"用户的对话历史，并从中自动提取用户画像。
 
-### 1. AddMemory - 添加对话记忆
-核心组件，用于将对话历史存储为结构化的记忆节点，并自动提取用户画像信息。
+**核心能力：**
+- 💾 **记忆存储**：自动将对话转换为结构化记忆，支持语义搜索
+- 🔍 **智能检索**：基于上下文语义检索相关历史对话
+- 👤 **画像提取**：自动从对话中提取用户属性（年龄、兴趣、职业等）
+- 🎯 **个性化对话**：结合记忆为用户提供更个性化的回复
 
-**前置使用条件：**
-- DashScope API-KEY
-- 配置记忆服务Endpoint (可选)
-- 用户画像 Schema（可选，用于画像提取场景）
+**典型场景：**
+```
+用户首次对话：
+  用户："我今年28岁，是一名软件工程师，周末喜欢打篮球"
+  系统：自动记录 → 提取画像（年龄=28，职业=软件工程师，爱好=篮球）
 
-**输入参数 (AddMemoryInput)：**
-- `user_id` (str): 唯一用户标识符
-- `messages` (List[Message]): 对话消息列表
-  - `role`: 消息角色（user/assistant）
-  - `content`: 消息内容
-- `timestamp` (int, 可选): 对话时间戳（10位），默认为当前时间
-- `profile_schema` (str, 可选): 用户画像 Schema ID，通过CreateProfileSchema接口创建
-- `meta_data` (Dict, 可选): 附加元数据（位置、上下文等）
+一周后再次对话：
+  用户："推荐一些周末活动"
+  系统：检索记忆 → 发现喜欢篮球 → 推荐篮球赛事和球馆
+```
 
-**输出参数 (AddMemoryOutput)：**
-- `memory_nodes` (List[MemoryNode]): 创建的记忆节点  - `memory_node_id`: 唯一记忆节点 ID
-  - `content`: 记忆内容
-  - `event`: 记忆事件类型
-  - `old_content`: 旧内容（仅在更新记忆场景时出现）
-- `request_id` : 唯一的request_id
+## 📋 核心组件
 
-**核心功能：**
-- **自动提取**: 自动从对话中提取关键信息
-- **画像学习**: 从对话中学习用户特征（年龄、兴趣等）
-- **结构化存储**: 将对话存储为结构化的可搜索记忆节点
-- **元数据支持**: 支持自定义元数据（时间、位置、上下文）
-- **更新跟踪**: 跟踪记忆的更新和变化
+### 1. AddMemory - 添加记忆
+将用户对话存储为记忆，自动提取关键信息和用户画像。
 
-### 2. SearchMemory - 搜索相关记忆
-基于语义相似度搜索相关历史对话的组件。
+**主要参数：**
+- `user_id`: 用户唯一标识
+- `messages`: 对话消息列表（user/assistant）
+- `timestamp`: 对话时间戳（可选）
+- `profile_schema`: 用户画像 Schema ID（可选，用于画像提取）
+- `meta_data`: 附加元数据，如位置、类别等（可选）
 
-**前置使用条件：**
-- 用户已有记忆数据
-- 有效的搜索查询
+**返回结果：**
+- `memory_nodes`: 创建的记忆节点列表，包含记忆ID、内容、事件类型
 
-**输入参数 (SearchMemoryInput)：**
-- `user_id` (str): 用户标识符
-- `messages` (List[Message]): 当前对话上下文
-- `top_k` (int, 可选): 返回结果数量（默认: 5）
-- `min_score` (float, 可选): 最小相似度分数（建议值0.03）
-- `filters` (Dict, 可选): 额外的过滤条件
+### 2. SearchMemory - 搜索记忆
+基于语义相似度搜索相关历史对话。
 
-**输出参数 (SearchMemoryOutput)：**
-- `memory_nodes` (List[MemoryNode]): 检索到的记忆节点
-- `request_id` (str): 请求标识符
+**主要参数：**
+- `user_id`: 用户标识
+- `messages`: 当前对话上下文
+- `top_k`: 返回结果数量（默认 5）
+- `min_score`: 最小相似度分数（建议 0.03）
 
-**核心功能：**
-- **语义搜索**: 基于语义相似度检索，而非仅关键词匹配
-- **上下文感知**: 考虑对话上下文以获得更好结果
-- **分数排序**: 按相关性分数排序返回结果
-- **灵活过滤**: 支持时间范围、事件类型等多种过滤器
+**返回结果：**
+- `memory_nodes`: 按相关性排序的记忆节点列表
 
-### 3. ListMemory - 列出记忆节点
-支持分页的用户记忆节点列表组件。
+### 3. ListMemory - 列出记忆
+分页查看用户的所有记忆。
 
-**输入参数 (ListMemoryInput)：**
-- `user_id` (str): 用户标识符
-- `page_num` (int): 页码（从 1 开始）
-- `page_size` (int): 每页条目数
+**主要参数：**
+- `user_id`: 用户标识
+- `page_num`: 页码（从 1 开始）
+- `page_size`: 每页条目数
 
-**输出参数 (ListMemoryOutput)：**
-- `memory_nodes` (List[MemoryNode]): 当前页的记忆列表
-- `total` (int): 总记忆节点数
-- `page_num` (int): 当前页码
-- `page_size` (int): 页面大小
-- `request_id` (str): 请求标识符
+### 4. DeleteMemory - 删除记忆
+删除指定的记忆节点。
 
-### 4. DeleteMemory - 删除记忆节点
-删除指定记忆节点的组件。
+**主要参数：**
+- `user_id`: 用户标识
+- `memory_node_id`: 要删除的记忆节点 ID
 
-**输入参数 (DeleteMemoryInput)：**
-- `user_id` (str): 用户标识符
-- `memory_node_id` (str): 要删除的记忆节点 ID
+### 5. CreateProfileSchema - 创建画像模板
+定义要提取的用户画像字段结构。
 
-**输出参数 (DeleteMemoryOutput)：**
-- `success` (bool): 删除是否成功
-- `request_id` (str): 请求标识符
+**主要参数：**
+- `name`: 模板名称
+- `description`: 模板描述
+- `attributes`: 画像属性列表（如：年龄、爱好、职业）
 
-### 5. CreateProfileSchema - 创建用户画像 Schema
-定义用户画像字段结构的组件。
-
-**输入参数 (CreateProfileSchemaInput)：**
-- `name` (str): Schema 名称
-- `description` (str): Schema 描述
-- `attributes` (List[ProfileAttribute]): 画像属性定义
-  - `name`: 属性名称（如"年龄"、"爱好"）
-  - `description`: 属性描述
-
-**输出参数 (CreateProfileSchemaOutput)：**
-- `profile_schema_id` (str): 创建的 Schema ID
-- `request_id` (str): 请求标识符
+**返回结果：**
+- `profile_schema_id`: 创建的模板 ID
 
 ### 6. GetUserProfile - 获取用户画像
-获取自动提取的用户画像信息的组件。
+获取系统自动提取的用户画像信息。
 
-**输入参数 (GetUserProfileInput)：**
-- `schema_id` (str): 画像 Schema ID
-- `user_id` (str): 用户标识符
+**主要参数：**
+- `schema_id`: 画像模板 ID
+- `user_id`: 用户标识
 
-**输出参数 (GetUserProfileOutput)：**
-- `profile` (UserProfile): 用户画像信息
-  - `schema_name`: Schema 名称
-  - `schema_description`: Schema 描述
-  - `attributes`: 包含提取值的画像属性
-- `request_id` (str): 请求标识符
+**返回结果：**
+- `profile`: 用户画像，包含各属性的提取值
 
 ## 🔧 环境变量配置
 
@@ -337,27 +308,30 @@ async def metadata_example():
 asyncio.run(metadata_example())
 ```
 
-## 🏗️ 记忆架构特点
+## 🏗️ 核心特性
 
-### 记忆存储策略
+### 🔍 智能检索
+- **语义理解**：不是简单的关键词匹配，而是理解对话含义
+- **上下文感知**：结合当前对话内容找到最相关的历史记忆
+- **时间过滤**：可以筛选特定时间段的记忆
 
-- **对话结构化**: 自动将对话结构化为记忆
-- **自动摘要**: 从冗长对话中提取关键信息
-- **时间序列组织**: 按时间线组织记忆
-- **事件分类**: 按事件类型分类记忆（提醒、事实、偏好等）
+### 💾 自动记忆管理
+- **结构化存储**：自动将对话转为结构化记忆节点
+- **事件分类**：自动识别记忆类型（提醒、事实、偏好等）
+- **元数据支持**：支持添加位置、类别等附加信息
 
-### 检索策略
+### 👤 用户画像提取
+- **自动学习**：从对话中自动提取用户属性（年龄、职业、爱好等）
+- **渐进式更新**：随着对话积累，画像逐步完善
+- **多属性支持**：可定义多个画像字段同时提取
 
-- **语义搜索**: 基于语义相似度检索
-- **时间过滤**: 支持按时间范围过滤（最近、特定时期）
-- **相关性排序**: 按语义相似度和时效性排序结果
-- **上下文感知**: 考虑对话上下文以获得更好的检索效果
+## 💡 最佳实践
 
-### 画像提取
+### 记忆管理建议
+1. **及时存储**：在每轮对话结束后及时调用 AddMemory 保存记忆
+2. **合理使用 top_k**：搜索时建议设置 `top_k=3~10`，平衡性能和效果
+3. **添加meta信息**：为记忆添加自定义信息，便于自定义管理
 
-- **基于 NLP 的提取**: 使用自然语言处理提取用户信息
-- **渐进式更新**: 随时间逐步构建和完善用户画像
-- **冲突解决**: 智能处理冲突信息
-- **多属性支持**: 同时支持多个画像属性
-
-
+### 用户画像建议
+1. **明确定义 Schema**：画像字段及描述应该清晰、具体，避免过于抽象
+2. **渐进式收集**：不要期望一次对话就能提取所有信息
