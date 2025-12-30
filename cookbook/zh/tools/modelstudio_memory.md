@@ -1,6 +1,6 @@
 # 记忆组件 (Modelstudio Memory Components)
 
-本目录包含Modelstudio Memory相关组件，提供对话记忆存储、检索和用户画像管理功能。
+本示例包含Modelstudio Memory相关组件，提供对话记忆存储、检索和用户画像管理功能。
 
 ## 📋 组件列表
 
@@ -124,392 +124,217 @@
 
 ### 基础记忆操作示例
 
+演示添加、搜索和列出记忆的基本流程：
+
 ```python
 from agentscope_runtime.tools.modelstudio_memory import (
-    AddMemory,
-    SearchMemory,
-    ListMemory,
-    DeleteMemory,
-    Message,
-    AddMemoryInput,
-    SearchMemoryInput,
-    ListMemoryInput,
-    DeleteMemoryInput,
+    AddMemory, SearchMemory, Message, AddMemoryInput, SearchMemoryInput,
 )
 import asyncio
-import time
 
-# 初始化组件
-add_memory = AddMemory()
-search_memory = SearchMemory()
-list_memory = ListMemory()
-delete_memory = DeleteMemory()
-
-
-async def basic_memory_example():
-    user_id = "user_001"
+async def basic_example():
+    add_memory = AddMemory()
+    search_memory = SearchMemory()
     
-    # 1. 添加对话记忆
-    add_result = await add_memory.arun(
-        AddMemoryInput(
-            user_id=user_id,
+    try:
+        # 添加记忆
+        await add_memory.arun(AddMemoryInput(
+            user_id="user_001",
             messages=[
-                Message(role="user", content="每天上午9点提醒我喝水。"),
-                Message(role="assistant", content="好的，我已经记录下来。"),
-            ],
-            timestamp=int(time.time()),
-            meta_data={
-                "location_name": "家里",
-                "context": "日常事务"
-            }
-        )
-    )
+                Message(role="user", content="每天上午9点提醒我喝水"),
+                Message(role="assistant", content="好的，已记录"),
+            ]
+        ))
+        
+        await asyncio.sleep(2)  # 等待记忆处理
+        
+        # 搜索记忆
+        result = await search_memory.arun(SearchMemoryInput(
+            user_id="user_001",
+            messages=[Message(role="user", content="我需要做什么？")],
+            top_k=5
+        ))
+        
+        for node in result.memory_nodes:
+            print(f"记忆: {node.content}")
     
-    print(f"添加了 {len(add_result.memory_nodes)} 条记忆节点")
-    memory_ids = [node.memory_node_id for node in add_result.memory_nodes]
-    
-    # 等待记忆处理完成
-    await asyncio.sleep(2)
-    
-    # 2. 搜索相关记忆
-    search_result = await search_memory.arun(
-        SearchMemoryInput(
-            user_id=user_id,
-            messages=[
-                Message(role="user", content="今天我需要做什么？")
-            ],
-            top_k=5,
-            min_score=0
-        )
-    )
-    
-    print(f"找到 {len(search_result.memory_nodes)} 条相关记忆：")
-    for node in search_result.memory_nodes:
-        print(f"  - {node.content}")
-    
-    # 3. 列出所有记忆
-    list_result = await list_memory.arun(
-        ListMemoryInput(
-            user_id=user_id,
-            page_num=1,
-            page_size=10
-        )
-    )
-    
-    print(f"总记忆数：{list_result.total}")
-    
-    # 4. 删除记忆
-    for memory_id in memory_ids:
-        await delete_memory.arun(
-            DeleteMemoryInput(
-                user_id=user_id,
-                memory_node_id=memory_id
-            )
-        )
-    
-    print("清理完成")
+    finally:
+        await add_memory.close()
+        await search_memory.close()
 
-
-asyncio.run(basic_memory_example())
+asyncio.run(basic_example())
 ```
 
 ### 用户画像提取示例
 
+演示如何从对话中自动提取用户画像：
+
 ```python
 from agentscope_runtime.tools.modelstudio_memory import (
-    CreateProfileSchema,
-    GetUserProfile,
-    AddMemory,
-    ProfileAttribute,
-    CreateProfileSchemaInput,
-    GetUserProfileInput,
-    AddMemoryInput,
-    Message,
+    CreateProfileSchema, GetUserProfile, AddMemory,
+    ProfileAttribute, CreateProfileSchemaInput, 
+    GetUserProfileInput, AddMemoryInput, Message,
 )
 import asyncio
-import time
 
-
-async def profile_extraction_example():
+async def profile_example():
     create_schema = CreateProfileSchema()
     get_profile = GetUserProfile()
     add_memory = AddMemory()
     
-    user_id = "user_002"
-    
-    # 1. 创建用户画像 Schema
-    schema_result = await create_schema.arun(
-        CreateProfileSchemaInput(
+    try:
+        # 创建画像 Schema
+        schema_result = await create_schema.arun(CreateProfileSchemaInput(
             name="用户基础画像",
-            description="包含年龄和兴趣的基础用户信息",
+            description="包含年龄和兴趣的用户信息",
             attributes=[
                 ProfileAttribute(name="年龄", description="用户年龄"),
                 ProfileAttribute(name="爱好", description="用户的兴趣爱好"),
                 ProfileAttribute(name="职业", description="用户职业"),
             ]
-        )
-    )
-    
-    schema_id = schema_result.profile_schema_id
-    print(f"创建画像 Schema：{schema_id}")
-    
-    # 2. 添加包含画像信息的对话
-    await add_memory.arun(
-        AddMemoryInput(
-            user_id=user_id,
+        ))
+        
+        schema_id = schema_result.profile_schema_id
+        
+        # 添加包含画像信息的对话
+        await add_memory.arun(AddMemoryInput(
+            user_id="user_002",
             messages=[
-                Message(
-                    role="user",
-                    content="我今年28岁，是一名软件工程师。周末喜欢踢足球。"
-                ),
-                Message(role="assistant", content="很高兴认识你！我已经记下你的信息了。"),
+                Message(role="user", content="我今年28岁，是一名软件工程师。周末喜欢踢足球。"),
+                Message(role="assistant", content="很高兴认识你！"),
             ],
-            timestamp=int(time.time()),
             profile_schema=schema_id
-        )
-    )
+        ))
+        
+        await asyncio.sleep(3)  # 等待画像提取
+        
+        # 获取提取的画像
+        profile = await get_profile.arun(GetUserProfileInput(
+            schema_id=schema_id, user_id="user_002"
+        ))
+        
+        for attr in profile.profile.attributes:
+            print(f"{attr.name}: {attr.value or '未提取'}")
     
-    # 等待画像提取
-    await asyncio.sleep(3)
-    
-    # 3. 获取提取的画像
-    profile_result = await get_profile.arun(
-        GetUserProfileInput(
-            schema_id=schema_id,
-            user_id=user_id
-        )
-    )
-    
-    print(f"\n📋 用户画像：")
-    print(f"Schema：{profile_result.profile.schema_name}")
-    print(f"\n提取的属性：")
-    for attr in profile_result.profile.attributes:
-        value = attr.value if attr.value else "（暂未提取）"
-        print(f"  - {attr.name}：{value}")
+    finally:
+        await create_schema.close()
+        await get_profile.close()
+        await add_memory.close()
 
-
-asyncio.run(profile_extraction_example())
+asyncio.run(profile_example())
 ```
 
 ### 记忆增强的 LLM 对话示例
 
+演示如何结合记忆和大模型实现个性化对话：
+
 ```python
 from agentscope_runtime.tools.modelstudio_memory import (
-    AddMemory,
-    SearchMemory,
-    Message,
-    AddMemoryInput,
-    SearchMemoryInput,
+    AddMemory, SearchMemory, Message, AddMemoryInput, SearchMemoryInput,
 )
 from openai import AsyncOpenAI
 import asyncio
-import time
 import os
 
-
-async def memory_enhanced_conversation():
+async def llm_with_memory():
     add_memory = AddMemory()
     search_memory = SearchMemory()
-    
-    # 初始化 OpenAI 客户端（DashScope 兼容）
     llm_client = AsyncOpenAI(
         api_key=os.getenv("DASHSCOPE_API_KEY"),
-        base_url=os.getenv(
-            "LLM_BASE_URL",
-            "https://dashscope.aliyuncs.com/compatible-mode/v1"
-        )
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
     )
     
-    user_id = "user_003"
-    
-    # 1. 将初始对话存入记忆
-    initial_messages = [
-        Message(role="user", content="我最喜欢的编程语言是 Python。"),
-        Message(role="assistant", content="很好！Python 非常强大和灵活。"),
-        Message(role="user", content="我目前在学习机器学习。"),
-        Message(role="assistant", content="很棒的选择！机器学习是个迷人的领域。"),
-    ]
-    
-    await add_memory.arun(
-        AddMemoryInput(
-            user_id=user_id,
-            messages=initial_messages,
-            timestamp=int(time.time())
-        )
-    )
-    
-    await asyncio.sleep(2)
-    
-    # 2. 新查询 - 搜索相关记忆
-    user_query = "我对哪些技术感兴趣？"
-    
-    search_result = await search_memory.arun(
-        SearchMemoryInput(
-            user_id=user_id,
-            messages=[Message(role="user", content=user_query)],
-            top_k=5
-        )
-    )
-    
-    # 3. 从检索的记忆构建上下文
-    memory_context = "\n".join([
-        f"- {node.content}" for node in search_result.memory_nodes
-    ])
-    
-    # 4. 使用带记忆上下文的 LLM 生成回答
-    system_prompt = (
-        "你是一个有帮助的助手。使用以下关于用户的记忆来提供个性化的回答。\n\n"
-        f"用户的记忆：\n{memory_context}"
-    )
-    
-    stream = await llm_client.chat.completions.create(
-        model="qwen-max",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_query}
-        ],
-        stream=True
-    )
-    
-    print(f"用户：{user_query}\n")
-    print("助手：", end="")
-    
-    full_response = ""
-    async for chunk in stream:
-        if chunk.choices and chunk.choices[0].delta.content:
-            content = chunk.choices[0].delta.content
-            print(content, end="", flush=True)
-            full_response += content
-    
-    print("\n")
-    
-    # 5. 存储新对话
-    await add_memory.arun(
-        AddMemoryInput(
+    try:
+        user_id = "user_003"
+        
+        # 存储历史对话
+        await add_memory.arun(AddMemoryInput(
             user_id=user_id,
             messages=[
-                Message(role="user", content=user_query),
-                Message(role="assistant", content=full_response)
-            ],
-            timestamp=int(time.time())
+                Message(role="user", content="我最喜欢的编程语言是 Python"),
+                Message(role="assistant", content="很好！Python 非常强大"),
+            ]
+        ))
+        
+        await asyncio.sleep(2)
+        
+        # 搜索相关记忆
+        query = "我对哪些技术感兴趣？"
+        result = await search_memory.arun(SearchMemoryInput(
+            user_id=user_id,
+            messages=[Message(role="user", content=query)],
+            top_k=5
+        ))
+        
+        # 构建带记忆的提示词
+        memory_ctx = "\n".join([f"- {n.content}" for n in result.memory_nodes])
+        system_prompt = f"使用以下用户记忆提供个性化回答：\n{memory_ctx}"
+        
+        # 调用大模型
+        response = await llm_client.chat.completions.create(
+            model="qwen-max",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": query}
+            ]
         )
-    )
+        
+        print(response.choices[0].message.content)
     
-    await llm_client.close()
+    finally:
+        await add_memory.close()
+        await search_memory.close()
+        await llm_client.close()
 
-
-asyncio.run(memory_enhanced_conversation())
+asyncio.run(llm_with_memory())
 ```
 
-### 长期记忆管理示例
+### 记忆管理示例
+
+演示如何使用元数据和时间戳管理记忆：
 
 ```python
 from agentscope_runtime.tools.modelstudio_memory import (
-    AddMemory,
-    SearchMemory,
-    ListMemory,
-    Message,
-    AddMemoryInput,
-    SearchMemoryInput,
-    ListMemoryInput,
+    AddMemory, SearchMemory, Message, AddMemoryInput, SearchMemoryInput,
 )
 import asyncio
 import time
-from datetime import datetime, timedelta
 
-
-async def long_term_memory_management():
+async def metadata_example():
     add_memory = AddMemory()
     search_memory = SearchMemory()
-    list_memory = ListMemory()
     
-    user_id = "user_004"
-    
-    # 模拟不同时间的对话
-    conversations = [
-        {
-            "time_offset": 0,  # 今天
-            "messages": [
-                Message(role="user", content="明天下午2点和设计团队开会。"),
-                Message(role="assistant", content="我已经记下您明天下午2点的会议。"),
-            ],
-            "meta_data": {"category": "工作", "priority": "高"}
-        },
-        {
-            "time_offset": -86400,  # 昨天
-            "messages": [
-                Message(role="user", content="完成了第四季度项目报告。"),
-                Message(role="assistant", content="太棒了，恭喜完成报告！"),
-            ],
-            "meta_data": {"category": "工作", "status": "已完成"}
-        },
-        {
-            "time_offset": -604800,  # 上周
-            "messages": [
-                Message(role="user", content="开始学习 React 来做新项目。"),
-                Message(role="assistant", content="React 是个很棒的框架！"),
-            ],
-            "meta_data": {"category": "学习", "topic": "React"}
-        }
-    ]
-    
-    # 存储不同时间戳的对话
-    print("📝 存储对话...")
-    for conv in conversations:
-        timestamp = int(time.time()) + conv["time_offset"]
-        await add_memory.arun(
-            AddMemoryInput(
-                user_id=user_id,
-                messages=conv["messages"],
-                timestamp=timestamp,
-                meta_data=conv["meta_data"]
-            )
-        )
-    
-    await asyncio.sleep(2)
-    
-    # 查询记忆
-    queries = [
-        "我有什么会议安排？",
-        "我最近完成了什么？",
-        "我正在学习什么？"
-    ]
-    
-    print("\n🔍 查询记忆：\n")
-    for query in queries:
-        print(f"问：{query}")
-        search_result = await search_memory.arun(
-            SearchMemoryInput(
-                user_id=user_id,
-                messages=[Message(role="user", content=query)],
-                top_k=3
-            )
-        )
+    try:
+        user_id = "user_004"
         
-        if search_result.memory_nodes:
-            print(f"相关记忆：")
-            for node in search_result.memory_nodes:
-                print(f"  - {node.content}")
-        else:
-            print("  未找到相关记忆")
-        print()
-    
-    # 分页列出所有记忆
-    print("📊 所有存储的记忆：")
-    list_result = await list_memory.arun(
-        ListMemoryInput(
+        # 添加带元数据的记忆
+        await add_memory.arun(AddMemoryInput(
             user_id=user_id,
-            page_num=1,
-            page_size=10
-        )
-    )
+            messages=[
+                Message(role="user", content="明天下午2点和设计团队开会"),
+                Message(role="assistant", content="已记录会议安排"),
+            ],
+            timestamp=int(time.time()),
+            meta_data={"category": "工作", "priority": "高"}
+        ))
+        
+        await asyncio.sleep(2)
+        
+        # 查询记忆
+        result = await search_memory.arun(SearchMemoryInput(
+            user_id=user_id,
+            messages=[Message(role="user", content="我有什么会议安排？")],
+            top_k=3
+        ))
+        
+        for node in result.memory_nodes:
+            print(f"记忆: {node.content}")
     
-    print(f"总计：{list_result.total} 条记忆")
-    for i, node in enumerate(list_result.memory_nodes, 1):
-        print(f"  [{i}] {node.content}")
+    finally:
+        await add_memory.close()
+        await search_memory.close()
 
-
-asyncio.run(long_term_memory_management())
+asyncio.run(metadata_example())
 ```
 
 ## 🏗️ 记忆架构特点
