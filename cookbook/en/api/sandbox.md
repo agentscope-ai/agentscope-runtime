@@ -78,6 +78,34 @@ The main classes that users typically interact with are directly importable from
    :no-index:
 ```
 
+
+### CloudPhoneSandbox
+```{eval-rst}
+.. autoclass:: agentscope_runtime.sandbox.CloudPhoneSandbox
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+```
+
+### CloudComputerSandbox
+```{eval-rst}
+.. autoclass:: agentscope_runtime.sandbox.CloudComputerSandbox
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+```
+
+### E2bSandBox
+```{eval-rst}
+.. autoclass:: agentscope_runtime.sandbox.E2bSandBox
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+```
+
 ## Custom & Example
 ```{eval-rst}
 .. automodule:: agentscope_runtime.sandbox.custom.custom_sandbox
