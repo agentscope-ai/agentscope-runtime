@@ -106,7 +106,7 @@ import asyncio
 async def basic_example():
     add_memory = AddMemory()
     search_memory = SearchMemory()
-    
+
     try:
         # 添加记忆
         await add_memory.arun(AddMemoryInput(
@@ -116,19 +116,19 @@ async def basic_example():
                 Message(role="assistant", content="好的，已记录"),
             ]
         ))
-        
+
         await asyncio.sleep(2)  # 等待记忆处理
-        
+
         # 搜索记忆
         result = await search_memory.arun(SearchMemoryInput(
             user_id="user_001",
             messages=[Message(role="user", content="我需要做什么？")],
             top_k=5
         ))
-        
+
         for node in result.memory_nodes:
             print(f"记忆: {node.content}")
-    
+
     finally:
         await add_memory.close()
         await search_memory.close()
@@ -143,7 +143,7 @@ asyncio.run(basic_example())
 ```python
 from agentscope_runtime.tools.modelstudio_memory import (
     CreateProfileSchema, GetUserProfile, AddMemory,
-    ProfileAttribute, CreateProfileSchemaInput, 
+    ProfileAttribute, CreateProfileSchemaInput,
     GetUserProfileInput, AddMemoryInput, Message,
 )
 import asyncio
@@ -152,7 +152,7 @@ async def profile_example():
     create_schema = CreateProfileSchema()
     get_profile = GetUserProfile()
     add_memory = AddMemory()
-    
+
     try:
         # 创建画像 Schema
         schema_result = await create_schema.arun(CreateProfileSchemaInput(
@@ -164,9 +164,9 @@ async def profile_example():
                 ProfileAttribute(name="职业", description="用户职业"),
             ]
         ))
-        
+
         schema_id = schema_result.profile_schema_id
-        
+
         # 添加包含画像信息的对话
         await add_memory.arun(AddMemoryInput(
             user_id="user_002",
@@ -176,17 +176,17 @@ async def profile_example():
             ],
             profile_schema=schema_id
         ))
-        
+
         await asyncio.sleep(3)  # 等待画像提取
-        
+
         # 获取提取的画像
         profile = await get_profile.arun(GetUserProfileInput(
             schema_id=schema_id, user_id="user_002"
         ))
-        
+
         for attr in profile.profile.attributes:
             print(f"{attr.name}: {attr.value or '未提取'}")
-    
+
     finally:
         await create_schema.close()
         await get_profile.close()
@@ -214,10 +214,10 @@ async def llm_with_memory():
         api_key=os.getenv("DASHSCOPE_API_KEY"),
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
     )
-    
+
     try:
         user_id = "user_003"
-        
+
         # 存储历史对话
         await add_memory.arun(AddMemoryInput(
             user_id=user_id,
@@ -226,9 +226,9 @@ async def llm_with_memory():
                 Message(role="assistant", content="很好！Python 非常强大"),
             ]
         ))
-        
+
         await asyncio.sleep(2)
-        
+
         # 搜索相关记忆
         query = "我对哪些技术感兴趣？"
         result = await search_memory.arun(SearchMemoryInput(
@@ -236,11 +236,11 @@ async def llm_with_memory():
             messages=[Message(role="user", content=query)],
             top_k=5
         ))
-        
+
         # 构建带记忆的提示词
         memory_ctx = "\n".join([f"- {n.content}" for n in result.memory_nodes])
         system_prompt = f"使用以下用户记忆提供个性化回答：\n{memory_ctx}"
-        
+
         # 调用大模型
         response = await llm_client.chat.completions.create(
             model="qwen-max",
@@ -249,9 +249,9 @@ async def llm_with_memory():
                 {"role": "user", "content": query}
             ]
         )
-        
+
         print(response.choices[0].message.content)
-    
+
     finally:
         await add_memory.close()
         await search_memory.close()
@@ -274,10 +274,10 @@ import time
 async def metadata_example():
     add_memory = AddMemory()
     search_memory = SearchMemory()
-    
+
     try:
         user_id = "user_004"
-        
+
         # 添加带元数据的记忆
         await add_memory.arun(AddMemoryInput(
             user_id=user_id,
@@ -288,19 +288,19 @@ async def metadata_example():
             timestamp=int(time.time()),
             meta_data={"category": "工作", "priority": "高"}
         ))
-        
+
         await asyncio.sleep(2)
-        
+
         # 查询记忆
         result = await search_memory.arun(SearchMemoryInput(
             user_id=user_id,
             messages=[Message(role="user", content="我有什么会议安排？")],
             top_k=3
         ))
-        
+
         for node in result.memory_nodes:
             print(f"记忆: {node.content}")
-    
+
     finally:
         await add_memory.close()
         await search_memory.close()
