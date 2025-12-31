@@ -94,6 +94,8 @@ ext = [
     "nacos-sdk-python>=3.0.0",
     "agent-framework>=1.0.0b251120",
     "boxlite>=0.5.2",
+    "alibabacloud-pailangstudio20240710@https://sdk-portal-us-prod.oss-accelerate.aliyuncs.com/downloads/u-5eebaa3c-604c-411d-a3b9-ea32e5118ae1-python-tea.zip",
+    "alibabacloud-eas20210701",
 ]
 
 [tool.pytest.ini_options]
