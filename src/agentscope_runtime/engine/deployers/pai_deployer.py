@@ -659,18 +659,14 @@ class PAIDeployManager(DeployManager):
         instance_type: Optional[List[str]] = None,
         cpu: Optional[int] = None,
         memory: Optional[int] = None,
-        # Network configuration
         vpc_id: Optional[str] = None,
         vswitch_id: Optional[str] = None,
         security_group_id: Optional[str] = None,
-        # Role configuration
         ram_role_mode: str = "default",
         ram_role_arn: Optional[str] = None,
-        # Control flags
         enable_trace: bool = True,
         wait: bool = True,
         timeout: int = 1800,
-        custom_endpoints: Optional[List[Dict]] = None,
         auto_approve: bool = False,
         **kwargs,
     ) -> Dict[str, str]:
@@ -731,11 +727,8 @@ class PAIDeployManager(DeployManager):
                     app=app,
                     endpoint_path=endpoint_path,
                     protocol_adapters=protocol_adapters,
-                    custom_endpoints=custom_endpoints,
                     requirements=requirements,
-                    extra_packages=extra_packages,
-                    port=8080,
-                    platform="pai",
+                    extra_packages=extra_packages
                     **kwargs,
                 )
 
@@ -803,43 +796,44 @@ class PAIDeployManager(DeployManager):
                     deployment_id,
                     timeout=timeout,
                 )
+                service_status = "running"
             else:
-                return deployment_id
+                service_status = "deploying"
 
-            # Save deployment state
+            console_uri = self.get_deployment_console_uri(proj_id, deployment_id)
+
             local_deploy_id = self.deploy_id
             deployment = Deployment(
                 id=local_deploy_id,
                 platform="pai",
-                url=console_url,
-                status="running" if deployment_status else "deploying",
+                url=self.get_deployment_console_uri(proj_id, deployment_id),
+                status=service_status,
                 created_at=datetime.now().isoformat(),
                 agent_source=project_dir,
                 config={
                     "pai_deployment_id": deployment_id,
-                    "flow_id": flow_id,
+                    "flow_id": proj_id,
                     "snapshot_id": snapshot_id,
                     "service_name": service_name,
                     "workspace_id": self.pai_config.workspace_id,
-                    "resource_type": resource_type,
                 },
             )
             self.state_manager.save(deployment)
 
             # Return deployment information
             result = {
-                "deploy_id": deploy_id,
+                "deploy_id": local_deploy_id,
                 "pai_deployment_id": deployment_id,
-                "flow_id": flow_id,
+                "flow_id": proj_id,
                 "snapshot_id": snapshot_id,
                 "service_name": service_name,
                 "workspace_id": self.pai_config.workspace_id,
-                "url": console_url,
-                "status": "running" if deployment_status else "deploying",
+                "url": console_uri,
+                "status": service_status,
             }
 
             logger.info("PAI deployment completed successfully")
-            logger.info("Console URL: %s", console_url)
+            logger.info("Console URL: %s", console_uri)
 
             return result
 
