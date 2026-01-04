@@ -257,6 +257,7 @@ class PAIDeployManager(DeployManager):
         """
         super().__init__(state_manager=state_manager)
         self.pai_config = pai_config or PAIConfig.from_env()
+        self.oss_config = oss_config or OSSConfig.from_env()
         self.build_root = Path(build_root) if build_root else None
 
     def _parse_oss_path(self, oss_path: str) -> Tuple[str, str]:
@@ -400,7 +401,7 @@ class PAIDeployManager(DeployManager):
         vpc_id: Optional[str] = None,
         vswitch_id: Optional[str] = None,
         security_group_id: Optional[str] = None,
-        service_group: Optional[str] = None
+        service_group_name: Optional[str] = None
     ) -> str:
         """
         Build deployment configuration JSON string.
@@ -415,8 +416,8 @@ class PAIDeployManager(DeployManager):
             },
         }
 
-        if service_group:
-            config["metadata"]["group"] = service_group
+        if service_group_name:
+            config["metadata"]["group"] = service_group_name
 
 
         # Add resource-specific configuration
@@ -533,6 +534,7 @@ class PAIDeployManager(DeployManager):
         # Build deployment configuration
         deployment_config = self._build_deployment_config(
             resource_type=resource_type,
+            service_group_name=service_group_name,
             **deployment_kwargs,
         )
 
@@ -728,7 +730,7 @@ class PAIDeployManager(DeployManager):
                     endpoint_path=endpoint_path,
                     protocol_adapters=protocol_adapters,
                     requirements=requirements,
-                    extra_packages=extra_packages
+                    extra_packages=extra_packages,
                     **kwargs,
                 )
 
@@ -751,11 +753,12 @@ class PAIDeployManager(DeployManager):
 
             oss_archive_uri = self._upload_archive(
                 service_name=service_name,
-                archive_path=archive_path, oss_path=self.oss_config.oss_path
+                archive_path=archive_path,
+                oss_path=oss_path or self.oss_config.oss_path,
             )
 
             proj_id = await self.get_or_create_langstudio_proj(
-                service_name, oss_archive_uri, self.oss_config.oss_path
+                service_name, oss_archive_uri, oss_path or self.oss_config.oss_path
             )
 
             # Step 2: Upload to OSS
@@ -771,7 +774,7 @@ class PAIDeployManager(DeployManager):
                 snapshot_id=snapshot_id,
                 proj_id=proj_id,
                 service_name=service_name,
-                oss_work_dir=self.oss_config.oss_path,
+                oss_work_dir=oss_path or self.oss_config.oss_path,
                 enable_trace=enable_trace,
                 resource_type=resource_type,
                 service_group_name=service_group_name,
@@ -786,7 +789,6 @@ class PAIDeployManager(DeployManager):
                 vpc_id=vpc_id,
                 vswitch_id=vswitch_id,
                 security_group_id=security_group_id,
-                auto_approve=auto_approve,
             )
 
             # Step 5: Wait for deployment if requested
@@ -847,10 +849,12 @@ class PAIDeployManager(DeployManager):
         Return the console URI for a deployment.
 
         """
-        return f"https://pai.console.aliyun.com/?regionId="
-        f"{self.pai_config.region_id}&workspaceId="
-        f"{self.pai_config.workspace_id}#/lang-studio/flows/"
-        f"flow-{proj_id}/deployments/{deployment_id}"
+        return (
+            f"https://pai.console.aliyun.com/?regionId="
+            f"{self.pai_config.region_id}&workspaceId="
+            f"{self.pai_config.workspace_id}#/lang-studio/flows/"
+            f"flow-{proj_id}/deployments/{deployment_id}"
+        )
 
     def _create_project_archive(self, service_name, project_dir: Path):
         build_dir = generate_build_directory("pai")
@@ -917,8 +921,8 @@ class PAIDeployManager(DeployManager):
         """
         bucket_name, endpoint, object_key = parse_oss_uri(oss_path)
         archive_obj_key = posixpath.join(
-            object_key, "temp", f"{service_name}_{datetime.now().strftime("%Y%m%d_%H%M%S")}")
-
+            object_key, "temp", f"{service_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
         if endpoint and not oss_endpoint:
             oss_endpoint = endpoint
 
@@ -967,9 +971,8 @@ class PAIDeployManager(DeployManager):
 
         return oss.Client(
             config=oss.Config(
-                region=self.pai_config.region_id,
+                region=region or self.pai_config.region_id,
                 oss_endpoint=oss_endpoint,
-                region=region,
                 credentials_provider=_CustomOssCredentialsProvider(
                     self._acs_credential_client()
                 ),
@@ -1141,7 +1144,7 @@ class PAIDeployManager(DeployManager):
             else public_endpoint
         )
 
-    @cache
+    @staticmethod
     def _get_oss_endpoint(region_id: str) -> str:
         internal_endpoint = f"oss-{region_id}-internal.aliyuncs.com"
         public_endpoint = f"oss-{region_id}.aliyuncs.com"
@@ -1180,10 +1183,10 @@ class PAIDeployManager(DeployManager):
                 }
 
             # Ensure SDKs available
-            self.pai_config.ensure_valid()
+            self._assert_cloud_sdks_available()
 
             # Create PAI client
-            pai_client = _get_pai_client(self.pai_config)
+            pai_client = self.get_langstudio_client()
 
             # Delete deployment
             logger.info("Stopping PAI deployment: %s", pai_deployment_id)
