@@ -437,10 +437,10 @@ agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-ba
 #### Serverless Sandbox Deployment
 
 AgentScope Runtime also supports serverless deployment, which is suitable for running sandboxes in a serverless environment,
-[Alibaba Cloud Function Compute (FC)](https://help.aliyun.com/zh/functioncompute/fc/) or [Alibaba Cloud AgentRun](https://docs.agent.run/).
+[Alibaba Cloud Function Compute (FC)](https://help.aliyun.com/zh/functioncompute/fc/).
 
 First, please refer to the [documentation](https://runtime.agentscope.io/en/sandbox/advanced.html#optional-function-compute-fc-settings) to configure the serverless environment variables.
-Make `CONTAINER_DEPLOYMENT` to `fc` or `agentrun` to enable serverless deployment.
+Make `CONTAINER_DEPLOYMENT` to `fc` to enable serverless deployment.
 
 Then, start a sandbox server, use the `--config` option to specify a serverless environment setup:
 
@@ -501,8 +501,7 @@ print(response)
 ```
 
 Besides, `DeployManager` also supports serverless deployments, such as deploying your agent app
-to [ModelStudio](https://bailian.console.aliyun.com/?admin=1&tab=doc#/doc/?type=app&url=2983030)
-or [AgentRun](https://docs.agent.run/).
+to [ModelStudio](https://bailian.console.aliyun.com/?admin=1&tab=doc#/doc/?type=app&url=2983030).
 
 ```python
 from agentscope_runtime.engine.deployers import ModelStudioDeployManager
