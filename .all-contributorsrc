@@ -302,6 +302,17 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "rlp2006",
+      "name": "Li Peng (Yuan Yi)",
+      "avatar_url": "https://avatars.githubusercontent.com/u/212365247?v=4",
+      "profile": "https://github.com/rlp2006",
+      "contributions": [
+        "code",
+        "doc",
+        "example"
+      ]
     }
   ],
   "contributorsPerLine": 7,
