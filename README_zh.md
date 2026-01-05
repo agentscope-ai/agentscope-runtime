@@ -3,6 +3,7 @@
 # AgentScope Runtime v1.0
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/agentscope-ai/agentscope-runtime)
+[![WebUI](https://img.shields.io/badge/Try_WebUI-Online-green.svg?logo=googlechrome)](http://webui.runtime.agentscope.io/)
 [![PyPI](https://img.shields.io/pypi/v/agentscope-runtime?label=PyPI&color=brightgreen&logo=python)](https://pypi.org/project/agentscope-runtime/)
 [![Downloads](https://static.pepy.tech/badge/agentscope-runtime)](https://pepy.tech/project/agentscope-runtime)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg?logo=python&label=Python)](https://python.org)
@@ -438,10 +439,10 @@ agentscope-registry.ap-southeast-1.cr.aliyuncs.com/myteam/runtime-sandbox-base:p
 
 #### Serverless 沙箱部署
 
-AgentScope Runtime 同样支持 serverless 部署，适用于在无服务器环境中运行沙箱，例如 [阿里云函数计算（FC）](https://help.aliyun.com/zh/functioncompute/fc/)或[阿里云 AgentRun](https://docs.agent.run/)。
+AgentScope Runtime 同样支持 serverless 部署，适用于在无服务器环境中运行沙箱，例如 [阿里云函数计算（FC）](https://help.aliyun.com/zh/functioncompute/fc/)。
 
 首先，请参考[文档](https://runtime.agentscope.io/zh/sandbox/advanced.html#optional-function-compute-fc-settings)配置 serverless 环境变量。
-将 `CONTAINER_DEPLOYMENT` 设置为 `fc` 或 `agentrun` 以启用 serverless 部署。
+将 `CONTAINER_DEPLOYMENT` 设置为 `fc` 以启用 serverless 部署。
 
 然后，启动沙箱服务器，使用 `--config` 选项指定 serverless 环境配置：
 
@@ -505,8 +506,7 @@ print(response)
 ```
 
 此外，`DeployManager` 也支持 Serverless 部署，例如将您的 agent 应用部署到
-[ModelStudio](https://bailian.console.aliyun.com/?admin=1&tab=doc#/doc/?type=app&url=2983030)
-或 [AgentRun](https://docs.agent.run/)。
+[ModelStudio](https://bailian.console.aliyun.com/?admin=1&tab=doc#/doc/?type=app&url=2983030)。
 
 ```python
 from agentscope_runtime.engine.deployers import ModelStudioDeployManager

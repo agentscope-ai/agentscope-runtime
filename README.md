@@ -3,6 +3,7 @@
 # AgentScope Runtime v1.0
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/agentscope-ai/agentscope-runtime)
+[![WebUI](https://img.shields.io/badge/Try_WebUI-Online-green.svg?logo=googlechrome)](http://webui.runtime.agentscope.io/)
 [![PyPI](https://img.shields.io/pypi/v/agentscope-runtime?label=PyPI&color=brightgreen&logo=python)](https://pypi.org/project/agentscope-runtime/)
 [![Downloads](https://static.pepy.tech/badge/agentscope-runtime)](https://pepy.tech/project/agentscope-runtime)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg?logo=python&label=Python)](https://python.org)
@@ -436,10 +437,10 @@ agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-ba
 #### Serverless Sandbox Deployment
 
 AgentScope Runtime also supports serverless deployment, which is suitable for running sandboxes in a serverless environment,
-[Alibaba Cloud Function Compute (FC)](https://help.aliyun.com/zh/functioncompute/fc/) or [Alibaba Cloud AgentRun](https://docs.agent.run/).
+[Alibaba Cloud Function Compute (FC)](https://help.aliyun.com/zh/functioncompute/fc/).
 
 First, please refer to the [documentation](https://runtime.agentscope.io/en/sandbox/advanced.html#optional-function-compute-fc-settings) to configure the serverless environment variables.
-Make `CONTAINER_DEPLOYMENT` to `fc` or `agentrun` to enable serverless deployment.
+Make `CONTAINER_DEPLOYMENT` to `fc` to enable serverless deployment.
 
 Then, start a sandbox server, use the `--config` option to specify a serverless environment setup:
 
@@ -500,8 +501,7 @@ print(response)
 ```
 
 Besides, `DeployManager` also supports serverless deployments, such as deploying your agent app
-to [ModelStudio](https://bailian.console.aliyun.com/?admin=1&tab=doc#/doc/?type=app&url=2983030)
-or [AgentRun](https://docs.agent.run/).
+to [ModelStudio](https://bailian.console.aliyun.com/?admin=1&tab=doc#/doc/?type=app&url=2983030).
 
 ```python
 from agentscope_runtime.engine.deployers import ModelStudioDeployManager
