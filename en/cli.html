@@ -1545,20 +1545,171 @@ agentscope<span class="w"> </span>deploy<span class="w"> </span>k8s<span class="
 <p><strong>Note:</strong> <code class="docutils literal notranslate"><span class="pre">USE_LOCAL_RUNTIME=True</span></code> uses local agentscope runtime instead of PyPI version.</p>
 </section>
 </section>
+<section id="knative-deployment">
+<h4>4.4. Knative Deployment<a class="headerlink" href="#knative-deployment" title="Link to this heading">¶</a></h4>
+<p>Deploy to Knative/ACK Knative cluster.</p>
+<section id="id20">
+<h5>Command Syntax<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h5>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>deploy<span class="w"> </span>knative<span class="w"> </span>SOURCE<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="id21">
+<h5>Platform-Specific Options<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h5>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--namespace</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;agentscope-runtime&quot;</span></code></p></td>
+<td><p>Kubernetes namespace</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--kube-config-path</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">-c</span></code></p></td>
+<td><p>path</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--port</span></code></p></td>
+<td><p>integer</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">8080</span></code></p></td>
+<td><p>Container port</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--image-name</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;agent_app&quot;</span></code></p></td>
+<td><p>Docker image name</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--image-tag</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;linux-amd64&quot;</span></code></p></td>
+<td><p>Docker image tag</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--registry-url</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;localhost&quot;</span></code></p></td>
+<td><p>Remote registry URL</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--registry-namespace</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;agentscope-runtime&quot;</span></code></p></td>
+<td><p>Remote registry namespace</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--push</span></code></p></td>
+<td><p>flag</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+<td><p>Push image to registry</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--base-image</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;python:3.10-slim-bookworm&quot;</span></code></p></td>
+<td><p>Base Docker image</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--requirements</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>Python requirements (comma-separated or file path)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--cpu-request</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;200m&quot;</span></code></p></td>
+<td><p>CPU resource request (e.g., ‘200m’, ‘1’)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--cpu-limit</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;1000m&quot;</span></code></p></td>
+<td><p>CPU resource limit (e.g., ‘1000m’, ‘2’)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--memory-request</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;512Mi&quot;</span></code></p></td>
+<td><p>Memory resource request (e.g., ‘512Mi’, ‘1Gi’)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--memory-limit</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;2Gi&quot;</span></code></p></td>
+<td><p>Memory resource limit (e.g., ‘2Gi’, ‘4Gi’)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--image-pull-policy</span></code></p></td>
+<td><p>choice</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;IfNotPresent&quot;</span></code></p></td>
+<td><p>Image pull policy: <code class="docutils literal notranslate"><span class="pre">Always</span></code>, <code class="docutils literal notranslate"><span class="pre">IfNotPresent</span></code>, <code class="docutils literal notranslate"><span class="pre">Never</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--deploy-timeout</span></code></p></td>
+<td><p>integer</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">300</span></code></p></td>
+<td><p>Deployment timeout in seconds</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--health-check</span></code></p></td>
+<td><p>flag</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>Enable/disable health check</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--platform</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;linux/amd64&quot;</span></code></p></td>
+<td><p>Target platform (e.g., ‘linux/amd64’, ‘linux/arm64’)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--pypi-mirror</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>PyPI mirror URL for pip package installation (e.g., ‘https://pypi.tuna.tsinghua.edu.cn/simple’). If not specified, uses pip default</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="id22">
+<h5>Prerequisites<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h5>
+<ul class="simple">
+<li><p>Kubernetes cluster access</p></li>
+<li><p>Docker installed (for building images)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kubectl</span></code> configured</p></li>
+<li><p>Knative installed</p></li>
+</ul>
+</section>
+<section id="id23">
+<h5>Examples<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h5>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Basic deployment</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">USE_LOCAL_RUNTIME</span><span class="o">=</span>True
+agentscope<span class="w"> </span>deploy<span class="w"> </span>knative<span class="w"> </span>app_agent.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--image-name<span class="w"> </span>agent_app<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--env<span class="w"> </span><span class="nv">DASHSCOPE_API_KEY</span><span class="o">=</span>sk-xxx<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--image-tag<span class="w"> </span>linux-amd64-4<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--registry-url<span class="w"> </span>your-registry.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--push
+
+<span class="c1"># Custom namespace and resources</span>
+agentscope<span class="w"> </span>deploy<span class="w"> </span>knative<span class="w"> </span>app_agent.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--namespace<span class="w"> </span>production<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--cpu-limit<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--memory-limit<span class="w"> </span>4Gi<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--env<span class="w"> </span><span class="nv">DASHSCOPE_API_KEY</span><span class="o">=</span>sk-xxx
+</pre></div>
+</div>
+<p><strong>Note:</strong> <code class="docutils literal notranslate"><span class="pre">USE_LOCAL_RUNTIME=True</span></code> uses local agentscope runtime instead of PyPI version.</p>
+</section>
+</section>
 </section>
 <section id="deployment-management">
 <h3>5. Deployment Management<a class="headerlink" href="#deployment-management" title="Link to this heading">¶</a></h3>
 <section id="list-deployments">
 <h4>5.1. List Deployments<a class="headerlink" href="#list-deployments" title="Link to this heading">¶</a></h4>
 <p>List all deployments and their status.</p>
-<section id="id20">
-<h5>Command Syntax<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h5>
+<section id="id24">
+<h5>Command Syntax<a class="headerlink" href="#id24" title="Link to this heading">¶</a></h5>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>list<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 </section>
-<section id="id21">
-<h5>Options<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h5>
+<section id="id25">
+<h5>Options<a class="headerlink" href="#id25" title="Link to this heading">¶</a></h5>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -1588,8 +1739,8 @@ agentscope<span class="w"> </span>deploy<span class="w"> </span>k8s<span class="
 </table>
 </div>
 </section>
-<section id="id22">
-<h5>Examples<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h5>
+<section id="id26">
+<h5>Examples<a class="headerlink" href="#id26" title="Link to this heading">¶</a></h5>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># List all deployments</span>
 agentscope<span class="w"> </span>list
 
@@ -1608,14 +1759,14 @@ agentscope<span class="w"> </span>list<span class="w"> </span>--format<span clas
 <section id="check-deployment-status">
 <h4>5.2. Check Deployment Status<a class="headerlink" href="#check-deployment-status" title="Link to this heading">¶</a></h4>
 <p>Show detailed information about a specific deployment.</p>
-<section id="id23">
-<h5>Command Syntax<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h5>
+<section id="id27">
+<h5>Command Syntax<a class="headerlink" href="#id27" title="Link to this heading">¶</a></h5>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>status<span class="w"> </span>DEPLOY_ID<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 </section>
-<section id="id24">
-<h5>Arguments<a class="headerlink" href="#id24" title="Link to this heading">¶</a></h5>
+<section id="id28">
+<h5>Arguments<a class="headerlink" href="#id28" title="Link to this heading">¶</a></h5>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -1635,8 +1786,8 @@ agentscope<span class="w"> </span>list<span class="w"> </span>--format<span clas
 </table>
 </div>
 </section>
-<section id="id25">
-<h5>Options<a class="headerlink" href="#id25" title="Link to this heading">¶</a></h5>
+<section id="id29">
+<h5>Options<a class="headerlink" href="#id29" title="Link to this heading">¶</a></h5>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -1656,8 +1807,8 @@ agentscope<span class="w"> </span>list<span class="w"> </span>--format<span clas
 </table>
 </div>
 </section>
-<section id="id26">
-<h5>Examples<a class="headerlink" href="#id26" title="Link to this heading">¶</a></h5>
+<section id="id30">
+<h5>Examples<a class="headerlink" href="#id30" title="Link to this heading">¶</a></h5>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Show detailed deployment info</span>
 agentscope<span class="w"> </span>status<span class="w"> </span>local_20250101_120000_abc123
 
@@ -1670,74 +1821,9 @@ agentscope<span class="w"> </span>status<span class="w"> </span>local_20250101_1
 <section id="stop-deployment">
 <h4>5.3. Stop Deployment<a class="headerlink" href="#stop-deployment" title="Link to this heading">¶</a></h4>
 <p>Stop a running deployment.</p>
-<section id="id27">
-<h5>Command Syntax<a class="headerlink" href="#id27" title="Link to this heading">¶</a></h5>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>stop<span class="w"> </span>DEPLOY_ID<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
-</pre></div>
-</div>
-</section>
-<section id="id28">
-<h5>Arguments<a class="headerlink" href="#id28" title="Link to this heading">¶</a></h5>
-<div class="table-wrapper colwidths-auto docutils container">
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>Argument</p></th>
-<th class="head"><p>Type</p></th>
-<th class="head"><p>Required</p></th>
-<th class="head"><p>Description</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DEPLOY_ID</span></code></p></td>
-<td><p>string</p></td>
-<td><p>Yes</p></td>
-<td><p>Deployment ID</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
-<section id="id29">
-<h5>Options<a class="headerlink" href="#id29" title="Link to this heading">¶</a></h5>
-<div class="table-wrapper colwidths-auto docutils container">
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>Option</p></th>
-<th class="head"><p>Short</p></th>
-<th class="head"><p>Type</p></th>
-<th class="head"><p>Default</p></th>
-<th class="head"><p>Description</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--yes</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">-y</span></code></p></td>
-<td><p>flag</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
-<td><p>Skip confirmation prompt</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
-<section id="id30">
-<h5>Examples<a class="headerlink" href="#id30" title="Link to this heading">¶</a></h5>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Stop with confirmation prompt</span>
-agentscope<span class="w"> </span>stop<span class="w"> </span>local_20250101_120000_abc123
-
-<span class="c1"># Skip confirmation</span>
-agentscope<span class="w"> </span>stop<span class="w"> </span>local_20250101_120000_abc123<span class="w"> </span>--yes
-</pre></div>
-</div>
-<p><strong>Note:</strong> Currently updates local state only. Platform-specific cleanup may be needed separately.</p>
-</section>
-</section>
-<section id="invoke-deployed-agent">
-<h4>5.4. Invoke Deployed Agent<a class="headerlink" href="#invoke-deployed-agent" title="Link to this heading">¶</a></h4>
-<p>Interact with a deployed agent using CLI.</p>
 <section id="id31">
 <h5>Command Syntax<a class="headerlink" href="#id31" title="Link to this heading">¶</a></h5>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>invoke<span class="w"> </span>DEPLOY_ID<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>stop<span class="w"> </span>DEPLOY_ID<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 </section>
@@ -1775,6 +1861,71 @@ agentscope<span class="w"> </span>stop<span class="w"> </span>local_20250101_120
 </tr>
 </thead>
 <tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--yes</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">-y</span></code></p></td>
+<td><p>flag</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+<td><p>Skip confirmation prompt</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="id34">
+<h5>Examples<a class="headerlink" href="#id34" title="Link to this heading">¶</a></h5>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Stop with confirmation prompt</span>
+agentscope<span class="w"> </span>stop<span class="w"> </span>local_20250101_120000_abc123
+
+<span class="c1"># Skip confirmation</span>
+agentscope<span class="w"> </span>stop<span class="w"> </span>local_20250101_120000_abc123<span class="w"> </span>--yes
+</pre></div>
+</div>
+<p><strong>Note:</strong> Currently updates local state only. Platform-specific cleanup may be needed separately.</p>
+</section>
+</section>
+<section id="invoke-deployed-agent">
+<h4>5.4. Invoke Deployed Agent<a class="headerlink" href="#invoke-deployed-agent" title="Link to this heading">¶</a></h4>
+<p>Interact with a deployed agent using CLI.</p>
+<section id="id35">
+<h5>Command Syntax<a class="headerlink" href="#id35" title="Link to this heading">¶</a></h5>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>invoke<span class="w"> </span>DEPLOY_ID<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="id36">
+<h5>Arguments<a class="headerlink" href="#id36" title="Link to this heading">¶</a></h5>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Argument</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DEPLOY_ID</span></code></p></td>
+<td><p>string</p></td>
+<td><p>Yes</p></td>
+<td><p>Deployment ID</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="id37">
+<h5>Options<a class="headerlink" href="#id37" title="Link to this heading">¶</a></h5>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Short</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--query</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">-q</span></code></p></td>
 <td><p>string</p></td>
@@ -1797,8 +1948,8 @@ agentscope<span class="w"> </span>stop<span class="w"> </span>local_20250101_120
 </table>
 </div>
 </section>
-<section id="id34">
-<h5>Examples<a class="headerlink" href="#id34" title="Link to this heading">¶</a></h5>
+<section id="id38">
+<h5>Examples<a class="headerlink" href="#id38" title="Link to this heading">¶</a></h5>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Interactive mode with deployed agent</span>
 agentscope<span class="w"> </span>invoke<span class="w"> </span>local_20250101_120000_abc123
 
@@ -2341,34 +2492,41 @@ agentscope<span class="w"> </span>deploy<span class="w"> </span><span class="nb"
 <li><a class="reference internal" href="#id19">Examples</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#knative-deployment">4.4. Knative Deployment</a><ul>
+<li><a class="reference internal" href="#id20">Command Syntax</a></li>
+<li><a class="reference internal" href="#id21">Platform-Specific Options</a></li>
+<li><a class="reference internal" href="#id22">Prerequisites</a></li>
+<li><a class="reference internal" href="#id23">Examples</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#deployment-management">5. Deployment Management</a><ul>
 <li><a class="reference internal" href="#list-deployments">5.1. List Deployments</a><ul>
-<li><a class="reference internal" href="#id20">Command Syntax</a></li>
-<li><a class="reference internal" href="#id21">Options</a></li>
-<li><a class="reference internal" href="#id22">Examples</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#check-deployment-status">5.2. Check Deployment Status</a><ul>
-<li><a class="reference internal" href="#id23">Command Syntax</a></li>
-<li><a class="reference internal" href="#id24">Arguments</a></li>
+<li><a class="reference internal" href="#id24">Command Syntax</a></li>
 <li><a class="reference internal" href="#id25">Options</a></li>
 <li><a class="reference internal" href="#id26">Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#stop-deployment">5.3. Stop Deployment</a><ul>
+<li><a class="reference internal" href="#check-deployment-status">5.2. Check Deployment Status</a><ul>
 <li><a class="reference internal" href="#id27">Command Syntax</a></li>
 <li><a class="reference internal" href="#id28">Arguments</a></li>
 <li><a class="reference internal" href="#id29">Options</a></li>
 <li><a class="reference internal" href="#id30">Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#invoke-deployed-agent">5.4. Invoke Deployed Agent</a><ul>
+<li><a class="reference internal" href="#stop-deployment">5.3. Stop Deployment</a><ul>
 <li><a class="reference internal" href="#id31">Command Syntax</a></li>
 <li><a class="reference internal" href="#id32">Arguments</a></li>
 <li><a class="reference internal" href="#id33">Options</a></li>
 <li><a class="reference internal" href="#id34">Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#invoke-deployed-agent">5.4. Invoke Deployed Agent</a><ul>
+<li><a class="reference internal" href="#id35">Command Syntax</a></li>
+<li><a class="reference internal" href="#id36">Arguments</a></li>
+<li><a class="reference internal" href="#id37">Options</a></li>
+<li><a class="reference internal" href="#id38">Examples</a></li>
 </ul>
 </li>
 </ul>

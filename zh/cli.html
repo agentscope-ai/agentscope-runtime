@@ -1189,6 +1189,7 @@ agentscope<span class="w"> </span>run<span class="w"> </span>./my-project<span c
 <li><p><code class="docutils literal notranslate"><span class="pre">modelstudio</span></code>：阿里云 ModelStudio</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">agentrun</span></code>：阿里云 AgentRun</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">k8s</span></code>：Kubernetes/ACK</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">knative</span></code>：Knative/ACK Knative</p></li>
 </ul>
 </section>
 <section id="id29">
@@ -1544,20 +1545,171 @@ agentscope<span class="w"> </span>deploy<span class="w"> </span>k8s<span class="
 <p><strong>注意：</strong> <code class="docutils literal notranslate"><span class="pre">USE_LOCAL_RUNTIME=True</span></code> 使用本地 agentscope runtime 而不是 PyPI 版本。</p>
 </section>
 </section>
-</section>
+<section id="knative">
+<h4>4.4. Knative 部署<a class="headerlink" href="#knative" title="Link to this heading">¶</a></h4>
+<p>部署到 Knative/ACK Knative 集群。</p>
 <section id="id43">
-<h3>5. 部署管理<a class="headerlink" href="#id43" title="Link to this heading">¶</a></h3>
+<h5>命令语法<a class="headerlink" href="#id43" title="Link to this heading">¶</a></h5>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>deploy<span class="w"> </span>knative<span class="w"> </span>SOURCE<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
 <section id="id44">
-<h4>5.1. 列出部署<a class="headerlink" href="#id44" title="Link to this heading">¶</a></h4>
-<p>列出所有部署及其状态。</p>
+<h5>平台特定选项<a class="headerlink" href="#id44" title="Link to this heading">¶</a></h5>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>选项</p></th>
+<th class="head"><p>类型</p></th>
+<th class="head"><p>默认值</p></th>
+<th class="head"><p>描述</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--namespace</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;agentscope-runtime&quot;</span></code></p></td>
+<td><p>Kubernetes 命名空间</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--kube-config-path</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">-c</span></code></p></td>
+<td><p>path</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--port</span></code></p></td>
+<td><p>integer</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">8080</span></code></p></td>
+<td><p>容器端口</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--image-name</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;agent_app&quot;</span></code></p></td>
+<td><p>Docker 镜像名称</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--image-tag</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;linux-amd64&quot;</span></code></p></td>
+<td><p>Docker 镜像标签</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--registry-url</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;localhost&quot;</span></code></p></td>
+<td><p>远程注册表 URL</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--registry-namespace</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;agentscope-runtime&quot;</span></code></p></td>
+<td><p>远程注册表命名空间</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--push</span></code></p></td>
+<td><p>flag</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p></td>
+<td><p>推送镜像到注册表</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--base-image</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;python:3.10-slim-bookworm&quot;</span></code></p></td>
+<td><p>基础 Docker 镜像</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--requirements</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>Python 依赖（逗号分隔或文件路径）</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--cpu-request</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;200m&quot;</span></code></p></td>
+<td><p>CPU 资源请求（例如 ‘200m’、’1’）</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--cpu-limit</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;1000m&quot;</span></code></p></td>
+<td><p>CPU 资源限制（例如 ‘1000m’、’2’）</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--memory-request</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;512Mi&quot;</span></code></p></td>
+<td><p>内存资源请求（例如 ‘512Mi’、’1Gi’）</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--memory-limit</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;2Gi&quot;</span></code></p></td>
+<td><p>内存资源限制（例如 ‘2Gi’、’4Gi’）</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--image-pull-policy</span></code></p></td>
+<td><p>choice</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;IfNotPresent&quot;</span></code></p></td>
+<td><p>镜像拉取策略：<code class="docutils literal notranslate"><span class="pre">Always</span></code>、<code class="docutils literal notranslate"><span class="pre">IfNotPresent</span></code>、<code class="docutils literal notranslate"><span class="pre">Never</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--deploy-timeout</span></code></p></td>
+<td><p>integer</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">300</span></code></p></td>
+<td><p>部署超时时间（秒）</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--health-check</span></code></p></td>
+<td><p>flag</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>启用/禁用健康检查</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--platform</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;linux/amd64&quot;</span></code></p></td>
+<td><p>目标平台（例如 ‘linux/amd64’、’linux/arm64’）</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--pypi-mirror</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>PyPI 镜像源 URL，用于 pip 包安装（例如 ‘https://pypi.tuna.tsinghua.edu.cn/simple’）。如果未指定，使用 pip 默认源</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 <section id="id45">
-<h5>命令语法<a class="headerlink" href="#id45" title="Link to this heading">¶</a></h5>
+<h5>前置要求<a class="headerlink" href="#id45" title="Link to this heading">¶</a></h5>
+<ul class="simple">
+<li><p>Kubernetes 集群访问权限</p></li>
+<li><p>已安装 Docker（用于构建镜像）</p></li>
+<li><p>已配置 <code class="docutils literal notranslate"><span class="pre">kubectl</span></code></p></li>
+<li><p>已部署 Knative</p></li>
+</ul>
+</section>
+<section id="id46">
+<h5>示例<a class="headerlink" href="#id46" title="Link to this heading">¶</a></h5>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 基本部署</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">USE_LOCAL_RUNTIME</span><span class="o">=</span>True
+agentscope<span class="w"> </span>deploy<span class="w"> </span>knative<span class="w"> </span>app_agent.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--image-name<span class="w"> </span>agent_app<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--env<span class="w"> </span><span class="nv">DASHSCOPE_API_KEY</span><span class="o">=</span>sk-xxx<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--image-tag<span class="w"> </span>linux-amd64-4<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--registry-url<span class="w"> </span>your-registry.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--push
+
+<span class="c1"># 自定义命名空间和资源</span>
+agentscope<span class="w"> </span>deploy<span class="w"> </span>knative<span class="w"> </span>app_agent.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--namespace<span class="w"> </span>production<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--cpu-limit<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--memory-limit<span class="w"> </span>4Gi<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--env<span class="w"> </span><span class="nv">DASHSCOPE_API_KEY</span><span class="o">=</span>sk-xxx
+</pre></div>
+</div>
+<p><strong>注意：</strong> <code class="docutils literal notranslate"><span class="pre">USE_LOCAL_RUNTIME=True</span></code> 使用本地 agentscope runtime 而不是 PyPI 版本。</p>
+</section>
+</section>
+</section>
+<section id="id47">
+<h3>5. 部署管理<a class="headerlink" href="#id47" title="Link to this heading">¶</a></h3>
+<section id="id48">
+<h4>5.1. 列出部署<a class="headerlink" href="#id48" title="Link to this heading">¶</a></h4>
+<p>列出所有部署及其状态。</p>
+<section id="id49">
+<h5>命令语法<a class="headerlink" href="#id49" title="Link to this heading">¶</a></h5>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>list<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 </section>
-<section id="id46">
-<h5>选项<a class="headerlink" href="#id46" title="Link to this heading">¶</a></h5>
+<section id="id50">
+<h5>选项<a class="headerlink" href="#id50" title="Link to this heading">¶</a></h5>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -1587,8 +1739,8 @@ agentscope<span class="w"> </span>deploy<span class="w"> </span>k8s<span class="
 </table>
 </div>
 </section>
-<section id="id47">
-<h5>示例<a class="headerlink" href="#id47" title="Link to this heading">¶</a></h5>
+<section id="id51">
+<h5>示例<a class="headerlink" href="#id51" title="Link to this heading">¶</a></h5>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 列出所有部署</span>
 agentscope<span class="w"> </span>list
 
@@ -1604,17 +1756,17 @@ agentscope<span class="w"> </span>list<span class="w"> </span>--format<span clas
 </div>
 </section>
 </section>
-<section id="id48">
-<h4>5.2. 检查部署状态<a class="headerlink" href="#id48" title="Link to this heading">¶</a></h4>
+<section id="id52">
+<h4>5.2. 检查部署状态<a class="headerlink" href="#id52" title="Link to this heading">¶</a></h4>
 <p>显示特定部署的详细信息。</p>
-<section id="id49">
-<h5>命令语法<a class="headerlink" href="#id49" title="Link to this heading">¶</a></h5>
+<section id="id53">
+<h5>命令语法<a class="headerlink" href="#id53" title="Link to this heading">¶</a></h5>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>status<span class="w"> </span>DEPLOY_ID<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 </section>
-<section id="id50">
-<h5>参数<a class="headerlink" href="#id50" title="Link to this heading">¶</a></h5>
+<section id="id54">
+<h5>参数<a class="headerlink" href="#id54" title="Link to this heading">¶</a></h5>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -1634,8 +1786,8 @@ agentscope<span class="w"> </span>list<span class="w"> </span>--format<span clas
 </table>
 </div>
 </section>
-<section id="id51">
-<h5>选项<a class="headerlink" href="#id51" title="Link to this heading">¶</a></h5>
+<section id="id55">
+<h5>选项<a class="headerlink" href="#id55" title="Link to this heading">¶</a></h5>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -1655,8 +1807,8 @@ agentscope<span class="w"> </span>list<span class="w"> </span>--format<span clas
 </table>
 </div>
 </section>
-<section id="id52">
-<h5>示例<a class="headerlink" href="#id52" title="Link to this heading">¶</a></h5>
+<section id="id56">
+<h5>示例<a class="headerlink" href="#id56" title="Link to this heading">¶</a></h5>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 显示详细部署信息</span>
 agentscope<span class="w"> </span>status<span class="w"> </span>local_20250101_120000_abc123
 
@@ -1666,17 +1818,17 @@ agentscope<span class="w"> </span>status<span class="w"> </span>local_20250101_1
 </div>
 </section>
 </section>
-<section id="id53">
-<h4>5.3. 停止部署<a class="headerlink" href="#id53" title="Link to this heading">¶</a></h4>
+<section id="id57">
+<h4>5.3. 停止部署<a class="headerlink" href="#id57" title="Link to this heading">¶</a></h4>
 <p>停止正在运行的部署。</p>
-<section id="id54">
-<h5>命令语法<a class="headerlink" href="#id54" title="Link to this heading">¶</a></h5>
+<section id="id58">
+<h5>命令语法<a class="headerlink" href="#id58" title="Link to this heading">¶</a></h5>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>stop<span class="w"> </span>DEPLOY_ID<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 </section>
-<section id="id55">
-<h5>参数<a class="headerlink" href="#id55" title="Link to this heading">¶</a></h5>
+<section id="id59">
+<h5>参数<a class="headerlink" href="#id59" title="Link to this heading">¶</a></h5>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -1696,8 +1848,8 @@ agentscope<span class="w"> </span>status<span class="w"> </span>local_20250101_1
 </table>
 </div>
 </section>
-<section id="id56">
-<h5>选项<a class="headerlink" href="#id56" title="Link to this heading">¶</a></h5>
+<section id="id60">
+<h5>选项<a class="headerlink" href="#id60" title="Link to this heading">¶</a></h5>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -1719,8 +1871,8 @@ agentscope<span class="w"> </span>status<span class="w"> </span>local_20250101_1
 </table>
 </div>
 </section>
-<section id="id57">
-<h5>示例<a class="headerlink" href="#id57" title="Link to this heading">¶</a></h5>
+<section id="id61">
+<h5>示例<a class="headerlink" href="#id61" title="Link to this heading">¶</a></h5>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 停止并显示确认提示</span>
 agentscope<span class="w"> </span>stop<span class="w"> </span>local_20250101_120000_abc123
 
@@ -1731,17 +1883,17 @@ agentscope<span class="w"> </span>stop<span class="w"> </span>local_20250101_120
 <p><strong>注意：</strong> 目前仅更新本地状态。平台特定的清理可能需要单独进行。</p>
 </section>
 </section>
-<section id="id58">
-<h4>5.4. 调用已部署的智能体<a class="headerlink" href="#id58" title="Link to this heading">¶</a></h4>
+<section id="id62">
+<h4>5.4. 调用已部署的智能体<a class="headerlink" href="#id62" title="Link to this heading">¶</a></h4>
 <p>使用 CLI 与已部署的智能体交互。</p>
-<section id="id59">
-<h5>命令语法<a class="headerlink" href="#id59" title="Link to this heading">¶</a></h5>
+<section id="id63">
+<h5>命令语法<a class="headerlink" href="#id63" title="Link to this heading">¶</a></h5>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>invoke<span class="w"> </span>DEPLOY_ID<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 </section>
-<section id="id60">
-<h5>参数<a class="headerlink" href="#id60" title="Link to this heading">¶</a></h5>
+<section id="id64">
+<h5>参数<a class="headerlink" href="#id64" title="Link to this heading">¶</a></h5>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -1761,8 +1913,8 @@ agentscope<span class="w"> </span>stop<span class="w"> </span>local_20250101_120
 </table>
 </div>
 </section>
-<section id="id61">
-<h5>选项<a class="headerlink" href="#id61" title="Link to this heading">¶</a></h5>
+<section id="id65">
+<h5>选项<a class="headerlink" href="#id65" title="Link to this heading">¶</a></h5>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -1796,8 +1948,8 @@ agentscope<span class="w"> </span>stop<span class="w"> </span>local_20250101_120
 </table>
 </div>
 </section>
-<section id="id62">
-<h5>示例<a class="headerlink" href="#id62" title="Link to this heading">¶</a></h5>
+<section id="id66">
+<h5>示例<a class="headerlink" href="#id66" title="Link to this heading">¶</a></h5>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 与已部署智能体的交互模式</span>
 agentscope<span class="w"> </span>invoke<span class="w"> </span>local_20250101_120000_abc123
 
@@ -1811,8 +1963,8 @@ agentscope<span class="w"> </span>invoke<span class="w"> </span>local_20250101_1
 <section id="agentscope-sandbox">
 <h3>6. 沙箱管理：<code class="docutils literal notranslate"><span class="pre">agentscope</span> <span class="pre">sandbox</span></code><a class="headerlink" href="#agentscope-sandbox" title="Link to this heading">¶</a></h3>
 <p>统一 CLI 下的沙箱命令整合。</p>
-<section id="id63">
-<h4>命令<a class="headerlink" href="#id63" title="Link to this heading">¶</a></h4>
+<section id="id67">
+<h4>命令<a class="headerlink" href="#id67" title="Link to this heading">¶</a></h4>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 启动 MCP 服务器</span>
 agentscope<span class="w"> </span>sandbox<span class="w"> </span>mcp
 
@@ -1833,8 +1985,8 @@ agentscope<span class="w"> </span>sandbox<span class="w"> </span>build
 <section id="http-api">
 <h3>HTTP API（已部署的智能体）<a class="headerlink" href="#http-api" title="Link to this heading">¶</a></h3>
 <p>当您部署智能体时，它会暴露一个可以通过编程方式调用的 HTTP API 端点。</p>
-<section id="id64">
-<h4>端点<a class="headerlink" href="#id64" title="Link to this heading">¶</a></h4>
+<section id="id68">
+<h4>端点<a class="headerlink" href="#id68" title="Link to this heading">¶</a></h4>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">POST</span> <span class="o">/</span><span class="n">process</span>
 </pre></div>
 </div>
@@ -1848,8 +2000,8 @@ agentscope<span class="w"> </span>sandbox<span class="w"> </span>build
 <li><p><strong>ModelStudio/AgentRun</strong>：平台提供的端点</p></li>
 </ul>
 </section>
-<section id="id65">
-<h4>请求头<a class="headerlink" href="#id65" title="Link to this heading">¶</a></h4>
+<section id="id69">
+<h4>请求头<a class="headerlink" href="#id69" title="Link to this heading">¶</a></h4>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -1874,8 +2026,8 @@ agentscope<span class="w"> </span>sandbox<span class="w"> </span>build
 </table>
 </div>
 </section>
-<section id="id66">
-<h4>请求体<a class="headerlink" href="#id66" title="Link to this heading">¶</a></h4>
+<section id="id70">
+<h4>请求体<a class="headerlink" href="#id70" title="Link to this heading">¶</a></h4>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;input&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
@@ -1898,8 +2050,8 @@ agentscope<span class="w"> </span>sandbox<span class="w"> </span>build
 <li><p><code class="docutils literal notranslate"><span class="pre">session_id</span></code>：用于对话连续性的会话标识符</p></li>
 </ul>
 </section>
-<section id="id67">
-<h4>响应<a class="headerlink" href="#id67" title="Link to this heading">¶</a></h4>
+<section id="id71">
+<h4>响应<a class="headerlink" href="#id71" title="Link to this heading">¶</a></h4>
 <p>包含智能体输出的流式响应。响应格式取决于您的智能体实现。</p>
 </section>
 <section id="python">
@@ -1930,13 +2082,13 @@ agentscope<span class="w"> </span>sandbox<span class="w"> </span>build
 </section>
 </section>
 </section>
-<section id="id68">
-<h2>文件系统和工作空间<a class="headerlink" href="#id68" title="Link to this heading">¶</a></h2>
+<section id="id72">
+<h2>文件系统和工作空间<a class="headerlink" href="#id72" title="Link to this heading">¶</a></h2>
 <section id="agentscope-runtime">
 <h3>工作空间目录：<code class="docutils literal notranslate"><span class="pre">.agentscope_runtime</span></code><a class="headerlink" href="#agentscope-runtime" title="Link to this heading">¶</a></h3>
 <p>在部署过程中，部署器会在您的工作空间目录下的 <code class="docutils literal notranslate"><span class="pre">.agentscope_runtime/</span></code> 中创建临时文件和构建产物。此目录会在您当前工作目录中自动创建。</p>
-<section id="id69">
-<h4>目录结构<a class="headerlink" href="#id69" title="Link to this heading">¶</a></h4>
+<section id="id73">
+<h4>目录结构<a class="headerlink" href="#id73" title="Link to this heading">¶</a></h4>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>&lt;workspace&gt;/
 └── .agentscope_runtime/
     ├── builds/                          # 构建产物缓存
@@ -1953,8 +2105,8 @@ agentscope<span class="w"> </span>sandbox<span class="w"> </span>build
 </pre></div>
 </div>
 </section>
-<section id="id70">
-<h4>构建产物<a class="headerlink" href="#id70" title="Link to this heading">¶</a></h4>
+<section id="id74">
+<h4>构建产物<a class="headerlink" href="#id74" title="Link to this heading">¶</a></h4>
 <p>构建产物存储在 <code class="docutils literal notranslate"><span class="pre">builds/</span></code> 中，按平台分为子目录：</p>
 <ul class="simple">
 <li><p><strong>格式</strong>：<code class="docutils literal notranslate"><span class="pre">{platform}_{YYYYMMDD_HHMM}_{hash}/</span></code></p></li>
@@ -1962,8 +2114,8 @@ agentscope<span class="w"> </span>sandbox<span class="w"> </span>build
 <li><p><strong>目的</strong>：当代码未更改时缓存以供重用</p></li>
 </ul>
 </section>
-<section id="id71">
-<h4>管理构建产物<a class="headerlink" href="#id71" title="Link to this heading">¶</a></h4>
+<section id="id75">
+<h4>管理构建产物<a class="headerlink" href="#id75" title="Link to this heading">¶</a></h4>
 <p>您可以安全地：</p>
 <ul class="simple">
 <li><p><strong>查看</strong>：检查构建产物以了解正在部署的内容</p></li>
@@ -1985,8 +2137,8 @@ rm<span class="w"> </span>-rf<span class="w"> </span>.agentscope_runtime/builds/
 <p><strong>注意：</strong> CLI 使用内容感知缓存，因此删除构建后，如果需要，将在下次部署时重新生成它们。</p>
 </section>
 </section>
-<section id="id72">
-<h3>全局状态目录：<code class="docutils literal notranslate"><span class="pre">~/.agentscope-runtime</span></code><a class="headerlink" href="#id72" title="Link to this heading">¶</a></h3>
+<section id="id76">
+<h3>全局状态目录：<code class="docutils literal notranslate"><span class="pre">~/.agentscope-runtime</span></code><a class="headerlink" href="#id76" title="Link to this heading">¶</a></h3>
 <p>部署元数据和状态存储在您的主目录中：</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>~/.agentscope-runtime/
 ├── deployments.json              # 全局部署注册表
@@ -2003,10 +2155,10 @@ rm<span class="w"> </span>-rf<span class="w"> </span>.agentscope_runtime/builds/
 <p>您可以手动编辑 <code class="docutils literal notranslate"><span class="pre">deployments.json</span></code> 或与团队成员共享它以同步部署状态。</p>
 </section>
 </section>
-<section id="id73">
-<h2>常用工作流<a class="headerlink" href="#id73" title="Link to this heading">¶</a></h2>
-<section id="id74">
-<h3>开发工作流<a class="headerlink" href="#id74" title="Link to this heading">¶</a></h3>
+<section id="id77">
+<h2>常用工作流<a class="headerlink" href="#id77" title="Link to this heading">¶</a></h2>
+<section id="id78">
+<h3>开发工作流<a class="headerlink" href="#id78" title="Link to this heading">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. 在本地开发智能体</span>
 agentscope<span class="w"> </span>chat<span class="w"> </span>app_agent.py
 
@@ -2028,8 +2180,8 @@ agentscope<span class="w"> </span>stop<span class="w"> </span>&lt;deployment-id&
 </pre></div>
 </div>
 </section>
-<section id="id75">
-<h3>测试工作流<a class="headerlink" href="#id75" title="Link to this heading">¶</a></h3>
+<section id="id79">
+<h3>测试工作流<a class="headerlink" href="#id79" title="Link to this heading">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 使用单次查询快速测试</span>
 agentscope<span class="w"> </span>chat<span class="w"> </span>app_agent.py<span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;test query&quot;</span>
 
@@ -2041,8 +2193,8 @@ agentscope<span class="w"> </span>web<span class="w"> </span>app_agent.py<span c
 </pre></div>
 </div>
 </section>
-<section id="id76">
-<h3>生产部署工作流<a class="headerlink" href="#id76" title="Link to this heading">¶</a></h3>
+<section id="id80">
+<h3>生产部署工作流<a class="headerlink" href="#id80" title="Link to this heading">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. 部署到 Kubernetes</span>
 agentscope<span class="w"> </span>deploy<span class="w"> </span>k8s<span class="w"> </span>app_agent.py<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--image-name<span class="w"> </span>my-agent<span class="w"> </span><span class="se">\</span>
@@ -2066,10 +2218,10 @@ agentscope<span class="w"> </span>stop<span class="w"> </span>&lt;deployment-id&
 </div>
 </section>
 </section>
-<section id="id77">
-<h2>故障排除<a class="headerlink" href="#id77" title="Link to this heading">¶</a></h2>
-<section id="id78">
-<h3>智能体加载失败<a class="headerlink" href="#id78" title="Link to this heading">¶</a></h3>
+<section id="id81">
+<h2>故障排除<a class="headerlink" href="#id81" title="Link to this heading">¶</a></h2>
+<section id="id82">
+<h3>智能体加载失败<a class="headerlink" href="#id82" title="Link to this heading">¶</a></h3>
 <p><strong>错误：</strong> “No AgentApp found in agent.py”</p>
 <p><strong>解决方案：</strong> 确保您的文件导出 <code class="docutils literal notranslate"><span class="pre">agent_app</span></code> 或 <code class="docutils literal notranslate"><span class="pre">app</span></code> 变量，或 <code class="docutils literal notranslate"><span class="pre">create_app()</span></code> 函数。</p>
 </section>
@@ -2078,18 +2230,18 @@ agentscope<span class="w"> </span>stop<span class="w"> </span>&lt;deployment-id&
 <p><strong>错误：</strong> “Multiple AgentApp instances found”</p>
 <p><strong>解决方案：</strong> 仅导出一个 AgentApp 实例。注释掉或删除多余的实例。</p>
 </section>
-<section id="id79">
-<h3>导入错误<a class="headerlink" href="#id79" title="Link to this heading">¶</a></h3>
+<section id="id83">
+<h3>导入错误<a class="headerlink" href="#id83" title="Link to this heading">¶</a></h3>
 <p><strong>错误：</strong> 模块导入失败</p>
 <p><strong>解决方案：</strong> 确保所有依赖项都已安装，并且智能体文件是有效的 Python 代码。</p>
 </section>
-<section id="id80">
-<h3>端口已被占用<a class="headerlink" href="#id80" title="Link to this heading">¶</a></h3>
+<section id="id84">
+<h3>端口已被占用<a class="headerlink" href="#id84" title="Link to this heading">¶</a></h3>
 <p><strong>错误：</strong> “Address already in use”</p>
 <p><strong>解决方案：</strong> 使用 <code class="docutils literal notranslate"><span class="pre">--port</span></code> 标志使用不同的端口，或停止冲突的进程。</p>
 </section>
-<section id="id81">
-<h3>部署失败<a class="headerlink" href="#id81" title="Link to this heading">¶</a></h3>
+<section id="id85">
+<h3>部署失败<a class="headerlink" href="#id85" title="Link to this heading">¶</a></h3>
 <p><strong>错误：</strong> 部署超时或连接错误</p>
 <p><strong>解决方案：</strong></p>
 <ul class="simple">
@@ -2099,16 +2251,16 @@ agentscope<span class="w"> </span>stop<span class="w"> </span>&lt;deployment-id&
 <li><p>查看部署日志：<code class="docutils literal notranslate"><span class="pre">agentscope</span> <span class="pre">status</span> <span class="pre">&lt;deployment-id&gt;</span></code></p></li>
 </ul>
 </section>
-<section id="id82">
-<h3>会话未持久化<a class="headerlink" href="#id82" title="Link to this heading">¶</a></h3>
+<section id="id86">
+<h3>会话未持久化<a class="headerlink" href="#id86" title="Link to this heading">¶</a></h3>
 <p><strong>错误：</strong> 查询之间未维护会话历史</p>
 <p><strong>解决方案：</strong> 确保对相关查询使用相同的 <code class="docutils literal notranslate"><span class="pre">--session-id</span></code>，或让 CLI 自动生成一个。</p>
 </section>
 </section>
-<section id="id83">
-<h2>高级用法<a class="headerlink" href="#id83" title="Link to this heading">¶</a></h2>
-<section id="id84">
-<h3>会话管理<a class="headerlink" href="#id84" title="Link to this heading">¶</a></h3>
+<section id="id87">
+<h2>高级用法<a class="headerlink" href="#id87" title="Link to this heading">¶</a></h2>
+<section id="id88">
+<h3>会话管理<a class="headerlink" href="#id88" title="Link to this heading">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 继续之前的会话</span>
 agentscope<span class="w"> </span>chat<span class="w"> </span>app_agent.py<span class="w"> </span>--session-id<span class="w"> </span>my-session
 
@@ -2118,8 +2270,8 @@ agentscope<span class="w"> </span>chat<span class="w"> </span>app_agent.py<span 
 </pre></div>
 </div>
 </section>
-<section id="id85">
-<h3>输出格式<a class="headerlink" href="#id85" title="Link to this heading">¶</a></h3>
+<section id="id89">
+<h3>输出格式<a class="headerlink" href="#id89" title="Link to this heading">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 人类可读的表格（默认）</span>
 agentscope<span class="w"> </span>list
 
@@ -2128,8 +2280,8 @@ agentscope<span class="w"> </span>list<span class="w"> </span>--format<span clas
 </pre></div>
 </div>
 </section>
-<section id="id86">
-<h3>环境变量<a class="headerlink" href="#id86" title="Link to this heading">¶</a></h3>
+<section id="id90">
+<h3>环境变量<a class="headerlink" href="#id90" title="Link to this heading">¶</a></h3>
 <p>您可以通过多种方式提供环境变量：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 通过 CLI（最高优先级）</span>
 agentscope<span class="w"> </span>deploy<span class="w"> </span><span class="nb">local</span><span class="w"> </span>app_agent.py<span class="w"> </span>--env<span class="w"> </span><span class="nv">KEY1</span><span class="o">=</span>value1<span class="w"> </span>--env<span class="w"> </span><span class="nv">KEY2</span><span class="o">=</span>value2
@@ -2143,8 +2295,8 @@ agentscope<span class="w"> </span>deploy<span class="w"> </span><span class="nb"
 </div>
 <p>优先级顺序：CLI &gt; env-file &gt; 配置文件</p>
 </section>
-<section id="id87">
-<h3>配置文件<a class="headerlink" href="#id87" title="Link to this heading">¶</a></h3>
+<section id="id91">
+<h3>配置文件<a class="headerlink" href="#id91" title="Link to this heading">¶</a></h3>
 <p>您可以使用 JSON 或 YAML 配置文件：</p>
 <p><strong>deploy-config.yaml:</strong></p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-agent</span>
@@ -2169,16 +2321,16 @@ agentscope<span class="w"> </span>deploy<span class="w"> </span><span class="nb"
 </div>
 </section>
 </section>
-<section id="id88">
-<h2>下一步<a class="headerlink" href="#id88" title="Link to this heading">¶</a></h2>
+<section id="id92">
+<h2>下一步<a class="headerlink" href="#id92" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>查看 <a class="reference internal" href="#../../examples/"><span class="xref myst">examples/</span></a> 获取完整的智能体实现示例</p></li>
 <li><p>查看 <a class="reference internal" href="#../api/"><span class="xref myst">API 文档</span></a> 了解编程用法</p></li>
 <li><p>加入 Discord/DingTalk 社区获取支持</p></li>
 </ul>
 </section>
-<section id="id89">
-<h2>反馈<a class="headerlink" href="#id89" title="Link to this heading">¶</a></h2>
+<section id="id93">
+<h2>反馈<a class="headerlink" href="#id93" title="Link to this heading">¶</a></h2>
 <p>发现错误或有功能请求？请在 GitHub 上提交 issue。</p>
 </section>
 </section>
@@ -2338,90 +2490,97 @@ agentscope<span class="w"> </span>deploy<span class="w"> </span><span class="nb"
 <li><a class="reference internal" href="#id42">示例</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#knative">4.4. Knative 部署</a><ul>
+<li><a class="reference internal" href="#id43">命令语法</a></li>
+<li><a class="reference internal" href="#id44">平台特定选项</a></li>
+<li><a class="reference internal" href="#id45">前置要求</a></li>
+<li><a class="reference internal" href="#id46">示例</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id43">5. 部署管理</a><ul>
-<li><a class="reference internal" href="#id44">5.1. 列出部署</a><ul>
-<li><a class="reference internal" href="#id45">命令语法</a></li>
-<li><a class="reference internal" href="#id46">选项</a></li>
-<li><a class="reference internal" href="#id47">示例</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id48">5.2. 检查部署状态</a><ul>
+<li><a class="reference internal" href="#id47">5. 部署管理</a><ul>
+<li><a class="reference internal" href="#id48">5.1. 列出部署</a><ul>
 <li><a class="reference internal" href="#id49">命令语法</a></li>
-<li><a class="reference internal" href="#id50">参数</a></li>
-<li><a class="reference internal" href="#id51">选项</a></li>
-<li><a class="reference internal" href="#id52">示例</a></li>
+<li><a class="reference internal" href="#id50">选项</a></li>
+<li><a class="reference internal" href="#id51">示例</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id53">5.3. 停止部署</a><ul>
-<li><a class="reference internal" href="#id54">命令语法</a></li>
-<li><a class="reference internal" href="#id55">参数</a></li>
-<li><a class="reference internal" href="#id56">选项</a></li>
-<li><a class="reference internal" href="#id57">示例</a></li>
+<li><a class="reference internal" href="#id52">5.2. 检查部署状态</a><ul>
+<li><a class="reference internal" href="#id53">命令语法</a></li>
+<li><a class="reference internal" href="#id54">参数</a></li>
+<li><a class="reference internal" href="#id55">选项</a></li>
+<li><a class="reference internal" href="#id56">示例</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id58">5.4. 调用已部署的智能体</a><ul>
-<li><a class="reference internal" href="#id59">命令语法</a></li>
-<li><a class="reference internal" href="#id60">参数</a></li>
-<li><a class="reference internal" href="#id61">选项</a></li>
-<li><a class="reference internal" href="#id62">示例</a></li>
+<li><a class="reference internal" href="#id57">5.3. 停止部署</a><ul>
+<li><a class="reference internal" href="#id58">命令语法</a></li>
+<li><a class="reference internal" href="#id59">参数</a></li>
+<li><a class="reference internal" href="#id60">选项</a></li>
+<li><a class="reference internal" href="#id61">示例</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id62">5.4. 调用已部署的智能体</a><ul>
+<li><a class="reference internal" href="#id63">命令语法</a></li>
+<li><a class="reference internal" href="#id64">参数</a></li>
+<li><a class="reference internal" href="#id65">选项</a></li>
+<li><a class="reference internal" href="#id66">示例</a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li><a class="reference internal" href="#agentscope-sandbox">6. 沙箱管理：<code class="docutils literal notranslate"><span class="pre">agentscope</span> <span class="pre">sandbox</span></code></a><ul>
-<li><a class="reference internal" href="#id63">命令</a></li>
+<li><a class="reference internal" href="#id67">命令</a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li><a class="reference internal" href="#api">API 参考</a><ul>
 <li><a class="reference internal" href="#http-api">HTTP API（已部署的智能体）</a><ul>
-<li><a class="reference internal" href="#id64">端点</a></li>
+<li><a class="reference internal" href="#id68">端点</a></li>
 <li><a class="reference internal" href="#url">基础 URL</a></li>
-<li><a class="reference internal" href="#id65">请求头</a></li>
-<li><a class="reference internal" href="#id66">请求体</a></li>
-<li><a class="reference internal" href="#id67">响应</a></li>
+<li><a class="reference internal" href="#id69">请求头</a></li>
+<li><a class="reference internal" href="#id70">请求体</a></li>
+<li><a class="reference internal" href="#id71">响应</a></li>
 <li><a class="reference internal" href="#python">示例：Python 客户端</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id68">文件系统和工作空间</a><ul>
+<li><a class="reference internal" href="#id72">文件系统和工作空间</a><ul>
 <li><a class="reference internal" href="#agentscope-runtime">工作空间目录：<code class="docutils literal notranslate"><span class="pre">.agentscope_runtime</span></code></a><ul>
-<li><a class="reference internal" href="#id69">目录结构</a></li>
-<li><a class="reference internal" href="#id70">构建产物</a></li>
-<li><a class="reference internal" href="#id71">管理构建产物</a></li>
+<li><a class="reference internal" href="#id73">目录结构</a></li>
+<li><a class="reference internal" href="#id74">构建产物</a></li>
+<li><a class="reference internal" href="#id75">管理构建产物</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id72">全局状态目录：<code class="docutils literal notranslate"><span class="pre">~/.agentscope-runtime</span></code></a></li>
+<li><a class="reference internal" href="#id76">全局状态目录：<code class="docutils literal notranslate"><span class="pre">~/.agentscope-runtime</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id73">常用工作流</a><ul>
-<li><a class="reference internal" href="#id74">开发工作流</a></li>
-<li><a class="reference internal" href="#id75">测试工作流</a></li>
-<li><a class="reference internal" href="#id76">生产部署工作流</a></li>
+<li><a class="reference internal" href="#id77">常用工作流</a><ul>
+<li><a class="reference internal" href="#id78">开发工作流</a></li>
+<li><a class="reference internal" href="#id79">测试工作流</a></li>
+<li><a class="reference internal" href="#id80">生产部署工作流</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id77">故障排除</a><ul>
-<li><a class="reference internal" href="#id78">智能体加载失败</a></li>
+<li><a class="reference internal" href="#id81">故障排除</a><ul>
+<li><a class="reference internal" href="#id82">智能体加载失败</a></li>
 <li><a class="reference internal" href="#agentapp">多个 AgentApp 实例</a></li>
-<li><a class="reference internal" href="#id79">导入错误</a></li>
-<li><a class="reference internal" href="#id80">端口已被占用</a></li>
-<li><a class="reference internal" href="#id81">部署失败</a></li>
-<li><a class="reference internal" href="#id82">会话未持久化</a></li>
+<li><a class="reference internal" href="#id83">导入错误</a></li>
+<li><a class="reference internal" href="#id84">端口已被占用</a></li>
+<li><a class="reference internal" href="#id85">部署失败</a></li>
+<li><a class="reference internal" href="#id86">会话未持久化</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id83">高级用法</a><ul>
-<li><a class="reference internal" href="#id84">会话管理</a></li>
-<li><a class="reference internal" href="#id85">输出格式</a></li>
-<li><a class="reference internal" href="#id86">环境变量</a></li>
-<li><a class="reference internal" href="#id87">配置文件</a></li>
+<li><a class="reference internal" href="#id87">高级用法</a><ul>
+<li><a class="reference internal" href="#id88">会话管理</a></li>
+<li><a class="reference internal" href="#id89">输出格式</a></li>
+<li><a class="reference internal" href="#id90">环境变量</a></li>
+<li><a class="reference internal" href="#id91">配置文件</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id88">下一步</a></li>
-<li><a class="reference internal" href="#id89">反馈</a></li>
+<li><a class="reference internal" href="#id92">下一步</a></li>
+<li><a class="reference internal" href="#id93">反馈</a></li>
 </ul>
 </li>
 </ul>
