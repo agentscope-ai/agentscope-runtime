@@ -591,7 +591,7 @@ limitations under the License.
 
 ## 贡献者 ✨
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-30-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-31-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 
@@ -641,6 +641,7 @@ limitations under the License.
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/RTsama"><img src="https://avatars.githubusercontent.com/u/100779257?v=4?s=100" width="100px;" alt="RTsama"/><br /><sub><b>RTsama</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3ARTsama" title="Bug reports">🐛</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=RTsama" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://allenli178.top"><img src="https://avatars.githubusercontent.com/u/53218750?v=4?s=100" width="100px;" alt="YuYan"/><br /><sub><b>YuYan</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=allenli178" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/rlp2006"><img src="https://avatars.githubusercontent.com/u/212365247?v=4?s=100" width="100px;" alt="Li Peng (Yuan Yi)"/><br /><sub><b>Li Peng (Yuan Yi)</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=rlp2006" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=rlp2006" title="Documentation">📖</a> <a href="#example-rlp2006" title="Examples">💡</a></td>
     </tr>
   </tbody>
   <tfoot>
