@@ -18,6 +18,8 @@ from dotenv import find_dotenv, load_dotenv
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
+logger = logging.getLogger(__name__)
+
 # Make the v2.nacos imports optional to avoid hard dependency at
 # module import time.
 if TYPE_CHECKING:
@@ -40,7 +42,7 @@ else:
 
         _NACOS_SDK_AVAILABLE = True
     except Exception:
-        logging.getLogger(__name__).warning(
+        logger.warning(
             "[NacosRegistry] Nacos SDK (nacos-sdk-python) is not available. "
             "Install it with: pip install nacos-sdk-python",
         )
@@ -63,12 +65,11 @@ else:
         _NACOS_SDK_AVAILABLE = False
 
 # Import after conditional imports to avoid circular dependencies
+# flake8: noqa: E402
 from .a2a_registry import (  # pylint: disable=wrong-import-position
     A2ARegistry,
     A2ATransportsProperties,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class NacosSettings(BaseSettings):
