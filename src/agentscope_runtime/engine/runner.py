@@ -272,6 +272,18 @@ class Runner:
             kwargs.update(
                 {"msgs": await message_to_agno_message(request.input)},
             )
+        elif self.framework_type == "ms_agent_framework":
+            from ..adapters.ms_agent_framework.stream import (
+                adapt_ms_agent_framework_message_stream,
+            )
+            from ..adapters.ms_agent_framework.message import (
+                message_to_ms_agent_framework_message,
+            )
+
+            stream_adapter = adapt_ms_agent_framework_message_stream
+            kwargs.update(
+                {"msgs": message_to_ms_agent_framework_message(request.input)},
+            )
         # TODO: support other frameworks
         else:
 
