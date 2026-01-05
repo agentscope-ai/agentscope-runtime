@@ -15,6 +15,7 @@ from agentscope_runtime.sandbox import (
     FilesystemSandbox,
     GuiSandbox,
     MobileSandbox,
+    BaseSandboxAsync,
 )
 
 
@@ -60,7 +61,22 @@ def test_local_sandbox(env):
         print(box.mobile_tap([360, 150]))
 
 
-def test_remote_sandbox(env):
+@pytest.mark.asyncio
+async def test_local_sandbox_async(env):
+    async with BaseSandboxAsync() as box:
+        print(await box.list_tools_async())
+        print(
+            await box.call_tool_async(
+                "run_ipython_cell",
+                arguments={"code": "print('hello async world')"},
+            ),
+        )
+        print(await box.run_ipython_cell(code="print('hi async')"))
+        print(await box.run_shell_command(command="echo hello async"))
+
+
+@pytest.mark.asyncio
+async def test_remote_sandbox(env):
     server_process = None
     try:
         print("Starting server process...")
@@ -106,6 +122,20 @@ def test_remote_sandbox(env):
 
             print(box.run_ipython_cell(code="print('hi')"))
             print(box.run_shell_command(command="echo hello"))
+
+        async with BaseSandboxAsync(base_url="http://localhost:8000") as box:
+            print(await box.list_tools_async())
+            print(
+                await box.call_tool_async(
+                    "run_ipython_cell",
+                    arguments={
+                        "code": "print('hello world')",
+                    },
+                ),
+            )
+
+            print(await box.run_ipython_cell(code="print('hi')"))
+            print(await box.run_shell_command(command="echo hello"))
 
         with BrowserSandbox(base_url="http://localhost:8000") as box:
             print(box.list_tools())
