@@ -2,6 +2,8 @@
 # pylint: disable=redefined-outer-name, protected-access
 # pylint: disable=too-many-branches, too-many-statements
 # pylint: disable=redefined-outer-name, protected-access, too-many-branches
+# pylint: disable=too-many-public-methods
+import asyncio
 import inspect
 import json
 import logging
@@ -13,8 +15,13 @@ from typing import Optional, Dict, Union, List
 
 import requests
 import shortuuid
+import httpx
 
-from ..client import SandboxHttpClient, TrainingSandboxClient
+from ..client import (
+    SandboxHttpClient,
+    TrainingSandboxClient,
+    SandboxHttpAsyncClient,
+)
 from ..enums import SandboxType
 from ..manager.storage import (
     LocalStorage,
@@ -76,6 +83,51 @@ def remote_wrapper(
     return decorator
 
 
+def remote_wrapper_async(
+    method: str = "POST",
+    success_key: str = "data",
+):
+    """
+    Async decorator to handle both remote and local method execution.
+    Supports awaitable functions.
+    """
+
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(self, *args, **kwargs):
+            # Remote mode
+            if hasattr(self, "httpx_client") and self.httpx_client is not None:
+                endpoint = "/" + func.__name__
+
+                # Build JSON data from args/kwargs
+                sig = inspect.signature(func)
+                param_names = list(sig.parameters.keys())[1:]  # Skip 'self'
+                data = dict(zip(param_names, args))
+                data.update(kwargs)
+
+                # Make async HTTP request
+                response = await self._make_request_async(
+                    method,
+                    endpoint,
+                    data,
+                )
+
+                if success_key:
+                    return response.get(success_key)
+                return response
+
+            # Local mode
+            return await func(self, *args, **kwargs)
+
+        wrapper._is_remote_wrapper = True
+        wrapper._http_method = method
+        wrapper._path = "/" + func.__name__
+
+        return wrapper
+
+    return decorator
+
+
 class SandboxManager:
     def __init__(
         self,
@@ -93,15 +145,23 @@ class SandboxManager:
             # authentication
             self.http_session = requests.Session()
             self.http_session.timeout = 30
+
+            # For async HTTP
+            self.httpx_client = httpx.AsyncClient(timeout=30)
+
             self.base_url = base_url.rstrip("/")
             if bearer_token:
                 self.http_session.headers.update(
+                    {"Authorization": f"Bearer {bearer_token}"},
+                )
+                self.httpx_client.headers.update(
                     {"Authorization": f"Bearer {bearer_token}"},
                 )
             # Remote mode, return directly
             return
         else:
             self.http_session = None
+            self.httpx_client = None
             self.base_url = None
 
         if not config:
@@ -274,6 +334,56 @@ class SandboxManager:
 
         return response.json()
 
+    async def _make_request_async(
+        self,
+        method: str,
+        endpoint: str,
+        data: dict,
+    ):
+        """
+        Make an asynchronous HTTP request to the specified endpoint.
+        """
+        url = f"{self.base_url}/{endpoint.lstrip('/')}"
+        if method.upper() == "GET":
+            response = await self.httpx_client.get(url, params=data)
+        else:
+            response = await self.httpx_client.request(method, url, json=data)
+
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            error_components = [
+                f"HTTP {response.status_code} Error: {str(e)}",
+            ]
+
+            try:
+                server_response = response.json()
+                if "detail" in server_response:
+                    error_components.append(
+                        f"Server Detail: {server_response['detail']}",
+                    )
+                elif "error" in server_response:
+                    error_components.append(
+                        f"Server Error: {server_response['error']}",
+                    )
+                else:
+                    error_components.append(
+                        f"Server Response: {server_response}",
+                    )
+            except (ValueError, json.JSONDecodeError):
+                if response.text:
+                    error_components.append(
+                        f"Server Response: {response.text}",
+                    )
+
+            error = " | ".join(error_components)
+
+            logger.error(f"Error making request: {error}")
+
+            return {"data": f"Error: {error}"}
+
+        return response.json()
+
     def _init_container_pool(self):
         """
         Init runtime pool
@@ -336,6 +446,11 @@ class SandboxManager:
                 logger.error(
                     f"Error cleaning up container {key}: {e}",
                 )
+
+    @remote_wrapper_async()
+    async def cleanup_async(self, *args, **kwargs):
+        """Async wrapper for cleanup()."""
+        return await asyncio.to_thread(self.cleanup, *args, **kwargs)
 
     @remote_wrapper()
     def create_from_pool(self, sandbox_type=None, meta: Optional[Dict] = None):
@@ -443,6 +558,11 @@ class SandboxManager:
             )
             logger.debug(f"{e}: {traceback.format_exc()}")
             return self.create()
+
+    @remote_wrapper_async()
+    async def create_from_pool_async(self, *args, **kwargs):
+        """Async wrapper for create_from_pool()."""
+        return await asyncio.to_thread(self.create_from_pool, *args, **kwargs)
 
     @remote_wrapper()
     def create(
@@ -621,6 +741,11 @@ class SandboxManager:
             self.release(identity=container_name)
             return None
 
+    @remote_wrapper_async()
+    async def create_async(self, *args, **kwargs):
+        """Async wrapper for create()."""
+        return await asyncio.to_thread(self.create, *args, **kwargs)
+
     @remote_wrapper()
     def release(self, identity):
         try:
@@ -671,6 +796,11 @@ class SandboxManager:
             logger.debug(f"{traceback.format_exc()}")
             return False
 
+    @remote_wrapper_async()
+    async def release_async(self, *args, **kwargs):
+        """Async wrapper for release()."""
+        return await asyncio.to_thread(self.release, *args, **kwargs)
+
     @remote_wrapper()
     def start(self, identity):
         try:
@@ -703,6 +833,11 @@ class SandboxManager:
             )
             return False
 
+    @remote_wrapper_async()
+    async def start_async(self, *args, **kwargs):
+        """Async wrapper for start()."""
+        return await asyncio.to_thread(self.start, *args, **kwargs)
+
     @remote_wrapper()
     def stop(self, identity):
         try:
@@ -733,10 +868,20 @@ class SandboxManager:
             )
             return False
 
+    @remote_wrapper_async()
+    async def stop_async(self, *args, **kwargs):
+        """Async wrapper for stop()."""
+        return await asyncio.to_thread(self.stop, *args, **kwargs)
+
     @remote_wrapper()
     def get_status(self, identity):
         """Get container status by container_name or container_id."""
         return self.client.get_status(identity)
+
+    @remote_wrapper_async()
+    async def get_status_async(self, *args, **kwargs):
+        """Async wrapper for get_status()."""
+        return await asyncio.to_thread(self.get_status, *args, **kwargs)
 
     @remote_wrapper()
     def get_info(self, identity):
@@ -752,6 +897,11 @@ class SandboxManager:
             container_model = container_model.model_dump_json()
 
         return container_model
+
+    @remote_wrapper_async()
+    async def get_info_async(self, *args, **kwargs):
+        """Async wrapper for get_info()."""
+        return await asyncio.to_thread(self.get_info, *args, **kwargs)
 
     def _establish_connection(self, identity):
         container_model = ContainerModel(**self.get_info(identity))
@@ -769,11 +919,30 @@ class SandboxManager:
             container_model,
         ).__enter__()
 
+    async def _establish_connection_async(self, identity):
+        container_model = ContainerModel(**self.get_info(identity))
+
+        # TODO: TrainingSandboxClient lacks async, can use asyncio.to_thread()
+        if (
+            "sandbox-appworld" in container_model.version
+            or "sandbox-bfcl" in container_model.version
+        ):
+            client = TrainingSandboxClient(base_url=container_model.url)
+            return client.__enter__()
+        async_client = SandboxHttpAsyncClient(container_model)
+        await async_client.__aenter__()
+        return async_client
+
     @remote_wrapper()
     def check_health(self, identity):
         """List tool"""
         client = self._establish_connection(identity)
         return client.check_health()
+
+    @remote_wrapper_async()
+    async def check_health_async(self, identity):
+        client = await self._establish_connection_async(identity)
+        return await client.check_health()
 
     @remote_wrapper()
     def list_tools(self, identity, tool_type=None, **kwargs):
@@ -781,11 +950,22 @@ class SandboxManager:
         client = self._establish_connection(identity)
         return client.list_tools(tool_type=tool_type, **kwargs)
 
+    @remote_wrapper_async()
+    async def list_tools_async(self, identity, tool_type=None, **kwargs):
+        client = await self._establish_connection_async(identity)
+        return await client.list_tools(tool_type=tool_type, **kwargs)
+
     @remote_wrapper()
     def call_tool(self, identity, tool_name=None, arguments=None):
         """Call tool"""
         client = self._establish_connection(identity)
         return client.call_tool(tool_name, arguments)
+
+    @remote_wrapper_async()
+    async def call_tool_async(self, identity, tool_name=None, arguments=None):
+        """Call tool (async)"""
+        client = await self._establish_connection_async(identity)
+        return await client.call_tool(tool_name, arguments)
 
     @remote_wrapper()
     def add_mcp_servers(self, identity, server_configs, overwrite=False):
@@ -798,10 +978,35 @@ class SandboxManager:
             overwrite=overwrite,
         )
 
+    @remote_wrapper_async()
+    async def add_mcp_servers_async(
+        self,
+        identity,
+        server_configs,
+        overwrite=False,
+    ):
+        """
+        Add MCP servers to runtime (async).
+        """
+        client = await self._establish_connection_async(identity)
+        return await client.add_mcp_servers(
+            server_configs=server_configs,
+            overwrite=overwrite,
+        )
+
     @remote_wrapper()
     def get_session_mapping(self, session_ctx_id: str) -> list:
         """Get all container names bound to a session context"""
         return self.session_mapping.get(session_ctx_id) or []
+
+    @remote_wrapper_async()
+    async def get_session_mapping_async(self, *args, **kwargs):
+        """Async wrapper for get_session_mapping()."""
+        return await asyncio.to_thread(
+            self.get_session_mapping,
+            *args,
+            **kwargs,
+        )
 
     @remote_wrapper()
     def list_session_keys(self) -> list:
@@ -810,3 +1015,8 @@ class SandboxManager:
         for key in self.session_mapping.scan():
             session_keys.append(key)
         return session_keys
+
+    @remote_wrapper_async()
+    async def list_session_keys_async(self, *args, **kwargs):
+        """Async wrapper for list_session_keys()."""
+        return await asyncio.to_thread(self.list_session_keys, *args, **kwargs)
