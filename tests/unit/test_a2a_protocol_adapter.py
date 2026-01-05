@@ -44,7 +44,7 @@ class TestWellknownEndpointErrorHandling:
 
         # Test the endpoint
         client = TestClient(app)
-        response = client.get("/.wellknown/agent-card.json")
+        response = client.get("/.well-known/agent-card.json")
 
         # Should return 200 with agent card data
         assert response.status_code == 200
@@ -473,7 +473,7 @@ class TestExtractA2AConfig:
         """When None, should return default config without registry."""
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
-            ".a2a_protocol_adapter.create_registry_from_env",
+            ".nacos_a2a_registry.create_nacos_registry_from_env",
             return_value=None,
         ):
             result = extract_a2a_config(a2a_config=None)
@@ -487,7 +487,7 @@ class TestExtractA2AConfig:
 
         with patch(
             "agentscope_runtime.engine.deployers.adapter.a2a"
-            ".a2a_protocol_adapter.create_registry_from_env",
+            ".nacos_a2a_registry.create_nacos_registry_from_env",
             return_value=mock_registry,
         ):
             config = AgentCardWithRuntimeConfig()

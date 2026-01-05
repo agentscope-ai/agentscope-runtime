@@ -8,11 +8,17 @@ for A2A protocol adapters.
 """
 import asyncio
 import logging
-from enum import Enum
-from typing import Optional, TYPE_CHECKING, List
+import os
 import threading
+from enum import Enum
+from typing import Any, Optional, TYPE_CHECKING, List
 
 from a2a.types import AgentCard
+from dotenv import find_dotenv, load_dotenv
+from pydantic import ConfigDict
+from pydantic_settings import BaseSettings
+
+logger = logging.getLogger(__name__)
 
 # Make the v2.nacos imports optional to avoid hard dependency at
 # module import time.
@@ -36,6 +42,10 @@ else:
 
         _NACOS_SDK_AVAILABLE = True
     except Exception:
+        logger.warning(
+            "[NacosRegistry] Nacos SDK (nacos-sdk-python) is not available. "
+            "Install it with: pip install nacos-sdk-python",
+        )
 
         class ClientConfig:
             pass
@@ -55,12 +65,129 @@ else:
         _NACOS_SDK_AVAILABLE = False
 
 # Import after conditional imports to avoid circular dependencies
+# flake8: noqa: E402
 from .a2a_registry import (  # pylint: disable=wrong-import-position
     A2ARegistry,
     A2ATransportsProperties,
 )
 
-logger = logging.getLogger(__name__)
+
+class NacosSettings(BaseSettings):
+    """Nacos-specific settings loaded from environment variables."""
+
+    NACOS_SERVER_ADDR: str = "localhost:8848"
+    NACOS_USERNAME: Optional[str] = None
+    NACOS_PASSWORD: Optional[str] = None
+    NACOS_NAMESPACE_ID: Optional[str] = None
+    NACOS_ACCESS_KEY: Optional[str] = None
+    NACOS_SECRET_KEY: Optional[str] = None
+
+    model_config = ConfigDict(
+        extra="allow",
+    )
+
+
+_nacos_settings: Optional[NacosSettings] = None
+
+
+def get_nacos_settings() -> NacosSettings:
+    """Return a singleton Nacos settings instance, loading .env files
+    if needed."""
+    global _nacos_settings
+
+    if _nacos_settings is None:
+        dotenv_path = find_dotenv(raise_error_if_not_found=False)
+        if dotenv_path:
+            load_dotenv(dotenv_path, override=False)
+        else:
+            if os.path.exists(".env.example"):
+                load_dotenv(".env.example", override=False)
+        _nacos_settings = NacosSettings()
+
+    return _nacos_settings
+
+
+def _build_nacos_client_config(settings: NacosSettings) -> Any:
+    """Build Nacos client configuration from settings.
+
+    Supports both username/password and access key authentication.
+    """
+    try:
+        from v2.nacos import ClientConfigBuilder
+    except (ImportError, ModuleNotFoundError) as e:
+        logger.warning(
+            "[A2A] Nacos SDK (nacos-sdk-python) is not available. "
+            "Install it with: pip install nacos-sdk-python",
+        )
+        raise ImportError(
+            "Nacos SDK (nacos-sdk-python) is not available. "
+            "Install it with: pip install nacos-sdk-python",
+        ) from e
+
+    builder = ClientConfigBuilder().server_address(settings.NACOS_SERVER_ADDR)
+
+    if settings.NACOS_NAMESPACE_ID:
+        builder.namespace_id(settings.NACOS_NAMESPACE_ID)
+        logger.debug(
+            "[A2A] Using Nacos namespace: %s",
+            settings.NACOS_NAMESPACE_ID,
+        )
+
+    if settings.NACOS_USERNAME and settings.NACOS_PASSWORD:
+        builder.username(settings.NACOS_USERNAME).password(
+            settings.NACOS_PASSWORD,
+        )
+        logger.debug("[A2A] Using Nacos username/password authentication")
+
+    if settings.NACOS_ACCESS_KEY and settings.NACOS_SECRET_KEY:
+        builder.access_key(settings.NACOS_ACCESS_KEY).secret_key(
+            settings.NACOS_SECRET_KEY,
+        )
+        logger.debug("[A2A] Using Nacos access key authentication")
+
+    return builder.build()
+
+
+def create_nacos_registry_from_env() -> Optional[A2ARegistry]:
+    """Create a NacosRegistry instance from environment settings.
+
+    Returns None if the required nacos SDK is not available or
+    construction fails.
+    """
+    if not _NACOS_SDK_AVAILABLE:
+        return None
+
+    try:
+        nacos_settings = get_nacos_settings()
+        nacos_client_config = _build_nacos_client_config(nacos_settings)
+        registry = NacosRegistry(nacos_client_config=nacos_client_config)
+
+        auth_methods = []
+        if nacos_settings.NACOS_USERNAME and nacos_settings.NACOS_PASSWORD:
+            auth_methods.append("username/password")
+        if nacos_settings.NACOS_ACCESS_KEY and nacos_settings.NACOS_SECRET_KEY:
+            auth_methods.append("access_key")
+        auth_status = ", ".join(auth_methods) if auth_methods else "disabled"
+
+        namespace_info = (
+            f", namespace={nacos_settings.NACOS_NAMESPACE_ID}"
+            if nacos_settings.NACOS_NAMESPACE_ID
+            else ""
+        )
+        logger.info(
+            f"[A2A] Created Nacos registry from environment: "
+            f"server={nacos_settings.NACOS_SERVER_ADDR}, "
+            f"authentication={auth_status}{namespace_info}",
+        )
+        return registry
+    except (ImportError, ModuleNotFoundError):
+        return None
+    except Exception:
+        logger.warning(
+            "[A2A] Failed to construct Nacos registry from settings",
+            exc_info=True,
+        )
+        return None
 
 
 class RegistrationStatus(Enum):
@@ -127,11 +254,10 @@ class NacosRegistry(A2ARegistry):
             a2a_transports_properties: List of transport configurations.
                 Each transport will be registered separately.
         """
-        # If Nacos SDK is not available, log and return
         if not _NACOS_SDK_AVAILABLE:
-            logger.debug(
-                "[NacosRegistry] Nacos SDK is not available; "
-                "skipping registration",
+            logger.warning(
+                "[NacosRegistry] Nacos SDK (nacos-sdk-python) is not "
+                "available. Install it with: pip install nacos-sdk-python",
             )
             return
 
@@ -154,11 +280,7 @@ class NacosRegistry(A2ARegistry):
         thread and run the registration using asyncio.run so
         registration still occurs in synchronous contexts.
         """
-        # All status checks and updates must be within the lock to
-        # ensure atomicity
         with self._registration_lock:
-            # Check if shutdown was already requested (inside lock
-            # for atomicity)
             if self._shutdown_event.is_set():
                 logger.info(
                     "[NacosRegistry] Shutdown already requested, "
@@ -167,7 +289,6 @@ class NacosRegistry(A2ARegistry):
                 self._registration_status = RegistrationStatus.CANCELLED
                 return
 
-            # Check if registration is already in progress or completed
             if self._registration_status in (
                 RegistrationStatus.IN_PROGRESS,
                 RegistrationStatus.COMPLETED,
@@ -184,8 +305,6 @@ class NacosRegistry(A2ARegistry):
             try:
                 loop = asyncio.get_running_loop()
             except RuntimeError:
-                # No running loop in this thread; we'll fall back to a
-                # background thread
                 loop = None
 
             if loop is not None:
@@ -203,7 +322,6 @@ class NacosRegistry(A2ARegistry):
                 )
                 return
 
-            # No running loop: use a background thread to run asyncio.run
             def _thread_runner():
                 try:
                     with self._registration_lock:
@@ -257,8 +375,6 @@ class NacosRegistry(A2ARegistry):
                 daemon=True,
             )
             thread.start()
-            # Store thread reference after successful start for
-            # proper tracking and cleanup
             with self._registration_lock:
                 self._register_thread = thread
             logger.info(
@@ -282,14 +398,7 @@ class NacosRegistry(A2ARegistry):
         if self._nacos_client_config is not None:
             return self._nacos_client_config
 
-        # Use centralized config builder from a2a_registry module
-        # This ensures consistent behavior with env-based registry creation
-        from .a2a_registry import (
-            get_registry_settings,
-            _build_nacos_client_config,
-        )
-
-        settings = get_registry_settings()
+        settings = get_nacos_settings()
         return _build_nacos_client_config(settings)
 
     # pylint: disable=too-many-branches,too-many-statements
