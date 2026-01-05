@@ -650,19 +650,18 @@ body.preview-active {
     <span class="n">AgentCard</span><span class="p">,</span>
     <span class="n">AgentSkill</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">a2a.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">AGENT_CARD_WELL_KNOWN_PATH</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigDict</span><span class="p">,</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">field_validator</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.utils.net_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">get_first_non_loopback_ip</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.version</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span> <span class="k">as</span> <span class="n">runtime_version</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.a2a_agent_adapter</span><span class="w"> </span><span class="kn">import</span> <span class="n">A2AExecutor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.a2a_registry</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">A2ARegistry</span><span class="p">,</span>
     <span class="n">A2ATransportsProperties</span><span class="p">,</span>
-    <span class="n">create_registry_from_env</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="c1"># NOTE: Do NOT import NacosRegistry at module import time to avoid</span>
@@ -675,7 +674,7 @@ body.preview-active {
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="n">A2A_JSON_RPC_URL</span> <span class="o">=</span> <span class="s2">&quot;/a2a&quot;</span>
-<span class="n">DEFAULT_WELLKNOWN_PATH</span> <span class="o">=</span> <span class="s2">&quot;/.wellknown/agent-card.json&quot;</span>
+<span class="n">DEFAULT_WELLKNOWN_PATH</span> <span class="o">=</span> <span class="n">AGENT_CARD_WELL_KNOWN_PATH</span>
 <span class="n">DEFAULT_TASK_TIMEOUT</span> <span class="o">=</span> <span class="mi">60</span>
 <span class="n">DEFAULT_TASK_EVENT_TIMEOUT</span> <span class="o">=</span> <span class="mi">10</span>
 <span class="n">DEFAULT_TRANSPORT</span> <span class="o">=</span> <span class="s2">&quot;JSONRPC&quot;</span>
@@ -691,8 +690,12 @@ body.preview-active {
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;AgentCardWithRuntimeConfig&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalize a2a_config to AgentCardWithRuntimeConfig object.</span>
 
-<span class="sd">    Ensures a non-null ``AgentCardWithRuntimeConfig`` instance and sets up</span>
-<span class="sd">    environment-based registry fallback if registry is not provided.</span>
+<span class="sd">    Registry resolution priority:</span>
+<span class="sd">    1. Use registry from a2a_config if provided</span>
+<span class="sd">    2. Fallback to environment variables if a2a_config.registry is</span>
+<span class="sd">       None</span>
+<span class="sd">    3. If neither is available, registry remains None (user doesn&#39;t</span>
+<span class="sd">       want registry)</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        a2a_config: Optional AgentCardWithRuntimeConfig instance.</span>
@@ -703,12 +706,18 @@ body.preview-active {
     <span class="k">if</span> <span class="n">a2a_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">a2a_config</span> <span class="o">=</span> <span class="n">AgentCardWithRuntimeConfig</span><span class="p">()</span>
 
-    <span class="c1"># Fallback to environment registry if not provided</span>
+    <span class="c1"># Try environment variables only if registry is not explicitly provided</span>
     <span class="k">if</span> <span class="n">a2a_config</span><span class="o">.</span><span class="n">registry</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">env_registry</span> <span class="o">=</span> <span class="n">create_registry_from_env</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">env_registry</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">a2a_config</span><span class="o">.</span><span class="n">registry</span> <span class="o">=</span> <span class="n">env_registry</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;[A2A] Using registry from environment variables&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">.nacos_a2a_registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_nacos_registry_from_env</span>
+
+            <span class="n">env_registry</span> <span class="o">=</span> <span class="n">create_nacos_registry_from_env</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">env_registry</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">a2a_config</span><span class="o">.</span><span class="n">registry</span> <span class="o">=</span> <span class="n">env_registry</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;[A2A] Using registry from environment variables&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="c1"># Nacos SDK not available, registry remains None</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;[A2A] Nacos registry not available&quot;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">a2a_config</span></div>
 
@@ -1154,7 +1163,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-04</div>
+              Last updated on 2026-01-05</div>
           </div>
           <div class="right-details">
             <div class="icons">
