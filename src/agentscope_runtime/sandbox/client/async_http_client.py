@@ -1,27 +1,22 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=unused-argument
 import logging
-import time
+import asyncio
 from typing import Any, Optional
 
-import requests
+import httpx
 from pydantic import Field
 
 from .base import SandboxHttpBase
 from ..model import ContainerModel
 
-
-DEFAULT_TIMEOUT = 60
-
-logging.getLogger("httpx").setLevel(logging.CRITICAL)
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class SandboxHttpClient(SandboxHttpBase):
+class SandboxHttpAsyncClient(SandboxHttpBase):
     """
-    A Python client for interacting with the runtime API. Connect with
-    container directly.
+    A Python async client for interacting with the runtime API.
+    Connect directly to the container.
     """
 
     def __init__(
@@ -31,97 +26,106 @@ class SandboxHttpClient(SandboxHttpBase):
         domain: str = "localhost",
     ) -> None:
         """
-        Initialize the Python client.
+        Initialize the Python async client.
 
         Args:
             model (ContainerModel): The pydantic model representing the
             runtime sandbox.
         """
         super().__init__(model, timeout, domain)
-        self.session = requests.Session()
-        self.session.headers.update(self.headers)
+        self.client = httpx.AsyncClient(
+            timeout=self.timeout,
+            headers=self.headers,
+        )
 
-    def __enter__(self):
+    async def __aenter__(self):
         # Wait for the runtime api server to be healthy
-        self.wait_until_healthy()
+        await self.wait_until_healthy()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        pass
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        await self.client.aclose()
 
-    def _request(self, method: str, url: str, **kwargs):
-        if "timeout" not in kwargs:
-            kwargs["timeout"] = self.timeout
-        return self.session.request(method, url, **kwargs)
+    async def _request(self, method: str, url: str, **kwargs):
+        return await self.client.request(method, url, **kwargs)
 
-    def safe_request(self, method, url, **kwargs):
+    async def safe_request(self, method: str, url: str, **kwargs):
+        """
+        Unified HTTP request method with async exception handling.
+        Returns JSON if possible, otherwise plain text.
+        """
         try:
-            r = self._request(method, url, **kwargs)
+            r = await self._request(method, url, **kwargs)
             r.raise_for_status()
             try:
                 return r.json()
             except ValueError:
                 return r.text
-        except requests.exceptions.RequestException as e:
+        except httpx.RequestError as e:
             logger.error(f"HTTP error: {e}")
             return {
                 "isError": True,
                 "content": [{"type": "text", "text": str(e)}],
             }
 
-    def check_health(self) -> bool:
+    async def check_health(self) -> bool:
         """
-        Checks if the runtime service is running by verifying the health
+        Check if the runtime service is running by verifying the health
         endpoint.
 
         Returns:
-            bool: True if the service is reachable, False otherwise
+            bool: True if the service is reachable, False otherwise.
         """
-        endpoint = f"{self.base_url}/healthz"
         try:
-            response_api = self.session.get(endpoint)
-            return response_api.status_code == 200
-        except requests.RequestException:
+            r = await self._request(
+                "get",
+                f"{self.base_url}/healthz",
+            )
+            return r.status_code == 200
+        except httpx.RequestError:
             return False
 
-    def wait_until_healthy(self) -> None:
+    async def wait_until_healthy(self) -> None:
         """
-        Waits until the runtime service is running for a specified timeout.
+        Wait until the runtime service is running for a specified timeout.
         """
-        start_time = time.time()
-        while time.time() - start_time < self.start_timeout:
-            if self.check_health():
+        start_time = asyncio.get_event_loop().time()
+        while (
+            asyncio.get_event_loop().time() - start_time < self.start_timeout
+        ):
+            if await self.check_health():
                 return
-            time.sleep(1)
+            await asyncio.sleep(1)
         raise TimeoutError(
             "Runtime service did not start within the specified timeout.",
         )
 
-    def add_mcp_servers(self, server_configs, overwrite=False):
+    async def add_mcp_servers(self, server_configs, overwrite=False):
         """
         Add MCP servers to runtime.
         """
-        return self.safe_request(
+        endpoint = f"{self.base_url}/mcp/add_servers"
+        return await self.safe_request(
             "post",
-            f"{self.base_url}/mcp/add_servers",
-            json={
-                "server_configs": server_configs,
-                "overwrite": overwrite,
-            },
+            endpoint,
+            json={"server_configs": server_configs, "overwrite": overwrite},
         )
 
-    def list_tools(self, tool_type=None, **kwargs) -> dict:
+    async def list_tools(self, tool_type=None, **kwargs) -> dict:
         """
         List available MCP tools plus generic built-in tools.
         """
-        data = self.safe_request("get", f"{self.base_url}/mcp/list_tools")
+        data = await self.safe_request(
+            "get",
+            f"{self.base_url}/mcp/list_tools",
+        )
         if isinstance(data, dict) and "isError" not in data:
             data["generic"] = self.generic_tools
             if tool_type:
                 return {tool_type: data.get(tool_type, {})}
         return data
 
-    def call_tool(
+    async def call_tool(
         self,
         name: str,
         arguments: Optional[dict[str, Any]] = None,
@@ -133,60 +137,58 @@ class SandboxHttpClient(SandboxHttpBase):
         """
         if arguments is None:
             arguments = {}
-
         if name in self.generic_tools:
             if name == "run_ipython_cell":
-                return self.run_ipython_cell(**arguments)
+                return await self.run_ipython_cell(**arguments)
             elif name == "run_shell_command":
-                return self.run_shell_command(**arguments)
+                return await self.run_shell_command(**arguments)
 
-        return self.safe_request(
+        return await self.safe_request(
             "post",
             f"{self.base_url}/mcp/call_tool",
-            json={
-                "tool_name": name,
-                "arguments": arguments,
-            },
+            json={"tool_name": name, "arguments": arguments},
         )
 
-    def run_ipython_cell(
+    async def run_ipython_cell(
         self,
-        code: str = Field(
-            description="IPython code to execute",
-        ),
+        code: str = Field(description="IPython code to execute"),
     ) -> dict:
-        """Run an IPython cell."""
-        return self.safe_request(
+        """
+        Run an IPython cell.
+        """
+        return await self.safe_request(
             "post",
             f"{self.base_url}/tools/run_ipython_cell",
             json={"code": code},
         )
 
-    def run_shell_command(
+    async def run_shell_command(
         self,
-        command: str = Field(
-            description="Shell command to execute",
-        ),
+        command: str = Field(description="Shell command to execute"),
     ) -> dict:
-        """Run a shell command."""
-        return self.safe_request(
+        """
+        Run a shell command.
+        """
+        return await self.safe_request(
             "post",
             f"{self.base_url}/tools/run_shell_command",
             json={"command": command},
         )
 
-    # Below the method is used by API Server
-    def commit_changes(self, commit_message: str = "Automated commit") -> dict:
+    async def commit_changes(
+        self,
+        commit_message: str = "Automated commit",
+    ) -> dict:
         """
         Commit the uncommitted changes with a given commit message.
         """
-        return self.safe_request(
+        return await self.safe_request(
             "post",
             f"{self.base_url}/watcher/commit_changes",
             json={"commit_message": commit_message},
         )
 
-    def generate_diff(
+    async def generate_diff(
         self,
         commit_a: Optional[str] = None,
         commit_b: Optional[str] = None,
@@ -195,51 +197,52 @@ class SandboxHttpClient(SandboxHttpBase):
         Generate the diff between two commits or between uncommitted changes
         and the latest commit.
         """
-        return self.safe_request(
+        return await self.safe_request(
             "post",
             f"{self.base_url}/watcher/generate_diff",
             json={"commit_a": commit_a, "commit_b": commit_b},
         )
 
-    def git_logs(self) -> dict:
+    async def git_logs(self) -> dict:
         """
         Retrieve the git logs.
         """
-        return self.safe_request("get", f"{self.base_url}/watcher/git_logs")
+        return await self.safe_request(
+            "get",
+            f"{self.base_url}/watcher/git_logs",
+        )
 
-    def get_workspace_file(self, file_path: str) -> dict:
+    # -------- Workspace File APIs --------
+
+    async def get_workspace_file(self, file_path: str) -> dict:
         """
         Retrieve a file from the /workspace directory.
         """
         try:
             endpoint = f"{self.base_url}/workspace/files"
             params = {"file_path": file_path}
-            response = self._request(
-                "get",
-                endpoint,
-                params=params,
-            )
-            response.raise_for_status()
-            # Return the binary content of the file
+            r = await self._request("get", endpoint, params=params)
+            r.raise_for_status()
+
             # Check for empty content
-            if response.headers.get("Content-Length") == "0":
+            if r.headers.get("Content-Length") == "0":
                 logger.warning(f"The file {file_path} is empty.")
                 return {"data": b""}
 
             # Accumulate the content in chunks
             file_content = bytearray()
-            for chunk in response.iter_content(chunk_size=4096):
+            async for chunk in r.aiter_bytes():
                 file_content.extend(chunk)
 
             return {"data": bytes(file_content)}
-        except requests.exceptions.RequestException as e:
+        except httpx.RequestError as e:
             logger.error(f"An error occurred while retrieving the file: {e}")
             return {
                 "isError": True,
                 "content": [{"type": "text", "text": str(e)}],
             }
 
-    def create_or_edit_workspace_file(
+    async def create_or_edit_workspace_file(
         self,
         file_path: str,
         content: str,
@@ -247,47 +250,47 @@ class SandboxHttpClient(SandboxHttpBase):
         """
         Create or edit a file within the /workspace directory.
         """
-        return self.safe_request(
+        return await self.safe_request(
             "post",
             f"{self.base_url}/workspace/files",
             params={"file_path": file_path},
             json={"content": content},
         )
 
-    def list_workspace_directories(
+    async def list_workspace_directories(
         self,
         directory: str = "/workspace",
     ) -> dict:
         """
         List files in the specified directory within the /workspace.
         """
-        return self.safe_request(
+        return await self.safe_request(
             "get",
             f"{self.base_url}/workspace/list-directories",
             params={"directory": directory},
         )
 
-    def create_workspace_directory(self, directory_path: str) -> dict:
+    async def create_workspace_directory(self, directory_path: str) -> dict:
         """
         Create a directory within the /workspace directory.
         """
-        return self.safe_request(
+        return await self.safe_request(
             "post",
             f"{self.base_url}/workspace/directories",
             params={"directory_path": directory_path},
         )
 
-    def delete_workspace_file(self, file_path: str) -> dict:
+    async def delete_workspace_file(self, file_path: str) -> dict:
         """
         Delete a file within the /workspace directory.
         """
-        return self.safe_request(
+        return await self.safe_request(
             "delete",
             f"{self.base_url}/workspace/files",
             params={"file_path": file_path},
         )
 
-    def delete_workspace_directory(
+    async def delete_workspace_directory(
         self,
         directory_path: str,
         recursive: bool = False,
@@ -295,13 +298,13 @@ class SandboxHttpClient(SandboxHttpBase):
         """
         Delete a directory within the /workspace directory.
         """
-        return self.safe_request(
+        return await self.safe_request(
             "delete",
             f"{self.base_url}/workspace/directories",
             params={"directory_path": directory_path, "recursive": recursive},
         )
 
-    def move_or_rename_workspace_item(
+    async def move_or_rename_workspace_item(
         self,
         source_path: str,
         destination_path: str,
@@ -309,7 +312,7 @@ class SandboxHttpClient(SandboxHttpBase):
         """
         Move or rename a file or directory within the /workspace directory.
         """
-        return self.safe_request(
+        return await self.safe_request(
             "put",
             f"{self.base_url}/workspace/move",
             params={
@@ -318,7 +321,7 @@ class SandboxHttpClient(SandboxHttpBase):
             },
         )
 
-    def copy_workspace_item(
+    async def copy_workspace_item(
         self,
         source_path: str,
         destination_path: str,
@@ -326,7 +329,7 @@ class SandboxHttpClient(SandboxHttpBase):
         """
         Copy a file or directory within the /workspace directory.
         """
-        return self.safe_request(
+        return await self.safe_request(
             "post",
             f"{self.base_url}/workspace/copy",
             params={
