@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
 from typing import TYPE_CHECKING
 from .....common.utils.lazy_loader import install_lazy_loader
-from .a2a_protocol_adapter import (
-    A2AFastAPIDefaultAdapter,
-    AgentCardWithRuntimeConfig,
-    extract_a2a_config,
-)
-from .a2a_registry import (
-    A2ARegistry,
-)
 
 if TYPE_CHECKING:
+    from .a2a_protocol_adapter import (
+        A2AFastAPIDefaultAdapter,
+        AgentCardWithRuntimeConfig,
+        extract_a2a_config,
+    )
+    from .a2a_registry import A2ARegistry
     from .nacos_a2a_registry import NacosRegistry
 
 # NOTE: NacosRegistry is NOT imported at module import time to avoid forcing
@@ -21,6 +19,10 @@ if TYPE_CHECKING:
 install_lazy_loader(
     globals(),
     {
+        "A2AFastAPIDefaultAdapter": ".a2a_protocol_adapter",
+        "AgentCardWithRuntimeConfig": ".a2a_protocol_adapter",
+        "extract_a2a_config": ".a2a_protocol_adapter",
+        "A2ARegistry": ".a2a_registry",
         "NacosRegistry": {
             "module": ".nacos_a2a_registry",
             "hint": "NacosRegistry requires the 'nacos-sdk-python' package. "
@@ -28,11 +30,3 @@ install_lazy_loader(
         },
     },
 )
-
-__all__ = [
-    "A2AFastAPIDefaultAdapter",
-    "AgentCardWithRuntimeConfig",
-    "extract_a2a_config",
-    "A2ARegistry",
-    "NacosRegistry",
-]
