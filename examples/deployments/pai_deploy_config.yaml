@@ -1,0 +1,48 @@
+# PAI Deployment Configuration Example
+# This configuration file can be used with: agentscope deploy pai <source> --config pai_deploy_config.yaml
+
+# Service Configuration
+name: "my-agent-service"  # Required: Name of the service
+workspace_id: "12345"     # PAI workspace ID (can also use PAI_WORKSPACE_ID env var)
+region: "cn-hangzhou"
+# oss_path: "oss://my-bucket/agent-workspace/"  # OSS work directory path, If not provided, the default OSS storage Path of Workspace will be used.
+
+configuration:
+  # 1. Resource Configuration
+
+  resources:
+    instance_count: 1
+
+    # deploy to public resource group
+    instance_type: "ecs.c6.large"
+
+    # deploy to dedicated EAS resource group
+    # resource_id: "eas-r-xxxxx"
+    # cpu: 2
+    # memory: 4096
+
+    # For quota resource type (uncomment if using)
+    # quota_id: "quota-xxxxx"
+    # cpu: 2
+    # memory: 4096
+
+
+  # 2. VPC Configuration (optional)
+  # vpc_config:
+    # vpc_id: "vpc-xxxxx"
+    # vswitch_id: "vsw-xxxxx"
+    # security_group_id: "sg-xxxxx"
+
+  # # RAM Role Configuration, if not provided, default PAI RAMRole will be used.
+  # ram_role_arn: "acs:ram::xxxxx:role/xxxxx"
+
+  # Deployment Settings
+  enable_trace: true
+  auto_approve: true
+
+  # Service Group (optional)
+  # service_group_name: "my-service-group"
+
+  # Environment Variables
+  environment:
+    DASHSCOPE_API_KEY: "your-api-key"

@@ -65,6 +65,17 @@ try:
 except ImportError:
     KNATIVE_AVAILABLE = False
 
+try:
+    from agentscope_runtime.engine.deployers.pai_deployer import (
+        PAIDeployManager,
+        PAIConfig,
+        OSSConfig,
+    )
+
+    PAI_AVAILABLE = True
+except ImportError:
+    PAI_AVAILABLE = False
+
 
 def _validate_source(source: str) -> tuple[str, str]:
     """
@@ -254,6 +265,7 @@ def deploy():
     \b
     - modelstudio: Alibaba Cloud ModelStudio
     - agentrun: Alibaba Cloud AgentRun
+    - pai: Alibaba Cloud PAI (Platform for AI)
     - k8s: Kubernetes/ACK
     - local: Local deployment (detached mode)
     - Knative: Knative/ACK Knative
@@ -702,6 +714,317 @@ def agentrun(
             echo_info(f"Deployment ID: {deploy_id}")
             echo_info(f"Endpoint URL: {endpoint_url}")
             echo_info(f"Console URL: {url}")
+
+    except Exception as e:
+        echo_error(f"Deployment failed: {e}")
+        import traceback
+
+        echo_error(traceback.format_exc())
+        sys.exit(1)
+
+
+@deploy.command()
+@click.argument("source", required=True)
+@click.option("--name", help="Name for the service (required)", default=None)
+@click.option(
+    "--oss-path",
+    help="OSS work directory path (e.g., oss://bucket-name/path/)",
+    default=None,
+)
+@click.option(
+    "--workspace-id",
+    help="PAI workspace ID (or PAI_WORKSPACE_ID environment variable) to deploy to",
+    default=None,
+)
+@click.option(
+    "--region",
+    help="Region ID (e.g., cn-hangzhou) to deploy to",
+    default=None,
+)
+@click.option(
+    "--resource-id",
+    help="PAI-EAS Resource group ID",
+    default=None,
+)
+@click.option(
+    "--quota-id",
+    help="PAI Resource Quota ID",
+    default=None,
+)
+@click.option(
+    "--instance-count",
+    help="Number of instances",
+    type=int,
+    default=1,
+)
+@click.option(
+    "--instance-type",
+    help="Instance types for public resource (can be repeated)",
+    multiple=True,
+    default=None,
+)
+@click.option(
+    "--cpu",
+    help="CPU cores",
+    type=int,
+    default=None,
+)
+@click.option(
+    "--memory",
+    help="Memory in MB",
+    type=int,
+    default=None,
+)
+@click.option(
+    "--service-group",
+    help="Service group name",
+    default=None,
+)
+@click.option(
+    "--ram-role-mode",
+    help="RAM role mode: default, custom, or none",
+    type=click.Choice(["default", "custom", "none"]),
+    default="default",
+)
+@click.option(
+    "--ram-role-arn",
+    help="RAM role ARN (required for custom mode)",
+    default=None,
+)
+@click.option(
+    "--enable-trace/--no-trace",
+    help="Enable/disable tracing",
+    default=True,
+)
+@click.option(
+    "--wait/--no-wait",
+    help="Wait for deployment to complete",
+    default=True,
+)
+@click.option(
+    "--timeout",
+    help="Deployment timeout in seconds",
+    type=int,
+    default=1800,
+)
+@click.option(
+    "--auto-approve/--no-auto-approve",
+    help="Auto approve the deployment",
+    default=True,
+)
+@click.option(
+    "--env",
+    "-E",
+    multiple=True,
+    help="Environment variable in KEY=VALUE format (can be repeated)",
+)
+@click.option(
+    "--env-file",
+    type=click.Path(exists=True),
+    help="Path to .env file with environment variables",
+)
+@click.option(
+    "--config",
+    "-c",
+    type=click.Path(exists=True),
+    help="Path to deployment config file (.json, .yaml, or .yml)",
+)
+def pai(
+    source: str,
+    name: str,
+    oss_path: str,
+    workspace_id: str,
+    region: str,
+    resource_id: str,
+    quota_id: str,
+    instance_count: int,
+    instance_type: tuple,
+    cpu: int,
+    memory: int,
+    service_group: str,
+    ram_role_mode: str,
+    ram_role_arn: str,
+    enable_trace: bool,
+    wait: bool,
+    timeout: int,
+    auto_approve: bool,
+    env: tuple,
+    env_file: str,
+    config: str,
+):
+    """
+    Deploy to Alibaba Cloud PAI (Platform for AI).
+
+    SOURCE can be a Python file or project directory containing an agent.
+
+    Required environment variables:
+    - ALIBABA_CLOUD_ACCESS_KEY_ID
+    - ALIBABA_CLOUD_ACCESS_KEY_SECRET
+    - PAI_WORKSPACE_ID (or --workspace-id)
+    - OSS_PATH (or --oss-path): OSS work directory path
+
+    Optional environment variables:
+    - REGION_ID or REGION or ALIBABA_CLOUD_REGION_ID: Alibaba Cloud region
+    """
+    if not PAI_AVAILABLE:
+        echo_error("PAI deployer is not available")
+        echo_info(
+            "Please install required dependencies: "
+            "alibabacloud-oss-v2 alibabacloud-pailangstudio20240710 "
+            "alibabacloud-eas20210701",
+        )
+        sys.exit(1)
+
+    try:
+        echo_info(f"Preparing deployment from {source}...")
+
+        # Load config file if provided
+        config_dict = {}
+        if config:
+            echo_info(f"Loading configuration from {config}...")
+            config_dict = _load_config_file(config)
+
+        # Merge CLI parameters with config (CLI takes precedence)
+        cli_params = {
+            "name": name,
+            "oss_path": oss_path,
+            "workspace_id": workspace_id,
+            "resource_id": resource_id,
+            "quota_id": quota_id,
+            "instance_count": instance_count,
+            "instance_type": list(instance_type) if instance_type else None,
+            "cpu": cpu,
+            "memory": memory,
+            "service_group_name": service_group,
+            "ram_role_mode": ram_role_mode,
+            "ram_role_arn": ram_role_arn,
+            "enable_trace": enable_trace,
+            "wait": wait,
+            "timeout": timeout,
+            "auto_approve": auto_approve,
+        }
+        merged_config = _merge_config(config_dict, cli_params)
+
+        # Extract parameters
+        service_name = merged_config.get("name")
+        if not service_name:
+            echo_error("Name for the service is required. Use --name option.")
+            sys.exit(1)
+
+        oss_path = merged_config.get("oss_path")
+        workspace_id = merged_config.get("workspace_id")
+        resource_id = merged_config.get("resource_id")
+        quota_id = merged_config.get("quota_id")
+        instance_count = merged_config.get("instance_count", 1)
+        instance_type = merged_config.get("instance_type")
+        cpu = merged_config.get("cpu")
+        memory = merged_config.get("memory")
+        service_group_name = merged_config.get("service_group_name")
+        ram_role_mode = merged_config.get("ram_role_mode", "default")
+        ram_role_arn = merged_config.get("ram_role_arn")
+        enable_trace = merged_config.get("enable_trace", True)
+        wait = merged_config.get("wait", True)
+        timeout = merged_config.get("timeout", 1800)
+        auto_approve = merged_config.get("auto_approve", True)
+
+        # Validate source
+        abs_source, source_type = _validate_source(source)
+
+        # Parse environment variables (from config, env_file, and CLI)
+        environment = merged_config.get("environment", {}).copy()
+        cli_env = _parse_environment(env, env_file)
+        environment.update(cli_env)  # CLI env overrides config env
+
+        deployer = PAIDeployManager(
+            workspace_id=workspace_id,
+            region_id=region,
+            oss_path=oss_path,
+        )
+
+        if not deployer.workspace_id:
+            echo_error(
+                "PAI workspace ID is required. Set PAI_WORKSPACE_ID "
+                "or use --workspace-id option."
+            )
+            sys.exit(1)
+
+        echo_info(f"PAI Workspace ID: {deployer.workspace_id}")
+        echo_info(f"OSS Path: {deployer.oss_path}")
+        echo_info(f"Region: {deployer.region_id}")
+
+        # Prepare deployment parameters
+        if source_type == "directory":
+            # For directory: use directory as project_dir
+            project_dir = abs_source
+
+            echo_info(f"Using project directory: {project_dir}")
+        else:
+            # For single file: use parent directory as project_dir
+            file_path = abs_source
+            project_dir = os.path.dirname(file_path)
+
+            echo_info(f"Using file: {file_path}")
+            echo_info(f"Project directory: {project_dir}")
+
+        # Deploy to PAI
+        echo_info(f"Deploying to PAI as service '{service_name}'...")
+
+        # Build deployment parameters
+        deploy_params = {
+            "project_dir": project_dir,
+            "service_name": service_name,
+            "instance_count": instance_count,
+            "enable_trace": enable_trace,
+            "wait": wait,
+            "timeout": timeout,
+            "auto_approve": auto_approve,
+            "environment": environment if environment else None,
+        }
+
+        # Add optional parameters
+        if instance_type:
+            deploy_params["instance_type"] = instance_type
+        if resource_id:
+            deploy_params["resource_id"] = resource_id
+        if quota_id:
+            deploy_params["quota_id"] = quota_id
+        if cpu:
+            deploy_params["cpu"] = cpu
+        if memory:
+            deploy_params["memory"] = memory
+        if service_group_name:
+            deploy_params["service_group_name"] = service_group_name
+        if ram_role_arn:
+            deploy_params["ram_role_arn"] = ram_role_arn
+
+        deploy_params["ram_role_mode"] = ram_role_mode
+
+        result = asyncio.run(deployer.deploy(**deploy_params))
+
+        deploy_id = result.get("deploy_id")
+        flow_id = result.get("flow_id")
+        snapshot_id = result.get("snapshot_id")
+        console_url = result.get("url")
+        status = result.get("status")
+
+        echo_success("Deployment successful!")
+        echo_info(f"Deployment ID: {deploy_id}")
+        echo_info(f"Project ID: {flow_id}")
+        echo_info(f"Snapshot ID: {snapshot_id}")
+        echo_info(f"Service Name: {service_name}")
+        echo_info(f"Status: {status}")
+        echo_info(f"Console URL: {console_url}")
+
+        if wait and auto_approve:
+            echo_info(
+                "\nDeployment is running. Use 'agentscope stop "
+                f"{deploy_id}' to stop it."
+            )
+        elif not auto_approve:
+            echo_warning(
+                "\nDeployment created but not approved. "
+                "Please approve it in the PAI console."
+            )
 
     except Exception as e:
         echo_error(f"Deployment failed: {e}")

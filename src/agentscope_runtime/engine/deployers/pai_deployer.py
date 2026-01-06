@@ -4,6 +4,7 @@
 # pylint:disable=ungrouped-imports, arguments-renamed, protected-access
 #
 # flake8: noqa: E501
+import asyncio
 import fnmatch
 from functools import cache
 import glob
@@ -15,9 +16,8 @@ import time
 import zipfile
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Iterator, Optional, List, Union, Tuple, Any, cast
+from typing import Dict, Optional, List, Union, Tuple, Any, cast
 
-from alibabacloud_pailangstudio20240710.models import GetFlowRequest
 from pydantic import BaseModel, Field
 
 from agentscope_runtime.engine.deployers.utils.oss_utils import (
@@ -33,6 +33,7 @@ from .utils.package import generate_build_directory
 
 logger = logging.getLogger(__name__)
 
+
 try:
     import alibabacloud_oss_v2 as oss
     from alibabacloud_oss_v2.models import PutObjectRequest
@@ -40,6 +41,10 @@ try:
     from alibabacloud_pailangstudio20240710 import models as PAIModels
     from alibabacloud_tea_openapi import models as open_api_models
     from alibabacloud_tea_util import models as util_models
+    from alibabacloud_eas20210701.models import Service
+    from alibabacloud_pailangstudio20240710.models import (
+        DeleteFlowRequest,
+    )
 except Exception:
     oss = None
     PutObjectRequest = None
@@ -47,6 +52,8 @@ except Exception:
     PAIModels = None
     open_api_models = None
     util_models = None
+    Service = None
+    DeleteFlowRequest = None
 
 
 class OSSConfig(BaseModel):
@@ -197,10 +204,6 @@ def _get_default_ignore_patterns() -> List[str]:
 class PAIConfig(BaseModel):
     """Configuration for PAI platform."""
 
-    endpoint: str = Field(
-        "pailangstudio.cn-hangzhou.aliyuncs.com",
-        description="PAI service endpoint",
-    )
     workspace_id: Optional[str] = None
     region_id: Optional[str] = None
     access_key_id: Optional[str] = None
@@ -213,7 +216,10 @@ class PAIConfig(BaseModel):
         ws_id = workspace_id or os.environ.get("PAI_WORKSPACE_ID")
 
         # Get region from environment
-        region = os.environ.get("PAI_REGION_ID", "cn-hangzhou")
+        region = os.getenv(
+            "REGION_ID",
+            os.getenv("REGION", os.getenv("ALIBABA_CLOUD_REGION_ID")),
+        )
 
         # Build endpoint based on region
         endpoint = f"pailangstudio.{region}.aliyuncs.com"
@@ -241,128 +247,50 @@ class PAIDeployManager(DeployManager):
 
     def __init__(
         self,
-        pai_config: Optional[PAIConfig] = None,
-        oss_config: Optional[OSSConfig] = None,
+        workspace_id: str,
+        region_id: str,
+        access_key_id: Optional[str] = None,
+        access_key_secret: Optional[str] = None,
+        security_token: Optional[str] = None,
+        oss_path: Optional[str] = None,
         build_root: Optional[Union[str, Path]] = None,
         state_manager=None,
     ) -> None:
         """
         Initialize PAI deployer.
-
-        Args:
-            oss_config: OSS configuration for file storage
-            pai_config: PAI platform configuration
-            build_root: Root directory for build artifacts
-            state_manager: State manager for tracking deployments
         """
         super().__init__(state_manager=state_manager)
-        self.pai_config = pai_config or PAIConfig.from_env()
-        self.oss_config = oss_config or OSSConfig.from_env()
+        self.workspace_id = workspace_id or os.getenv("PAI_WORKSPACE_ID")
+        self.region_id = region_id or os.getenv(
+            "REGION_ID",
+            os.getenv("REGION", os.getenv("ALIBABA_CLOUD_REGION_ID")),
+        )
+        self.access_key_id = access_key_id or os.getenv(
+            "ALIBABA_CLOUD_ACCESS_KEY_ID"
+        )
+        self.access_key_secret = access_key_secret or os.getenv(
+            "ALIBABA_CLOUD_ACCESS_KEY_SECRET"
+        )
+        self.security_token = security_token or os.getenv(
+            "ALIBABA_CLOUD_SECURITY_TOKEN"
+        )
+        self.oss_path = oss_path
         self.build_root = Path(build_root) if build_root else None
 
-    def _parse_oss_path(self, oss_path: str) -> Tuple[str, str]:
-        """
-        Parse OSS path into bucket name and object prefix.
-
-        Args:
-            oss_path: OSS path like "oss://bucket-name/path/to/dir/"
-
-        Returns:
-            Tuple of (bucket_name, object_prefix)
-        """
-        if not oss_path.startswith("oss://"):
-            raise ValueError(f"Invalid OSS path format: {oss_path}")
-
-        path = oss_path[6:]  # Remove "oss://"
-        parts = path.split("/", 1)
-        bucket_name = parts[0]
-        object_prefix = parts[1] if len(parts) > 1 else ""
-
-        # Remove internal suffix if present
-        bucket_name = bucket_name.replace("-internal.aliyuncs.com", "")
-
-        return bucket_name, object_prefix
+        if not self.oss_path:
+            self.oss_path = self._get_workspace_default_oss_storage_path()
 
     def _assert_cloud_sdks_available(self):
         """Ensure required cloud SDKs are installed."""
-        # if oss is None or PAIClient is None:
-        #     raise RuntimeError(
-        #         "PAI SDKs not installed. Please install: "
-        #         "alibabacloud-oss-v2 alibabacloud-pailangstudio20240710 "
-        #         "alibabacloud-credentials alibabacloud-tea-openapi alibabacloud-tea-util",
-        #     )
-        credential_client = self._acs_credential_client()
+        credential_client = self._credential_client()
 
         try:
-            cred = credential_client.get_credential()
+            _ = credential_client.get_credential()
         except Exception as e:
             raise RuntimeError(
-                f"Failed to get credential: {e}. Please check your credential configuration."
+                f"Failed to get credential: {e}. Please check your credential "
+                "configuration.",
             ) from e
-
-    async def _find_existing_flow(
-        self,
-        pai_client,
-        service_name: str,
-        app_name: Optional[str] = None,
-    ) -> Optional[str]:
-        """
-        Find existing Flow by service_name and optional app_name.
-
-        Args:
-            pai_client: PAI client instance
-            service_name: Service name to search for
-            app_name: Optional app name to match in tags
-
-        Returns:
-            Flow ID if found, None otherwise
-        """
-        try:
-            logger.info(
-                "Searching for existing Flow with service_name=%s, app_name=%s",
-                service_name,
-                app_name,
-            )
-
-            # List flows in workspace
-            list_req = PAIModels.ListFlowsRequest(
-                workspace_id=self.pai_config.workspace_id,
-                page_number=1,
-                page_size=100,
-            )
-            runtime = util_models.RuntimeOptions()
-            headers = {}
-
-            response = pai_client.list_flows_with_options(
-                list_req,
-                headers,
-                runtime,
-            )
-
-            flows_data = response.to_map().get("body", {})
-            flows = flows_data.get("Data", [])
-
-            for flow in flows:
-                # Check if service_name matches in tags
-                tags = flow.get("Tags", {})
-                if tags.get("service_name") == service_name:
-                    if app_name:
-                        # If app_name specified, also check it
-                        if tags.get("app_name") == app_name:
-                            flow_id = flow.get("FlowId")
-                            logger.info("Found existing Flow: %s", flow_id)
-                            return flow_id
-                    else:
-                        flow_id = flow.get("FlowId")
-                        logger.info("Found existing Flow: %s", flow_id)
-                        return flow_id
-
-            logger.info("No existing Flow found")
-            return None
-
-        except Exception as e:
-            logger.warning("Error searching for existing Flow: %s", e)
-            return None
 
     async def _create_snapshot(
         self,
@@ -373,21 +301,24 @@ class PAIDeployManager(DeployManager):
         """
         Create a snapshot for given archive_oss_uri
         """
-        from alibabacloud_pailangstudio20240710.models import CreateSnapshotRequest
+        from alibabacloud_pailangstudio20240710.models import (
+            CreateSnapshotRequest,
+        )
 
         client = self.get_langstudio_client()
 
         resp = await client.create_snapshot_async(
             request=CreateSnapshotRequest(
-                workspace_id=self.pai_config.workspace_id,
+                workspace_id=self.workspace_id,
                 snapshot_resource_type="Flow",
                 snapshot_resource_id=proj_id,
-                snapshot_name=f"{service_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                snapshot_name=(
+                    f"{service_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                ),
                 source_storage_path=archive_oss_uri,
             )
         )
         return resp.body.snapshot_id
-
 
     def _build_deployment_config(
         self,
@@ -401,7 +332,8 @@ class PAIDeployManager(DeployManager):
         vpc_id: Optional[str] = None,
         vswitch_id: Optional[str] = None,
         security_group_id: Optional[str] = None,
-        service_group_name: Optional[str] = None
+        service_group_name: Optional[str] = None,
+        environment: Optional[Dict[str, str]] = None,
     ) -> str:
         """
         Build deployment configuration JSON string.
@@ -409,16 +341,28 @@ class PAIDeployManager(DeployManager):
         config = {
             "metadata": {
                 "instance": instance_count,
-                "workspace_id": self.pai_config.workspace_id,
+                "workspace_id": self.workspace_id,
             },
             "cloud": {
                 "networking": {},
             },
         }
 
+        if environment:
+            config["containers"] = [
+                {
+                    "env": [
+                        {
+                            "name": key,
+                            "value": value,
+                        }
+                        for key, value in environment.items()
+                    ],
+                }
+            ]
+
         if service_group_name:
             config["metadata"]["group"] = service_group_name
-
 
         # Add resource-specific configuration
         if resource_type == "public":
@@ -478,8 +422,9 @@ class PAIDeployManager(DeployManager):
         Returns:
             Credential configuration dict
         """
-        from alibabacloud_pailangstudio20240710.models import CreateDeploymentRequestCredentialConfig
-
+        from alibabacloud_pailangstudio20240710.models import (
+            CreateDeploymentRequestCredentialConfig,
+        )
 
         if ram_role_mode == "none":
             return {
@@ -504,7 +449,7 @@ class PAIDeployManager(DeployManager):
                     "ram_role_arn required for custom ram_role_mode"
                 )
             config["CredentialConfigItems"][0]["Roles"] = [ram_role_arn]
-        
+
         return CreateDeploymentRequestCredentialConfig().from_map(config)
 
     async def _deploy_snapshot(
@@ -518,12 +463,15 @@ class PAIDeployManager(DeployManager):
         service_group_name: Optional[str] = None,
         ram_role_mode: str = "default",
         ram_role_arn: Optional[str] = None,
+        auto_approve: bool = True,
         **deployment_kwargs,
     ) -> str:
         """
         Deploy a snapshot as a service.
         """
-        from alibabacloud_pailangstudio20240710.models import CreateDeploymentRequest
+        from alibabacloud_pailangstudio20240710.models import (
+            CreateDeploymentRequest,
+        )
 
         logger.info(
             "Deploying snapshot %s as service %s", snapshot_id, service_name
@@ -546,15 +494,16 @@ class PAIDeployManager(DeployManager):
 
         # Prepare deployment request
         deploy_req = CreateDeploymentRequest(
-            workspace_id=self.pai_config.workspace_id,
+            workspace_id=self.workspace_id,
             resource_type="Flow",
             resource_id=proj_id,
             resource_snapshot_id=snapshot_id,
             service_name=service_name,
             enable_trace=enable_trace,
-            work_dir=oss_work_dir,
+            work_dir=self._oss_uri_patch_endpoint(oss_work_dir),
             deployment_config=deployment_config,
             credential_config=credential_config,
+            auto_approval=auto_approve,
         )
 
         if service_group_name:
@@ -568,9 +517,17 @@ class PAIDeployManager(DeployManager):
         logger.info("Deployment created: %s", deployment_id)
         return deployment_id
 
+    def _oss_uri_patch_endpoint(self, oss_uri: str) -> str:
+        """
+        Patch OSS URI endpoint to the correct endpoint.
+        """
+        bucket_name, endpoint, object_key = parse_oss_uri(oss_uri)
+        if not endpoint:
+            endpoint = self._get_oss_endpoint(self.region_id)
+        return f"oss://{bucket_name}.{endpoint}/{object_key}"
+
     async def _wait_for_deployment(
         self,
-        pai_client,
         deployment_id: str,
         timeout: int = 1800,
         poll_interval: int = 10,
@@ -592,46 +549,45 @@ class PAIDeployManager(DeployManager):
             RuntimeError: If deployment fails
         """
         logger.info("Waiting for deployment %s to complete...", deployment_id)
+        client = self.get_langstudio_client()
 
         start_time = time.time()
-        runtime = util_models.RuntimeOptions()
-        headers = {}
 
         while time.time() - start_time < timeout:
             try:
                 # Get deployment status
                 get_req = PAIModels.GetDeploymentRequest(
-                    deployment_id=deployment_id,
-                    workspace_id=self.pai_config.workspace_id,
+                    workspace_id=self.workspace_id,
                 )
 
-                response = pai_client.get_deployment_with_options(
+                response = await client.get_deployment_async(
                     deployment_id,
                     get_req,
-                    headers,
-                    runtime,
                 )
-
-                status_data = response.to_map().get("body", {})
-                status = status_data.get("Status")
-
+                status = response.body.deployment_status
                 logger.info("Deployment status: %s", status)
 
-                if status == "Running":
-                    logger.info("Deployment is running")
-                    return status_data
-                elif status in ["Failed", "Stopped"]:
-                    error_msg = status_data.get("Message", "Unknown error")
-                    raise RuntimeError(f"Deployment failed: {error_msg}")
+                if status == "Succeed":
+                    return
+                elif status == "Failed":
+                    raise RuntimeError(
+                        f"Deployment {deployment_id} failed: {response.body.error_message}"
+                    )
+                elif status == "Cancled":
+                    raise RuntimeError(f"Deployment {deployment_id} cancled.")
 
-                # Wait before next poll
-                time.sleep(poll_interval)
-
+                elif status == "Running" or status == "Creating":
+                    await asyncio.sleep(poll_interval)
+                    continue
+                else:
+                    raise RuntimeError(
+                        f"Deployment {deployment_id} status unknown: {status}"
+                    )
             except Exception as e:
                 if "Failed" in str(e) or "Stopped" in str(e):
                     raise
                 logger.warning("Error checking deployment status: %s", e)
-                time.sleep(poll_interval)
+                await asyncio.sleep(poll_interval)
 
         raise TimeoutError(
             f"Deployment {deployment_id} did not complete within {timeout} seconds",
@@ -639,21 +595,17 @@ class PAIDeployManager(DeployManager):
 
     async def deploy(
         self,
+        project_dir: Optional[Union[str, Path]] = None,
         app=None,
         runner=None,
-        endpoint_path: str = "/process",
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
         environment: Optional[Dict[str, str]] = None,
-        # PAI-specific args
-        project_dir: Optional[Union[str, Path]] = None,
         service_name: Optional[str] = None,
         app_name: Optional[str] = None,
-        oss_path: Optional[str] = None,
         service_group_name: Optional[str] = None,
         tags: Optional[Dict[str, str]] = None,
-        # Resource configuration
         resource_type: str = "public",
         resource_id: Optional[str] = None,
         quota_id: Optional[str] = None,
@@ -669,7 +621,7 @@ class PAIDeployManager(DeployManager):
         enable_trace: bool = True,
         wait: bool = True,
         timeout: int = 1800,
-        auto_approve: bool = False,
+        auto_approve: bool = True,
         **kwargs,
     ) -> Dict[str, str]:
         """
@@ -686,7 +638,6 @@ class PAIDeployManager(DeployManager):
             project_dir: Local project directory
             service_name: Service name (required)
             app_name: Application name
-            oss_path: OSS work directory path (required)
             workspace_id: PAI workspace ID
             service_group_name: Service group name
             tags: Tags for the deployment
@@ -727,7 +678,6 @@ class PAIDeployManager(DeployManager):
                 logger.info("Creating detached project from app/runner")
                 project_dir = await LocalDeployManager.create_detached_project(
                     app=app,
-                    endpoint_path=endpoint_path,
                     protocol_adapters=protocol_adapters,
                     requirements=requirements,
                     extra_packages=extra_packages,
@@ -754,11 +704,13 @@ class PAIDeployManager(DeployManager):
             oss_archive_uri = self._upload_archive(
                 service_name=service_name,
                 archive_path=archive_path,
-                oss_path=oss_path or self.oss_config.oss_path,
+                oss_path=self.oss_path,
             )
 
             proj_id = await self.get_or_create_langstudio_proj(
-                service_name, oss_archive_uri, oss_path or self.oss_config.oss_path
+                service_name,
+                oss_archive_uri,
+                self.oss_path,
             )
 
             # Step 2: Upload to OSS
@@ -774,7 +726,7 @@ class PAIDeployManager(DeployManager):
                 snapshot_id=snapshot_id,
                 proj_id=proj_id,
                 service_name=service_name,
-                oss_work_dir=oss_path or self.oss_config.oss_path,
+                oss_work_dir=self.oss_path,
                 enable_trace=enable_trace,
                 resource_type=resource_type,
                 service_group_name=service_group_name,
@@ -789,47 +741,58 @@ class PAIDeployManager(DeployManager):
                 vpc_id=vpc_id,
                 vswitch_id=vswitch_id,
                 security_group_id=security_group_id,
+                auto_approve=auto_approve,
+                environment=environment,
             )
 
             # Step 5: Wait for deployment if requested
             deployment_status = None
             if auto_approve and wait:
-                deployment_status = await self._wait_for_deployment(
+                await self._wait_for_deployment(
                     deployment_id,
                     timeout=timeout,
                 )
                 service_status = "running"
+
+                service = await self._get_service(service_name)
+                service = cast(Service, service)
+
+                endpoint = service.internet_endpoint
+                token = service.access_token
             else:
-                service_status = "deploying"
+                endpoint = None
+                token = None
+                service_status = "pending"
 
-            console_uri = self.get_deployment_console_uri(proj_id, deployment_id)
+            console_uri = self.get_deployment_console_uri(
+                proj_id, deployment_id
+            )
 
-            local_deploy_id = self.deploy_id
             deployment = Deployment(
-                id=local_deploy_id,
+                id=deployment_id,
                 platform="pai",
-                url=self.get_deployment_console_uri(proj_id, deployment_id),
+                url=endpoint,
+                token=token,
                 status=service_status,
                 created_at=datetime.now().isoformat(),
-                agent_source=project_dir,
+                agent_source=str(project_dir),
                 config={
                     "pai_deployment_id": deployment_id,
                     "flow_id": proj_id,
                     "snapshot_id": snapshot_id,
                     "service_name": service_name,
-                    "workspace_id": self.pai_config.workspace_id,
+                    "workspace_id": self.workspace_id,
                 },
             )
             self.state_manager.save(deployment)
 
             # Return deployment information
             result = {
-                "deploy_id": local_deploy_id,
-                "pai_deployment_id": deployment_id,
+                "deploy_id": deployment_id,
                 "flow_id": proj_id,
                 "snapshot_id": snapshot_id,
                 "service_name": service_name,
-                "workspace_id": self.pai_config.workspace_id,
+                "workspace_id": self.workspace_id,
                 "url": console_uri,
                 "status": service_status,
             }
@@ -843,18 +806,48 @@ class PAIDeployManager(DeployManager):
             logger.error("Failed to deploy to PAI: %s", e, exc_info=True)
             raise
 
-    
-    def get_deployment_console_uri(self, proj_id: str, deployment_id: str) -> str:
+    def get_deployment_console_uri(
+        self, proj_id: str, deployment_id: str
+    ) -> str:
         """
         Return the console URI for a deployment.
 
         """
         return (
             f"https://pai.console.aliyun.com/?regionId="
-            f"{self.pai_config.region_id}&workspaceId="
-            f"{self.pai_config.workspace_id}#/lang-studio/flows/"
+            f"{self.region_id}&workspaceId="
+            f"{self.workspace_id}#/lang-studio/flows/"
             f"flow-{proj_id}/deployments/{deployment_id}"
         )
+
+    def get_service_console_uri(self, service_name: str) -> str:
+        """
+        Return the console URI for a service.
+
+        """
+        return (
+            f"https://pai.console.aliyun.com/?regionId="
+            f"{self.region_id}&workspaceId="
+            f"{self.workspace_id}#/eas/serviceDetail/"
+            f"{service_name}/detail"
+        )
+
+    async def _get_workspace_default_oss_storage_path(self) -> Optional[str]:
+        from alibabacloud_aiworkspace20210204.models import ListConfigsRequest
+
+        client = self.get_workspace_client()
+        config_key = "modelExportPath"
+
+        resp = await client.list_configs_async(
+            workspace_id=self.workspace_id,
+            request=ListConfigsRequest(
+                config_keys=config_key,
+            ),
+        )
+        default_oss_storage_uri = next(
+            (c for c in resp.body.configs if c.config_key == config_key), None
+        )
+        return default_oss_storage_uri
 
     def _create_project_archive(self, service_name, project_dir: Path):
         build_dir = generate_build_directory("pai")
@@ -886,9 +879,18 @@ class PAIDeployManager(DeployManager):
 
             for file_path in source_files:
                 file_path_obj = Path(file_path)
+
+                # Skip if not a file (e.g., directories)
+                if not file_path_obj.is_file():
+                    continue
+
                 file_relative_path = file_path_obj.relative_to(
                     project_path
                 ).as_posix()
+
+                # Skip . and .. directory references
+                if file_relative_path in (".", ".."):
+                    continue
 
                 if _should_ignore(file_relative_path, ignore_patterns):
                     logger.debug(
@@ -921,13 +923,15 @@ class PAIDeployManager(DeployManager):
         """
         bucket_name, endpoint, object_key = parse_oss_uri(oss_path)
         archive_obj_key = posixpath.join(
-            object_key, "temp", f"{service_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            object_key,
+            "temp",
+            f"{service_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip",
         )
         if endpoint and not oss_endpoint:
             oss_endpoint = endpoint
 
         if not oss_endpoint:
-            oss_endpoint = self._get_oss_endpoint(self.pai_config.region_id)
+            oss_endpoint = self._get_oss_endpoint(self.region_id)
 
         client = self._get_oss_client(
             oss_endpoint=oss_endpoint,
@@ -942,7 +946,6 @@ class PAIDeployManager(DeployManager):
             filepath=archive_path,
         )
         return f"oss://{bucket_name}.{oss_endpoint}/{archive_obj_key}"
-
 
     def _get_existing_app() -> Optional[str]:
         pass
@@ -971,15 +974,15 @@ class PAIDeployManager(DeployManager):
 
         return oss.Client(
             config=oss.Config(
-                region=region or self.pai_config.region_id,
-                oss_endpoint=oss_endpoint,
+                region=region or self.region_id,
+                endpoint=oss_endpoint,
                 credentials_provider=_CustomOssCredentialsProvider(
-                    self._acs_credential_client()
+                    self._credential_client()
                 ),
             )
         )
 
-    def _acs_credential_client(self):
+    def _credential_client(self):
         from alibabacloud_credentials.client import (
             Client as CredentialClient,
         )
@@ -991,105 +994,117 @@ class PAIDeployManager(DeployManager):
                 "ALIBABA_CLOUD_ACCESS_KEY_ID and ALIBABA_CLOUD_ACCESS_KEY_SECRET must be set"
             )
 
-        return CredentialClient(
-            access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
-            access_key_secret=os.environ.get(
-                "ALIBABA_CLOUD_ACCESS_KEY_SECRET"
-            ),
-        )
+        return CredentialClient()
 
-    async def _get_service(self, service_name: str):
+    def _eas_service_client(self):
         from alibabacloud_eas20210701.client import Client as EASClient
         from alibabacloud_tea_openapi import models as open_api_models
 
+        return EASClient(
+            config=open_api_models.Config(
+                credential=self._credential_client(),
+                region_id=self.region_id,
+                endpoint=self._get_eas_endpoint(self.region_id),
+            ),
+        )
+
+    async def _get_service(self, service_name: str) -> Optional[Any]:
+        """Get service information.
+
+        Args:
+            service_name: Name of the service to retrieve
+
+        Returns:
+            Service object if found, None otherwise
+        """
         from alibabacloud_tea_openapi.exceptions import AlibabaCloudException
 
-        eas_client = EASClient(
-            config=open_api_models.Config(
-                credential=self._acs_credential_client(),
-                region_id=self.pai_config.region_id,
-                endpoint=self._get_eas_endpoint(self.pai_config.region_id),
-            ),
-        )
-
-        cred_client = self._acs_credential_client()
-
-        eas_client = EASClient(
-            config=open_api_models.Config(
-                credential=cred_client,
-                region_id="cn-hangzhou",
-                endpoint="pai-eas.cn-hangzhou.aliyuncs.com",
-            ),
-        )
+        eas_client = self._eas_service_client()
 
         try:
-            resp = await eas_client.describe_service_async()
+            resp = await eas_client.describe_service_async(
+                cluster_id=self.region_id, service_name=service_name
+            )
             return resp.body
         except AlibabaCloudException as e:
             if e.code == "Forbidden.PrivilegeCheckFailed":
                 logger.warning(
                     f"Given service name is owned by another user: {e}"
                 )
-                raise RuntimeError(
-                    f"Given service name is owned by another user: {service_name}"
+
+                raise ValueError(
+                    f"Given service name is owned by another user: "
+                    f"{service_name}. Please use a different service name."
                 )
             elif e.code == "InvalidService.NotFound":
                 return None
             else:
                 raise e
-    
-    async def get_or_create_langstudio_proj(self, service_name, proj_archive_oss_uri: str, oss_path: str) :
+
+    async def get_or_create_langstudio_proj(
+        self, service_name, proj_archive_oss_uri: str, oss_path: str
+    ):
         from alibabacloud_eas20210701.models import Service
         from alibabacloud_tea_openapi.exceptions import AlibabaCloudException
-        from alibabacloud_pailangstudio20240710.models import GetFlowRequest, CreateFlowRequest, ListFlowsRequest
-
-        service = await self._get_service(service_name)
-
-        service = cast(Service, service)
+        from alibabacloud_pailangstudio20240710.models import (
+            GetFlowRequest,
+            CreateFlowRequest,
+        )
 
         langstudio_client = self.get_langstudio_client()
 
+        service = await self._get_service(service_name)
+        service = cast(Optional[Service], service)
+
+        # try to reuse existing project from service label
         if service and service.labels:
-            proj_id = next((label.value for label in service.labels if label.key == "FlowId"), None)
+            proj_id_from_svc_label = next(
+                (
+                    label.label_value
+                    for label in service.labels
+                    if label.label_key == "FlowId"
+                ),
+                None,
+            )
             try:
-                resp = await langstudio_client.get_flow_async(proj_id, request=GetFlowRequest(workspace_id=self.pai_config.workspace_id))
+                resp = await langstudio_client.get_flow_async(
+                    proj_id_from_svc_label,
+                    request=GetFlowRequest(workspace_id=self.workspace_id),
+                )
                 proj_id = resp.body.flow_id
             except AlibabaCloudException as e:
                 if e.status_code == 400:
-                    logger.info("No flow found with id: %s, %s", proj_id, e)
+                    logger.info(
+                        "No flow found with id: %s, %s",
+                        proj_id_from_svc_label,
+                        e,
+                    )
                     proj_id = None
                 else:
                     raise e
         else:
             proj_id = None
-        
+
         if not proj_id:
             flow_proj = await self._get_langstudio_proj_by_name(service_name)
             if flow_proj:
                 proj_id = flow_proj.flow_id
-            else:
 
-                resp = await langstudio_client.create_flow_async(
-                    request=CreateFlowRequest(
-                        workspace_id=self.pai_config.workspace_id,
-                        flow_name=service_name,
-                        description=f"Flow for {service_name}",
-                        flow_type="Code",
-                        source_uri=proj_archive_oss_uri,
-                        working_dir=oss_path,
-                    )
+        if not proj_id:
+            resp = await langstudio_client.create_flow_async(
+                request=CreateFlowRequest(
+                    workspace_id=self.workspace_id,
+                    flow_name=service_name,
+                    description=f"Project {service_name} created by Agentscope Runtime.",
+                    flow_type="Code",
+                    source_uri=proj_archive_oss_uri,
+                    work_dir=self._oss_uri_patch_endpoint(oss_path),
+                    create_from="OSS",
                 )
-                proj_id = resp.body.flow_id
-        
+            )
+            proj_id = resp.body.flow_id
 
         return proj_id
-
-
-
-
-
-
-
 
     async def _get_langstudio_proj(self, flow_id: str):
         from alibabacloud_pailangstudio20240710.models import GetFlowRequest
@@ -1098,7 +1113,10 @@ class PAIDeployManager(DeployManager):
         client = self.get_langstudio_client()
 
         try:
-            resp = await client.get_flow_async(flow_id, request=GetFlowRequest(workspace_id=self.pai_config.workspace_id))
+            resp = await client.get_flow_async(
+                flow_id,
+                request=GetFlowRequest(workspace_id=self.workspace_id),
+            )
             return resp.body
         except AlibabaCloudException as e:
             if e.status_code == 400:
@@ -1106,21 +1124,41 @@ class PAIDeployManager(DeployManager):
                 return None
             else:
                 raise e
-    
 
     def get_langstudio_client(self):
         from alibabacloud_pailangstudio20240710.client import Client
 
         client = Client(
             config=open_api_models.Config(
-                credential=self._acs_credential_client(),
-                region_id=self.pai_config.region_id,
-                endpoint=self._get_langstudio_endpoint(
-                    self.pai_config.region_id
-                ),
+                credential=self._credential_client(),
+                region_id=self.region_id,
+                endpoint=self._get_langstudio_endpoint(self.region_id),
             ),
         )
         return client
+
+    def get_workspace_client(self):
+        from alibabacloud_aiworkspace20210204.client import Client
+        from alibabacloud_tea_openapi import models as open_api_models
+
+        client = Client(
+            config=open_api_models.Config(
+                credential=self._credential_client(),
+                region_id=self.region_id,
+                endpoint=self._get_workspace_endpoint(self.region_id),
+            ),
+        )
+        return client
+
+    def _get_workspace_endpoint(self, region_id: str) -> str:
+        internal_endpoint = f"aiworkspace-vpc.{region_id}.aliyuncs.com"
+        public_endpoint = f"aiworkspace.{region_id}.aliyuncs.com"
+
+        return (
+            internal_endpoint
+            if can_connect(internal_endpoint)
+            else public_endpoint
+        )
 
     @cache
     def _get_langstudio_endpoint(self, region_id: str) -> str:
@@ -1192,7 +1230,7 @@ class PAIDeployManager(DeployManager):
             logger.info("Stopping PAI deployment: %s", pai_deployment_id)
 
             delete_req = PAIModels.DeleteDeploymentRequest(
-                workspace_id=self.pai_config.workspace_id,
+                workspace_id=self.workspace_id,
             )
             runtime = util_models.RuntimeOptions()
             headers = {}
@@ -1229,7 +1267,6 @@ class PAIDeployManager(DeployManager):
     def get_status(self) -> str:
         """Get deployment status (not fully implemented)."""
         return "unknown"
-    
 
     async def _get_langstudio_proj_by_name(self, name: str):
         from alibabacloud_pailangstudio20240710.models import ListFlowsRequest
@@ -1241,40 +1278,72 @@ class PAIDeployManager(DeployManager):
         while True:
             resp = await client.list_flows_async(
                 request=ListFlowsRequest(
-                    workspace_id=self.pai_config.workspace_id,
+                    workspace_id=self.workspace_id,
                     flow_name=name,
                     sort_by="GmtCreateTime",
                     order="DESC",
                     next_token=next_token,
-                    page_number=100,
+                    page_size=100,
                 )
             )
             for flow in resp.body.flows:
                 if flow.flow_name == name:
                     return flow
-            
+
             next_token = resp.body.next_token
             if not next_token:
                 break
-    
-    
+
     async def _update_deployment(self, deployment_id: str, auto_approve: bool):
-        from alibabacloud_pailangstudio20240710.models import UpdateDeploymentRequest
+        from alibabacloud_pailangstudio20240710.models import (
+            UpdateDeploymentRequest,
+        )
 
         client = self.get_langstudio_client()
-
-        """
-        {"WorkspaceId":"285773","StageAction":"{\"Stage\":3,\"Action\":\"Confirm\"}"}
-        """
-
         resp = await client.update_deployment_async(
             request=UpdateDeploymentRequest(
-                workspace_id=self.pai_config.workspace_id,
-                stage_action=json.dumps({
-                    "Stage": 3,
-                    "Action": "Confirm"
-                })
+                workspace_id=self.workspace_id,
+                stage_action=json.dumps({"Stage": 3, "Action": "Confirm"}),
             )
         )
 
+        return resp
+
+    async def delete_service(self, service_name: str) -> None:
+        service_client = self._eas_service_client()
+
+        await service_client.delete_service_async(
+            cluster_id=self.region_id,
+            service_name=service_name,
+        )
+
+    async def delete_project(self, project_name: str) -> None:
+        proj = await self._get_langstudio_proj_by_name(project_name)
+        if not proj:
+            return
+        client = self.get_langstudio_client()
+
+        await client.delete_flow_async(
+            flow_id=proj.flow_id,
+            request=DeleteFlowRequest(
+                workspace_id=self.workspace_id,
+            ),
+        )
+
+    async def approve_deployment(
+        self, deployment_id: str, wait=True, timeout=1800, poll_interval=10
+    ) -> None:
+        from alibabacloud_pailangstudio20240710.models import (
+            UpdateDeploymentRequest,
+        )
+
+        # wait untils the deployment is waiting for approval
+
+        client = self.get_langstudio_client()
+        resp = await client.update_deployment_async(
+            request=UpdateDeploymentRequest(
+                workspace_id=self.workspace_id,
+                stage_action=json.dumps({"Stage": 3, "Action": "Confirm"}),
+            )
+        )
         return resp

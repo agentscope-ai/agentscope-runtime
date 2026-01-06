@@ -30,36 +30,6 @@ def state_manager(temp_state_dir):
     return DeploymentStateManager(state_dir=str(temp_state_dir))
 
 
-@pytest.fixture
-def sample_deployment():
-    """Create a sample deployment for testing."""
-    return Deployment(
-        id="test-deploy-1",
-        platform="local",
-        url="http://localhost:8080",
-        agent_source="/path/to/agent.py",
-        created_at="2024-01-01T00:00:00",
-        status="running",
-        token=None,
-        config={"key": "value"},
-    )
-
-
-@pytest.fixture
-def sample_deployment_2():
-    """Create another sample deployment for testing."""
-    return Deployment(
-        id="test-deploy-2",
-        platform="k8s",
-        url="http://localhost:8090",
-        agent_source="/path/to/agent2.py",
-        created_at="2024-01-02T00:00:00",
-        status="running",
-        token="test-token",
-        config={"key2": "value2"},
-    )
-
-
 class TestDeploymentStateManagerBasic:
     """Test basic operations of DeploymentStateManager."""
 
