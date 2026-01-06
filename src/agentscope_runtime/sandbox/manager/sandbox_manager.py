@@ -38,6 +38,7 @@ from ...common.collections import (
     InMemoryMapping,
     InMemoryQueue,
 )
+from ..constant import TIMEOUT
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -144,10 +145,9 @@ class SandboxManager:
             # Initialize HTTP session for remote mode with bearer token
             # authentication
             self.http_session = requests.Session()
-            self.http_session.timeout = 30
 
             # For async HTTP
-            self.httpx_client = httpx.AsyncClient(timeout=30)
+            self.httpx_client = httpx.AsyncClient(timeout=TIMEOUT)
 
             self.base_url = base_url.rstrip("/")
             if bearer_token:
@@ -340,9 +340,14 @@ class SandboxManager:
         """
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
         if method.upper() == "GET":
-            response = self.http_session.get(url, params=data)
+            response = self.http_session.get(url, params=data, timeout=TIMEOUT)
         else:
-            response = self.http_session.request(method, url, json=data)
+            response = self.http_session.request(
+                method,
+                url,
+                json=data,
+                timeout=TIMEOUT,
+            )
 
         try:
             response.raise_for_status()
