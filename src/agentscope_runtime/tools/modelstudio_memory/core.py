@@ -17,7 +17,7 @@ from typing import Any, Optional
 from ..base import Tool
 from .base import ModelStudioMemoryBase
 from .config import MemoryServiceConfig
-from .models import (
+from .schemas import (
     AddMemoryInput,
     AddMemoryOutput,
     CreateProfileSchemaInput,

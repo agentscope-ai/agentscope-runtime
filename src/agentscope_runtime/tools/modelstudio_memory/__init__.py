@@ -13,8 +13,8 @@ Components:
     - CreateProfileSchema: Create a user profile schema
     - GetUserProfile: Retrieve a user profile
 
-Models:
-    All Pydantic models for input/output are available in the models submodule.
+Schemas:
+    All Pydantic schemas for input/output are available in the schemas submodule.
 
 Exceptions:
     Custom exceptions for better error handling are available in the
@@ -47,8 +47,8 @@ from .core import (
     GetUserProfile,
 )
 
-# Models - Import commonly used models for convenience
-from .models import (
+# Schemas - Import commonly used schemas for convenience
+from .schemas import (
     AddMemoryInput,
     AddMemoryOutput,
     CreateProfileSchemaInput,
@@ -84,7 +84,7 @@ __all__ = [
     "MemoryNetworkError",
     "MemoryNotFoundError",
     "MemoryValidationError",
-    # Models
+    # Schemas
     "Message",
     "MemoryNode",
     "AddMemoryInput",
