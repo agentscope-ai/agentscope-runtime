@@ -53,7 +53,6 @@ class SandboxHttpBase:
     }
 
     def __init__(self, model, timeout: int = 60, domain: str = "localhost"):
-        self.session_id = model.session_id
         self.base_url = urljoin(
             model.url.replace("localhost", domain),
             "fastapi",
@@ -64,8 +63,8 @@ class SandboxHttpBase:
 
         self.headers = {
             "Content-Type": "application/json",
-            "x-agentrun-session-id": "s" + self.session_id,
-            "x-agentscope-runtime-session-id": "s" + self.session_id,
+            "x-agentrun-session-id": "s" + model.container_id,
+            "x-agentscope-runtime-session-id": "s" + model.container_id,
         }
         if self.secret:
             self.headers["Authorization"] = f"Bearer {self.secret}"

@@ -37,6 +37,7 @@
 
 ## 🆕 NEWS
 
+* **[2026-01]** Added **asynchronous sandbox** implementations (`BaseSandboxAsync`, `GuiSandboxAsync`, `BrowserSandboxAsync`, `FilesystemSandboxAsync`, `MobileSandboxAsync`) enabling non-blocking, concurrent tool execution in async program. Improved `run_ipython_cell` and `run_shell_command` methods with enhanced **concurrency and parallel execution** capabilities for more efficient sandbox operations.
 * **[2025-12]** We have released **AgentScope Runtime v1.0**, introducing a unified “Agent as API” white-box development experience, with enhanced multi-agent collaboration, state persistence, and cross-framework integration. This release also streamlines abstractions and modules to ensure consistency between development and production environments. Please refer to the **[CHANGELOG](https://runtime.agentscope.io/en/CHANGELOG.html)** for full update details and migration guide.
 
 ---
@@ -260,15 +261,29 @@ These examples demonstrate how to create sandboxed environments and execute tool
 
 > [!NOTE]
 >
-> Current version requires Docker or Kubernetes to be installed and running on your system. Please refer to [this tutorial](https://runtime.agentscope.io/en/sandbox.html) for more details.
+> If you want to run the sandbox locally, the current version requires Docker or Kubernetes to be installed and running. In the future, we will offer more public cloud deployment options, as well as other virtualization technologies. Please refer to [this tutorial](https://runtime.agentscope.io/en/sandbox.html) for more details.
 >
 > If you plan to use the sandbox on a large scale in production, we recommend deploying it directly in Alibaba Cloud for managed hosting: [One-click deploy sandbox on Alibaba Cloud](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83)
+
+> [!TIP]
+> AgentScope Runtime provides **both synchronous** and **asynchronous** versions for each sandbox type
+
+| Synchronous Class   | Asynchronous Class       |
+| ------------------- | ------------------------ |
+| `BaseSandbox`       | `BaseSandboxAsync`       |
+| `GuiSandbox`        | `GuiSandboxAsync`        |
+| `FilesystemSandbox` | `FilesystemSandboxAsync` |
+| `BrowserSandbox`    | `BrowserSandboxAsync`    |
+| `MobileSandbox`     | `MobileSandboxAsync`     |
+| `TrainingSandbox`   | -                        |
+| `AgentbaySandbox`   | -                        |
 
 #### Base Sandbox
 
 Use for running **Python code** or **shell commands** in an isolated environment.
 
 ```python
+# --- Synchronous version ---
 from agentscope_runtime.sandbox import BaseSandbox
 
 with BaseSandbox() as box:
@@ -277,6 +292,15 @@ with BaseSandbox() as box:
     print(box.run_ipython_cell(code="print('hi')"))  # Run Python code
     print(box.run_shell_command(command="echo hello"))  # Run shell command
     input("Press Enter to continue...")
+
+# --- Asynchronous version ---
+from agentscope_runtime.sandbox import BaseSandboxAsync
+
+async with BaseSandboxAsync() as box:
+    # Default image is `agentscope/runtime-sandbox-base:latest`
+    print(await box.list_tools())  # List all available tools
+    print(await box.run_ipython_cell(code="print('hi')"))  # Run Python code
+    print(await box.run_shell_command(command="echo hello"))  # Run shell command
 ```
 
 #### GUI Sandbox
@@ -286,14 +310,26 @@ Provides a **virtual desktop** environment for mouse, keyboard, and screen opera
 <img src="https://img.alicdn.com/imgextra/i2/O1CN01df5SaM1xKFQP4KGBW_!!6000000006424-2-tps-2958-1802.png" alt="GUI Sandbox" width="800" height="500">
 
 ```python
+# --- Synchronous version ---
 from agentscope_runtime.sandbox import GuiSandbox
 
 with GuiSandbox() as box:
     # By default, pulls `agentscope/runtime-sandbox-gui:latest` from DockerHub
-    print(box.list_tools()) # List all available tools
+    print(box.list_tools())  # List all available tools
     print(box.desktop_url)  # Web desktop access URL
     print(box.computer_use(action="get_cursor_position"))  # Get mouse cursor position
-    print(box.computer_use(action="get_screenshot"))       # Capture screenshot
+    print(box.computer_use(action="get_screenshot"))  # Capture screenshot
+    input("Press Enter to continue...")
+
+# --- Asynchronous version ---
+from agentscope_runtime.sandbox import GuiSandboxAsync
+
+async with GuiSandboxAsync() as box:
+    # Default image is `agentscope/runtime-sandbox-gui:latest`
+    print(await box.list_tools())  # List all available tools
+    print(box.desktop_url)  # Web desktop access URL
+    print(await box.computer_use(action="get_cursor_position"))  # Get mouse cursor position
+    print(await box.computer_use(action="get_screenshot"))  # Capture screenshot
     input("Press Enter to continue...")
 ```
 
@@ -304,13 +340,24 @@ A GUI-based sandbox with **browser operations** inside an isolated sandbox.
 <img src="https://img.alicdn.com/imgextra/i4/O1CN01OIq1dD1gAJMcm0RFR_!!6000000004101-2-tps-2734-1684.png" alt="GUI Sandbox" width="800" height="500">
 
 ```python
+# --- Synchronous version ---
 from agentscope_runtime.sandbox import BrowserSandbox
 
 with BrowserSandbox() as box:
     # By default, pulls `agentscope/runtime-sandbox-browser:latest` from DockerHub
-    print(box.list_tools()) # List all available tools
+    print(box.list_tools())  # List all available tools
     print(box.desktop_url)  # Web desktop access URL
     box.browser_navigate("https://www.google.com/")  # Open a webpage
+    input("Press Enter to continue...")
+
+# --- Asynchronous version ---
+from agentscope_runtime.sandbox import BrowserSandboxAsync
+
+async with BrowserSandboxAsync() as box:
+    # Default image is `agentscope/runtime-sandbox-browser:latest`
+    print(await box.list_tools())  # List all available tools
+    print(box.desktop_url)  # Web desktop access URL
+    await box.browser_navigate("https://www.google.com/")  # Open a webpage
     input("Press Enter to continue...")
 ```
 
@@ -321,13 +368,24 @@ A GUI-based sandbox with **file system operations** such as creating, reading, a
 <img src="https://img.alicdn.com/imgextra/i3/O1CN01VocM961vK85gWbJIy_!!6000000006153-2-tps-2730-1686.png" alt="GUI Sandbox" width="800" height="500">
 
 ```python
-from agentscope_runtime.sandbox import FilesystemSandbox
+# --- Synchronous version ---
+from agentscope_runtime.sandbox import BrowserSandbox
 
-with FilesystemSandbox() as box:
-    # By default, pulls `agentscope/runtime-sandbox-filesystem:latest` from DockerHub
-    print(box.list_tools()) # List all available tools
+with BrowserSandbox() as box:
+    # By default, pulls `agentscope/runtime-sandbox-browser:latest` from DockerHub
+    print(box.list_tools())  # List all available tools
     print(box.desktop_url)  # Web desktop access URL
-    box.create_directory("test")  # Create a directory
+    box.browser_navigate("https://www.google.com/")  # Open a webpage
+    input("Press Enter to continue...")
+
+# --- Asynchronous version ---
+from agentscope_runtime.sandbox import BrowserSandboxAsync
+
+async with BrowserSandboxAsync() as box:
+    # Default image is `agentscope/runtime-sandbox-browser:latest`
+    print(await box.list_tools())  # List all available tools
+    print(box.desktop_url)  # Web desktop access URL
+    await box.browser_navigate("https://www.google.com/")  # Open a webpage
     input("Press Enter to continue...")
 ```
 
@@ -352,16 +410,32 @@ Provides a **sandboxed Android emulator environment** that allows executing vari
 - **Architecture Compatibility**:
   When running on an ARM64/aarch64 architecture (e.g., Apple M-series chips), you may encounter compatibility or performance issues. It is recommended to run on an x86_64 host.
 ```python
+# --- Synchronous version ---
 from agentscope_runtime.sandbox import MobileSandbox
 
 with MobileSandbox() as box:
     # By default, pulls 'agentscope/runtime-sandbox-mobile:latest' from DockerHub
-    print(box.list_tools()) # List all available tools
-    print(box.mobile_get_screen_resolution()) # Get the screen resolution
-    print(box.mobile_tap([500, 1000])) # Tap at coordinate (500, 1000)
-    print(box.mobile_input_text("Hello from AgentScope!")) # Input text
-    print(box.mobile_key_event(3)) # Sends a HOME key event (KeyCode: 3)
-    screenshot_result = box.mobile_get_screenshot() # Get the current screenshot
+    print(box.list_tools())  # List all available tools
+    print(box.mobile_get_screen_resolution())  # Get the screen resolution
+    print(box.mobile_tap([500, 1000]))  # Tap at coordinate (500, 1000)
+    print(box.mobile_input_text("Hello from AgentScope!"))  # Input text
+    print(box.mobile_key_event(3))  # HOME key event
+    screenshot_result = box.mobile_get_screenshot()  # Get screenshot
+    print(screenshot_result)
+    input("Press Enter to continue...")
+
+# --- Asynchronous version ---
+from agentscope_runtime.sandbox import MobileSandboxAsync
+
+async with MobileSandboxAsync() as box:
+    # Default image is 'agentscope/runtime-sandbox-mobile:latest'
+    print(await box.list_tools())  # List all available tools
+    print(await box.mobile_get_screen_resolution())  # Get the screen resolution
+    print(await box.mobile_tap([500, 1000]))  # Tap at coordinate (500, 1000)
+    print(await box.mobile_input_text("Hello from AgentScope!"))  # Input text
+    print(await box.mobile_key_event(3))  # HOME key event
+    screenshot_result = await box.mobile_get_screenshot()  # Get screenshot
+    print(screenshot_result)
     input("Press Enter to continue...")
 ```
 
@@ -432,15 +506,11 @@ Example:
 agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtime-sandbox-base:preview
 ```
 
----
-
 #### Serverless Sandbox Deployment
 
-AgentScope Runtime also supports serverless deployment, which is suitable for running sandboxes in a serverless environment,
-[Alibaba Cloud Function Compute (FC)](https://help.aliyun.com/zh/functioncompute/fc/).
+AgentScope Runtime also supports serverless deployment, which is suitable for running sandboxes in a serverless environment, e.g. [Alibaba Cloud Function Compute (FC)](https://help.aliyun.com/zh/functioncompute/fc/).
 
-First, please refer to the [documentation](https://runtime.agentscope.io/en/sandbox/advanced.html#optional-function-compute-fc-settings) to configure the serverless environment variables.
-Make `CONTAINER_DEPLOYMENT` to `fc` to enable serverless deployment.
+First, please refer to the [documentation](https://runtime.agentscope.io/en/sandbox/advanced.html#optional-function-compute-fc-settings) to configure the serverless environment variables. Make `CONTAINER_DEPLOYMENT` to `fc` to enable serverless deployment.
 
 Then, start a sandbox server, use the `--config` option to specify a serverless environment setup:
 

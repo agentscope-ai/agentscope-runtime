@@ -245,7 +245,13 @@ async def proxy_vnc_static(sandbox_id: str, path: str):
     target_url = f"{base_url}/{path}"
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(
+            headers={  # For FC
+                "Content-Type": "application/json",
+                "x-agentrun-session-id": "s" + sandbox_id,
+                "x-agentscope-runtime-session-id": "s" + sandbox_id,
+            },
+        ) as client:
             upstream = await client.get(target_url)
             return Response(
                 content=upstream.content,

@@ -109,50 +109,40 @@ print(json.dumps(result, indent=4, ensure_ascii=False))
 
 前面的部分介绍了以工具为中心的使用方法，而本节介绍以沙箱为中心的使用方法。
 
-您可以通过`sandbox` SDK创建不同类型的沙箱。通过 `SandboxService` 管理沙箱生命周期，支持会话管理和沙箱复用。
+您可以通过`sandbox` SDK创建不同类型的沙箱。通过 `SandboxService` 管理沙箱生命周期，支持会话管理和沙箱复用。AgentScope Runtime 为每种沙箱类型都提供了 **同步版本** 和 **异步版本**：
 
-
-```{code-cell}
-import asyncio
-from agentscope_runtime.engine.services.sandbox import SandboxService
-
-async def main():
-    # 创建并启动沙箱服务
-    sandbox_service = SandboxService()
-    await sandbox_service.start()
-
-    session_id = "my_session"
-    user_id = "my_user"
-
-    # 连接到基础沙箱
-    sandboxes = sandbox_service.connect(
-        session_id=session_id,
-        user_id=user_id,
-        sandbox_types=["base"],
-    )
-
-    base_sandbox = sandboxes[0]
-    print(base_sandbox.list_tools())  # 列出所有可用工具
-    print(base_sandbox.run_ipython_cell(code="print('hi')"))
-    print(base_sandbox.run_shell_command(command="echo hello"))
-
-    # 停止沙箱服务
-    await sandbox_service.stop()
-
-asyncio.run(main())
-```
+| 同步类              | 异步类                   |
+| ------------------- | ------------------------ |
+| `BaseSandbox`       | `BaseSandboxAsync`       |
+| `GuiSandbox`        | `GuiSandboxAsync`        |
+| `FilesystemSandbox` | `FilesystemSandboxAsync` |
+| `BrowserSandbox`    | `BrowserSandboxAsync`    |
+| `MobileSandbox`     | `MobileSandboxAsync`     |
+| `TrainingSandbox`   | \- （暂无异步版本）      |
+| `AgentbaySandbox`   | \- （暂无异步版本）      |
 
 
 * **基础沙箱（Base Sandbox）**：用于在隔离环境中运行 **Python 代码** 或 **Shell 命令**。
 
 ```{code-cell}
+# --- 同步版本 ---
 from agentscope_runtime.sandbox import BaseSandbox
 
 with BaseSandbox() as box:
-    # 默认从 DockerHub 拉取 `agentscope/runtime-sandbox-base:latest` 镜像
-    print(box.list_tools()) # 列出所有可用工具
-    print(box.run_ipython_cell(code="print('hi')"))
-    print(box.run_shell_command(command="echo hello"))
+    # 默认使用镜像 `agentscope/runtime-sandbox-base:latest` 从 DockerHub 拉取
+    print(box.list_tools())  # 列出所有可用工具
+    print(box.run_ipython_cell(code="print('你好')"))  # 在沙箱中运行 Python 代码
+    print(box.run_shell_command(command="echo hello"))  # 在沙箱中运行 Shell 命令
+    input("按 Enter 键继续...")
+
+# --- 异步版本 ---
+from agentscope_runtime.sandbox import BaseSandboxAsync
+
+async with BaseSandboxAsync() as box:
+    # 默认使用镜像 `agentscope/runtime-sandbox-base:latest` 从 DockerHub 拉取
+    print(await box.list_tools())  # 列出所有可用工具
+    print(await box.run_ipython_cell(code="print('你好')"))  # 在沙箱中运行 Python 代码
+    print(await box.run_shell_command(command="echo hello"))  # 在沙箱中运行 Shell 命令
     input("按 Enter 键继续...")
 ```
 
@@ -161,14 +151,26 @@ with BaseSandbox() as box:
   <img src="https://img.alicdn.com/imgextra/i2/O1CN01df5SaM1xKFQP4KGBW_!!6000000006424-2-tps-2958-1802.png" alt="GUI Sandbox" width="800" height="500">
 
 ```{code-cell}
+# --- 同步版本 ---
 from agentscope_runtime.sandbox import GuiSandbox
 
 with GuiSandbox() as box:
-    # 默认从 DockerHub 拉取 `agentscope/runtime-sandbox-gui:latest` 镜像
-    print(box.list_tools()) # 列出所有可用工具
-    print(box.desktop_url)  # 桌面访问链接
-    print(box.computer_use(action="get_cursor_position"))  # 获取鼠标位置
-    print(box.computer_use(action="get_screenshot"))       # 获取屏幕截图
+    # 默认使用镜像 `agentscope/runtime-sandbox-gui:latest` 从 DockerHub 拉取
+    print(box.list_tools())  # 列出所有可用工具
+    print(box.desktop_url)  # Web 桌面访问地址
+    print(box.computer_use(action="get_cursor_position"))  # 获取鼠标位置坐标
+    print(box.computer_use(action="get_screenshot"))  # 截取桌面截图
+    input("按 Enter 键继续...")
+
+# --- 异步版本 ---
+from agentscope_runtime.sandbox import GuiSandboxAsync
+
+async with GuiSandboxAsync() as box:
+    # 默认使用镜像 `agentscope/runtime-sandbox-gui:latest` 从 DockerHub 拉取
+    print(await box.list_tools())  # 列出所有可用工具
+    print(box.desktop_url)  # Web 桌面访问地址
+    print(await box.computer_use(action="get_cursor_position"))  # 获取鼠标位置坐标
+    print(await box.computer_use(action="get_screenshot"))  # 截取桌面截图
     input("按 Enter 键继续...")
 ```
 
@@ -177,13 +179,24 @@ with GuiSandbox() as box:
   <img src="https://img.alicdn.com/imgextra/i3/O1CN01VocM961vK85gWbJIy_!!6000000006153-2-tps-2730-1686.png" alt="GUI Sandbox" width="800" height="500">
 
 ```{code-cell}
+# --- 同步版本 ---
 from agentscope_runtime.sandbox import FilesystemSandbox
 
 with FilesystemSandbox() as box:
-    # 默认从 DockerHub 拉取 `agentscope/runtime-sandbox-filesystem:latest` 镜像
-    print(box.list_tools()) # 列出所有可用工具
-    print(box.desktop_url)  # 桌面访问链接
-    box.create_directory("test")  # 创建目录
+    # 默认使用镜像 `agentscope/runtime-sandbox-filesystem:latest` 从 DockerHub 拉取
+    print(box.list_tools())  # 列出所有可用工具
+    print(box.desktop_url)  # Web 桌面访问地址
+    box.create_directory("test")  # 创建一个目录
+    input("按 Enter 键继续...")
+
+# --- 异步版本 ---
+from agentscope_runtime.sandbox import FilesystemSandboxAsync
+
+async with FilesystemSandboxAsync() as box:
+    # 默认使用镜像 `agentscope/runtime-sandbox-filesystem:latest` 从 DockerHub 拉取
+    print(await box.list_tools())  # 列出所有可用工具
+    print(box.desktop_url)  # Web 桌面访问地址
+    await box.create_directory("test")  # 创建一个目录
     input("按 Enter 键继续...")
 ```
 
@@ -192,13 +205,24 @@ with FilesystemSandbox() as box:
   <img src="https://img.alicdn.com/imgextra/i4/O1CN01OIq1dD1gAJMcm0RFR_!!6000000004101-2-tps-2734-1684.png" alt="GUI Sandbox" width="800" height="500">
 
 ```{code-cell}
+# --- 同步版本 ---
 from agentscope_runtime.sandbox import BrowserSandbox
 
 with BrowserSandbox() as box:
-    # 默认从 DockerHub 拉取 `agentscope/runtime-sandbox-browser:latest` 镜像
-    print(box.list_tools()) # 列出所有可用工具
-    print(box.desktop_url)  # 浏览器桌面访问链接
+    # 默认使用镜像 `agentscope/runtime-sandbox-browser:latest` 从 DockerHub 拉取
+    print(box.list_tools())  # 列出所有可用工具
+    print(box.desktop_url)  # Web 桌面访问地址
     box.browser_navigate("https://www.google.com/")  # 打开网页
+    input("按 Enter 键继续...")
+
+# --- 异步版本 ---
+from agentscope_runtime.sandbox import BrowserSandboxAsync
+
+async with BrowserSandboxAsync() as box:
+    # 默认使用镜像 `agentscope/runtime-sandbox-browser:latest` 从 DockerHub 拉取
+    print(await box.list_tools())  # 列出所有可用工具
+    print(box.desktop_url)  # Web 桌面访问地址
+    await box.browser_navigate("https://www.google.com/")  # 打开网页
     input("按 Enter 键继续...")
 ```
 
@@ -224,16 +248,32 @@ with BrowserSandbox() as box:
     在 ARM64/aarch64 架构（如 Apple M 系列芯片）上运行时，可能会遇到兼容性或性能问题，建议在 x86_64 架构的主机上运行。
 
 ```{code-cell}
+# --- 同步版本 ---
 from agentscope_runtime.sandbox import MobileSandbox
 
 with MobileSandbox() as box:
-    # 默认从 DockerHub 拉取 'agentscope/runtime-sandbox-mobile:latest' 镜像
-    print(box.list_tools()) # 列出所有可用工具
-    print(box.mobile_get_screen_resolution()) # 获取屏幕分辨率
-    print(box.mobile_tap([500, 1000])) # 在坐标 (500, 1000) 处进行点击
-    print(box.mobile_input_text("Hello from AgentScope!")) # 输入文本
-    print(box.mobile_key_event(3)) # 发送 HOME 按键事件 (KeyCode: 3)
-    screenshot_result = box.mobile_get_screenshot() # 获取当前屏幕截图
+    # 默认使用镜像 'agentscope/runtime-sandbox-mobile:latest' 从 DockerHub 拉取
+    print(box.list_tools())  # 列出所有可用工具
+    print(box.mobile_get_screen_resolution())  # 获取屏幕分辨率
+    print(box.mobile_tap([500, 1000]))  # 在坐标 (500, 1000) 点击
+    print(box.mobile_input_text("来自 AgentScope 的问候！"))  # 输入文本
+    print(box.mobile_key_event(3))  # 发送 HOME 按键事件（KeyCode: 3）
+    screenshot_result = box.mobile_get_screenshot()  # 截取屏幕
+    print(screenshot_result)
+    input("按 Enter 键继续...")
+
+# --- 异步版本 ---
+from agentscope_runtime.sandbox import MobileSandboxAsync
+
+async with MobileSandboxAsync() as box:
+    # 默认使用镜像 'agentscope/runtime-sandbox-mobile:latest' 从 DockerHub 拉取
+    print(await box.list_tools())  # 列出所有可用工具
+    print(await box.mobile_get_screen_resolution())  # 获取屏幕分辨率
+    print(await box.mobile_tap([500, 1000]))  # 在坐标 (500, 1000) 点击
+    print(await box.mobile_input_text("来自 AgentScope 的问候！"))  # 输入文本
+    print(await box.mobile_key_event(3))  # 发送 HOME 按键事件（KeyCode: 3）
+    screenshot_result = await box.mobile_get_screenshot()  # 截取屏幕
+    print(screenshot_result)
     input("按 Enter 键继续...")
 ```
 
