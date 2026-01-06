@@ -18,7 +18,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, List, Union, Tuple, Any, cast
 
-from pydantic import BaseModel, Field
 
 from agentscope_runtime.engine.deployers.utils.oss_utils import (
     can_connect,
@@ -36,70 +35,24 @@ logger = logging.getLogger(__name__)
 
 try:
     import alibabacloud_oss_v2 as oss
-    from alibabacloud_oss_v2.models import PutObjectRequest
-    from alibabacloud_pailangstudio20240710.client import Client as PAIClient
-    from alibabacloud_pailangstudio20240710 import models as PAIModels
-    from alibabacloud_tea_openapi import models as open_api_models
-    from alibabacloud_tea_util import models as util_models
-    from alibabacloud_eas20210701.models import Service
-    from alibabacloud_pailangstudio20240710.models import (
-        DeleteFlowRequest,
+    from alibabacloud_credentials.client import (
+        Client as CredentialClient,
     )
+    from alibabacloud_pailangstudio20240710.client import (
+        Client as LangStudioClient,
+    )
+    from alibabacloud_aiworkspace20210204.client import (
+        Client as WorkspaceClient,
+    )
+    from alibabacloud_eas20210701.client import Client as EASClient
+    from alibabacloud_tea_openapi import models as open_api_models
 except Exception:
     oss = None
-    PutObjectRequest = None
-    PAIClient = None
-    PAIModels = None
+    CredentialClient = None
+    LangStudioClient = None
+    WorkspaceClient = None
+    EASClient = None
     open_api_models = None
-    util_models = None
-    Service = None
-    DeleteFlowRequest = None
-
-
-class OSSConfig(BaseModel):
-    """Configuration for OSS storage."""
-
-    region: str = Field("cn-hangzhou", description="OSS region")
-    access_key_id: Optional[str] = None
-    access_key_secret: Optional[str] = None
-    bucket_name: Optional[str] = None
-    oss_path: Optional[str] = Field(
-        None,
-        description="OSS work directory path (e.g., oss://bucket-name/path/)",
-    )
-
-    @classmethod
-    def from_env(cls, oss_path: Optional[str] = None) -> "OSSConfig":
-        """Create OSSConfig from environment variables."""
-        return cls(
-            region=os.environ.get("OSS_REGION", "cn-hangzhou"),
-            access_key_id=os.environ.get(
-                "OSS_ACCESS_KEY_ID",
-                os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
-            ),
-            access_key_secret=os.environ.get(
-                "OSS_ACCESS_KEY_SECRET",
-                os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
-            ),
-            bucket_name=os.environ.get("OSS_BUCKET_NAME"),
-            oss_path=oss_path or os.environ.get("OSS_PATH"),
-        )
-
-    def ensure_valid(self) -> None:
-        """Validate required configuration."""
-        missing = []
-        if not self.access_key_id:
-            missing.append("OSS_ACCESS_KEY_ID or ALIBABA_CLOUD_ACCESS_KEY_ID")
-        if not self.access_key_secret:
-            missing.append(
-                "OSS_ACCESS_KEY_SECRET or ALIBABA_CLOUD_ACCESS_KEY_SECRET",
-            )
-        if not self.oss_path:
-            missing.append("oss_path")
-        if missing:
-            raise RuntimeError(
-                f"Missing required OSS configuration: {', '.join(missing)}",
-            )
 
 
 def _read_ignore_file(ignore_file_path: Path) -> List[str]:
@@ -201,40 +154,6 @@ def _get_default_ignore_patterns() -> List[str]:
     ]
 
 
-class PAIConfig(BaseModel):
-    """Configuration for PAI platform."""
-
-    workspace_id: Optional[str] = None
-    region_id: Optional[str] = None
-    access_key_id: Optional[str] = None
-    access_key_secret: Optional[str] = None
-
-    @classmethod
-    def from_env(cls, workspace_id: Optional[str] = None) -> "PAIConfig":
-        """Create PAIConfig from environment variables."""
-        # Get workspace_id from parameter or environment
-        ws_id = workspace_id or os.environ.get("PAI_WORKSPACE_ID")
-
-        # Get region from environment
-        region = os.getenv(
-            "REGION_ID",
-            os.getenv("REGION", os.getenv("ALIBABA_CLOUD_REGION_ID")),
-        )
-
-        # Build endpoint based on region
-        endpoint = f"pailangstudio.{region}.aliyuncs.com"
-
-        return cls(
-            endpoint=endpoint,
-            workspace_id=ws_id,
-            region_id=region,
-            access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
-            access_key_secret=os.environ.get(
-                "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
-            ),
-        )
-
-
 class PAIDeployManager(DeployManager):
     """
     Deployer for Alibaba Cloud PAI (Platform for AI) platform.
@@ -279,6 +198,20 @@ class PAIDeployManager(DeployManager):
 
         if not self.oss_path:
             self.oss_path = self._get_workspace_default_oss_storage_path()
+
+    @classmethod
+    def is_available(cls) -> bool:
+        """Check if PAI is available."""
+
+        return all(
+            [
+                oss is not None,
+                open_api_models is not None,
+                LangStudioClient is not None,
+                WorkspaceClient is not None,
+                EASClient is not None,
+            ]
+        )
 
     def _assert_cloud_sdks_available(self):
         """Ensure required cloud SDKs are installed."""
@@ -548,6 +481,10 @@ class PAIDeployManager(DeployManager):
             TimeoutError: If deployment doesn't complete within timeout
             RuntimeError: If deployment fails
         """
+        from alibabacloud_pailangstudio20240710.models import (
+            GetDeploymentRequest,
+        )
+
         logger.info("Waiting for deployment %s to complete...", deployment_id)
         client = self.get_langstudio_client()
 
@@ -556,7 +493,7 @@ class PAIDeployManager(DeployManager):
         while time.time() - start_time < timeout:
             try:
                 # Get deployment status
-                get_req = PAIModels.GetDeploymentRequest(
+                get_req = GetDeploymentRequest(
                     workspace_id=self.workspace_id,
                 )
 
@@ -596,8 +533,7 @@ class PAIDeployManager(DeployManager):
     async def deploy(
         self,
         project_dir: Optional[Union[str, Path]] = None,
-        app=None,
-        runner=None,
+        entrypoint: Optional[str] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
         requirements: Optional[Union[str, List[str]]] = None,
         extra_packages: Optional[List[str]] = None,
@@ -674,15 +610,15 @@ class PAIDeployManager(DeployManager):
             self._assert_cloud_sdks_available()
 
             # Step 1: Prepare project
-            if not project_dir and (runner or app):
-                logger.info("Creating detached project from app/runner")
-                project_dir = await LocalDeployManager.create_detached_project(
-                    app=app,
-                    protocol_adapters=protocol_adapters,
-                    requirements=requirements,
-                    extra_packages=extra_packages,
-                    **kwargs,
-                )
+            # if not project_dir and (runner or app):
+            #     logger.info("Creating detached project from app/runner")
+            #     project_dir = await LocalDeployManager.create_detached_project(
+            #         app=app,
+            #         protocol_adapters=protocol_adapters,
+            #         requirements=requirements,
+            #         extra_packages=extra_packages,
+            #         **kwargs,
+            #     )
 
             if not project_dir:
                 raise ValueError(
@@ -755,8 +691,6 @@ class PAIDeployManager(DeployManager):
                 service_status = "running"
 
                 service = await self._get_service(service_name)
-                service = cast(Service, service)
-
                 endpoint = service.internet_endpoint
                 token = service.access_token
             else:
@@ -777,11 +711,12 @@ class PAIDeployManager(DeployManager):
                 created_at=datetime.now().isoformat(),
                 agent_source=str(project_dir),
                 config={
-                    "pai_deployment_id": deployment_id,
+                    "deployment_id": deployment_id,
                     "flow_id": proj_id,
                     "snapshot_id": snapshot_id,
                     "service_name": service_name,
                     "workspace_id": self.workspace_id,
+                    "oss_path": self.oss_path,
                 },
             )
             self.state_manager.save(deployment)
@@ -921,6 +856,8 @@ class PAIDeployManager(DeployManager):
         Returns:
             OSS path of the uploaded archive
         """
+        from alibabacloud_oss_v2.models import PutObjectRequest
+
         bucket_name, endpoint, object_key = parse_oss_uri(oss_path)
         archive_obj_key = posixpath.join(
             object_key,
@@ -996,10 +933,7 @@ class PAIDeployManager(DeployManager):
 
         return CredentialClient()
 
-    def _eas_service_client(self):
-        from alibabacloud_eas20210701.client import Client as EASClient
-        from alibabacloud_tea_openapi import models as open_api_models
-
+    def _eas_service_client(self) -> EASClient:
         return EASClient(
             config=open_api_models.Config(
                 credential=self._credential_client(),
@@ -1125,10 +1059,9 @@ class PAIDeployManager(DeployManager):
             else:
                 raise e
 
-    def get_langstudio_client(self):
-        from alibabacloud_pailangstudio20240710.client import Client
+    def get_langstudio_client(self) -> LangStudioClient:
 
-        client = Client(
+        client = LangStudioClient(
             config=open_api_models.Config(
                 credential=self._credential_client(),
                 region_id=self.region_id,
@@ -1137,11 +1070,10 @@ class PAIDeployManager(DeployManager):
         )
         return client
 
-    def get_workspace_client(self):
-        from alibabacloud_aiworkspace20210204.client import Client
+    def get_workspace_client(self) -> WorkspaceClient:
         from alibabacloud_tea_openapi import models as open_api_models
 
-        client = Client(
+        client = WorkspaceClient(
             config=open_api_models.Config(
                 credential=self._credential_client(),
                 region_id=self.region_id,
@@ -1204,6 +1136,10 @@ class PAIDeployManager(DeployManager):
         Returns:
             Dict with success status and message
         """
+        from alibabacloud_pailangstudio20240710.models import (
+            DeleteDeploymentRequest,
+        )
+
         try:
             # Get deployment from state
             deployment = self.state_manager.get(deploy_id)
@@ -1229,17 +1165,12 @@ class PAIDeployManager(DeployManager):
             # Delete deployment
             logger.info("Stopping PAI deployment: %s", pai_deployment_id)
 
-            delete_req = PAIModels.DeleteDeploymentRequest(
+            delete_req = DeleteDeploymentRequest(
                 workspace_id=self.workspace_id,
             )
-            runtime = util_models.RuntimeOptions()
-            headers = {}
-
-            pai_client.delete_deployment_with_options(
+            await pai_client.delete_deployment_async(
                 pai_deployment_id,
                 delete_req,
-                headers,
-                runtime,
             )
 
             # Remove from state
@@ -1318,6 +1249,8 @@ class PAIDeployManager(DeployManager):
         )
 
     async def delete_project(self, project_name: str) -> None:
+        from alibabacloud_pailangstudio20240710.models import DeleteFlowRequest
+
         proj = await self._get_langstudio_proj_by_name(project_name)
         if not proj:
             return

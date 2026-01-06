@@ -68,11 +68,9 @@ except ImportError:
 try:
     from agentscope_runtime.engine.deployers.pai_deployer import (
         PAIDeployManager,
-        PAIConfig,
-        OSSConfig,
     )
 
-    PAI_AVAILABLE = True
+    PAI_AVAILABLE = PAIDeployManager.is_available()
 except ImportError:
     PAI_AVAILABLE = False
 
@@ -727,6 +725,11 @@ def agentrun(
 @click.argument("source", required=True)
 @click.option("--name", help="Name for the service (required)", default=None)
 @click.option(
+    "--entrypoint",
+    help="Entrypoint file name for directory sources (e.g., 'app.py', 'main.py')",
+    default=None,
+)
+@click.option(
     "--oss-path",
     help="OSS work directory path (e.g., oss://bucket-name/path/)",
     default=None,
@@ -781,12 +784,6 @@ def agentrun(
     default=None,
 )
 @click.option(
-    "--ram-role-mode",
-    help="RAM role mode: default, custom, or none",
-    type=click.Choice(["default", "custom", "none"]),
-    default="default",
-)
-@click.option(
     "--ram-role-arn",
     help="RAM role ARN (required for custom mode)",
     default=None,
@@ -834,6 +831,7 @@ def pai(
     name: str,
     oss_path: str,
     workspace_id: str,
+    entrypoint: str,
     region: str,
     resource_id: str,
     quota_id: str,
@@ -842,7 +840,6 @@ def pai(
     cpu: int,
     memory: int,
     service_group: str,
-    ram_role_mode: str,
     ram_role_arn: str,
     enable_trace: bool,
     wait: bool,
@@ -896,7 +893,6 @@ def pai(
             "cpu": cpu,
             "memory": memory,
             "service_group_name": service_group,
-            "ram_role_mode": ram_role_mode,
             "ram_role_arn": ram_role_arn,
             "enable_trace": enable_trace,
             "wait": wait,
@@ -920,11 +916,8 @@ def pai(
         cpu = merged_config.get("cpu")
         memory = merged_config.get("memory")
         service_group_name = merged_config.get("service_group_name")
-        ram_role_mode = merged_config.get("ram_role_mode", "default")
         ram_role_arn = merged_config.get("ram_role_arn")
         enable_trace = merged_config.get("enable_trace", True)
-        wait = merged_config.get("wait", True)
-        timeout = merged_config.get("timeout", 1800)
         auto_approve = merged_config.get("auto_approve", True)
 
         # Validate source
@@ -996,8 +989,6 @@ def pai(
             deploy_params["service_group_name"] = service_group_name
         if ram_role_arn:
             deploy_params["ram_role_arn"] = ram_role_arn
-
-        deploy_params["ram_role_mode"] = ram_role_mode
 
         result = asyncio.run(deployer.deploy(**deploy_params))
 

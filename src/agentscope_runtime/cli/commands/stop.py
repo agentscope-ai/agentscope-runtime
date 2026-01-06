@@ -61,6 +61,13 @@ def _create_deployer(
             )
 
             return AgentRunDeployManager()
+        
+        elif platform == "pai":
+            from agentscope_runtime.engine.deployers.pai_deployer import (
+                PAIDeployManager,
+            )
+
+            return PAIDeployManager()
         else:
             echo_warning(f"Unknown platform: {platform}")
             return None

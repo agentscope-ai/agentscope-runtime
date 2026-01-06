@@ -15,8 +15,6 @@ import pytest
 
 from agentscope_runtime.engine.deployers.pai_deployer import (
     PAIDeployManager,
-    OSSConfig,
-    PAIConfig,
 )
 from agentscope_runtime.engine.helpers.agent_api_client import (
     HTTPAgentAPIClient,

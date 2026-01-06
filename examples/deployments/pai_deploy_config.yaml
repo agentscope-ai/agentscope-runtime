@@ -1,15 +1,19 @@
 # PAI Deployment Configuration Example
 # This configuration file can be used with: agentscope deploy pai <source> --config pai_deploy_config.yaml
 
-# Service Configuration
-name: "my-agent-service"  # Required: Name of the service
-workspace_id: "12345"     # PAI workspace ID (can also use PAI_WORKSPACE_ID env var)
+# PAI Service Configuration
+name: "my-agent-service" # Required: Name of the service
+workspace_id: "12345" # PAI workspace ID (can also use PAI_WORKSPACE_ID env var)
 region: "cn-hangzhou"
-# oss_path: "oss://my-bucket/agent-workspace/"  # OSS work directory path, If not provided, the default OSS storage Path of Workspace will be used.
 
 configuration:
-  # 1. Resource Configuration
 
+  # Path to the project 
+  # project_dir: "./agent_example/"
+
+  # entrypoint of the project, defaults to app.py, agent.py, main.py.
+  # entrypoint: main.py
+  # 1. Resource Configuration
   resources:
     instance_count: 1
 
@@ -26,7 +30,6 @@ configuration:
     # cpu: 2
     # memory: 4096
 
-
   # 2. VPC Configuration (optional)
   # vpc_config:
     # vpc_id: "vpc-xxxxx"
@@ -38,7 +41,9 @@ configuration:
 
   # Deployment Settings
   enable_trace: true
-  auto_approve: true
+
+  # auto_approve: true
+  oss_path: "oss://my-bucket/agent-workspace/" # OSS work directory path, If not provided, the default OSS storage Path of Workspace will be used.
 
   # Service Group (optional)
   # service_group_name: "my-service-group"
