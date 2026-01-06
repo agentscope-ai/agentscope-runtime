@@ -143,7 +143,7 @@ class MobileMixin:
 
 
 class AsyncMobileMixin:
-    async def mobile_url(self):
+    async def get_mobile_url_async(self):
         """
         Asynchronously retrieve the mobile VNC/websockify connection URL.
 
@@ -336,7 +336,7 @@ class MobileSandbox(MobileMixin, Sandbox):
     description="Mobile Sandbox (Async)",
     runtime_config={"privileged": True},
 )
-class MobileSandboxAsync(AsyncMobileMixin, SandboxAsync):
+class MobileSandboxAsync(MobileMixin, AsyncMobileMixin, SandboxAsync):
     _host_check_done = False
 
     def __init__(

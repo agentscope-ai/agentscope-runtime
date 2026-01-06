@@ -2,7 +2,7 @@
 import io
 import sys
 import logging
-import subprocess
+import asyncio
 import traceback
 from contextlib import redirect_stderr, redirect_stdout
 
@@ -128,16 +128,16 @@ async def run_shell_command(
         if not command:
             raise HTTPException(status_code=400, detail="Command is required.")
 
-        result = subprocess.run(
+        proc = await asyncio.create_subprocess_shell(
             command,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            check=False,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
-        stdout_content = result.stdout
-        stderr_content = result.stderr
+
+        stdout_bytes, stderr_bytes = await proc.communicate()
+
+        stdout_content = stdout_bytes.decode()
+        stderr_content = stderr_bytes.decode()
 
         content_list = []
 
@@ -161,7 +161,7 @@ async def run_shell_command(
             content_list.append(
                 TextContent(
                     type="text",
-                    text=str(result.returncode),
+                    text=str(proc.returncode),
                     description="returncode",
                 ),
             )
@@ -173,7 +173,7 @@ async def run_shell_command(
                     + "\n"
                     + stderr_content
                     + "\n"
-                    + str(result.returncode),
+                    + str(proc.returncode),
                     description="output",
                 ),
             )

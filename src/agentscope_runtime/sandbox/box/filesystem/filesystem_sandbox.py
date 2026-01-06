@@ -163,7 +163,7 @@ class FilesystemSandbox(GUIMixin, BaseSandbox):
     timeout=TIMEOUT,
     description="Filesystem sandbox (Async)",
 )
-class FilesystemSandboxAsync(AsyncGUIMixin, BaseSandboxAsync):
+class FilesystemSandboxAsync(GUIMixin, AsyncGUIMixin, BaseSandboxAsync):
     def __init__(  # pylint: disable=useless-parent-delegation
         self,
         sandbox_id: Optional[str] = None,

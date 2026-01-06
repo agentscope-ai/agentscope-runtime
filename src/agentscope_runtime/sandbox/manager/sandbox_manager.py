@@ -286,6 +286,51 @@ class SandboxManager:
         )
         self.cleanup()
 
+        if self.http_session:
+            try:
+                self.http_session.close()
+                logger.debug("HTTP session closed.")
+            except Exception as e:
+                logger.warning(f"Error closing http_session: {e}")
+
+        if self.httpx_client:
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.ensure_future(self.httpx_client.aclose())
+                else:
+                    loop.run_until_complete(self.httpx_client.aclose())
+                logger.debug("HTTPX async client closed.")
+            except Exception as e:
+                logger.warning(f"Error closing httpx_client: {e}")
+
+    async def __aenter__(self):
+        logger.debug(
+            "Entering SandboxManager context (async). "
+            "Cleanup will be performed automatically on async exit.",
+        )
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, tb):
+        logger.debug(
+            "Exiting SandboxManager context (async). Cleaning up resources.",
+        )
+        await self.cleanup_async()
+
+        if self.http_session:
+            try:
+                self.http_session.close()
+                logger.debug("HTTP session closed.")
+            except Exception as e:
+                logger.warning(f"Error closing http_session: {e}")
+
+        if self.httpx_client:
+            try:
+                await self.httpx_client.aclose()
+                logger.debug("HTTPX async client closed.")
+            except Exception as e:
+                logger.warning(f"Error closing httpx_client: {e}")
+
     def _generate_container_key(self, session_id):
         return f"{self.prefix}{session_id}"
 
@@ -351,7 +396,7 @@ class SandboxManager:
 
         try:
             response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
+        except httpx.HTTPStatusError as e:
             error_components = [
                 f"HTTP {response.status_code} Error: {str(e)}",
             ]

@@ -77,9 +77,8 @@ class SandboxHttpClient(SandboxHttpBase):
         Returns:
             bool: True if the service is reachable, False otherwise
         """
-        endpoint = f"{self.base_url}/healthz"
         try:
-            response_api = self.session.get(endpoint)
+            response_api = self._request("get", f"{self.base_url}/healthz")
             return response_api.status_code == 200
         except requests.RequestException:
             return False

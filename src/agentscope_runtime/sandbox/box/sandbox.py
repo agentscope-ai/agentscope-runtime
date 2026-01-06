@@ -82,15 +82,15 @@ class SandboxBase:
         """
         try:
             if self.embed_mode:
-                self.manager_api.cleanup()
+                self.manager_api.__exit__(None, None, None)
             else:
                 self.manager_api.release(self.sandbox_id)
         except Exception as e:
             import traceback
 
             logger.error(
-                f"Cleanup {self.sandbox_id} error: {e}\
-                n{traceback.format_exc()}",
+                f"Cleanup {self.sandbox_id} error: {e}"
+                f"\n{traceback.format_exc()}",
             )
 
 
@@ -156,15 +156,15 @@ class SandboxAsync(SandboxBase):
     async def _cleanup_async(self):
         try:
             if self.embed_mode:
-                await self.manager_api.cleanup_async()
+                await self.manager_api.__aexit__(None, None, None)
             else:
                 await self.manager_api.release_async(self.sandbox_id)
         except Exception as e:
             import traceback
 
             logger.error(
-                f"Async Cleanup {self.sandbox_id} error: {e}\
-                n{traceback.format_exc()}",
+                f"Async Cleanup {self.sandbox_id} error: {e}"
+                f"\n{traceback.format_exc()}",
             )
 
     async def get_info_async(self) -> dict:

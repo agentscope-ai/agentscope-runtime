@@ -35,7 +35,7 @@ class GUIMixin:
 
 
 class AsyncGUIMixin:
-    async def desktop_url(self):
+    async def get_desktop_url_async(self):
         # Check sandbox health asynchronously
         is_healthy = await self.manager_api.check_health_async(
             identity=self.sandbox_id,
@@ -158,7 +158,7 @@ class GuiSandbox(GUIMixin, BaseSandbox):
     timeout=TIMEOUT,
     description="GUI Sandbox (Async)",
 )
-class GuiSandboxAsync(AsyncGUIMixin, BaseSandboxAsync):
+class GuiSandboxAsync(GUIMixin, AsyncGUIMixin, BaseSandboxAsync):
     def __init__(  # pylint: disable=useless-parent-delegation
         self,
         sandbox_id: Optional[str] = None,

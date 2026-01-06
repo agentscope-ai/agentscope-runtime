@@ -308,7 +308,7 @@ class BrowserSandbox(GUIMixin, BaseSandbox):
     timeout=TIMEOUT,
     description="Browser sandbox (Async)",
 )
-class BrowserSandboxAsync(AsyncGUIMixin, BaseSandboxAsync):
+class BrowserSandboxAsync(GUIMixin, AsyncGUIMixin, BaseSandboxAsync):
     def __init__(  # pylint: disable=useless-parent-delegation
         self,
         sandbox_id: Optional[str] = None,
