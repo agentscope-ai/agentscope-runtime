@@ -54,9 +54,12 @@ async def run_ipython_cell(
                     preprocessing_exc_tuple = sys.exc_info()
 
                 if transformed_cell is None:
-                    raise RuntimeError(
-                        "IPython cell transformation failed: "
-                        "transformed_cell is None.",
+                    raise HTTPException(
+                        status_code=500,
+                        detail=(
+                            "IPython cell transformation failed: "
+                            "transformed_cell is None."
+                        ),
                     )
 
                 asyncio.run(
