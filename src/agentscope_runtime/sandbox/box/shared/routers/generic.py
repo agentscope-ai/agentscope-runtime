@@ -44,26 +44,30 @@ async def run_ipython_cell(
         stdout_buf = io.StringIO()
         stderr_buf = io.StringIO()
 
-        with redirect_stdout(stdout_buf), redirect_stderr(stderr_buf):
-            preprocessing_exc_tuple = None
-            try:
-                transformed_cell = ipy.transform_cell(code)
-            except Exception:
-                transformed_cell = code
-                preprocessing_exc_tuple = sys.exc_info()
+        def thread_target():
+            with redirect_stdout(stdout_buf), redirect_stderr(stderr_buf):
+                preprocessing_exc_tuple = None
+                try:
+                    transformed_cell = ipy.transform_cell(code)
+                except Exception:
+                    transformed_cell = code
+                    preprocessing_exc_tuple = sys.exc_info()
 
-            if transformed_cell is None:
-                raise HTTPException(
-                    status_code=500,
-                    detail="IPython cell transformation failed: "
-                    "transformed_cell is None.",
+                if transformed_cell is None:
+                    raise RuntimeError(
+                        "IPython cell transformation failed: "
+                        "transformed_cell is None.",
+                    )
+
+                asyncio.run(
+                    ipy.run_cell_async(
+                        code,
+                        transformed_cell=transformed_cell,
+                        preprocessing_exc_tuple=preprocessing_exc_tuple,
+                    ),
                 )
 
-            await ipy.run_cell_async(
-                code,
-                transformed_cell=transformed_cell,
-                preprocessing_exc_tuple=preprocessing_exc_tuple,
-            )
+        await asyncio.to_thread(thread_target)
 
         stdout_content = stdout_buf.getvalue()
         stderr_content = stderr_buf.getvalue()
