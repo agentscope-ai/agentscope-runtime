@@ -68,14 +68,14 @@ except ImportError:
 
 try:
     from agentscope_runtime.engine.deployers.pai_deployer import (
-        PAIDeployManager,
+        PAI_AVAILABLE,
         PAIDeployConfig,
+        PAIDeployManager,
     )
-
-    PAI_AVAILABLE = PAIDeployManager.is_available()
 except ImportError:
     PAI_AVAILABLE = False
     PAIDeployConfig = None
+    PAIDeployManager = None
 
 
 def _validate_source(source: str) -> tuple[str, str]:

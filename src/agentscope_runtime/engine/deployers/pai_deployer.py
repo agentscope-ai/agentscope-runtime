@@ -6,7 +6,6 @@
 # flake8: noqa: E501
 import asyncio
 import fnmatch
-from functools import cache
 import glob
 import json
 import logging
@@ -21,16 +20,37 @@ from typing import Dict, Optional, List, Union, Any, Literal, cast
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
-from agentscope_runtime.engine.deployers.utils.oss_utils import (
-    can_connect,
-    parse_oss_uri,
-)
-from agentscope_runtime.version import __version__
 
+from ...version import __version__
+
+from .utils.oss_utils import parse_oss_uri
+from .utils.net_utils import is_tcp_reachable
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
 from .state import Deployment
 from .utils.package import generate_build_directory
+
+
+try:
+    import alibabacloud_oss_v2 as oss
+    from alibabacloud_pailangstudio20240710.client import (
+        Client as LangStudioClient,
+    )
+    from alibabacloud_aiworkspace20210204.client import (
+        Client as WorkspaceClient,
+    )
+    from alibabacloud_eas20210701.client import Client as EASClient
+    from alibabacloud_tea_openapi import models as open_api_models
+
+    PAI_AVAILABLE = True
+except ImportError:
+    oss = None
+    LangStudioClient = None
+    WorkspaceClient = None
+    EASClient = None
+    open_api_models = None
+    PAI_AVAILABLE = False
+
 
 logger = logging.getLogger(__name__)
 
@@ -397,24 +417,6 @@ class PAIDeployConfig(ConfigBaseModel):
             )
 
 
-try:
-    import alibabacloud_oss_v2 as oss
-    from alibabacloud_pailangstudio20240710.client import (
-        Client as LangStudioClient,
-    )
-    from alibabacloud_aiworkspace20210204.client import (
-        Client as WorkspaceClient,
-    )
-    from alibabacloud_eas20210701.client import Client as EASClient
-    from alibabacloud_tea_openapi import models as open_api_models
-except Exception:
-    oss = None
-    LangStudioClient = None
-    WorkspaceClient = None
-    EASClient = None
-    open_api_models = None
-
-
 def _read_ignore_file(ignore_file_path: Path) -> List[str]:
     """
     Read patterns from .gitignore or .dockerignore file.
@@ -559,9 +561,12 @@ class PAIDeployManager(DeployManager):
         """
         super().__init__(state_manager=state_manager)
         self.workspace_id = workspace_id or os.getenv("PAI_WORKSPACE_ID")
-        self.region_id = region_id or os.getenv(
-            "REGION_ID",
-            os.getenv("REGION", os.getenv("ALIBABA_CLOUD_REGION_ID", "")),
+        self.region_id = (
+            region_id
+            or os.getenv("REGION")
+            or os.getenv("ALIBABA_CLOUD_REGION_ID")
+            or os.getenv("REGION_ID")
+            or "cn-hangzhou"
         )
         self.access_key_id = access_key_id or os.getenv(
             "ALIBABA_CLOUD_ACCESS_KEY_ID",
@@ -1166,13 +1171,13 @@ class PAIDeployManager(DeployManager):
             f"{service_name}/detail"
         )
 
-    async def _get_workspace_default_oss_storage_path(self) -> Optional[str]:
+    def _get_workspace_default_oss_storage_path(self) -> Optional[str]:
         from alibabacloud_aiworkspace20210204.models import ListConfigsRequest
 
         client = self.get_workspace_client()
         config_key = "modelExportPath"
 
-        resp = await client.list_configs_async(
+        resp = client.list_configs(
             workspace_id=self.workspace_id,
             request=ListConfigsRequest(
                 config_keys=config_key,
@@ -1182,7 +1187,14 @@ class PAIDeployManager(DeployManager):
             (c for c in resp.body.configs if c.config_key == config_key),
             None,
         )
-        return default_oss_storage_uri
+
+        if default_oss_storage_uri:
+            bucket, _, key = parse_oss_uri(
+                default_oss_storage_uri.config_value,
+            )
+            return f"oss://{bucket}/{key}"
+        else:
+            return None
 
     def _create_project_archive(self, service_name, project_dir: Path):
         build_dir = generate_build_directory("pai")
@@ -1325,15 +1337,28 @@ class PAIDeployManager(DeployManager):
         from alibabacloud_credentials.client import (
             Client as CredClient,
         )
+        from alibabacloud_credentials.models import Config
+        from alibabacloud_credentials.utils import auth_constant as ac
 
-        if not os.environ.get(
-            "ALIBABA_CLOUD_ACCESS_KEY_ID",
-        ) or not os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"):
-            raise ValueError(
-                "ALIBABA_CLOUD_ACCESS_KEY_ID and ALIBABA_CLOUD_ACCESS_KEY_SECRET must be set",
-            )
+        if self.access_key_id and self.access_key_secret:
+            if not self.security_token:
+                config = Config(
+                    type=ac.ACCESS_KEY,
+                    access_key_id=self.access_key_id,
+                    access_key_secret=self.access_key_secret,
+                )
 
-        return CredClient()
+            else:
+                config = Config(
+                    type=ac.STS,
+                    access_key_id=self.access_key_id,
+                    access_key_secret=self.access_key_secret,
+                    security_token=self.security_token,
+                )
+        else:
+            config = None
+
+        return CredClient(config=config)
 
     def _eas_service_client(self) -> EASClient:
         return EASClient(
@@ -1492,31 +1517,29 @@ class PAIDeployManager(DeployManager):
 
         return (
             internal_endpoint
-            if can_connect(internal_endpoint)
+            if is_tcp_reachable(internal_endpoint)
             else public_endpoint
         )
 
     @staticmethod
-    @cache
     def _get_langstudio_endpoint(region_id: str) -> str:
         internal_endpoint = f"pailangstudio-vpc.{region_id}.aliyuncs.com"
         public_endpoint = f"pailangstudio.{region_id}.aliyuncs.com"
 
         return (
             internal_endpoint
-            if can_connect(internal_endpoint)
+            if is_tcp_reachable(internal_endpoint)
             else public_endpoint
         )
 
     @staticmethod
-    @cache
     def _get_eas_endpoint(region_id: str) -> str:
         internal_endpoint = f"pai-eas-manage-vpc.{region_id}.aliyuncs.com"
         public_endpoint = f"pai-eas.{region_id}.aliyuncs.com"
 
         return (
             internal_endpoint
-            if can_connect(internal_endpoint)
+            if is_tcp_reachable(internal_endpoint)
             else public_endpoint
         )
 
@@ -1527,7 +1550,7 @@ class PAIDeployManager(DeployManager):
 
         return (
             internal_endpoint
-            if can_connect(internal_endpoint)
+            if is_tcp_reachable(internal_endpoint)
             else public_endpoint
         )
 
