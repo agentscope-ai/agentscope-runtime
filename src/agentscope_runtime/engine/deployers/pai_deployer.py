@@ -581,7 +581,7 @@ class PAIDeployManager(DeployManager):
         self.build_root = Path(build_root) if build_root else None
 
         if not self.oss_path:
-            self.oss_path = self._get_workspace_default_oss_storage_path()
+            self.oss_path = self.get_workspace_default_oss_storage_path()
 
     @classmethod
     def is_available(cls) -> bool:
@@ -1171,7 +1171,7 @@ class PAIDeployManager(DeployManager):
             f"{service_name}/detail"
         )
 
-    def _get_workspace_default_oss_storage_path(self) -> Optional[str]:
+    def get_workspace_default_oss_storage_path(self) -> Optional[str]:
         from alibabacloud_aiworkspace20210204.models import ListConfigsRequest
 
         client = self.get_workspace_client()

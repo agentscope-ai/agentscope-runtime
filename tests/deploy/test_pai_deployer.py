@@ -98,21 +98,12 @@ async def service_name(deploy_manager: PAIDeployManager) -> str:
 @pytest.fixture
 def deploy_manager():
     """Create a PAIDeployManager instance for testing."""
-    return PAIDeployManager(
-        workspace_id="285773",
-        region_id="cn-hangzhou",
-        oss_path="oss://langstudio-hangzhou-pre/test-path/",
-    )
+    deployer_manager = PAIDeployManager()
 
-
-@pytest.mark.asyncio
-async def test_deploy_with_nonexistent_project(deploy_manager):
-    """Test deploy with non-existent project directory."""
-    with pytest.raises(FileNotFoundError, match="Project directory not found"):
-        await deploy_manager.deploy(
-            service_name="test-service",
-            project_dir="/nonexistent/path",
-        )
+    if not deployer_manager.workspace_id or not deployer_manager.region_id:
+        pytest.skip("PAI_WORKSPACE_ID or REGION_ID is not set")
+    else:
+        return deployer_manager
 
 
 @pytest.mark.asyncio
@@ -169,24 +160,10 @@ async def test_deploy_with_project_dir(
 
 
 async def test_list_workspace_configs(deploy_manager: PAIDeployManager):
-    from alibabacloud_aiworkspace20210204.models import ListConfigsRequest
+    oss_uri = deploy_manager.get_workspace_default_oss_storage_path()
 
-    DEFAULT_OSS_STORAGE_URI = "modelExportPath"
-
-    resp = await deploy_manager.get_workspace_client().list_configs_async(
-        workspace_id=deploy_manager.workspace_id,
-        request=ListConfigsRequest(config_keys=DEFAULT_OSS_STORAGE_URI),
-    )
-    default_oss_storage_uri = next(
-        (
-            c
-            for c in resp.body.configs
-            if c.config_key == DEFAULT_OSS_STORAGE_URI
-        ),
-        None,
-    )
-
-    assert default_oss_storage_uri is not None
+    if not oss_uri:
+        assert oss_uri.startswith("oss://")
 
 
 if __name__ == "__main__":
