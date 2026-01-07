@@ -928,7 +928,7 @@ def _get_ot_tracer() -> ot_trace.Tracer:
         if isinstance(existing_provider, NoOpTracerProvider):
             return False
         elif isinstance(existing_provider, ProxyTracerProvider):
-            # PorxyTraceProvider will use the _TRACER_PROVIDER as real tracer
+            # ProxyTracerProvider will use the _TRACER_PROVIDER as real tracer
             # provider to get the tracer
             return bool(_TRACER_PROVIDER)
 
