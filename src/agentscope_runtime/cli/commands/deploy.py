@@ -200,6 +200,33 @@ def _merge_config(config_dict: dict, cli_params: dict) -> dict:
     return merged
 
 
+def _parse_tags(tag_tuples: tuple) -> dict:
+    """
+    Parse tags from --tag options.
+
+    Args:
+        tag_tuples: Tuple of KEY=VALUE strings from --tag options
+
+    Returns:
+        Dictionary of tags
+
+    Raises:
+        ValueError: If tag format is invalid
+    """
+    tags = {}
+
+    for tag_pair in tag_tuples:
+        if "=" not in tag_pair:
+            raise ValueError(
+                f"Invalid tag format: '{tag_pair}'. Use KEY=VALUE format",
+            )
+
+        key, value = tag_pair.split("=", 1)
+        tags[key.strip()] = value.strip()
+
+    return tags
+
+
 def _parse_environment(env_tuples: tuple, env_file: str = None) -> dict:
     """
     Parse environment variables from --env options and --env-file.
@@ -814,6 +841,12 @@ def agentrun(
     type=click.Path(exists=True),
     help="Path to .env file with environment variables",
 )
+@click.option(
+    "--tag",
+    "-T",
+    multiple=True,
+    help="Tag in KEY=VALUE format (can be repeated)",
+)
 def pai(
     source: str,
     config: str,
@@ -836,6 +869,7 @@ def pai(
     auto_approve: bool,
     env: tuple,
     env_file: str,
+    tag: tuple,
 ):
     """
     Deploy to Alibaba Cloud PAI (Platform for AI).
@@ -867,9 +901,8 @@ def pai(
     if not PAI_AVAILABLE:
         echo_error("PAI deployer is not available")
         echo_info(
-            "Please install required dependencies: "
-            "alibabacloud-oss-v2 alibabacloud-pailangstudio20240710 "
-            "alibabacloud-eas20210701 alibabacloud-aiworkspace20210204",
+            "Please install required dependencies via "
+            "pip install 'agentscope-runtime[ext]'",
         )
         sys.exit(1)
 
@@ -881,8 +914,9 @@ def pai(
         else:
             deploy_config = PAIDeployConfig()
 
-        # Step 2: Parse CLI environment variables
+        # Step 2: Parse CLI environment variables and tags
         cli_env = _parse_environment(env, env_file)
+        cli_tags = _parse_tags(tag)
 
         # Step 3: Resolve source path
         resolved_source = None
@@ -917,6 +951,7 @@ def pai(
             timeout=timeout,
             auto_approve=auto_approve,
             environment=cli_env if cli_env else None,
+            tags=cli_tags if cli_tags else None,
         )
 
         # Step 5: Resolve source_dir to absolute path
@@ -950,10 +985,12 @@ def pai(
             sys.exit(1)
 
         # Step 8: Create deployer
+        # Use resolved OSS work dir (spec.storage -> context.storage fallback)
+        resolved_oss_path = deploy_config.resolve_oss_work_dir()
         deployer = PAIDeployManager(
             workspace_id=deploy_config.context.workspace_id,
             region_id=deploy_config.context.region,
-            oss_path=deploy_config.spec.storage.work_dir,
+            oss_path=resolved_oss_path,
         )
 
         # Validate workspace_id (may come from env var in deployer)
@@ -978,11 +1015,15 @@ def pai(
             echo_info(f"Entrypoint: {deploy_config.spec.code.entrypoint}")
         if deployer.oss_path:
             echo_info(f"OSS Path: {deployer.oss_path}")
+        if deploy_config.spec.tags:
+            echo_info(f"Tags: {deploy_config.spec.tags}")
 
         # Step 10: Deploy
         echo_info(f"Deploying to PAI as service '{service_name}'...")
 
         deploy_kwargs = deploy_config.to_deployer_kwargs()
+        # Add deploy_method to indicate this is a CLI deployment
+        deploy_kwargs["deploy_method"] = "cli"
         result = asyncio.run(deployer.deploy(**deploy_kwargs))
 
         # Step 11: Display results

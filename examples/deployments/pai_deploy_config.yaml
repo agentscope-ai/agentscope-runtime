@@ -3,8 +3,8 @@
 #   agentscope deploy pai <source> --config pai_deploy_config.yaml
 #
 # Structure:
-# - context: Where to deploy (region / workspace)
-# - spec:    What to deploy (code / resources / network / permissions / env)
+# - context: Where to deploy (region / workspace / default storage)
+# - spec:    What to deploy (code / resources / network / permissions / env / tags)
 
 context:
   # PAI workspace ID (tenant scope).
@@ -15,10 +15,17 @@ context:
   # Example: cn-hangzhou, cn-shanghai, etc.
   region: "cn-hangzhou"
 
+  # Default storage configuration (used as fallback if spec.storage is not set).
+  # This is useful for setting a workspace-level default OSS path.
+  # If not provided, default OSS storage path configured in the workspace will
+  # be used.
+  storage:
+    work_dir: "oss://my-bucket/agent-workspace/"
+
 spec:
   # Service name (required).
-  # Recommended: lowercase letters, numbers, and hyphen; must be unique within the region.
-  name: "my-agent-service"
+  # Recommended: lowercase letters, numbers, and underscore; must be unique within the region.
+  name: "my_agent_service"
 
   code:
     # Path to your project root directory (relative to the config file, unless your CLI defines otherwise).
@@ -69,7 +76,7 @@ spec:
     vswitch_id: "vsw-xxxxx"
     security_group_id: "sg-xxxxx"
 
-  permission:
+  identity:
     # Optional: RAM role ARN assumed by the service runtime.
     # If omitted, the default PAI RAM role for the workspace will be used.
     ram_role_arn: "acs:ram::xxxxx:role/xxxxx"
@@ -80,9 +87,24 @@ spec:
 
   storage:
     # Optional: OSS working directory for build artifacts / runtime files.
-    # If omitted, the workspace default OSS path will be used.
+    # Priority: spec.storage.work_dir > context.storage.work_dir > workspace default
+    # If omitted here, context.storage.work_dir will be used as fallback.
     work_dir: "oss://my-bucket/agent-workspace/"
 
   env:
     # Environment variables injected into the running container/service.
     DASHSCOPE_API_KEY: "your-dashscope-api-key"
+
+  tags:
+    # Optional: Tags for the deployment.
+    # Tags can be used for resource management, cost allocation, and filtering.
+    # Can also be set via CLI: --tag KEY=VALUE (can be repeated)
+    #
+    # Note: The following tags are automatically added by the deployment tool:
+    #   - agentscope.io/deployed-by: "agentscope-runtime"
+    #   - agentscope.io/client-version: "<version>"
+    #   - agentscope.io/deploy-method: "cli" or "sdk"
+    # You can override these auto-generated tags if needed.
+    project: "my-project"
+    environment: "production"
+    owner: "team-ai"

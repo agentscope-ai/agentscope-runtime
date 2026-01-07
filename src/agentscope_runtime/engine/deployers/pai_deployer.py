@@ -19,12 +19,13 @@ from pathlib import Path
 from typing import Dict, Optional, List, Union, Any, Literal, cast
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from agentscope_runtime.engine.deployers.utils.oss_utils import (
     can_connect,
     parse_oss_uri,
 )
+from agentscope_runtime.version import __version__
 
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
@@ -34,7 +35,11 @@ from .utils.package import generate_build_directory
 logger = logging.getLogger(__name__)
 
 
-class PAICodeConfig(BaseModel):
+class ConfigBaseModel(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+
+class PAICodeConfig(ConfigBaseModel):
     """Code configuration for PAI deployment."""
 
     source_dir: Optional[str] = Field(
@@ -47,7 +52,7 @@ class PAICodeConfig(BaseModel):
     )
 
 
-class PAIResourcesConfig(BaseModel):
+class PAIResourcesConfig(ConfigBaseModel):
     """Resource configuration for PAI deployment."""
 
     instance_count: int = Field(1, description="Number of service instances")
@@ -77,7 +82,7 @@ class PAIResourcesConfig(BaseModel):
     )
 
 
-class PAIVpcConfig(BaseModel):
+class PAIVpcConfig(ConfigBaseModel):
     """VPC configuration for PAI deployment."""
 
     vpc_id: Optional[str] = None
@@ -85,8 +90,8 @@ class PAIVpcConfig(BaseModel):
     security_group_id: Optional[str] = None
 
 
-class PAIPermissionConfig(BaseModel):
-    """Permission configuration for PAI deployment."""
+class PAIIdentityConfig(ConfigBaseModel):
+    """Identity/Permission configuration for PAI deployment."""
 
     ram_role_arn: Optional[str] = Field(
         None,
@@ -94,13 +99,13 @@ class PAIPermissionConfig(BaseModel):
     )
 
 
-class PAIObservabilityConfig(BaseModel):
+class PAIObservabilityConfig(ConfigBaseModel):
     """Observability configuration for PAI deployment."""
 
     enable_trace: bool = Field(True, description="Enable tracing/telemetry")
 
 
-class PAIStorageConfig(BaseModel):
+class PAIStorageConfig(ConfigBaseModel):
     """Storage configuration for PAI deployment."""
 
     work_dir: Optional[str] = Field(
@@ -109,7 +114,7 @@ class PAIStorageConfig(BaseModel):
     )
 
 
-class PAIContextConfig(BaseModel):
+class PAIContextConfig(ConfigBaseModel):
     """Context configuration (where to deploy)."""
 
     workspace_id: Optional[str] = Field(
@@ -120,9 +125,13 @@ class PAIContextConfig(BaseModel):
         None,
         description="Region code (e.g., cn-hangzhou)",
     )
+    storage: PAIStorageConfig = Field(
+        default_factory=PAIStorageConfig,
+        description="Default storage configuration (fallback for spec.storage)",
+    )
 
 
-class PAISpecConfig(BaseModel):
+class PAISpecConfig(ConfigBaseModel):
     """Spec configuration (what to deploy)."""
 
     name: Optional[str] = Field(None, description="Service name")
@@ -133,8 +142,8 @@ class PAISpecConfig(BaseModel):
     )
     resources: PAIResourcesConfig = Field(default_factory=PAIResourcesConfig)
     vpc_config: PAIVpcConfig = Field(default_factory=PAIVpcConfig)
-    permission: PAIPermissionConfig = Field(
-        default_factory=PAIPermissionConfig,
+    identity: PAIIdentityConfig = Field(
+        default_factory=PAIIdentityConfig,
     )
     observability: PAIObservabilityConfig = Field(
         default_factory=PAIObservabilityConfig,
@@ -144,9 +153,13 @@ class PAISpecConfig(BaseModel):
         default_factory=dict,
         description="Environment variables",
     )
+    tags: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Tags for the deployment",
+    )
 
 
-class PAIDeployConfig(BaseModel):
+class PAIDeployConfig(ConfigBaseModel):
     """
     Complete PAI deployment configuration.
 
@@ -195,6 +208,7 @@ class PAIDeployConfig(BaseModel):
         timeout: Optional[int] = None,
         auto_approve: Optional[bool] = None,
         environment: Optional[Dict[str, str]] = None,
+        tags: Optional[Dict[str, str]] = None,
     ) -> "PAIDeployConfig":
         """
         Merge CLI parameters into config. CLI values override config values.
@@ -233,9 +247,9 @@ class PAIDeployConfig(BaseModel):
         if memory is not None:
             data["spec"]["resources"]["memory"] = memory
 
-        # Permission overrides
+        # IAM overrides
         if ram_role_arn is not None:
-            data["spec"]["permission"]["ram_role_arn"] = ram_role_arn
+            data["spec"]["identity"]["ram_role_arn"] = ram_role_arn
 
         # Observability overrides
         if enable_trace is not None:
@@ -248,6 +262,10 @@ class PAIDeployConfig(BaseModel):
         # Environment overrides (merge, CLI takes precedence)
         if environment:
             data["spec"]["env"].update(environment)
+
+        # Tags overrides (merge, CLI takes precedence)
+        if tags:
+            data["spec"]["tags"].update(tags)
 
         # Deployment behavior overrides
         if wait is not None:
@@ -278,6 +296,21 @@ class PAIDeployConfig(BaseModel):
             return "resource"
         return "public"
 
+    def resolve_oss_work_dir(self) -> Optional[str]:
+        """
+        Resolve OSS work directory with fallback.
+
+        Priority:
+        1. spec.storage.work_dir if set
+        2. context.storage.work_dir as fallback
+        3. None (deployer will use workspace default)
+        """
+        if self.spec.storage.work_dir:
+            return self.spec.storage.work_dir
+        if self.context.storage.work_dir:
+            return self.context.storage.work_dir
+        return None
+
     def to_deployer_kwargs(self) -> Dict[str, Any]:
         """
         Convert config to kwargs for PAIDeployManager.deploy().
@@ -286,7 +319,7 @@ class PAIDeployConfig(BaseModel):
         resources = self.spec.resources
 
         # Determine RAM role mode
-        ram_role_arn = self.spec.permission.ram_role_arn
+        ram_role_arn = self.spec.identity.ram_role_arn
         ram_role_mode = "custom" if ram_role_arn else "default"
 
         # Prepare instance_type as list if provided
@@ -313,6 +346,7 @@ class PAIDeployConfig(BaseModel):
             "ram_role_arn": ram_role_arn,
             "enable_trace": self.spec.observability.enable_trace,
             "environment": self.spec.env if self.spec.env else None,
+            "tags": self.spec.tags if self.spec.tags else None,
             "wait": self.wait,
             "timeout": self.timeout,
             "auto_approve": self.auto_approve,
@@ -480,6 +514,25 @@ def _get_default_ignore_patterns() -> List[str]:
     ]
 
 
+def _generate_deployment_tool_tags(
+    deploy_method: str = "cli",
+) -> Dict[str, str]:
+    """
+    Generate automatic tags for deployment tool information.
+
+    Args:
+        deploy_method: Deployment method, either "cli" or "sdk"
+
+    Returns:
+        Dictionary of auto-generated tags with agentscope.io/ prefix
+    """
+    return {
+        "agentscope.io/deployed-by": "agentscope-runtime",
+        "agentscope.io/client-version": __version__,
+        "agentscope.io/deploy-method": deploy_method,
+    }
+
+
 class PAIDeployManager(DeployManager):
     """
     Deployer for Alibaba Cloud PAI (Platform for AI) platform.
@@ -593,6 +646,7 @@ class PAIDeployManager(DeployManager):
         security_group_id: Optional[str] = None,
         service_group_name: Optional[str] = None,
         environment: Optional[Dict[str, str]] = None,
+        tags: Optional[Dict[str, str]] = None,
     ) -> str:
         """
         Build deployment configuration JSON string.
@@ -606,6 +660,9 @@ class PAIDeployManager(DeployManager):
                 "networking": {},
             },
         }
+
+        if tags:
+            config["labels"] = tags
 
         if environment:
             config["containers"] = [
@@ -885,6 +942,7 @@ class PAIDeployManager(DeployManager):
         wait: bool = True,
         timeout: int = 1800,
         auto_approve: bool = True,
+        deploy_method: str = "cli",
         **kwargs,
     ) -> Dict[str, str]:
         """
@@ -921,6 +979,7 @@ class PAIDeployManager(DeployManager):
             timeout: Deployment timeout in seconds
             custom_endpoints: Custom endpoints configuration
             auto_approve: Auto approve the deployment
+            deploy_method: Deployment method ("cli" or "sdk")
 
         Returns:
             Dict containing deployment information
@@ -931,6 +990,12 @@ class PAIDeployManager(DeployManager):
         """
         if not service_name:
             raise ValueError("service_name is required for PAI deployment")
+
+        # Merge auto-generated tags with user tags
+        # Priority: auto tags < user tags (user can override auto tags)
+        final_tags = _generate_deployment_tool_tags(deploy_method)
+        if tags:
+            final_tags.update(tags)
 
         try:
             # Ensure SDKs are available
@@ -1010,6 +1075,7 @@ class PAIDeployManager(DeployManager):
                 security_group_id=security_group_id,
                 auto_approve=auto_approve,
                 environment=environment,
+                tags=final_tags,  # Use merged tags
             )
 
             # Step 5: Wait for deployment if requested
