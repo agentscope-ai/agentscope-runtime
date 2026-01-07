@@ -16,8 +16,10 @@ import time
 import zipfile
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, List, Union, Tuple, Any, cast
+from typing import Dict, Optional, List, Union, Any, Literal, cast
 
+import yaml
+from pydantic import BaseModel, Field
 
 from agentscope_runtime.engine.deployers.utils.oss_utils import (
     can_connect,
@@ -26,18 +28,343 @@ from agentscope_runtime.engine.deployers.utils.oss_utils import (
 
 from .adapter.protocol_adapter import ProtocolAdapter
 from .base import DeployManager
-from .local_deployer import LocalDeployManager
 from .state import Deployment
 from .utils.package import generate_build_directory
 
 logger = logging.getLogger(__name__)
 
 
+class PAICodeConfig(BaseModel):
+    """Code configuration for PAI deployment."""
+
+    source_dir: Optional[str] = Field(
+        None,
+        description="Path to project root directory",
+    )
+    entrypoint: Optional[str] = Field(
+        None,
+        description="Entrypoint file within source_dir",
+    )
+
+
+class PAIResourcesConfig(BaseModel):
+    """Resource configuration for PAI deployment."""
+
+    instance_count: int = Field(1, description="Number of service instances")
+    type: Optional[Literal["public", "resource", "quota"]] = Field(
+        None,
+        description="Resource type: public, resource (EAS group), or quota",
+    )
+    instance_type: Optional[str] = Field(
+        None,
+        description="ECS instance type for public mode",
+    )
+    resource_id: Optional[str] = Field(
+        None,
+        description="EAS resource group ID for resource mode",
+    )
+    quota_id: Optional[str] = Field(
+        None,
+        description="PAI quota ID for quota mode",
+    )
+    cpu: Optional[int] = Field(
+        None,
+        description="CPU cores for resource/quota mode",
+    )
+    memory: Optional[int] = Field(
+        None,
+        description="Memory in MB for resource/quota mode",
+    )
+
+
+class PAIVpcConfig(BaseModel):
+    """VPC configuration for PAI deployment."""
+
+    vpc_id: Optional[str] = None
+    vswitch_id: Optional[str] = None
+    security_group_id: Optional[str] = None
+
+
+class PAIPermissionConfig(BaseModel):
+    """Permission configuration for PAI deployment."""
+
+    ram_role_arn: Optional[str] = Field(
+        None,
+        description="RAM role ARN for service runtime",
+    )
+
+
+class PAIObservabilityConfig(BaseModel):
+    """Observability configuration for PAI deployment."""
+
+    enable_trace: bool = Field(True, description="Enable tracing/telemetry")
+
+
+class PAIStorageConfig(BaseModel):
+    """Storage configuration for PAI deployment."""
+
+    work_dir: Optional[str] = Field(
+        None,
+        description="OSS working directory for artifacts",
+    )
+
+
+class PAIContextConfig(BaseModel):
+    """Context configuration (where to deploy)."""
+
+    workspace_id: Optional[str] = Field(
+        None,
+        description="PAI workspace ID",
+    )
+    region: Optional[str] = Field(
+        None,
+        description="Region code (e.g., cn-hangzhou)",
+    )
+
+
+class PAISpecConfig(BaseModel):
+    """Spec configuration (what to deploy)."""
+
+    name: Optional[str] = Field(None, description="Service name")
+    code: PAICodeConfig = Field(default_factory=PAICodeConfig)
+    service_group_name: Optional[str] = Field(
+        None,
+        description="Service group name",
+    )
+    resources: PAIResourcesConfig = Field(default_factory=PAIResourcesConfig)
+    vpc_config: PAIVpcConfig = Field(default_factory=PAIVpcConfig)
+    permission: PAIPermissionConfig = Field(
+        default_factory=PAIPermissionConfig,
+    )
+    observability: PAIObservabilityConfig = Field(
+        default_factory=PAIObservabilityConfig,
+    )
+    storage: PAIStorageConfig = Field(default_factory=PAIStorageConfig)
+    env: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Environment variables",
+    )
+
+
+class PAIDeployConfig(BaseModel):
+    """
+    Complete PAI deployment configuration.
+
+    Supports both nested YAML structure and flat CLI parameters.
+    """
+
+    # Nested structure (from config file)
+    context: PAIContextConfig = Field(default_factory=PAIContextConfig)
+    spec: PAISpecConfig = Field(default_factory=PAISpecConfig)
+
+    # Deployment behavior
+    wait: bool = Field(True, description="Wait for deployment to complete")
+    timeout: int = Field(1800, description="Deployment timeout in seconds")
+    auto_approve: bool = Field(True, description="Auto approve deployment")
+
+    @classmethod
+    def from_yaml(cls, path: Union[str, Path]) -> "PAIDeployConfig":
+        """Load configuration from YAML file."""
+        with open(path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        return cls.model_validate(data)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "PAIDeployConfig":
+        """Create configuration from dictionary."""
+        return cls.model_validate(data)
+
+    def merge_cli(
+        self,
+        source: Optional[str] = None,
+        name: Optional[str] = None,
+        entrypoint: Optional[str] = None,
+        workspace_id: Optional[str] = None,
+        region: Optional[str] = None,
+        oss_path: Optional[str] = None,
+        instance_type: Optional[str] = None,
+        instance_count: Optional[int] = None,
+        resource_id: Optional[str] = None,
+        quota_id: Optional[str] = None,
+        cpu: Optional[int] = None,
+        memory: Optional[int] = None,
+        service_group: Optional[str] = None,
+        ram_role_arn: Optional[str] = None,
+        enable_trace: Optional[bool] = None,
+        wait: Optional[bool] = None,
+        timeout: Optional[int] = None,
+        auto_approve: Optional[bool] = None,
+        environment: Optional[Dict[str, str]] = None,
+    ) -> "PAIDeployConfig":
+        """
+        Merge CLI parameters into config. CLI values override config values.
+
+        Returns a new PAIDeployConfig with merged values.
+        """
+        data = self.model_dump()
+
+        # Context overrides
+        if workspace_id is not None:
+            data["context"]["workspace_id"] = workspace_id
+        if region is not None:
+            data["context"]["region"] = region
+
+        # Spec overrides
+        if name is not None:
+            data["spec"]["name"] = name
+        if source is not None:
+            data["spec"]["code"]["source_dir"] = source
+        if entrypoint is not None:
+            data["spec"]["code"]["entrypoint"] = entrypoint
+        if service_group is not None:
+            data["spec"]["service_group_name"] = service_group
+
+        # Resources overrides
+        if instance_type is not None:
+            data["spec"]["resources"]["instance_type"] = instance_type
+        if instance_count is not None:
+            data["spec"]["resources"]["instance_count"] = instance_count
+        if resource_id is not None:
+            data["spec"]["resources"]["resource_id"] = resource_id
+        if quota_id is not None:
+            data["spec"]["resources"]["quota_id"] = quota_id
+        if cpu is not None:
+            data["spec"]["resources"]["cpu"] = cpu
+        if memory is not None:
+            data["spec"]["resources"]["memory"] = memory
+
+        # Permission overrides
+        if ram_role_arn is not None:
+            data["spec"]["permission"]["ram_role_arn"] = ram_role_arn
+
+        # Observability overrides
+        if enable_trace is not None:
+            data["spec"]["observability"]["enable_trace"] = enable_trace
+
+        # Storage overrides
+        if oss_path is not None:
+            data["spec"]["storage"]["work_dir"] = oss_path
+
+        # Environment overrides (merge, CLI takes precedence)
+        if environment:
+            data["spec"]["env"].update(environment)
+
+        # Deployment behavior overrides
+        if wait is not None:
+            data["wait"] = wait
+        if timeout is not None:
+            data["timeout"] = timeout
+        if auto_approve is not None:
+            data["auto_approve"] = auto_approve
+
+        return PAIDeployConfig.model_validate(data)
+
+    def resolve_resource_type(self) -> str:
+        """
+        Resolve resource type with implicit inference.
+
+        Priority:
+        1. Explicit type if set
+        2. 'quota' if quota_id is provided
+        3. 'resource' if resource_id is provided
+        4. 'public' (default)
+        """
+        resources = self.spec.resources
+        if resources.type:
+            return resources.type
+        if resources.quota_id:
+            return "quota"
+        if resources.resource_id:
+            return "resource"
+        return "public"
+
+    def to_deployer_kwargs(self) -> Dict[str, Any]:
+        """
+        Convert config to kwargs for PAIDeployManager.deploy().
+        """
+        resource_type = self.resolve_resource_type()
+        resources = self.spec.resources
+
+        # Determine RAM role mode
+        ram_role_arn = self.spec.permission.ram_role_arn
+        ram_role_mode = "custom" if ram_role_arn else "default"
+
+        # Prepare instance_type as list if provided
+        instance_type = None
+        if resources.instance_type:
+            instance_type = [resources.instance_type]
+
+        kwargs = {
+            "project_dir": self.spec.code.source_dir,
+            "entrypoint": self.spec.code.entrypoint,
+            "service_name": self.spec.name,
+            "service_group_name": self.spec.service_group_name,
+            "resource_type": resource_type,
+            "instance_count": resources.instance_count,
+            "instance_type": instance_type,
+            "resource_id": resources.resource_id,
+            "quota_id": resources.quota_id,
+            "cpu": resources.cpu,
+            "memory": resources.memory,
+            "vpc_id": self.spec.vpc_config.vpc_id,
+            "vswitch_id": self.spec.vpc_config.vswitch_id,
+            "security_group_id": self.spec.vpc_config.security_group_id,
+            "ram_role_mode": ram_role_mode,
+            "ram_role_arn": ram_role_arn,
+            "enable_trace": self.spec.observability.enable_trace,
+            "environment": self.spec.env if self.spec.env else None,
+            "wait": self.wait,
+            "timeout": self.timeout,
+            "auto_approve": self.auto_approve,
+        }
+
+        # Remove None values to use deployer defaults
+        return {k: v for k, v in kwargs.items() if v is not None}
+
+    def validate_for_deploy(self) -> None:
+        """
+        Validate configuration is complete for deployment.
+
+        Raises:
+            ValueError: If required fields are missing
+        """
+        errors = []
+
+        if not self.spec.name:
+            errors.append("Service name is required (spec.name or --name)")
+
+        if not self.spec.code.source_dir:
+            errors.append(
+                "Source directory is required "
+                "(spec.code.source_dir or SOURCE argument)",
+            )
+
+        # Validate source_dir exists
+        if self.spec.code.source_dir:
+            source_path = Path(self.spec.code.source_dir)
+            if not source_path.exists():
+                errors.append(
+                    f"Source directory not found: {self.spec.code.source_dir}",
+                )
+
+        # Resource type specific validation
+        resource_type = self.resolve_resource_type()
+        resources = self.spec.resources
+
+        if resource_type == "resource" and not resources.resource_id:
+            errors.append("resource_id is required for resource mode")
+        if resource_type == "quota" and not resources.quota_id:
+            errors.append("quota_id is required for quota mode")
+
+        if errors:
+            raise ValueError(
+                "Configuration validation failed:\n  - "
+                + "\n  - ".join(errors),
+            )
+
+
 try:
     import alibabacloud_oss_v2 as oss
-    from alibabacloud_credentials.client import (
-        Client as CredentialClient,
-    )
     from alibabacloud_pailangstudio20240710.client import (
         Client as LangStudioClient,
     )
@@ -48,7 +375,6 @@ try:
     from alibabacloud_tea_openapi import models as open_api_models
 except Exception:
     oss = None
-    CredentialClient = None
     LangStudioClient = None
     WorkspaceClient = None
     EASClient = None
@@ -67,7 +393,7 @@ def _read_ignore_file(ignore_file_path: Path) -> List[str]:
     """
     patterns = []
     if ignore_file_path.exists():
-        with open(ignore_file_path, "r") as f:
+        with open(ignore_file_path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 # Skip empty lines and comments
@@ -182,16 +508,16 @@ class PAIDeployManager(DeployManager):
         self.workspace_id = workspace_id or os.getenv("PAI_WORKSPACE_ID")
         self.region_id = region_id or os.getenv(
             "REGION_ID",
-            os.getenv("REGION", os.getenv("ALIBABA_CLOUD_REGION_ID")),
+            os.getenv("REGION", os.getenv("ALIBABA_CLOUD_REGION_ID", "")),
         )
         self.access_key_id = access_key_id or os.getenv(
-            "ALIBABA_CLOUD_ACCESS_KEY_ID"
+            "ALIBABA_CLOUD_ACCESS_KEY_ID",
         )
         self.access_key_secret = access_key_secret or os.getenv(
-            "ALIBABA_CLOUD_ACCESS_KEY_SECRET"
+            "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
         )
         self.security_token = security_token or os.getenv(
-            "ALIBABA_CLOUD_SECURITY_TOKEN"
+            "ALIBABA_CLOUD_SECURITY_TOKEN",
         )
         self.oss_path = oss_path
         self.build_root = Path(build_root) if build_root else None
@@ -210,7 +536,7 @@ class PAIDeployManager(DeployManager):
                 LangStudioClient is not None,
                 WorkspaceClient is not None,
                 EASClient is not None,
-            ]
+            ],
         )
 
     def _assert_cloud_sdks_available(self):
@@ -230,7 +556,7 @@ class PAIDeployManager(DeployManager):
         archive_oss_uri: str,
         proj_id: str,
         service_name: str,
-    ) -> Tuple[str, str]:
+    ) -> str:
         """
         Create a snapshot for given archive_oss_uri
         """
@@ -249,7 +575,7 @@ class PAIDeployManager(DeployManager):
                     f"{service_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
                 ),
                 source_storage_path=archive_oss_uri,
-            )
+            ),
         )
         return resp.body.snapshot_id
 
@@ -271,7 +597,7 @@ class PAIDeployManager(DeployManager):
         """
         Build deployment configuration JSON string.
         """
-        config = {
+        config: Dict[str, Any] = {
             "metadata": {
                 "instance": instance_count,
                 "workspace_id": self.workspace_id,
@@ -291,7 +617,7 @@ class PAIDeployManager(DeployManager):
                         }
                         for key, value in environment.items()
                     ],
-                }
+                },
             ]
 
         if service_group_name:
@@ -308,7 +634,7 @@ class PAIDeployManager(DeployManager):
             # EAS resource group
             if not resource_id:
                 raise ValueError(
-                    "resource_id required for eas_group resource type"
+                    "resource_id required for eas_group resource type",
                 )
             config["metadata"]["resource"] = resource_id
             if cpu:
@@ -364,7 +690,7 @@ class PAIDeployManager(DeployManager):
                 "EnableCredentialInject": False,
             }
 
-        config = {
+        cred_config: Dict[str, Any] = {
             "EnableCredentialInject": True,
             "AliyunEnvRoleKey": "0",
             "CredentialConfigItems": [
@@ -379,11 +705,11 @@ class PAIDeployManager(DeployManager):
         if ram_role_mode == "custom":
             if not ram_role_arn:
                 raise ValueError(
-                    "ram_role_arn required for custom ram_role_mode"
+                    "ram_role_arn required for custom ram_role_mode",
                 )
-            config["CredentialConfigItems"][0]["Roles"] = [ram_role_arn]
+            cred_config["CredentialConfigItems"][0]["Roles"] = [ram_role_arn]
 
-        return CreateDeploymentRequestCredentialConfig().from_map(config)
+        return CreateDeploymentRequestCredentialConfig().from_map(cred_config)
 
     async def _deploy_snapshot(
         self,
@@ -407,7 +733,9 @@ class PAIDeployManager(DeployManager):
         )
 
         logger.info(
-            "Deploying snapshot %s as service %s", snapshot_id, service_name
+            "Deploying snapshot %s as service %s",
+            snapshot_id,
+            service_name,
         )
 
         client = self.get_langstudio_client()
@@ -505,21 +833,20 @@ class PAIDeployManager(DeployManager):
                 logger.info("Deployment status: %s", status)
 
                 if status == "Succeed":
-                    return
-                elif status == "Failed":
+                    return {}
+                if status == "Failed":
                     raise RuntimeError(
-                        f"Deployment {deployment_id} failed: {response.body.error_message}"
+                        f"Deployment {deployment_id} failed: {response.body.error_message}",
                     )
-                elif status == "Cancled":
+                if status == "Cancled":
                     raise RuntimeError(f"Deployment {deployment_id} cancled.")
 
-                elif status == "Running" or status == "Creating":
+                if status in ("Running", "Creating"):
                     await asyncio.sleep(poll_interval)
                     continue
-                else:
-                    raise RuntimeError(
-                        f"Deployment {deployment_id} status unknown: {status}"
-                    )
+                raise RuntimeError(
+                    f"Deployment {deployment_id} status unknown: {status}",
+                )
             except Exception as e:
                 if "Failed" in str(e) or "Stopped" in str(e):
                     raise
@@ -530,7 +857,7 @@ class PAIDeployManager(DeployManager):
             f"Deployment {deployment_id} did not complete within {timeout} seconds",
         )
 
-    async def deploy(
+    async def deploy(  # pylint: disable=unused-argument
         self,
         project_dir: Optional[Union[str, Path]] = None,
         entrypoint: Optional[str] = None,
@@ -628,14 +955,18 @@ class PAIDeployManager(DeployManager):
             project_dir = Path(project_dir).resolve()
             if not project_dir.is_dir():
                 raise FileNotFoundError(
-                    f"Project directory not found: {project_dir}"
+                    f"Project directory not found: {project_dir}",
                 )
 
             # Create a zip archive of the project
             logger.info("Creating project archive")
             archive_path = self._create_project_archive(
-                service_name, project_dir
+                service_name,
+                project_dir,
             )
+
+            if not self.oss_path:
+                raise ValueError("oss_path is required for PAI deployment")
 
             oss_archive_uri = self._upload_archive(
                 service_name=service_name,
@@ -682,7 +1013,6 @@ class PAIDeployManager(DeployManager):
             )
 
             # Step 5: Wait for deployment if requested
-            deployment_status = None
             if auto_approve and wait:
                 await self._wait_for_deployment(
                     deployment_id,
@@ -699,7 +1029,8 @@ class PAIDeployManager(DeployManager):
                 service_status = "pending"
 
             console_uri = self.get_deployment_console_uri(
-                proj_id, deployment_id
+                proj_id,
+                deployment_id,
             )
 
             deployment = Deployment(
@@ -742,7 +1073,9 @@ class PAIDeployManager(DeployManager):
             raise
 
     def get_deployment_console_uri(
-        self, proj_id: str, deployment_id: str
+        self,
+        proj_id: str,
+        deployment_id: str,
     ) -> str:
         """
         Return the console URI for a deployment.
@@ -780,7 +1113,8 @@ class PAIDeployManager(DeployManager):
             ),
         )
         default_oss_storage_uri = next(
-            (c for c in resp.body.configs if c.config_key == config_key), None
+            (c for c in resp.body.configs if c.config_key == config_key),
+            None,
         )
         return default_oss_storage_uri
 
@@ -805,7 +1139,9 @@ class PAIDeployManager(DeployManager):
         archive_path = build_dir / zip_filename
 
         with zipfile.ZipFile(
-            archive_path, "w", zipfile.ZIP_DEFLATED
+            archive_path,
+            "w",
+            zipfile.ZIP_DEFLATED,
         ) as archive:
             source_files = glob.glob(
                 pathname=str(project_path / "**"),
@@ -820,7 +1156,7 @@ class PAIDeployManager(DeployManager):
                     continue
 
                 file_relative_path = file_path_obj.relative_to(
-                    project_path
+                    project_path,
                 ).as_posix()
 
                 # Skip . and .. directory references
@@ -829,7 +1165,8 @@ class PAIDeployManager(DeployManager):
 
                 if _should_ignore(file_relative_path, ignore_patterns):
                     logger.debug(
-                        "Skipping ignored file: %s", file_relative_path
+                        "Skipping ignored file: %s",
+                        file_relative_path,
                     )
                     continue
                 archive.write(file_path, file_relative_path)
@@ -884,20 +1221,19 @@ class PAIDeployManager(DeployManager):
         )
         return f"oss://{bucket_name}.{oss_endpoint}/{archive_obj_key}"
 
-    def _get_existing_app() -> Optional[str]:
-        pass
-
     def _get_oss_client(
-        self, oss_endpoint: Optional[str] = None, region: Optional[str] = None
+        self,
+        oss_endpoint: Optional[str] = None,
+        region: Optional[str] = None,
     ):
         from alibabacloud_credentials.client import (
-            Client as CredentialClient,
+            Client as CredClient,
         )
 
         class _CustomOssCredentialsProvider(
-            oss.credentials.CredentialsProvider
+            oss.credentials.CredentialsProvider,
         ):
-            def __init__(self, credential_client: "CredentialClient"):
+            def __init__(self, credential_client: "CredClient"):
                 self.credential_client = credential_client
 
             def get_credentials(self) -> oss.credentials.Credentials:
@@ -914,24 +1250,24 @@ class PAIDeployManager(DeployManager):
                 region=region or self.region_id,
                 endpoint=oss_endpoint,
                 credentials_provider=_CustomOssCredentialsProvider(
-                    self._credential_client()
+                    self._credential_client(),
                 ),
-            )
+            ),
         )
 
     def _credential_client(self):
         from alibabacloud_credentials.client import (
-            Client as CredentialClient,
+            Client as CredClient,
         )
 
         if not os.environ.get(
-            "ALIBABA_CLOUD_ACCESS_KEY_ID"
+            "ALIBABA_CLOUD_ACCESS_KEY_ID",
         ) or not os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"):
             raise ValueError(
-                "ALIBABA_CLOUD_ACCESS_KEY_ID and ALIBABA_CLOUD_ACCESS_KEY_SECRET must be set"
+                "ALIBABA_CLOUD_ACCESS_KEY_ID and ALIBABA_CLOUD_ACCESS_KEY_SECRET must be set",
             )
 
-        return CredentialClient()
+        return CredClient()
 
     def _eas_service_client(self) -> EASClient:
         return EASClient(
@@ -957,26 +1293,29 @@ class PAIDeployManager(DeployManager):
 
         try:
             resp = await eas_client.describe_service_async(
-                cluster_id=self.region_id, service_name=service_name
+                cluster_id=self.region_id,
+                service_name=service_name,
             )
             return resp.body
         except AlibabaCloudException as e:
             if e.code == "Forbidden.PrivilegeCheckFailed":
                 logger.warning(
-                    f"Given service name is owned by another user: {e}"
+                    f"Given service name is owned by another user: {e}",
                 )
 
                 raise ValueError(
                     f"Given service name is owned by another user: "
-                    f"{service_name}. Please use a different service name."
-                )
-            elif e.code == "InvalidService.NotFound":
+                    f"{service_name}. Please use a different service name.",
+                ) from e
+            if e.code == "InvalidService.NotFound":
                 return None
-            else:
-                raise e
+            raise
 
     async def get_or_create_langstudio_proj(
-        self, service_name, proj_archive_oss_uri: str, oss_path: str
+        self,
+        service_name,
+        proj_archive_oss_uri: str,
+        oss_path: str,
     ):
         from alibabacloud_eas20210701.models import Service
         from alibabacloud_tea_openapi.exceptions import AlibabaCloudException
@@ -1034,7 +1373,7 @@ class PAIDeployManager(DeployManager):
                     source_uri=proj_archive_oss_uri,
                     work_dir=self._oss_uri_patch_endpoint(oss_path),
                     create_from="OSS",
-                )
+                ),
             )
             proj_id = resp.body.flow_id
 
@@ -1060,7 +1399,6 @@ class PAIDeployManager(DeployManager):
                 raise e
 
     def get_langstudio_client(self) -> LangStudioClient:
-
         client = LangStudioClient(
             config=open_api_models.Config(
                 credential=self._credential_client(),
@@ -1071,10 +1409,10 @@ class PAIDeployManager(DeployManager):
         return client
 
     def get_workspace_client(self) -> WorkspaceClient:
-        from alibabacloud_tea_openapi import models as open_api_models
+        from alibabacloud_tea_openapi import models as openapi_models
 
         client = WorkspaceClient(
-            config=open_api_models.Config(
+            config=openapi_models.Config(
                 credential=self._credential_client(),
                 region_id=self.region_id,
                 endpoint=self._get_workspace_endpoint(self.region_id),
@@ -1092,8 +1430,9 @@ class PAIDeployManager(DeployManager):
             else public_endpoint
         )
 
+    @staticmethod
     @cache
-    def _get_langstudio_endpoint(self, region_id: str) -> str:
+    def _get_langstudio_endpoint(region_id: str) -> str:
         internal_endpoint = f"pailangstudio-vpc.{region_id}.aliyuncs.com"
         public_endpoint = f"pailangstudio.{region_id}.aliyuncs.com"
 
@@ -1103,8 +1442,9 @@ class PAIDeployManager(DeployManager):
             else public_endpoint
         )
 
+    @staticmethod
     @cache
-    def _get_eas_endpoint(self, region_id: str) -> str:
+    def _get_eas_endpoint(region_id: str) -> str:
         internal_endpoint = f"pai-eas-manage-vpc.{region_id}.aliyuncs.com"
         public_endpoint = f"pai-eas.{region_id}.aliyuncs.com"
 
@@ -1215,7 +1555,7 @@ class PAIDeployManager(DeployManager):
                     order="DESC",
                     next_token=next_token,
                     page_size=100,
-                )
+                ),
             )
             for flow in resp.body.flows:
                 if flow.flow_name == name:
@@ -1224,8 +1564,13 @@ class PAIDeployManager(DeployManager):
             next_token = resp.body.next_token
             if not next_token:
                 break
+        return None
 
-    async def _update_deployment(self, deployment_id: str, auto_approve: bool):
+    async def _update_deployment(
+        self,
+        deployment_id: str,  # pylint: disable=unused-argument
+        auto_approve: bool,  # pylint: disable=unused-argument
+    ):
         from alibabacloud_pailangstudio20240710.models import (
             UpdateDeploymentRequest,
         )
@@ -1235,7 +1580,7 @@ class PAIDeployManager(DeployManager):
             request=UpdateDeploymentRequest(
                 workspace_id=self.workspace_id,
                 stage_action=json.dumps({"Stage": 3, "Action": "Confirm"}),
-            )
+            ),
         )
 
         return resp
@@ -1264,7 +1609,11 @@ class PAIDeployManager(DeployManager):
         )
 
     async def approve_deployment(
-        self, deployment_id: str, wait=True, timeout=1800, poll_interval=10
+        self,
+        deployment_id: str,  # pylint: disable=unused-argument
+        wait=True,  # pylint: disable=unused-argument
+        timeout=1800,  # pylint: disable=unused-argument
+        poll_interval=10,  # pylint: disable=unused-argument
     ) -> None:
         from alibabacloud_pailangstudio20240710.models import (
             UpdateDeploymentRequest,
@@ -1277,6 +1626,6 @@ class PAIDeployManager(DeployManager):
             request=UpdateDeploymentRequest(
                 workspace_id=self.workspace_id,
                 stage_action=json.dumps({"Stage": 3, "Action": "Confirm"}),
-            )
+            ),
         )
         return resp

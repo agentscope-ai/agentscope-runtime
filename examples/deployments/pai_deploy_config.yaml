@@ -1,53 +1,88 @@
 # PAI Deployment Configuration Example
-# This configuration file can be used with: agentscope deploy pai <source> --config pai_deploy_config.yaml
+# Used with:
+#   agentscope deploy pai <source> --config pai_deploy_config.yaml
+#
+# Structure:
+# - context: Where to deploy (region / workspace)
+# - spec:    What to deploy (code / resources / network / permissions / env)
 
-# PAI Service Configuration
-name: "my-agent-service" # Required: Name of the service
-workspace_id: "12345" # PAI workspace ID (can also use PAI_WORKSPACE_ID env var)
-region: "cn-hangzhou"
+context:
+  # PAI workspace ID (tenant scope).
+  # Can be overridden by env var: PAI_WORKSPACE_ID
+  workspace_id: "12345"
 
-configuration:
+  # Region code where the PAI Service are located.
+  # Example: cn-hangzhou, cn-shanghai, etc.
+  region: "cn-hangzhou"
 
-  # Path to the project 
-  # project_dir: "./agent_example/"
+spec:
+  # Service name (required).
+  # Recommended: lowercase letters, numbers, and hyphen; must be unique within the region.
+  name: "my-agent-service"
 
-  # entrypoint of the project, defaults to app.py, agent.py, main.py.
-  # entrypoint: main.py
-  # 1. Resource Configuration
+  code:
+    # Path to your project root directory (relative to the config file, unless your CLI defines otherwise).
+    # This directory will be packaged and uploaded for deployment.
+    source_dir: "example_proj"
+
+    # Entrypoint file within source_dir.
+    # If omitted, the system may try common defaults: app.py, agent.py, main.py
+    entrypoint: "agent.py"
+
+  # Optional: assign the service into an existing service group for management/permissioning.
+  # If not set, the service will be created without a group (or use platform default behavior).
+  service_group_name: "my-service-group"
+
   resources:
+    # Number of service instances (replicas).
     instance_count: 1
 
-    # deploy to public resource group
+    # Resource selection mode (mutually exclusive):
+    # - public:   deploy on public resource pool, specify instance_type
+    # - resource: deploy to a dedicated EAS resource group, specify resource_id + cpu + memory
+    # - quota:    deploy using a PAI quota, specify quota_id + cpu + memory
+    type: "public" # options: public, resource, quota
+
+    # --- public mode ---
+    # ECS instance type used in public resource pool.
+    # Required when type=public. Ignored/invalid for other types.
     instance_type: "ecs.c6.large"
 
-    # deploy to dedicated EAS resource group
+    # --- resource mode ---
+    # Dedicated EAS resource group ID. Required when type=resource.
     # resource_id: "eas-r-xxxxx"
+
+    # --- quota mode ---
+    # Quota ID. Required when type=quota.
+    # quota_id: "quota-xxxxxxxx"
+
+    # CPU cores and memory for type=resource/type=quota.
+    # For type=public, these are typically ignored (or should be omitted to avoid confusion).
     # cpu: 2
     # memory: 4096
 
-    # For quota resource type (uncomment if using)
-    # quota_id: "quota-xxxxx"
-    # cpu: 2
-    # memory: 4096
+  vpc_config:
+    # Optional: VPC networking configuration.
+    # If provided, the service will
+    # If omitted, the platform default network (public) will be used.
+    vpc_id: "vpc-xxxxx"
+    vswitch_id: "vsw-xxxxx"
+    security_group_id: "sg-xxxxx"
 
-  # 2. VPC Configuration (optional)
-  # vpc_config:
-    # vpc_id: "vpc-xxxxx"
-    # vswitch_id: "vsw-xxxxx"
-    # security_group_id: "sg-xxxxx"
+  permission:
+    # Optional: RAM role ARN assumed by the service runtime.
+    # If omitted, the default PAI RAM role for the workspace will be used.
+    ram_role_arn: "acs:ram::xxxxx:role/xxxxx"
 
-  # # RAM Role Configuration, if not provided, default PAI RAMRole will be used.
-  # ram_role_arn: "acs:ram::xxxxx:role/xxxxx"
+  observability:
+    # Enable tracing / telemetry collection.
+    enable_trace: true
 
-  # Deployment Settings
-  enable_trace: true
+  storage:
+    # Optional: OSS working directory for build artifacts / runtime files.
+    # If omitted, the workspace default OSS path will be used.
+    work_dir: "oss://my-bucket/agent-workspace/"
 
-  # auto_approve: true
-  oss_path: "oss://my-bucket/agent-workspace/" # OSS work directory path, If not provided, the default OSS storage Path of Workspace will be used.
-
-  # Service Group (optional)
-  # service_group_name: "my-service-group"
-
-  # Environment Variables
-  environment:
-    DASHSCOPE_API_KEY: "your-api-key"
+  env:
+    # Environment variables injected into the running container/service.
+    DASHSCOPE_API_KEY: "your-dashscope-api-key"
