@@ -1557,7 +1557,7 @@ class PAIDeployManager(DeployManager):
 
     async def stop(self, deploy_id: str, **kwargs) -> Dict[str, Any]:
         """
-        Stop PAI deployment.
+        Stop PAI deployment by stopping the deployed EAS service.
 
         Args:
             deploy_id: Deployment identifier
@@ -1566,64 +1566,47 @@ class PAIDeployManager(DeployManager):
         Returns:
             Dict with success status and message
         """
-        from alibabacloud_pailangstudio20240710.models import (
-            DeleteDeploymentRequest,
-        )
-
-        try:
-            # Get deployment from state
-            deployment = self.state_manager.get(deploy_id)
-            if not deployment:
-                return {
-                    "success": False,
-                    "message": f"Deployment {deploy_id} not found",
-                }
-
-            pai_deployment_id = deployment.config.get("pai_deployment_id")
-            if not pai_deployment_id:
-                return {
-                    "success": False,
-                    "message": "PAI deployment ID not found in state",
-                }
-
-            # Ensure SDKs available
-            self._assert_cloud_sdks_available()
-
-            # Create PAI client
-            pai_client = self.get_langstudio_client()
-
-            # Delete deployment
-            logger.info("Stopping PAI deployment: %s", pai_deployment_id)
-
-            delete_req = DeleteDeploymentRequest(
-                workspace_id=self.workspace_id,
-            )
-            await pai_client.delete_deployment_async(
-                pai_deployment_id,
-                delete_req,
-            )
-
-            # Remove from state
-            self.state_manager.remove(deploy_id)
-
-            logger.info("PAI deployment stopped successfully")
-
-            return {
-                "success": True,
-                "message": f"Deployment {pai_deployment_id} stopped",
-                "details": {
-                    "deploy_id": deploy_id,
-                    "pai_deployment_id": pai_deployment_id,
-                },
-            }
-
-        except Exception as e:
-            logger.error("Failed to stop PAI deployment: %s", e)
+        # Get deployment from state
+        deployment = self.state_manager.get(deploy_id)
+        if not deployment:
             return {
                 "success": False,
-                "message": f"Failed to stop deployment: {str(e)}",
-                "details": {"deploy_id": deploy_id},
+                "message": f"Deployment {deploy_id} not found",
             }
+
+        service_name = deployment.config.get("service_name")
+        if not service_name:
+            return {
+                "success": False,
+                "message": "Service name not found in deployment state",
+            }
+
+        # Ensure SDKs available
+        self._assert_cloud_sdks_available()
+
+        # Get EAS client and stop the service
+        eas_client = self._eas_service_client()
+
+        logger.info("Stopping EAS service: %s", service_name)
+
+        await eas_client.stop_service_async(
+            cluster_id=self.region_id,
+            service_name=service_name,
+        )
+
+        # Update deployment status in state
+        self.state_manager.update_status(deploy_id, "stopped")
+
+        logger.info("EAS service stopped successfully: %s", service_name)
+
+        return {
+            "success": True,
+            "message": f"Service {service_name} stopped",
+            "details": {
+                "deploy_id": deploy_id,
+                "service_name": service_name,
+            },
+        }
 
     def get_status(self) -> str:
         """Get deployment status (not fully implemented)."""

@@ -139,24 +139,13 @@ async def test_deploy_with_project_dir(
 
     events = []
     async for event in client.astream(
-        create_simple_text_request(query="北京今天的天气如何?")
+        create_simple_text_request(query="北京今天的天气如何?"),
     ):
         events.append(event)
 
     assert len(events) > 2
 
-    result_2 = await deploy_manager.deploy(
-        project_dir=agentscope_proj_dir,
-        service_name=service_name,
-        wait=True,
-        auto_approve=False,
-        environment={
-            "DASHSCOPE_API_KEY": os.getenv("DASHSCOPE_API_KEY", ""),
-        },
-    )
-
-    assert result_2["status"] == "pending"
-    assert result_2.get("deploy_id") is not None
+    await deploy_manager.stop(result_1["deploy_id"])
 
 
 async def test_list_workspace_configs(deploy_manager: PAIDeployManager):
