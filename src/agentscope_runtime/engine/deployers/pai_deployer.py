@@ -529,9 +529,9 @@ def _generate_deployment_tool_tags(
         Dictionary of auto-generated tags with agentscope.io/ prefix
     """
     return {
-        "agentscope.io/deployed-by": "agentscope-runtime",
-        "agentscope.io/client-version": __version__,
-        "agentscope.io/deploy-method": deploy_method,
+        "deployed-by": "agentscope-runtime",
+        "client-version": __version__,
+        "deploy-method": deploy_method,
     }
 
 
@@ -881,38 +881,39 @@ class PAIDeployManager(DeployManager):
         start_time = time.time()
 
         while time.time() - start_time < timeout:
-            try:
-                # Get deployment status
-                get_req = GetDeploymentRequest(
-                    workspace_id=self.workspace_id,
-                )
+            # Get deployment status
+            get_req = GetDeploymentRequest(
+                workspace_id=self.workspace_id,
+            )
 
-                response = await client.get_deployment_async(
-                    deployment_id,
-                    get_req,
-                )
-                status = response.body.deployment_status
-                logger.info("Deployment status: %s", status)
+            response = await client.get_deployment_async(
+                deployment_id,
+                get_req,
+            )
+            status = response.body.deployment_status
+            logger.info("Deployment status: %s", status)
 
-                if status == "Succeed":
-                    return {}
-                if status == "Failed":
-                    raise RuntimeError(
-                        f"Deployment {deployment_id} failed: {response.body.error_message}",
-                    )
-                if status == "Cancled":
-                    raise RuntimeError(f"Deployment {deployment_id} cancled.")
-
-                if status in ("Running", "Creating"):
-                    await asyncio.sleep(poll_interval)
-                    continue
+            if status == "Succeed":
+                return {}
+            elif status == "Failed":
                 raise RuntimeError(
-                    f"Deployment {deployment_id} status unknown: {status}",
+                    f"Deployment {deployment_id} failed: {response.body.error_message}",
                 )
-            except Exception as e:
-                if "Failed" in str(e) or "Stopped" in str(e):
-                    raise
-                logger.warning("Error checking deployment status: %s", e)
+            elif status == "Cancled":
+                raise RuntimeError(f"Deployment {deployment_id} cancled.")
+            elif status in (
+                "Running",
+                "Creating",
+                "WaitForConfirm",
+                "Waiting",
+            ):
+                await asyncio.sleep(poll_interval)
+            else:
+                logger.warning(
+                    "Deployment %s status unknown: %s",
+                    deployment_id,
+                    status,
+                )
                 await asyncio.sleep(poll_interval)
 
         raise TimeoutError(
@@ -1091,7 +1092,7 @@ class PAIDeployManager(DeployManager):
                 )
                 service_status = "running"
 
-                service = await self._get_service(service_name)
+                service = await self.get_service(service_name)
                 endpoint = service.internet_endpoint
                 token = service.access_token
             else:
@@ -1369,7 +1370,7 @@ class PAIDeployManager(DeployManager):
             ),
         )
 
-    async def _get_service(self, service_name: str) -> Optional[Any]:
+    async def get_service(self, service_name: str) -> Optional[Any]:
         """Get service information.
 
         Args:
@@ -1417,7 +1418,7 @@ class PAIDeployManager(DeployManager):
 
         langstudio_client = self.get_langstudio_client()
 
-        service = await self._get_service(service_name)
+        service = await self.get_service(service_name)
         service = cast(Optional[Service], service)
 
         # try to reuse existing project from service label
@@ -1697,24 +1698,140 @@ class PAIDeployManager(DeployManager):
             ),
         )
 
+    async def wait_for_approval_stage(
+        self,
+        deployment_id: str,
+        timeout: int = 300,
+        poll_interval: int = 5,
+    ) -> bool:
+        """
+        Wait for deployment to reach approval stage (WaitingForApproval).
+
+        Args:
+            deployment_id: Deployment ID to monitor
+            timeout: Maximum wait time in seconds
+            poll_interval: Polling interval in seconds
+
+        Returns:
+            True if deployment reached approval stage, False otherwise
+
+        Raises:
+            TimeoutError: If deployment doesn't reach approval stage
+            RuntimeError: If deployment fails before approval stage
+        """
+        from alibabacloud_pailangstudio20240710.models import (
+            GetDeploymentRequest,
+        )
+
+        logger.info(
+            "Waiting for deployment %s to reach approval stage...",
+            deployment_id,
+        )
+        client = self.get_langstudio_client()
+
+        start_time = time.time()
+
+        while time.time() - start_time < timeout:
+            get_req = GetDeploymentRequest(
+                workspace_id=self.workspace_id,
+            )
+            response = await client.get_deployment_async(
+                deployment_id,
+                get_req,
+            )
+            status = response.body.deployment_status
+
+            if status == "WaitForConfirm":
+                logger.info("Deployment is ready for approval")
+                return True
+            if status in ("Failed", "Cancled"):
+                raise RuntimeError(
+                    f"Deployment {deployment_id} failed: "
+                    f"{response.body.error_message}",
+                )
+            if status in ("Running", "Creating"):
+                await asyncio.sleep(poll_interval)
+                continue
+            if status == "Succeed":
+                # Already approved and succeeded
+                return True
+
+            await asyncio.sleep(poll_interval)
+
+        raise TimeoutError(
+            f"Deployment {deployment_id} did not reach approval stage "
+            f"within {timeout} seconds",
+        )
+
     async def approve_deployment(
         self,
-        deployment_id: str,  # pylint: disable=unused-argument
-        wait=True,  # pylint: disable=unused-argument
-        timeout=1800,  # pylint: disable=unused-argument
-        poll_interval=10,  # pylint: disable=unused-argument
-    ) -> None:
+        deployment_id: str,
+        wait: bool = True,
+        timeout: int = 1800,
+        poll_interval: int = 10,
+    ) -> Dict[str, Any]:
+        """
+        Approve a deployment.
+
+        Args:
+            deployment_id: Deployment ID to approve
+            wait: Wait for deployment to complete after approval
+            timeout: Deployment timeout in seconds
+            poll_interval: Polling interval in seconds
+
+        Returns:
+            Dict with approval result
+        """
         from alibabacloud_pailangstudio20240710.models import (
             UpdateDeploymentRequest,
         )
 
-        # wait untils the deployment is waiting for approval
-
+        logger.info("Approving deployment %s", deployment_id)
         client = self.get_langstudio_client()
-        resp = await client.update_deployment_async(
+
+        await client.update_deployment_async(
+            deployment_id,
             request=UpdateDeploymentRequest(
                 workspace_id=self.workspace_id,
                 stage_action=json.dumps({"Stage": 3, "Action": "Confirm"}),
             ),
         )
-        return resp
+
+        if wait:
+            await self._wait_for_deployment(
+                deployment_id,
+                timeout=timeout,
+                poll_interval=poll_interval,
+            )
+
+        return {"success": True, "deployment_id": deployment_id}
+
+    async def cancel_deployment(
+        self,
+        deployment_id: str,
+    ) -> Dict[str, Any]:
+        """
+        Cancel a deployment.
+
+        Args:
+            deployment_id: Deployment ID to reject
+
+        Returns:
+            Dict with rejection result
+        """
+        from alibabacloud_pailangstudio20240710.models import (
+            UpdateDeploymentRequest,
+        )
+
+        logger.info("Cancelling deployment %s", deployment_id)
+        client = self.get_langstudio_client()
+
+        await client.update_deployment_async(
+            deployment_id,
+            request=UpdateDeploymentRequest(
+                workspace_id=self.workspace_id,
+                stage_action=json.dumps({"Stage": 3, "Action": "Cancel"}),
+            ),
+        )
+
+        return {"success": True, "deployment_id": deployment_id}

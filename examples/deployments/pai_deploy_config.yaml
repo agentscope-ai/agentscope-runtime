@@ -101,9 +101,9 @@ spec:
     # Can also be set via CLI: --tag KEY=VALUE (can be repeated)
     #
     # Note: The following tags are automatically added by the deployment tool:
-    #   - agentscope.io/deployed-by: "agentscope-runtime"
-    #   - agentscope.io/client-version: "<version>"
-    #   - agentscope.io/deploy-method: "cli" or "sdk"
+    #   - deployed-by: "agentscope-runtime"
+    #   - client-version: "<version>"
+    #   - deploy-method: "cli" or "sdk"
     # You can override these auto-generated tags if needed.
     project: "my-project"
     environment: "production"

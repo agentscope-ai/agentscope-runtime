@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """agentscope deploy command - Deploy agents to various platforms."""
 # pylint: disable=too-many-statements, too-many-branches
+# pylint: disable=too-many-nested-blocks
 
 import asyncio
 import json
@@ -1033,23 +1034,108 @@ def pai(
         console_url = result.get("url")
         status = result.get("status")
 
-        echo_success("Deployment successful!")
+        echo_success("Deployment created!")
         echo_info(f"Deployment ID: {deploy_id}")
         echo_info(f"Project ID: {flow_id}")
         echo_info(f"Snapshot ID: {snapshot_id}")
         echo_info(f"Service Name: {service_name}")
         echo_info(f"Status: {status}")
-        echo_info(f"Console URL: {console_url}")
+        echo_info(f"Deployment Console URL: {console_url}")
 
-        if deploy_config.wait and deploy_config.auto_approve:
+        # Step 12: Handle approval flow for auto_approve=False
+        if not deploy_config.auto_approve:
+            # Interactive approval flow
+            echo_info("\n" + "=" * 60)
+            echo_warning(
+                "Deployment created but waiting for approval.",
+            )
+            echo_info(
+                f"View deployment details at:\n  {console_url}",
+            )
+            echo_info("=" * 60)
+
+            # Check if we're in an interactive terminal
+            if sys.stdin.isatty():
+                echo_info("\nWhat would you like to do?")
+                echo_info("  [A]pprove - Approve and start deployment")
+                echo_info("  [C]ancel  - Cancel this deployment")
+                echo_info("  [S]kip    - Skip (approve later in console)")
+
+                choice = click.prompt(
+                    "\nYour choice(case insensitive)",
+                    type=click.Choice(
+                        ["A", "C", "S"],
+                        case_sensitive=False,
+                    ),
+                    default="S",
+                )
+                choice = choice.upper()
+
+                if choice == "A":
+                    echo_info("\nApproving deployment...")
+                    try:
+                        # Wait for deployment to reach approval stage
+                        asyncio.run(
+                            deployer.wait_for_approval_stage(deploy_id),
+                        )
+                        # Approve the deployment
+                        echo_info("Deployment approved by CLI.")
+                        asyncio.run(
+                            deployer.approve_deployment(
+                                deploy_id,
+                                wait=deploy_config.wait,
+                                timeout=deploy_config.timeout,
+                            ),
+                        )
+                        echo_success("Deployment completed!")
+
+                        # Get updated service info
+                        if deploy_config.wait:
+                            service = asyncio.run(
+                                deployer.get_service(service_name),
+                            )
+                            if service and service.internet_endpoint:
+                                echo_info(
+                                    f"Service Endpoint: "
+                                    f"{service.internet_endpoint}",
+                                )
+                            echo_info(
+                                f"\nDeployment is running. Use "
+                                f"'agentscope stop {deploy_id}' to stop it.",
+                            )
+                    except Exception as e:
+                        echo_error(f"Failed to approve deployment: {e}")
+                        sys.exit(1)
+
+                elif choice == "C":
+                    echo_info("\nCancelling deployment...")
+                    try:
+                        asyncio.run(
+                            deployer.wait_for_approval_stage(deploy_id),
+                        )
+                        asyncio.run(deployer.cancel_deployment(deploy_id))
+                        echo_warning("Deployment cancelled.")
+                    except Exception as e:
+                        echo_error(f"Failed to cancel deployment: {e}")
+                        sys.exit(1)
+
+                else:  # choice == "S"
+                    echo_info(
+                        "\nSkipped. Please approve or cancel the deployment "
+                        "in the PAI console.",
+                    )
+            else:
+                # Non-interactive mode
+                echo_warning(
+                    "\nNon-interactive mode: Please approve or cancel the "
+                    "deployment in the PAI console.",
+                )
+
+        elif deploy_config.wait:
+            echo_success("Deployment completed successfully!")
             echo_info(
                 f"\nDeployment is running. Use 'agentscope stop "
                 f"{deploy_id}' to stop it.",
-            )
-        elif not deploy_config.auto_approve:
-            echo_warning(
-                "\nDeployment created but not approved. "
-                "Please approve it in the PAI console.",
             )
 
     except Exception as e:
