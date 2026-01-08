@@ -301,6 +301,7 @@ async with BaseSandboxAsync() as box:
     print(await box.list_tools())  # List all available tools
     print(await box.run_ipython_cell(code="print('hi')"))  # Run Python code
     print(await box.run_shell_command(command="echo hello"))  # Run shell command
+    input("Press Enter to continue...")
 ```
 
 #### GUI Sandbox
