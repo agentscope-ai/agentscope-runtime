@@ -547,8 +547,8 @@ class PAIDeployManager(DeployManager):
 
     def __init__(
         self,
-        workspace_id: str,
-        region_id: str,
+        workspace_id: Optional[str] = None,
+        region_id: Optional[str] = None,
         access_key_id: Optional[str] = None,
         access_key_secret: Optional[str] = None,
         security_token: Optional[str] = None,
