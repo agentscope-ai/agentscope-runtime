@@ -1,32 +1,35 @@
 # -*- coding: utf-8 -*-
-from .base import DeployManager
-from .local_deployer import LocalDeployManager
-from .kubernetes_deployer import (
-    KubernetesDeployManager,
-    K8sConfig,
-)
-from .modelstudio_deployer import (
-    ModelstudioDeployManager,
-)
-from .knative_deployer import (
-    KnativeDeployManager,
-)
+from typing import TYPE_CHECKING
+from ...common.utils.lazy_loader import install_lazy_loader
 
-try:
-    from .agentrun_deployer import (
-        AgentRunDeployManager,
+if TYPE_CHECKING:
+    from .base import DeployManager
+    from .local_deployer import LocalDeployManager
+    from .kubernetes_deployer import (
+        KubernetesDeployManager,
+        K8sConfig,
     )
-except ImportError:
-    AgentRunDeployManager = None  # type: ignore
+    from .modelstudio_deployer import ModelstudioDeployManager
+    from .knative_deployer import KnativeDeployManager
+    from .agentrun_deployer import AgentRunDeployManager
+    from .fc_deployer import FCDeployManager
 
-try:
-    from .fc_deployer import (
-        FCDeployManager,
-    )
-except ImportError:
-    FCDeployManager = None  # type: ignore
+install_lazy_loader(
+    globals(),
+    {
+        "DeployManager": ".base",
+        "LocalDeployManager": ".local_deployer",
+        "KubernetesDeployManager": ".kubernetes_deployer",
+        "K8sConfig": ".kubernetes_deployer",
+        "ModelstudioDeployManager": ".modelstudio_deployer",
+        "KnativeDeployManager": ".knative_deployer",
+        "AgentRunDeployManager": ".agentrun_deployer",
+        "FCDeployManager": ".fc_deployer",
+    },
+)
 
 __all__ = [
+    "K8sConfig",
     "DeployManager",
     "LocalDeployManager",
     "KubernetesDeployManager",
