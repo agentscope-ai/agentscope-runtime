@@ -637,8 +637,8 @@ body.preview-active {
 <span class="kn">from</span><span class="w"> </span><span class="nn">...utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_image_uri</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxRegistry</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxType</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">...box.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSandbox</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">...box.gui</span><span class="w"> </span><span class="kn">import</span> <span class="n">GUIMixin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...box.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSandbox</span><span class="p">,</span> <span class="n">BaseSandboxAsync</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...box.gui</span><span class="w"> </span><span class="kn">import</span> <span class="n">GUIMixin</span><span class="p">,</span> <span class="n">AsyncGUIMixin</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...constant</span><span class="w"> </span><span class="kn">import</span> <span class="n">TIMEOUT</span>
 
 
@@ -1005,6 +1005,202 @@ body.preview-active {
         <span class="p">)</span></div>
 </div>
 
+
+
+<span class="nd">@SandboxRegistry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
+    <span class="n">build_image_uri</span><span class="p">(</span><span class="s2">&quot;runtime-sandbox-browser&quot;</span><span class="p">),</span>
+    <span class="n">sandbox_type</span><span class="o">=</span><span class="n">SandboxType</span><span class="o">.</span><span class="n">BROWSER_ASYNC</span><span class="p">,</span>
+    <span class="n">security_level</span><span class="o">=</span><span class="s2">&quot;medium&quot;</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="o">=</span><span class="n">TIMEOUT</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Browser sandbox (Async)&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BrowserSandboxAsync</span><span class="p">(</span><span class="n">GUIMixin</span><span class="p">,</span> <span class="n">AsyncGUIMixin</span><span class="p">,</span> <span class="n">BaseSandboxAsync</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>  <span class="c1"># pylint: disable=useless-parent-delegation</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sandbox_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">,</span>
+        <span class="n">base_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">bearer_token</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">sandbox_type</span><span class="p">:</span> <span class="n">SandboxType</span> <span class="o">=</span> <span class="n">SandboxType</span><span class="o">.</span><span class="n">BROWSER_ASYNC</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">sandbox_id</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="p">,</span>
+            <span class="n">base_url</span><span class="p">,</span>
+            <span class="n">bearer_token</span><span class="p">,</span>
+            <span class="n">sandbox_type</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close the current browser page.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span><span class="s2">&quot;browser_close&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_resize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resize the browser window.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;browser_resize&quot;</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;width&quot;</span><span class="p">:</span> <span class="n">width</span><span class="p">,</span> <span class="s2">&quot;height&quot;</span><span class="p">:</span> <span class="n">height</span><span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_console_messages</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return all console messages from the browser.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span><span class="s2">&quot;browser_console_messages&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_handle_dialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accept</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">prompt_text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle a dialog popup.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;browser_handle_dialog&quot;</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;accept&quot;</span><span class="p">:</span> <span class="n">accept</span><span class="p">,</span> <span class="s2">&quot;promptText&quot;</span><span class="p">:</span> <span class="n">prompt_text</span><span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_file_upload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paths</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Upload one or multiple files.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;browser_file_upload&quot;</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;paths&quot;</span><span class="p">:</span> <span class="n">paths</span><span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_press_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Press a key in the browser.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span><span class="s2">&quot;browser_press_key&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="n">key</span><span class="p">})</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_navigate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Navigate to a URL.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span><span class="s2">&quot;browser_navigate&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">url</span><span class="p">})</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_navigate_back</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Go back in browser history.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span><span class="s2">&quot;browser_navigate_back&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_navigate_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Go forward in browser history.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span><span class="s2">&quot;browser_navigate_forward&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_network_requests</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return network requests.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span><span class="s2">&quot;browser_network_requests&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_pdf_save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save page as a PDF.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;browser_pdf_save&quot;</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;filename&quot;</span><span class="p">:</span> <span class="n">filename</span><span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_take_screenshot</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">raw</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">element</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">ref</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Take a screenshot.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;browser_take_screenshot&quot;</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="p">,</span> <span class="s2">&quot;filename&quot;</span><span class="p">:</span> <span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;element&quot;</span><span class="p">:</span> <span class="n">element</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">ref</span><span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Accessibility snapshot.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span><span class="s2">&quot;browser_snapshot&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Click an element.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;browser_click&quot;</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;element&quot;</span><span class="p">:</span> <span class="n">element</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">ref</span><span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_drag</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">start_element</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">start_ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">end_element</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">end_ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Drag and drop.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;browser_drag&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;startElement&quot;</span><span class="p">:</span> <span class="n">start_element</span><span class="p">,</span>
+                <span class="s2">&quot;startRef&quot;</span><span class="p">:</span> <span class="n">start_ref</span><span class="p">,</span>
+                <span class="s2">&quot;endElement&quot;</span><span class="p">:</span> <span class="n">end_element</span><span class="p">,</span>
+                <span class="s2">&quot;endRef&quot;</span><span class="p">:</span> <span class="n">end_ref</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_hover</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hover over an element.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;browser_hover&quot;</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;element&quot;</span><span class="p">:</span> <span class="n">element</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">ref</span><span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_type</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">element</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">submit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">slowly</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Type text into an element.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;browser_type&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;element&quot;</span><span class="p">:</span> <span class="n">element</span><span class="p">,</span>
+                <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">ref</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
+                <span class="s2">&quot;submit&quot;</span><span class="p">:</span> <span class="n">submit</span><span class="p">,</span>
+                <span class="s2">&quot;slowly&quot;</span><span class="p">:</span> <span class="n">slowly</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_select_option</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">element</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">values</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select options in a dropdown.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;browser_select_option&quot;</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;element&quot;</span><span class="p">:</span> <span class="n">element</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">ref</span><span class="p">,</span> <span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="n">values</span><span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_tab_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List all tabs.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span><span class="s2">&quot;browser_tab_list&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_tab_new</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Open a new tab.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span><span class="s2">&quot;browser_tab_new&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">url</span><span class="p">})</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_tab_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Select tab by index.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;browser_tab_select&quot;</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="n">index</span><span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_tab_close</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close a tab.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;browser_tab_close&quot;</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="n">index</span><span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">browser_wait_for</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">time</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">text_gone</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Wait for text or time.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;browser_wait_for&quot;</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">time</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span> <span class="s2">&quot;textGone&quot;</span><span class="p">:</span> <span class="n">text_gone</span><span class="p">},</span>
+        <span class="p">)</span>
 </pre></div>
         </article>
       </div>

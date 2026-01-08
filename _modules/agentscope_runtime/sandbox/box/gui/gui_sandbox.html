@@ -639,7 +639,7 @@ body.preview-active {
 <span class="kn">from</span><span class="w"> </span><span class="nn">...utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_image_uri</span><span class="p">,</span> <span class="n">get_platform</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxRegistry</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxType</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">...box.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSandbox</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...box.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSandbox</span><span class="p">,</span> <span class="n">BaseSandboxAsync</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...constant</span><span class="w"> </span><span class="kn">import</span> <span class="n">TIMEOUT</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -659,6 +659,34 @@ body.preview-active {
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_url</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">urljoin</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;url&quot;</span><span class="p">],</span> <span class="n">path</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;?&quot;</span> <span class="o">+</span> <span class="n">urlencode</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
 
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_url</span><span class="si">}</span><span class="s2">/desktop/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sandbox_id</span><span class="si">}{</span><span class="n">remote_path</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;?</span><span class="si">{</span><span class="n">urlencode</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">AsyncGUIMixin</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_desktop_url_async</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Check sandbox health asynchronously</span>
+        <span class="n">is_healthy</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">manager_api</span><span class="o">.</span><span class="n">check_health_async</span><span class="p">(</span>
+            <span class="n">identity</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sandbox_id</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_healthy</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sandbox </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sandbox_id</span><span class="si">}</span><span class="s2"> is not healthy&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Retrieve container information asynchronously</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_info_async</span><span class="p">()</span>
+
+        <span class="c1"># Default local VNC path and remote VNC relay path</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="s2">&quot;/vnc/vnc_lite.html&quot;</span>
+        <span class="n">remote_path</span> <span class="o">=</span> <span class="s2">&quot;/vnc/vnc_relay.html&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;runtime_token&quot;</span><span class="p">]}</span>
+
+        <span class="c1"># If base_url is not set, construct the local URL</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_url</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">urljoin</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;url&quot;</span><span class="p">],</span> <span class="n">path</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;?&quot;</span> <span class="o">+</span> <span class="n">urlencode</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="c1"># Construct the remote URL with sandbox ID and VNC relay path</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_url</span><span class="si">}</span><span class="s2">/desktop/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sandbox_id</span><span class="si">}{</span><span class="n">remote_path</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="sa">f</span><span class="s2">&quot;?</span><span class="si">{</span><span class="n">urlencode</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -761,6 +789,94 @@ body.preview-active {
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;computer&quot;</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span></div>
 </div>
 
+
+
+<span class="nd">@SandboxRegistry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
+    <span class="n">build_image_uri</span><span class="p">(</span><span class="s2">&quot;runtime-sandbox-gui&quot;</span><span class="p">),</span>
+    <span class="n">sandbox_type</span><span class="o">=</span><span class="n">SandboxType</span><span class="o">.</span><span class="n">GUI_ASYNC</span><span class="p">,</span>
+    <span class="n">security_level</span><span class="o">=</span><span class="s2">&quot;high&quot;</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="o">=</span><span class="n">TIMEOUT</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;GUI Sandbox (Async)&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">GuiSandboxAsync</span><span class="p">(</span><span class="n">GUIMixin</span><span class="p">,</span> <span class="n">AsyncGUIMixin</span><span class="p">,</span> <span class="n">BaseSandboxAsync</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>  <span class="c1"># pylint: disable=useless-parent-delegation</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sandbox_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">,</span>
+        <span class="n">base_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">bearer_token</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">sandbox_type</span><span class="p">:</span> <span class="n">SandboxType</span> <span class="o">=</span> <span class="n">SandboxType</span><span class="o">.</span><span class="n">GUI_ASYNC</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">sandbox_id</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="p">,</span>
+            <span class="n">base_url</span><span class="p">,</span>
+            <span class="n">bearer_token</span><span class="p">,</span>
+            <span class="n">sandbox_type</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># Architecture compatibility warning</span>
+        <span class="k">if</span> <span class="n">get_platform</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;linux/arm64&quot;</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Compatibility Notice: This GUI Sandbox may have issues on &quot;</span>
+                <span class="s2">&quot;arm64 CPU architectures, due to the computer-use-mcp not &quot;</span>
+                <span class="s2">&quot;providing linux/arm64 compatibility. It has been tested &quot;</span>
+                <span class="s2">&quot;on Apple M4 chips with Rosetta enabled. However, on M1, M2, &quot;</span>
+                <span class="s2">&quot;and M3 chips, Chromium browser might crash due to the missing &quot;</span>
+                <span class="s2">&quot;SSE3 instruction set.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">computer_use</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">coordinate</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">text</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously use mouse and keyboard to interact with a desktop GUI.</span>
+
+<span class="sd">        This method interfaces with the sandbox&#39;s GUI environment.</span>
+<span class="sd">        You do not have access to a terminal or applications menu;</span>
+<span class="sd">        interaction is performed by clicking on desktop icons or using</span>
+<span class="sd">        keyboard shortcuts.</span>
+
+<span class="sd">        Guidelines:</span>
+<span class="sd">            * Prefer keyboard shortcuts where possible over cursor actions.</span>
+<span class="sd">            * If visual keyboard hints (two-letter boxes) are shown, typing</span>
+<span class="sd">              those letters will click the element — use this where possible.</span>
+<span class="sd">            * Applications or actions may require waiting; e.g., repeat</span>
+<span class="sd">              screenshots if windows don’t open immediately.</span>
+<span class="sd">            * Always determine cursor coordinates using screenshots before moving</span>
+<span class="sd">              the cursor to click on elements.</span>
+<span class="sd">            * If clicks fail to load content, try adjusting cursor coordinates to</span>
+<span class="sd">              center on the target element.</span>
+<span class="sd">            * Click with the cursor tip centered on elements, not on edges.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            action (str): The action to perform. Options include:</span>
+<span class="sd">                * `key` — Press a key or key combination.</span>
+<span class="sd">                * `type` — Type a string of text.</span>
+<span class="sd">                * `get_cursor_position` — Get current cursor coordinates (x, y).</span>
+<span class="sd">                * `mouse_move` — Move cursor to given (x, y).</span>
+<span class="sd">                * `left_click` — Left mouse click.</span>
+<span class="sd">                * `left_click_drag` — Click and drag to given (x, y).</span>
+<span class="sd">                * `right_click` — Right mouse click.</span>
+<span class="sd">                * `middle_click` — Middle mouse click.</span>
+<span class="sd">                * `double_click` — Double left mouse click.</span>
+<span class="sd">                * `get_screenshot` — Capture screen screenshot.</span>
+<span class="sd">            coordinate (list[float] | tuple[float, float], optional):</span>
+<span class="sd">                Pixel coordinates (x from left edge, y from top edge).</span>
+<span class="sd">            text (str, optional): String to type, or key-combination for `key` action.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Any: Tool execution result from the sandbox.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">coordinate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;coordinate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">coordinate</span>
+        <span class="k">if</span> <span class="n">text</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">text</span>
+
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span><span class="s2">&quot;computer&quot;</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
 </pre></div>
         </article>
       </div>

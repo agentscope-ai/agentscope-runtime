@@ -760,19 +760,62 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <section id="create-a-sandbox">
 <h3>Create a Sandbox<a class="headerlink" href="#create-a-sandbox" title="Link to this heading">¶</a></h3>
 <p>The previous section introduced tool-centred usage methods, while this section introduces sandbox-centred usage methods.</p>
-<p>You can create different types of sandboxes via the <code class="docutils literal notranslate"><span class="pre">sandbox</span></code> SDK:</p>
+<p>You can create different types of sandboxes via the <code class="docutils literal notranslate"><span class="pre">sandbox</span></code> SDK. AgentScope Runtime provides <strong>both synchronous</strong> and <strong>asynchronous</strong> versions for each sandbox type:</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Synchronous Class</p></th>
+<th class="head"><p>Asynchronous Class</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BaseSandbox</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BaseSandboxAsync</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">GuiSandbox</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">GuiSandboxAsync</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FilesystemSandbox</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">FilesystemSandboxAsync</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BrowserSandbox</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BrowserSandboxAsync</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">MobileSandbox</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MobileSandboxAsync</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TrainingSandbox</span></code></p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AgentbaySandbox</span></code></p></td>
+<td><p>-</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 <ul class="simple">
 <li><p><strong>Base Sandbox</strong>: Use for running <strong>Python code</strong> or <strong>shell commands</strong> in an isolated environment.</p></li>
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSandbox</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># --- Synchronous version ---</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSandbox</span>
 
 <span class="k">with</span> <span class="n">BaseSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
     <span class="c1"># By default, pulls `agentscope/runtime-sandbox-base:latest` from DockerHub</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span> <span class="c1"># List all available tools</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">run_ipython_cell</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;print(&#39;hi&#39;)&quot;</span><span class="p">))</span>  <span class="c1"># Run Python code</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="s2">&quot;echo hello&quot;</span><span class="p">))</span>  <span class="c1"># Run shell command</span>
+    <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span>
+
+<span class="c1"># --- Asynchronous version ---</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSandboxAsync</span>
+
+<span class="k">async</span> <span class="k">with</span> <span class="n">BaseSandboxAsync</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
+    <span class="c1"># Default image is `agentscope/runtime-sandbox-base:latest`</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>  <span class="c1"># List all available tools</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">run_ipython_cell</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;print(&#39;hi&#39;)&quot;</span><span class="p">))</span>  <span class="c1"># Run Python code</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="s2">&quot;echo hello&quot;</span><span class="p">))</span>  <span class="c1"># Run shell command</span>
     <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -784,14 +827,26 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">GuiSandbox</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># --- Synchronous version ---</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">GuiSandbox</span>
 
 <span class="k">with</span> <span class="n">GuiSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
     <span class="c1"># By default, pulls `agentscope/runtime-sandbox-gui:latest` from DockerHub</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span> <span class="c1"># List all available tools</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>  <span class="c1"># List all available tools</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">desktop_url</span><span class="p">)</span>  <span class="c1"># Web desktop access URL</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_cursor_position&quot;</span><span class="p">))</span>  <span class="c1"># Get mouse cursor position</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_screenshot&quot;</span><span class="p">))</span>       <span class="c1"># Capture screenshot</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_screenshot&quot;</span><span class="p">))</span>  <span class="c1"># Capture screenshot</span>
+    <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span>
+
+<span class="c1"># --- Asynchronous version ---</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">GuiSandboxAsync</span>
+
+<span class="k">async</span> <span class="k">with</span> <span class="n">GuiSandboxAsync</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
+    <span class="c1"># Default image is `agentscope/runtime-sandbox-gui:latest`</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>  <span class="c1"># List all available tools</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">desktop_url</span><span class="p">)</span>  <span class="c1"># Web desktop access URL</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_cursor_position&quot;</span><span class="p">))</span>  <span class="c1"># Get mouse cursor position</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_screenshot&quot;</span><span class="p">))</span>  <span class="c1"># Capture screenshot</span>
     <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -803,13 +858,24 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilesystemSandbox</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># --- Synchronous version ---</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilesystemSandbox</span>
 
 <span class="k">with</span> <span class="n">FilesystemSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
     <span class="c1"># By default, pulls `agentscope/runtime-sandbox-filesystem:latest` from DockerHub</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span> <span class="c1"># List all available tools</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>  <span class="c1"># List all available tools</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">desktop_url</span><span class="p">)</span>  <span class="c1"># Web desktop access URL</span>
     <span class="n">box</span><span class="o">.</span><span class="n">create_directory</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>  <span class="c1"># Create a directory</span>
+    <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span>
+
+<span class="c1"># --- Asynchronous version ---</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilesystemSandboxAsync</span>
+
+<span class="k">async</span> <span class="k">with</span> <span class="n">FilesystemSandboxAsync</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
+    <span class="c1"># Default image is `agentscope/runtime-sandbox-filesystem:latest`</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>  <span class="c1"># List all available tools</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">desktop_url</span><span class="p">)</span>  <span class="c1"># Web desktop access URL</span>
+    <span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">create_directory</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>  <span class="c1"># Create a directory</span>
     <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -821,13 +887,24 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">BrowserSandbox</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># --- Synchronous version ---</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">BrowserSandbox</span>
 
 <span class="k">with</span> <span class="n">BrowserSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
     <span class="c1"># By default, pulls `agentscope/runtime-sandbox-browser:latest` from DockerHub</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span> <span class="c1"># List all available tools</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>  <span class="c1"># List all available tools</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">desktop_url</span><span class="p">)</span>  <span class="c1"># Web desktop access URL</span>
     <span class="n">box</span><span class="o">.</span><span class="n">browser_navigate</span><span class="p">(</span><span class="s2">&quot;https://www.google.com/&quot;</span><span class="p">)</span>  <span class="c1"># Open a webpage</span>
+    <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span>
+
+<span class="c1"># --- Asynchronous version ---</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">BrowserSandboxAsync</span>
+
+<span class="k">async</span> <span class="k">with</span> <span class="n">BrowserSandboxAsync</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
+    <span class="c1"># Default image is `agentscope/runtime-sandbox-browser:latest`</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>  <span class="c1"># List all available tools</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">desktop_url</span><span class="p">)</span>  <span class="c1"># Web desktop access URL</span>
+    <span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">browser_navigate</span><span class="p">(</span><span class="s2">&quot;https://www.google.com/&quot;</span><span class="p">)</span>  <span class="c1"># Open a webpage</span>
     <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -860,16 +937,32 @@ When running on an ARM64/aarch64 architecture (e.g., Apple M-series chips), you 
 </ul>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">MobileSandbox</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># --- Synchronous version ---</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">MobileSandbox</span>
 
 <span class="k">with</span> <span class="n">MobileSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
     <span class="c1"># By default, pulls &#39;agentscope/runtime-sandbox-mobile:latest&#39; from DockerHub</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span> <span class="c1"># List all available tools</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_get_screen_resolution</span><span class="p">())</span> <span class="c1"># Get the screen resolution</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_tap</span><span class="p">([</span><span class="mi">500</span><span class="p">,</span> <span class="mi">1000</span><span class="p">]))</span> <span class="c1"># Tap at coordinate (500, 1000)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_input_text</span><span class="p">(</span><span class="s2">&quot;Hello from AgentScope!&quot;</span><span class="p">))</span> <span class="c1"># Input text</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_key_event</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span> <span class="c1"># Sends a HOME key event (KeyCode: 3)</span>
-    <span class="n">screenshot_result</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">mobile_get_screenshot</span><span class="p">()</span> <span class="c1"># Get the current screenshot</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>  <span class="c1"># List all available tools</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_get_screen_resolution</span><span class="p">())</span>  <span class="c1"># Get the screen resolution</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_tap</span><span class="p">([</span><span class="mi">500</span><span class="p">,</span> <span class="mi">1000</span><span class="p">]))</span>  <span class="c1"># Tap at coordinate (500, 1000)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_input_text</span><span class="p">(</span><span class="s2">&quot;Hello from AgentScope!&quot;</span><span class="p">))</span>  <span class="c1"># Input text</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">mobile_key_event</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>  <span class="c1"># HOME key event</span>
+    <span class="n">screenshot_result</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">mobile_get_screenshot</span><span class="p">()</span>  <span class="c1"># Get screenshot</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">screenshot_result</span><span class="p">)</span>
+    <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span>
+
+<span class="c1"># --- Asynchronous version ---</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">MobileSandboxAsync</span>
+
+<span class="k">async</span> <span class="k">with</span> <span class="n">MobileSandboxAsync</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
+    <span class="c1"># Default image is &#39;agentscope/runtime-sandbox-mobile:latest&#39;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>  <span class="c1"># List all available tools</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">mobile_get_screen_resolution</span><span class="p">())</span>  <span class="c1"># Get the screen resolution</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">mobile_tap</span><span class="p">([</span><span class="mi">500</span><span class="p">,</span> <span class="mi">1000</span><span class="p">]))</span>  <span class="c1"># Tap at coordinate (500, 1000)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">mobile_input_text</span><span class="p">(</span><span class="s2">&quot;Hello from AgentScope!&quot;</span><span class="p">))</span>  <span class="c1"># Input text</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">mobile_key_event</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>  <span class="c1"># HOME key event</span>
+    <span class="n">screenshot_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">mobile_get_screenshot</span><span class="p">()</span>  <span class="c1"># Get screenshot</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">screenshot_result</span><span class="p">)</span>
     <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press Enter to continue...&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -886,19 +979,6 @@ When running on an ARM64/aarch64 architecture (e.g., Apple M-series chips), you 
 <span class="k">with</span> <span class="n">TrainingSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
     <span class="n">profile_list</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">get_env_profile</span><span class="p">(</span><span class="n">env_type</span><span class="o">=</span><span class="s2">&quot;appworld&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">profile_list</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-<ul class="simple">
-<li><p><strong>Cloud Sandbox</strong>: A cloud-based sandbox environment that doesn’t require local Docker containers. <code class="docutils literal notranslate"><span class="pre">CloudSandbox</span></code> is the base class for cloud sandboxes, providing a unified interface.</p></li>
-</ul>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">CloudSandbox</span>
-
-<span class="c1"># CloudSandbox is an abstract base class, typically not used directly</span>
-<span class="c1"># Please use specific cloud sandbox implementations, such as AgentbaySandbox</span>
 </pre></div>
 </div>
 </div>

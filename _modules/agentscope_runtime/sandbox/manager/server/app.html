@@ -902,7 +902,13 @@ body.preview-active {
     <span class="n">target_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_url</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span>
 
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">()</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span>  <span class="c1"># For FC</span>
+                <span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;x-agentrun-session-id&quot;</span><span class="p">:</span> <span class="s2">&quot;s&quot;</span> <span class="o">+</span> <span class="n">sandbox_id</span><span class="p">,</span>
+                <span class="s2">&quot;x-agentscope-runtime-session-id&quot;</span><span class="p">:</span> <span class="s2">&quot;s&quot;</span> <span class="o">+</span> <span class="n">sandbox_id</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
             <span class="n">upstream</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">target_url</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
                 <span class="n">content</span><span class="o">=</span><span class="n">upstream</span><span class="o">.</span><span class="n">content</span><span class="p">,</span>

@@ -636,7 +636,7 @@ body.preview-active {
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">urlencode</span><span class="p">,</span> <span class="n">urljoin</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.box.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sandbox</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sandbox</span><span class="p">,</span> <span class="n">SandboxAsync</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">...utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_image_uri</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxRegistry</span>
@@ -644,6 +644,107 @@ body.preview-active {
 <span class="kn">from</span><span class="w"> </span><span class="nn">...constant</span><span class="w"> </span><span class="kn">import</span> <span class="n">TIMEOUT</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">HostPrerequisiteError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Exception raised when host prerequisites</span>
+<span class="sd">    for MobileSandbox are not met.&quot;&quot;&quot;</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_host_readiness</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="s2">&quot;Performing one-time host environment check for MobileSandbox...&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">architecture</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">machine</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">architecture</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;aarch64&quot;</span><span class="p">,</span> <span class="s2">&quot;arm64&quot;</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">======================== WARNING ========================</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;ARM64/aarch64 architecture detected (e.g., Apple M-series).</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Running this mobile sandbox on a non-x86_64 host may lead </span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot; to unexpected compatibility or performance issues.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;=========================================================&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">os_type</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">os_type</span> <span class="o">==</span> <span class="s2">&quot;Linux&quot;</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                <span class="p">[</span><span class="s2">&quot;lsmod&quot;</span><span class="p">],</span>
+                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">loaded_modules</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">,</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CalledProcessError</span><span class="p">):</span>
+            <span class="n">loaded_modules</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Could not execute &#39;lsmod&#39; to verify kernel modules.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;binder_linux&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">loaded_modules</span><span class="p">:</span>
+            <span class="n">error_message</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">========== HOST PREREQUISITE FAILED ==========</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;MobileSandbox requires specific kernel modules&quot;</span>
+                <span class="s2">&quot; that appear to be missing or not loaded.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;To fix this, please run the following commands&quot;</span>
+                <span class="s2">&quot; on your Linux host:</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;## Install required kernel modules</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;sudo apt update&quot;</span>
+                <span class="s2">&quot; &amp;&amp; sudo apt install -y linux-modules-extra-`uname -r`</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;sudo modprobe binder_linux&quot;</span>
+                <span class="s1">&#39; devices=&quot;binder,hwbinder,vndbinder&quot;</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="s2">&quot;## (Optional) Load the ashmem driver for older kernels</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;sudo modprobe ashmem_linux</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;==================================================&quot;</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">HostPrerequisiteError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">os_type</span> <span class="o">==</span> <span class="s2">&quot;Windows&quot;</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                <span class="p">[</span><span class="s2">&quot;wsl&quot;</span><span class="p">,</span> <span class="s2">&quot;lsmod&quot;</span><span class="p">],</span>
+                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">loaded_modules</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">,</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CalledProcessError</span><span class="p">):</span>
+            <span class="n">loaded_modules</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Could not execute &#39;wsl lsmod&#39; to verify kernel modules.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;binder_linux&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">loaded_modules</span><span class="p">:</span>
+            <span class="n">error_message</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">========== HOST PREREQUISITE FAILED ==========</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;MobileSandbox on Windows requires Docker Desktop &quot;</span>
+                <span class="s2">&quot;with the WSL 2 backend.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;The required kernel modules seem to be missing &quot;</span>
+                <span class="s2">&quot;in your WSL 2 environment.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;To fix this, please follow these steps:</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;1. **Ensure Docker Desktop is using WSL 2**:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;   - Open Docker Desktop -&gt; Settings -&gt; General.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;   - Make sure &#39;Use the WSL 2 based engine&#39; &quot;</span>
+                <span class="s2">&quot;is checked.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;2. **Ensure WSL is installed and updated**:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;   - Open PowerShell or Command Prompt &quot;</span>
+                <span class="s2">&quot;as Administrator.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;   - Run: wsl --install</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;   - Run: wsl --update</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;   (An update usually installs a recent Linux kernel &quot;</span>
+                <span class="s2">&quot;with the required modules.)</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;3. **Verify manually (Optional)**:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;   - After updating, run &#39;wsl lsmod | findstr binder&#39; &quot;</span>
+                <span class="s2">&quot;in your terminal.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;   - If it shows &#39;binder_linux&#39;, &quot;</span>
+                <span class="s2">&quot;the issue should be resolved.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;==================================================&quot;</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">HostPrerequisiteError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Host environment check passed.&quot;</span><span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">MobileMixin</span><span class="p">:</span>
@@ -672,9 +773,41 @@ body.preview-active {
         <span class="p">)</span>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">HostPrerequisiteError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Exception raised when host prerequisites</span>
-<span class="sd">    for MobileSandbox are not met.&quot;&quot;&quot;</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AsyncMobileMixin</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_mobile_url_async</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously retrieve the mobile VNC/websockify connection URL.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: Fully qualified URL to access the mobile sandbox UI remotely.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            RuntimeError: If the sandbox is not healthy.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check health asynchronously</span>
+        <span class="n">is_healthy</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">manager_api</span><span class="o">.</span><span class="n">check_health_async</span><span class="p">(</span>
+            <span class="n">identity</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sandbox_id</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_healthy</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sandbox </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sandbox_id</span><span class="si">}</span><span class="s2"> is not healthy&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Get container info asynchronously</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_info_async</span><span class="p">()</span>
+
+        <span class="c1"># Local path and remote path (currently the same)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="s2">&quot;/websockify/&quot;</span>
+        <span class="n">remote_path</span> <span class="o">=</span> <span class="s2">&quot;/websockify/&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;runtime_token&quot;</span><span class="p">]}</span>
+
+        <span class="c1"># Local URL if base_url is not set</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_url</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">urljoin</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;url&quot;</span><span class="p">],</span> <span class="n">path</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;?&quot;</span> <span class="o">+</span> <span class="n">urlencode</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="c1"># Remote URL</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_url</span><span class="si">}</span><span class="s2">/desktop/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sandbox_id</span><span class="si">}{</span><span class="n">remote_path</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;?</span><span class="si">{</span><span class="n">urlencode</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
 
 
 <div class="viewcode-block" id="MobileSandbox">
@@ -701,7 +834,7 @@ body.preview-active {
         <span class="n">sandbox_type</span><span class="p">:</span> <span class="n">SandboxType</span> <span class="o">=</span> <span class="n">SandboxType</span><span class="o">.</span><span class="n">MOBILE</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="k">if</span> <span class="n">base_url</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">_host_check_done</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_check_host_readiness</span><span class="p">()</span>
+            <span class="n">_check_host_readiness</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">_host_check_done</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
@@ -712,101 +845,6 @@ body.preview-active {
             <span class="n">sandbox_type</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_check_host_readiness</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="s2">&quot;Performing one-time host environment check for MobileSandbox...&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">architecture</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">machine</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">architecture</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;aarch64&quot;</span><span class="p">,</span> <span class="s2">&quot;arm64&quot;</span><span class="p">):</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">======================== WARNING ========================</span><span class="se">\n</span><span class="s2">&quot;</span>
-                <span class="s2">&quot;ARM64/aarch64 architecture detected (e.g., Apple M-series).</span><span class="se">\n</span><span class="s2">&quot;</span>
-                <span class="s2">&quot;Running this mobile sandbox on a non-x86_64 host may lead </span><span class="se">\n</span><span class="s2">&quot;</span>
-                <span class="s2">&quot; to unexpected compatibility or performance issues.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                <span class="s2">&quot;=========================================================&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
-
-        <span class="n">os_type</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">os_type</span> <span class="o">==</span> <span class="s2">&quot;Linux&quot;</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-                    <span class="p">[</span><span class="s2">&quot;lsmod&quot;</span><span class="p">],</span>
-                    <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                    <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                    <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">loaded_modules</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span>
-            <span class="k">except</span> <span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">,</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CalledProcessError</span><span class="p">):</span>
-                <span class="n">loaded_modules</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;Could not execute &#39;lsmod&#39; to verify kernel modules.&quot;</span><span class="p">,</span>
-                <span class="p">)</span>
-
-            <span class="k">if</span> <span class="s2">&quot;binder_linux&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">loaded_modules</span><span class="p">:</span>
-                <span class="n">error_message</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">========== HOST PREREQUISITE FAILED ==========</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;MobileSandbox requires specific kernel modules&quot;</span>
-                    <span class="s2">&quot; that appear to be missing or not loaded.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;To fix this, please run the following commands&quot;</span>
-                    <span class="s2">&quot; on your Linux host:</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;## Install required kernel modules</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;sudo apt update&quot;</span>
-                    <span class="s2">&quot; &amp;&amp; sudo apt install -y linux-modules-extra-`uname -r`</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;sudo modprobe binder_linux&quot;</span>
-                    <span class="s1">&#39; devices=&quot;binder,hwbinder,vndbinder&quot;</span><span class="se">\n</span><span class="s1">&#39;</span>
-                    <span class="s2">&quot;## (Optional) Load the ashmem driver for older kernels</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;sudo modprobe ashmem_linux</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;==================================================&quot;</span>
-                <span class="p">)</span>
-                <span class="k">raise</span> <span class="n">HostPrerequisiteError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">os_type</span> <span class="o">==</span> <span class="s2">&quot;Windows&quot;</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-                    <span class="p">[</span><span class="s2">&quot;wsl&quot;</span><span class="p">,</span> <span class="s2">&quot;lsmod&quot;</span><span class="p">],</span>
-                    <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                    <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                    <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                    <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">loaded_modules</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span>
-            <span class="k">except</span> <span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">,</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CalledProcessError</span><span class="p">):</span>
-                <span class="n">loaded_modules</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;Could not execute &#39;wsl lsmod&#39; to verify kernel modules.&quot;</span><span class="p">,</span>
-                <span class="p">)</span>
-
-            <span class="k">if</span> <span class="s2">&quot;binder_linux&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">loaded_modules</span><span class="p">:</span>
-                <span class="n">error_message</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">========== HOST PREREQUISITE FAILED ==========</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;MobileSandbox on Windows requires Docker Desktop &quot;</span>
-                    <span class="s2">&quot;with the WSL 2 backend.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;The required kernel modules seem to be missing &quot;</span>
-                    <span class="s2">&quot;in your WSL 2 environment.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;To fix this, please follow these steps:</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;1. **Ensure Docker Desktop is using WSL 2**:</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;   - Open Docker Desktop -&gt; Settings -&gt; General.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;   - Make sure &#39;Use the WSL 2 based engine&#39; &quot;</span>
-                    <span class="s2">&quot;is checked.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;2. **Ensure WSL is installed and updated**:</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;   - Open PowerShell or Command Prompt &quot;</span>
-                    <span class="s2">&quot;as Administrator.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;   - Run: wsl --install</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;   - Run: wsl --update</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;   (An update usually installs a recent Linux kernel &quot;</span>
-                    <span class="s2">&quot;with the required modules.)</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;3. **Verify manually (Optional)**:</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;   - After updating, run &#39;wsl lsmod | findstr binder&#39; &quot;</span>
-                    <span class="s2">&quot;in your terminal.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;   - If it shows &#39;binder_linux&#39;, &quot;</span>
-                    <span class="s2">&quot;the issue should be resolved.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;==================================================&quot;</span>
-                <span class="p">)</span>
-                <span class="k">raise</span> <span class="n">HostPrerequisiteError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
-
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Host environment check passed.&quot;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="MobileSandbox.adb_use">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.MobileSandbox.adb_use">[docs]</a>
@@ -946,6 +984,115 @@ body.preview-active {
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;adb&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;get_screenshot&quot;</span><span class="p">})</span></div>
 </div>
 
+
+
+<span class="nd">@SandboxRegistry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
+    <span class="n">build_image_uri</span><span class="p">(</span><span class="s2">&quot;runtime-sandbox-mobile&quot;</span><span class="p">),</span>
+    <span class="n">sandbox_type</span><span class="o">=</span><span class="n">SandboxType</span><span class="o">.</span><span class="n">MOBILE_ASYNC</span><span class="p">,</span>
+    <span class="n">security_level</span><span class="o">=</span><span class="s2">&quot;high&quot;</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="o">=</span><span class="n">TIMEOUT</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Mobile Sandbox (Async)&quot;</span><span class="p">,</span>
+    <span class="n">runtime_config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;privileged&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+<span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MobileSandboxAsync</span><span class="p">(</span><span class="n">MobileMixin</span><span class="p">,</span> <span class="n">AsyncMobileMixin</span><span class="p">,</span> <span class="n">SandboxAsync</span><span class="p">):</span>
+    <span class="n">_host_check_done</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sandbox_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">,</span>
+        <span class="n">base_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">bearer_token</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">sandbox_type</span><span class="p">:</span> <span class="n">SandboxType</span> <span class="o">=</span> <span class="n">SandboxType</span><span class="o">.</span><span class="n">MOBILE_ASYNC</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">base_url</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">_host_check_done</span><span class="p">:</span>
+            <span class="n">_check_host_readiness</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">_host_check_done</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">sandbox_id</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="p">,</span>
+            <span class="n">base_url</span><span class="p">,</span>
+            <span class="n">bearer_token</span><span class="p">,</span>
+            <span class="n">sandbox_type</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">adb_use</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">coordinate</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">end</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">duration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">code</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">text</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Asynchronously execute a general-purpose ADB action.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">coordinate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;coordinate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">coordinate</span>
+        <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">start</span>
+        <span class="k">if</span> <span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;end&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">end</span>
+        <span class="k">if</span> <span class="n">duration</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">duration</span>
+        <span class="k">if</span> <span class="n">code</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;code&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">code</span>
+        <span class="k">if</span> <span class="n">text</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">text</span>
+
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span><span class="s2">&quot;adb&quot;</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">mobile_get_screen_resolution</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Asynchronously get the screen resolution.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;adb&quot;</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;get_screen_resolution&quot;</span><span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">mobile_tap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coordinate</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Asynchronously tap specific screen coordinates.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;adb&quot;</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;tap&quot;</span><span class="p">,</span> <span class="s2">&quot;coordinate&quot;</span><span class="p">:</span> <span class="n">coordinate</span><span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">mobile_swipe</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">start</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">end</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">duration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Asynchronously perform a swipe gesture.&quot;&quot;&quot;</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;swipe&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;start&quot;</span><span class="p">:</span> <span class="n">start</span><span class="p">,</span>
+            <span class="s2">&quot;end&quot;</span><span class="p">:</span> <span class="n">end</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">duration</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">duration</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span><span class="s2">&quot;adb&quot;</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">mobile_input_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Asynchronously input text into the focused UI element.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;adb&quot;</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;input_text&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">mobile_key_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Asynchronously send a key event to the device.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span>
+            <span class="s2">&quot;adb&quot;</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;key_event&quot;</span><span class="p">,</span> <span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="n">code</span><span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">mobile_get_screenshot</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Asynchronously take a screenshot.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_tool_async</span><span class="p">(</span><span class="s2">&quot;adb&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;get_screenshot&quot;</span><span class="p">})</span>
 </pre></div>
         </article>
       </div>
