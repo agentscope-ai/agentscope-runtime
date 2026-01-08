@@ -222,6 +222,10 @@ class PAIDeployConfig(ConfigBaseModel):
         cpu: Optional[int] = None,
         memory: Optional[int] = None,
         service_group: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        vpc_id: Optional[str] = None,
+        vswitch_id: Optional[str] = None,
+        security_group_id: Optional[str] = None,
         ram_role_arn: Optional[str] = None,
         enable_trace: Optional[bool] = None,
         wait: Optional[bool] = None,
@@ -254,6 +258,8 @@ class PAIDeployConfig(ConfigBaseModel):
             data["spec"]["service_group_name"] = service_group
 
         # Resources overrides
+        if resource_type is not None:
+            data["spec"]["resources"]["type"] = resource_type
         if instance_type is not None:
             data["spec"]["resources"]["instance_type"] = instance_type
         if instance_count is not None:
@@ -266,6 +272,14 @@ class PAIDeployConfig(ConfigBaseModel):
             data["spec"]["resources"]["cpu"] = cpu
         if memory is not None:
             data["spec"]["resources"]["memory"] = memory
+
+        # VPC overrides
+        if vpc_id is not None:
+            data["spec"]["vpc_config"]["vpc_id"] = vpc_id
+        if vswitch_id is not None:
+            data["spec"]["vpc_config"]["vswitch_id"] = vswitch_id
+        if security_group_id is not None:
+            data["spec"]["vpc_config"]["security_group_id"] = security_group_id
 
         # IAM overrides
         if ram_role_arn is not None:
@@ -342,10 +356,21 @@ class PAIDeployConfig(ConfigBaseModel):
         ram_role_arn = self.spec.identity.ram_role_arn
         ram_role_mode = "custom" if ram_role_arn else "default"
 
-        # Prepare instance_type as list if provided
-        instance_type = None
-        if resources.instance_type:
-            instance_type = [resources.instance_type]
+        # Apply default values based on resource_type
+        instance_type = resources.instance_type
+        cpu = resources.cpu
+        memory = resources.memory
+
+        if resource_type == "public":
+            # Default instance_type for public mode
+            if not instance_type:
+                instance_type = "ecs.c6.large"
+        elif resource_type in ("resource", "quota"):
+            # Default cpu and memory for resource/quota mode
+            if cpu is None:
+                cpu = 2
+            if memory is None:
+                memory = 2048
 
         kwargs = {
             "project_dir": self.spec.code.source_dir,
@@ -357,8 +382,8 @@ class PAIDeployConfig(ConfigBaseModel):
             "instance_type": instance_type,
             "resource_id": resources.resource_id,
             "quota_id": resources.quota_id,
-            "cpu": resources.cpu,
-            "memory": resources.memory,
+            "cpu": cpu,
+            "memory": memory,
             "vpc_id": self.spec.vpc_config.vpc_id,
             "vswitch_id": self.spec.vpc_config.vswitch_id,
             "security_group_id": self.spec.vpc_config.security_group_id,
@@ -580,6 +605,9 @@ class PAIDeployManager(DeployManager):
         self.oss_path = oss_path
         self.build_root = Path(build_root) if build_root else None
 
+        if not self.workspace_id:
+            raise ValueError("Workspace ID is required")
+
         if not self.oss_path:
             self.oss_path = self.get_workspace_default_oss_storage_path()
 
@@ -643,7 +671,7 @@ class PAIDeployManager(DeployManager):
         instance_count: int = 1,
         resource_id: Optional[str] = None,
         quota_id: Optional[str] = None,
-        instance_type: Optional[List[str]] = None,
+        instance_type: Optional[str] = None,
         cpu: Optional[int] = None,
         memory: Optional[int] = None,
         vpc_id: Optional[str] = None,
@@ -690,13 +718,13 @@ class PAIDeployManager(DeployManager):
             # Public resource pool
             if instance_type:
                 config["cloud"]["computing"] = {
-                    "instances": [{"type": t} for t in instance_type],
+                    "instances": [{"type": instance_type}],
                 }
-        elif resource_type == "eas_group":
+        elif resource_type == "resource":
             # EAS resource group
             if not resource_id:
                 raise ValueError(
-                    "resource_id required for eas_group resource type",
+                    "resource_id required for resource type",
                 )
             config["metadata"]["resource"] = resource_id
             if cpu:
@@ -936,7 +964,7 @@ class PAIDeployManager(DeployManager):
         resource_id: Optional[str] = None,
         quota_id: Optional[str] = None,
         instance_count: int = 1,
-        instance_type: Optional[List[str]] = None,
+        instance_type: Optional[str] = None,
         cpu: Optional[int] = None,
         memory: Optional[int] = None,
         vpc_id: Optional[str] = None,
@@ -968,13 +996,13 @@ class PAIDeployManager(DeployManager):
             workspace_id: PAI workspace ID
             service_group_name: Service group name
             tags: Tags for the deployment
-            resource_type: "public", "eas_group", or "quota"
+            resource_type: "public", "resource", or "quota"
             resource_id: EAS resource group ID
             quota_id: Quota ID
             instance_count: Number of instances
-            instance_type: Instance types for public resource
-            cpu: CPU cores
-            memory: Memory in MB
+            instance_type: Instance type for public resource (e.g. ecs.c6.large)
+            cpu: CPU cores (for resource/quota mode, default 2)
+            memory: Memory in MB (for resource/quota mode, default 2048)
             vpc_id: VPC ID
             vswitch_id: VSwitch ID
             security_group_id: Security group ID
@@ -1119,6 +1147,7 @@ class PAIDeployManager(DeployManager):
                     "snapshot_id": snapshot_id,
                     "service_name": service_name,
                     "workspace_id": self.workspace_id,
+                    "region": self.region_id,
                     "oss_path": self.oss_path,
                 },
             )
@@ -1177,6 +1206,8 @@ class PAIDeployManager(DeployManager):
 
         client = self.get_workspace_client()
         config_key = "modelExportPath"
+
+        logger.warning("WorkspaceID: %s", self.workspace_id)
 
         resp = client.list_configs(
             workspace_id=self.workspace_id,

@@ -1,0 +1,38 @@
+# PAI Deployment Configuration (Simplified Example)
+#
+# Usage:
+#   cd examples/deployments/pai_deploy
+#   agentscope deploy pai --config deploy_config.yaml
+#
+# Note: code.source_dir is resolved relative to this config file's location.
+
+context:
+  # PAI workspace ID (required)
+  # Can also be set via environment variable: PAI_WORKSPACE_ID
+  workspace_id: "your-workspace-id"
+
+  # Region code (e.g., cn-hangzhou, cn-shanghai)
+  region: "cn-hangzhou"
+
+spec:
+  # Service name (required, must be unique within region)
+  name: "my_agent_service"
+
+  code:
+    # Path to project directory (relative to this config file)
+    source_dir: "my_agent"
+    # Entrypoint file within source_dir
+    entrypoint: "agent.py"
+
+  resources:
+    # Resource type: public, resource, or quota
+    type: "public"
+    # Instance type for public resource pool
+    instance_type: "ecs.c6.large"
+    # Number of instances
+    instance_count: 1
+
+
+  # Environment variables for the service
+  env:
+    DASHSCOPE_API_KEY: "your-dashscope-api-key"

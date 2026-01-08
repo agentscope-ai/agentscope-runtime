@@ -809,6 +809,27 @@ def agentrun(
 @click.option("--cpu", help="CPU cores", type=int, default=None)
 @click.option("--memory", help="Memory in MB", type=int, default=None)
 @click.option("--service-group", help="Service group name", default=None)
+@click.option(
+    "--resource-type",
+    type=click.Choice(["public", "resource", "quota"]),
+    help="Resource type: public (instance), resource (EAS group), quota",
+    default=None,
+)
+@click.option(
+    "--vpc-id",
+    help="VPC ID for network configuration",
+    default=None,
+)
+@click.option(
+    "--vswitch-id",
+    help="VSwitch ID for network configuration",
+    default=None,
+)
+@click.option(
+    "--security-group-id",
+    help="Security group ID for network configuration",
+    default=None,
+)
 @click.option("--ram-role-arn", help="RAM role ARN", default=None)
 @click.option(
     "--enable-trace/--no-trace",
@@ -863,6 +884,10 @@ def pai(
     cpu: int,
     memory: int,
     service_group: str,
+    resource_type: str,
+    vpc_id: str,
+    vswitch_id: str,
+    security_group_id: str,
     ram_role_arn: str,
     enable_trace: bool,
     wait: bool,
@@ -946,6 +971,10 @@ def pai(
             cpu=cpu,
             memory=memory,
             service_group=service_group,
+            resource_type=resource_type,
+            vpc_id=vpc_id,
+            vswitch_id=vswitch_id,
+            security_group_id=security_group_id,
             ram_role_arn=ram_role_arn,
             enable_trace=enable_trace,
             wait=wait,
