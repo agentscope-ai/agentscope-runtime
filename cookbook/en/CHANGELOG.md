@@ -1,5 +1,40 @@
 # CHANGELOG
 
+## v1.0.4
+
+Building on the extensibility and consistency of the v1.x framework, **AgentScope Runtime v1.0.4** introduces several new deployment features, including Knative and Serverless FC deployers, native support for the MS-Agent-Framework, and an asynchronous Sandbox SDK to reduce blocking and improve responsiveness.
+This release also enhances safety handling for existing OpenTelemetry tracer providers, updates dependencies, and fixes compatibility issues with non-stream tool calls. Documentation has been updated with a quick “Try WebUI” entry, corrections to local deployment examples, and acknowledgements for new contributors.
+
+### Added
+
+- **Knative Deployer Support**
+  Added a Knative deployer, enabling AgentScope Runtime to be deployed in Knative-based environments.
+- **Serverless FC Deployer Support**
+  Introduced a Serverless Function Compute deployer for running in cloud-native serverless environments.
+- **MS-Agent-Framework Support**
+  Integrated support for Microsoft’s MS-Agent-Framework, expanding framework compatibility.
+- **Async Sandbox SDK**
+  Released an asynchronous Sandbox SDK to enable non-blocking calls, improving responsiveness and concurrency.
+- **Try WebUI Entry**
+  Added a quick access link to try WebUI directly from documentation.
+
+### Changed
+
+- **Dependency Update**
+  Updated `nacos-sdk-python` to a newer version for improved stability and compatibility.
+
+### Fixed
+
+- **Non-stream Tool Call Support**
+  Fixed compatibility issues with tools invoked in non-stream mode.
+- **OpenTelemetry Tracer Provider Safety Handling**
+  Added safe handling for existing tracer providers to avoid initialization conflicts.
+
+### Documentation
+
+- Updated README to include WebUI URL for quick access.
+- Corrected method call names in local deployment examples.
+
 ## v1.0.3
 
 On the basis of maintaining the extensibility and consistency of the v1.x framework, **AgentScope Runtime v1.0.3** brings **A2A protocol registry support**, a more complete error handling and token usage statistics mechanism, a new weather component with enhanced UI interaction capabilities, as well as multiple fixes and optimizations for Sandbox, Redis, and Agent states. It also improves deployment build (Sandbox Image Building), remote desktop custom URL support, PYPI mirror configuration, and other features.
