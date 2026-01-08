@@ -636,10 +636,10 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <section id="advanced-deployment-guide">
 <h1>Advanced Deployment Guide<a class="headerlink" href="#advanced-deployment-guide" title="Link to this heading">¶</a></h1>
-<p>This guide covers the six advanced deployment methods available in AgentScope Runtime, providing production-ready solutions for different scenarios: <strong>Local Daemon</strong>, <strong>Detached Process</strong>, <strong>Kubernetes Deployment</strong>, <strong>ModelStudio Deployment</strong>, <strong>AgentRun Deployment</strong>, and <strong>Knative Deployment</strong>.</p>
+<p>This guide covers the seven advanced deployment methods available in AgentScope Runtime, providing production-ready solutions for different scenarios: <strong>Local Daemon</strong>, <strong>Detached Process</strong>, <strong>Kubernetes Deployment</strong>, <strong>ModelStudio Deployment</strong>, <strong>AgentRun Deployment</strong>, <strong>Knative Deployment</strong> and <strong>Function Compute (FC) Deployment</strong>.</p>
 <section id="overview-of-deployment-methods">
 <h2>Overview of Deployment Methods<a class="headerlink" href="#overview-of-deployment-methods" title="Link to this heading">¶</a></h2>
-<p>AgentScope Runtime offers six distinct deployment approaches, each tailored for specific use cases:</p>
+<p>AgentScope Runtime offers seven distinct deployment approaches, each tailored for specific use cases:</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -686,6 +686,12 @@ body.preview-active {
 <td><p>Single-node (multi-node support coming)</p></td>
 <td><p>Orchestrated</p></td>
 <td><p>Container-level</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Function Compute (FC)</strong></p></td>
+<td><p>Alibaba Cloud Serverless</p></td>
+<td><p>Cloud-managed</p></td>
+<td><p>Platform-managed</p></td>
+<td><p>MicroVM-level</p></td>
 </tr>
 </tbody>
 </table>
@@ -1619,6 +1625,318 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 </ul>
 </section>
 </section>
+<section id="method-7-serverless-deployment-function-compute-fc">
+<h2>Method 7: Serverless Deployment: Function Compute (FC)<a class="headerlink" href="#method-7-serverless-deployment-function-compute-fc" title="Link to this heading">¶</a></h2>
+<p><strong>Best For</strong>: Alibaba Cloud users who need to deploy agents to Function Compute (FC) service with automated build, upload, and deployment workflows. FC provides a true serverless experience with pay-per-use pricing and automatic scaling.</p>
+<section id="id13">
+<h3>Features<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Serverless deployment on Alibaba Cloud Function Compute</p></li>
+<li><p>Automatic project building and packaging with Docker</p></li>
+<li><p>OSS integration for artifact storage</p></li>
+<li><p>HTTP trigger for public access</p></li>
+<li><p>Session affinity support for stateful applications</p></li>
+<li><p>VPC and logging configuration support</p></li>
+<li><p>Pay-per-use pricing model</p></li>
+</ul>
+</section>
+<section id="fc-deployment-prerequisites">
+<h3>FC Deployment Prerequisites<a class="headerlink" href="#fc-deployment-prerequisites" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Ensure environment variables are set</span>
+<span class="c1"># More env settings, please refer to the table below</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_ACCESS_KEY_ID</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span><span class="o">=</span><span class="s2">&quot;your-access-key-secret&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FC_ACCOUNT_ID</span><span class="o">=</span><span class="s2">&quot;your-fc-account-id&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FC_REGION_ID</span><span class="o">=</span><span class="s2">&quot;cn-hangzhou&quot;</span><span class="w">  </span><span class="c1"># or other regions</span>
+
+<span class="c1"># OSS configuration (for storing build artifacts)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OSS_ACCESS_KEY_ID</span><span class="o">=</span><span class="s2">&quot;your-oss-access-key-id&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OSS_ACCESS_KEY_SECRET</span><span class="o">=</span><span class="s2">&quot;your-oss-access-key-secret&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OSS_REGION</span><span class="o">=</span><span class="s2">&quot;cn-hangzhou&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OSS_BUCKET_NAME</span><span class="o">=</span><span class="s2">&quot;your-bucket-name&quot;</span>
+</pre></div>
+</div>
+<p>You can set the following environment variables or <code class="docutils literal notranslate"><span class="pre">FCConfig</span></code> to customize the deployment:</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_ID</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>-</p></td>
+<td><p>Alibaba Cloud Access Key ID</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>-</p></td>
+<td><p>Alibaba Cloud Access Key Secret</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_ACCOUNT_ID</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>-</p></td>
+<td><p>Alibaba Cloud Account ID for FC</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_REGION_ID</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cn-hangzhou</span></code></p></td>
+<td><p>Region ID for FC service</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_LOG_STORE</span></code></p></td>
+<td><p>No</p></td>
+<td><p>-</p></td>
+<td><p>Log store name (requires log_project to be set)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_LOG_PROJECT</span></code></p></td>
+<td><p>No</p></td>
+<td><p>-</p></td>
+<td><p>Log project name (requires log_store to be set)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_VPC_ID</span></code></p></td>
+<td><p>No</p></td>
+<td><p>-</p></td>
+<td><p>VPC ID for private network access</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_SECURITY_GROUP_ID</span></code></p></td>
+<td><p>No</p></td>
+<td><p>-</p></td>
+<td><p>Security Group ID (required if vpc_id is set)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_VSWITCH_IDS</span></code></p></td>
+<td><p>No</p></td>
+<td><p>-</p></td>
+<td><p>VSwitch IDs in JSON array format (required if vpc_id is set)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_CPU</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2.0</span></code></p></td>
+<td><p>CPU allocation in cores</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_MEMORY</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2048</span></code></p></td>
+<td><p>Memory allocation in MB</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_DISK</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">512</span></code></p></td>
+<td><p>Disk allocation in MB</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_EXECUTION_ROLE_ARN</span></code></p></td>
+<td><p>No</p></td>
+<td><p>-</p></td>
+<td><p>Execution role ARN for permissions</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_SESSION_CONCURRENCY_LIMIT</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">200</span></code></p></td>
+<td><p>Session concurrency limit per instance</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_SESSION_IDLE_TIMEOUT_SECONDS</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">3600</span></code></p></td>
+<td><p>Session idle timeout in seconds</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">OSS_ACCESS_KEY_ID</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_ID</span></code></p></td>
+<td><p>OSS Access Key ID (falls back to Alibaba Cloud credentials)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">OSS_ACCESS_KEY_SECRET</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span></code></p></td>
+<td><p>OSS Access Key Secret (falls back to Alibaba Cloud credentials)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">OSS_REGION</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cn-hangzhou</span></code></p></td>
+<td><p>OSS region</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">OSS_BUCKET_NAME</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>-</p></td>
+<td><p>OSS bucket name for storing build artifacts</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="id14">
+<h3>Implementation<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
+<p>Using the agent and endpoints defined in the <a class="reference internal" href="#common-agent-setup"><span class="std std-ref">Common Agent Setup</span></a> section:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># fc_deploy.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.fc_deployer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">FCDeployManager</span><span class="p">,</span>
+    <span class="n">OSSConfig</span><span class="p">,</span>
+    <span class="n">FCConfig</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agent_app</span><span class="w"> </span><span class="kn">import</span> <span class="n">app</span>  <span class="c1"># Import configured app</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">deploy_to_fc</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deploy AgentApp to Alibaba Cloud Function Compute (FC)&quot;&quot;&quot;</span>
+
+    <span class="c1"># Configure OSS and FC</span>
+    <span class="n">deployer</span> <span class="o">=</span> <span class="n">FCDeployManager</span><span class="p">(</span>
+        <span class="n">oss_config</span><span class="o">=</span><span class="n">OSSConfig</span><span class="p">(</span>
+            <span class="n">access_key_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_ACCESS_KEY_ID&quot;</span><span class="p">),</span>
+            <span class="n">access_key_secret</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_ACCESS_KEY_SECRET&quot;</span><span class="p">),</span>
+            <span class="n">region</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_REGION&quot;</span><span class="p">,</span> <span class="s2">&quot;cn-hangzhou&quot;</span><span class="p">),</span>
+            <span class="n">bucket_name</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_BUCKET_NAME&quot;</span><span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">fc_config</span><span class="o">=</span><span class="n">FCConfig</span><span class="p">(</span>
+            <span class="n">access_key_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ALIBABA_CLOUD_ACCESS_KEY_ID&quot;</span><span class="p">),</span>
+            <span class="n">access_key_secret</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ALIBABA_CLOUD_ACCESS_KEY_SECRET&quot;</span><span class="p">),</span>
+            <span class="n">account_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;FC_ACCOUNT_ID&quot;</span><span class="p">),</span>
+            <span class="n">region_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;FC_REGION_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;cn-hangzhou&quot;</span><span class="p">),</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Execute deployment</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
+        <span class="n">deployer</span><span class="p">,</span>
+        <span class="n">deploy_name</span><span class="o">=</span><span class="s2">&quot;agent-app-example&quot;</span><span class="p">,</span>
+        <span class="n">requirements</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;agentscope&quot;</span><span class="p">,</span> <span class="s2">&quot;fastapi&quot;</span><span class="p">,</span> <span class="s2">&quot;uvicorn&quot;</span><span class="p">],</span>
+        <span class="n">environment</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;PYTHONPATH&quot;</span><span class="p">:</span> <span class="s2">&quot;/code&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ Deployed to FC: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📍 Function Name: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;function_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;🔗 Endpoint URL: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;endpoint_url&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📦 Artifact URL: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;artifact_url&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">deploy_to_fc</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>Key Points</strong>:</p>
+<ul class="simple">
+<li><p>Automatically builds project with Docker and creates a deployable zip package</p></li>
+<li><p>Uploads artifacts to OSS for FC to pull</p></li>
+<li><p>Creates FC function with HTTP trigger for public access</p></li>
+<li><p>Supports session affinity via <code class="docutils literal notranslate"><span class="pre">x-agentscope-runtime-session-id</span></code> header</p></li>
+<li><p>Supports updating existing deployments (via <code class="docutils literal notranslate"><span class="pre">function_name</span></code> parameter)</p></li>
+</ul>
+</section>
+<section id="id15">
+<h3>Configuration<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h3>
+<section id="id16">
+<h4>OSSConfig<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h4>
+<p>OSS configuration for storing build artifacts:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">OSSConfig</span><span class="p">(</span>
+    <span class="n">access_key_id</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span><span class="p">,</span>
+    <span class="n">access_key_secret</span><span class="o">=</span><span class="s2">&quot;your-access-key-secret&quot;</span><span class="p">,</span>
+    <span class="n">region</span><span class="o">=</span><span class="s2">&quot;cn-hangzhou&quot;</span><span class="p">,</span>
+    <span class="n">bucket_name</span><span class="o">=</span><span class="s2">&quot;your-bucket-name&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="fcconfig">
+<h4>FCConfig<a class="headerlink" href="#fcconfig" title="Link to this heading">¶</a></h4>
+<p>Function Compute service configuration:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">FCConfig</span><span class="p">(</span>
+    <span class="n">access_key_id</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span><span class="p">,</span>
+    <span class="n">access_key_secret</span><span class="o">=</span><span class="s2">&quot;your-access-key-secret&quot;</span><span class="p">,</span>
+    <span class="n">account_id</span><span class="o">=</span><span class="s2">&quot;your-account-id&quot;</span><span class="p">,</span>
+    <span class="n">region_id</span><span class="o">=</span><span class="s2">&quot;cn-hangzhou&quot;</span><span class="p">,</span>  <span class="c1"># Supported regions: cn-hangzhou, cn-beijing, etc.</span>
+    <span class="n">cpu</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>  <span class="c1"># CPU cores</span>
+    <span class="n">memory</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span>  <span class="c1"># Memory in MB</span>
+    <span class="n">disk</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>  <span class="c1"># Disk in MB</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id17">
+<h3>Advanced Usage<a class="headerlink" href="#id17" title="Link to this heading">¶</a></h3>
+<section id="updating-existing-function">
+<h4>Updating Existing Function<a class="headerlink" href="#updating-existing-function" title="Link to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
+    <span class="n">deployer</span><span class="p">,</span>
+    <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;existing-function-name&quot;</span><span class="p">,</span>  <span class="c1"># Update existing function</span>
+    <span class="c1"># ... other parameters</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="deploying-from-project-directory">
+<h4>Deploying from Project Directory<a class="headerlink" href="#deploying-from-project-directory" title="Link to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
+    <span class="n">deployer</span><span class="p">,</span>
+    <span class="n">project_dir</span><span class="o">=</span><span class="s2">&quot;/path/to/project&quot;</span><span class="p">,</span>  <span class="c1"># Project directory</span>
+    <span class="n">cmd</span><span class="o">=</span><span class="s2">&quot;python main.py&quot;</span><span class="p">,</span>  <span class="c1"># Startup command</span>
+    <span class="n">deploy_name</span><span class="o">=</span><span class="s2">&quot;my-agent-app&quot;</span><span class="p">,</span>
+    <span class="c1"># ... other parameters</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id18">
+<h3>Testing the Deployed Service<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h3>
+<p>Once deployed, you can test the endpoints using curl:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Health check</span>
+curl<span class="w"> </span>https://&lt;your-endpoint-url&gt;/health
+
+<span class="c1"># Test sync endpoint with session affinity</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://&lt;your-endpoint-url&gt;/sync<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;x-agentscope-runtime-session-id: 123&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;input&quot;: [</span>
+<span class="s1">      {</span>
+<span class="s1">        &quot;role&quot;: &quot;user&quot;,</span>
+<span class="s1">        &quot;content&quot;: [</span>
+<span class="s1">          {</span>
+<span class="s1">            &quot;type&quot;: &quot;text&quot;,</span>
+<span class="s1">            &quot;text&quot;: &quot;Hello, how are you?&quot;</span>
+<span class="s1">          }</span>
+<span class="s1">        ]</span>
+<span class="s1">      }</span>
+<span class="s1">    ],</span>
+<span class="s1">    &quot;session_id&quot;: &quot;123&quot;</span>
+<span class="s1">  }&#39;</span>
+
+<span class="c1"># Test streaming endpoint</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://&lt;your-endpoint-url&gt;/stream_async<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Accept: text/event-stream&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;x-agentscope-runtime-session-id: 123&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--no-buffer<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;input&quot;: [</span>
+<span class="s1">      {</span>
+<span class="s1">        &quot;role&quot;: &quot;user&quot;,</span>
+<span class="s1">        &quot;content&quot;: [</span>
+<span class="s1">          {</span>
+<span class="s1">            &quot;type&quot;: &quot;text&quot;,</span>
+<span class="s1">            &quot;text&quot;: &quot;Tell me a story&quot;</span>
+<span class="s1">          }</span>
+<span class="s1">        ]</span>
+<span class="s1">      }</span>
+<span class="s1">    ],</span>
+<span class="s1">    &quot;session_id&quot;: &quot;123&quot;</span>
+<span class="s1">  }&#39;</span>
+</pre></div>
+</div>
+<p><strong>Note</strong>: The <code class="docutils literal notranslate"><span class="pre">x-agentscope-runtime-session-id</span></code> header enables session affinity, which routes requests with the same session ID to the same FC instance for stateful operations.</p>
+</section>
+</section>
 </section>
 
     <script type="text/x-thebe-config">
@@ -1674,7 +1992,7 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-07</div>
+              Last updated on 2026-01-08</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -1770,6 +2088,23 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 <li><a class="reference internal" href="#id10">Features</a></li>
 <li><a class="reference internal" href="#id11">Prerequisites for Kubernetes Deployment</a></li>
 <li><a class="reference internal" href="#id12">Implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#method-7-serverless-deployment-function-compute-fc">Method 7: Serverless Deployment: Function Compute (FC)</a><ul>
+<li><a class="reference internal" href="#id13">Features</a></li>
+<li><a class="reference internal" href="#fc-deployment-prerequisites">FC Deployment Prerequisites</a></li>
+<li><a class="reference internal" href="#id14">Implementation</a></li>
+<li><a class="reference internal" href="#id15">Configuration</a><ul>
+<li><a class="reference internal" href="#id16">OSSConfig</a></li>
+<li><a class="reference internal" href="#fcconfig">FCConfig</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id17">Advanced Usage</a><ul>
+<li><a class="reference internal" href="#updating-existing-function">Updating Existing Function</a></li>
+<li><a class="reference internal" href="#deploying-from-project-directory">Deploying from Project Directory</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id18">Testing the Deployed Service</a></li>
 </ul>
 </li>
 </ul>

@@ -636,10 +636,10 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <section id="id1">
 <h1>高级部署<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h1>
-<p>章节演示了AgentScope Runtime中可用的六种高级部署方法，为不同场景提供生产就绪的解决方案：<strong>本地守护进程</strong>、<strong>独立进程</strong>、<strong>Kubernetes部署</strong>、<strong>ModelStudio部署</strong>、<strong>AgentRun部署</strong>和<strong>Knative</strong>。</p>
+<p>章节演示了AgentScope Runtime中可用的七种高级部署方法，为不同场景提供生产就绪的解决方案：<strong>本地守护进程</strong>、<strong>独立进程</strong>、<strong>Kubernetes部署</strong>、<strong>ModelStudio部署</strong>、<strong>AgentRun部署</strong>、<strong>Knative</strong>和<strong>函数计算（Function Compute, FC）部署</strong>。</p>
 <section id="id2">
 <h2>部署方法概述<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
-<p>AgentScope Runtime提供六种不同的部署方式，每种都针对特定的使用场景：</p>
+<p>AgentScope Runtime提供七种不同的部署方式，每种都针对特定的使用场景：</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -686,6 +686,12 @@ body.preview-active {
 <td><p>单节点（将支持多节点）</p></td>
 <td><p>编排</p></td>
 <td><p>容器级</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>函数计算(FC)</strong></p></td>
+<td><p>阿里云 Serverless</p></td>
+<td><p>云端管理</p></td>
+<td><p>平台管理</p></td>
+<td><p>微虚拟机级</p></td>
 </tr>
 </tbody>
 </table>
@@ -1609,6 +1615,318 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 </ul>
 </section>
 </section>
+<section id="serverless-function-compute-fc">
+<h2>方法7：Serverless部署：函数计算（Function Compute, FC）<a class="headerlink" href="#serverless-function-compute-fc" title="Link to this heading">¶</a></h2>
+<p><strong>最适合</strong>：阿里云用户，需要将智能体部署到函数计算（FC）服务，实现自动化的构建、上传和部署流程。FC 提供真正的 Serverless 体验，按量付费并自动扩缩容。</p>
+<section id="id31">
+<h3>特性<a class="headerlink" href="#id31" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>阿里云函数计算的 Serverless 部署</p></li>
+<li><p>使用 Docker 自动构建和打包项目</p></li>
+<li><p>OSS 集成用于制品存储</p></li>
+<li><p>HTTP 触发器支持公网访问</p></li>
+<li><p>会话亲和性支持有状态应用</p></li>
+<li><p>VPC 和日志配置支持</p></li>
+<li><p>按量付费模式</p></li>
+</ul>
+</section>
+<section id="fc">
+<h3>FC 部署前置条件<a class="headerlink" href="#fc" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 确保设置环境变量</span>
+<span class="c1"># 更多环境变量配置，请参考下面的表格</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_ACCESS_KEY_ID</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span><span class="o">=</span><span class="s2">&quot;your-access-key-secret&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FC_ACCOUNT_ID</span><span class="o">=</span><span class="s2">&quot;your-fc-account-id&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FC_REGION_ID</span><span class="o">=</span><span class="s2">&quot;cn-hangzhou&quot;</span><span class="w">  </span><span class="c1"># 或其他区域</span>
+
+<span class="c1"># OSS 配置（用于存储构建制品）</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OSS_ACCESS_KEY_ID</span><span class="o">=</span><span class="s2">&quot;your-oss-access-key-id&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OSS_ACCESS_KEY_SECRET</span><span class="o">=</span><span class="s2">&quot;your-oss-access-key-secret&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OSS_REGION</span><span class="o">=</span><span class="s2">&quot;cn-hangzhou&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OSS_BUCKET_NAME</span><span class="o">=</span><span class="s2">&quot;your-bucket-name&quot;</span>
+</pre></div>
+</div>
+<p>您可以设置以下环境变量或指定 <code class="docutils literal notranslate"><span class="pre">FCConfig</span></code> 来自定义部署：</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>变量</p></th>
+<th class="head"><p>必填</p></th>
+<th class="head"><p>默认值</p></th>
+<th class="head"><p>描述</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_ID</span></code></p></td>
+<td><p>是</p></td>
+<td><p>-</p></td>
+<td><p>阿里云 Access Key ID</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span></code></p></td>
+<td><p>是</p></td>
+<td><p>-</p></td>
+<td><p>阿里云 Access Key Secret</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_ACCOUNT_ID</span></code></p></td>
+<td><p>是</p></td>
+<td><p>-</p></td>
+<td><p>阿里云账号 ID（用于 FC）</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_REGION_ID</span></code></p></td>
+<td><p>否</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cn-hangzhou</span></code></p></td>
+<td><p>FC 服务的区域 ID</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_LOG_STORE</span></code></p></td>
+<td><p>否</p></td>
+<td><p>-</p></td>
+<td><p>日志存储名称（需同时设置 log_project）</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_LOG_PROJECT</span></code></p></td>
+<td><p>否</p></td>
+<td><p>-</p></td>
+<td><p>日志项目名称（需同时设置 log_store）</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_VPC_ID</span></code></p></td>
+<td><p>否</p></td>
+<td><p>-</p></td>
+<td><p>VPC ID（用于私网访问）</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_SECURITY_GROUP_ID</span></code></p></td>
+<td><p>否</p></td>
+<td><p>-</p></td>
+<td><p>安全组 ID（设置 vpc_id 时必填）</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_VSWITCH_IDS</span></code></p></td>
+<td><p>否</p></td>
+<td><p>-</p></td>
+<td><p>VSwitch ID 列表，JSON 数组格式（设置 vpc_id 时必填）</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_CPU</span></code></p></td>
+<td><p>否</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2.0</span></code></p></td>
+<td><p>CPU 分配（核数）</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_MEMORY</span></code></p></td>
+<td><p>否</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2048</span></code></p></td>
+<td><p>内存分配（MB）</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_DISK</span></code></p></td>
+<td><p>否</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">512</span></code></p></td>
+<td><p>磁盘分配（MB）</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_EXECUTION_ROLE_ARN</span></code></p></td>
+<td><p>否</p></td>
+<td><p>-</p></td>
+<td><p>执行角色 ARN（用于权限控制）</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FC_SESSION_CONCURRENCY_LIMIT</span></code></p></td>
+<td><p>否</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">200</span></code></p></td>
+<td><p>每实例会话并发限制</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FC_SESSION_IDLE_TIMEOUT_SECONDS</span></code></p></td>
+<td><p>否</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">3600</span></code></p></td>
+<td><p>会话空闲超时时间（秒）</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">OSS_ACCESS_KEY_ID</span></code></p></td>
+<td><p>否</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_ID</span></code></p></td>
+<td><p>OSS Access Key ID（默认使用阿里云凭证）</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">OSS_ACCESS_KEY_SECRET</span></code></p></td>
+<td><p>否</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span></code></p></td>
+<td><p>OSS Access Key Secret（默认使用阿里云凭证）</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">OSS_REGION</span></code></p></td>
+<td><p>否</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cn-hangzhou</span></code></p></td>
+<td><p>OSS 区域</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">OSS_BUCKET_NAME</span></code></p></td>
+<td><p>是</p></td>
+<td><p>-</p></td>
+<td><p>OSS 存储桶名称（用于存储构建制品）</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="id32">
+<h3>实现<a class="headerlink" href="#id32" title="Link to this heading">¶</a></h3>
+<p>使用 <a class="reference internal" href="#zh-common-agent-setup"><span class="std std-ref">通用智能体配置</span></a> 部分定义的智能体和端点：</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># fc_deploy.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.fc_deployer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">FCDeployManager</span><span class="p">,</span>
+    <span class="n">OSSConfig</span><span class="p">,</span>
+    <span class="n">FCConfig</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agent_app</span><span class="w"> </span><span class="kn">import</span> <span class="n">app</span>  <span class="c1"># 导入已配置的 app</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">deploy_to_fc</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;将 AgentApp 部署到阿里云函数计算（FC）&quot;&quot;&quot;</span>
+
+    <span class="c1"># 配置 OSS 和 FC</span>
+    <span class="n">deployer</span> <span class="o">=</span> <span class="n">FCDeployManager</span><span class="p">(</span>
+        <span class="n">oss_config</span><span class="o">=</span><span class="n">OSSConfig</span><span class="p">(</span>
+            <span class="n">access_key_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_ACCESS_KEY_ID&quot;</span><span class="p">),</span>
+            <span class="n">access_key_secret</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_ACCESS_KEY_SECRET&quot;</span><span class="p">),</span>
+            <span class="n">region</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_REGION&quot;</span><span class="p">,</span> <span class="s2">&quot;cn-hangzhou&quot;</span><span class="p">),</span>
+            <span class="n">bucket_name</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_BUCKET_NAME&quot;</span><span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">fc_config</span><span class="o">=</span><span class="n">FCConfig</span><span class="p">(</span>
+            <span class="n">access_key_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ALIBABA_CLOUD_ACCESS_KEY_ID&quot;</span><span class="p">),</span>
+            <span class="n">access_key_secret</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ALIBABA_CLOUD_ACCESS_KEY_SECRET&quot;</span><span class="p">),</span>
+            <span class="n">account_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;FC_ACCOUNT_ID&quot;</span><span class="p">),</span>
+            <span class="n">region_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;FC_REGION_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;cn-hangzhou&quot;</span><span class="p">),</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="c1"># 执行部署</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
+        <span class="n">deployer</span><span class="p">,</span>
+        <span class="n">deploy_name</span><span class="o">=</span><span class="s2">&quot;agent-app-example&quot;</span><span class="p">,</span>
+        <span class="n">requirements</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;agentscope&quot;</span><span class="p">,</span> <span class="s2">&quot;fastapi&quot;</span><span class="p">,</span> <span class="s2">&quot;uvicorn&quot;</span><span class="p">],</span>
+        <span class="n">environment</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;PYTHONPATH&quot;</span><span class="p">:</span> <span class="s2">&quot;/code&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ 部署到 FC：</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📍 函数名称：</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;function_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;🔗 端点 URL：</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;endpoint_url&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📦 制品 URL：</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;artifact_url&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">deploy_to_fc</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>关键点</strong>：</p>
+<ul class="simple">
+<li><p>使用 Docker 自动构建项目并创建可部署的 zip 包</p></li>
+<li><p>上传制品到 OSS 供 FC 拉取</p></li>
+<li><p>创建带 HTTP 触发器的 FC 函数，支持公网访问</p></li>
+<li><p>通过 <code class="docutils literal notranslate"><span class="pre">x-agentscope-runtime-session-id</span></code> 请求头支持会话亲和性</p></li>
+<li><p>支持更新现有部署（通过 <code class="docutils literal notranslate"><span class="pre">function_name</span></code> 参数）</p></li>
+</ul>
+</section>
+<section id="id33">
+<h3>配置说明<a class="headerlink" href="#id33" title="Link to this heading">¶</a></h3>
+<section id="id34">
+<h4>OSSConfig<a class="headerlink" href="#id34" title="Link to this heading">¶</a></h4>
+<p>OSS 配置用于存储构建制品：</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">OSSConfig</span><span class="p">(</span>
+    <span class="n">access_key_id</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span><span class="p">,</span>
+    <span class="n">access_key_secret</span><span class="o">=</span><span class="s2">&quot;your-access-key-secret&quot;</span><span class="p">,</span>
+    <span class="n">region</span><span class="o">=</span><span class="s2">&quot;cn-hangzhou&quot;</span><span class="p">,</span>
+    <span class="n">bucket_name</span><span class="o">=</span><span class="s2">&quot;your-bucket-name&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="fcconfig">
+<h4>FCConfig<a class="headerlink" href="#fcconfig" title="Link to this heading">¶</a></h4>
+<p>函数计算服务配置：</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">FCConfig</span><span class="p">(</span>
+    <span class="n">access_key_id</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span><span class="p">,</span>
+    <span class="n">access_key_secret</span><span class="o">=</span><span class="s2">&quot;your-access-key-secret&quot;</span><span class="p">,</span>
+    <span class="n">account_id</span><span class="o">=</span><span class="s2">&quot;your-account-id&quot;</span><span class="p">,</span>
+    <span class="n">region_id</span><span class="o">=</span><span class="s2">&quot;cn-hangzhou&quot;</span><span class="p">,</span>  <span class="c1"># 支持的区域：cn-hangzhou, cn-beijing 等</span>
+    <span class="n">cpu</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>  <span class="c1"># CPU 核数</span>
+    <span class="n">memory</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span>  <span class="c1"># 内存 MB</span>
+    <span class="n">disk</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>  <span class="c1"># 磁盘 MB</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id35">
+<h3>高级用法<a class="headerlink" href="#id35" title="Link to this heading">¶</a></h3>
+<section id="id36">
+<h4>更新现有函数<a class="headerlink" href="#id36" title="Link to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
+    <span class="n">deployer</span><span class="p">,</span>
+    <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;existing-function-name&quot;</span><span class="p">,</span>  <span class="c1"># 更新现有函数</span>
+    <span class="c1"># ... 其他参数</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id37">
+<h4>从项目目录部署<a class="headerlink" href="#id37" title="Link to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
+    <span class="n">deployer</span><span class="p">,</span>
+    <span class="n">project_dir</span><span class="o">=</span><span class="s2">&quot;/path/to/project&quot;</span><span class="p">,</span>  <span class="c1"># 项目目录</span>
+    <span class="n">cmd</span><span class="o">=</span><span class="s2">&quot;python main.py&quot;</span><span class="p">,</span>  <span class="c1"># 启动命令</span>
+    <span class="n">deploy_name</span><span class="o">=</span><span class="s2">&quot;my-agent-app&quot;</span><span class="p">,</span>
+    <span class="c1"># ... 其他参数</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id38">
+<h3>测试部署的服务<a class="headerlink" href="#id38" title="Link to this heading">¶</a></h3>
+<p>部署后，您可以使用 curl 测试端点：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 健康检查</span>
+curl<span class="w"> </span>https://&lt;your-endpoint-url&gt;/health
+
+<span class="c1"># 测试同步端点（带会话亲和性）</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://&lt;your-endpoint-url&gt;/sync<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;x-agentscope-runtime-session-id: 123&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;input&quot;: [</span>
+<span class="s1">      {</span>
+<span class="s1">        &quot;role&quot;: &quot;user&quot;,</span>
+<span class="s1">        &quot;content&quot;: [</span>
+<span class="s1">          {</span>
+<span class="s1">            &quot;type&quot;: &quot;text&quot;,</span>
+<span class="s1">            &quot;text&quot;: &quot;你好，最近怎么样？&quot;</span>
+<span class="s1">          }</span>
+<span class="s1">        ]</span>
+<span class="s1">      }</span>
+<span class="s1">    ],</span>
+<span class="s1">    &quot;session_id&quot;: &quot;123&quot;</span>
+<span class="s1">  }&#39;</span>
+
+<span class="c1"># 测试流式端点</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://&lt;your-endpoint-url&gt;/stream_async<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Accept: text/event-stream&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;x-agentscope-runtime-session-id: 123&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--no-buffer<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;input&quot;: [</span>
+<span class="s1">      {</span>
+<span class="s1">        &quot;role&quot;: &quot;user&quot;,</span>
+<span class="s1">        &quot;content&quot;: [</span>
+<span class="s1">          {</span>
+<span class="s1">            &quot;type&quot;: &quot;text&quot;,</span>
+<span class="s1">            &quot;text&quot;: &quot;给我讲个故事&quot;</span>
+<span class="s1">          }</span>
+<span class="s1">        ]</span>
+<span class="s1">      }</span>
+<span class="s1">    ],</span>
+<span class="s1">    &quot;session_id&quot;: &quot;123&quot;</span>
+<span class="s1">  }&#39;</span>
+</pre></div>
+</div>
+<p><strong>注意</strong>：<code class="docutils literal notranslate"><span class="pre">x-agentscope-runtime-session-id</span></code> 请求头启用会话亲和性，将具有相同会话 ID 的请求路由到同一 FC 实例，以支持有状态操作。</p>
+</section>
+</section>
 </section>
 
     <script type="text/x-thebe-config">
@@ -1664,7 +1982,7 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-07</div>
+              Last updated on 2026-01-08</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -1759,6 +2077,23 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 <li><a class="reference internal" href="#id28">特性</a></li>
 <li><a class="reference internal" href="#id29">Knative 部署前置条件</a></li>
 <li><a class="reference internal" href="#id30">实现</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#serverless-function-compute-fc">方法7：Serverless部署：函数计算（Function Compute, FC）</a><ul>
+<li><a class="reference internal" href="#id31">特性</a></li>
+<li><a class="reference internal" href="#fc">FC 部署前置条件</a></li>
+<li><a class="reference internal" href="#id32">实现</a></li>
+<li><a class="reference internal" href="#id33">配置说明</a><ul>
+<li><a class="reference internal" href="#id34">OSSConfig</a></li>
+<li><a class="reference internal" href="#fcconfig">FCConfig</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id35">高级用法</a><ul>
+<li><a class="reference internal" href="#id36">更新现有函数</a></li>
+<li><a class="reference internal" href="#id37">从项目目录部署</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id38">测试部署的服务</a></li>
 </ul>
 </li>
 </ul>
