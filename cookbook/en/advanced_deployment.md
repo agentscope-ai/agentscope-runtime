@@ -14,11 +14,11 @@ kernelspec:
 
 # Advanced Deployment Guide
 
-This guide covers the seven advanced deployment methods available in AgentScope Runtime, providing production-ready solutions for different scenarios: **Local Daemon**, **Detached Process**, **Kubernetes Deployment**, **ModelStudio Deployment**, **AgentRun Deployment**, **Knative Deployment** and **Function Compute (FC) Deployment**.
+This guide covers the multiple advanced deployment methods available in AgentScope Runtime, providing production-ready solutions for different scenarios: **Local Daemon**, **Detached Process**, **Kubernetes Deployment**, **ModelStudio Deployment**, **AgentRun Deployment**, **PAI Deployment**, **Knative Deployment** and **Function Compute (FC) Deployment**.
 
 ## Overview of Deployment Methods
 
-AgentScope Runtime offers seven distinct deployment approaches, each tailored for specific use cases:
+AgentScope Runtime offers multiple distinct deployment approaches, each tailored for specific use cases:
 
 | Deployment Type           | Use Case | Scalability | Management | Resource Isolation |
 |---------------------------|----------|-------------|------------|-------------------|
@@ -27,6 +27,7 @@ AgentScope Runtime offers seven distinct deployment approaches, each tailored fo
 | **Kubernetes**            | Enterprise & Cloud | Single-node (multi-node support coming) | Orchestrated | Container-level |
 | **ModelStudio**           | Alibaba Cloud Platform | Cloud-managed | Platform-managed | Container-level |
 | **AgentRun**              | AgentRun Platform | Cloud-managed | Platform-managed | Container-level |
+| **PAI**                   | Alibaba Cloud PAI Platform | Cloud-managed | Platform-managed | Container-level |
 | **Knative**               | Enterprise & Cloud | Single-node (multi-node support coming) | Orchestrated | Container-level |
 | **Function Compute (FC)** | Alibaba Cloud Serverless | Cloud-managed | Platform-managed | MicroVM-level |
 
@@ -727,7 +728,386 @@ result = await app.deploy(
 )
 ```
 
-## Method 6: Knative Deployment
+## Method 6: PAI Deployment (Platform for AI)
+
+**Best for**: Enterprise users who need to deploy on Alibaba Cloud PAI platform, leveraging LangStudio for project management and EAS (Elastic Algorithm Service) for service deployment.
+
+### Features
+- Fully managed deployment on Alibaba Cloud PAI platform
+- Integrated LangStudio project and snapshot management
+- EAS (Elastic Algorithm Service) service deployment
+- Three resource types: Public Resource Pool, Dedicated Resource Group, Quota
+- VPC network configuration support
+- RAM role and permission configuration
+- Tracing support
+- Automatic/manual approval workflow
+- Auto-generated deployment tags
+
+### Prerequisites for PAI Deployment
+
+```bash
+# Set required environment variables
+export ALIBABA_CLOUD_ACCESS_KEY_ID="your-access-key-id"
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
+
+# Optional configuration
+export PAI_WORKSPACE_ID="your-workspace-id"
+export REGION_ID="cn-hangzhou"  # or ALIBABA_CLOUD_REGION_ID
+```
+
+You can set the following environment variables or use config file/CLI parameters to customize deployment:
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `ALIBABA_CLOUD_ACCESS_KEY_ID` | Yes | - | Alibaba Cloud Access Key ID |
+| `ALIBABA_CLOUD_ACCESS_KEY_SECRET` | Yes | - | Alibaba Cloud Access Key Secret |
+| `PAI_WORKSPACE_ID` | No | - | PAI Workspace ID (can be specified via CLI or config file) |
+| `REGION_ID` / `ALIBABA_CLOUD_REGION_ID` | No | `cn-hangzhou` | Region ID |
+| `ALIBABA_CLOUD_SECURITY_TOKEN` | No | - | STS Security Token (when using STS) |
+
+### PAI Workspace Requirements
+
+- If using a RAM user account, PAI Developer Role must be assigned
+- OSS bucket must be configured for storing build artifacts
+- (Optional) VPC with public network access if using DashScope models
+
+> **Note**: Services deployed to PAI EAS have no public network access by default. If using DashScope models, configure a VPC with public network access. Reference: [Configure Network Connectivity](https://help.aliyun.com/zh/pai/user-guide/configure-network-connectivity)
+
+### Implementation (SDK)
+
+Using the agent and endpoints defined in the {ref}`Common Agent Setup<common-agent-setup>` section:
+
+```{code-cell}
+# pai_deploy.py
+import asyncio
+import os
+from agentscope_runtime.engine.deployers.pai_deployer import (
+    PAIDeployManager,
+)
+from agent_app import app  # Import configured app
+
+async def deploy_to_pai():
+    """Deploy AgentApp to Alibaba Cloud PAI"""
+
+    # Create PAI deploy manager
+    deployer = PAIDeployManager(
+        workspace_id=os.environ.get("PAI_WORKSPACE_ID"),
+        region_id=os.environ.get("REGION_ID", "cn-hangzhou"),
+    )
+
+    # Execute deployment
+    result = await app.deploy(
+        deployer,
+        service_name="my-agent-service",
+        project_dir="./my_agent",
+        entrypoint="agent.py",
+        resource_type="public",
+        instance_type="ecs.c6.large",
+        instance_count=1,
+        environment={
+            "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+        },
+        enable_trace=True,
+        wait=True,
+    )
+
+    print(f"✅ Deployment successful: {result['url']}")
+    print(f"📍 Deployment ID: {result['deploy_id']}")
+    print(f"📦 Project ID: {result['flow_id']}")
+    return result
+
+if __name__ == "__main__":
+    asyncio.run(deploy_to_pai())
+```
+
+**Key Points**:
+- Automatically packages project and uploads to OSS
+- Creates LangStudio project and snapshot
+- Deploys as EAS service
+- Supports multiple resource type configurations
+
+### Implementation (CLI)
+
+PAI deployment recommends using configuration files for clarity and maintainability:
+
+**Method 1: Using Configuration File (Recommended)**
+
+```bash
+# Navigate to example directory
+cd examples/deployments/pai_deploy
+
+# Deploy using config file
+agentscope deploy pai --config deploy_config.yaml
+
+# Deploy with CLI overrides
+agentscope deploy pai --config deploy_config.yaml --name new-service-name
+```
+
+**Method 2: Using CLI Only**
+
+```bash
+agentscope deploy pai ./my_agent \
+  --name my-service \
+  --workspace-id 12345 \
+  --region cn-hangzhou \
+  --instance-type ecs.c6.large \
+  --env DASHSCOPE_API_KEY=your-key
+```
+
+**Full CLI Options**
+
+```bash
+agentscope deploy pai [SOURCE] [OPTIONS]
+
+Arguments:
+  SOURCE                  Source directory or file (optional if using config)
+
+Options:
+  --config, -c PATH       Path to deployment config file (.yaml)
+  --name TEXT             Service name (required)
+  --workspace-id TEXT     PAI workspace ID
+  --region TEXT           Region ID (e.g., cn-hangzhou)
+  --entrypoint TEXT       Entrypoint file (default: app.py, agent.py, main.py)
+  --oss-path TEXT         OSS work directory
+  --instance-type TEXT    Instance type (for public resource)
+  --instance-count INT    Number of instances
+  --resource-id TEXT      EAS resource group ID (for resource mode)
+  --quota-id TEXT         PAI quota ID (for quota mode)
+  --cpu INT               CPU cores
+  --memory INT            Memory in MB
+  --service-group TEXT    Service group name
+  --resource-type TEXT    Resource type: public, resource, quota
+  --vpc-id TEXT           VPC ID
+  --vswitch-id TEXT       VSwitch ID
+  --security-group-id TEXT  Security group ID
+  --ram-role-arn TEXT     RAM role ARN
+  --enable-trace/--no-trace  Enable/disable tracing
+  --wait/--no-wait        Wait for deployment to complete
+  --timeout INT           Deployment timeout in seconds
+  --auto-approve/--no-auto-approve  Auto approve deployment
+  --env, -E TEXT          Environment variable (KEY=VALUE, repeatable)
+  --env-file PATH         Path to .env file
+  --tag, -T TEXT          Tag (KEY=VALUE, repeatable)
+```
+
+### Configuration
+
+#### PAIDeployConfig Structure
+
+PAI deployment uses YAML configuration files with the following structure:
+
+```yaml
+# deploy_config.yaml
+context:
+  # PAI workspace ID (required)
+  workspace_id: "your-workspace-id"
+  # Region (e.g., cn-hangzhou, cn-shanghai)
+  region: "cn-hangzhou"
+
+spec:
+  # Service name (required, unique within region)
+  name: "my_agent_service"
+
+  code:
+    # Source directory (relative to config file location)
+    source_dir: "my_agent"
+    # Entrypoint file
+    entrypoint: "agent.py"
+
+  resources:
+    # Resource type: public, resource, quota
+    type: "public"
+    # Instance type (required for public mode)
+    instance_type: "ecs.c6.large"
+    # Number of instances
+    instance_count: 1
+
+  # VPC configuration (optional)
+  vpc_config:
+    vpc_id: "vpc-xxxxx"
+    vswitch_id: "vsw-xxxxx"
+    security_group_id: "sg-xxxxx"
+
+  # RAM role configuration (optional)
+  identity:
+    ram_role_arn: "acs:ram::xxx:role/xxx"
+
+  # Observability configuration
+  observability:
+    enable_trace: true
+
+  # Environment variables
+  env:
+    DASHSCOPE_API_KEY: "your-dashscope-api-key"
+
+  # Tags
+  tags:
+    team: "ai-team"
+    project: "agent-demo"
+```
+
+> **Note**: `code.source_dir` is resolved relative to the config file location.
+
+#### Configuration Structure Reference
+
+| Section | Description |
+|---------|-------------|
+| `context` | Deployment target (workspace, region, storage) |
+| `spec.name` | Service name (required) |
+| `spec.code` | Source directory and entrypoint |
+| `spec.resources` | Resource allocation settings |
+| `spec.vpc_config` | VPC network configuration (optional) |
+| `spec.identity` | RAM role configuration (optional) |
+| `spec.observability` | Tracing settings |
+| `spec.env` | Environment variables |
+| `spec.tags` | Deployment tags |
+
+### Resource Types
+
+PAI supports three resource types:
+
+#### 1. Public Resource Pool (`type: "public"`)
+
+Deploy on shared ECS instances, suitable for development/testing and small-scale deployments:
+
+```yaml
+spec:
+  resources:
+    type: "public"
+    instance_type: "ecs.c6.large"  # Required
+    instance_count: 1
+```
+
+#### 2. Dedicated Resource Group (`type: "resource"`)
+
+Deploy on dedicated EAS resource group, suitable for production environments requiring resource isolation:
+
+```yaml
+spec:
+  resources:
+    type: "resource"
+    resource_id: "eas-r-xxxxx"  # Required
+    cpu: 2
+    memory: 4096
+```
+
+#### 3. Quota-based (`type: "quota"`)
+
+Deploy using PAI quota, suitable for enterprise-level resource management:
+
+```yaml
+spec:
+  resources:
+    type: "quota"
+    quota_id: "quota-xxxxxxxx"  # Required
+    cpu: 2
+    memory: 4096
+```
+
+### VPC Configuration
+
+Private network deployment configuration for scenarios requiring access to public or internal resources:
+
+```yaml
+spec:
+  vpc_config:
+    vpc_id: "vpc-xxxxx"
+    vswitch_id: "vsw-xxxxx"
+    security_group_id: "sg-xxxxx"
+```
+
+### Advanced Usage
+
+#### Manual Approval Workflow
+
+By default, deployments are auto-approved. For manual approval:
+
+```bash
+# Use --no-auto-approve option
+agentscope deploy pai --config deploy_config.yaml --no-auto-approve
+```
+
+In interactive terminal, CLI will prompt you to choose:
+- `[A]pprove` - Approve and start deployment
+- `[C]ancel` - Cancel deployment
+- `[S]kip` - Skip, approve later in console
+
+#### Environment Variable Injection
+
+**Method 1: Configuration File**
+
+```yaml
+spec:
+  env:
+    DASHSCOPE_API_KEY: "your-key"
+    MY_CONFIG: "value"
+```
+
+**Method 2: CLI Parameters**
+
+```bash
+agentscope deploy pai ./my_agent \
+  --env DASHSCOPE_API_KEY=your-key \
+  --env MY_CONFIG=value
+```
+
+**Method 3: .env File**
+
+```bash
+agentscope deploy pai ./my_agent --env-file .env
+```
+
+#### Auto-Generated Tags
+
+The following tags are automatically added to deployments:
+
+- `deployed-by: agentscope-runtime`
+- `client-version: <version>`
+- `deploy-method: cli`
+
+#### Managing Deployments
+
+```bash
+# Stop deployment
+agentscope stop <deploy-id>
+
+# View deployment status
+# Visit the PAI console URL provided after deployment
+```
+
+### Troubleshooting
+
+#### Common Issues
+
+1. **"PAI deployer is not available"**
+
+   ```bash
+   pip install 'agentscope-runtime[ext]'
+   ```
+
+2. **"Workspace ID is required"**
+   - Set `PAI_WORKSPACE_ID` environment variable, or
+   - Use `--workspace-id` CLI option, or
+   - Add `context.workspace_id` in config file
+
+3. **"Service name is owned by another user"**
+   - Choose a different service name (must be unique within region)
+
+4. **Credential errors**
+   - Verify `ALIBABA_CLOUD_ACCESS_KEY_ID` and `ALIBABA_CLOUD_ACCESS_KEY_SECRET`
+   - Check RAM permissions for PAI/EAS/OSS access
+
+5. **OSS upload failures**
+   - Ensure OSS bucket exists and is accessible
+   - Check region matches between workspace and OSS bucket
+
+### Complete Example
+
+For more detailed PAI deployment examples, refer to:
+- Example directory: `examples/deployments/pai_deploy/`
+- Config file example: `examples/deployments/pai_deploy/deploy_config.yaml`
+
+## Method 7: Knative Deployment
 
 **Best for**: Enterprise production environments requiring scalability, high availability, and cloud-native serverless container orchestration.
 
@@ -821,7 +1201,7 @@ if __name__ == "__main__":
 - Provides automatic scaling from zero to thousands of instances, intelligent traffic routing
 - Resource limits and health checks configured
 
-## Method 7: Serverless Deployment: Function Compute (FC)
+## Method 8: Serverless Deployment: Function Compute (FC)
 
 **Best For**: Alibaba Cloud users who need to deploy agents to Function Compute (FC) service with automated build, upload, and deployment workflows. FC provides a true serverless experience with pay-per-use pricing and automatic scaling.
 

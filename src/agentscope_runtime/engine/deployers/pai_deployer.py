@@ -953,8 +953,6 @@ class PAIDeployManager(DeployManager):
         project_dir: Optional[Union[str, Path]] = None,
         entrypoint: Optional[str] = None,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
-        requirements: Optional[Union[str, List[str]]] = None,
-        extra_packages: Optional[List[str]] = None,
         environment: Optional[Dict[str, str]] = None,
         service_name: Optional[str] = None,
         app_name: Optional[str] = None,
@@ -976,7 +974,6 @@ class PAIDeployManager(DeployManager):
         wait: bool = True,
         timeout: int = 1800,
         auto_approve: bool = True,
-        deploy_method: str = "cli",
         **kwargs,
     ) -> Dict[str, str]:
         """
@@ -987,8 +984,6 @@ class PAIDeployManager(DeployManager):
             runner: Runner instance
             endpoint_path: API endpoint path
             protocol_adapters: Protocol adapters
-            requirements: Python requirements
-            extra_packages: Extra packages to install
             environment: Environment variables
             project_dir: Local project directory
             service_name: Service name (required)
@@ -1022,11 +1017,17 @@ class PAIDeployManager(DeployManager):
             ValueError: If required parameters are missing
             RuntimeError: If deployment fails
         """
+        from agentscope_runtime.engine.deployers.local_deployer import (
+            LocalDeployManager,
+        )
+
         if not service_name:
             raise ValueError("service_name is required for PAI deployment")
 
         # Merge auto-generated tags with user tags
         # Priority: auto tags < user tags (user can override auto tags)
+
+        deploy_method = kwargs.get("deploy_method", "sdk")
         final_tags = _generate_deployment_tool_tags(deploy_method)
         if tags:
             final_tags.update(tags)
@@ -1035,16 +1036,15 @@ class PAIDeployManager(DeployManager):
             # Ensure SDKs are available
             self._assert_cloud_sdks_available()
 
-            # Step 1: Prepare project
-            # if not project_dir and (runner or app):
-            #     logger.info("Creating detached project from app/runner")
-            #     project_dir = await LocalDeployManager.create_detached_project(
-            #         app=app,
-            #         protocol_adapters=protocol_adapters,
-            #         requirements=requirements,
-            #         extra_packages=extra_packages,
-            #         **kwargs,
-            #     )
+            app = kwargs.get("app")
+
+            if not project_dir and app:
+                logger.info("Creating detached project from app/runner")
+                project_dir = await LocalDeployManager.create_detached_project(
+                    app=app,
+                    protocol_adapters=protocol_adapters,
+                    **kwargs,
+                )
 
             if not project_dir:
                 raise ValueError(
