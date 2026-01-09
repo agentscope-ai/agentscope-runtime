@@ -12,6 +12,7 @@ from kubernetes.client.rest import ApiException
 logger = logging.getLogger(__name__)
 
 
+# TODO: not support Sandbox
 class KnativeClient:
     """
     A client for interacting with Knative Services in a Kubernetes cluster.

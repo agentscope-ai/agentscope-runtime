@@ -116,7 +116,7 @@ KUBECONFIG_PATH=
 | `POOL_SIZE`            | 预热容器池大小         | `1`                        | 缓存的容器以实现更快启动。`POOL_SIZE` 参数控制预创建并缓存在就绪状态的容器数量。当用户请求新沙箱时，系统将首先尝试从这个预热池中分配，相比从零开始创建容器显著减少启动时间。例如，使用 `POOL_SIZE=10`，系统维护 10 个就绪容器，可以立即分配给新请求 |
 | `AUTO_CLEANUP`         | 自动容器清理           | `True`                     | 如果设置为 `True`，服务器关闭后将释放所有沙箱。              |
 | `CONTAINER_PREFIX_KEY` | 容器名称前缀           | `agent-runtime-container-` | 用于标识                                                     |
-| `CONTAINER_DEPLOYMENT` | 容器运行时             | `docker`                   | 目前支持`docker`和`k8s`                                      |
+| `CONTAINER_DEPLOYMENT` | 容器运行时             | `docker`                   | 目前支持`docker`、`k8s`、`agentrun`, `fc`、`gvisor`          |
 | `DEFAULT_MOUNT_DIR`    | 默认挂载目录           | `sessions_mount_dir`       | 用于持久存储路径，存储`/workspace` 文件                      |
 | `READONLY_MOUNTS`      | 只读目录挂载           | `None`                     | 一个字典，映射 **宿主机路径** → **容器路径**，以 **只读** 方式挂载。用于共享文件 / 配置，但禁止容器修改数据。示例：<br/>`{"\/Users\/alice\/data": "\/data"}` 会把宿主机 `/Users/alice/data` 挂载到容器的 `/data`（只读）。 |
 | `PORT_RANGE`           | 可用端口范围           | `[49152,59152]`            | 用于服务端口分配                                             |

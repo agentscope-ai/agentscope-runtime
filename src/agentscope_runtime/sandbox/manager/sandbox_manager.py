@@ -38,6 +38,7 @@ from ...common.collections import (
     InMemoryMapping,
     InMemoryQueue,
 )
+from ...common.container_clients import ContainerClientFactory
 from ..constant import TIMEOUT
 
 logging.basicConfig(level=logging.INFO)
@@ -164,7 +165,12 @@ class SandboxManager:
             self.httpx_client = None
             self.base_url = None
 
-        if not config:
+        if config:
+            logger.debug(
+                f"Launching sandbox manager with config:"
+                f"\n{config.model_dump()}",
+            )
+        else:
             config = SandboxManagerEnvConfig(
                 file_system="local",
                 redis_enabled=False,
@@ -230,30 +236,10 @@ class SandboxManager:
         self.container_deployment = self.config.container_deployment
 
         if base_url is None:
-            if self.container_deployment == "docker":
-                from ...common.container_clients.docker_client import (
-                    DockerClient,
-                )
-
-                self.client = DockerClient(config=self.config)
-            elif self.container_deployment == "k8s":
-                from ...common.container_clients.kubernetes_client import (
-                    KubernetesClient,
-                )
-
-                self.client = KubernetesClient(config=self.config)
-            elif self.container_deployment == "agentrun":
-                from ...common.container_clients.agentrun_client import (
-                    AgentRunClient,
-                )
-
-                self.client = AgentRunClient(config=self.config)
-            elif self.container_deployment == "fc":
-                from ...common.container_clients.fc_client import FCClient
-
-                self.client = FCClient(config=self.config)
-            else:
-                raise NotImplementedError("Not implemented")
+            self.client = ContainerClientFactory.create_client(
+                deployment_type=self.container_deployment,
+                config=self.config,
+            )
         else:
             self.client = None
 
