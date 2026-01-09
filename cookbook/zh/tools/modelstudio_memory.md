@@ -2,7 +2,7 @@
 
 ## 📖 什么是 ModelStudio Memory？
 
-ModelStudio Memory 是来自阿里云百炼大模型平台官方提供的**对话记忆管理服务**，让你的 AI 
+ModelStudio Memory 是来自阿里云百炼大模型平台官方提供的**对话记忆管理服务**，让你的 AI
 应用能够"记住"用户的对话历史，并从中自动提取用户画像。
 
 **核心能力：**

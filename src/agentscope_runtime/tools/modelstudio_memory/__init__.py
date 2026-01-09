@@ -14,7 +14,8 @@ Components:
     - GetUserProfile: Retrieve a user profile
 
 Schemas:
-    All Pydantic schemas for input/output are available in the schemas submodule.
+    All Pydantic schemas for input/output are available in the schemas
+    submodule.
 
 Exceptions:
     Custom exceptions for better error handling are available in the

@@ -106,7 +106,7 @@ import asyncio
 async def basic_example():
     add_memory = AddMemory()
     search_memory = SearchMemory()
-    
+
     try:
         # Add memory
         await add_memory.arun(AddMemoryInput(
@@ -116,19 +116,19 @@ async def basic_example():
                 Message(role="assistant", content="Okay, recorded"),
             ]
         ))
-        
+
         await asyncio.sleep(2)  # Wait for memory processing
-        
+
         # Search memory
         result = await search_memory.arun(SearchMemoryInput(
             user_id="user_001",
             messages=[Message(role="user", content="What do I need to do?")],
             top_k=5
         ))
-        
+
         for node in result.memory_nodes:
             print(f"Memory: {node.content}")
-    
+
     finally:
         await add_memory.close()
         await search_memory.close()
@@ -143,7 +143,7 @@ Demonstrates how to automatically extract user profiles from conversations:
 ```python
 from agentscope_runtime.tools.modelstudio_memory import (
     CreateProfileSchema, GetUserProfile, AddMemory,
-    ProfileAttribute, CreateProfileSchemaInput, 
+    ProfileAttribute, CreateProfileSchemaInput,
     GetUserProfileInput, AddMemoryInput, Message,
 )
 import asyncio
@@ -152,7 +152,7 @@ async def profile_example():
     create_schema = CreateProfileSchema()
     get_profile = GetUserProfile()
     add_memory = AddMemory()
-    
+
     try:
         # Create profile schema
         schema_result = await create_schema.arun(CreateProfileSchemaInput(
@@ -164,9 +164,9 @@ async def profile_example():
                 ProfileAttribute(name="Occupation", description="User's occupation"),
             ]
         ))
-        
+
         schema_id = schema_result.profile_schema_id
-        
+
         # Add conversation with profile information
         await add_memory.arun(AddMemoryInput(
             user_id="user_002",
@@ -176,17 +176,17 @@ async def profile_example():
             ],
             profile_schema=schema_id
         ))
-        
+
         await asyncio.sleep(3)  # Wait for profile extraction
-        
+
         # Get extracted profile
         profile = await get_profile.arun(GetUserProfileInput(
             schema_id=schema_id, user_id="user_002"
         ))
-        
+
         for attr in profile.profile.attributes:
             print(f"{attr.name}: {attr.value or 'Not extracted'}")
-    
+
     finally:
         await create_schema.close()
         await get_profile.close()
@@ -214,10 +214,10 @@ async def llm_with_memory():
         api_key=os.getenv("DASHSCOPE_API_KEY"),
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
     )
-    
+
     try:
         user_id = "user_003"
-        
+
         # Store conversation history
         await add_memory.arun(AddMemoryInput(
             user_id=user_id,
@@ -226,9 +226,9 @@ async def llm_with_memory():
                 Message(role="assistant", content="Great! Python is very powerful"),
             ]
         ))
-        
+
         await asyncio.sleep(2)
-        
+
         # Search relevant memories
         query = "What technologies am I interested in?"
         result = await search_memory.arun(SearchMemoryInput(
@@ -236,11 +236,11 @@ async def llm_with_memory():
             messages=[Message(role="user", content=query)],
             top_k=5
         ))
-        
+
         # Build prompt with memory context
         memory_ctx = "\n".join([f"- {n.content}" for n in result.memory_nodes])
         system_prompt = f"Use the following user memories to provide personalized responses:\n{memory_ctx}"
-        
+
         # Call LLM
         response = await llm_client.chat.completions.create(
             model="qwen-max",
@@ -249,9 +249,9 @@ async def llm_with_memory():
                 {"role": "user", "content": query}
             ]
         )
-        
+
         print(response.choices[0].message.content)
-    
+
     finally:
         await add_memory.close()
         await search_memory.close()
@@ -274,10 +274,10 @@ import time
 async def metadata_example():
     add_memory = AddMemory()
     search_memory = SearchMemory()
-    
+
     try:
         user_id = "user_004"
-        
+
         # Add memory with metadata
         await add_memory.arun(AddMemoryInput(
             user_id=user_id,
@@ -288,19 +288,19 @@ async def metadata_example():
             timestamp=int(time.time()),
             meta_data={"category": "work", "priority": "high"}
         ))
-        
+
         await asyncio.sleep(2)
-        
+
         # Query memories
         result = await search_memory.arun(SearchMemoryInput(
             user_id=user_id,
             messages=[Message(role="user", content="What meetings do I have?")],
             top_k=3
         ))
-        
+
         for node in result.memory_nodes:
             print(f"Memory: {node.content}")
-    
+
     finally:
         await add_memory.close()
         await search_memory.close()
@@ -335,4 +335,5 @@ asyncio.run(metadata_example())
 ### User Profile
 1. **Clear Schema Definition**: Profile fields and descriptions should be clear and specific, avoid being too abstract
 2. **Progressive Collection**: Don't expect to extract all information from a single conversation
+
 
