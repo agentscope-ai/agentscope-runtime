@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 from ..enums import SandboxType
 from ..manager.sandbox_manager import SandboxManager
+from ..manager.server.app import get_config
 
 
 logging.basicConfig(level=logging.INFO)
@@ -32,12 +33,15 @@ class SandboxBase:
         self._sandbox_id = sandbox_id
 
         if base_url:
+            # Remote Manager
             self.manager_api = SandboxManager(
                 base_url=base_url,
                 bearer_token=bearer_token,
             )
         else:
+            # Embedded Manager
             self.manager_api = SandboxManager(
+                config=get_config(),
                 default_type=sandbox_type,
             )
 
