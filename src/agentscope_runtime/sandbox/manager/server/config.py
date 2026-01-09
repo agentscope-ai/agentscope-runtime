@@ -30,7 +30,6 @@ class Settings(BaseSettings):
         "agentrun",
         "fc",
         "knative",
-        "boxlite",
     ] = "docker"
     DEFAULT_MOUNT_DIR: str = "sessions_mount_dir"
     # Read-only mounts (host_path -> container_path)
