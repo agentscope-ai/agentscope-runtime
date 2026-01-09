@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from .knative_client import KnativeClient
     from .fc_client import FCClient
     from .agentrun_client import AgentRunClient
+    from .gvisor_client import GVisorDockerClient
 
 install_lazy_loader(
     globals(),
@@ -19,6 +20,7 @@ install_lazy_loader(
         "KnativeClient": ".knative_client",
         "FCClient": ".fc_client",
         "AgentRunClient": ".agentrun_client",
+        "GVisorDockerClient": ".gvisor_client",
     },
 )
 
@@ -30,6 +32,7 @@ class ContainerClientFactory:
         "knative": "KnativeClient",
         "fc": "FCClient",
         "agentrun": "AgentRunClient",
+        "gvisor": "GVisorDockerClient",
     }
 
     @classmethod

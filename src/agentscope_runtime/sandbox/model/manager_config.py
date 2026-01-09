@@ -34,6 +34,7 @@ class SandboxManagerEnvConfig(BaseModel):
         "agentrun",
         "fc",
         "knative",
+        "gvisor",
     ] = Field(
         ...,
         description="Container deployment backend: 'docker', 'cloud', 'k8s'"
