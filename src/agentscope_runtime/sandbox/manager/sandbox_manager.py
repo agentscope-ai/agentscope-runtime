@@ -142,12 +142,6 @@ class SandboxManager:
             List[Union[SandboxType, str]],
         ] = SandboxType.BASE,
     ):
-        if config:
-            logger.debug(
-                f"Launching sandbox manager with config:"
-                f"\n{config.model_dump()}",
-            )
-
         if base_url:
             # Initialize HTTP session for remote mode with bearer token
             # authentication
@@ -171,7 +165,12 @@ class SandboxManager:
             self.httpx_client = None
             self.base_url = None
 
-        if not config:
+        if config:
+            logger.debug(
+                f"Launching sandbox manager with config:"
+                f"\n{config.model_dump()}",
+            )
+        else:
             config = SandboxManagerEnvConfig(
                 file_system="local",
                 redis_enabled=False,
