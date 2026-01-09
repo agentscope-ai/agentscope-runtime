@@ -284,6 +284,16 @@ class Runner:
             kwargs.update(
                 {"msgs": message_to_ms_agent_framework_message(request.input)},
             )
+        elif self.framework_type == "crewai":
+            from ..adapters.crewai.stream import (
+                adapt_crewai_message_stream,
+            )
+            from ..adapters.crewai.message import message_to_crewai_message
+
+            stream_adapter = adapt_crewai_message_stream
+            kwargs.update(
+                {"msgs": await message_to_crewai_message(request.input)},
+            )
         # TODO: support other frameworks
         else:
 

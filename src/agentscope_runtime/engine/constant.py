@@ -6,4 +6,5 @@ ALLOWED_FRAMEWORK_TYPES = [
     "langgraph",
     "agno",
     "ms_agent_framework",
+    "crewai",
 ]
