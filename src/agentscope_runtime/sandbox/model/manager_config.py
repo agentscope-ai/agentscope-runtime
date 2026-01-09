@@ -38,7 +38,7 @@ class SandboxManagerEnvConfig(BaseModel):
     ] = Field(
         ...,
         description="Container deployment backend: 'docker', 'cloud', 'k8s'"
-        " 'agentrun' or 'fc'.",
+        " 'agentrun', 'fc', 'knative', or 'gvisor'.",
     )
 
     default_mount_dir: Optional[str] = Field(
