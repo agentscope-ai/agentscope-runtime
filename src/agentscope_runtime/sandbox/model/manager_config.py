@@ -33,7 +33,6 @@ class SandboxManagerEnvConfig(BaseModel):
         "k8s",
         "agentrun",
         "fc",
-        "knative",
         "gvisor",
     ] = Field(
         "docker",

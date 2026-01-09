@@ -29,7 +29,6 @@ class Settings(BaseSettings):
         "k8s",
         "agentrun",
         "fc",
-        "knative",
         "gvisor",
     ] = "docker"
     DEFAULT_MOUNT_DIR: str = "sessions_mount_dir"
