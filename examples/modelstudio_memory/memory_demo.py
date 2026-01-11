@@ -45,7 +45,7 @@ logging.basicConfig(
 # Disable verbose logging for certain components
 # (unless explicitly set to DEBUG)
 if LOG_LEVEL != "DEBUG":
-    logging.getLogger("agentscope_bricks").setLevel(logging.WARNING)
+    logging.getLogger("agentscope_runtime").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
 
@@ -160,9 +160,11 @@ def example_messages() -> List[Message]:
         Message(role="assistant", content="好的，我已经记录下来。"),
         Message(
             role="user",
-            content="还有明天记得提醒我给诺成老师买个生日礼物，\
-            诺成老师今年30岁了，比我大三岁。我们的爱好相同，\
-            经常一起踢球，所以我打算给诺成老师买一个精美的足球",
+            content=(
+                "还有明天记得提醒我给诺成老师买个生日礼物，"
+                "诺成老师今年30岁了，比我大三岁。我们的爱好相同，"
+                "经常一起踢球，所以我打算给诺成老师买一个精美的足球"
+            )
         ),
         Message(role="assistant", content="好的，我明天会提醒你"),
     ]
@@ -298,9 +300,8 @@ async def step_list_memory(
         f"✓ List retrieved successfully (Request ID: {result.request_id})",
     )
     print_info(
-        f"📊 Pagination: Page \
-        {result.page_num}/{total_pages}, \
-        {result.page_size} per page, {result.total} total",
+        f"📊 Pagination: Page {result.page_num}/{total_pages}, "
+        f"{result.page_size} per page, {result.total} total",
     )
     print("")
 
@@ -326,10 +327,10 @@ async def step_list_memory(
 
 
 async def step_search_memory_with_llm(
-    search_memory: SearchMemory,
-    llm_client: AsyncOpenAI,
-    end_user_id: str,
-) -> Tuple[List[str], str]:
+        search_memory: SearchMemory,
+        llm_client: AsyncOpenAI,
+        end_user_id: str,
+):
     """Search memories and generate personalized response using LLM"""
     user_query = "今天和明天需要提醒我做什么？"
 
@@ -363,7 +364,7 @@ async def step_search_memory_with_llm(
 
     if not search_result.memory_nodes:
         print_warn("No relevant memory nodes found")
-        return [], user_query
+        return
 
     print_info(f"Found {len(search_result.memory_nodes)} relevant memories:")
     print("")
@@ -424,7 +425,7 @@ async def step_search_memory_with_llm(
     print("")
     print("")
 
-    return [hid for hid in hit_ids if hid], user_query
+    return
 
 
 async def step_get_user_profile(
@@ -629,7 +630,7 @@ async def main() -> None:  # pylint: disable=too-many-statements
 
         print_section("Demo 3: Search Memory + LLM Answer")
         try:
-            _hits, _query = await step_search_memory_with_llm(
+            await step_search_memory_with_llm(
                 search_memory,
                 llm_client,
                 end_user_id,

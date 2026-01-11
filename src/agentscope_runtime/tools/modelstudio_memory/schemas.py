@@ -187,7 +187,7 @@ class CreateProfileSchemaInput(BaseModel):
     @model_validator(mode="after")
     def validate_attributes(self) -> "CreateProfileSchemaInput":
         """Validate that at least one attribute is provided."""
-        if not self.attributes or len(self.attributes) == 0:
+        if not self.attributes:
             raise ValueError("attributes must contain at least one item")
         return self
 
