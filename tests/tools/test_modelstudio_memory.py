@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=redefined-outer-name
 
+import asyncio
 import os
 import uuid
 from datetime import datetime
+
 import pytest
-import time
 
 from agentscope_runtime.tools.modelstudio_memory import (
     AddMemory,
@@ -83,14 +84,15 @@ def get_user_profile_component():
     yield component
 
 
+@pytest.mark.asyncio
 @pytest.mark.skipif(
     NO_DASHSCOPE_KEY,
     reason="DASHSCOPE_API_KEY not set",
 )
-def test_add_memory_success(add_memory_component):
+async def test_add_memory_success(add_memory_component):
     """Test adding a memory node."""
     test_user_id = generate_test_user_id()
-    
+
     # Prepare test data
     messages = [
         Message(role="user", content="I love playing basketball on weekends"),
@@ -106,8 +108,7 @@ def test_add_memory_success(add_memory_component):
         meta_data={"source": "pytest", "test": "add_memory"},
     )
 
-    # Call the run method
-    result = add_memory_component.run(input_data)
+    result = await add_memory_component.arun(input_data)
 
     # Assertions
     assert isinstance(result, AddMemoryOutput)
@@ -117,27 +118,27 @@ def test_add_memory_success(add_memory_component):
             assert isinstance(node, MemoryNode)
 
 
+@pytest.mark.asyncio
 @pytest.mark.skipif(
     NO_DASHSCOPE_KEY,
     reason="DASHSCOPE_API_KEY not set",
 )
-def test_search_memory_success(search_memory_component):
+async def test_search_memory_success(search_memory_component):
     """Test searching memory nodes."""
     test_user_id = generate_test_user_id()
-    
+
     # SearchMemoryInput requires messages for context
     messages = [
         Message(role="user", content="basketball"),
     ]
-    
+
     input_data = SearchMemoryInput(
         user_id=test_user_id,
         messages=messages,
         top_k=5,
     )
 
-    # Call the run method
-    result = search_memory_component.run(input_data)
+    result = await search_memory_component.arun(input_data)
 
     # Assertions
     assert isinstance(result, SearchMemoryOutput)
@@ -147,22 +148,22 @@ def test_search_memory_success(search_memory_component):
             assert isinstance(node, MemoryNode)
 
 
+@pytest.mark.asyncio
 @pytest.mark.skipif(
     NO_DASHSCOPE_KEY,
     reason="DASHSCOPE_API_KEY not set",
 )
-def test_list_memory_success(list_memory_component):
+async def test_list_memory_success(list_memory_component):
     """Test listing memory nodes with pagination."""
     test_user_id = generate_test_user_id()
-    
+
     input_data = ListMemoryInput(
         user_id=test_user_id,
         page_size=10,
         page_num=1,
     )
 
-    # Call the run method
-    result = list_memory_component.run(input_data)
+    result = await list_memory_component.arun(input_data)
 
     # Assertions
     assert isinstance(result, ListMemoryOutput)
@@ -173,17 +174,18 @@ def test_list_memory_success(list_memory_component):
             assert isinstance(node, MemoryNode)
 
 
+@pytest.mark.asyncio
 @pytest.mark.skipif(
     NO_DASHSCOPE_KEY,
     reason="DASHSCOPE_API_KEY not set",
 )
-def test_delete_memory_success(
+async def test_delete_memory_success(
     add_memory_component,
     delete_memory_component,
 ):
     """Test deleting a memory node."""
     test_user_id = generate_test_user_id()
-    
+
     # First, add a memory node
     messages = [
         Message(role="user", content="Remember that I like playing football"),
@@ -196,10 +198,10 @@ def test_delete_memory_success(
         meta_data={"test": "delete_memory"},
     )
 
-    add_result = add_memory_component.run(add_input)
+    add_result = await add_memory_component.arun(add_input)
 
-    # wait for several seconds
-    time.sleep(5)
+    # Wait for several seconds for the memory to be processed
+    await asyncio.sleep(3)
     if add_result.memory_nodes:
         memory_node_id = add_result.memory_nodes[0].memory_node_id
 
@@ -209,23 +211,24 @@ def test_delete_memory_success(
             memory_node_id=memory_node_id,
         )
 
-        result = delete_memory_component.run(delete_input)
+        result = await delete_memory_component.arun(delete_input)
 
         # Assertions
         assert isinstance(result, DeleteMemoryOutput)
         assert result.request_id is not None
 
 
+@pytest.mark.asyncio
 @pytest.mark.skipif(
     NO_DASHSCOPE_KEY,
     reason="DASHSCOPE_API_KEY not set",
 )
-def test_create_profile_schema_success(create_profile_schema_component):
+async def test_create_profile_schema_success(create_profile_schema_component):
     """Test creating a user profile schema."""
     # Generate unique schema name
     mmdd = datetime.now().strftime("%m%d%H%M%S")
     schema_name = f"test_schema_{mmdd}"
-    
+
     # Define profile attributes
     attributes = [
         ProfileAttribute(
@@ -248,19 +251,20 @@ def test_create_profile_schema_success(create_profile_schema_component):
         attributes=attributes,
     )
 
-    # Call the run method
-    result = create_profile_schema_component.run(input_data)
+    # Call the async run method
+    result = await create_profile_schema_component.arun(input_data)
 
     # Assertions
     assert isinstance(result, CreateProfileSchemaOutput)
     assert result.profile_schema_id is not None
 
 
+@pytest.mark.asyncio
 @pytest.mark.skipif(
     NO_DASHSCOPE_KEY,
     reason="DASHSCOPE_API_KEY not set",
 )
-def test_get_user_profile_success(
+async def test_get_user_profile_success(
     create_profile_schema_component,
     get_user_profile_component,
 ):
@@ -283,7 +287,7 @@ def test_get_user_profile_success(
         attributes=attributes,
     )
 
-    schema_result = create_profile_schema_component.run(schema_input)
+    schema_result = await create_profile_schema_component.arun(schema_input)
     schema_id = schema_result.profile_schema_id
 
     # Now get the user profile
@@ -292,8 +296,7 @@ def test_get_user_profile_success(
         user_id=test_user_id,
     )
 
-    # Call the run method
-    result = get_user_profile_component.run(input_data)
+    result = await get_user_profile_component.arun(input_data)
 
     # Assertions
     assert isinstance(result, GetUserProfileOutput)

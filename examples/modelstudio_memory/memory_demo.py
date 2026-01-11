@@ -6,7 +6,7 @@ import sys
 import time
 import uuid
 from datetime import datetime
-from typing import List, Tuple
+from typing import List
 from openai import AsyncOpenAI
 
 from agentscope_runtime.tools.modelstudio_memory import (
@@ -164,7 +164,7 @@ def example_messages() -> List[Message]:
                 "还有明天记得提醒我给诺成老师买个生日礼物，"
                 "诺成老师今年30岁了，比我大三岁。我们的爱好相同，"
                 "经常一起踢球，所以我打算给诺成老师买一个精美的足球"
-            )
+            ),
         ),
         Message(role="assistant", content="好的，我明天会提醒你"),
     ]
@@ -327,9 +327,9 @@ async def step_list_memory(
 
 
 async def step_search_memory_with_llm(
-        search_memory: SearchMemory,
-        llm_client: AsyncOpenAI,
-        end_user_id: str,
+    search_memory: SearchMemory,
+    llm_client: AsyncOpenAI,
+    end_user_id: str,
 ):
     """Search memories and generate personalized response using LLM"""
     user_query = "今天和明天需要提醒我做什么？"

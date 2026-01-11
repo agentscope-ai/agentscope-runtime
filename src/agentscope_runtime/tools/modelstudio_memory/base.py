@@ -147,21 +147,21 @@ class ModelStudioMemoryBase:
                         error_code=error_code,
                         request_id=request_id,
                     )
-                elif response.status == 404:
+                if response.status == 404:
                     raise MemoryNotFoundError(
                         error_message,
                         status_code=response.status,
                         error_code=error_code,
                         request_id=request_id,
                     )
-                elif response.status == 400:
+                if response.status == 400:
                     raise MemoryValidationError(
                         error_message,
                         status_code=response.status,
                         error_code=error_code,
                         request_id=request_id,
                     )
-                elif 400 <= response.status < 500:
+                if 400 <= response.status < 500:
                     # Other 4XX errors
                     raise MemoryValidationError(
                         error_message,
@@ -169,14 +169,12 @@ class ModelStudioMemoryBase:
                         error_code=error_code,
                         request_id=request_id,
                     )
-                else:
-                    # 5XX server errors
-                    raise MemoryAPIError(
-                        error_message,
-                        status_code=response.status,
-                        error_code=error_code,
-                        request_id=request_id,
-                    )
+                raise MemoryAPIError(
+                    error_message,
+                    status_code=response.status,
+                    error_code=error_code,
+                    request_id=request_id,
+                )
 
         except aiohttp.ClientError as e:
             logger.exception(f"Network error: {str(e)}")
