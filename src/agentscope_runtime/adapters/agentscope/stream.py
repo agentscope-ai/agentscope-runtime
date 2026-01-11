@@ -271,7 +271,7 @@ async def adapt_agentscope_message_stream(
                                 role="assistant",
                             )
                             data_delta_content = DataContent(
-                                index=0,
+                                index=None if last else 0,
                                 data=fc_cls(
                                     call_id=element["id"],
                                     name=element.get("name"),
