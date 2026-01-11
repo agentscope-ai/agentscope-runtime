@@ -43,7 +43,7 @@ Searches relevant historical conversations based on semantic similarity.
 - `user_id`: User identifier
 - `messages`: Current conversation context
 - `top_k`: Number of results to return (default: 5)
-- `min_score`: Minimum similarity score (recommended: 0.03)
+- `min_score`: Minimum similarity score (default: 0.0)
 
 **Returns:**
 - `memory_nodes`: List of memory nodes sorted by relevance

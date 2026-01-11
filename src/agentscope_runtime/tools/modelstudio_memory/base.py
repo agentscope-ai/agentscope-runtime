@@ -60,7 +60,7 @@ class ModelStudioMemoryBase:
         """
         return {
             "Content-Type": "application/json",
-            "User-Agent": "agentscope-bricks",
+            "User-Agent": "agentscope-runtime",
             "Authorization": f"Bearer {self.config.api_key}",
         }
 
@@ -140,28 +140,28 @@ class ModelStudioMemoryBase:
                 logger.error(error_log)
 
                 # Raise appropriate exception based on status code
-                if response.status == [401, 403]:
+                if response.status in [401, 403]:
                     raise MemoryAuthenticationError(
                         error_message,
                         status_code=response.status,
                         error_code=error_code,
                         request_id=request_id,
                     )
-                if response.status == 404:
+                elif response.status == 404:
                     raise MemoryNotFoundError(
                         error_message,
                         status_code=response.status,
                         error_code=error_code,
                         request_id=request_id,
                     )
-                if response.status == 400:
+                elif response.status == 400:
                     raise MemoryValidationError(
                         error_message,
                         status_code=response.status,
                         error_code=error_code,
                         request_id=request_id,
                     )
-                if 400 <= response.status < 500:
+                elif 400 <= response.status < 500:
                     # Other 4XX errors
                     raise MemoryValidationError(
                         error_message,
@@ -169,13 +169,14 @@ class ModelStudioMemoryBase:
                         error_code=error_code,
                         request_id=request_id,
                     )
-                # 5XX server errors
-                raise MemoryAPIError(
-                    error_message,
-                    status_code=response.status,
-                    error_code=error_code,
-                    request_id=request_id,
-                )
+                else:
+                    # 5XX server errors
+                    raise MemoryAPIError(
+                        error_message,
+                        status_code=response.status,
+                        error_code=error_code,
+                        request_id=request_id,
+                    )
 
         except aiohttp.ClientError as e:
             logger.exception(f"Network error: {str(e)}")

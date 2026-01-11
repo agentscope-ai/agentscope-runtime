@@ -29,8 +29,8 @@ if [ ! -f "$WORK_DIR/memory_demo.py" ]; then
 fi
 
 # Check if API Key is valid
-if [ -z "$DASHSCOPE_API_KEY" ]; then
-  echo "[ERROR] DASHSCOPE_API_KEY is empty. Please set it before running." >&2
+if [ -z "${DASHSCOPE_API_KEY:-}" ] || [ "$DASHSCOPE_API_KEY" = "YOUR_DASHSCOPE_API_KEY" ]; then
+  echo "[ERROR] DASHSCOPE_API_KEY is not set or is still using the placeholder value. Please set it to a valid API key before running." >&2
   exit 1
 fi
 

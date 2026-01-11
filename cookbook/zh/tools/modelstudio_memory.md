@@ -44,7 +44,7 @@ ModelStudio Memory 是来自阿里云百炼大模型平台官方提供的**对�
 - `user_id`: 用户标识
 - `messages`: 当前对话上下文
 - `top_k`: 返回结果数量（默认 5）
-- `min_score`: 最小相似度分数（建议 0.03）
+- `min_score`: 最小相似度分数（默认 0.0）
 
 **返回结果：**
 - `memory_nodes`: 按相关性排序的记忆节点列表
