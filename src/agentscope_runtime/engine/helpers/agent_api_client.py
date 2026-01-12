@@ -47,7 +47,7 @@ class AgentAPIClientBase(ABC):
         Raises:
             Exception: If the request fails
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     async def astream(self, request: AgentRequest) -> AsyncIterator[Event]:
@@ -63,7 +63,9 @@ class AgentAPIClientBase(ABC):
         Raises:
             Exception: If the request fails
         """
-        pass
+        raise NotImplementedError
+        # Make this an async generator for proper type checking
+        yield  # pylint: disable=unreachable
 
 
 # ============================================================================
@@ -79,7 +81,8 @@ def parse_sse_line_bytes(line: bytes) -> tuple[Optional[str], Optional[str]]:
         line: SSE line as bytes
 
     Returns:
-        Tuple of (field, value) where field can be 'data', 'event', 'id', or 'retry'
+        Tuple of (field, value) where field can be 'data', 'event',
+        'id', or 'retry'
     """
     line_str = line.decode("utf-8").strip()
     return parse_sse_line(line_str)
@@ -93,7 +96,8 @@ def parse_sse_line(line: str) -> tuple[Optional[str], Optional[str]]:
         line: SSE line string (already decoded from bytes)
 
     Returns:
-        Tuple of (field, value) where field can be 'data', 'event', 'id', or 'retry'
+        Tuple of (field, value) where field can be 'data', 'event',
+        'id', or 'retry'
     """
     line_str = line.strip()
     if line_str.startswith("data: "):
@@ -115,36 +119,37 @@ def parse_event_from_json(data: Dict) -> Optional[Event]:
         data: Parsed JSON response data
 
     Returns:
-        Event object (Message, Content, or AgentResponse) if valid, None otherwise
+        Event object (Message, Content, or AgentResponse) if valid,
+        None otherwise
     """
     try:
         obj_type = data.get("object")
 
         if obj_type == "response":
             return AgentResponse(**data)
-        elif obj_type == "message":
+        if obj_type == "message":
             return Message(**data)
-        elif obj_type == "content":
-            content_type = data.get("type")
-            if content_type == "text":
-                return TextContent(**data)
-            elif content_type == "image":
-                return ImageContent(**data)
-            elif content_type == "data":
-                return DataContent(**data)
-            else:
-                return Content(**data)
-        else:
-            # Unknown object type, return as generic event if it has required fields
-            if "object" in data:
-                return Event(**data)
-
+        if obj_type == "content":
+            content_type = data.get("type", "")
+            content_class_map = {
+                "text": TextContent,
+                "image": ImageContent,
+                "data": DataContent,
+            }
+            content_class = content_class_map.get(content_type, Content)
+            return content_class(**data)
+        # Unknown object type, return as generic event if it has
+        # required fields
+        if "object" in data:
+            return Event(**data)
+        return None
     except Exception as e:
         logger.warning(
-            "Failed to parse event from JSON: %s, error: %s", data, e
+            "Failed to parse event from JSON: %s, error: %s",
+            data,
+            e,
         )
-
-    return None
+        return None
 
 
 class HTTPAgentAPIClient(AgentAPIClientBase):
@@ -172,7 +177,8 @@ class HTTPAgentAPIClient(AgentAPIClientBase):
         Initialize HTTP Agent API client.
 
         Args:
-            endpoint: API endpoint URL (e.g., "https://api.example.com/process")
+            endpoint: API endpoint URL
+                (e.g., "https://api.example.com/process")
             token: Optional authorization token (Bearer token)
             timeout: Request timeout in seconds (default: 300)
             headers: Optional additional custom headers
@@ -229,17 +235,18 @@ class HTTPAgentAPIClient(AgentAPIClientBase):
 
             # Parse SSE stream
             for line in response.iter_lines():
-                if line:
-                    field, value = parse_sse_line_bytes(line)
-                    if field == "data" and value:
-                        try:
-                            data = json.loads(value)
-                            event = parse_event_from_json(data)
-                            if event:
-                                yield event
-                        except json.JSONDecodeError:
-                            logger.debug("Failed to parse JSON: %s", value)
-                            continue
+                if not line:
+                    continue
+                field, value = parse_sse_line_bytes(line)
+                if field != "data" or not value:
+                    continue
+                try:
+                    data = json.loads(value)
+                    event = parse_event_from_json(data)
+                    if event:
+                        yield event
+                except json.JSONDecodeError:
+                    logger.debug("Failed to parse JSON: %s", value)
 
         except requests.exceptions.RequestException as e:
             logger.error("HTTP request failed: %s", e)
@@ -269,7 +276,6 @@ class HTTPAgentAPIClient(AgentAPIClientBase):
                     json=payload,
                     headers=headers,
                 ) as response:
-
                     # chunks = ""
 
                     # async for c in response.aiter_bytes():
@@ -279,23 +285,23 @@ class HTTPAgentAPIClient(AgentAPIClientBase):
 
                     response.raise_for_status()
 
-
-
                     # Parse SSE stream
                     async for line in response.aiter_lines():
-                        if line:
-                            field, value = parse_sse_line(line)
-                            if field == "data" and value:
-                                try:
-                                    data = json.loads(value)
-                                    event = parse_event_from_json(data)
-                                    if event:
-                                        yield event
-                                except json.JSONDecodeError:
-                                    logger.debug(
-                                        "Failed to parse JSON: %s", value
-                                    )
-                                    continue
+                        if not line:
+                            continue
+                        field, value = parse_sse_line(line)
+                        if field != "data" or not value:
+                            continue
+                        try:
+                            data = json.loads(value)
+                            event = parse_event_from_json(data)
+                            if event:
+                                yield event
+                        except json.JSONDecodeError:
+                            logger.debug(
+                                "Failed to parse JSON: %s",
+                                value,
+                            )
 
         except httpx.HTTPError as e:
             logger.error("HTTP request failed: %s", e)
