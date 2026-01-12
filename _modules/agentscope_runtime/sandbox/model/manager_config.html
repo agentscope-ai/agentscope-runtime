@@ -649,7 +649,7 @@ body.preview-active {
     <span class="p">)</span>
 
     <span class="n">file_system</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="s2">&quot;oss&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-        <span class="o">...</span><span class="p">,</span>
+        <span class="s2">&quot;local&quot;</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Type of file system to use: &#39;local&#39; or &#39;oss&#39;.&quot;</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">storage_folder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -657,7 +657,7 @@ body.preview-active {
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Folder path in storage.&quot;</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">redis_enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-        <span class="o">...</span><span class="p">,</span>
+        <span class="kc">False</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Indicates if Redis is enabled.&quot;</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">container_deployment</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span>
@@ -666,14 +666,15 @@ body.preview-active {
         <span class="s2">&quot;k8s&quot;</span><span class="p">,</span>
         <span class="s2">&quot;agentrun&quot;</span><span class="p">,</span>
         <span class="s2">&quot;fc&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;gvisor&quot;</span><span class="p">,</span>
     <span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-        <span class="o">...</span><span class="p">,</span>
+        <span class="s2">&quot;docker&quot;</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Container deployment backend: &#39;docker&#39;, &#39;cloud&#39;, &#39;k8s&#39;&quot;</span>
-        <span class="s2">&quot; &#39;agentrun&#39; or &#39;fc&#39;.&quot;</span><span class="p">,</span>
+        <span class="s2">&quot; &#39;agentrun&#39;, &#39;fc&#39;, &#39;knative&#39;, or &#39;gvisor&#39;.&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="n">default_mount_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-        <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">&quot;sessions_mount_dir&quot;</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path for local file system storage.&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -981,7 +982,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-08</div>
+              Last updated on 2026-01-12</div>
           </div>
           <div class="right-details">
             <div class="icons">
