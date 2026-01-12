@@ -72,6 +72,15 @@ def vpc_config() -> Dict[str, str]:
 
 
 @pytest.fixture
+def workspace_id() -> str:
+    """Workspace ID for testing."""
+    workspace_id = os.getenv("PAI_WORKSPACE_ID", "")
+    if not workspace_id:
+        pytest.skip("PAI_WORKSPACE_ID is not set")
+    return workspace_id
+
+
+@pytest.fixture
 async def service_name(deploy_manager: PAIDeployManager) -> AsyncIterator[str]:
     """Generate unique service name and cleanup after test."""
     svc_name = (
@@ -103,9 +112,9 @@ async def service_name(deploy_manager: PAIDeployManager) -> AsyncIterator[str]:
 
 
 @pytest.fixture
-def deploy_manager():
+def deploy_manager(workspace_id: str):
     """Create a PAIDeployManager instance for testing."""
-    deployer_manager = PAIDeployManager()
+    deployer_manager = PAIDeployManager(workspace_id=workspace_id)
 
     if not deployer_manager.workspace_id or not deployer_manager.region_id:
         pytest.skip("PAI_WORKSPACE_ID or REGION_ID is not set")
