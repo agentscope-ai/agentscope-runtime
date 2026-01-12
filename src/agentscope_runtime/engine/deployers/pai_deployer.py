@@ -33,26 +33,565 @@ from .utils.package import generate_build_directory
 
 try:
     import alibabacloud_oss_v2 as oss
-    from alibabacloud_pailangstudio20240710.client import (
-        Client as LangStudioClient,
-    )
     from alibabacloud_aiworkspace20210204.client import (
         Client as WorkspaceClient,
     )
     from alibabacloud_eas20210701.client import Client as EASClient
     from alibabacloud_tea_openapi import models as open_api_models
+    from alibabacloud_tea_openapi.client import Client as OpenApiClient
+    from alibabacloud_tea_openapi import utils_models as open_api_util_models
+    from alibabacloud_tea_openapi.utils import Utils as OpenApiUtils
 
     PAI_AVAILABLE = True
 except ImportError:
     oss = None
-    LangStudioClient = None
     WorkspaceClient = None
     EASClient = None
     open_api_models = None
+    OpenApiClient = None
+    open_api_util_models = None
+    OpenApiUtils = None
     PAI_AVAILABLE = False
 
 
 logger = logging.getLogger(__name__)
+
+
+class LangStudioClient:
+    """
+    A lightweight PAI LangStudio API client .
+
+    This client provides direct access to the PAI LangStudio API endpoints
+    using the alibabacloud_tea_openapi.client.Client for request handling.
+    """
+
+    API_VERSION = "2024-07-10"
+
+    def __init__(
+        self,
+        config: "open_api_models.Config",
+    ):
+        """
+        Initialize the LangStudio client.
+
+        Args:
+            config: OpenAPI configuration with credentials and endpoint
+        """
+        if OpenApiClient is None:
+            raise ImportError(
+                "alibabacloud_tea_openapi is required. "
+                "Install with: pip install alibabacloud_tea_openapi",
+            )
+        self._client = OpenApiClient(config)
+        self._client._endpoint_rule = ""
+        self._client.check_config(config)
+        if config.endpoint:
+            self._client._endpoint = config.endpoint
+        else:
+            self._client._endpoint = (
+                f"pailangstudio.{config.region_id}.aliyuncs.com"
+            )
+
+    def _build_params(
+        self,
+        action: str,
+        pathname: str,
+        method: str,
+    ) -> "open_api_util_models.Params":
+        """Build request parameters."""
+        return open_api_util_models.Params(
+            action=action,
+            version=self.API_VERSION,
+            protocol="HTTPS",
+            pathname=pathname,
+            method=method,
+            auth_type="AK",
+            style="ROA",
+            req_body_type="json",
+            body_type="json",
+        )
+
+    @staticmethod
+    def _percent_encode(value: str) -> str:
+        """URL percent-encode a value."""
+        from urllib.parse import quote
+
+        return quote(str(value), safe="")
+
+    # =========================================================================
+    # Flow APIs
+    # =========================================================================
+
+    async def list_flows_async(
+        self,
+        workspace_id: str,
+        flow_name: Optional[str] = None,
+        flow_id: Optional[str] = None,
+        flow_type: Optional[str] = None,
+        creator: Optional[str] = None,
+        user_id: Optional[str] = None,
+        sort_by: Optional[str] = None,
+        order: Optional[str] = None,
+        page_number: Optional[int] = None,
+        page_size: Optional[int] = None,
+        max_results: Optional[int] = None,
+        next_token: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        List flows in a workspace.
+
+        Args:
+            workspace_id: The workspace ID
+            flow_name: Filter by flow name
+            flow_id: Filter by flow ID
+            flow_type: Filter by flow type
+            creator: Filter by creator
+            user_id: Filter by user ID
+            sort_by: Sort field
+            order: Sort order (ASC/DESC)
+            page_number: Page number
+            page_size: Page size
+            max_results: Maximum results
+            next_token: Pagination token
+
+        Returns:
+            Dict containing flows list and pagination info
+        """
+        from darabonba.runtime import RuntimeOptions
+
+        query: Dict[str, Any] = {"WorkspaceId": workspace_id}
+        if flow_name is not None:
+            query["FlowName"] = flow_name
+        if flow_id is not None:
+            query["FlowId"] = flow_id
+        if flow_type is not None:
+            query["FlowType"] = flow_type
+        if creator is not None:
+            query["Creator"] = creator
+        if user_id is not None:
+            query["UserId"] = user_id
+        if sort_by is not None:
+            query["SortBy"] = sort_by
+        if order is not None:
+            query["Order"] = order
+        if page_number is not None:
+            query["PageNumber"] = page_number
+        if page_size is not None:
+            query["PageSize"] = page_size
+        if max_results is not None:
+            query["MaxResults"] = max_results
+        if next_token is not None:
+            query["NextToken"] = next_token
+
+        req = open_api_util_models.OpenApiRequest(
+            headers={},
+            query=OpenApiUtils.query(query),
+        )
+        params = self._build_params(
+            action="ListFlows",
+            pathname="/api/v1/langstudio/flows",
+            method="GET",
+        )
+        runtime = RuntimeOptions()
+        result = await self._client.call_api_async(params, req, runtime)
+        return result.get("body", {})
+
+    async def get_flow_async(
+        self,
+        flow_id: str,
+        workspace_id: str,
+        include_code_mode_run_info: Optional[bool] = None,
+    ) -> Dict[str, Any]:
+        """
+        Get a flow by ID.
+
+        Args:
+            flow_id: The flow ID
+            workspace_id: The workspace ID
+            include_code_mode_run_info: Include code mode run info
+
+        Returns:
+            Dict containing flow details
+        """
+        from darabonba.runtime import RuntimeOptions
+
+        query: Dict[str, Any] = {"WorkspaceId": workspace_id}
+        if include_code_mode_run_info is not None:
+            query["IncludeCodeModeRunInfo"] = include_code_mode_run_info
+
+        req = open_api_util_models.OpenApiRequest(
+            headers={},
+            query=OpenApiUtils.query(query),
+        )
+        params = self._build_params(
+            action="GetFlow",
+            pathname=f"/api/v1/langstudio/flows/{self._percent_encode(flow_id)}",
+            method="GET",
+        )
+        runtime = RuntimeOptions()
+        result = await self._client.call_api_async(params, req, runtime)
+        return result.get("body", {})
+
+    async def create_flow_async(
+        self,
+        workspace_id: str,
+        flow_name: str,
+        flow_type: str,
+        description: Optional[str] = None,
+        source_uri: Optional[str] = None,
+        work_dir: Optional[str] = None,
+        create_from: Optional[str] = None,
+        accessibility: Optional[str] = None,
+        flow_template_id: Optional[str] = None,
+        runtime_id: Optional[str] = None,
+        source_flow_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Create a new flow.
+
+        Args:
+            workspace_id: The workspace ID
+            flow_name: The flow name
+            flow_type: The flow type (e.g., "Code")
+            description: Flow description
+            source_uri: Source URI (for OSS imports)
+            work_dir: Working directory
+            create_from: Creation source (e.g., "OSS")
+            accessibility: Accessibility setting
+            flow_template_id: Template ID to create from
+            runtime_id: Runtime ID
+            source_flow_id: Source flow ID to copy from
+
+        Returns:
+            Dict containing the created flow info with flow_id
+        """
+        from darabonba.runtime import RuntimeOptions
+
+        body: Dict[str, Any] = {
+            "WorkspaceId": workspace_id,
+            "FlowName": flow_name,
+            "FlowType": flow_type,
+        }
+        if description is not None:
+            body["Description"] = description
+        if source_uri is not None:
+            body["SourceUri"] = source_uri
+        if work_dir is not None:
+            body["WorkDir"] = work_dir
+        if create_from is not None:
+            body["CreateFrom"] = create_from
+        if accessibility is not None:
+            body["Accessibility"] = accessibility
+        if flow_template_id is not None:
+            body["FlowTemplateId"] = flow_template_id
+        if runtime_id is not None:
+            body["RuntimeId"] = runtime_id
+        if source_flow_id is not None:
+            body["SourceFlowId"] = source_flow_id
+
+        req = open_api_util_models.OpenApiRequest(
+            headers={},
+            body=OpenApiUtils.parse_to_map(body),
+        )
+        params = self._build_params(
+            action="CreateFlow",
+            pathname="/api/v1/langstudio/flows",
+            method="POST",
+        )
+        runtime = RuntimeOptions()
+        result = await self._client.call_api_async(params, req, runtime)
+        return result.get("body", {})
+
+    async def delete_flow_async(
+        self,
+        flow_id: str,
+        workspace_id: str,
+    ) -> Dict[str, Any]:
+        """
+        Delete a flow.
+
+        Args:
+            flow_id: The flow ID to delete
+            workspace_id: The workspace ID
+
+        Returns:
+            Dict containing deletion result
+        """
+        from darabonba.runtime import RuntimeOptions
+
+        query: Dict[str, Any] = {"WorkspaceId": workspace_id}
+
+        req = open_api_util_models.OpenApiRequest(
+            headers={},
+            query=OpenApiUtils.query(query),
+        )
+        params = self._build_params(
+            action="DeleteFlow",
+            pathname=f"/api/v1/langstudio/flows/{self._percent_encode(flow_id)}",
+            method="DELETE",
+        )
+        runtime = RuntimeOptions()
+        result = await self._client.call_api_async(params, req, runtime)
+        return result.get("body", {})
+
+    # =========================================================================
+    # Snapshot APIs
+    # =========================================================================
+
+    async def create_snapshot_async(
+        self,
+        workspace_id: str,
+        snapshot_resource_type: str,
+        snapshot_resource_id: str,
+        snapshot_name: str,
+        source_storage_path: Optional[str] = None,
+        work_dir: Optional[str] = None,
+        description: Optional[str] = None,
+        accessibility: Optional[str] = None,
+        creation_type: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Create a snapshot.
+
+        Args:
+            workspace_id: The workspace ID
+            snapshot_resource_type: Resource type (e.g., "Flow")
+            snapshot_resource_id: Resource ID (e.g., flow_id)
+            snapshot_name: Name for the snapshot
+            source_storage_path: Source storage path (OSS URI)
+            work_dir: Working directory
+            description: Snapshot description
+            accessibility: Accessibility setting
+            creation_type: Creation type
+
+        Returns:
+            Dict containing snapshot_id
+        """
+        from darabonba.runtime import RuntimeOptions
+
+        body: Dict[str, Any] = {
+            "WorkspaceId": workspace_id,
+            "SnapshotResourceType": snapshot_resource_type,
+            "SnapshotResourceId": snapshot_resource_id,
+            "SnapshotName": snapshot_name,
+        }
+        if source_storage_path is not None:
+            body["SourceStoragePath"] = source_storage_path
+        if work_dir is not None:
+            body["WorkDir"] = work_dir
+        if description is not None:
+            body["Description"] = description
+        if accessibility is not None:
+            body["Accessibility"] = accessibility
+        if creation_type is not None:
+            body["CreationType"] = creation_type
+
+        req = open_api_util_models.OpenApiRequest(
+            headers={},
+            body=OpenApiUtils.parse_to_map(body),
+        )
+        params = self._build_params(
+            action="CreateSnapshot",
+            pathname="/api/v1/langstudio/snapshots",
+            method="POST",
+        )
+        runtime = RuntimeOptions()
+        result = await self._client.call_api_async(params, req, runtime)
+        return result.get("body", {})
+
+    # =========================================================================
+    # Deployment APIs
+    # =========================================================================
+
+    async def create_deployment_async(
+        self,
+        workspace_id: str,
+        resource_type: str,
+        resource_id: str,
+        resource_snapshot_id: str,
+        service_name: str,
+        work_dir: Optional[str] = None,
+        deployment_config: Optional[str] = None,
+        credential_config: Optional[Dict[str, Any]] = None,
+        enable_trace: Optional[bool] = None,
+        auto_approval: Optional[bool] = None,
+        service_group: Optional[str] = None,
+        description: Optional[str] = None,
+        accessibility: Optional[str] = None,
+        envs: Optional[Dict[str, str]] = None,
+        labels: Optional[Dict[str, str]] = None,
+        user_vpc: Optional[Dict[str, Any]] = None,
+        ecs_spec: Optional[str] = None,
+        data_sources: Optional[List[Dict[str, Any]]] = None,
+        chat_history_config: Optional[Dict[str, Any]] = None,
+        content_moderation_config: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Create a deployment.
+
+        Args:
+            workspace_id: The workspace ID
+            resource_type: Resource type (e.g., "Flow")
+            resource_id: Resource ID (e.g., flow_id)
+            resource_snapshot_id: Snapshot ID
+            service_name: Service name
+            work_dir: Working directory (OSS path)
+            deployment_config: Deployment configuration JSON string
+            credential_config: Credential configuration dict
+            enable_trace: Enable tracing
+            auto_approval: Auto approve deployment
+            service_group: Service group name
+            description: Deployment description
+            accessibility: Accessibility setting
+            envs: Environment variables
+            labels: Labels/tags
+            user_vpc: VPC configuration
+            ecs_spec: ECS specification
+            data_sources: Data sources configuration
+            chat_history_config: Chat history configuration
+            content_moderation_config: Content moderation configuration
+
+        Returns:
+            Dict containing deployment_id
+        """
+        from darabonba.runtime import RuntimeOptions
+
+        body: Dict[str, Any] = {
+            "WorkspaceId": workspace_id,
+            "ResourceType": resource_type,
+            "ResourceId": resource_id,
+            "ResourceSnapshotId": resource_snapshot_id,
+            "ServiceName": service_name,
+        }
+        if work_dir is not None:
+            body["WorkDir"] = work_dir
+        if deployment_config is not None:
+            body["DeploymentConfig"] = deployment_config
+        if credential_config is not None:
+            body["CredentialConfig"] = credential_config
+        if enable_trace is not None:
+            body["EnableTrace"] = enable_trace
+        if auto_approval is not None:
+            body["AutoApproval"] = auto_approval
+        if service_group is not None:
+            body["ServiceGroup"] = service_group
+        if description is not None:
+            body["Description"] = description
+        if accessibility is not None:
+            body["Accessibility"] = accessibility
+        if envs is not None:
+            body["Envs"] = envs
+        if labels is not None:
+            body["Labels"] = labels
+        if user_vpc is not None:
+            body["UserVpc"] = user_vpc
+        if ecs_spec is not None:
+            body["EcsSpec"] = ecs_spec
+        if data_sources is not None:
+            body["DataSources"] = data_sources
+        if chat_history_config is not None:
+            body["ChatHistoryConfig"] = chat_history_config
+        if content_moderation_config is not None:
+            body["ContentModerationConfig"] = content_moderation_config
+
+        req = open_api_util_models.OpenApiRequest(
+            headers={},
+            body=OpenApiUtils.parse_to_map(body),
+        )
+        params = self._build_params(
+            action="CreateDeployment",
+            pathname="/api/v1/langstudio/deployments",
+            method="POST",
+        )
+        runtime = RuntimeOptions()
+        result = await self._client.call_api_async(params, req, runtime)
+        return result.get("body", {})
+
+    async def get_deployment_async(
+        self,
+        deployment_id: str,
+        workspace_id: str,
+    ) -> Dict[str, Any]:
+        """
+        Get deployment details.
+
+        Args:
+            deployment_id: The deployment ID
+            workspace_id: The workspace ID
+
+        Returns:
+            Dict containing deployment details including status
+        """
+        from darabonba.runtime import RuntimeOptions
+
+        query: Dict[str, Any] = {"WorkspaceId": workspace_id}
+
+        req = open_api_util_models.OpenApiRequest(
+            headers={},
+            query=OpenApiUtils.query(query),
+        )
+        params = self._build_params(
+            action="GetDeployment",
+            pathname=(
+                f"/api/v1/langstudio/deployments/"
+                f"{self._percent_encode(deployment_id)}"
+            ),
+            method="GET",
+        )
+        runtime = RuntimeOptions()
+        result = await self._client.call_api_async(params, req, runtime)
+        return result.get("body", {})
+
+    async def update_deployment_async(
+        self,
+        deployment_id: str,
+        workspace_id: str,
+        stage_action: Optional[str] = None,
+        auto_approval: Optional[bool] = None,
+        deployment_config: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Update a deployment.
+
+        Args:
+            deployment_id: The deployment ID
+            workspace_id: The workspace ID
+            stage_action: Stage action JSON (e.g., {"Stage": 3, "Action": "Confirm"})
+            auto_approval: Auto approval setting
+            deployment_config: Deployment configuration
+            description: Deployment description
+
+        Returns:
+            Dict containing update result
+        """
+        from darabonba.runtime import RuntimeOptions
+
+        body: Dict[str, Any] = {"WorkspaceId": workspace_id}
+        if stage_action is not None:
+            body["StageAction"] = stage_action
+        if auto_approval is not None:
+            body["AutoApproval"] = auto_approval
+        if deployment_config is not None:
+            body["DeploymentConfig"] = deployment_config
+        if description is not None:
+            body["Description"] = description
+
+        req = open_api_util_models.OpenApiRequest(
+            headers={},
+            body=OpenApiUtils.parse_to_map(body),
+        )
+        params = self._build_params(
+            action="UpdateDeployment",
+            pathname=(
+                f"/api/v1/langstudio/deployments/"
+                f"{self._percent_encode(deployment_id)}"
+            ),
+            method="PUT",
+        )
+        runtime = RuntimeOptions()
+        result = await self._client.call_api_async(params, req, runtime)
+        return result.get("body", {})
 
 
 class ConfigBaseModel(BaseModel):
@@ -585,7 +1124,10 @@ class PAIDeployManager(DeployManager):
         Initialize PAI deployer.
         """
         super().__init__(state_manager=state_manager)
-        self.workspace_id = workspace_id or os.getenv("PAI_WORKSPACE_ID")
+        self.workspace_id: str = workspace_id or os.getenv(
+            "PAI_WORKSPACE_ID",
+            "",
+        )
         self.region_id = (
             region_id
             or os.getenv("REGION")
@@ -646,24 +1188,18 @@ class PAIDeployManager(DeployManager):
         """
         Create a snapshot for given archive_oss_uri
         """
-        from alibabacloud_pailangstudio20240710.models import (
-            CreateSnapshotRequest,
-        )
-
         client = self.get_langstudio_client()
 
         resp = await client.create_snapshot_async(
-            request=CreateSnapshotRequest(
-                workspace_id=self.workspace_id,
-                snapshot_resource_type="Flow",
-                snapshot_resource_id=proj_id,
-                snapshot_name=(
-                    f"{service_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-                ),
-                source_storage_path=archive_oss_uri,
+            workspace_id=self.workspace_id,
+            snapshot_resource_type="Flow",
+            snapshot_resource_id=proj_id,
+            snapshot_name=(
+                f"{service_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
             ),
+            source_storage_path=archive_oss_uri,
         )
-        return resp.body.snapshot_id
+        return resp.get("SnapshotId", "")
 
     def _build_deployment_config(
         self,
@@ -760,7 +1296,7 @@ class PAIDeployManager(DeployManager):
         self,
         ram_role_mode: str = "default",
         ram_role_arn: Optional[str] = None,
-    ):
+    ) -> Dict[str, Any]:
         """
         Build credential configuration.
 
@@ -771,10 +1307,6 @@ class PAIDeployManager(DeployManager):
         Returns:
             Credential configuration dict
         """
-        from alibabacloud_pailangstudio20240710.models import (
-            CreateDeploymentRequestCredentialConfig,
-        )
-
         if ram_role_mode == "none":
             return {
                 "EnableCredentialInject": False,
@@ -799,7 +1331,7 @@ class PAIDeployManager(DeployManager):
                 )
             cred_config["CredentialConfigItems"][0]["Roles"] = [ram_role_arn]
 
-        return CreateDeploymentRequestCredentialConfig().from_map(cred_config)
+        return cred_config
 
     async def _deploy_snapshot(
         self,
@@ -818,10 +1350,6 @@ class PAIDeployManager(DeployManager):
         """
         Deploy a snapshot as a service.
         """
-        from alibabacloud_pailangstudio20240710.models import (
-            CreateDeploymentRequest,
-        )
-
         logger.info(
             "Deploying snapshot %s as service %s",
             snapshot_id,
@@ -843,8 +1371,7 @@ class PAIDeployManager(DeployManager):
             ram_role_arn=ram_role_arn,
         )
 
-        # Prepare deployment request
-        deploy_req = CreateDeploymentRequest(
+        response = await client.create_deployment_async(
             workspace_id=self.workspace_id,
             resource_type="Flow",
             resource_id=proj_id,
@@ -855,16 +1382,10 @@ class PAIDeployManager(DeployManager):
             deployment_config=deployment_config,
             credential_config=credential_config,
             auto_approval=auto_approve,
+            service_group=service_group_name,
         )
 
-        if service_group_name:
-            deploy_req.service_group = service_group_name
-
-        response = await client.create_deployment_async(
-            deploy_req,
-        )
-
-        deployment_id = response.body.deployment_id
+        deployment_id = response.get("DeploymentId", "")
         logger.info("Deployment created: %s", deployment_id)
         return deployment_id
 
@@ -887,7 +1408,6 @@ class PAIDeployManager(DeployManager):
         Wait for deployment to reach running state.
 
         Args:
-            pai_client: PAI client instance
             deployment_id: Deployment ID to monitor
             timeout: Maximum wait time in seconds
             poll_interval: Polling interval in seconds
@@ -899,10 +1419,6 @@ class PAIDeployManager(DeployManager):
             TimeoutError: If deployment doesn't complete within timeout
             RuntimeError: If deployment fails
         """
-        from alibabacloud_pailangstudio20240710.models import (
-            GetDeploymentRequest,
-        )
-
         logger.info("Waiting for deployment %s to complete...", deployment_id)
         client = self.get_langstudio_client()
 
@@ -910,22 +1426,19 @@ class PAIDeployManager(DeployManager):
 
         while time.time() - start_time < timeout:
             # Get deployment status
-            get_req = GetDeploymentRequest(
+            response = await client.get_deployment_async(
+                deployment_id=deployment_id,
                 workspace_id=self.workspace_id,
             )
-
-            response = await client.get_deployment_async(
-                deployment_id,
-                get_req,
-            )
-            status = response.body.deployment_status
+            status = response.get("DeploymentStatus", "")
             logger.info("Deployment status: %s", status)
 
             if status == "Succeed":
                 return {}
             elif status == "Failed":
+                error_msg = response.get("ErrorMessage", "Unknown error")
                 raise RuntimeError(
-                    f"Deployment {deployment_id} failed: {response.body.error_message}",
+                    f"Deployment {deployment_id} failed: {error_msg}",
                 )
             elif status == "Cancled":
                 raise RuntimeError(f"Deployment {deployment_id} cancled.")
@@ -1442,10 +1955,6 @@ class PAIDeployManager(DeployManager):
     ):
         from alibabacloud_eas20210701.models import Service
         from alibabacloud_tea_openapi.exceptions import AlibabaCloudException
-        from alibabacloud_pailangstudio20240710.models import (
-            GetFlowRequest,
-            CreateFlowRequest,
-        )
 
         langstudio_client = self.get_langstudio_client()
 
@@ -1454,7 +1963,7 @@ class PAIDeployManager(DeployManager):
 
         # try to reuse existing project from service label
         if service and service.labels:
-            proj_id_from_svc_label = next(
+            proj_id_from_svc_label: Optional[str] = next(
                 (
                     label.label_value
                     for label in service.labels
@@ -1462,58 +1971,61 @@ class PAIDeployManager(DeployManager):
                 ),
                 None,
             )
-            try:
-                resp = await langstudio_client.get_flow_async(
-                    proj_id_from_svc_label,
-                    request=GetFlowRequest(workspace_id=self.workspace_id),
-                )
-                proj_id = resp.body.flow_id
-            except AlibabaCloudException as e:
-                if e.status_code == 400:
-                    logger.info(
-                        "No flow found with id: %s, %s",
-                        proj_id_from_svc_label,
-                        e,
+            if not proj_id_from_svc_label:
+                proj_id = None
+            else:
+                try:
+                    resp = await langstudio_client.get_flow_async(
+                        flow_id=proj_id_from_svc_label,
+                        workspace_id=self.workspace_id,
                     )
-                    proj_id = None
-                else:
-                    raise e
+                    proj_id = resp.get("FlowId")
+                except AlibabaCloudException as e:
+                    if e.status_code == 400:
+                        logger.info(
+                            "No flow found with id: %s, %s",
+                            proj_id_from_svc_label,
+                            e,
+                        )
+                        proj_id = None
+                    else:
+                        raise e
         else:
             proj_id = None
 
         if not proj_id:
             flow_proj = await self._get_langstudio_proj_by_name(service_name)
             if flow_proj:
-                proj_id = flow_proj.flow_id
+                proj_id = flow_proj.get("FlowId")
 
         if not proj_id:
             resp = await langstudio_client.create_flow_async(
-                request=CreateFlowRequest(
-                    workspace_id=self.workspace_id,
-                    flow_name=service_name,
-                    description=f"Project {service_name} created by Agentscope Runtime.",
-                    flow_type="Code",
-                    source_uri=proj_archive_oss_uri,
-                    work_dir=self._oss_uri_patch_endpoint(oss_path),
-                    create_from="OSS",
-                ),
+                workspace_id=self.workspace_id,
+                flow_name=service_name,
+                description=f"Project {service_name} created by Agentscope Runtime.",
+                flow_type="Code",
+                source_uri=proj_archive_oss_uri,
+                work_dir=self._oss_uri_patch_endpoint(oss_path),
+                create_from="OSS",
             )
-            proj_id = resp.body.flow_id
+            proj_id = resp.get("FlowId")
 
         return proj_id
 
-    async def _get_langstudio_proj(self, flow_id: str):
-        from alibabacloud_pailangstudio20240710.models import GetFlowRequest
+    async def _get_langstudio_proj(
+        self,
+        flow_id: str,
+    ) -> Optional[Dict[str, Any]]:
         from alibabacloud_tea_openapi.exceptions import AlibabaCloudException
 
         client = self.get_langstudio_client()
 
         try:
             resp = await client.get_flow_async(
-                flow_id,
-                request=GetFlowRequest(workspace_id=self.workspace_id),
+                flow_id=flow_id,
+                workspace_id=self.workspace_id,
             )
-            return resp.body
+            return resp
         except AlibabaCloudException as e:
             if e.status_code == 400:
                 logger.info("No flow found with id: %s, %s", flow_id, e)
@@ -1643,48 +2155,43 @@ class PAIDeployManager(DeployManager):
         """Get deployment status (not fully implemented)."""
         return "unknown"
 
-    async def _get_langstudio_proj_by_name(self, name: str):
-        from alibabacloud_pailangstudio20240710.models import ListFlowsRequest
-
+    async def _get_langstudio_proj_by_name(
+        self,
+        name: str,
+    ) -> Optional[Dict[str, Any]]:
         next_token = None
 
         client = self.get_langstudio_client()
 
         while True:
             resp = await client.list_flows_async(
-                request=ListFlowsRequest(
-                    workspace_id=self.workspace_id,
-                    flow_name=name,
-                    sort_by="GmtCreateTime",
-                    order="DESC",
-                    next_token=next_token,
-                    page_size=100,
-                ),
+                workspace_id=self.workspace_id,
+                flow_name=name,
+                sort_by="GmtCreateTime",
+                order="DESC",
+                next_token=next_token,
+                page_size=100,
             )
-            for flow in resp.body.flows:
-                if flow.flow_name == name:
+            flows = resp.get("Flows", [])
+            for flow in flows:
+                if flow.get("FlowName") == name:
                     return flow
 
-            next_token = resp.body.next_token
+            next_token = resp.get("NextToken")
             if not next_token:
                 break
         return None
 
     async def _update_deployment(
         self,
-        deployment_id: str,  # pylint: disable=unused-argument
+        deployment_id: str,
         auto_approve: bool,  # pylint: disable=unused-argument
-    ):
-        from alibabacloud_pailangstudio20240710.models import (
-            UpdateDeploymentRequest,
-        )
-
+    ) -> Dict[str, Any]:
         client = self.get_langstudio_client()
         resp = await client.update_deployment_async(
-            request=UpdateDeploymentRequest(
-                workspace_id=self.workspace_id,
-                stage_action=json.dumps({"Stage": 3, "Action": "Confirm"}),
-            ),
+            deployment_id=deployment_id,
+            workspace_id=self.workspace_id,
+            stage_action=json.dumps({"Stage": 3, "Action": "Confirm"}),
         )
 
         return resp
@@ -1698,18 +2205,14 @@ class PAIDeployManager(DeployManager):
         )
 
     async def delete_project(self, project_name: str) -> None:
-        from alibabacloud_pailangstudio20240710.models import DeleteFlowRequest
-
         proj = await self._get_langstudio_proj_by_name(project_name)
         if not proj:
             return
         client = self.get_langstudio_client()
 
         await client.delete_flow_async(
-            flow_id=proj.flow_id,
-            request=DeleteFlowRequest(
-                workspace_id=self.workspace_id,
-            ),
+            flow_id=proj.get("FlowId", ""),
+            workspace_id=self.workspace_id,
         )
 
     async def wait_for_approval_stage(
@@ -1733,10 +2236,6 @@ class PAIDeployManager(DeployManager):
             TimeoutError: If deployment doesn't reach approval stage
             RuntimeError: If deployment fails before approval stage
         """
-        from alibabacloud_pailangstudio20240710.models import (
-            GetDeploymentRequest,
-        )
-
         logger.info(
             "Waiting for deployment %s to reach approval stage...",
             deployment_id,
@@ -1746,22 +2245,19 @@ class PAIDeployManager(DeployManager):
         start_time = time.time()
 
         while time.time() - start_time < timeout:
-            get_req = GetDeploymentRequest(
+            response = await client.get_deployment_async(
+                deployment_id=deployment_id,
                 workspace_id=self.workspace_id,
             )
-            response = await client.get_deployment_async(
-                deployment_id,
-                get_req,
-            )
-            status = response.body.deployment_status
+            status = response.get("DeploymentStatus", "")
 
             if status == "WaitForConfirm":
                 logger.info("Deployment is ready for approval")
                 return True
             if status in ("Failed", "Cancled"):
+                error_msg = response.get("ErrorMessage", "Unknown error")
                 raise RuntimeError(
-                    f"Deployment {deployment_id} failed: "
-                    f"{response.body.error_message}",
+                    f"Deployment {deployment_id} failed: {error_msg}",
                 )
             if status in ("Running", "Creating"):
                 await asyncio.sleep(poll_interval)
@@ -1796,19 +2292,13 @@ class PAIDeployManager(DeployManager):
         Returns:
             Dict with approval result
         """
-        from alibabacloud_pailangstudio20240710.models import (
-            UpdateDeploymentRequest,
-        )
-
         logger.info("Approving deployment %s", deployment_id)
         client = self.get_langstudio_client()
 
         await client.update_deployment_async(
-            deployment_id,
-            request=UpdateDeploymentRequest(
-                workspace_id=self.workspace_id,
-                stage_action=json.dumps({"Stage": 3, "Action": "Confirm"}),
-            ),
+            deployment_id=deployment_id,
+            workspace_id=self.workspace_id,
+            stage_action=json.dumps({"Stage": 3, "Action": "Confirm"}),
         )
 
         if wait:
@@ -1833,19 +2323,13 @@ class PAIDeployManager(DeployManager):
         Returns:
             Dict with rejection result
         """
-        from alibabacloud_pailangstudio20240710.models import (
-            UpdateDeploymentRequest,
-        )
-
         logger.info("Cancelling deployment %s", deployment_id)
         client = self.get_langstudio_client()
 
         await client.update_deployment_async(
-            deployment_id,
-            request=UpdateDeploymentRequest(
-                workspace_id=self.workspace_id,
-                stage_action=json.dumps({"Stage": 3, "Action": "Cancel"}),
-            ),
+            deployment_id=deployment_id,
+            workspace_id=self.workspace_id,
+            stage_action=json.dumps({"Stage": 3, "Action": "Cancel"}),
         )
 
         return {"success": True, "deployment_id": deployment_id}

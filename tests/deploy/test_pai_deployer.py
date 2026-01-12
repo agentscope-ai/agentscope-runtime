@@ -571,14 +571,5 @@ async def test_redeploy_existing_service(
     await deploy_manager.stop(result_2["deploy_id"])
 
 
-@pytest.mark.asyncio
-async def test_list_workspace_configs(deploy_manager: PAIDeployManager):
-    """Test retrieving workspace default OSS storage path."""
-    oss_uri = deploy_manager.get_workspace_default_oss_storage_path()
-
-    if oss_uri:
-        assert oss_uri.startswith("oss://")
-
-
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
