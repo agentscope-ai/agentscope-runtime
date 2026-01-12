@@ -128,8 +128,11 @@ async def step_create_profile_schema(
         name="User Profile (Demo)",
         description="Demo user profile schema",
         attributes=[
-            ProfileAttribute(name="年龄", description="用户年龄"),
-            ProfileAttribute(name="爱好", description="兴趣偏好"),
+            ProfileAttribute(name="Age", description="User's age"),
+            ProfileAttribute(
+                name="Hobbies",
+                description="User's interests and preferences",
+            ),
         ],
     )
 
@@ -155,18 +158,22 @@ def example_messages() -> List[Message]:
     return [
         Message(
             role="user",
-            content="每天上午9点提醒我喝水，下午3点复习笔记。",
+            content="Remind me to drink water at "
+            "9am and review my notes at 3pm every day.",
         ),
-        Message(role="assistant", content="好的，我已经记录下来。"),
+        Message(role="assistant", content="Got it, I've noted that down."),
         Message(
             role="user",
             content=(
-                "还有明天记得提醒我给诺成老师买个生日礼物，"
-                "诺成老师今年30岁了，比我大三岁。我们的爱好相同，"
-                "经常一起踢球，所以我打算给诺成老师买一个精美的足球"
+                "Also, remind me to buy a birthday gift "
+                "for Mr. Smith tomorrow. Mr. Smith is turning "
+                "30 this year, three years older than me. "
+                "We share the same hobbies and "
+                "often play soccer together, so I plan to "
+                "buy him a nice soccer ball."
             ),
         ),
-        Message(role="assistant", content="好的，我明天会提醒你"),
+        Message(role="assistant", content="Sure, I'll remind you tomorrow."),
     ]
 
 
@@ -332,7 +339,7 @@ async def step_search_memory_with_llm(
     end_user_id: str,
 ):
     """Search memories and generate personalized response using LLM"""
-    user_query = "今天和明天需要提醒我做什么？"
+    user_query = "What do I need to be reminded of today and tomorrow?"
 
     print_info(
         "We'll use a natural language query to search relevant memories, "
@@ -390,9 +397,11 @@ async def step_search_memory_with_llm(
         f"- {node.content}" for node in search_result.memory_nodes
     ]
     system_prompt = (
-        "你是一名助理。根据以下检索到的记忆回答用户问题。\n\n"
-        + "记忆内容：\n"
-        + ("\n".join(context_lines) if context_lines else "(无检索结果)")
+        "You are an assistant. "
+        "Answer the user's question based on the "
+        "following retrieved memories.\n\n"
+        + "Memory content:\n"
+        + ("\n".join(context_lines) if context_lines else "(No results)")
     )
 
     messages = [
@@ -437,10 +446,17 @@ async def step_get_user_profile(
     print_info("🎯 User Profile Feature Demo")
     print("")
     print_info(
-        "💡 说明：记忆服务会自动从对话中提取用户信息，填充到画像字段中。",
+        "💡 Note: The memory service automatically extracts "
+        "user information from conversations and populates profile fields.",
     )
-    print_info("    例如：从 '诺成老师今年30岁，比我大三岁' 可推断出用户27岁")
-    print_info("          从 '我们经常一起踢球' 可推断出用户爱好是足球")
+    print_info(
+        "    For example: From 'Mr. Smith is turning 30, "
+        "three years older than me' we can infer the user is 27",
+    )
+    print_info(
+        "    From 'We often play soccer together' "
+        "we can infer the user's hobby is soccer",
+    )
     print("")
 
     payload = GetUserProfileInput(schema_id=schema_id, user_id=end_user_id)

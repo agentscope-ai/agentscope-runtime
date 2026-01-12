@@ -2,7 +2,8 @@
 
 ## 📖 What is ModelStudio Memory?
 
-ModelStudio Memory is a **conversation memory management service** that enables your AI applications to "remember" user conversation history and automatically extract user profiles.
+ModelStudio Memory is a **conversation memory tool** that enables
+your AI applications to "remember" user conversation history and automatically extract user profiles.
 
 **Core Capabilities:**
 - 💾 **Memory Storage**: Automatically converts conversations into structured memories with semantic search support
