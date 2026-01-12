@@ -19,8 +19,6 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
 from agentscope_runtime.engine.services.agent_state import InMemoryStateService
 
 agent_app = AgentApp(
-    app_name="Friday",
-    app_description="A helpful assistant",
     agui_config=AGUIAdaptorConfig(
         route_path="/ag-ui",
     ),

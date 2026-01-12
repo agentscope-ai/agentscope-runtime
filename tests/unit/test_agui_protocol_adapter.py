@@ -119,7 +119,7 @@ class TestAGUIEventStreaming:
             "messages": [{"id": "msg_1", "role": "user", "content": "Hi"}],
         }
 
-        response = client.post("/agui", json=request_data)
+        response = client.post("/ag-ui", json=request_data)
         assert response.status_code == 200
 
         # Parse events
@@ -165,20 +165,20 @@ class TestAGUIEventStreaming:
         # Verify thread_id and run_id are present in RUN_STARTED event
         run_started_event = events[run_started_idx]
         assert (
-            run_started_event["thread_id"] == "test_thread"
-        ), "RUN_STARTED should have correct thread_id"
+            run_started_event["threadId"] == "test_thread"
+        ), "RUN_STARTED should have correct threadId"
         assert (
-            run_started_event["run_id"] == "test_run"
-        ), "RUN_STARTED should have correct run_id"
+            run_started_event["runId"] == "test_run"
+        ), "RUN_STARTED should have correct runId"
 
         # Verify RUN_FINISHED event
         run_finished_event = events[run_finished_idx]
         assert (
-            run_finished_event["thread_id"] == "test_thread"
-        ), "RUN_FINISHED should have correct thread_id"
+            run_finished_event["threadId"] == "test_thread"
+        ), "RUN_FINISHED should have correct threadId"
         assert (
-            run_finished_event["run_id"] == "test_run"
-        ), "RUN_FINISHED should have correct run_id"
+            run_finished_event["runId"] == "test_run"
+        ), "RUN_FINISHED should have correct runId"
 
         # Collect text deltas from TEXT_MESSAGE_CONTENT events
         text_deltas = []
@@ -200,9 +200,9 @@ class TestAGUIEventStreaming:
         message_ids = set()
         for event in events:
             if event["type"] in ["TEXT_MESSAGE_START", "TEXT_MESSAGE_CONTENT"]:
-                if "message_id" in event:
-                    message_ids.add(event["message_id"])
+                if "messageId" in event:
+                    message_ids.add(event["messageId"])
 
         assert (
             len(message_ids) == 1
-        ), "All text message events should have the same message_id"
+        ), "All text message events should have the same messageId"

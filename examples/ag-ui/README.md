@@ -4,7 +4,7 @@
 
 ## 示例特性
 
-- **AG-UI 协议支持**: 实现了完整的 AG-UI 协议，包括流式事件推送
+- **AG-UI 协议支持**: 支持AG-UI protocol
 - **ReAct Agent**: 使用 AgentScope 的 ReAct Agent 实现推理和行动循环
 - **工具调用**: 集成了 `get_weather` 和 `execute_python_code` 两个示例工具
 - **会话管理**: 支持多会话历史记录的管理和持久化
