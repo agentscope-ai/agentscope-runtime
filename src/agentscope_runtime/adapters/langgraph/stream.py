@@ -95,13 +95,12 @@ async def adapt_langgraph_message_stream(
                                     ensure_ascii=False,
                                 ),
                             ).model_dump(),
-                            delta=True,
                         )
 
                         data_content = plugin_call_message.add_delta_content(
                             new_content=data_content,
                         )
-                        yield data_content
+                        yield data_content.completed()
                         yield plugin_call_message.completed()
             else:
                 if has_tool_call_chunk:
