@@ -164,7 +164,7 @@ class TestAGUIIntegration:
         start_app,
     ):  # pylint: disable=unused-argument
         """Test simple text exchange through AG-UI protocol with real LLM."""
-        url = f"http://localhost:{PORT}/agui"
+        url = f"http://localhost:{PORT}/ag-ui"
         custom_thread_id = "test_thread_1"
         custom_run_id = "test_run_1"
         request_data = {
@@ -229,8 +229,8 @@ class TestAGUIIntegration:
 
                 run_started = [e for e in events if e["type"] == "RUN_STARTED"]
                 assert len(run_started) > 0
-                assert run_started[0]["thread_id"] == custom_thread_id
-                assert run_started[0]["run_id"] == custom_run_id
+                assert run_started[0]["threadId"] == custom_thread_id
+                assert run_started[0]["runId"] == custom_run_id
 
     @pytest.mark.asyncio
     async def test_conversation_with_history(
@@ -238,7 +238,7 @@ class TestAGUIIntegration:
         start_app,
     ):  # pylint: disable=unused-argument
         """Test conversation with message history through AG-UI."""
-        url = f"http://localhost:{PORT}/agui"
+        url = f"http://localhost:{PORT}/ag-ui"
 
         # First turn: tell agent the user's name
         request_data_1 = {
@@ -333,7 +333,7 @@ class TestAGUIIntegration:
         start_app,
     ):  # pylint: disable=unused-argument
         """Test tool call through AG-UI."""
-        url = f"http://localhost:{PORT}/agui"
+        url = f"http://localhost:{PORT}/ag-ui"
         custom_thread_id = "test_thread_1"
         custom_run_id = "test_run_1"
         request_data = {
@@ -343,7 +343,7 @@ class TestAGUIIntegration:
                 {
                     "id": "msg_1",
                     "role": "user",
-                    "content": "北京的天气如何?",
+                    "content": "北京今天的天气如何?",
                 },
             ],
         }
