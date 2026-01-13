@@ -86,6 +86,7 @@ jobs:
 
       - name: Run tests with coverage (boxlite)
         run: |
+          pip install -q boxlite
           export CONTAINER_DEPLOYMENT=boxlite
           coverage run -m pytest tests/sandbox/test_sandbox.py tests/sandbox/test_sandbox_service.py
 
