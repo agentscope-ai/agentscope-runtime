@@ -80,8 +80,13 @@ jobs:
           export PIP_DEFAULT_TIMEOUT=300
           pip install -q -e ".[dev]"
 
-      - name: Run tests with coverage
+      - name: Run tests with coverage (default)
         run: |
+          coverage run -m pytest tests/sandbox/test_sandbox.py tests/sandbox/test_sandbox_service.py
+
+      - name: Run tests with coverage (boxlite)
+        run: |
+          export CONTAINER_DEPLOYMENT=boxlite
           coverage run -m pytest tests/sandbox/test_sandbox.py tests/sandbox/test_sandbox_service.py
 
       - name: Generate coverage report
