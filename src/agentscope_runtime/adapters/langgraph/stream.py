@@ -170,10 +170,12 @@ async def adapt_langgraph_message_stream(
             )
 
             data_content = DataContent(
-                index=None,
                 data=function_output_data.model_dump(),
             )
-            plugin_output_message.content = [data_content]
+            yield data_content.completed()
+            plugin_output_message.add_content(
+                data_content,
+            )
             yield plugin_output_message.completed()
         else:
             role = "assistant"
