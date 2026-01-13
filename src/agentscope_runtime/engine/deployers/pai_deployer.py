@@ -1440,7 +1440,7 @@ class PAIDeployManager(DeployManager):
                 raise RuntimeError(
                     f"Deployment {deployment_id} failed: {error_msg}",
                 )
-            elif status == "Cancled":
+            elif status == "Canceled":
                 raise RuntimeError(f"Deployment {deployment_id} cancled.")
             elif status in (
                 "Running",
@@ -2254,7 +2254,7 @@ class PAIDeployManager(DeployManager):
             if status == "WaitForConfirm":
                 logger.info("Deployment is ready for approval")
                 return True
-            if status in ("Failed", "Cancled"):
+            if status in ("Failed", "Canceled"):
                 error_msg = response.get("ErrorMessage", "Unknown error")
                 raise RuntimeError(
                     f"Deployment {deployment_id} failed: {error_msg}",
