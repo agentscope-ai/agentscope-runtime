@@ -62,6 +62,7 @@
 > | [Microsoft Agent Framework](https://runtime.agentscope.io/en/ms_agent_framework_guidelines.html) | ✅             | ✅    | 🚧       |
 > | [Agno](https://runtime.agentscope.io/en/agno_guidelines.html) | ✅             | ✅    | 🚧       |
 > | AutoGen                                                      | 🚧             | ✅    | 🚧       |
+> | [CrewAI](https://runtime.agentscope.io/en/crewai_guidelines.html) | ✅             | ✅    | 🚧       |
 
 ---
 
