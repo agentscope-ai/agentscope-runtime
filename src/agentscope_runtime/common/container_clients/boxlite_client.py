@@ -327,6 +327,8 @@ class BoxliteClient(BaseClient):
             # Convert BoxInfo to dict format similar to Docker
             if info.state in ["running", "starting"]:
                 status = "running"
+            else:
+                status = info.state
             return {
                 "Id": info.id,
                 "Name": info.name or "",
