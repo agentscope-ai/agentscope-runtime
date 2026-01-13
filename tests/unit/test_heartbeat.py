@@ -125,3 +125,96 @@ def test_heartbeat_inmemory_basic():
     assert mgr.needs_restore(session_ctx_id) is True
     assert (session_ctx_id, "heartbeat_timeout") in mgr.reaped_sessions
     assert session_ctx_id not in mgr.list_session_keys()
+
+
+def test_heartbeat_watcher_inmemory_real_manager(monkeypatch):
+    """
+    Test watcher thread itself (in-memory mode):
+    - create writes heartbeat
+    - watcher reaps after timeout automatically
+    """
+    from agentscope_runtime.sandbox.manager.sandbox_manager import (
+        SandboxManager,
+    )
+    from agentscope_runtime.sandbox.model import SandboxManagerEnvConfig
+
+    cfg = SandboxManagerEnvConfig(
+        redis_enabled=False,
+        file_system="local",
+        container_deployment="docker",  # won't be used due to monkeypatch
+        pool_size=0,
+        default_mount_dir="sessions_mount_dir",
+        heartbeat_timeout=1,
+        heartbeat_scan_interval=1,  # enable watcher
+        heartbeat_lock_ttl=3,
+    )
+    mgr = SandboxManager(config=cfg)
+
+    session_ctx_id = "watcher_session_ctx"
+    container_name = "watcher_container"
+
+    # fake create
+    def _fake_create(
+        self,
+        sandbox_type=None,
+        mount_dir=None,
+        storage_path=None,
+        environment=None,
+        meta=None,
+    ):
+        meta = meta or {}
+        model_dict = {
+            "session_id": "sid1",
+            "container_id": "cid1",
+            "container_name": container_name,
+            "url": "http://127.0.0.1:1",
+            "ports": [1],
+            "mount_dir": "",
+            "storage_path": "",
+            "runtime_token": "token",
+            "version": "fake",
+            "meta": meta,
+            "timeout": 0,
+        }
+        self.container_mapping.set(container_name, model_dict)
+
+        if meta and meta.get("session_ctx_id"):
+            scid = meta["session_ctx_id"]
+            env_ids = self.session_mapping.get(scid) or []
+            if container_name not in env_ids:
+                env_ids.append(container_name)
+            self.session_mapping.set(scid, env_ids)
+            self.update_heartbeat(scid)
+            self.clear_session_recycled(scid)
+
+        return container_name
+
+    # fake release
+    def _fake_release(self, identity):
+        c = self.container_mapping.get(identity)
+        if c is None:
+            return True
+        self.container_mapping.delete(identity)
+        meta = c.get("meta") or {}
+        scid = meta.get("session_ctx_id")
+        if scid:
+            self.session_mapping.delete(scid)
+        return True
+
+    monkeypatch.setattr(SandboxManager, "create", _fake_create, raising=True)
+    monkeypatch.setattr(SandboxManager, "release", _fake_release, raising=True)
+
+    try:
+        mgr.create(meta={"session_ctx_id": session_ctx_id})
+        assert mgr.get_heartbeat(session_ctx_id) is not None
+
+        mgr.start_heartbeat_watcher()
+
+        # wait long enough for: timeout + (at least one scan interval)
+        time.sleep(cfg.heartbeat_timeout + cfg.heartbeat_scan_interval + 0.5)
+
+        assert mgr.get_heartbeat(session_ctx_id) is None
+        assert mgr.needs_restore(session_ctx_id) is True
+        assert session_ctx_id not in mgr.list_session_keys()
+    finally:
+        mgr.stop_heartbeat_watcher()
