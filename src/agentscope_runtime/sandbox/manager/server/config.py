@@ -102,6 +102,8 @@ class Settings(BaseSettings):
     HEARTBEAT_SCAN_INTERVAL: int = 0  # 0 to disable heartbeat check
     HEARTBEAT_LOCK_TTL: int = 120
 
+    MAX_SANDBOX_INSTANCES: int = 0  # 0 means unlimited
+
     model_config = ConfigDict(
         case_sensitive=True,
         extra="allow",

@@ -713,6 +713,19 @@ class SandboxManager(HeartbeatMixin):
         environment: Optional[Dict] = None,
         meta: Optional[Dict] = None,
     ):
+        # Enforce max sandbox instances
+        try:
+            limit = self.config.max_sandbox_instances
+            if limit > 0:
+                current = len(list(self.container_mapping.scan(self.prefix)))
+                if current >= limit:
+                    raise RuntimeError(
+                        f"Max sandbox instances reached: {current}/{limit}",
+                    )
+        except RuntimeError as e:
+            logger.warning(str(e))
+            return None
+
         if sandbox_type is not None:
             target_sandbox_type = SandboxType(sandbox_type)
         else:

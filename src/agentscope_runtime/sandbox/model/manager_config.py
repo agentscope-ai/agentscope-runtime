@@ -251,6 +251,12 @@ class SandboxManagerEnvConfig(BaseModel):
         default=120,
         description="Redis distributed lock TTL in seconds for reaping.",
     )
+    max_sandbox_instances: int = Field(
+        default=0,
+        description="Maximum number of sandbox instances allowed. "
+        "0 means unlimited.",
+        ge=0,
+    )
 
     @model_validator(mode="after")
     def check_settings(self):

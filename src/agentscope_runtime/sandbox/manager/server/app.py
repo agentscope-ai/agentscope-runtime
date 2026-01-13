@@ -108,6 +108,7 @@ def get_config() -> SandboxManagerEnvConfig:
             heartbeat_timeout=settings.HEARTBEAT_TIMEOUT,
             heartbeat_scan_interval=settings.HEARTBEAT_SCAN_INTERVAL,
             heartbeat_lock_ttl=settings.HEARTBEAT_LOCK_TTL,
+            max_sandbox_instances=settings.MAX_SANDBOX_INSTANCES,
         )
     return _config
 
