@@ -120,6 +120,9 @@ KUBECONFIG_PATH=
 | `DEFAULT_MOUNT_DIR` | Default mount directory | `sessions_mount_dir`       | For persistent storage path where the `/workspace` file is stored |
 | `READONLY_MOUNTS` | Read-only directory mounts | `None` | A dictionary mapping **host paths** to **container paths**, mounted in **read-only** mode. Used to share files/configurations without allowing container writes. Example:<br/>`{"\/Users\/alice\/data": "\/data"}` mounts the host's `/Users/alice/data` to `/data` inside the container as read-only. |
 | `PORT_RANGE` | Available port range | `[49152,59152]`            | For service port allocation |
+| `HEARTBEAT_TIMEOUT` | Session heartbeat timeout (seconds) | `300` | If a `session_ctx_id` has no “touch” activities (e.g., list_tools/call_tool/check_health/add_mcp_servers) within this period, it is considered idle and can be reaped by the scanner. |
+| `HEARTBEAT_SCAN_INTERVAL` | Heartbeat scan interval (seconds) | `0` | Interval for the background watcher to run the heartbeat scan. Set to `0` to disable the watcher (you may run `scan_heartbeat_once()` via an external cron instead). |
+| `HEARTBEAT_LOCK_TTL` | Distributed lock TTL for scan/reap (seconds) | `120` | In multi-instance deployments, used to ensure only one instance reaps a given `session_ctx_id` at a time. Should be larger than the typical reap duration; too small may cause duplicate reaping after lock expiry. |
 
 #### (Optional) Redis Settings
 

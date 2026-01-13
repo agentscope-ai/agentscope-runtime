@@ -131,16 +131,19 @@ KUBECONFIG_PATH=
 
 Redis 为沙箱状态和状态管理提供缓存。如果只有一个工作进程，您可以使用内存缓存：
 
-| Parameter                  | Description      | Default                                   | Notes                                 |
-| -------------------------- | ---------------- | ----------------------------------------- | ------------------------------------- |
-| `REDIS_ENABLED`            | 启用 Redis 支持  | `False`                                   | 分布式部署或工作进程数大于 `1` 时必需 |
-| `REDIS_SERVER`             | Redis 服务器地址 | localhost                                 | Redis 主机                            |
-| `REDIS_PORT`               | Redis 端口       | 6379                                      | 标准 Redis 端口                       |
-| `REDIS_DB`                 | Redis 数据库编号 | `0`                                       | 0-15                                  |
-| `REDIS_USER`               | Redis 用户名     | Empty                                     | 用于 Redis6+ ACL                      |
-| `REDIS_PASSWORD`           | Redis 密码       | Empty                                     | 身份验证                              |
-| `REDIS_PORT_KEY`           | 端口跟踪键       | `_agent_runtime_container_occupied_ports` | 内部使用                              |
-| `REDIS_CONTAINER_POOL_KEY` | 容器池键         | `_agent_runtime_container_container_pool` | 内部使用                              |
+| Parameter                  | Description                     | Default                                   | Notes                                                        |
+| -------------------------- | ------------------------------- | ----------------------------------------- | ------------------------------------------------------------ |
+| `REDIS_ENABLED`            | 启用 Redis 支持                 | `False`                                   | 分布式部署或工作进程数大于 `1` 时必需                        |
+| `REDIS_SERVER`             | Redis 服务器地址                | localhost                                 | Redis 主机                                                   |
+| `REDIS_PORT`               | Redis 端口                      | 6379                                      | 标准 Redis 端口                                              |
+| `REDIS_DB`                 | Redis 数据库编号                | `0`                                       | 0-15                                                         |
+| `REDIS_USER`               | Redis 用户名                    | Empty                                     | 用于 Redis6+ ACL                                             |
+| `REDIS_PASSWORD`           | Redis 密码                      | Empty                                     | 身份验证                                                     |
+| `REDIS_PORT_KEY`           | 端口跟踪键                      | `_agent_runtime_container_occupied_ports` | 内部使用                                                     |
+| `REDIS_CONTAINER_POOL_KEY` | 容器池键                        | `_agent_runtime_container_container_pool` | 内部使用                                                     |
+| `HEARTBEAT_TIMEOUT`        | 会话心跳超时时间（秒）          | `300`                                     | 当某个 `session_ctx_id` 在该时间内没有发生任何“触达事件”（如 list_tools/call_tool/check_health/add_mcp_servers），会被判定为闲置，可被扫描任务回收（reap）。 |
+| `HEARTBEAT_SCAN_INTERVAL`  | 心跳扫描间隔（秒）              | `0`                                       | 后台扫描任务的执行间隔。设为 `0` 表示禁用后台 watcher（可改用外部 cron 手动调用 `scan_heartbeat_once()`）。 |
+| `HEARTBEAT_LOCK_TTL`       | 心跳扫描/回收分布式锁 TTL（秒） | `120`                                     | 多实例部署时用于互斥回收同一 `session_ctx_id` 的锁过期时间，避免重复回收。应大于一次回收的典型耗时；过小可能导致锁过期后被其他实例重复回收。 |
 
 #### （可选）OSS 设置
 
