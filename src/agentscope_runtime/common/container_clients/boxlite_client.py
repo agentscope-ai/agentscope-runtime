@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-branches
 import atexit
 import logging
 import socket
@@ -192,6 +193,19 @@ class BoxliteClient(BaseClient):
             # Create the box
             box = self.runtime.create(box_options, name=name)
             box_id = box.id
+
+            logger.debug(f"✓ Box created: {box.id}")
+
+            # Execute command (mirrors: await box.exec())
+            execution = box.exec("echo", ["Hello from default runtime"])
+            stdout = execution.stdout()
+
+            logger.debug("Output:")
+            for line in stdout:  # Regular for loop, not async for
+                logger.debug(f"  {line.strip()}")
+
+            exec_result = execution.wait()  # No await
+            logger.debug(f"✓ Exit code: {exec_result.exit_code}")
 
             # Store port mapping
             if port_mapping:
