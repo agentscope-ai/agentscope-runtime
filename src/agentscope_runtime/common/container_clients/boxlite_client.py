@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+import atexit
 import logging
 import socket
 import traceback
 
 import boxlite
+from boxlite import SyncBoxlite
 
 from .base_client import BaseClient
 from ..collections import (
@@ -82,7 +84,8 @@ class BoxliteClient(BaseClient):
 
         # Initialize BoxLite runtime
         try:
-            self.runtime = boxlite.Boxlite.default()
+            self.runtime = SyncBoxlite.default()
+            self.runtime.__enter__()
         except Exception as e:
             raise RuntimeError(
                 f"BoxLite client initialization failed: {str(e)}\n"
@@ -90,6 +93,20 @@ class BoxliteClient(BaseClient):
                 "• Ensure BoxLite is properly installed\n"
                 "• Check BoxLite runtime configuration",
             ) from e
+
+        atexit.register(self._cleanup_runtime)
+
+    def _cleanup_runtime(self):
+        try:
+            if hasattr(self, "runtime") and self.runtime:
+                if hasattr(self.runtime, "__exit__"):
+                    self.runtime.__exit__(None, None, None)
+                elif hasattr(self.runtime, "close"):
+                    self.runtime.close()
+                logger.info("BoxLite runtime cleaned up via atexit.")
+        except Exception as e:
+            logger.warning(f"An error occurred during BoxLite cleanup: {e}")
+            logger.debug(traceback.format_exc())
 
     def create(
         self,
