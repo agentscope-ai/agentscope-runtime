@@ -238,6 +238,23 @@ class SandboxManagerEnvConfig(BaseModel):
         description="Log store for FC.",
     )
 
+    # Heartbeat related
+    heartbeat_timeout: int = Field(
+        default=300,
+        validation_alias="HEARTBEAT_TIMEOUT",
+        description="Idle timeout in seconds before session is reaped.",
+    )
+    heartbeat_scan_interval: int = Field(
+        default=60,
+        validation_alias="HEARTBEAT_SCAN_INTERVAL",
+        description="Heartbeat scan interval in seconds. 0 disables scanning.",
+    )
+    heartbeat_lock_ttl: int = Field(
+        default=120,
+        validation_alias="HEARTBEAT_LOCK_TTL",
+        description="Redis distributed lock TTL in seconds for reaping.",
+    )
+
     @model_validator(mode="after")
     def check_settings(self):
         if self.default_mount_dir:

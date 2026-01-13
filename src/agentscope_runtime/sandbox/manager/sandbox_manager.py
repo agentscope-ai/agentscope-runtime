@@ -2,10 +2,12 @@
 # pylint: disable=redefined-outer-name, protected-access
 # pylint: disable=too-many-branches, too-many-statements
 # pylint: disable=redefined-outer-name, protected-access, too-many-branches
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, unused-argument
 import asyncio
 import inspect
 import json
+import time
+import threading
 import logging
 import os
 import secrets
@@ -17,6 +19,8 @@ import requests
 import shortuuid
 import httpx
 
+from .heartbeat_mixin import HeartbeatMixin, touch_session
+from ..constant import TIMEOUT
 from ..client import (
     SandboxHttpClient,
     TrainingSandboxClient,
@@ -39,7 +43,6 @@ from ...common.collections import (
     InMemoryQueue,
 )
 from ...common.container_clients import ContainerClientFactory
-from ..constant import TIMEOUT
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -130,7 +133,7 @@ def remote_wrapper_async(
     return decorator
 
 
-class SandboxManager:
+class SandboxManager(HeartbeatMixin):
     def __init__(
         self,
         config: Optional[SandboxManagerEnvConfig] = None,
@@ -208,26 +211,49 @@ class SandboxManager:
                 password=self.config.redis_password,
                 decode_responses=True,
             )
+            self.redis_client = redis_client
             try:
-                redis_client.ping()
+                self.redis_client.ping()
             except ConnectionError as e:
                 raise RuntimeError(
                     "Unable to connect to the Redis server.",
                 ) from e
 
-            self.container_mapping = RedisMapping(redis_client)
+            self.container_mapping = RedisMapping(self.redis_client)
             self.session_mapping = RedisMapping(
-                redis_client,
+                self.redis_client,
                 prefix="session_mapping",
+            )
+            # Heartbeat mapping:
+            #   Key:   session_ctx_id (str)
+            #   Value: last_active_timestamp (float, unix seconds)
+            # Used to determine whether a session is idle and should be reaped.
+            self.heartbeat_mapping = RedisMapping(
+                self.redis_client,
+                prefix="heartbeat_mapping",
+            )
+            # Recycled/restore-required mapping:
+            #   Key:   session_ctx_id (str)
+            #   Value: recycled_timestamp (float, unix seconds) or truthy
+            #       marker
+            # Set when a session is reaped. Next user request should trigger
+            # "restore session" flow (stubbed in this iteration).
+            self.recycled_mapping = RedisMapping(
+                self.redis_client,
+                prefix="recycled_mapping",
             )
 
             # Init multi sand box pool
             for t in self.default_type:
                 queue_key = f"{self.config.redis_container_pool_key}:{t.value}"
-                self.pool_queues[t] = RedisQueue(redis_client, queue_key)
+                self.pool_queues[t] = RedisQueue(self.redis_client, queue_key)
         else:
+            self.redis_client = None
             self.container_mapping = InMemoryMapping()
             self.session_mapping = InMemoryMapping()
+            # See comments in Redis branch for semantics.
+            self.heartbeat_mapping = InMemoryMapping()
+            self.recycled_mapping = InMemoryMapping()
 
             # Init multi sand box pool
             for t in self.default_type:
@@ -257,6 +283,13 @@ class SandboxManager:
         if self.pool_size > 0:
             self._init_container_pool()
 
+        self.heartbeat_timeout = self.config.heartbeat_timeout
+        self.heartbeat_scan_interval = self.config.heartbeat_scan_interval
+        self.heartbeat_lock_ttl = self.config.heartbeat_lock_ttl
+
+        self._heartbeat_stop_event = threading.Event()
+        self._heartbeat_thread = None
+
         logger.debug(str(config))
 
     def __enter__(self):
@@ -264,12 +297,18 @@ class SandboxManager:
             "Entering SandboxManager context (sync). "
             "Cleanup will be performed automatically on exit.",
         )
+        if self.http_session is None:
+            # remote mode: watcher should run on server side, not client side
+            self.start_heartbeat_watcher()
+
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         logger.debug(
             "Exiting SandboxManager context (sync). Cleaning up resources.",
         )
+        self.stop_heartbeat_watcher()
+
         self.cleanup()
 
         if self.http_session:
@@ -295,12 +334,18 @@ class SandboxManager:
             "Entering SandboxManager context (async). "
             "Cleanup will be performed automatically on async exit.",
         )
+        if self.http_session is None:
+            # remote mode: watcher should run on server side, not client side
+            self.start_heartbeat_watcher()
+
         return self
 
     async def __aexit__(self, exc_type, exc_value, tb):
         logger.debug(
             "Exiting SandboxManager context (async). Cleaning up resources.",
         )
+        self.stop_heartbeat_watcher()
+
         await self.cleanup_async()
 
         if self.http_session:
@@ -447,6 +492,57 @@ class SandboxManager:
                     logger.error(f"Error initializing runtime pool: {e}")
                     break
 
+    def start_heartbeat_watcher(self) -> bool:
+        """
+        Start background heartbeat scanning thread.
+        Default: not started automatically. Caller must invoke explicitly.
+        If heartbeat_scan_interval == 0 => disabled, returns False.
+        """
+        interval = int(self.config.heartbeat_scan_interval)
+        if interval <= 0:
+            logger.info(
+                "heartbeat watcher disabled (heartbeat_scan_interval <= 0)",
+            )
+            return False
+
+        if self._heartbeat_thread and self._heartbeat_thread.is_alive():
+            return True  # already running
+
+        self._heartbeat_stop_event.clear()
+
+        def _loop():
+            logger.info(f"heartbeat watcher started, interval={interval}s")
+            while not self._heartbeat_stop_event.is_set():
+                try:
+                    metrics = self.scan_heartbeat_once()
+                    logger.debug(f"heartbeat scan metrics: {metrics}")
+                except Exception as e:
+                    logger.warning(f"heartbeat watcher loop error: {e}")
+                    logger.debug(traceback.format_exc())
+
+                # wait with stop support
+                self._heartbeat_stop_event.wait(interval)
+
+            logger.info("heartbeat watcher stopped")
+
+        self._heartbeat_thread = threading.Thread(
+            target=_loop,
+            name="heartbeat-watcher",
+            daemon=True,
+        )
+        self._heartbeat_thread.start()
+        return True
+
+    def stop_heartbeat_watcher(self, join_timeout: float = 5.0) -> None:
+        """
+        Stop background watcher thread (if running).
+        """
+        self._heartbeat_stop_event.set()
+        t = self._heartbeat_thread
+        if t and t.is_alive():
+            t.join(timeout=join_timeout)
+        self._heartbeat_thread = None
+
     @remote_wrapper()
     def cleanup(self):
         logger.debug(
@@ -535,20 +631,28 @@ class SandboxManager:
                         container_model.container_name,
                         container_model.model_dump(),
                     )
-                    # Update session mapping
-                    if "session_ctx_id" in meta:
+
+                    # Update session mapping + first heartbeat
+                    # (only when session_ctx_id exists)
+                    session_ctx_id = meta.get("session_ctx_id")
+                    if session_ctx_id:
                         env_ids = (
                             self.session_mapping.get(
-                                meta["session_ctx_id"],
+                                session_ctx_id,
                             )
                             or []
                         )
                         if container_model.container_name not in env_ids:
                             env_ids.append(container_model.container_name)
-                        self.session_mapping.set(
-                            meta["session_ctx_id"],
-                            env_ids,
-                        )
+                        self.session_mapping.set(session_ctx_id, env_ids)
+
+                        # Treat "allocated from pool to a session" as first
+                        # activity
+                        self.update_heartbeat(session_ctx_id)
+
+                        # If this session was previously reaped,
+                        # clear restore-required marker
+                        self.clear_session_recycled(session_ctx_id)
 
                 logger.debug(
                     f"Retrieved container from pool:"
@@ -754,15 +858,25 @@ class SandboxManager:
             )
 
             # Build mapping session_ctx_id to container_name
-            if meta and "session_ctx_id" in meta:
-                env_ids = (
-                    self.session_mapping.get(
-                        meta["session_ctx_id"],
-                    )
-                    or []
-                )
-                env_ids.append(container_model.container_name)
-                self.session_mapping.set(meta["session_ctx_id"], env_ids)
+            # NOTE:
+            # - Only containers bound to a user session_ctx_id participate
+            #   in heartbeat/reap.
+            # - Prewarmed pool containers typically have no session_ctx_id;
+            #   do NOT write heartbeat for them.
+            if meta and "session_ctx_id" in meta and meta["session_ctx_id"]:
+                session_ctx_id = meta["session_ctx_id"]
+
+                env_ids = self.session_mapping.get(session_ctx_id) or []
+                if container_model.container_name not in env_ids:
+                    env_ids.append(container_model.container_name)
+                self.session_mapping.set(session_ctx_id, env_ids)
+
+                # First heartbeat on creation (treat "allocate to session"
+                # as first activity)
+                self.update_heartbeat(session_ctx_id)
+
+                # Session is now alive again; clear restore-required marker
+                self.clear_session_recycled(session_ctx_id)
 
             logger.debug(
                 f"Created container {container_name}"
@@ -970,40 +1084,47 @@ class SandboxManager:
         return async_client
 
     @remote_wrapper()
+    @touch_session(identity_arg="identity")
     def check_health(self, identity):
         """List tool"""
         client = self._establish_connection(identity)
         return client.check_health()
 
     @remote_wrapper_async()
+    @touch_session(identity_arg="identity")
     async def check_health_async(self, identity):
         client = await self._establish_connection_async(identity)
         return await client.check_health()
 
     @remote_wrapper()
+    @touch_session(identity_arg="identity")
     def list_tools(self, identity, tool_type=None, **kwargs):
         """List tool"""
         client = self._establish_connection(identity)
         return client.list_tools(tool_type=tool_type, **kwargs)
 
     @remote_wrapper_async()
+    @touch_session(identity_arg="identity")
     async def list_tools_async(self, identity, tool_type=None, **kwargs):
         client = await self._establish_connection_async(identity)
         return await client.list_tools(tool_type=tool_type, **kwargs)
 
     @remote_wrapper()
+    @touch_session(identity_arg="identity")
     def call_tool(self, identity, tool_name=None, arguments=None):
         """Call tool"""
         client = self._establish_connection(identity)
         return client.call_tool(tool_name, arguments)
 
     @remote_wrapper_async()
+    @touch_session(identity_arg="identity")
     async def call_tool_async(self, identity, tool_name=None, arguments=None):
         """Call tool (async)"""
         client = await self._establish_connection_async(identity)
         return await client.call_tool(tool_name, arguments)
 
     @remote_wrapper()
+    @touch_session(identity_arg="identity")
     def add_mcp_servers(self, identity, server_configs, overwrite=False):
         """
         Add MCP servers to runtime.
@@ -1015,6 +1136,7 @@ class SandboxManager:
         )
 
     @remote_wrapper_async()
+    @touch_session(identity_arg="identity")
     async def add_mcp_servers_async(
         self,
         identity,
@@ -1056,3 +1178,117 @@ class SandboxManager:
     async def list_session_keys_async(self, *args, **kwargs):
         """Async wrapper for list_session_keys()."""
         return await asyncio.to_thread(self.list_session_keys, *args, **kwargs)
+
+    def reap_session(
+        self,
+        session_ctx_id: str,
+        reason: str = "heartbeat_timeout",
+    ) -> bool:
+        """
+        Reap (release) ALL containers bound to session_ctx_id.
+
+        Important:
+        - Prewarm pool containers are NOT part of session_mapping
+          (no session_ctx_id), so they won't be reaped by this flow.
+        """
+        try:
+            env_ids = self.get_session_mapping(session_ctx_id) or []
+
+            # (virtual hook) snapshot/save state before releasing - not
+            # implemented yet
+            # self.save_session_snapshot(
+            #     session_ctx_id,
+            #     env_ids,
+            #     reason=reason,
+            # )
+
+            for container_name in list(env_ids):
+                try:
+                    self.release(container_name)
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to release container {container_name} for "
+                        f"session {session_ctx_id}: {e}",
+                    )
+
+            # Mark session as recycled -> next request should go restore
+            # flow (stub)
+            self.mark_session_recycled(session_ctx_id)
+
+            # Heartbeat no longer meaningful after reap
+            self.delete_heartbeat(session_ctx_id)
+
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to reap session {session_ctx_id}: {e}")
+            logger.debug(traceback.format_exc())
+            return False
+
+    def scan_heartbeat_once(self) -> dict:
+        """
+        Scan all session_ctx_id in session_mapping and reap those idle
+        beyond timeout. Uses redis distributed lock to avoid multi-instance
+        double reap.
+        """
+        now = time.time()
+        timeout = int(self.config.heartbeat_timeout)
+
+        result = {
+            "scanned_sessions": 0,
+            "reaped_sessions": 0,
+            "skipped_no_heartbeat": 0,
+            "skipped_lock_busy": 0,
+            "skipped_not_idle_after_double_check": 0,
+            "errors": 0,
+        }
+
+        for session_ctx_id in self.list_session_keys():
+            result["scanned_sessions"] += 1
+
+            last_active = self.get_heartbeat(session_ctx_id)
+            if last_active is None:
+                result["skipped_no_heartbeat"] += 1
+                continue
+
+            if now - last_active <= timeout:
+                continue
+
+            token = self.acquire_heartbeat_lock(session_ctx_id)
+            if not token:
+                result["skipped_lock_busy"] += 1
+                continue
+
+            try:
+                # double-check after lock
+                # (avoid racing with a fresh heartbeat update)
+                last_active2 = self.get_heartbeat(session_ctx_id)
+                if last_active2 is None:
+                    result["skipped_no_heartbeat"] += 1
+                    continue
+
+                if time.time() - last_active2 <= timeout:
+                    result["skipped_not_idle_after_double_check"] += 1
+                    continue
+
+                ok = self.reap_session(
+                    session_ctx_id,
+                    reason="heartbeat_timeout",
+                )
+                if ok:
+                    result["reaped_sessions"] += 1
+            except Exception:
+                result["errors"] += 1
+                logger.warning(
+                    f"scan_heartbeat_once error on session {session_ctx_id}",
+                )
+                logger.debug(traceback.format_exc())
+            finally:
+                self.release_heartbeat_lock(session_ctx_id, token)
+
+        return result
+
+    async def scan_heartbeat_once_async(self) -> dict:
+        """
+        Async convenience wrapper (internal use). Not a remote API.
+        """
+        return await asyncio.to_thread(self.scan_heartbeat_once)
