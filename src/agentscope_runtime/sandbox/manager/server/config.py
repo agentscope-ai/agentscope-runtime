@@ -99,7 +99,7 @@ class Settings(BaseSettings):
 
     # Heartbeat related
     HEARTBEAT_TIMEOUT: int = 300
-    HEARTBEAT_SCAN_INTERVAL: int = 60  # 0 to disable heartbeat check
+    HEARTBEAT_SCAN_INTERVAL: int = 0  # 0 to disable heartbeat check
     HEARTBEAT_LOCK_TTL: int = 120
 
     model_config = ConfigDict(

@@ -245,7 +245,7 @@ class SandboxManagerEnvConfig(BaseModel):
         description="Idle timeout in seconds before session is reaped.",
     )
     heartbeat_scan_interval: int = Field(
-        default=60,
+        default=0,
         validation_alias="HEARTBEAT_SCAN_INTERVAL",
         description="Heartbeat scan interval in seconds. 0 disables scanning.",
     )

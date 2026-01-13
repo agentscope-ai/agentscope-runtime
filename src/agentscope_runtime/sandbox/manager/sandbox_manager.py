@@ -899,11 +899,15 @@ class SandboxManager(HeartbeatMixin):
     @remote_wrapper()
     def release(self, identity):
         try:
-            container_json = self.get_info(identity)
-
-            if not container_json:
-                logger.warning(
-                    f"No container found for {identity}.",
+            container_json = self.container_mapping.get(identity)
+            if container_json is None:
+                container_json = self.container_mapping.get(
+                    self._generate_container_key(identity),
+                )
+            if container_json is None:
+                logger.debug(
+                    f"release: container not found for {identity}, "
+                    f"treat as already released",
                 )
                 return True
 
@@ -1218,6 +1222,9 @@ class SandboxManager(HeartbeatMixin):
             # Heartbeat no longer meaningful after reap
             self.delete_heartbeat(session_ctx_id)
 
+            # Ensure mapping is cleared even if some releases failed
+            self.session_mapping.delete(session_ctx_id)
+
             return True
         except Exception as e:
             logger.warning(f"Failed to reap session {session_ctx_id}: {e}")
@@ -1242,7 +1249,7 @@ class SandboxManager(HeartbeatMixin):
             "errors": 0,
         }
 
-        for session_ctx_id in self.list_session_keys():
+        for session_ctx_id in list(self.session_mapping.scan()):
             result["scanned_sessions"] += 1
 
             last_active = self.get_heartbeat(session_ctx_id)
