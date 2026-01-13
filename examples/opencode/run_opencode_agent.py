@@ -41,11 +41,23 @@ async def query_func(
     """Example: forward AgentApp requests to the OpenCode server."""
     httpx = _load_httpx()
     params = {"directory": DIRECTORY} if DIRECTORY else None
+    target_session_id = _resolve_opencode_session_id(request)
 
     async with httpx.AsyncClient(timeout=None) as client:
-        session_resp = await client.post(f"{BASE_URL}/session")
-        session_resp.raise_for_status()
-        session_id = session_resp.json().get("id")
+        if target_session_id:
+            session_resp = await client.get(
+                f"{BASE_URL}/session/{target_session_id}",
+            )
+            if session_resp.status_code == 404:
+                raise RuntimeError(
+                    f"opencode session not found: {target_session_id}",
+                )
+            session_resp.raise_for_status()
+            session_id = target_session_id
+        else:
+            session_resp = await client.post(f"{BASE_URL}/session")
+            session_resp.raise_for_status()
+            session_id = session_resp.json().get("id")
 
         if not session_id:
             raise RuntimeError("failed to create opencode session")
@@ -80,6 +92,20 @@ async def query_func(
                     if isinstance(event, dict)
                     else None
                 )
+                if target_session_id:
+                    event_session_id = None
+                    if event_type == "message.part.updated":
+                        part = (
+                            props.get("part", {})
+                            if isinstance(props, dict)
+                            else {}
+                        )
+                        event_session_id = part.get("sessionID")
+                    elif isinstance(props, dict):
+                        event_session_id = props.get("sessionID")
+                    if event_session_id != target_session_id:
+                        continue
+
                 if event_type == "message.part.updated":
                     part = (
                         props.get("part", {})
@@ -120,6 +146,19 @@ def _load_httpx() -> Any:
             "httpx is required for this example; install it in your "
             "environment (e.g. `pip install httpx`).",
         ) from exc
+
+
+def _resolve_opencode_session_id(
+    request: Optional[AgentRequest],
+) -> Optional[str]:
+    if not request or not request.session_id:
+        return None
+    session_id = request.session_id.strip()
+    if not session_id:
+        return None
+    if session_id.startswith("ses_"):
+        return session_id
+    return None
 
 
 async def iter_sse_events(response: Any) -> AsyncIterator[Dict]:
