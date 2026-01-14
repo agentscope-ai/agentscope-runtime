@@ -215,9 +215,9 @@ def _handle_part_event(
             usage_by_message_id,
             usage_state,
         )
-        return
-
-    if part_type == "text":
+    elif part_type == "step-start":
+        pass
+    elif part_type == "text":
         yield from _handle_text_part(
             part,
             delta,
@@ -227,9 +227,7 @@ def _handle_part_event(
             usage_by_message_id,
             usage_state,
         )
-        return
-
-    if part_type == "reasoning":
+    elif part_type == "reasoning":
         yield from _handle_text_part(
             part,
             delta,
@@ -239,9 +237,7 @@ def _handle_part_event(
             usage_by_message_id,
             usage_state,
         )
-        return
-
-    if part_type == "tool":
+    elif part_type == "tool":
         yield from _handle_tool_part(
             part,
             tool_states,
@@ -249,30 +245,26 @@ def _handle_part_event(
             usage_by_message_id,
             usage_state,
         )
-        return
-
-    if part_type == "file":
+    elif part_type == "file":
         yield from _handle_file_part(
             part,
             agent_by_message_id,
             usage_by_message_id,
             usage_state,
         )
-        return
-
-    if part_type == "step-finish":
+    elif part_type == "step-finish":
         usage = _usage_from_step_finish(part)
         message_id = part.get("messageID")
         if usage and message_id:
             usage_by_message_id[message_id] = usage
             usage_state["last"] = usage
-
-    yield from _emit_data_message(
-        part,
-        agent_by_message_id,
-        usage_by_message_id,
-        usage_state,
-    )
+    else:
+        yield from _emit_data_message(
+            part,
+            agent_by_message_id,
+            usage_by_message_id,
+            usage_state,
+        )
 
 
 def _handle_text_part(
