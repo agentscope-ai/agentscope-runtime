@@ -307,7 +307,7 @@ class BoxliteClient(BaseClient):
                 if force:
                     info = box.info()
                     if info.state == "running":
-                        box.stop(box.stop)
+                        box.stop()
 
             # Get ports before removal
             ports = self.ports_cache.get(container_id)
@@ -358,13 +358,13 @@ class BoxliteClient(BaseClient):
                     "Paused": False,
                     "Restarting": False,
                     "OOMKilled": False,
-                    "Dead": info.state == "stopped",
+                    "Dead": not info.state.running,
                     "Pid": info.state.pid or 0,
                     "ExitCode": 0 if info.state.running else 1,
                     "Error": "",
                     "StartedAt": info.created_at,
                     "FinishedAt": ""
-                    if info.state.running == "running"
+                    if info.state.running
                     else info.created_at,
                 },
                 "Created": info.created_at,
