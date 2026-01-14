@@ -236,6 +236,7 @@ class Runner:
 
         query_kwargs = {
             "request": request,
+            "response": response,
         }
 
         if self.framework_type == "text":
