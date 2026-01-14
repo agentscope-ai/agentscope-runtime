@@ -869,6 +869,10 @@ class BaseResponse(Event):
         self.output = self.output or []
         self.output.append(message)
 
+    def completed(self) -> Self:
+        self.completed_at = int(datetime.now().timestamp())
+        return super().completed()
+
 
 class AgentResponse(BaseResponse):
     """agent response"""

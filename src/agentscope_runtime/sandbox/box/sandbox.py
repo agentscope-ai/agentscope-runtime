@@ -6,77 +6,56 @@ from typing import Any, Optional
 
 from ..enums import SandboxType
 from ..manager.sandbox_manager import SandboxManager
+from ..manager.server.app import get_config
 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class Sandbox:
+class SandboxBase:
     """
-    Sandbox Interface.
+    Common base class for both sync and async Sandbox interfaces.
     """
 
     def __init__(
         self,
         sandbox_id: Optional[str] = None,
-        timeout: int = 3000,  # TODO: enable life circle management
+        timeout: int = 3000,
         base_url: Optional[str] = None,
-        bearer_token: Optional[str] = None,  # TODO: support api_key
+        bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.BASE,
     ) -> None:
-        """
-        Initialize the sandbox interface.
-        """
         self.base_url = base_url
+        self.embed_mode = not bool(base_url)
+        self.sandbox_type = sandbox_type
+        self.timeout = timeout
+        self._sandbox_id = sandbox_id
+
         if base_url:
-            self.embed_mode = False
+            # Remote Manager
             self.manager_api = SandboxManager(
                 base_url=base_url,
                 bearer_token=bearer_token,
-            ).__enter__()
+            )
         else:
-            # Launch a local manager
-            self.embed_mode = True
+            # Embedded Manager
             self.manager_api = SandboxManager(
+                config=get_config(),
                 default_type=sandbox_type,
             )
 
-        if sandbox_id is None:
-            logger.debug(
-                "You are using embed mode, it might take several seconds to "
-                "init the runtime, please wait.",
-            )
+    @property
+    def sandbox_id(self) -> Optional[str]:
+        return self._sandbox_id
 
-            sandbox_id = self.manager_api.create_from_pool(
-                sandbox_type=SandboxType(sandbox_type).value,
-            )
-            if sandbox_id is None:
-                raise RuntimeError(
-                    "No sandbox available. "
-                    "Please check if sandbox images exist, build or pull "
-                    "missing images in sandbox server.",
-                )
-            self._sandbox_id = sandbox_id
+    @sandbox_id.setter
+    def sandbox_id(self, value: str) -> None:
+        if not value:
+            raise ValueError("Sandbox ID cannot be empty.")
+        self._sandbox_id = value
 
-        self._sandbox_id = sandbox_id
-        self.sandbox_type = sandbox_type
-        self.timeout = timeout
-
-        # Clean up function enabled in embed mode
-        if self.embed_mode:
-            atexit.register(self._cleanup)
-            self._register_signal_handlers()
-
-    def _register_signal_handlers(self) -> None:
-        """
-        Register signal handlers for graceful shutdown and cleanup.
-        Handles SIGINT (Ctrl+C) and, if available, SIGTERM to ensure that
-        the sandbox is properly cleaned up when the process receives these
-        signals. On platforms where SIGTERM is not available (e.g.,
-        Windows), only SIGINT is handled.
-        """
-
+    def _register_signal_handlers(self):
         def _handler(signum, frame):  # pylint: disable=unused-argument
             logger.debug(
                 f"Received signal {signum}, stopping Sandbox"
@@ -85,7 +64,6 @@ class Sandbox:
             self._cleanup()
             raise SystemExit(0)
 
-        # Windows does not support SIGTERM
         if hasattr(signal, "SIGTERM"):
             signals = [signal.SIGINT, signal.SIGTERM]
         else:
@@ -107,38 +85,35 @@ class Sandbox:
         specific sandbox instance.
         """
         try:
-            # Remote not need to close the embed_manager
             if self.embed_mode:
-                # Clean all
                 self.manager_api.__exit__(None, None, None)
             else:
-                # Clean the specific sandbox
                 self.manager_api.release(self.sandbox_id)
         except Exception as e:
             import traceback
 
             logger.error(
-                f"Cleanup {self.sandbox_id} error: {e}\n"
-                f"{traceback.format_exc()}",
+                f"Cleanup {self.sandbox_id} error: {e}"
+                f"\n{traceback.format_exc()}",
             )
 
+
+class Sandbox(SandboxBase):
     def __enter__(self):
+        # Create sandbox if sandbox_id not provided
+        if self.sandbox_id is None:
+            self.sandbox_id = self.manager_api.create_from_pool(
+                sandbox_type=SandboxType(self.sandbox_type).value,
+            )
+            if self.sandbox_id is None:
+                raise RuntimeError("No sandbox available.")
+            if self.embed_mode:
+                atexit.register(self._cleanup)
+                self._register_signal_handlers()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._cleanup()
-
-    @property
-    def sandbox_id(self) -> str:
-        """Get the sandbox ID."""
-        return self._sandbox_id
-
-    @sandbox_id.setter
-    def sandbox_id(self, value: str) -> None:
-        """Set the sandbox ID."""
-        if not value:
-            raise ValueError("Sandbox ID cannot be empty.")
-        self._sandbox_id = value
 
     def get_info(self) -> dict:
         return self.manager_api.get_info(self.sandbox_id)
@@ -156,15 +131,77 @@ class Sandbox:
     ) -> Any:
         if arguments is None:
             arguments = {}
-
         return self.manager_api.call_tool(self.sandbox_id, name, arguments)
 
-    def add_mcp_servers(
+    def add_mcp_servers(self, server_configs: dict, overwrite=False):
+        return self.manager_api.add_mcp_servers(
+            self.sandbox_id,
+            server_configs,
+            overwrite,
+        )
+
+
+class SandboxAsync(SandboxBase):
+    async def __aenter__(self):
+        if self.sandbox_id is None:
+            self.sandbox_id = await self.manager_api.create_from_pool_async(
+                sandbox_type=SandboxType(self.sandbox_type).value,
+            )
+            if self.sandbox_id is None:
+                raise RuntimeError("No sandbox available.")
+            if self.embed_mode:
+                atexit.register(self._cleanup)
+                self._register_signal_handlers()
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        await self._cleanup_async()
+
+    async def _cleanup_async(self):
+        try:
+            if self.embed_mode:
+                await self.manager_api.__aexit__(None, None, None)
+            else:
+                await self.manager_api.release_async(self.sandbox_id)
+        except Exception as e:
+            import traceback
+
+            logger.error(
+                f"Async Cleanup {self.sandbox_id} error: {e}"
+                f"\n{traceback.format_exc()}",
+            )
+
+    async def get_info_async(self) -> dict:
+        return await self.manager_api.get_info_async(self.sandbox_id)
+
+    async def list_tools_async(
+        self,
+        tool_type: Optional[str] = None,
+    ) -> dict:
+        return await self.manager_api.list_tools_async(
+            self.sandbox_id,
+            tool_type=tool_type,
+        )
+
+    async def call_tool_async(
+        self,
+        name: str,
+        arguments: Optional[dict[str, Any]] = None,
+    ) -> Any:
+        if arguments is None:
+            arguments = {}
+        return await self.manager_api.call_tool_async(
+            self.sandbox_id,
+            name,
+            arguments,
+        )
+
+    async def add_mcp_servers_async(
         self,
         server_configs: dict,
         overwrite=False,
     ):
-        return self.manager_api.add_mcp_servers(
+        return await self.manager_api.add_mcp_servers_async(
             self.sandbox_id,
             server_configs,
             overwrite,

@@ -1,5 +1,39 @@
 # CHANGELOG
 
+## v1.0.4
+
+在保持 AgentScope Runtime v1.x 框架可扩展性与一致性的基础上，**AgentScope Runtime v1.0.4** 引入了多项部署支持的新特性，包括 Knative 与 Serverless FC 部署器、对 MS-Agent-Framework 的支持，以及异步 Sandbox SDK 以减少阻塞并提升响应速度。同时，本版本优化了 OpenTelemetry Tracer Provider 的安全处理，更新了依赖，并修复了非流式工具的调用问题。文档部分新增了 WebUI 试用入口与部署示例修正，并增添了多位新贡献者。
+
+### Added
+
+- **Knative Deployer 支持**
+  新增 Knative 部署器功能，支持在 Knative 环境中快速部署 AgentScope Runtime。
+- **Serverless FC Deployer 支持**
+  引入 Serverless Function Compute 部署器，方便在云原生无服务器环境运行。
+- **MS-Agent-Framework 支持**
+  框架新增对微软 MS-Agent-Framework 的兼容与集成。
+- **Async Sandbox SDK**
+  推出异步版 Sandbox SDK，实现非阻塞调用，提升系统的交互响应速度。
+- **Try WebUI 入口**
+  在文档中新增试用 WebUI 的快速访问链接，方便用户体验最新功能。
+
+### Changed
+
+- **依赖更新**
+  更新 `nacos-sdk-python` 依赖版本，增强稳定性与兼容性。
+
+### Fixed
+
+- **非流式工具调用支持**
+  修复不同类型工具在非流式调用模式下的兼容性问题。
+- **OpenTelemetry Tracer Provider 安全处理**
+  增加对已有 Tracer Provider 的安全检测与合理处理，避免冲突。
+
+### Documentation
+
+- 更新 README，增加 WebUI 访问 URL。
+- 部署示例（本地部署）中修正方法调用名称。
+
 ## v1.0.3
 
 AgentScope Runtime v1.0.3 在保持 v1.x 框架可扩展性与一致性的基础上，带来了 **A2A 协议注册支持**、更完整的异常与 Token 使用统计机制、新的天气组件与 UI 交互能力，以及多个 Sandbox、Redis、Agent 状态的修复与优化。同时改进了部署构建（Sandbox Image Building）、远程桌面自定义 URL 支持、PYPI 镜像配置等功能。

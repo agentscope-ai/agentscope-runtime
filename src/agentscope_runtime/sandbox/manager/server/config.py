@@ -29,6 +29,7 @@ class Settings(BaseSettings):
         "k8s",
         "agentrun",
         "fc",
+        "gvisor",
     ] = "docker"
     DEFAULT_MOUNT_DIR: str = "sessions_mount_dir"
     # Read-only mounts (host_path -> container_path)

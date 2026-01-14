@@ -7,7 +7,7 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from . import TracingUtil
 from .base import TracerHandler
@@ -39,8 +39,7 @@ class LogContext(BaseModel):
     ds_service_id: str = ""
     ds_service_name: str = ""
 
-    class Config:
-        extra = "ignore"  # ignore additional key
+    model_config = ConfigDict(extra="allow")
 
 
 class JsonFormatter(logging.Formatter):

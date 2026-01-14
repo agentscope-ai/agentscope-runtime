@@ -17,26 +17,6 @@ from ..collections import (
 logger = logging.getLogger(__name__)
 
 
-def is_port_available(port):
-    """
-    Check if a given port is available (not in use) on the local system.
-
-    Args:
-        port (int): The port number to check.
-
-    Returns:
-        bool: True if the port is available, False if it is in use.
-    """
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        try:
-            s.bind(("", port))
-            # Port is available
-            return True
-        except OSError:
-            # Port is in use
-            return False
-
-
 class DockerClient(BaseClient):
     def __init__(self, config=None):
         self.config = config

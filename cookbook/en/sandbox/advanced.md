@@ -116,7 +116,7 @@ KUBECONFIG_PATH=
 | `POOL_SIZE` | Pre-warmed container pool size | `1`                        | Cached containers for faster startup. The `POOL_SIZE` parameter controls how many containers are pre-created and cached in a ready-to-use state. When users request a new sandbox, the system will first try to allocate from this pre-warmed pool, significantly reducing startup time compared to creating containers from scratch. For example, with `POOL_SIZE=10`, the system maintains 10 ready containers that can be instantly assigned to new requests. |
 | `AUTO_CLEANUP` | Automatic container cleanup | `True`                     | All sandboxes will be released after the server is closed if set to `True`. |
 | `CONTAINER_PREFIX_KEY` | Container name prefix | `agent-runtime-container-` | For identification |
-| `CONTAINER_DEPLOYMENT` | Container runtime | `docker`                   | Currently, `docker` and `k8s` are supported |
+| `CONTAINER_DEPLOYMENT` | Container runtime | `docker`                   | Currently, `docker`, `k8s`, `agentrun`, `fc`, `gvisor` are supported |
 | `DEFAULT_MOUNT_DIR` | Default mount directory | `sessions_mount_dir`       | For persistent storage path where the `/workspace` file is stored |
 | `READONLY_MOUNTS` | Read-only directory mounts | `None` | A dictionary mapping **host paths** to **container paths**, mounted in **read-only** mode. Used to share files/configurations without allowing container writes. Example:<br/>`{"\/Users\/alice\/data": "\/data"}` mounts the host's `/Users/alice/data` to `/data` inside the container as read-only. |
 | `PORT_RANGE` | Available port range | `[49152,59152]`            | For service port allocation |

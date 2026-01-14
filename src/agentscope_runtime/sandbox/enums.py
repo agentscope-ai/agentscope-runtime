@@ -70,3 +70,10 @@ class SandboxType(DynamicEnum):
     APPWORLD = "appworld"
     BFCL = "bfcl"
     AGENTBAY = "agentbay"
+
+    # Async sandbox
+    BASE_ASYNC = "base_async"
+    BROWSER_ASYNC = "browser_async"
+    FILESYSTEM_ASYNC = "filesystem_async"
+    GUI_ASYNC = "gui_async"
+    MOBILE_ASYNC = "mobile_async"

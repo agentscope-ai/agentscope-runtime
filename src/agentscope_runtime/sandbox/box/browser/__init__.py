@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
-from .browser_sandbox import BrowserSandbox
+from .browser_sandbox import BrowserSandbox, BrowserSandboxAsync
 
-__all__ = ["BrowserSandbox"]
+__all__ = ["BrowserSandbox", "BrowserSandboxAsync"]

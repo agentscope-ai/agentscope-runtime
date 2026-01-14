@@ -109,11 +109,23 @@ If you prefer to build the Docker images yourself or need custom modifications, 
 
 The previous section introduced tool-centred usage methods, while this section introduces sandbox-centred usage methods.
 
-You can create different types of sandboxes via the `sandbox` SDK:
+You can create different types of sandboxes via the `sandbox` SDK. AgentScope Runtime provides **both synchronous** and **asynchronous** versions for each sandbox type:
+
+| Synchronous Class    | Asynchronous Class        |
+|-----------------------|---------------------------|
+| `BaseSandbox`         | `BaseSandboxAsync`         |
+| `GuiSandbox`          | `GuiSandboxAsync`          |
+| `FilesystemSandbox`   | `FilesystemSandboxAsync`   |
+| `BrowserSandbox`      | `BrowserSandboxAsync`      |
+| `MobileSandbox`       | `MobileSandboxAsync`       |
+| `TrainingSandbox` | - |
+| `AgentbaySandbox` | - |
+
 
 * **Base Sandbox**: Use for running **Python code** or **shell commands** in an isolated environment.
 
 ```{code-cell}
+# --- Synchronous version ---
 from agentscope_runtime.sandbox import BaseSandbox
 
 with BaseSandbox() as box:
@@ -122,6 +134,16 @@ with BaseSandbox() as box:
     print(box.run_ipython_cell(code="print('hi')"))  # Run Python code
     print(box.run_shell_command(command="echo hello"))  # Run shell command
     input("Press Enter to continue...")
+
+# --- Asynchronous version ---
+from agentscope_runtime.sandbox import BaseSandboxAsync
+
+async with BaseSandboxAsync() as box:
+    # Default image is `agentscope/runtime-sandbox-base:latest`
+    print(await box.list_tools())  # List all available tools
+    print(await box.run_ipython_cell(code="print('hi')"))  # Run Python code
+    print(await box.run_shell_command(command="echo hello"))  # Run shell command
+    input("Press Enter to continue...")
 ```
 
 * **GUI Sandbox**: Provides a **virtual desktop** environment for mouse, keyboard, and screen operations.
@@ -129,14 +151,26 @@ with BaseSandbox() as box:
   <img src="https://img.alicdn.com/imgextra/i2/O1CN01df5SaM1xKFQP4KGBW_!!6000000006424-2-tps-2958-1802.png" alt="GUI Sandbox" width="800" height="500">
 
 ```{code-cell}
+# --- Synchronous version ---
 from agentscope_runtime.sandbox import GuiSandbox
 
 with GuiSandbox() as box:
     # By default, pulls `agentscope/runtime-sandbox-gui:latest` from DockerHub
-    print(box.list_tools()) # List all available tools
+    print(box.list_tools())  # List all available tools
     print(box.desktop_url)  # Web desktop access URL
     print(box.computer_use(action="get_cursor_position"))  # Get mouse cursor position
-    print(box.computer_use(action="get_screenshot"))       # Capture screenshot
+    print(box.computer_use(action="get_screenshot"))  # Capture screenshot
+    input("Press Enter to continue...")
+
+# --- Asynchronous version ---
+from agentscope_runtime.sandbox import GuiSandboxAsync
+
+async with GuiSandboxAsync() as box:
+    # Default image is `agentscope/runtime-sandbox-gui:latest`
+    print(await box.list_tools())  # List all available tools
+    print(box.desktop_url)  # Web desktop access URL
+    print(await box.computer_use(action="get_cursor_position"))  # Get mouse cursor position
+    print(await box.computer_use(action="get_screenshot"))  # Capture screenshot
     input("Press Enter to continue...")
 ```
 
@@ -145,13 +179,24 @@ with GuiSandbox() as box:
   <img src="https://img.alicdn.com/imgextra/i3/O1CN01VocM961vK85gWbJIy_!!6000000006153-2-tps-2730-1686.png" alt="GUI Sandbox" width="800" height="500">
 
 ```{code-cell}
+# --- Synchronous version ---
 from agentscope_runtime.sandbox import FilesystemSandbox
 
 with FilesystemSandbox() as box:
     # By default, pulls `agentscope/runtime-sandbox-filesystem:latest` from DockerHub
-    print(box.list_tools()) # List all available tools
+    print(box.list_tools())  # List all available tools
     print(box.desktop_url)  # Web desktop access URL
     box.create_directory("test")  # Create a directory
+    input("Press Enter to continue...")
+
+# --- Asynchronous version ---
+from agentscope_runtime.sandbox import FilesystemSandboxAsync
+
+async with FilesystemSandboxAsync() as box:
+    # Default image is `agentscope/runtime-sandbox-filesystem:latest`
+    print(await box.list_tools())  # List all available tools
+    print(box.desktop_url)  # Web desktop access URL
+    await box.create_directory("test")  # Create a directory
     input("Press Enter to continue...")
 ```
 
@@ -160,13 +205,24 @@ with FilesystemSandbox() as box:
   <img src="https://img.alicdn.com/imgextra/i4/O1CN01OIq1dD1gAJMcm0RFR_!!6000000004101-2-tps-2734-1684.png" alt="GUI Sandbox" width="800" height="500">
 
 ```{code-cell}
+# --- Synchronous version ---
 from agentscope_runtime.sandbox import BrowserSandbox
 
 with BrowserSandbox() as box:
     # By default, pulls `agentscope/runtime-sandbox-browser:latest` from DockerHub
-    print(box.list_tools()) # List all available tools
+    print(box.list_tools())  # List all available tools
     print(box.desktop_url)  # Web desktop access URL
     box.browser_navigate("https://www.google.com/")  # Open a webpage
+    input("Press Enter to continue...")
+
+# --- Asynchronous version ---
+from agentscope_runtime.sandbox import BrowserSandboxAsync
+
+async with BrowserSandboxAsync() as box:
+    # Default image is `agentscope/runtime-sandbox-browser:latest`
+    print(await box.list_tools())  # List all available tools
+    print(box.desktop_url)  # Web desktop access URL
+    await box.browser_navigate("https://www.google.com/")  # Open a webpage
     input("Press Enter to continue...")
 ```
 
@@ -192,16 +248,32 @@ with BrowserSandbox() as box:
     When running on an ARM64/aarch64 architecture (e.g., Apple M-series chips), you may encounter compatibility or performance issues. It is recommended to run on an x86_64 host.
 
 ```{code-cell}
+# --- Synchronous version ---
 from agentscope_runtime.sandbox import MobileSandbox
 
 with MobileSandbox() as box:
     # By default, pulls 'agentscope/runtime-sandbox-mobile:latest' from DockerHub
-    print(box.list_tools()) # List all available tools
-    print(box.mobile_get_screen_resolution()) # Get the screen resolution
-    print(box.mobile_tap([500, 1000])) # Tap at coordinate (500, 1000)
-    print(box.mobile_input_text("Hello from AgentScope!")) # Input text
-    print(box.mobile_key_event(3)) # Sends a HOME key event (KeyCode: 3)
-    screenshot_result = box.mobile_get_screenshot() # Get the current screenshot
+    print(box.list_tools())  # List all available tools
+    print(box.mobile_get_screen_resolution())  # Get the screen resolution
+    print(box.mobile_tap([500, 1000]))  # Tap at coordinate (500, 1000)
+    print(box.mobile_input_text("Hello from AgentScope!"))  # Input text
+    print(box.mobile_key_event(3))  # HOME key event
+    screenshot_result = box.mobile_get_screenshot()  # Get screenshot
+    print(screenshot_result)
+    input("Press Enter to continue...")
+
+# --- Asynchronous version ---
+from agentscope_runtime.sandbox import MobileSandboxAsync
+
+async with MobileSandboxAsync() as box:
+    # Default image is 'agentscope/runtime-sandbox-mobile:latest'
+    print(await box.list_tools())  # List all available tools
+    print(await box.mobile_get_screen_resolution())  # Get the screen resolution
+    print(await box.mobile_tap([500, 1000]))  # Tap at coordinate (500, 1000)
+    print(await box.mobile_input_text("Hello from AgentScope!"))  # Input text
+    print(await box.mobile_key_event(3))  # HOME key event
+    screenshot_result = await box.mobile_get_screenshot()  # Get screenshot
+    print(screenshot_result)
     input("Press Enter to continue...")
 ```
 
@@ -214,15 +286,6 @@ from agentscope_runtime.sandbox import TrainingSandbox
 with TrainingSandbox() as box:
     profile_list = box.get_env_profile(env_type="appworld", split="train")
     print(profile_list)
-```
-
-* **Cloud Sandbox**: A cloud-based sandbox environment that doesn't require local Docker containers. `CloudSandbox` is the base class for cloud sandboxes, providing a unified interface.
-
-```{code-cell}
-from agentscope_runtime.sandbox import CloudSandbox
-
-# CloudSandbox is an abstract base class, typically not used directly
-# Please use specific cloud sandbox implementations, such as AgentbaySandbox
 ```
 
 * **AgentBay Sandbox (AgentbaySandbox)**: A cloud sandbox implementation based on AgentBay cloud service, supporting multiple image types (Linux, Windows, Browser, CodeSpace, Mobile, etc.).

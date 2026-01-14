@@ -16,7 +16,7 @@ class SandboxManagerEnvConfig(BaseModel):
     )
 
     file_system: Literal["local", "oss"] = Field(
-        ...,
+        "local",
         description="Type of file system to use: 'local' or 'oss'.",
     )
     storage_folder: Optional[str] = Field(
@@ -24,7 +24,7 @@ class SandboxManagerEnvConfig(BaseModel):
         description="Folder path in storage.",
     )
     redis_enabled: bool = Field(
-        ...,
+        False,
         description="Indicates if Redis is enabled.",
     )
     container_deployment: Literal[
@@ -33,14 +33,15 @@ class SandboxManagerEnvConfig(BaseModel):
         "k8s",
         "agentrun",
         "fc",
+        "gvisor",
     ] = Field(
-        ...,
+        "docker",
         description="Container deployment backend: 'docker', 'cloud', 'k8s'"
-        " 'agentrun' or 'fc'.",
+        " 'agentrun', 'fc', 'knative', or 'gvisor'.",
     )
 
     default_mount_dir: Optional[str] = Field(
-        None,
+        "sessions_mount_dir",
         description="Path for local file system storage.",
     )
 

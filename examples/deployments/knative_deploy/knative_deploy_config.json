@@ -1,0 +1,41 @@
+{
+  "name": "friday-agent",
+  "namespace": "agentscope-runtime",
+  "port": 8080,
+  "image_name": "agent_app",
+  "image_tag": "linux-amd64-1",
+  "base_image": "python:3.10-slim-bookworm",
+  "platform": "linux/amd64",
+  "push_to_registry": true,
+  "requirements": [
+    "agentscope",
+    "fastapi",
+    "uvicorn"
+  ],
+  "extra_packages": [
+    "/path/to/other_project.py"
+  ],
+  "environment": {
+    "PYTHONPATH": "/app",
+    "LOG_LEVEL": "INFO",
+    "DASHSCOPE_API_KEY": "${DASHSCOPE_API_KEY}"
+  },
+  "labels": {
+    "app": "agent-ksvc"
+  },
+  "runtime_config": {
+    "resources": {
+      "requests": {
+        "cpu": "200m",
+        "memory": "512Mi"
+      },
+      "limits": {
+        "cpu": "1000m",
+        "memory": "2Gi"
+      }
+    },
+    "image_pull_policy": "IfNotPresent"
+  },
+  "deploy_timeout": 300,
+  "health_check": true
+}

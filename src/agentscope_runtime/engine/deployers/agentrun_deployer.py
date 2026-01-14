@@ -7,7 +7,7 @@ import logging
 import os
 import time
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, Optional, List, Any, Union, Tuple
 
@@ -1011,7 +1011,7 @@ ls -lh /output/{zip_filename}
         try:
             presign_result = oss_client.presign(
                 GetObjectRequest(bucket=bucket_name, key=object_key),
-                expires=datetime.timedelta(hours=3),
+                expires=timedelta(hours=3),
             )
             presigned_url = presign_result.url
             logger.info("Presigned URL generated (valid for 3 hours)")

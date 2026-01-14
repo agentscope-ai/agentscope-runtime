@@ -26,7 +26,11 @@ from typing import (
 from pydantic import BaseModel
 from opentelemetry.propagate import extract
 from opentelemetry.context import attach
-from opentelemetry.trace import StatusCode, NoOpTracerProvider
+from opentelemetry.trace import (
+    ProxyTracerProvider,
+    StatusCode,
+    NoOpTracerProvider,
+)
 from opentelemetry import trace as ot_trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
     OTLPSpanExporter as OTLPSpanGrpcExporter,
@@ -917,12 +921,22 @@ def _get_ot_tracer() -> ot_trace.Tracer:
         ot_trace.Tracer: The OpenTelemetry tracer instance.
     """
 
-    def _get_ot_tracer_inner() -> ot_trace.Tracer:
+    def _has_existing_trace_provider() -> bool:
+        from opentelemetry.trace import _TRACER_PROVIDER
+
         existing_provider = ot_trace.get_tracer_provider()
+        if isinstance(existing_provider, NoOpTracerProvider):
+            return False
+        elif isinstance(existing_provider, ProxyTracerProvider):
+            # ProxyTracerProvider will use the _TRACER_PROVIDER as real tracer
+            # provider to get the tracer
+            return bool(_TRACER_PROVIDER)
 
-        if not isinstance(existing_provider, NoOpTracerProvider):
+        return True
+
+    def _get_ot_tracer_inner() -> ot_trace.Tracer:
+        if _has_existing_trace_provider():
             return ot_trace.get_tracer("agentscope_runtime")
-
         resource = Resource(
             attributes={
                 SERVICE_NAME: _get_service_name(),

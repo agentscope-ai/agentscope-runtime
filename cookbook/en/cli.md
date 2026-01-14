@@ -610,6 +610,69 @@ agentscope deploy k8s app_agent.py \
 
 **Note:** `USE_LOCAL_RUNTIME=True` uses local agentscope runtime instead of PyPI version.
 
+#### 4.4. Knative Deployment
+
+Deploy to Knative/ACK Knative cluster.
+
+##### Command Syntax
+
+```bash
+agentscope deploy knative SOURCE [OPTIONS]
+```
+
+##### Platform-Specific Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `--namespace` | string | `"agentscope-runtime"` | Kubernetes namespace |
+| `--kube-config-path` | `-c` | path | `None` | Path to kubeconfig file |
+| `--port` | integer | `8080` | Container port |
+| `--image-name` | string | `"agent_app"` | Docker image name |
+| `--image-tag` | string | `"linux-amd64"` | Docker image tag |
+| `--registry-url` | string | `"localhost"` | Remote registry URL |
+| `--registry-namespace` | string | `"agentscope-runtime"` | Remote registry namespace |
+| `--push` | flag | `False` | Push image to registry |
+| `--base-image` | string | `"python:3.10-slim-bookworm"` | Base Docker image |
+| `--requirements` | string | `None` | Python requirements (comma-separated or file path) |
+| `--cpu-request` | string | `"200m"` | CPU resource request (e.g., '200m', '1') |
+| `--cpu-limit` | string | `"1000m"` | CPU resource limit (e.g., '1000m', '2') |
+| `--memory-request` | string | `"512Mi"` | Memory resource request (e.g., '512Mi', '1Gi') |
+| `--memory-limit` | string | `"2Gi"` | Memory resource limit (e.g., '2Gi', '4Gi') |
+| `--image-pull-policy` | choice | `"IfNotPresent"` | Image pull policy: `Always`, `IfNotPresent`, `Never` |
+| `--deploy-timeout` | integer | `300` | Deployment timeout in seconds |
+| `--health-check` | flag | `None` | Enable/disable health check |
+| `--platform` | string | `"linux/amd64"` | Target platform (e.g., 'linux/amd64', 'linux/arm64') |
+| `--pypi-mirror` | string | `None` | PyPI mirror URL for pip package installation (e.g., 'https://pypi.tuna.tsinghua.edu.cn/simple'). If not specified, uses pip default |
+
+##### Prerequisites
+
+- Kubernetes cluster access
+- Docker installed (for building images)
+- `kubectl` configured
+- Knative installed
+
+##### Examples
+
+```bash
+# Basic deployment
+export USE_LOCAL_RUNTIME=True
+agentscope deploy knative app_agent.py \
+  --image-name agent_app \
+  --env DASHSCOPE_API_KEY=sk-xxx \
+  --image-tag linux-amd64-4 \
+  --registry-url your-registry.com \
+  --push
+
+# Custom namespace and resources
+agentscope deploy knative app_agent.py \
+  --namespace production \
+  --cpu-limit 2 \
+  --memory-limit 4Gi \
+  --env DASHSCOPE_API_KEY=sk-xxx
+```
+
+**Note:** `USE_LOCAL_RUNTIME=True` uses local agentscope runtime instead of PyPI version.
+
 ### 5. Deployment Management
 
 #### 5.1. List Deployments
