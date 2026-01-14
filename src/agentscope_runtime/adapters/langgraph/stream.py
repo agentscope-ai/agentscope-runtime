@@ -173,6 +173,7 @@ async def adapt_langgraph_message_stream(
 
             data_content = DataContent(
                 data=function_output_data.model_dump(),
+                msg_id=plugin_output_message.id,
             )
             yield data_content.completed()
             plugin_output_message.add_content(

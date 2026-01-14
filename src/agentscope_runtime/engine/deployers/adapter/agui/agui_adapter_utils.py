@@ -500,12 +500,7 @@ class AGUIAdapter:
                 content.model_dump(exclude_none=True),
             )
 
-        content_index = (
-            content.index
-            if content.index is not None
-            else self._get_msg_content_index(content)
-        )
-        agui_msg_id = f"{content.msg_id}_{content_index}"
+        agui_msg_id = content.msg_id
         self._message_id_to_agui_message_id_mapping[content.msg_id].add(
             agui_msg_id,
         )
