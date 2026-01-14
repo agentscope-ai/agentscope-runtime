@@ -55,20 +55,21 @@ AGENT_VERSION = "1.0.0"
 def extract_a2a_config(
     a2a_config: Optional["AgentCardWithRuntimeConfig"] = None,
 ) -> "AgentCardWithRuntimeConfig":
-    """Normalize a2a_config to AgentCardWithRuntimeConfig object.
+    """Normalize ``a2a_config`` to an ``AgentCardWithRuntimeConfig`` object.
 
     Registry resolution priority:
-    1. Use registry from a2a_config if provided
-    2. Fallback to environment variables if a2a_config.registry is
-       None
-    3. If neither is available, registry remains None (user doesn't
-       want registry)
+
+    1. Use ``registry`` from ``a2a_config`` if provided.
+    2. Fallback to environment variables if ``a2a_config.registry`` is
+       ``None``.
+    3. If neither is available, registry remains ``None``
+       (user doesn't want it).
 
     Args:
-        a2a_config: Optional AgentCardWithRuntimeConfig instance.
+        a2a_config: Optional ``AgentCardWithRuntimeConfig`` instance.
 
     Returns:
-        Normalized AgentCardWithRuntimeConfig object.
+        Normalized ``AgentCardWithRuntimeConfig`` object.
     """
     if a2a_config is None:
         a2a_config = AgentCardWithRuntimeConfig()

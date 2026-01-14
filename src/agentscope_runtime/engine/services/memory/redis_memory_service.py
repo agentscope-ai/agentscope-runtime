@@ -30,25 +30,24 @@ class RedisMemoryService(MemoryService):
         Initialize RedisMemoryService.
 
         Args:
-            redis_url: Redis connection URL
-            redis_client: Optional pre-configured Redis client
-            socket_timeout: Socket timeout in seconds (default: 5.0)
+            redis_url: Redis connection URL.
+            redis_client: Optional pre-configured Redis client.
+            socket_timeout: Socket timeout in seconds (default: 5.0).
             socket_connect_timeout: Socket connect timeout in seconds
-             (default: 5.0)
+                (default: 5.0).
             max_connections: Maximum number of connections in the pool
-             (default: None)
-            retry_on_timeout: Whether to retry on timeout (default: True)
-            ttl_seconds: Time-to-live in seconds for memory data.
-            If None, data never expires (default: 3600, i.e., 1 hour)
+                (default: None).
+            retry_on_timeout: Whether to retry on timeout (default: True).
+            ttl_seconds: Time-to-live in seconds for memory data. If None,
+                data never expires (default: 3600, i.e., 1 hour).
             max_messages_per_session: Maximum number of messages stored per
-             session_id field within a user's Redis memory hash.
-             If None, no limit (default: None)
-            health_check_interval: Interval in seconds for health checks
-             on idle connections (default: 30.0).
-                Connections idle longer than this will be checked before reuse.
-                Set to 0 to disable.
-            socket_keepalive: Enable TCP keepalive to prevent
-            silent disconnections (default: True)
+                session_id field within a user's Redis memory hash. If None,
+                no limit (default: None).
+            health_check_interval: Interval in seconds for health checks on
+                idle connections (default: 30.0). Connections idle longer
+                than this will be checked before reuse. Set to 0 to disable.
+            socket_keepalive: Enable TCP keepalive to prevent silent
+                disconnections (default: True).
         """
         self._redis_url = redis_url
         self._redis = redis_client
