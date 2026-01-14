@@ -85,7 +85,17 @@ class BoxliteClient(BaseClient):
 
         # Initialize BoxLite runtime
         try:
-            self.runtime = SyncBoxlite.default()
+            from ...sandbox.constant import REGISTRY
+
+            if REGISTRY:
+                image_registries = [REGISTRY]
+            else:
+                image_registries = ["ghcr.io", "docker.io"]
+
+            options = boxlite.Options(
+                image_registries=image_registries,
+            )
+            self.runtime = SyncBoxlite(options=options)
             self.runtime.__enter__()
         except Exception as e:
             raise RuntimeError(
@@ -339,26 +349,22 @@ class BoxliteClient(BaseClient):
             ports = self.ports_cache.get(container_id) or []
 
             # Convert BoxInfo to dict format similar to Docker
-            if info.state in ["running", "starting"]:
-                status = "running"
-            else:
-                status = info.state
             return {
                 "Id": info.id,
                 "Name": info.name or "",
                 "State": {
-                    "Status": status,
-                    "Running": info.state in ["running", "starting"],
+                    "Status": info.state.status,
+                    "Running": info.state.running,
                     "Paused": False,
                     "Restarting": False,
                     "OOMKilled": False,
                     "Dead": info.state == "stopped",
-                    "Pid": info.pid or 0,
-                    "ExitCode": 0 if info.state == "running" else 1,
+                    "Pid": info.state.pid or 0,
+                    "ExitCode": 0 if info.state.running else 1,
                     "Error": "",
                     "StartedAt": info.created_at,
                     "FinishedAt": ""
-                    if info.state == "running"
+                    if info.state.running == "running"
                     else info.created_at,
                 },
                 "Created": info.created_at,
