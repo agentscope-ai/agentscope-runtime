@@ -30,7 +30,7 @@ For **Apple Silicon devices** (such as M1/M2), we recommend the following option
 ````
 
 - Docker (optionally with gVisor) or [BoxLite](https://github.com/boxlite-ai/boxlite) (local)
-- (Optional,  remote/production, choose as needed) Kubernetes (K8s) / Function Compute (FC) / [Alibaba Cloud ACK](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope Runtime 沙箱环境)
+- (Optional,  remote/production, choose as needed) Kubernetes (K8s) / Function Compute (FC) / [Alibaba Cloud ACK](https://computenest.console.aliyun.com/service/instance/create/cn-hangzhou?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83)
 
 ## Setup
 
