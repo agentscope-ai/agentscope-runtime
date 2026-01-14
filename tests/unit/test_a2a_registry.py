@@ -261,16 +261,23 @@ class TestCreateNacosRegistryFromEnv:
             sys.modules["v2"].nacos = mock_v2_nacos
 
             try:
-                with patch(
-                    "agentscope_runtime.engine.deployers.adapter"
-                    ".a2a.nacos_a2a_registry.NacosRegistry",
-                    mock_nacos_registry_class,
+                # Ensure at least one NACOS_* env var is explicitly set so that
+                # create_nacos_registry_from_env() treats registry as enabled.
+                with patch.dict(
+                    os.environ,
+                    {"NACOS_SERVER_ADDR": "nacos.example.com:8848"},
+                    clear=False,
                 ):
-                    result = create_nacos_registry_from_env()
-                    # Should return a registry instance when
-                    # SDK is available
-                    assert result is not None
-                    assert result.registry_name() == "nacos"
+                    with patch(
+                        "agentscope_runtime.engine.deployers.adapter"
+                        ".a2a.nacos_a2a_registry.NacosRegistry",
+                        mock_nacos_registry_class,
+                    ):
+                        result = create_nacos_registry_from_env()
+                        # Should return a registry instance when
+                        # SDK is available and NACOS_* is configured
+                        assert result is not None
+                        assert result.registry_name() == "nacos"
             finally:
                 # Restore original module
                 if original_v2_nacos is not None:
