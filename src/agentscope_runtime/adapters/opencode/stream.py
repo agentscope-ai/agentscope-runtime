@@ -43,6 +43,7 @@ async def adapt_opencode_message_stream(
             info = _get_event_properties(event).get("info")
             if isinstance(info, dict):
                 if info.get("role") == "assistant":
+                    # Map message_id -> agent name and cache usage if provided.
                     message_id = info.get("id")
                     agent_name = info.get("agent")
                     if message_id and agent_name:
@@ -155,10 +156,12 @@ class _ToolStreamState:
 
 
 def _normalize_event(event: Any) -> Optional[Dict[str, Any]]:
+    # OpenCode events may be raw dicts, wrapped under "data", or SDK objects.
     if event is None:
         return None
 
     if isinstance(event, dict):
+        # Some transports wrap the actual payload under "data".
         if "data" in event and "type" not in event:
             inner = event.get("data")
             if isinstance(inner, dict):
@@ -181,6 +184,7 @@ def _normalize_event(event: Any) -> Optional[Dict[str, Any]]:
 
 
 def _get_event_properties(event: Dict[str, Any]) -> Dict[str, Any]:
+    # OpenCode keeps message payload under "properties" for event updates.
     props = event.get("properties")
     return props if isinstance(props, dict) else {}
 
@@ -216,6 +220,7 @@ def _handle_part_event(
             usage_state,
         )
     elif part_type == "step-start":
+        # Step markers are control signals, not user-visible content.
         pass
     elif part_type == "text":
         yield from _handle_text_part(
@@ -253,6 +258,7 @@ def _handle_part_event(
             usage_state,
         )
     elif part_type == "step-finish":
+        # Step finish carries token/cost accounting for this message.
         usage = _usage_from_step_finish(part)
         message_id = part.get("messageID")
         if usage and message_id:
@@ -579,6 +585,8 @@ def _apply_usage_to_message(
     usage_by_message_id: Dict[str, Dict[str, Any]],
     usage_state: Dict[str, Optional[Dict[str, Any]]],
 ) -> None:
+    # Usage can arrive before or after text parts;
+    # prefer message_id, fallback last.
     if message.usage is not None:
         return
 
@@ -597,6 +605,7 @@ def _get_part_delta_text(
     delta: Optional[str],
     previous_text: str,
 ) -> str:
+    # Prefer explicit delta; otherwise derive delta by prefix diff.
     if isinstance(delta, str) and delta:
         return delta
 
