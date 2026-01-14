@@ -89,11 +89,7 @@ async def adapt_langgraph_message_stream(
                             index=index,
                             data=FunctionCall(
                                 call_id=call_id,
-                                name=tool_call.get("name", ""),
-                                arguments=json.dumps(
-                                    tool_call.get("args", {}),
-                                    ensure_ascii=False,
-                                ),
+                                arguments=tool_call.get("args"),
                             ).model_dump(),
                         )
 
@@ -162,11 +158,16 @@ async def adapt_langgraph_message_stream(
                 type=MessageType.PLUGIN_CALL_OUTPUT,
                 role="tool",
             )
+            tool_call_output = (
+                msg.content
+                if isinstance(msg.content, str)
+                else json.dumps(msg.content, ensure_ascii=False)
+            )
             # Create function call output data
             function_output_data = FunctionCallOutput(
                 call_id=msg.tool_call_id,
                 name=msg.name,
-                output=json.dumps(content, ensure_ascii=False),
+                output=tool_call_output,
             )
 
             data_content = DataContent(
