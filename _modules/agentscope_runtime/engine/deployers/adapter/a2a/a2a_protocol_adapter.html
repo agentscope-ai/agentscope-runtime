@@ -688,20 +688,21 @@ body.preview-active {
 <span class="k">def</span><span class="w"> </span><span class="nf">extract_a2a_config</span><span class="p">(</span>
     <span class="n">a2a_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;AgentCardWithRuntimeConfig&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;AgentCardWithRuntimeConfig&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalize a2a_config to AgentCardWithRuntimeConfig object.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalize ``a2a_config`` to an ``AgentCardWithRuntimeConfig`` object.</span>
 
 <span class="sd">    Registry resolution priority:</span>
-<span class="sd">    1. Use registry from a2a_config if provided</span>
-<span class="sd">    2. Fallback to environment variables if a2a_config.registry is</span>
-<span class="sd">       None</span>
-<span class="sd">    3. If neither is available, registry remains None (user doesn&#39;t</span>
-<span class="sd">       want registry)</span>
+
+<span class="sd">    1. Use ``registry`` from ``a2a_config`` if provided.</span>
+<span class="sd">    2. Fallback to environment variables if ``a2a_config.registry`` is</span>
+<span class="sd">       ``None``.</span>
+<span class="sd">    3. If neither is available, registry remains ``None``</span>
+<span class="sd">       (user doesn&#39;t want it).</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        a2a_config: Optional AgentCardWithRuntimeConfig instance.</span>
+<span class="sd">        a2a_config: Optional ``AgentCardWithRuntimeConfig`` instance.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        Normalized AgentCardWithRuntimeConfig object.</span>
+<span class="sd">        Normalized ``AgentCardWithRuntimeConfig`` object.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">a2a_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">a2a_config</span> <span class="o">=</span> <span class="n">AgentCardWithRuntimeConfig</span><span class="p">()</span>
@@ -1644,6 +1645,7 @@ mermaid.initialize(
 );
 
 window.addEventListener("load", load);</script>
+    <script src="../../../../../../_static/mermaid-loader.js?v=c1bd9ce5"></script>
     <script src="../../../../../../_static/language.js?v=c79991d2"></script>
     </body>
 </html>

@@ -665,25 +665,24 @@ body.preview-active {
 <span class="sd">        Initialize RedisMemoryService.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            redis_url: Redis connection URL</span>
-<span class="sd">            redis_client: Optional pre-configured Redis client</span>
-<span class="sd">            socket_timeout: Socket timeout in seconds (default: 5.0)</span>
+<span class="sd">            redis_url: Redis connection URL.</span>
+<span class="sd">            redis_client: Optional pre-configured Redis client.</span>
+<span class="sd">            socket_timeout: Socket timeout in seconds (default: 5.0).</span>
 <span class="sd">            socket_connect_timeout: Socket connect timeout in seconds</span>
-<span class="sd">             (default: 5.0)</span>
+<span class="sd">                (default: 5.0).</span>
 <span class="sd">            max_connections: Maximum number of connections in the pool</span>
-<span class="sd">             (default: None)</span>
-<span class="sd">            retry_on_timeout: Whether to retry on timeout (default: True)</span>
-<span class="sd">            ttl_seconds: Time-to-live in seconds for memory data.</span>
-<span class="sd">            If None, data never expires (default: 3600, i.e., 1 hour)</span>
+<span class="sd">                (default: None).</span>
+<span class="sd">            retry_on_timeout: Whether to retry on timeout (default: True).</span>
+<span class="sd">            ttl_seconds: Time-to-live in seconds for memory data. If None,</span>
+<span class="sd">                data never expires (default: 3600, i.e., 1 hour).</span>
 <span class="sd">            max_messages_per_session: Maximum number of messages stored per</span>
-<span class="sd">             session_id field within a user&#39;s Redis memory hash.</span>
-<span class="sd">             If None, no limit (default: None)</span>
-<span class="sd">            health_check_interval: Interval in seconds for health checks</span>
-<span class="sd">             on idle connections (default: 30.0).</span>
-<span class="sd">                Connections idle longer than this will be checked before reuse.</span>
-<span class="sd">                Set to 0 to disable.</span>
-<span class="sd">            socket_keepalive: Enable TCP keepalive to prevent</span>
-<span class="sd">            silent disconnections (default: True)</span>
+<span class="sd">                session_id field within a user&#39;s Redis memory hash. If None,</span>
+<span class="sd">                no limit (default: None).</span>
+<span class="sd">            health_check_interval: Interval in seconds for health checks on</span>
+<span class="sd">                idle connections (default: 30.0). Connections idle longer</span>
+<span class="sd">                than this will be checked before reuse. Set to 0 to disable.</span>
+<span class="sd">            socket_keepalive: Enable TCP keepalive to prevent silent</span>
+<span class="sd">                disconnections (default: True).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_redis_url</span> <span class="o">=</span> <span class="n">redis_url</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span> <span class="o">=</span> <span class="n">redis_client</span>
@@ -1454,6 +1453,7 @@ mermaid.initialize(
 );
 
 window.addEventListener("load", load);</script>
+    <script src="../../../../../_static/mermaid-loader.js?v=c1bd9ce5"></script>
     <script src="../../../../../_static/language.js?v=c79991d2"></script>
     </body>
 </html>

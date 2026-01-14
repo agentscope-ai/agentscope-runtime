@@ -630,6 +630,7 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <h1>Source code for agentscope_runtime.engine.app.agent_app</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># flake8: noqa: E501</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">types</span>
@@ -709,11 +710,14 @@ body.preview-active {
 <span class="sd">                Must be an ``AgentCardWithRuntimeConfig`` instance, which</span>
 <span class="sd">                contains ``agent_card`` (AgentCard object or dict) and runtime</span>
 <span class="sd">                settings (host, port, registry, task_timeout, etc.).</span>
-<span class="sd">                Example:</span>
-<span class="sd">                    from a2a.types import AgentCard, AgentCapabilities</span>
-<span class="sd">                    from agentscope_runtime.engine.deployers.adapter.a2a import (  # noqa: E501</span>
+
+<span class="sd">                Example::</span>
+
+<span class="sd">                    from a2a.types import AgentCapabilities</span>
+<span class="sd">                    from agentscope_runtime.engine.deployers.adapter.a2a import (</span>
 <span class="sd">                        AgentCardWithRuntimeConfig,</span>
 <span class="sd">                    )</span>
+
 <span class="sd">                    config = AgentCardWithRuntimeConfig(</span>
 <span class="sd">                        agent_card={</span>
 <span class="sd">                            &quot;name&quot;: &quot;MyAgent&quot;,</span>
@@ -1519,6 +1523,7 @@ mermaid.initialize(
 );
 
 window.addEventListener("load", load);</script>
+    <script src="../../../../_static/mermaid-loader.js?v=c1bd9ce5"></script>
     <script src="../../../../_static/language.js?v=c79991d2"></script>
     </body>
 </html>
