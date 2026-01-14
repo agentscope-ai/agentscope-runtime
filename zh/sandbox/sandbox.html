@@ -641,7 +641,7 @@ body.preview-active {
 <h2>前提条件<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>当前的沙箱环境默认使用 Docker 进行隔离。此外，我们还支持 Kubernetes (K8s) 作为远程服务后端。未来，我们计划在即将发布的版本中加入更多第三方托管解决方案。</p>
+<p>当前版本的沙箱支持多种后端隔离/运行方式。本地运行可使用 Docker（可选配 gVisor）或 <a class="reference external" href="https://github.com/boxlite-ai/boxlite">BoxLite</a>；大规模远程/生产部署推荐使用 Kubernetes（K8s）、函数计算（FC）或 <a class="reference external" href="https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83">阿里云 ACK</a> 等。你也可以通过设置环境变量 <code class="docutils literal notranslate"><span class="pre">CONTAINER_DEPLOYMENT</span></code> 来切换后端（默认：<code class="docutils literal notranslate"><span class="pre">docker</span></code>）。</p>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -652,8 +652,8 @@ body.preview-active {
 </ul>
 </div>
 <ul class="simple">
-<li><p>Docker</p></li>
-<li><p>（可选，仅支持远程模式）Kubernetes</p></li>
+<li><p>Docker（可选配 gVisor）或 <a class="reference external" href="https://github.com/boxlite-ai/boxlite">BoxLite</a>（本地）</p></li>
+<li><p>（远程/生产，按需选择）Kubernetes（K8s）/ 函数计算（FC）/ [阿里云 ACK](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope Runtime 沙箱环境)</p></li>
 </ul>
 </section>
 <section id="id3">
@@ -740,11 +740,12 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.tools.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_ipython_cell</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSandbox</span>
 
-<span class="c1"># 模型上下文协议（MCP）兼容的工具调用结果</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">run_ipython_cell</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;print(&#39;Setup successful!&#39;)&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+<span class="k">with</span> <span class="n">BaseSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">sandbox</span><span class="p">:</span>
+    <span class="c1"># 模型上下文协议（MCP）兼容的工具调用结果</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">sandbox</span><span class="o">.</span><span class="n">run_ipython_cell</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;print(&#39;Setup successful!&#39;)&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -1536,7 +1537,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-12</div>
+              Last updated on 2026-01-14</div>
           </div>
           <div class="right-details">
             <div class="icons">

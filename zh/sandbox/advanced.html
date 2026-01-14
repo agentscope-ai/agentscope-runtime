@@ -810,6 +810,118 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </tbody>
 </table>
 </div>
+<section id="id6">
+<h5>后端对比<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h5>
+<p>沙箱支持多种后端，可通过 <code class="docutils literal notranslate"><span class="pre">CONTAINER_DEPLOYMENT</span></code> 选择。下表对比了本地隔离方案与远程/托管部署后端。</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>属性</p></th>
+<th class="head"><p>Docker（<code class="docutils literal notranslate"><span class="pre">docker</span></code>）</p></th>
+<th class="head"><p>gVisor（<code class="docutils literal notranslate"><span class="pre">gvisor</span></code>）</p></th>
+<th class="head"><p>BoxLite（<code class="docutils literal notranslate"><span class="pre">boxlite</span></code>）</p></th>
+<th class="head"><p>Kubernetes（<code class="docutils literal notranslate"><span class="pre">k8s</span></code>）</p></th>
+<th class="head"><p>AgentRun（<code class="docutils literal notranslate"><span class="pre">agentrun</span></code>）</p></th>
+<th class="head"><p>函数计算（<code class="docutils literal notranslate"><span class="pre">fc</span></code>）</p></th>
+<th class="head"><p>ACK（托管 K8s）</p></th>
+<th class="head"><p>Firecracker（不支持）</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>类别</p></td>
+<td><p>本地容器</p></td>
+<td><p>本地容器（用户态内核）</p></td>
+<td><p>本地轻量虚拟机</p></td>
+<td><p>远程/集群容器编排</p></td>
+<td><p>云托管 / 无服务器</p></td>
+<td><p>云无服务器</p></td>
+<td><p>云托管 Kubernetes</p></td>
+<td><p>MicroVM（本地/云）</p></td>
+</tr>
+<tr class="row-odd"><td><p>隔离</p></td>
+<td><p>内核命名空间</p></td>
+<td><p>用户态内核</p></td>
+<td><p>硬件虚拟机</p></td>
+<td><p>内核命名空间（Pod/容器）</p></td>
+<td><p>平台隔离（云）</p></td>
+<td><p>平台隔离（云）</p></td>
+<td><p>内核命名空间（托管 K8s）</p></td>
+<td><p>硬件虚拟机</p></td>
+</tr>
+<tr class="row-even"><td><p>逃逸风险</p></td>
+<td><p>可能发生容器逃逸</p></td>
+<td><p>很低</p></td>
+<td><p>接近于零</p></td>
+<td><p>可能发生容器逃逸（取决于加固/运行时）</p></td>
+<td><p>由平台缓解</p></td>
+<td><p>由平台缓解</p></td>
+<td><p>可能发生容器逃逸（取决于加固/运行时）</p></td>
+<td><p>接近于零</p></td>
+</tr>
+<tr class="row-odd"><td><p>典型启动时间</p></td>
+<td><p>&lt; 100 ms</p></td>
+<td><p>&lt; 200 ms</p></td>
+<td><p>&lt; 200 ms</p></td>
+<td><p>数秒（取决于调度/拉取镜像）</p></td>
+<td><p>数秒（取决于冷启动）</p></td>
+<td><p>数秒（取决于冷启动）</p></td>
+<td><p>数秒（取决于调度/拉取镜像）</p></td>
+<td><p>&lt; 125 ms</p></td>
+</tr>
+<tr class="row-even"><td><p>需要守护进程</p></td>
+<td><p>是</p></td>
+<td><p>是（<code class="docutils literal notranslate"><span class="pre">runsc</span></code>）</p></td>
+<td><p>否</p></td>
+<td><p>是（集群控制面/节点 Agent）</p></td>
+<td><p>否（托管）</p></td>
+<td><p>否（托管）</p></td>
+<td><p>是（托管；用户无需自建控制面）</p></td>
+<td><p>是</p></td>
+</tr>
+<tr class="row-odd"><td><p>OCI 镜像支持</p></td>
+<td><p>原生</p></td>
+<td><p>通过 Docker</p></td>
+<td><p>原生</p></td>
+<td><p>原生</p></td>
+<td><p>通常支持（依平台而定）</p></td>
+<td><p>通常支持（依平台而定）</p></td>
+<td><p>原生</p></td>
+<td><p>需要额外配置</p></td>
+</tr>
+<tr class="row-even"><td><p>可嵌入</p></td>
+<td><p>否（CLI/API）</p></td>
+<td><p>否</p></td>
+<td><p>是（库形式）</p></td>
+<td><p>否（控制面 API）</p></td>
+<td><p>否（平台 API）</p></td>
+<td><p>否（平台 API）</p></td>
+<td><p>否（控制面 API）</p></td>
+<td><p>部分支持</p></td>
+</tr>
+<tr class="row-odd"><td><p>操作系统支持</p></td>
+<td><p>Linux/macOS/Windows</p></td>
+<td><p>Linux/macOS</p></td>
+<td><p>macOS（Apple Silicon）、Linux（x86_64/ARM64）、Windows (WLS2)</p></td>
+<td><p>Linux（集群节点）</p></td>
+<td><p>托管（云）</p></td>
+<td><p>托管（云）</p></td>
+<td><p>托管（云）</p></td>
+<td><p>Linux（x86_64/ARM64）</p></td>
+</tr>
+<tr class="row-even"><td><p>最适合</p></td>
+<td><p>本地开发/测试</p></td>
+<td><p>更高安全性的本地运行</p></td>
+<td><p>高隔离 + 可嵌入的本地运行时</p></td>
+<td><p>大规模生产调度</p></td>
+<td><p>托管部署 + 弹性伸缩</p></td>
+<td><p>托管部署 + 弹性伸缩</p></td>
+<td><p>阿里云托管 K8s 生产环境</p></td>
+<td><p>高隔离 + 快速启动（规划中）</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 </section>
 <section id="redis">
 <h4>（可选）Redis 设置<a class="headerlink" href="#redis" title="Link to this heading">¶</a></h4>
@@ -1102,8 +1214,8 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </div>
 </section>
 </section>
-<section id="id6">
-<h3>导入自定义沙箱<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<section id="id7">
+<h3>导入自定义沙箱<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
 <p>除了默认提供的基础沙箱类型外，您还可以通过编写扩展模块并使用 <code class="docutils literal notranslate"><span class="pre">--extension</span></code> 参数加载，实现自定义沙箱的功能，例如修改镜像、增加环境变量、定义超时时间等。</p>
 <section id="custom-sandbox-py">
 <h4>编写自定义沙箱扩展（例如 <code class="docutils literal notranslate"><span class="pre">custom_sandbox.py</span></code>）<a class="headerlink" href="#custom-sandbox-py" title="Link to this heading">¶</a></h4>
@@ -1116,8 +1228,8 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </ul>
 </div></blockquote>
 </section>
-<section id="id7">
-<h4>启动时加载扩展<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h4>
+<section id="id8">
+<h4>启动时加载扩展<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h4>
 <p>将 <code class="docutils literal notranslate"><span class="pre">custom_sandbox.py</span></code> 放在项目或可导入的 Python 模块路径中，然后启动服务器时指定 <code class="docutils literal notranslate"><span class="pre">--extension</span></code> 参数：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-server<span class="w"> </span>--extension<span class="w"> </span>custom_sandbox.py
 </pre></div>
@@ -1130,16 +1242,16 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </div>
 </section>
 </section>
-<section id="id8">
-<h3>启动服务器<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
+<section id="id9">
+<h3>启动服务器<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
 <p>你也可以不使用启动选项，配置好<code class="docutils literal notranslate"><span class="pre">.env</span></code> 文件后直接启动服务器：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-server
 </pre></div>
 </div>
 <p>服务器将自动从<code class="docutils literal notranslate"><span class="pre">.env</span></code> 文件加载配置并使用您的自定义设置启动。</p>
 </section>
-<section id="id9">
-<h3>连接到远程服务器<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
+<section id="id10">
+<h3>连接到远程服务器<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
 <p>从您的客户端应用程序连接到远程服务器：</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSandbox</span>
 
@@ -1155,11 +1267,11 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </div>
 </section>
 </section>
-<section id="id10">
-<h2>自定义构建沙箱<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h2>
-<p>虽然内置沙箱类型涵盖了常见用例，但您可能会遇到需要专门环境或独特工具组合的场景。创建自定义沙箱允许您根据特定需求定制执行环境。本节演示如何构建和注册您的自定义沙箱类型。</p>
 <section id="id11">
-<h3>从源码安装（自定义沙箱必需）<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
+<h2>自定义构建沙箱<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h2>
+<p>虽然内置沙箱类型涵盖了常见用例，但您可能会遇到需要专门环境或独特工具组合的场景。创建自定义沙箱允许您根据特定需求定制执行环境。本节演示如何构建和注册您的自定义沙箱类型。</p>
+<section id="id12">
+<h3>从源码安装（自定义沙箱必需）<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
 <p>要创建自定义沙箱，您需要以可编辑模式从源码安装AgentScope Runtime，这允许您修改代码并立即看到更改：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/agentscope-ai/agentscope-runtime.git
 <span class="nb">cd</span><span class="w"> </span>agentscope-runtime
@@ -1178,7 +1290,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 </div>
 </section>
 <section id="custom-sandbox-zh">
-<span id="id12"></span><h3>创建自定义沙箱类<a class="headerlink" href="#custom-sandbox-zh" title="Link to this heading">¶</a></h3>
+<span id="id13"></span><h3>创建自定义沙箱类<a class="headerlink" href="#custom-sandbox-zh" title="Link to this heading">¶</a></h3>
 <p>您可以定义自定义沙箱类型并将其注册到系统中以满足特殊需求。只需继承 <code class="docutils literal notranslate"><span class="pre">Sandbox</span></code> 并使用 <code class="docutils literal notranslate"><span class="pre">SandboxRegistry.register</span></code>装饰器，然后将文件放在 <code class="docutils literal notranslate"><span class="pre">src/agentscope_runtime/sandbox/custom</span></code> 中（例如，<code class="docutils literal notranslate"><span class="pre">src/agentscope_runtime/sandbox/custom/custom_sandbox.py</span></code>）:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
@@ -1322,8 +1434,8 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 </pre></div>
 </div>
 </section>
-<section id="id13">
-<h3>构建您的自定义镜像<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h3>
+<section id="id14">
+<h3>构建您的自定义镜像<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
 <p>准备好Dockerfile 和自定义沙箱类后，使用内置构建器工具构建您的自定义沙箱镜像：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-builder<span class="w"> </span>my_custom_sandbox<span class="w"> </span>--dockerfile_path<span class="w"> </span>examples/custom_sandbox/Dockerfile<span class="w"> </span>--extension<span class="w"> </span>PATH_TO_YOUR_SANDBOX_MODULE
 </pre></div>
@@ -1335,8 +1447,8 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <li><p><code class="docutils literal notranslate"><span class="pre">--extension</span></code>: 自定义沙箱模块的路径</p></li>
 </ul>
 <p>构建完成后，您的自定义沙箱镜像将准备好与您定义的相应沙箱类一起使用。</p>
-<section id="id14">
-<h4>本地构建内置镜像<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h4>
+<section id="id15">
+<h4>本地构建内置镜像<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h4>
 <p>您也可以使用构建器在本地构建内置沙箱镜像：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 构建所有内置镜像</span>
 runtime-sandbox-builder<span class="w"> </span>all
@@ -1366,8 +1478,8 @@ runtime-sandbox-builder<span class="w"> </span>mobile
 </ul>
 </section>
 </section>
-<section id="id15">
-<h3>更改所使用的镜像标签<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h3>
+<section id="id16">
+<h3>更改所使用的镜像标签<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h3>
 <p>您可以更改环境变量以为 Sandbox 模块使用不同的镜像标签。默认情况下，使用的标签是 <code class="docutils literal notranslate"><span class="pre">&quot;latest&quot;</span></code>。</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">RUNTIME_SANDBOX_IMAGE_TAG</span><span class="o">=</span><span class="s2">&quot;my_custom&quot;</span>
 </pre></div>
@@ -1461,7 +1573,7 @@ runtime-sandbox-builder<span class="w"> </span>mobile
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-12</div>
+              Last updated on 2026-01-14</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -1502,7 +1614,10 @@ runtime-sandbox-builder<span class="w"> </span>mobile
 <li><a class="reference internal" href="#id4">自定义配置</a></li>
 <li><a class="reference internal" href="#id5">配置参考</a><ul>
 <li><a class="reference internal" href="#api">API服务设置</a></li>
-<li><a class="reference internal" href="#runtime-manager">Runtime Manager 设置</a></li>
+<li><a class="reference internal" href="#runtime-manager">Runtime Manager 设置</a><ul>
+<li><a class="reference internal" href="#id6">后端对比</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#redis">（可选）Redis 设置</a></li>
 <li><a class="reference internal" href="#oss">（可选）OSS 设置</a></li>
 <li><a class="reference internal" href="#k8s">（可选）K8S 设置</a></li>
@@ -1510,24 +1625,24 @@ runtime-sandbox-builder<span class="w"> </span>mobile
 <li><a class="reference internal" href="#fc">（可选）函数计算（FC）设置</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id6">导入自定义沙箱</a><ul>
+<li><a class="reference internal" href="#id7">导入自定义沙箱</a><ul>
 <li><a class="reference internal" href="#custom-sandbox-py">编写自定义沙箱扩展（例如 <code class="docutils literal notranslate"><span class="pre">custom_sandbox.py</span></code>）</a></li>
-<li><a class="reference internal" href="#id7">启动时加载扩展</a></li>
+<li><a class="reference internal" href="#id8">启动时加载扩展</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id8">启动服务器</a></li>
-<li><a class="reference internal" href="#id9">连接到远程服务器</a></li>
+<li><a class="reference internal" href="#id9">启动服务器</a></li>
+<li><a class="reference internal" href="#id10">连接到远程服务器</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id10">自定义构建沙箱</a><ul>
-<li><a class="reference internal" href="#id11">从源码安装（自定义沙箱必需）</a></li>
+<li><a class="reference internal" href="#id11">自定义构建沙箱</a><ul>
+<li><a class="reference internal" href="#id12">从源码安装（自定义沙箱必需）</a></li>
 <li><a class="reference internal" href="#custom-sandbox-zh">创建自定义沙箱类</a></li>
 <li><a class="reference internal" href="#docker">准备Docker镜像</a></li>
-<li><a class="reference internal" href="#id13">构建您的自定义镜像</a><ul>
-<li><a class="reference internal" href="#id14">本地构建内置镜像</a></li>
+<li><a class="reference internal" href="#id14">构建您的自定义镜像</a><ul>
+<li><a class="reference internal" href="#id15">本地构建内置镜像</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id15">更改所使用的镜像标签</a></li>
+<li><a class="reference internal" href="#id16">更改所使用的镜像标签</a></li>
 <li><a class="reference internal" href="#sandbox">更改 Sandbox 镜像相关配置</a></li>
 </ul>
 </li>

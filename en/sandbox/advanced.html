@@ -810,6 +810,118 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 </tbody>
 </table>
 </div>
+<section id="backend-comparison">
+<h5>Backend Comparison<a class="headerlink" href="#backend-comparison" title="Link to this heading">¶</a></h5>
+<p>The sandbox supports multiple backends, selectable via <code class="docutils literal notranslate"><span class="pre">CONTAINER_DEPLOYMENT</span></code>. The table below compares local isolation options and remote/managed deployment backends.</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Property</p></th>
+<th class="head"><p>Docker (<code class="docutils literal notranslate"><span class="pre">docker</span></code>)</p></th>
+<th class="head"><p>gVisor (<code class="docutils literal notranslate"><span class="pre">gvisor</span></code>)</p></th>
+<th class="head"><p>BoxLite (<code class="docutils literal notranslate"><span class="pre">boxlite</span></code>)</p></th>
+<th class="head"><p>Kubernetes (<code class="docutils literal notranslate"><span class="pre">k8s</span></code>)</p></th>
+<th class="head"><p>AgentRun (<code class="docutils literal notranslate"><span class="pre">agentrun</span></code>)</p></th>
+<th class="head"><p>Function Compute (<code class="docutils literal notranslate"><span class="pre">fc</span></code>)</p></th>
+<th class="head"><p>ACK (Managed K8s)</p></th>
+<th class="head"><p>Firecracker (Not supported)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Category</p></td>
+<td><p>Local containers</p></td>
+<td><p>Local containers (user-space kernel)</p></td>
+<td><p>Local lightweight VM</p></td>
+<td><p>Remote/cluster container orchestration</p></td>
+<td><p>Cloud managed / serverless</p></td>
+<td><p>Cloud serverless</p></td>
+<td><p>Cloud managed Kubernetes</p></td>
+<td><p>MicroVM (local/cloud)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Isolation</p></td>
+<td><p>Kernel namespaces</p></td>
+<td><p>User-space kernel</p></td>
+<td><p>Hardware VM</p></td>
+<td><p>Kernel namespaces (pods/containers)</p></td>
+<td><p>Platform-isolated (cloud)</p></td>
+<td><p>Platform-isolated (cloud)</p></td>
+<td><p>Kernel namespaces (managed K8s)</p></td>
+<td><p>Hardware VM</p></td>
+</tr>
+<tr class="row-even"><td><p>Escape risk</p></td>
+<td><p>Container escape possible</p></td>
+<td><p>Very low</p></td>
+<td><p>Near zero</p></td>
+<td><p>Container escape possible (depends on hardening/runtime)</p></td>
+<td><p>Mitigated by platform</p></td>
+<td><p>Mitigated by platform</p></td>
+<td><p>Container escape possible (depends on hardening/runtime)</p></td>
+<td><p>Near zero</p></td>
+</tr>
+<tr class="row-odd"><td><p>Typical startup time</p></td>
+<td><p>&lt; 100 ms</p></td>
+<td><p>&lt; 200 ms</p></td>
+<td><p>&lt; 200 ms</p></td>
+<td><p>Seconds (scheduling/pull dependent)</p></td>
+<td><p>Seconds (cold start dependent)</p></td>
+<td><p>Seconds (cold start dependent)</p></td>
+<td><p>Seconds (scheduling/pull dependent)</p></td>
+<td><p>&lt; 125 ms</p></td>
+</tr>
+<tr class="row-even"><td><p>Requires daemon</p></td>
+<td><p>Yes</p></td>
+<td><p>Yes (<code class="docutils literal notranslate"><span class="pre">runsc</span></code>)</p></td>
+<td><p>No</p></td>
+<td><p>Yes (cluster control plane/node agents)</p></td>
+<td><p>No (managed)</p></td>
+<td><p>No (managed)</p></td>
+<td><p>Yes (managed; users don’t run control plane)</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-odd"><td><p>OCI image support</p></td>
+<td><p>Native</p></td>
+<td><p>Via Docker</p></td>
+<td><p>Native</p></td>
+<td><p>Native</p></td>
+<td><p>Typically supported (platform-dependent)</p></td>
+<td><p>Typically supported (platform-dependent)</p></td>
+<td><p>Native</p></td>
+<td><p>Extra setup required</p></td>
+</tr>
+<tr class="row-even"><td><p>Embeddable</p></td>
+<td><p>No (CLI/API)</p></td>
+<td><p>No</p></td>
+<td><p>Yes (library)</p></td>
+<td><p>No (control-plane APIs)</p></td>
+<td><p>No (platform APIs)</p></td>
+<td><p>No (platform APIs)</p></td>
+<td><p>No (control-plane APIs)</p></td>
+<td><p>Partial</p></td>
+</tr>
+<tr class="row-odd"><td><p>OS support</p></td>
+<td><p>Linux/macOS/Windows</p></td>
+<td><p>Linux/macOS</p></td>
+<td><p>macOS (Apple Silicon), Linux (x86_64/ARM64), Windows (WLS2)</p></td>
+<td><p>Linux (cluster nodes)</p></td>
+<td><p>Managed (cloud)</p></td>
+<td><p>Managed (cloud)</p></td>
+<td><p>Managed (cloud)</p></td>
+<td><p>Linux (x86_64/ARM64)</p></td>
+</tr>
+<tr class="row-even"><td><p>Best for</p></td>
+<td><p>Local dev/test</p></td>
+<td><p>Higher-security local runs</p></td>
+<td><p>High isolation + embeddable local runtime</p></td>
+<td><p>Large-scale production scheduling</p></td>
+<td><p>Managed hosting + elasticity</p></td>
+<td><p>Managed hosting + elasticity</p></td>
+<td><p>Alibaba Cloud managed K8s production</p></td>
+<td><p>High isolation + fast boot (planned)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 </section>
 <section id="optional-redis-settings">
 <h4>(Optional) Redis Settings<a class="headerlink" href="#optional-redis-settings" title="Link to this heading">¶</a></h4>
@@ -1457,7 +1569,7 @@ You can modify any of them as needed to change the image source or version.</p>
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-12</div>
+              Last updated on 2026-01-14</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -1498,7 +1610,10 @@ You can modify any of them as needed to change the image source or version.</p>
 <li><a class="reference internal" href="#custom-configuration">Custom Configuration</a></li>
 <li><a class="reference internal" href="#configuration-reference">Configuration Reference</a><ul>
 <li><a class="reference internal" href="#service-settings">Service Settings</a></li>
-<li><a class="reference internal" href="#runtime-manager-settings">Runtime Manager Settings</a></li>
+<li><a class="reference internal" href="#runtime-manager-settings">Runtime Manager Settings</a><ul>
+<li><a class="reference internal" href="#backend-comparison">Backend Comparison</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#optional-redis-settings">(Optional) Redis Settings</a></li>
 <li><a class="reference internal" href="#optional-oss-settings">(Optional) OSS Settings</a></li>
 <li><a class="reference internal" href="#optional-k8s-settings">(Optional) K8S Settings</a></li>

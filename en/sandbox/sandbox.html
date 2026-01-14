@@ -641,7 +641,7 @@ body.preview-active {
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The current sandbox environment utilises Docker for default isolation. In addition, we offer support for Kubernetes (K8S) as a remote service backend. Looking ahead, we plan to incorporate more third-party hosting solutions in future releases.</p>
+<p>The current sandbox supports multiple backend isolation/runtime options. For local usage, you can use Docker (optionally with gVisor) or <a class="reference external" href="https://github.com/boxlite-ai/boxlite">BoxLite</a>. For large-scale remote/production deployments, we recommend Kubernetes (K8s), Function Compute (FC), or <a class="reference external" href="https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83">Alibaba Cloud ACK</a>. You can also switch the backend by setting the <code class="docutils literal notranslate"><span class="pre">CONTAINER_DEPLOYMENT</span></code> environment variable (default: <code class="docutils literal notranslate"><span class="pre">docker</span></code>).</p>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -652,8 +652,8 @@ body.preview-active {
 </ul>
 </div>
 <ul class="simple">
-<li><p>Docker</p></li>
-<li><p>(Optional,  remote mode only) Kubernetes</p></li>
+<li><p>Docker (optionally with gVisor) or <a class="reference external" href="https://github.com/boxlite-ai/boxlite">BoxLite</a> (local)</p></li>
+<li><p>(Optional,  remote/production, choose as needed) Kubernetes (K8s) / Function Compute (FC) / [Alibaba Cloud ACK](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope Runtime 沙箱环境)</p></li>
 </ul>
 </section>
 <section id="setup">
@@ -740,11 +740,12 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox.tools.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_ipython_cell</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSandbox</span>
 
-<span class="c1"># Model Context Protocol (MCP)-compatible tool call results</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">run_ipython_cell</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;print(&#39;Setup successful!&#39;)&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+<span class="k">with</span> <span class="n">BaseSandbox</span><span class="p">()</span> <span class="k">as</span> <span class="n">sandbox</span><span class="p">:</span>
+    <span class="c1"># Model Context Protocol (MCP)-compatible tool call results</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">sandbox</span><span class="o">.</span><span class="n">run_ipython_cell</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;print(&#39;Setup successful!&#39;)&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -1523,7 +1524,7 @@ When running on an ARM64/aarch64 architecture (e.g., Apple M-series chips), you 
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-12</div>
+              Last updated on 2026-01-14</div>
           </div>
           <div class="right-details">
             <div class="icons">
