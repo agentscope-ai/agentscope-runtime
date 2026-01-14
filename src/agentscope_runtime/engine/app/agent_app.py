@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E501
 import logging
 import os
 import types
@@ -74,11 +75,14 @@ class AgentApp(BaseApp):
                 Must be an ``AgentCardWithRuntimeConfig`` instance, which
                 contains ``agent_card`` (AgentCard object or dict) and runtime
                 settings (host, port, registry, task_timeout, etc.).
-                Example:
-                    from a2a.types import AgentCard, AgentCapabilities
-                    from agentscope_runtime.engine.deployers.adapter.a2a import (  # noqa: E501
+
+                Example::
+
+                    from a2a.types import AgentCapabilities
+                    from agentscope_runtime.engine.deployers.adapter.a2a import (
                         AgentCardWithRuntimeConfig,
                     )
+
                     config = AgentCardWithRuntimeConfig(
                         agent_card={
                             "name": "MyAgent",
