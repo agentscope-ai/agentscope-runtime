@@ -19,7 +19,7 @@ AgentScope Runtime's Sandbox is a versatile tool that provides a **secure** and 
 ## Prerequisites
 
 ```{note}
-The current sandbox environment utilises Docker for default isolation. In addition, we offer support for Kubernetes (K8S) as a remote service backend. Looking ahead, we plan to incorporate more third-party hosting solutions in future releases.
+The current sandbox supports multiple backend isolation/runtime options. For local usage, you can use Docker (optionally with gVisor) or [BoxLite](https://github.com/boxlite-ai/boxlite). For large-scale remote/production deployments, we recommend Kubernetes (K8s), Function Compute (FC), or [Alibaba Cloud ACK](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83). You can also switch the backend by setting the `CONTAINER_DEPLOYMENT` environment variable (default: `docker`).
 ```
 
 
@@ -29,8 +29,8 @@ For **Apple Silicon devices** (such as M1/M2), we recommend the following option
 * Colima: Ensure that Rosetta 2 support is enabled. You can start [Colima](https://github.com/abiosoft/colima) with the following command to achieve compatibility: `colima start --vm-type=vz --vz-rosetta --memory 8 --cpu 1`
 ````
 
-- Docker
-- (Optional,  remote mode only) Kubernetes
+- Docker (optionally with gVisor) or [BoxLite](https://github.com/boxlite-ai/boxlite) (local)
+- (Optional,  remote/production, choose as needed) Kubernetes (K8s) / Function Compute (FC) / [Alibaba Cloud ACK](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope Runtime 沙箱环境)
 
 ## Setup
 
@@ -92,11 +92,12 @@ You can verify that everything is set up correctly by calling `run_ipython_cell`
 
 ```{code-cell}
 import json
-from agentscope_runtime.sandbox.tools.base import run_ipython_cell
+from agentscope_runtime.sandbox import BaseSandbox
 
-# Model Context Protocol (MCP)-compatible tool call results
-result = run_ipython_cell(code="print('Setup successful!')")
-print(json.dumps(result, indent=4, ensure_ascii=False))
+with BaseSandbox() as sandbox:
+    # Model Context Protocol (MCP)-compatible tool call results
+    result = sandbox.run_ipython_cell(code="print('Setup successful!')")
+    print(json.dumps(result, indent=4, ensure_ascii=False))
 ```
 
 ### (Optional) Built the Docker Images from Scratch

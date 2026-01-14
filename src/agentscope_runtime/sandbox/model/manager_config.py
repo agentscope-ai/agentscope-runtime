@@ -20,7 +20,7 @@ class SandboxManagerEnvConfig(BaseModel):
         description="Type of file system to use: 'local' or 'oss'.",
     )
     storage_folder: Optional[str] = Field(
-        "",
+        "runtime_sandbox_storage",
         description="Folder path in storage.",
     )
     redis_enabled: bool = Field(
@@ -34,6 +34,7 @@ class SandboxManagerEnvConfig(BaseModel):
         "agentrun",
         "fc",
         "gvisor",
+        "boxlite",
     ] = Field(
         "docker",
         description="Container deployment backend: 'docker', 'cloud', 'k8s'"
@@ -68,16 +69,16 @@ class SandboxManagerEnvConfig(BaseModel):
         description="OSS endpoint URL. Required if file_system is 'oss'.",
     )
     oss_access_key_id: Optional[str] = Field(
-        None,
+        "your-access-key-id",
         description="Access key ID for OSS. Required if file_system is 'oss'.",
     )
     oss_access_key_secret: Optional[str] = Field(
-        None,
+        "your-access-key-secret",
         description="Access key secret for OSS. Required if file_system is "
         "'oss'.",
     )
     oss_bucket_name: Optional[str] = Field(
-        None,
+        "your-bucket-name",
         description="Bucket name in OSS. Required if file_system is 'oss'.",
     )
 

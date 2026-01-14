@@ -263,9 +263,9 @@ data: {"sequence_number":6,"object":"response","status":"completed", ... }
 
 > [!NOTE]
 >
-> 如果你想本地运行沙箱，当前版本需要安装并运行Docker或者Kubernetes，未来我们将提供更多公有云部署、以及其他虚拟化技术选项。请参考[此教程](https://runtime.agentscope.io/zh/sandbox.html)了解更多详情。
+> 如果你想在本地运行沙箱（sandbox），当前版本支持 **Docker（可选配 gVisor）** 或 **[BoxLite](https://github.com/boxlite-ai/boxlite)** 作为后端，并且可以通过设置环境变量 `CONTAINER_DEPLOYMENT` 来切换（可选值包括 `docker` / `gvisor` / `boxlite` 等，默认 `docker`）。
 >
-> 如果您计划在生产中大规模使用沙箱，推荐直接在阿里云中进行托管部署：[在阿里云一键部署沙箱](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83)
+> 对于大规模远程/生产环境部署，我们推荐使用 **Kubernetes（K8s）**、**函数计算（Function Compute，FC）**，或 **[阿里云容器服务 Kubernetes 版（ACK）](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope Runtime 沙箱环境)** 作为后端。更多细节请参考[本教程](https://runtime.agentscope.io/zh/sandbox/advanced.html)。
 
 > [!TIP]
 > AgentScope Runtime 为每种沙箱类型都提供了 **同步版本** 和 **异步版本**

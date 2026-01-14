@@ -19,7 +19,7 @@ AgentScope Runtime的Sandbox提供了一个**安全**且**隔离**的环境，�
 ## 前提条件
 
 ```{note}
-当前的沙箱环境默认使用 Docker 进行隔离。此外，我们还支持 Kubernetes (K8s) 作为远程服务后端。未来，我们计划在即将发布的版本中加入更多第三方托管解决方案。
+当前版本的沙箱支持多种后端隔离/运行方式。本地运行可使用 Docker（可选配 gVisor）或 [BoxLite](https://github.com/boxlite-ai/boxlite)；大规模远程/生产部署推荐使用 Kubernetes（K8s）、函数计算（FC）或 [阿里云 ACK](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83) 等。你也可以通过设置环境变量 `CONTAINER_DEPLOYMENT` 来切换后端（默认：`docker`）。
 ```
 
 
@@ -29,8 +29,8 @@ AgentScope Runtime的Sandbox提供了一个**安全**且**隔离**的环境，�
 * Colima：确保启用Rosetta 2支持。您可以使用以下命令启动[Colima](https://github.com/abiosoft/colima)以实现兼容性：`colima start --vm-type=vz --vz-rosetta --memory 8 --cpu 1`
 ````
 
-- Docker
-- （可选，仅支持远程模式）Kubernetes
+- Docker（可选配 gVisor）或 [BoxLite](https://github.com/boxlite-ai/boxlite)（本地）
+- （远程/生产，按需选择）Kubernetes（K8s）/ 函数计算（FC）/ [阿里云 ACK](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope Runtime 沙箱环境)
 
 ## 安装
 
@@ -92,11 +92,12 @@ docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtim
 
 ```{code-cell}
 import json
-from agentscope_runtime.sandbox.tools.base import run_ipython_cell
+from agentscope_runtime.sandbox import BaseSandbox
 
-# 模型上下文协议（MCP）兼容的工具调用结果
-result = run_ipython_cell(code="print('Setup successful!')")
-print(json.dumps(result, indent=4, ensure_ascii=False))
+with BaseSandbox() as sandbox:
+    # 模型上下文协议（MCP）兼容的工具调用结果
+    result = sandbox.run_ipython_cell(code="print('Setup successful!')")
+    print(json.dumps(result, indent=4, ensure_ascii=False))
 ```
 
 ### （可选）从头构建Docker镜像
