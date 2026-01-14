@@ -92,33 +92,11 @@ async def query_func(
                     if isinstance(event, dict)
                     else None
                 )
-                if target_session_id:
-                    event_session_id = None
-                    if event_type == "message.part.updated":
-                        part = (
-                            props.get("part", {})
-                            if isinstance(props, dict)
-                            else {}
-                        )
-                        event_session_id = part.get("sessionID")
-                    elif isinstance(props, dict):
-                        event_session_id = props.get("sessionID")
-                    if event_session_id != target_session_id:
+                event_session_id = _event_session_id(event_type, props)
+                if session_id:
+                    if event_session_id and event_session_id != session_id:
                         continue
-
-                if event_type == "message.part.updated":
-                    part = (
-                        props.get("part", {})
-                        if isinstance(props, dict)
-                        else {}
-                    )
-                    if part.get("sessionID") != session_id:
-                        continue
-                elif isinstance(props, dict):
-                    if (
-                        props.get("sessionID")
-                        and props.get("sessionID") != session_id
-                    ):
+                    if target_session_id and event_session_id is None:
                         continue
 
                 if ONLY_PART_UPDATED and event_type != "message.part.updated":
@@ -126,7 +104,7 @@ async def query_func(
                         props,
                         dict,
                     ):
-                        if props.get("sessionID") == session_id:
+                        if event_session_id == session_id:
                             break
                     continue
                 yield event
@@ -134,7 +112,7 @@ async def query_func(
                     props,
                     dict,
                 ):
-                    if props.get("sessionID") == session_id:
+                    if event_session_id == session_id:
                         break
 
 
@@ -158,6 +136,20 @@ def _resolve_opencode_session_id(
         return None
     if session_id.startswith("ses_"):
         return session_id
+    return None
+
+
+def _event_session_id(
+    event_type: Optional[str],
+    props: Any,
+) -> Optional[str]:
+    if event_type == "message.part.updated" and isinstance(props, dict):
+        part = props.get("part", {})
+        if isinstance(part, dict):
+            return part.get("sessionID")
+        return None
+    if isinstance(props, dict):
+        return props.get("sessionID")
     return None
 
 
