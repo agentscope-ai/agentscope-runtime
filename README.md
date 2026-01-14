@@ -261,7 +261,7 @@ These examples demonstrate how to create sandboxed environments and execute tool
 
 > [!NOTE]
 >
-> If you want to run the sandbox locally, the current version supports **Docker (optionally with gVisor)** or **[Boxlite](https://github.com/boxlite-ai/boxlite)** as the backend, and you can switch the backend by setting the environment variable `CONTAINER_DEPLOYMENT` (supported values include `docker` / `gvisor` / `boxlite` etc.; default: `docker`).
+> If you want to run the sandbox locally, the current version supports **Docker (optionally with gVisor)** or **[BoxLite](https://github.com/boxlite-ai/boxlite)** as the backend, and you can switch the backend by setting the environment variable `CONTAINER_DEPLOYMENT` (supported values include `docker` / `gvisor` / `boxlite` etc.; default: `docker`).
 >
 > For large-scale remote/production deployments, we recommend using **Kubernetes (K8s)**, **Function Compute (FC)**, or [**Alibaba Cloud Container Service for Kubernetes (ACK)**](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83) as the backend. Please refer to [this tutorial](https://runtime.agentscope.io/en/sandbox/advanced.html) for more details.
 

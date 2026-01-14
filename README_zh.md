@@ -263,7 +263,7 @@ data: {"sequence_number":6,"object":"response","status":"completed", ... }
 
 > [!NOTE]
 >
-> 如果你想在本地运行沙箱（sandbox），当前版本支持 **Docker（可选配 gVisor）** 或 **[Boxlite](https://github.com/boxlite-ai/boxlite)** 作为后端，并且可以通过设置环境变量 `CONTAINER_DEPLOYMENT` 来切换（可选值包括 `docker` / `gvisor` / `boxlite` 等，默认 `docker`）。
+> 如果你想在本地运行沙箱（sandbox），当前版本支持 **Docker（可选配 gVisor）** 或 **[BoxLite](https://github.com/boxlite-ai/boxlite)** 作为后端，并且可以通过设置环境变量 `CONTAINER_DEPLOYMENT` 来切换（可选值包括 `docker` / `gvisor` / `boxlite` 等，默认 `docker`）。
 >
 > 对于大规模远程/生产环境部署，我们推荐使用 **Kubernetes（K8s）**、**函数计算（Function Compute，FC）**，或 **[阿里云容器服务 Kubernetes 版（ACK）](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope Runtime 沙箱环境)** 作为后端。更多细节请参考[本教程](https://runtime.agentscope.io/zh/sandbox/advanced.html)。
 

@@ -19,7 +19,7 @@ AgentScope Runtime's Sandbox is a versatile tool that provides a **secure** and 
 ## Prerequisites
 
 ```{note}
-The current sandbox supports multiple backend isolation/runtime options. For local usage, you can use Docker (optionally with gVisor) or [Boxlite](https://github.com/boxlite-ai/boxlite). For large-scale remote/production deployments, we recommend Kubernetes (K8s), Function Compute (FC), or [Alibaba Cloud ACK](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83). You can also switch the backend by setting the `CONTAINER_DEPLOYMENT` environment variable (default: `docker`).
+The current sandbox supports multiple backend isolation/runtime options. For local usage, you can use Docker (optionally with gVisor) or [BoxLite](https://github.com/boxlite-ai/boxlite). For large-scale remote/production deployments, we recommend Kubernetes (K8s), Function Compute (FC), or [Alibaba Cloud ACK](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83). You can also switch the backend by setting the `CONTAINER_DEPLOYMENT` environment variable (default: `docker`).
 ```
 
 
@@ -29,7 +29,7 @@ For **Apple Silicon devices** (such as M1/M2), we recommend the following option
 * Colima: Ensure that Rosetta 2 support is enabled. You can start [Colima](https://github.com/abiosoft/colima) with the following command to achieve compatibility: `colima start --vm-type=vz --vz-rosetta --memory 8 --cpu 1`
 ````
 
-- Docker (optionally with gVisor) or [Boxlite](https://github.com/boxlite-ai/boxlite) (local)
+- Docker (optionally with gVisor) or [BoxLite](https://github.com/boxlite-ai/boxlite) (local)
 - (Optional,  remote/production, choose as needed) Kubernetes (K8s) / Function Compute (FC) / [Alibaba Cloud ACK](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope Runtime 沙箱环境)
 
 ## Setup

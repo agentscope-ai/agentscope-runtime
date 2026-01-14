@@ -96,7 +96,7 @@ class BoxliteClient(BaseClient):
                 image_registries=image_registries,
             )
             self.runtime = SyncBoxlite(options=options)
-            self.runtime.__enter__()
+            self.runtime.start()
         except Exception as e:
             raise RuntimeError(
                 f"BoxLite client initialization failed: {str(e)}\n"
@@ -113,7 +113,7 @@ class BoxliteClient(BaseClient):
                 if hasattr(self.runtime, "__exit__"):
                     self.runtime.__exit__(None, None, None)
                 elif hasattr(self.runtime, "close"):
-                    self.runtime.close()
+                    self.runtime.stop()
                 logger.info("BoxLite runtime cleaned up via atexit.")
         except Exception as e:
             logger.warning(f"An error occurred during BoxLite cleanup: {e}")
@@ -243,20 +243,7 @@ class BoxliteClient(BaseClient):
                 logger.warning(f"Box '{container_id}' not found")
                 return False
 
-            # BoxLite boxes are started automatically when created
-            # If stopped, we need to check if there's a way to restart
-            # For now, we'll just verify it's running
-            info = box.info()
-            if info.state == "stopped":
-                # BoxLite doesn't have a direct start method for stopped boxes
-                # We might need to recreate or use a different approach
-                logger.warning(
-                    f"Box '{container_id}' is stopped. "
-                    f"BoxLite doesn't support restarting stopped boxes "
-                    f"directly.",
-                )
-                return False
-
+            box.start()
             return True
         except Exception as e:
             logger.warning(f"An error occurred: {e}")
@@ -300,15 +287,6 @@ class BoxliteClient(BaseClient):
             bool: True if successful, False otherwise
         """
         try:
-            box = self.runtime.get(container_id)
-
-            if box is not None:
-                # If force is True and box is running, stop it first
-                if force:
-                    info = box.info()
-                    if info.state == "running":
-                        box.stop()
-
             # Get ports before removal
             ports = self.ports_cache.get(container_id)
 

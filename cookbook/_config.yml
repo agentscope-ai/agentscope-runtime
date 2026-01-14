@@ -82,6 +82,10 @@ sphinx:
     use_multitoc_numbering: false
     html_js_files:
       - language.js
+      - mermaid.min.js
+    # Mermaid configuration - use local file instead of CDN
+    # Set mermaid_version to empty string to disable CDN loading
+    mermaid_version: ""
     html_sidebars:
       "**":
         - "sidebar/scroll-start.html"

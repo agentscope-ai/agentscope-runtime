@@ -19,7 +19,7 @@ AgentScope Runtime的Sandbox提供了一个**安全**且**隔离**的环境，�
 ## 前提条件
 
 ```{note}
-当前版本的沙箱支持多种后端隔离/运行方式。本地运行可使用 Docker（可选配 gVisor）或 [Boxlite](https://github.com/boxlite-ai/boxlite)；大规模远程/生产部署推荐使用 Kubernetes（K8s）、函数计算（FC）或 [阿里云 ACK](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83) 等。你也可以通过设置环境变量 `CONTAINER_DEPLOYMENT` 来切换后端（默认：`docker`）。
+当前版本的沙箱支持多种后端隔离/运行方式。本地运行可使用 Docker（可选配 gVisor）或 [BoxLite](https://github.com/boxlite-ai/boxlite)；大规模远程/生产部署推荐使用 Kubernetes（K8s）、函数计算（FC）或 [阿里云 ACK](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83) 等。你也可以通过设置环境变量 `CONTAINER_DEPLOYMENT` 来切换后端（默认：`docker`）。
 ```
 
 
@@ -29,7 +29,7 @@ AgentScope Runtime的Sandbox提供了一个**安全**且**隔离**的环境，�
 * Colima：确保启用Rosetta 2支持。您可以使用以下命令启动[Colima](https://github.com/abiosoft/colima)以实现兼容性：`colima start --vm-type=vz --vz-rosetta --memory 8 --cpu 1`
 ````
 
-- Docker（可选配 gVisor）或 [Boxlite](https://github.com/boxlite-ai/boxlite)（本地）
+- Docker（可选配 gVisor）或 [BoxLite](https://github.com/boxlite-ai/boxlite)（本地）
 - （远程/生产，按需选择）Kubernetes（K8s）/ 函数计算（FC）/ [阿里云 ACK](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope Runtime 沙箱环境)
 
 ## 安装
