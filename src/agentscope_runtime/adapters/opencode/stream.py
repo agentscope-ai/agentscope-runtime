@@ -172,19 +172,34 @@ def _normalize_event(event: Any) -> Optional[Dict[str, Any]]:
                 event = inner
         return event
 
-    data = getattr(event, "data", None)
-    if isinstance(data, dict):
-        return data
+    # The OpenCode SDK models expose to_dict() that emits API field names.
+    to_dict = getattr(event, "to_dict", None)
+    normalized: Optional[Dict[str, Any]] = None
+    if callable(to_dict):
+        as_dict = to_dict()
+        if isinstance(as_dict, dict):
+            normalized = as_dict
 
-    model_dump = getattr(event, "model_dump", None)
-    if callable(model_dump):
-        return model_dump()
+    if normalized is None:
+        data = getattr(event, "data", None)
+        if isinstance(data, dict):
+            normalized = data
 
-    as_dict = getattr(event, "dict", None)
-    if callable(as_dict):
-        return as_dict()
+    if normalized is None:
+        model_dump = getattr(event, "model_dump", None)
+        if callable(model_dump):
+            as_dict = model_dump(by_alias=True)
+            if isinstance(as_dict, dict):
+                normalized = as_dict
 
-    return None
+    if normalized is None:
+        as_dict = getattr(event, "dict", None)
+        if callable(as_dict):
+            maybe_dict = as_dict()
+            if isinstance(maybe_dict, dict):
+                normalized = maybe_dict
+
+    return normalized
 
 
 def _get_event_properties(event: Dict[str, Any]) -> Dict[str, Any]:
