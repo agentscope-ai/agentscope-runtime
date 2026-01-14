@@ -935,29 +935,38 @@ def _get_ot_tracer() -> ot_trace.Tracer:
         return True
 
     def _get_ot_tracer_inner() -> ot_trace.Tracer:
-        if _has_existing_trace_provider():
-            return ot_trace.get_tracer("agentscope_runtime")
-        resource = Resource(
-            attributes={
-                SERVICE_NAME: _get_service_name(),
-                SERVICE_VERSION: os.getenv("SERVICE_VERSION", "1.0.0"),
-                "source": "agentscope_runtime-source",
-            },
-        )
-        provider = TracerProvider(resource=resource)
-        if _str_to_bool(os.getenv("TRACE_ENABLE_REPORT", "false")):
-            span_exporter = BatchSpanProcessor(
-                OTLPSpanGrpcExporter(
-                    endpoint=os.getenv("TRACE_ENDPOINT", ""),
-                    headers=f"Authentication="
-                    f"{os.getenv('TRACE_AUTHENTICATION', '')}",
-                ),
-            )
-            provider.add_span_processor(span_exporter)
+        enable_report = _str_to_bool(os.getenv("TRACE_ENABLE_REPORT", "false"))
+        enable_debug = _str_to_bool(os.getenv("TRACE_ENABLE_DEBUG", "false"))
 
-        if _str_to_bool(os.getenv("TRACE_ENABLE_DEBUG", "false")):
-            span_logger = BatchSpanProcessor(ConsoleSpanExporter())
-            provider.add_span_processor(span_logger)
+        if enable_report and _has_existing_trace_provider():
+            return ot_trace.get_tracer("agentscope_runtime")
+
+        # Create TracerProvider if either report or debug is enabled
+        if enable_report or enable_debug:
+            resource = Resource(
+                attributes={
+                    SERVICE_NAME: _get_service_name(),
+                    SERVICE_VERSION: os.getenv("SERVICE_VERSION", "1.0.0"),
+                    "source": "agentscope_runtime-source",
+                },
+            )
+            provider = TracerProvider(resource=resource)
+
+            if enable_report:
+                span_exporter = BatchSpanProcessor(
+                    OTLPSpanGrpcExporter(
+                        endpoint=os.getenv("TRACE_ENDPOINT", ""),
+                        headers=f"Authentication="
+                        f"{os.getenv('TRACE_AUTHENTICATION', '')}",
+                    ),
+                )
+                provider.add_span_processor(span_exporter)
+
+            if enable_debug:
+                span_logger = BatchSpanProcessor(ConsoleSpanExporter())
+                provider.add_span_processor(span_logger)
+        else:
+            provider = ot_trace.NoOpTracerProvider()
 
         tracer = ot_trace.get_tracer(
             "agentscope_runtime",
