@@ -79,6 +79,9 @@ def check_health(url, secret_token, timeout=120, interval=5):
 def prepare_redroid_image(platform_choice, redroid_tar_path):
     """
     Pulls and saves the redroid image to a tarball in the build context.
+
+    Returns:
+        bool: True on success, False on failure.
     """
     if platform_choice not in REDROID_DIGESTS:
         raise ValueError(
@@ -126,7 +129,8 @@ def prepare_redroid_image(platform_choice, redroid_tar_path):
         logger.info("Redroid image prepared successfully.")
         return True
     except subprocess.CalledProcessError as e:
-        logger.error(f"Failed to prepare Redroid image: {e.stderr}")
+        error_msg = e.stderr if getattr(e, "stderr", None) else str(e)
+        logger.error(f"Failed to prepare Redroid image: {error_msg}")
         return False
 
 
@@ -192,32 +196,34 @@ def build_image(
         )
 
     redroid_tar_path = None
-    if build_type == "mobile":
-        try:
-            check_mobile_sandbox_host_readiness()
-        except HostPrerequisiteError as e:
-            logger.error(e)
-            logger.error(
-                "Build process aborted due to host environment issue.",
-            )
-            return
-        except Exception as e:
-            logger.error(
-                f"An unexpected error occurred during host check: {e}",
-            )
-            return
-
-        redroid_tar_path = (
-            f"src/agentscope_runtime/sandbox/box/{build_type}/redroid.tar"
-        )
-        if not prepare_redroid_image(platform_choice, redroid_tar_path):
-            if os.path.exists(redroid_tar_path):
-                os.remove(redroid_tar_path)
-            raise RuntimeError(
-                "Failed to prepare Redroid image. Build aborted.",
-            )
-
     try:
+        if build_type == "mobile":
+            try:
+                check_mobile_sandbox_host_readiness()
+            except HostPrerequisiteError as e:
+                logger.error(e)
+                logger.error(
+                    "Build process aborted due to host environment issue.",
+                )
+                return
+            except Exception as e:
+                logger.error(
+                    f"An unexpected error occurred during host check: {e}",
+                )
+                return
+
+            redroid_tar_path = os.path.join(
+                os.path.dirname(__file__),
+                "box",
+                build_type,
+                "redroid.tar",
+            )
+
+            if not prepare_redroid_image(platform_choice, redroid_tar_path):
+                raise RuntimeError(
+                    "Failed to prepare Redroid image. Build aborted.",
+                )
+
         secret_token = "secret_token123"
 
         # Build Docker image
@@ -232,7 +238,7 @@ def build_image(
                     f"{image_name}dev",
                     ".",
                 ],
-                check=False,
+                check=True,
             )
         else:
             subprocess.run(
@@ -249,7 +255,7 @@ def build_image(
                     "--load",
                     ".",
                 ],
-                check=False,
+                check=True,
             )
 
         logger.info(f"Docker image {image_name}dev built successfully.")
@@ -292,7 +298,29 @@ def build_image(
                 check=False,
             )
 
-            container_id = result.stdout.strip()
+            if result.returncode != 0:
+                logger.error(
+                    "Failed to start Docker container for image %s: %s",
+                    f"{image_name}dev",
+                    (result.stderr or "").strip()
+                    or (result.stdout or "").strip(),
+                )
+                raise RuntimeError(
+                    "Failed to start Docker container for "
+                    f"image {image_name}dev",
+                )
+            container_id = (result.stdout or "").strip()
+            if not container_id:
+                logger.error(
+                    "Docker run command did not return a container ID "
+                    "for image %s.",
+                    f"{image_name}dev",
+                )
+                raise RuntimeError(
+                    "Docker run did not return a container ID "
+                    f"for image {image_name}dev",
+                )
+
             logger.info(
                 f"Running container {container_id} on port {free_port}",
             )
@@ -317,6 +345,7 @@ def build_image(
             else:
                 logger.error("Health checks failed.")
                 subprocess.run(["docker", "stop", container_id], check=True)
+                subprocess.run(["docker", "rm", container_id], check=True)
 
         if auto_build:
             choice = "y"
