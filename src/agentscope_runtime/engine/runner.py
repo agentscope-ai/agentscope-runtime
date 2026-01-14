@@ -284,6 +284,18 @@ class Runner:
             kwargs.update(
                 {"msgs": message_to_ms_agent_framework_message(request.input)},
             )
+        elif self.framework_type == "opencode":
+            from ..adapters.opencode.stream import (
+                adapt_opencode_message_stream,
+            )
+            from ..adapters.opencode.message import (
+                message_to_opencode_parts,
+            )
+
+            stream_adapter = adapt_opencode_message_stream
+            kwargs.update(
+                {"parts": message_to_opencode_parts(request.input)},
+            )
         # TODO: support other frameworks
         else:
 

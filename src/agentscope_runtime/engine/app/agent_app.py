@@ -150,10 +150,17 @@ class AgentApp(BaseApp):
     def query(self, framework: Optional[str] = "agentscope"):
         """
         Register run hook and optionally specify agent framework.
-        Allowed framework values: 'agentscope', 'autogen', 'agno', 'langgraph'.
+        Allowed framework values: 'agentscope', 'autogen', 'agno', 'langgraph',
+        'opencode'.
         """
 
-        allowed_frameworks = {"agentscope", "autogen", "agno", "langgraph"}
+        allowed_frameworks = {
+            "agentscope",
+            "autogen",
+            "agno",
+            "langgraph",
+            "opencode",
+        }
         if framework not in allowed_frameworks:
             raise ValueError(f"framework must be one of {allowed_frameworks}")
 
