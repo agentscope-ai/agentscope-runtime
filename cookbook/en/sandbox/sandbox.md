@@ -92,11 +92,12 @@ You can verify that everything is set up correctly by calling `run_ipython_cell`
 
 ```{code-cell}
 import json
-from agentscope_runtime.sandbox.tools.base import run_ipython_cell
+from agentscope_runtime.sandbox import BaseSandbox
 
-# Model Context Protocol (MCP)-compatible tool call results
-result = run_ipython_cell(code="print('Setup successful!')")
-print(json.dumps(result, indent=4, ensure_ascii=False))
+with BaseSandbox() as sandbox:
+    # Model Context Protocol (MCP)-compatible tool call results
+    result = sandbox.run_ipython_cell(code="print('Setup successful!')")
+    print(json.dumps(result, indent=4, ensure_ascii=False))
 ```
 
 ### (Optional) Built the Docker Images from Scratch

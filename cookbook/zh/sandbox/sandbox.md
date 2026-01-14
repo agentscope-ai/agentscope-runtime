@@ -92,11 +92,12 @@ docker pull agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/runtim
 
 ```{code-cell}
 import json
-from agentscope_runtime.sandbox.tools.base import run_ipython_cell
+from agentscope_runtime.sandbox import BaseSandbox
 
-# 模型上下文协议（MCP）兼容的工具调用结果
-result = run_ipython_cell(code="print('Setup successful!')")
-print(json.dumps(result, indent=4, ensure_ascii=False))
+with BaseSandbox() as sandbox:
+    # 模型上下文协议（MCP）兼容的工具调用结果
+    result = sandbox.run_ipython_cell(code="print('Setup successful!')")
+    print(json.dumps(result, indent=4, ensure_ascii=False))
 ```
 
 ### （可选）从头构建Docker镜像
