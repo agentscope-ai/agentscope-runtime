@@ -89,6 +89,7 @@ async def adapt_langgraph_message_stream(
                             index=index,
                             data=FunctionCall(
                                 call_id=call_id,
+                                name=tool_call.get("name"),
                                 arguments=tool_call.get("args"),
                             ).model_dump(),
                         )
