@@ -459,10 +459,9 @@ def _handle_file_part(
         filename=part.get("filename"),
     )
     file_content.msg_id = message.id
-    file_content.completed()
     message.content = [file_content]
 
-    yield file_content
+    yield file_content.completed()
     yield message.completed()
 
 
@@ -490,10 +489,9 @@ def _emit_data_message(
         delta=False,
     )
     data_content.msg_id = message.id
-    data_content.completed()
     message.content = [data_content]
 
-    yield data_content
+    yield data_content.completed()
     yield message.completed()
 
 
