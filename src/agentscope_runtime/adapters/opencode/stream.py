@@ -611,6 +611,7 @@ def _get_part_delta_text(
 
 
 def _part_is_completed(part: Dict[str, Any]) -> bool:
+    # OpenCode marks part completion by setting time.end.
     raw_time = part.get("time")
     if not isinstance(raw_time, dict):
         return False
