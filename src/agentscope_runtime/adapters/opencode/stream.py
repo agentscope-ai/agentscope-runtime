@@ -123,8 +123,12 @@ async def adapt_opencode_message_stream(
                 {"opencode_error": detail},
             )
 
-        if event_type == "session.idle":
-            break
+        if event_type == "session.status":
+            props = _get_event_properties(event)
+            status = props.get("status") if isinstance(props, dict) else None
+            if isinstance(status, dict) and status.get("type") == "idle":
+                break
+            continue
 
         for item in _emit_data_message(
             {

@@ -100,18 +100,12 @@ async def query_func(
                         continue
 
                 if ONLY_PART_UPDATED and event_type != "message.part.updated":
-                    if event_type == "session.idle" and isinstance(
-                        props,
-                        dict,
-                    ):
+                    if _is_session_idle(event_type, props):
                         if event_session_id == session_id:
                             break
                     continue
                 yield event
-                if event_type == "session.idle" and isinstance(
-                    props,
-                    dict,
-                ):
+                if _is_session_idle(event_type, props):
                     if event_session_id == session_id:
                         break
 
@@ -151,6 +145,13 @@ def _event_session_id(
     if isinstance(props, dict):
         return props.get("sessionID")
     return None
+
+
+def _is_session_idle(event_type: Optional[str], props: Any) -> bool:
+    if event_type != "session.status" or not isinstance(props, dict):
+        return False
+    status = props.get("status")
+    return isinstance(status, dict) and status.get("type") == "idle"
 
 
 async def iter_sse_events(response: Any) -> AsyncIterator[Dict]:
