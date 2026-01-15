@@ -92,7 +92,7 @@ ext = [
     "PyYAML",
     "agno>=2.3.8",
     "nacos-sdk-python>=3.0.0",
-    "agent-framework>=1.0.0b251120",
+    "agent-framework>=1.0.0b251120,<1.0.0b260114",
     "boxlite>=0.5.2",
     "alibabacloud-eas20210701>=7.0.0,<8.0.0",
     "alibabacloud-aiworkspace20210204>=7.0.0,<8.0.0",
