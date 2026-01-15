@@ -25,9 +25,19 @@
 [[中文README]](README_zh.md)
 [[Samples]](https://github.com/agentscope-ai/agentscope-samples)
 
-**A Production-Ready Runtime Framework for Agent Applications**
+**AgentScope Runtime** is a **production-grade runtime** for agent applications.
 
-***AgentScope Runtime** is AgentScope’s production-grade runtime for agent applications, built around three core capabilities: **tool sandboxing** (all tool calls run in a hardened sandbox), **Agent-as-a-Service (AaaS) APIs**, and **scalable deployment**. It provides full-stack observability and is also compatible with other mainstream agent frameworks.*
+> **AgentScope Runtime = Tool Sandboxing + AaaS APIs + Scalable Deployment**
+
+***Core capabilities:***
+
+- ***Tool Sandboxing** — tool call runs inside a **hardened sandbox***
+- ***Agent-as-a-Service (AaaS) APIs** — expose agents as **streaming, production-ready APIs***
+- ***Scalable Deployment** — deploy locally, on Kubernetes, or serverless for **elastic scale***
+
+***Plus:***
+- ***Full-stack observability** (logs / metrics / traces)*
+- ***Framework compatibility** with mainstream agent frameworks*
 
 </div>
 
