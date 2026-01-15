@@ -3,39 +3,41 @@ worker_processes 1;
 events { worker_connections 1024; }
 
 http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
     server {
         listen 80;
 
-        location /steel-api/${SECRET_TOKEN} {
-            rewrite ^/steel-api/${SECRET_TOKEN}(.*)$ $1 break;
-
-            proxy_pass http://localhost:3000;
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection "Upgrade";
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
-
         location /fastapi {
             rewrite ^/fastapi(.*)$ $1 break;
-
             proxy_pass http://localhost:8000;
-        }
-
-        location /artifacts {
-            rewrite ^/artifacts(.*)$ $1 break;
-
-            proxy_pass http://localhost:4500;
             proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection "Upgrade";
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+        }
+
+        location /vnc/ {
+            alias /usr/share/novnc/;
+            index vnc.html;
+
+            include /etc/nginx/mime.types;
+
+            types {
+                application/javascript js;
+            }
+        }
+
+        location /websockify {
+            proxy_pass http://localhost:9000/websockify;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         }
     }
 }

@@ -1,6 +1,0 @@
-[submodule "examples/custom_sandbox/box/third_party/markdownify-mcp"]
-        path = examples/custom_sandbox/box/third_party/markdownify-mcp
-        url = https://github.com/zcaceres/markdownify-mcp.git
-[submodule "examples/custom_sandbox/box/third_party/steel-browser"]
-        path = examples/custom_sandbox/box/third_party/steel-browser
-        url = https://github.com/steel-dev/steel-browser.git

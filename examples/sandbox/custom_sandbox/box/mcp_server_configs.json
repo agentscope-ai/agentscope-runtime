@@ -1,55 +1,11 @@
 {
   "mcpServers": {
-    "tavily-websearch": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "tavily-mcp@0.1.4"
-      ],
-      "disabled": false,
-      "autoApprove": []
-    },
-    "chart": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@antv/mcp-server-chart@0.4.0"
-      ]
-    },
-    "filesystem": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem@2025.3.28",
-        "/workspace"
-      ]
-    },
-    "word-document": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "office-word-mcp-server==1.1.3",
-        "word_mcp_server"
-      ]
-    },
-    "markdownify": {
-      "command": "node",
-      "args": [
-        "/agentscope_runtime/mcp_project/markdownify-mcp/dist/index.js"
-      ]
-    },
-    "amap-maps": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@amap/amap-maps-mcp-server@0.0.8"
-      ]
-    },
     "playwright": {
       "command": "npx",
       "args": [
         "-y",
-        "@playwright/mcp@0.0.29",
+        "@playwright/mcp@0.0.25",
+        "--no-sandbox",
         "--config",
         "/agentscope_runtime/playwright_mcp_config.json"
       ]
