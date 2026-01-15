@@ -25,37 +25,26 @@
 [[中文README]](README_zh.md)
 [[Samples]](https://github.com/agentscope-ai/agentscope-samples)
 
-<p><b>AgentScope Runtime</b> is a <b>production-grade runtime</b> for agent applications.</p>
+**AgentScope Runtime** is a **production-grade runtime** for agent applications.
 
-<table>
-  <tr>
-    <td width="50%" valign="top">
-
-<b>Core capabilities:</b><br><br>
-
-<b>Tool Sandboxing</b><br>
-<sub>Tool calls run inside a hardened sandbox</sub><br><br>
-
-<b>Agent-as-a-Service (AaaS) APIs</b><br>
-<sub>Expose agents as streaming, production-ready APIs</sub><br><br>
-
-<b>Scalable Deployment</b><br>
-<sub>Deploy locally, on Kubernetes, or serverless for elastic scale</sub>
-
-    </td>
-    <td width="50%" valign="top">
-
-<b>Plus:</b><br><br>
-
-<b>Full-stack observability</b><br>
-<sub>Logs / traces</sub><br><br>
-
-<b>Framework compatibility</b><br>
-<sub>Compatible with mainstream agent frameworks</sub>
-
-    </td>
-  </tr>
-</table>
+> ***Core capabilities:***
+>
+> **Tool Sandboxing** — tool call runs inside a **hardened sandbox**
+>
+> **Agent-as-a-Service (AaaS) APIs** — expose agents as **streaming, production-ready APIs**
+>
+> **Scalable Deployment** — deploy locally, on Kubernetes, or serverless for **elastic scale**
+>
+> <details>
+> <summary><b>Plus</b></summary>
+>
+> <br>
+>
+> **Full-stack observability** (logs / traces)
+>
+> **Framework compatibility** with mainstream agent frameworks
+>
+> </details>
 
 </div>
 
