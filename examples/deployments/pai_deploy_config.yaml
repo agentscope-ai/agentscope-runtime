@@ -1,0 +1,110 @@
+# PAI Deployment Configuration Example
+# Used with:
+#   agentscope deploy pai <source> --config pai_deploy_config.yaml
+#
+# Structure:
+# - context: Where to deploy (region / workspace / default storage)
+# - spec:    What to deploy (code / resources / network / permissions / env / tags)
+
+context:
+  # PAI workspace ID (tenant scope).
+  # Can be overridden by env var: PAI_WORKSPACE_ID
+  workspace_id: "12345"
+
+  # Region code where the PAI Service are located.
+  # Example: cn-hangzhou, cn-shanghai, etc.
+  region: "cn-hangzhou"
+
+  # Default storage configuration (used as fallback if spec.storage is not set).
+  # This is useful for setting a workspace-level default OSS path.
+  # If not provided, default OSS storage path configured in the workspace will
+  # be used.
+  storage:
+    work_dir: "oss://my-bucket/agent-workspace/"
+
+spec:
+  # Service name (required).
+  # Recommended: lowercase letters, numbers, and underscore; must be unique within the region.
+  name: "my_agent_service"
+
+  code:
+    # Path to your project root directory (relative to the config file, unless your CLI defines otherwise).
+    # This directory will be packaged and uploaded for deployment.
+    source_dir: "example_proj"
+
+    # Entrypoint file within source_dir.
+    # If omitted, the system may try common defaults: app.py, agent.py, main.py
+    entrypoint: "agent.py"
+
+  # Optional: assign the service into an existing service group for management/permissioning.
+  # If not set, the service will be created without a group (or use platform default behavior).
+  service_group_name: "my-service-group"
+
+  resources:
+    # Number of service instances (replicas).
+    instance_count: 1
+
+    # Resource selection mode (mutually exclusive):
+    # - public:   deploy on public resource pool, specify instance_type
+    # - resource: deploy to a dedicated EAS resource group, specify resource_id + cpu + memory
+    # - quota:    deploy using a PAI quota, specify quota_id + cpu + memory
+    type: "public" # options: public, resource, quota
+
+    # --- public mode ---
+    # ECS instance type used in public resource pool.
+    # Required when type=public. Ignored/invalid for other types.
+    instance_type: "ecs.c6.large"
+
+    # --- resource mode ---
+    # Dedicated EAS resource group ID. Required when type=resource.
+    # resource_id: "eas-r-xxxxx"
+
+    # --- quota mode ---
+    # Quota ID. Required when type=quota.
+    # quota_id: "quota-xxxxxxxx"
+
+    # CPU cores and memory for type=resource/type=quota.
+    # For type=public, these are typically ignored (or should be omitted to avoid confusion).
+    # cpu: 2
+    # memory: 4096
+
+  vpc_config:
+    # Optional: VPC networking configuration.
+    # If provided, the service will
+    # If omitted, the platform default network (public) will be used.
+    vpc_id: "vpc-xxxxx"
+    vswitch_id: "vsw-xxxxx"
+    security_group_id: "sg-xxxxx"
+
+  identity:
+    # Optional: RAM role ARN assumed by the service runtime.
+    # If omitted, the default PAI RAM role for the workspace will be used.
+    ram_role_arn: "acs:ram::xxxxx:role/xxxxx"
+
+  observability:
+    # Enable tracing / telemetry collection.
+    enable_trace: true
+
+  storage:
+    # Optional: OSS working directory for build artifacts / runtime files.
+    # Priority: spec.storage.work_dir > context.storage.work_dir > workspace default
+    # If omitted here, context.storage.work_dir will be used as fallback.
+    work_dir: "oss://my-bucket/agent-workspace/"
+
+  env:
+    # Environment variables injected into the running container/service.
+    DASHSCOPE_API_KEY: "your-dashscope-api-key"
+
+  tags:
+    # Optional: Tags for the deployment.
+    # Tags can be used for resource management, cost allocation, and filtering.
+    # Can also be set via CLI: --tag KEY=VALUE (can be repeated)
+    #
+    # Note: The following tags are automatically added by the deployment tool:
+    #   - deployed-by: "agentscope-runtime"
+    #   - client-version: "<version>"
+    #   - deploy-method: "cli" or "sdk"
+    # You can override these auto-generated tags if needed.
+    project: "my-project"
+    environment: "production"
+    owner: "team-ai"

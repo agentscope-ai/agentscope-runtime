@@ -14,11 +14,11 @@ kernelspec:
 
 # 高级部署
 
-章节演示了AgentScope Runtime中可用的七种高级部署方法，为不同场景提供生产就绪的解决方案：**本地守护进程**、**独立进程**、**Kubernetes部署**、**ModelStudio部署**、**AgentRun部署**、**Knative**和**函数计算（Function Compute, FC）部署**。
+章节演示了AgentScope Runtime中可用的八种高级部署方法，为不同场景提供生产就绪的解决方案：**本地守护进程**、**独立进程**、**Kubernetes部署**、**ModelStudio部署**、**AgentRun部署**、**PAI部署**、**Knative**和**函数计算（Function Compute, FC）部署**。
 
 ## 部署方法概述
 
-AgentScope Runtime提供七种不同的部署方式，每种都针对特定的使用场景：
+AgentScope Runtime提供多种不同的部署方式，每种都针对特定的使用场景：
 
 | 部署类型                           | 使用场景       | 扩展性 | 管理方式 | 资源隔离 |
 |--------------------------------|------------|--------|---------|--------|
@@ -27,6 +27,7 @@ AgentScope Runtime提供七种不同的部署方式，每种都针对特定的�
 | **Kubernetes**                 | 企业与云端      | 单节点（将支持多节点） | 编排 | 容器级 |
 | **ModelStudio**                | 百炼应用开发平台   | 云端管理 | 平台管理 | 容器级 |
 | **AgentRun**                   | AgentRun平台 | 云端管理 | 平台管理 | 容器级 |
+| **PAI**                       | 阿里云PAI平台   | 云端管理 | 平台管理 | 容器级 |
 | **Knative**                    | 企业与云端 | 单节点（将支持多节点） | 编排 | 容器级 |
 | **函数计算(FC)** | 阿里云 Serverless | 云端管理 | 平台管理 | 微虚拟机级 |
 
@@ -722,7 +723,386 @@ result = await app.deploy(
 )
 ```
 
-## 方法6：Knative部署
+## 方法6：PAI部署（Platform for AI）
+
+**最适合**：需要在阿里云PAI平台上部署，利用LangStudio进行项目管理和EAS（弹性算法服务）进行服务部署的企业用户。
+
+### 特性
+- 阿里云PAI平台的全托管部署
+- 集成LangStudio项目和快照管理
+- 支持EAS（弹性算法服务）服务部署
+- 三种资源类型：公共资源池、专属资源组、配额
+- VPC网络配置支持
+- RAM角色和权限配置
+- 链路追踪（Tracing）支持
+- 自动/手动审批工作流
+- 自动生成部署标签
+
+### PAI 部署前置条件
+
+```bash
+# 确保设置环境变量
+export ALIBABA_CLOUD_ACCESS_KEY_ID="your-access-key-id"
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
+
+# 可选配置
+export PAI_WORKSPACE_ID="your-workspace-id"
+export REGION_ID="cn-hangzhou"  # 或 ALIBABA_CLOUD_REGION_ID
+```
+
+您可以设置以下环境变量或通过配置文件/CLI参数来自定义部署：
+
+| 变量 | 必填 | 默认值 | 描述 |
+|-----|-----|-------|------|
+| `ALIBABA_CLOUD_ACCESS_KEY_ID` | 是 | - | 阿里云 Access Key ID |
+| `ALIBABA_CLOUD_ACCESS_KEY_SECRET` | 是 | - | 阿里云 Access Key Secret |
+| `PAI_WORKSPACE_ID` | 否 | - | PAI 工作空间 ID（可通过CLI或配置文件指定） |
+| `REGION_ID` / `ALIBABA_CLOUD_REGION_ID` | 否 | `cn-hangzhou` | 地域 ID |
+| `ALIBABA_CLOUD_SECURITY_TOKEN` | 否 | - | STS 临时安全令牌（使用STS时） |
+
+### PAI 工作空间要求
+
+- 如果使用 RAM 用户账号，需要分配 PAI 开发者角色
+- 需要配置 OSS 存储桶用于存储构建产物
+- （可选）如果使用 DashScope 模型，需要配置可访问公网的 VPC
+
+> **注意**：部署到 PAI EAS 的服务默认没有公网访问权限，如果使用 DashScope 模型，需要配置可访问公网的 VPC。参考：[配置网络连通性](https://help.aliyun.com/zh/pai/user-guide/configure-network-connectivity)
+
+### 实现（SDK方式）
+
+使用 {ref}`通用智能体配置<zh-common-agent-setup>` 部分定义的智能体和端点：
+
+```{code-cell}
+# pai_deploy.py
+import asyncio
+import os
+from agentscope_runtime.engine.deployers.pai_deployer import (
+    PAIDeployManager,
+)
+from agent_app import app  # 导入已配置的 app
+
+async def deploy_to_pai():
+    """将 AgentApp 部署到阿里云 PAI"""
+
+    # 创建 PAI 部署管理器
+    deployer = PAIDeployManager(
+        workspace_id=os.environ.get("PAI_WORKSPACE_ID"),
+        region_id=os.environ.get("REGION_ID", "cn-hangzhou"),
+    )
+
+    # 执行部署
+    result = await app.deploy(
+        deployer,
+        service_name="my-agent-service",
+        project_dir="./my_agent",
+        entrypoint="agent.py",
+        resource_type="public",
+        instance_type="ecs.c6.large",
+        instance_count=1,
+        environment={
+            "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+        },
+        enable_trace=True,
+        wait=True,
+    )
+
+    print(f"✅ 部署成功：{result['url']}")
+    print(f"📍 部署 ID：{result['deploy_id']}")
+    print(f"📦 项目 ID：{result['flow_id']}")
+    return result
+
+if __name__ == "__main__":
+    asyncio.run(deploy_to_pai())
+```
+
+**关键点**：
+- 自动打包项目并上传到 OSS
+- 创建 LangStudio 项目和快照
+- 部署为 EAS 服务
+- 支持多种资源类型配置
+
+### 实现（CLI方式）
+
+PAI 部署推荐使用配置文件方式，更加清晰和可维护：
+
+**方式1：使用配置文件（推荐）**
+
+```bash
+# 进入示例目录
+cd examples/deployments/pai_deploy
+
+# 使用配置文件部署
+agentscope deploy pai --config deploy_config.yaml
+
+# 使用配置文件并覆盖部分参数
+agentscope deploy pai --config deploy_config.yaml --name new-service-name
+```
+
+**方式2：仅使用 CLI 参数**
+
+```bash
+agentscope deploy pai ./my_agent \
+  --name my-service \
+  --workspace-id 12345 \
+  --region cn-hangzhou \
+  --instance-type ecs.c6.large \
+  --env DASHSCOPE_API_KEY=your-key
+```
+
+**完整 CLI 选项**
+
+```bash
+agentscope deploy pai [SOURCE] [OPTIONS]
+
+参数:
+  SOURCE                  源代码目录或文件（使用配置文件时可选）
+
+选项:
+  --config, -c PATH       部署配置文件路径 (.yaml)
+  --name TEXT             服务名称（必填）
+  --workspace-id TEXT     PAI 工作空间 ID
+  --region TEXT           地域 ID（如 cn-hangzhou）
+  --entrypoint TEXT       入口文件（默认：app.py, agent.py, main.py）
+  --oss-path TEXT         OSS 工作目录
+  --instance-type TEXT    实例类型（公共资源池模式）
+  --instance-count INT    实例数量
+  --resource-id TEXT      EAS 资源组 ID（资源组模式）
+  --quota-id TEXT         PAI 配额 ID（配额模式）
+  --cpu INT               CPU 核数
+  --memory INT            内存大小（MB）
+  --service-group TEXT    服务组名称
+  --resource-type TEXT    资源类型：public, resource, quota
+  --vpc-id TEXT           VPC ID
+  --vswitch-id TEXT       交换机 ID
+  --security-group-id TEXT  安全组 ID
+  --ram-role-arn TEXT     RAM 角色 ARN
+  --enable-trace/--no-trace  启用/禁用链路追踪
+  --wait/--no-wait        等待部署完成
+  --timeout INT           部署超时时间（秒）
+  --auto-approve/--no-auto-approve  自动审批部署
+  --env, -E TEXT          环境变量（KEY=VALUE，可重复）
+  --env-file PATH         .env 文件路径
+  --tag, -T TEXT          标签（KEY=VALUE，可重复）
+```
+
+### 配置说明
+
+#### PAIDeployConfig 配置结构
+
+PAI 部署使用 YAML 配置文件，结构如下：
+
+```yaml
+# deploy_config.yaml
+context:
+  # PAI 工作空间 ID（必填）
+  workspace_id: "your-workspace-id"
+  # 地域（如 cn-hangzhou, cn-shanghai）
+  region: "cn-hangzhou"
+
+spec:
+  # 服务名称（必填，地域内唯一）
+  name: "my_agent_service"
+
+  code:
+    # 源代码目录（相对于配置文件位置）
+    source_dir: "my_agent"
+    # 入口文件
+    entrypoint: "agent.py"
+
+  resources:
+    # 资源类型：public, resource, quota
+    type: "public"
+    # 实例类型（public模式必填）
+    instance_type: "ecs.c6.large"
+    # 实例数量
+    instance_count: 1
+
+  # VPC 配置（可选）
+  vpc_config:
+    vpc_id: "vpc-xxxxx"
+    vswitch_id: "vsw-xxxxx"
+    security_group_id: "sg-xxxxx"
+
+  # RAM 角色配置（可选）
+  identity:
+    ram_role_arn: "acs:ram::xxx:role/xxx"
+
+  # 可观测性配置
+  observability:
+    enable_trace: true
+
+  # 环境变量
+  env:
+    DASHSCOPE_API_KEY: "your-dashscope-api-key"
+
+  # 标签
+  tags:
+    team: "ai-team"
+    project: "agent-demo"
+```
+
+> **注意**：`code.source_dir` 是相对于配置文件位置的路径。
+
+#### 配置结构说明
+
+| 配置项 | 说明 |
+|--------|------|
+| `context` | 部署目标（工作空间、地域、存储） |
+| `spec.name` | 服务名称（必填） |
+| `spec.code` | 源代码目录和入口文件 |
+| `spec.resources` | 资源配置 |
+| `spec.vpc_config` | VPC 网络配置（可选） |
+| `spec.identity` | RAM 角色配置（可选） |
+| `spec.observability` | 链路追踪设置 |
+| `spec.env` | 环境变量 |
+| `spec.tags` | 部署标签 |
+
+### 资源类型
+
+PAI 支持三种资源类型：
+
+#### 1. 公共资源池 (`type: "public"`)
+
+部署到共享 ECS 实例，适合开发测试和小规模部署：
+
+```yaml
+spec:
+  resources:
+    type: "public"
+    instance_type: "ecs.c6.large"  # 必填
+    instance_count: 1
+```
+
+#### 2. 专属资源组 (`type: "resource"`)
+
+部署到专属 EAS 资源组，适合生产环境和需要资源隔离的场景：
+
+```yaml
+spec:
+  resources:
+    type: "resource"
+    resource_id: "eas-r-xxxxx"  # 必填
+    cpu: 2
+    memory: 4096
+```
+
+#### 3. 配额模式 (`type: "quota"`)
+
+使用 PAI 配额部署，适合企业级资源管理：
+
+```yaml
+spec:
+  resources:
+    type: "quota"
+    quota_id: "quota-xxxxxxxx"  # 必填
+    cpu: 2
+    memory: 4096
+```
+
+### VPC 配置
+
+私有网络部署配置，适用于需要访问公网或内网资源的场景：
+
+```yaml
+spec:
+  vpc_config:
+    vpc_id: "vpc-xxxxx"
+    vswitch_id: "vsw-xxxxx"
+    security_group_id: "sg-xxxxx"
+```
+
+### 高级用法
+
+#### 手动审批工作流
+
+默认情况下，部署会自动审批。如需手动审批：
+
+```bash
+# 使用 --no-auto-approve 选项
+agentscope deploy pai --config deploy_config.yaml --no-auto-approve
+```
+
+在交互式终端中，CLI 会提示您选择：
+- `[A]pprove` - 审批并开始部署
+- `[C]ancel` - 取消部署
+- `[S]kip` - 跳过，稍后在控制台审批
+
+#### 环境变量注入
+
+**方式1：配置文件**
+
+```yaml
+spec:
+  env:
+    DASHSCOPE_API_KEY: "your-key"
+    MY_CONFIG: "value"
+```
+
+**方式2：CLI 参数**
+
+```bash
+agentscope deploy pai ./my_agent \
+  --env DASHSCOPE_API_KEY=your-key \
+  --env MY_CONFIG=value
+```
+
+**方式3：.env 文件**
+
+```bash
+agentscope deploy pai ./my_agent --env-file .env
+```
+
+#### 自动生成的标签
+
+以下标签会自动添加到部署中：
+
+- `deployed-by: agentscope-runtime`
+- `client-version: <版本号>`
+- `deploy-method: cli`
+
+#### 管理部署
+
+```bash
+# 停止部署
+agentscope stop <deploy-id>
+
+# 查看部署状态
+# 访问部署后提供的 PAI 控制台 URL
+```
+
+### 故障排查
+
+#### 常见问题
+
+1. **"PAI deployer is not available"**
+
+   ```bash
+   pip install 'agentscope-runtime[ext]'
+   ```
+
+2. **"Workspace ID is required"**
+   - 设置 `PAI_WORKSPACE_ID` 环境变量，或
+   - 使用 `--workspace-id` CLI 选项，或
+   - 在配置文件中添加 `context.workspace_id`
+
+3. **"Service name is owned by another user"**
+   - 选择不同的服务名称（必须在地域内唯一）
+
+4. **凭证错误**
+   - 验证 `ALIBABA_CLOUD_ACCESS_KEY_ID` 和 `ALIBABA_CLOUD_ACCESS_KEY_SECRET`
+   - 检查 RAM 权限是否包含 PAI/EAS/OSS 访问权限
+
+5. **OSS 上传失败**
+   - 确保 OSS 存储桶存在且可访问
+   - 检查工作空间和 OSS 存储桶的地域是否一致
+
+### 完整示例
+
+更详细的 PAI 部署示例请参考：
+- 示例目录：`examples/deployments/pai_deploy/`
+- 配置文件示例：`examples/deployments/pai_deploy/deploy_config.yaml`
+
+## 方法7：Knative部署
 
 **最适合**：需要扩展性、高可用性和云原生 Serverless 容器编排的企业生产环境。
 
@@ -817,7 +1197,7 @@ if __name__ == "__main__":
 - 支持基于请求自动弹性、缩容至 0
 - 配置资源限制和健康检查
 
-## 方法7：Serverless部署：函数计算（Function Compute, FC）
+## 方法8：Serverless部署：函数计算（Function Compute, FC）
 
 **最适合**：阿里云用户，需要将智能体部署到函数计算（FC）服务，实现自动化的构建、上传和部署流程。FC 提供真正的 Serverless 体验，按量付费并自动扩缩容。
 
