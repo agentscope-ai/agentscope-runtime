@@ -1350,70 +1350,69 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <p>Here’s an example Dockerfile for a custom sandbox with a filesystem, a browser, and some useful MCP tools in one sandbox:</p>
 <div class="highlight-dockerfile notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">node:22-slim</span>
 
-<span class="c"># Set ENV variables</span>
+<span class="c"># ENV variables</span>
 <span class="k">ENV</span><span class="w"> </span><span class="nv">NODE_ENV</span><span class="o">=</span>production
 <span class="k">ENV</span><span class="w"> </span><span class="nv">WORKSPACE_DIR</span><span class="o">=</span>/workspace
 
 <span class="k">ARG</span><span class="w"> </span><span class="nv">DEBIAN_FRONTEND</span><span class="o">=</span>noninteractive
 
 <span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>--fix-missing<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>curl<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>python3<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>python3-pip<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>curl<span class="w">  </span><span class="se">\</span>
+<span class="w">    </span>python3<span class="w">  </span><span class="se">\</span>
+<span class="w">    </span>python3-pip<span class="w">  </span><span class="se">\</span>
 <span class="w">    </span>python3-venv<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>build-essential<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>libssl-dev<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>git<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>supervisor<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>vim<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>build-essential<span class="w">  </span><span class="se">\</span>
+<span class="w">    </span>libssl-dev<span class="w">  </span><span class="se">\</span>
+<span class="w">    </span>git<span class="w">  </span><span class="se">\</span>
+<span class="w">    </span>supervisor<span class="w">  </span><span class="se">\</span>
+<span class="w">    </span>vim<span class="w">  </span><span class="se">\</span>
 <span class="w">    </span>nginx<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>gettext-base
+<span class="w">    </span>gettext-base<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>xfce4<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>xfce4-terminal<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>x11vnc<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>xvfb<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>novnc<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>websockify<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>dbus-x11<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>fonts-wqy-zenhei<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>fonts-wqy-microhei
+
+<span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>--fix-missing<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>chromium<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>chromium-sandbox<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libx11-xcb1<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libxcomposite1<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libxdamage1<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libxext6<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libxfixes3<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libxi6<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libxtst6<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libnss3<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libglib2.0-0<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libdrm2<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libgbm1<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libasound2<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>fonts-liberation<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libu2f-udev
+
+<span class="k">RUN</span><span class="w"> </span>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/^CHROMIUM_FLAGS=&quot;&quot;/CHROMIUM_FLAGS=&quot;--no-sandbox&quot;/&#39;</span><span class="w"> </span>/usr/bin/chromium
 
 <span class="k">WORKDIR</span><span class="w"> </span><span class="s">/agentscope_runtime</span>
 <span class="k">RUN</span><span class="w"> </span>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
 <span class="k">ENV</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="s2">&quot;/agentscope_runtime/venv/bin:</span><span class="nv">$PATH</span><span class="s2">&quot;</span>
 
-<span class="c"># Copy application files</span>
 <span class="k">COPY</span><span class="w"> </span>src/agentscope_runtime/sandbox/box/shared/app.py<span class="w"> </span>./
 <span class="k">COPY</span><span class="w"> </span>src/agentscope_runtime/sandbox/box/shared/routers/<span class="w"> </span>./routers/
 <span class="k">COPY</span><span class="w"> </span>src/agentscope_runtime/sandbox/box/shared/dependencies/<span class="w"> </span>./dependencies/
-<span class="k">COPY</span><span class="w"> </span>src/agentscope_runtime/sandbox/box/shared/artifacts/<span class="w"> </span>./ext_services/artifacts/
-<span class="k">COPY</span><span class="w"> </span>examples/custom_sandbox/box/third_party/markdownify-mcp/<span class="w"> </span>./mcp_project/markdownify-mcp/
-<span class="k">COPY</span><span class="w"> </span>examples/custom_sandbox/box/third_party/steel-browser/<span class="w"> </span>./ext_services/steel-browser/
-<span class="k">COPY</span><span class="w"> </span>examples/custom_sandbox/box/<span class="w"> </span>./
+<span class="k">COPY</span><span class="w"> </span>examples/sandbox/custom_sandbox/box/<span class="w"> </span>./
 
 <span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
-
-<span class="c"># Install Google Chrome &amp; fonts</span>
-<span class="k">RUN</span><span class="w"> </span>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://dl.google.com/linux/linux_signing_key.pub<span class="w"> </span><span class="p">|</span><span class="w"> </span>apt-key<span class="w"> </span>add<span class="w"> </span>-<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>/etc/apt/sources.list.d/google-chrome.list<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>--fix-missing<span class="w"> </span>google-chrome-stable<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>google-chrome-stable<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>fonts-wqy-zenhei<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>fonts-wqy-microhei
-
-<span class="c"># Install steel browser</span>
-<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/agentscope_runtime/ext_services/steel-browser</span>
-<span class="k">RUN</span><span class="w"> </span>npm<span class="w"> </span>ci<span class="w"> </span>--omit<span class="o">=</span>dev<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span>install<span class="w"> </span>-g<span class="w"> </span>webpack<span class="w"> </span>webpack-cli<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span>run<span class="w"> </span>build<span class="w"> </span>-w<span class="w"> </span>api<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>node_modules/.cache
-
-<span class="c"># Install artifacts backend</span>
-<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/agentscope_runtime/ext_services/artifacts</span>
-<span class="k">RUN</span><span class="w"> </span>npm<span class="w"> </span>install<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>node_modules/.cache
-
-<span class="c"># Install mcp_project/markdownify-mcp</span>
-<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/agentscope_runtime/mcp_project/markdownify-mcp</span>
-<span class="k">RUN</span><span class="w"> </span>npm<span class="w"> </span>install<span class="w"> </span>-g<span class="w"> </span>pnpm<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>pnpm<span class="w"> </span>install<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>pnpm<span class="w"> </span>run<span class="w"> </span>build<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>node_modules/.cache
 
 <span class="k">WORKDIR</span><span class="w"> </span><span class="s">${WORKSPACE_DIR}</span>
 <span class="k">RUN</span><span class="w"> </span>mv<span class="w"> </span>/agentscope_runtime/config/supervisord.conf<span class="w"> </span>/etc/supervisor/conf.d/supervisord.conf
 <span class="k">RUN</span><span class="w"> </span>mv<span class="w"> </span>/agentscope_runtime/config/nginx.conf.template<span class="w"> </span>/etc/nginx/nginx.conf.template
+<span class="k">RUN</span><span class="w"> </span>mv<span class="w"> </span>/agentscope_runtime/vnc_relay.html<span class="w"> </span>/usr/share/novnc/vnc_relay.html
 <span class="k">RUN</span><span class="w"> </span>git<span class="w"> </span>init<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>chmod<span class="w"> </span>+x<span class="w"> </span>/agentscope_runtime/scripts/start.sh
 
@@ -1423,7 +1422,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <span class="k">ENV</span><span class="w"> </span><span class="nv">TAVILY_API_KEY</span><span class="o">=</span><span class="m">123</span>
 <span class="k">ENV</span><span class="w"> </span><span class="nv">AMAP_MAPS_API_KEY</span><span class="o">=</span><span class="m">123</span>
 
-<span class="c"># Cleanup to reduce image size</span>
+<span class="c"># Cleanup</span>
 <span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>cache<span class="w"> </span>purge<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>clean<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>/var/lib/apt/lists/*<span class="w"> </span><span class="se">\</span>
@@ -1439,7 +1438,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <section id="building-your-custom-image">
 <h3>Building Your Custom Image<a class="headerlink" href="#building-your-custom-image" title="Link to this heading">¶</a></h3>
 <p>After preparing your Dockerfile and custom sandbox class, use the built-in builder tool to build your custom sandbox image:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-builder<span class="w"> </span>my_custom_sandbox<span class="w"> </span>--dockerfile_path<span class="w"> </span>examples/custom_sandbox/Dockerfile<span class="w"> </span>--extension<span class="w"> </span>PATH_TO_YOUR_SANDBOX_MODULE
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>runtime-sandbox-builder<span class="w"> </span>my_custom_sandbox<span class="w"> </span>--dockerfile_path<span class="w"> </span>examples/sandbox/custom_sandbox/Dockerfile<span class="w"> </span>--extension<span class="w"> </span>PATH_TO_YOUR_SANDBOX_MODULE
 </pre></div>
 </div>
 <p><strong>Command Parameters:</strong></p>
