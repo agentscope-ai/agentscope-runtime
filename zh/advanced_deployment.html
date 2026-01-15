@@ -636,10 +636,10 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <section id="id1">
 <h1>高级部署<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h1>
-<p>章节演示了AgentScope Runtime中可用的七种高级部署方法，为不同场景提供生产就绪的解决方案：<strong>本地守护进程</strong>、<strong>独立进程</strong>、<strong>Kubernetes部署</strong>、<strong>ModelStudio部署</strong>、<strong>AgentRun部署</strong>、<strong>Knative</strong>和<strong>函数计算（Function Compute, FC）部署</strong>。</p>
+<p>章节演示了AgentScope Runtime中可用的八种高级部署方法，为不同场景提供生产就绪的解决方案：<strong>本地守护进程</strong>、<strong>独立进程</strong>、<strong>Kubernetes部署</strong>、<strong>ModelStudio部署</strong>、<strong>AgentRun部署</strong>、<strong>PAI部署</strong>、<strong>Knative</strong>和<strong>函数计算（Function Compute, FC）部署</strong>。</p>
 <section id="id2">
 <h2>部署方法概述<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
-<p>AgentScope Runtime提供七种不同的部署方式，每种都针对特定的使用场景：</p>
+<p>AgentScope Runtime提供多种不同的部署方式，每种都针对特定的使用场景：</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -681,13 +681,19 @@ body.preview-active {
 <td><p>平台管理</p></td>
 <td><p>容器级</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>Knative</strong></p></td>
+<tr class="row-odd"><td><p><strong>PAI</strong></p></td>
+<td><p>阿里云PAI平台</p></td>
+<td><p>云端管理</p></td>
+<td><p>平台管理</p></td>
+<td><p>容器级</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Knative</strong></p></td>
 <td><p>企业与云端</p></td>
 <td><p>单节点（将支持多节点）</p></td>
 <td><p>编排</p></td>
 <td><p>容器级</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>函数计算(FC)</strong></p></td>
+<tr class="row-odd"><td><p><strong>函数计算(FC)</strong></p></td>
 <td><p>阿里云 Serverless</p></td>
 <td><p>云端管理</p></td>
 <td><p>平台管理</p></td>
@@ -1514,11 +1520,457 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
 </section>
 </section>
 </section>
-<section id="knative">
-<h2>方法6：Knative部署<a class="headerlink" href="#knative" title="Link to this heading">¶</a></h2>
-<p><strong>最适合</strong>：需要扩展性、高可用性和云原生 Serverless 容器编排的企业生产环境。</p>
+<section id="pai-platform-for-ai">
+<h2>方法6：PAI部署（Platform for AI）<a class="headerlink" href="#pai-platform-for-ai" title="Link to this heading">¶</a></h2>
+<p><strong>最适合</strong>：需要在阿里云PAI平台上部署，利用LangStudio进行项目管理和EAS（弹性算法服务）进行服务部署的企业用户。</p>
 <section id="id28">
 <h3>特性<a class="headerlink" href="#id28" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>阿里云PAI平台的全托管部署</p></li>
+<li><p>集成LangStudio项目和快照管理</p></li>
+<li><p>支持EAS（弹性算法服务）服务部署</p></li>
+<li><p>三种资源类型：公共资源池、专属资源组、配额</p></li>
+<li><p>VPC网络配置支持</p></li>
+<li><p>RAM角色和权限配置</p></li>
+<li><p>链路追踪（Tracing）支持</p></li>
+<li><p>自动/手动审批工作流</p></li>
+<li><p>自动生成部署标签</p></li>
+</ul>
+</section>
+<section id="pai">
+<h3>PAI 部署前置条件<a class="headerlink" href="#pai" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 确保设置环境变量</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_ACCESS_KEY_ID</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span><span class="o">=</span><span class="s2">&quot;your-access-key-secret&quot;</span>
+
+<span class="c1"># 可选配置</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PAI_WORKSPACE_ID</span><span class="o">=</span><span class="s2">&quot;your-workspace-id&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">REGION_ID</span><span class="o">=</span><span class="s2">&quot;cn-hangzhou&quot;</span><span class="w">  </span><span class="c1"># 或 ALIBABA_CLOUD_REGION_ID</span>
+</pre></div>
+</div>
+<p>您可以设置以下环境变量或通过配置文件/CLI参数来自定义部署：</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>变量</p></th>
+<th class="head"><p>必填</p></th>
+<th class="head"><p>默认值</p></th>
+<th class="head"><p>描述</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_ID</span></code></p></td>
+<td><p>是</p></td>
+<td><p>-</p></td>
+<td><p>阿里云 Access Key ID</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span></code></p></td>
+<td><p>是</p></td>
+<td><p>-</p></td>
+<td><p>阿里云 Access Key Secret</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PAI_WORKSPACE_ID</span></code></p></td>
+<td><p>否</p></td>
+<td><p>-</p></td>
+<td><p>PAI 工作空间 ID（可通过CLI或配置文件指定）</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">REGION_ID</span></code> / <code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_REGION_ID</span></code></p></td>
+<td><p>否</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cn-hangzhou</span></code></p></td>
+<td><p>地域 ID</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_SECURITY_TOKEN</span></code></p></td>
+<td><p>否</p></td>
+<td><p>-</p></td>
+<td><p>STS 临时安全令牌（使用STS时）</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="id29">
+<h3>PAI 工作空间要求<a class="headerlink" href="#id29" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>如果使用 RAM 用户账号，需要分配 PAI 开发者角色</p></li>
+<li><p>需要配置 OSS 存储桶用于存储构建产物</p></li>
+<li><p>（可选）如果使用 DashScope 模型，需要配置可访问公网的 VPC</p></li>
+</ul>
+<blockquote>
+<div><p><strong>注意</strong>：部署到 PAI EAS 的服务默认没有公网访问权限，如果使用 DashScope 模型，需要配置可访问公网的 VPC。参考：<a class="reference external" href="https://help.aliyun.com/zh/pai/user-guide/configure-network-connectivity">配置网络连通性</a></p>
+</div></blockquote>
+</section>
+<section id="sdk">
+<h3>实现（SDK方式）<a class="headerlink" href="#sdk" title="Link to this heading">¶</a></h3>
+<p>使用 <a class="reference internal" href="#zh-common-agent-setup"><span class="std std-ref">通用智能体配置</span></a> 部分定义的智能体和端点：</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># pai_deploy.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.pai_deployer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PAIDeployManager</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agent_app</span><span class="w"> </span><span class="kn">import</span> <span class="n">app</span>  <span class="c1"># 导入已配置的 app</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">deploy_to_pai</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;将 AgentApp 部署到阿里云 PAI&quot;&quot;&quot;</span>
+
+    <span class="c1"># 创建 PAI 部署管理器</span>
+    <span class="n">deployer</span> <span class="o">=</span> <span class="n">PAIDeployManager</span><span class="p">(</span>
+        <span class="n">workspace_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;PAI_WORKSPACE_ID&quot;</span><span class="p">),</span>
+        <span class="n">region_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;REGION_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;cn-hangzhou&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="c1"># 执行部署</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
+        <span class="n">deployer</span><span class="p">,</span>
+        <span class="n">service_name</span><span class="o">=</span><span class="s2">&quot;my-agent-service&quot;</span><span class="p">,</span>
+        <span class="n">project_dir</span><span class="o">=</span><span class="s2">&quot;./my_agent&quot;</span><span class="p">,</span>
+        <span class="n">entrypoint</span><span class="o">=</span><span class="s2">&quot;agent.py&quot;</span><span class="p">,</span>
+        <span class="n">resource_type</span><span class="o">=</span><span class="s2">&quot;public&quot;</span><span class="p">,</span>
+        <span class="n">instance_type</span><span class="o">=</span><span class="s2">&quot;ecs.c6.large&quot;</span><span class="p">,</span>
+        <span class="n">instance_count</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">environment</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
+        <span class="p">},</span>
+        <span class="n">enable_trace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">wait</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ 部署成功：</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📍 部署 ID：</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;deploy_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📦 项目 ID：</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;flow_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">deploy_to_pai</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>关键点</strong>：</p>
+<ul class="simple">
+<li><p>自动打包项目并上传到 OSS</p></li>
+<li><p>创建 LangStudio 项目和快照</p></li>
+<li><p>部署为 EAS 服务</p></li>
+<li><p>支持多种资源类型配置</p></li>
+</ul>
+</section>
+<section id="cli">
+<h3>实现（CLI方式）<a class="headerlink" href="#cli" title="Link to this heading">¶</a></h3>
+<p>PAI 部署推荐使用配置文件方式，更加清晰和可维护：</p>
+<p><strong>方式1：使用配置文件（推荐）</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 进入示例目录</span>
+<span class="nb">cd</span><span class="w"> </span>examples/deployments/pai_deploy
+
+<span class="c1"># 使用配置文件部署</span>
+agentscope<span class="w"> </span>deploy<span class="w"> </span>pai<span class="w"> </span>--config<span class="w"> </span>deploy_config.yaml
+
+<span class="c1"># 使用配置文件并覆盖部分参数</span>
+agentscope<span class="w"> </span>deploy<span class="w"> </span>pai<span class="w"> </span>--config<span class="w"> </span>deploy_config.yaml<span class="w"> </span>--name<span class="w"> </span>new-service-name
+</pre></div>
+</div>
+<p><strong>方式2：仅使用 CLI 参数</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>deploy<span class="w"> </span>pai<span class="w"> </span>./my_agent<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--name<span class="w"> </span>my-service<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--workspace-id<span class="w"> </span><span class="m">12345</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--region<span class="w"> </span>cn-hangzhou<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--instance-type<span class="w"> </span>ecs.c6.large<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--env<span class="w"> </span><span class="nv">DASHSCOPE_API_KEY</span><span class="o">=</span>your-key
+</pre></div>
+</div>
+<p><strong>完整 CLI 选项</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>deploy<span class="w"> </span>pai<span class="w"> </span><span class="o">[</span>SOURCE<span class="o">]</span><span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+
+参数:
+<span class="w">  </span>SOURCE<span class="w">                  </span>源代码目录或文件（使用配置文件时可选）
+
+选项:
+<span class="w">  </span>--config,<span class="w"> </span>-c<span class="w"> </span>PATH<span class="w">       </span>部署配置文件路径<span class="w"> </span><span class="o">(</span>.yaml<span class="o">)</span>
+<span class="w">  </span>--name<span class="w"> </span>TEXT<span class="w">             </span>服务名称（必填）
+<span class="w">  </span>--workspace-id<span class="w"> </span>TEXT<span class="w">     </span>PAI<span class="w"> </span>工作空间<span class="w"> </span>ID
+<span class="w">  </span>--region<span class="w"> </span>TEXT<span class="w">           </span>地域<span class="w"> </span>ID（如<span class="w"> </span>cn-hangzhou）
+<span class="w">  </span>--entrypoint<span class="w"> </span>TEXT<span class="w">       </span>入口文件（默认：app.py,<span class="w"> </span>agent.py,<span class="w"> </span>main.py）
+<span class="w">  </span>--oss-path<span class="w"> </span>TEXT<span class="w">         </span>OSS<span class="w"> </span>工作目录
+<span class="w">  </span>--instance-type<span class="w"> </span>TEXT<span class="w">    </span>实例类型（公共资源池模式）
+<span class="w">  </span>--instance-count<span class="w"> </span>INT<span class="w">    </span>实例数量
+<span class="w">  </span>--resource-id<span class="w"> </span>TEXT<span class="w">      </span>EAS<span class="w"> </span>资源组<span class="w"> </span>ID（资源组模式）
+<span class="w">  </span>--quota-id<span class="w"> </span>TEXT<span class="w">         </span>PAI<span class="w"> </span>配额<span class="w"> </span>ID（配额模式）
+<span class="w">  </span>--cpu<span class="w"> </span>INT<span class="w">               </span>CPU<span class="w"> </span>核数
+<span class="w">  </span>--memory<span class="w"> </span>INT<span class="w">            </span>内存大小（MB）
+<span class="w">  </span>--service-group<span class="w"> </span>TEXT<span class="w">    </span>服务组名称
+<span class="w">  </span>--resource-type<span class="w"> </span>TEXT<span class="w">    </span>资源类型：public,<span class="w"> </span>resource,<span class="w"> </span>quota
+<span class="w">  </span>--vpc-id<span class="w"> </span>TEXT<span class="w">           </span>VPC<span class="w"> </span>ID
+<span class="w">  </span>--vswitch-id<span class="w"> </span>TEXT<span class="w">       </span>交换机<span class="w"> </span>ID
+<span class="w">  </span>--security-group-id<span class="w"> </span>TEXT<span class="w">  </span>安全组<span class="w"> </span>ID
+<span class="w">  </span>--ram-role-arn<span class="w"> </span>TEXT<span class="w">     </span>RAM<span class="w"> </span>角色<span class="w"> </span>ARN
+<span class="w">  </span>--enable-trace/--no-trace<span class="w">  </span>启用/禁用链路追踪
+<span class="w">  </span>--wait/--no-wait<span class="w">        </span>等待部署完成
+<span class="w">  </span>--timeout<span class="w"> </span>INT<span class="w">           </span>部署超时时间（秒）
+<span class="w">  </span>--auto-approve/--no-auto-approve<span class="w">  </span>自动审批部署
+<span class="w">  </span>--env,<span class="w"> </span>-E<span class="w"> </span>TEXT<span class="w">          </span>环境变量（KEY<span class="o">=</span>VALUE，可重复）
+<span class="w">  </span>--env-file<span class="w"> </span>PATH<span class="w">         </span>.env<span class="w"> </span>文件路径
+<span class="w">  </span>--tag,<span class="w"> </span>-T<span class="w"> </span>TEXT<span class="w">          </span>标签（KEY<span class="o">=</span>VALUE，可重复）
+</pre></div>
+</div>
+</section>
+<section id="id30">
+<h3>配置说明<a class="headerlink" href="#id30" title="Link to this heading">¶</a></h3>
+<section id="paideployconfig">
+<h4>PAIDeployConfig 配置结构<a class="headerlink" href="#paideployconfig" title="Link to this heading">¶</a></h4>
+<p>PAI 部署使用 YAML 配置文件，结构如下：</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># deploy_config.yaml</span>
+<span class="nt">context</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># PAI 工作空间 ID（必填）</span>
+<span class="w">  </span><span class="nt">workspace_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-workspace-id&quot;</span>
+<span class="w">  </span><span class="c1"># 地域（如 cn-hangzhou, cn-shanghai）</span>
+<span class="w">  </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;cn-hangzhou&quot;</span>
+
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># 服务名称（必填，地域内唯一）</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_agent_service&quot;</span>
+
+<span class="w">  </span><span class="nt">code</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># 源代码目录（相对于配置文件位置）</span>
+<span class="w">    </span><span class="nt">source_dir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_agent&quot;</span>
+<span class="w">    </span><span class="c1"># 入口文件</span>
+<span class="w">    </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;agent.py&quot;</span>
+
+<span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># 资源类型：public, resource, quota</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;public&quot;</span>
+<span class="w">    </span><span class="c1"># 实例类型（public模式必填）</span>
+<span class="w">    </span><span class="nt">instance_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ecs.c6.large&quot;</span>
+<span class="w">    </span><span class="c1"># 实例数量</span>
+<span class="w">    </span><span class="nt">instance_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+
+<span class="w">  </span><span class="c1"># VPC 配置（可选）</span>
+<span class="w">  </span><span class="nt">vpc_config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vpc_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;vpc-xxxxx&quot;</span>
+<span class="w">    </span><span class="nt">vswitch_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;vsw-xxxxx&quot;</span>
+<span class="w">    </span><span class="nt">security_group_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sg-xxxxx&quot;</span>
+
+<span class="w">  </span><span class="c1"># RAM 角色配置（可选）</span>
+<span class="w">  </span><span class="nt">identity</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">ram_role_arn</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;acs:ram::xxx:role/xxx&quot;</span>
+
+<span class="w">  </span><span class="c1"># 可观测性配置</span>
+<span class="w">  </span><span class="nt">observability</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enable_trace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="c1"># 环境变量</span>
+<span class="w">  </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">DASHSCOPE_API_KEY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-dashscope-api-key&quot;</span>
+
+<span class="w">  </span><span class="c1"># 标签</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">team</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ai-team&quot;</span>
+<span class="w">    </span><span class="nt">project</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;agent-demo&quot;</span>
+</pre></div>
+</div>
+<blockquote>
+<div><p><strong>注意</strong>：<code class="docutils literal notranslate"><span class="pre">code.source_dir</span></code> 是相对于配置文件位置的路径。</p>
+</div></blockquote>
+</section>
+<section id="id31">
+<h4>配置结构说明<a class="headerlink" href="#id31" title="Link to this heading">¶</a></h4>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>配置项</p></th>
+<th class="head"><p>说明</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">context</span></code></p></td>
+<td><p>部署目标（工作空间、地域、存储）</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">spec.name</span></code></p></td>
+<td><p>服务名称（必填）</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">spec.code</span></code></p></td>
+<td><p>源代码目录和入口文件</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">spec.resources</span></code></p></td>
+<td><p>资源配置</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">spec.vpc_config</span></code></p></td>
+<td><p>VPC 网络配置（可选）</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">spec.identity</span></code></p></td>
+<td><p>RAM 角色配置（可选）</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">spec.observability</span></code></p></td>
+<td><p>链路追踪设置</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">spec.env</span></code></p></td>
+<td><p>环境变量</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">spec.tags</span></code></p></td>
+<td><p>部署标签</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+<section id="id32">
+<h3>资源类型<a class="headerlink" href="#id32" title="Link to this heading">¶</a></h3>
+<p>PAI 支持三种资源类型：</p>
+<section id="type-public">
+<h4>1. 公共资源池 (<code class="docutils literal notranslate"><span class="pre">type:</span> <span class="pre">&quot;public&quot;</span></code>)<a class="headerlink" href="#type-public" title="Link to this heading">¶</a></h4>
+<p>部署到共享 ECS 实例，适合开发测试和小规模部署：</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;public&quot;</span>
+<span class="w">    </span><span class="nt">instance_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ecs.c6.large&quot;</span><span class="w">  </span><span class="c1"># 必填</span>
+<span class="w">    </span><span class="nt">instance_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+</pre></div>
+</div>
+</section>
+<section id="type-resource">
+<h4>2. 专属资源组 (<code class="docutils literal notranslate"><span class="pre">type:</span> <span class="pre">&quot;resource&quot;</span></code>)<a class="headerlink" href="#type-resource" title="Link to this heading">¶</a></h4>
+<p>部署到专属 EAS 资源组，适合生产环境和需要资源隔离的场景：</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;resource&quot;</span>
+<span class="w">    </span><span class="nt">resource_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;eas-r-xxxxx&quot;</span><span class="w">  </span><span class="c1"># 必填</span>
+<span class="w">    </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4096</span>
+</pre></div>
+</div>
+</section>
+<section id="type-quota">
+<h4>3. 配额模式 (<code class="docutils literal notranslate"><span class="pre">type:</span> <span class="pre">&quot;quota&quot;</span></code>)<a class="headerlink" href="#type-quota" title="Link to this heading">¶</a></h4>
+<p>使用 PAI 配额部署，适合企业级资源管理：</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;quota&quot;</span>
+<span class="w">    </span><span class="nt">quota_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;quota-xxxxxxxx&quot;</span><span class="w">  </span><span class="c1"># 必填</span>
+<span class="w">    </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4096</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="vpc">
+<h3>VPC 配置<a class="headerlink" href="#vpc" title="Link to this heading">¶</a></h3>
+<p>私有网络部署配置，适用于需要访问公网或内网资源的场景：</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">vpc_config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vpc_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;vpc-xxxxx&quot;</span>
+<span class="w">    </span><span class="nt">vswitch_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;vsw-xxxxx&quot;</span>
+<span class="w">    </span><span class="nt">security_group_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sg-xxxxx&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="id33">
+<h3>高级用法<a class="headerlink" href="#id33" title="Link to this heading">¶</a></h3>
+<section id="id34">
+<h4>手动审批工作流<a class="headerlink" href="#id34" title="Link to this heading">¶</a></h4>
+<p>默认情况下，部署会自动审批。如需手动审批：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 使用 --no-auto-approve 选项</span>
+agentscope<span class="w"> </span>deploy<span class="w"> </span>pai<span class="w"> </span>--config<span class="w"> </span>deploy_config.yaml<span class="w"> </span>--no-auto-approve
+</pre></div>
+</div>
+<p>在交互式终端中，CLI 会提示您选择：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">[A]pprove</span></code> - 审批并开始部署</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[C]ancel</span></code> - 取消部署</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[S]kip</span></code> - 跳过，稍后在控制台审批</p></li>
+</ul>
+</section>
+<section id="id35">
+<h4>环境变量注入<a class="headerlink" href="#id35" title="Link to this heading">¶</a></h4>
+<p><strong>方式1：配置文件</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">DASHSCOPE_API_KEY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-key&quot;</span>
+<span class="w">    </span><span class="nt">MY_CONFIG</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;value&quot;</span>
+</pre></div>
+</div>
+<p><strong>方式2：CLI 参数</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>deploy<span class="w"> </span>pai<span class="w"> </span>./my_agent<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--env<span class="w"> </span><span class="nv">DASHSCOPE_API_KEY</span><span class="o">=</span>your-key<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--env<span class="w"> </span><span class="nv">MY_CONFIG</span><span class="o">=</span>value
+</pre></div>
+</div>
+<p><strong>方式3：.env 文件</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>deploy<span class="w"> </span>pai<span class="w"> </span>./my_agent<span class="w"> </span>--env-file<span class="w"> </span>.env
+</pre></div>
+</div>
+</section>
+<section id="id36">
+<h4>自动生成的标签<a class="headerlink" href="#id36" title="Link to this heading">¶</a></h4>
+<p>以下标签会自动添加到部署中：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">deployed-by:</span> <span class="pre">agentscope-runtime</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">client-version:</span> <span class="pre">&lt;版本号&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">deploy-method:</span> <span class="pre">cli</span></code></p></li>
+</ul>
+</section>
+<section id="id37">
+<h4>管理部署<a class="headerlink" href="#id37" title="Link to this heading">¶</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 停止部署</span>
+agentscope<span class="w"> </span>stop<span class="w"> </span>&lt;deploy-id&gt;
+
+<span class="c1"># 查看部署状态</span>
+<span class="c1"># 访问部署后提供的 PAI 控制台 URL</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id38">
+<h3>故障排查<a class="headerlink" href="#id38" title="Link to this heading">¶</a></h3>
+<section id="id39">
+<h4>常见问题<a class="headerlink" href="#id39" title="Link to this heading">¶</a></h4>
+<ol class="arabic">
+<li><p><strong>“PAI deployer is not available”</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;agentscope-runtime[ext]&#39;</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>“Workspace ID is required”</strong></p>
+<ul class="simple">
+<li><p>设置 <code class="docutils literal notranslate"><span class="pre">PAI_WORKSPACE_ID</span></code> 环境变量，或</p></li>
+<li><p>使用 <code class="docutils literal notranslate"><span class="pre">--workspace-id</span></code> CLI 选项，或</p></li>
+<li><p>在配置文件中添加 <code class="docutils literal notranslate"><span class="pre">context.workspace_id</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>“Service name is owned by another user”</strong></p>
+<ul class="simple">
+<li><p>选择不同的服务名称（必须在地域内唯一）</p></li>
+</ul>
+</li>
+<li><p><strong>凭证错误</strong></p>
+<ul class="simple">
+<li><p>验证 <code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_ID</span></code> 和 <code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span></code></p></li>
+<li><p>检查 RAM 权限是否包含 PAI/EAS/OSS 访问权限</p></li>
+</ul>
+</li>
+<li><p><strong>OSS 上传失败</strong></p>
+<ul class="simple">
+<li><p>确保 OSS 存储桶存在且可访问</p></li>
+<li><p>检查工作空间和 OSS 存储桶的地域是否一致</p></li>
+</ul>
+</li>
+</ol>
+</section>
+</section>
+<section id="id40">
+<h3>完整示例<a class="headerlink" href="#id40" title="Link to this heading">¶</a></h3>
+<p>更详细的 PAI 部署示例请参考：</p>
+<ul class="simple">
+<li><p>示例目录：<code class="docutils literal notranslate"><span class="pre">examples/deployments/pai_deploy/</span></code></p></li>
+<li><p>配置文件示例：<code class="docutils literal notranslate"><span class="pre">examples/deployments/pai_deploy/deploy_config.yaml</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="knative">
+<h2>方法7：Knative部署<a class="headerlink" href="#knative" title="Link to this heading">¶</a></h2>
+<p><strong>最适合</strong>：需要扩展性、高可用性和云原生 Serverless 容器编排的企业生产环境。</p>
+<section id="id41">
+<h3>特性<a class="headerlink" href="#id41" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>基于容器的 Serverless 部署</p></li>
 <li><p>基于请求自动弹性、缩容至0</p></li>
@@ -1527,8 +1979,8 @@ docker<span class="w"> </span>login<span class="w"> </span>your-registry
 <li><p>健康检查和自动恢复</p></li>
 </ul>
 </section>
-<section id="id29">
-<h3>Knative 部署前置条件<a class="headerlink" href="#id29" title="Link to this heading">¶</a></h3>
+<section id="id42">
+<h3>Knative 部署前置条件<a class="headerlink" href="#id42" title="Link to this heading">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 确保Docker正在运行</span>
 docker<span class="w"> </span>--version
 
@@ -1543,8 +1995,8 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 </pre></div>
 </div>
 </section>
-<section id="id30">
-<h3>实现<a class="headerlink" href="#id30" title="Link to this heading">¶</a></h3>
+<section id="id43">
+<h3>实现<a class="headerlink" href="#id43" title="Link to this heading">¶</a></h3>
 <p>使用 <a class="reference internal" href="#zh-common-agent-setup"><span class="std std-ref">通用智能体配置</span></a> 部分定义的智能体和端点：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1616,10 +2068,10 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 </section>
 </section>
 <section id="serverless-function-compute-fc">
-<h2>方法7：Serverless部署：函数计算（Function Compute, FC）<a class="headerlink" href="#serverless-function-compute-fc" title="Link to this heading">¶</a></h2>
+<h2>方法8：Serverless部署：函数计算（Function Compute, FC）<a class="headerlink" href="#serverless-function-compute-fc" title="Link to this heading">¶</a></h2>
 <p><strong>最适合</strong>：阿里云用户，需要将智能体部署到函数计算（FC）服务，实现自动化的构建、上传和部署流程。FC 提供真正的 Serverless 体验，按量付费并自动扩缩容。</p>
-<section id="id31">
-<h3>特性<a class="headerlink" href="#id31" title="Link to this heading">¶</a></h3>
+<section id="id44">
+<h3>特性<a class="headerlink" href="#id44" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>阿里云函数计算的 Serverless 部署</p></li>
 <li><p>使用 Docker 自动构建和打包项目</p></li>
@@ -1756,8 +2208,8 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 </table>
 </div>
 </section>
-<section id="id32">
-<h3>实现<a class="headerlink" href="#id32" title="Link to this heading">¶</a></h3>
+<section id="id45">
+<h3>实现<a class="headerlink" href="#id45" title="Link to this heading">¶</a></h3>
 <p>使用 <a class="reference internal" href="#zh-common-agent-setup"><span class="std std-ref">通用智能体配置</span></a> 部分定义的智能体和端点：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1822,10 +2274,10 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 <li><p>支持更新现有部署（通过 <code class="docutils literal notranslate"><span class="pre">function_name</span></code> 参数）</p></li>
 </ul>
 </section>
-<section id="id33">
-<h3>配置说明<a class="headerlink" href="#id33" title="Link to this heading">¶</a></h3>
-<section id="id34">
-<h4>OSSConfig<a class="headerlink" href="#id34" title="Link to this heading">¶</a></h4>
+<section id="id46">
+<h3>配置说明<a class="headerlink" href="#id46" title="Link to this heading">¶</a></h3>
+<section id="id47">
+<h4>OSSConfig<a class="headerlink" href="#id47" title="Link to this heading">¶</a></h4>
 <p>OSS 配置用于存储构建制品：</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">OSSConfig</span><span class="p">(</span>
     <span class="n">access_key_id</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span><span class="p">,</span>
@@ -1852,10 +2304,10 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 </div>
 </section>
 </section>
-<section id="id35">
-<h3>高级用法<a class="headerlink" href="#id35" title="Link to this heading">¶</a></h3>
-<section id="id36">
-<h4>更新现有函数<a class="headerlink" href="#id36" title="Link to this heading">¶</a></h4>
+<section id="id48">
+<h3>高级用法<a class="headerlink" href="#id48" title="Link to this heading">¶</a></h3>
+<section id="id49">
+<h4>更新现有函数<a class="headerlink" href="#id49" title="Link to this heading">¶</a></h4>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
     <span class="n">deployer</span><span class="p">,</span>
     <span class="n">function_name</span><span class="o">=</span><span class="s2">&quot;existing-function-name&quot;</span><span class="p">,</span>  <span class="c1"># 更新现有函数</span>
@@ -1864,8 +2316,8 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 </pre></div>
 </div>
 </section>
-<section id="id37">
-<h4>从项目目录部署<a class="headerlink" href="#id37" title="Link to this heading">¶</a></h4>
+<section id="id50">
+<h4>从项目目录部署<a class="headerlink" href="#id50" title="Link to this heading">¶</a></h4>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
     <span class="n">deployer</span><span class="p">,</span>
     <span class="n">project_dir</span><span class="o">=</span><span class="s2">&quot;/path/to/project&quot;</span><span class="p">,</span>  <span class="c1"># 项目目录</span>
@@ -1877,8 +2329,8 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 </div>
 </section>
 </section>
-<section id="id38">
-<h3>测试部署的服务<a class="headerlink" href="#id38" title="Link to this heading">¶</a></h3>
+<section id="id51">
+<h3>测试部署的服务<a class="headerlink" href="#id51" title="Link to this heading">¶</a></h3>
 <p>部署后，您可以使用 curl 测试端点：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 健康检查</span>
 curl<span class="w"> </span>https://&lt;your-endpoint-url&gt;/health
@@ -2073,27 +2525,59 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#knative">方法6：Knative部署</a><ul>
+<li><a class="reference internal" href="#pai-platform-for-ai">方法6：PAI部署（Platform for AI）</a><ul>
 <li><a class="reference internal" href="#id28">特性</a></li>
-<li><a class="reference internal" href="#id29">Knative 部署前置条件</a></li>
-<li><a class="reference internal" href="#id30">实现</a></li>
+<li><a class="reference internal" href="#pai">PAI 部署前置条件</a></li>
+<li><a class="reference internal" href="#id29">PAI 工作空间要求</a></li>
+<li><a class="reference internal" href="#sdk">实现（SDK方式）</a></li>
+<li><a class="reference internal" href="#cli">实现（CLI方式）</a></li>
+<li><a class="reference internal" href="#id30">配置说明</a><ul>
+<li><a class="reference internal" href="#paideployconfig">PAIDeployConfig 配置结构</a></li>
+<li><a class="reference internal" href="#id31">配置结构说明</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#serverless-function-compute-fc">方法7：Serverless部署：函数计算（Function Compute, FC）</a><ul>
-<li><a class="reference internal" href="#id31">特性</a></li>
+<li><a class="reference internal" href="#id32">资源类型</a><ul>
+<li><a class="reference internal" href="#type-public">1. 公共资源池 (<code class="docutils literal notranslate"><span class="pre">type:</span> <span class="pre">&quot;public&quot;</span></code>)</a></li>
+<li><a class="reference internal" href="#type-resource">2. 专属资源组 (<code class="docutils literal notranslate"><span class="pre">type:</span> <span class="pre">&quot;resource&quot;</span></code>)</a></li>
+<li><a class="reference internal" href="#type-quota">3. 配额模式 (<code class="docutils literal notranslate"><span class="pre">type:</span> <span class="pre">&quot;quota&quot;</span></code>)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#vpc">VPC 配置</a></li>
+<li><a class="reference internal" href="#id33">高级用法</a><ul>
+<li><a class="reference internal" href="#id34">手动审批工作流</a></li>
+<li><a class="reference internal" href="#id35">环境变量注入</a></li>
+<li><a class="reference internal" href="#id36">自动生成的标签</a></li>
+<li><a class="reference internal" href="#id37">管理部署</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id38">故障排查</a><ul>
+<li><a class="reference internal" href="#id39">常见问题</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id40">完整示例</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#knative">方法7：Knative部署</a><ul>
+<li><a class="reference internal" href="#id41">特性</a></li>
+<li><a class="reference internal" href="#id42">Knative 部署前置条件</a></li>
+<li><a class="reference internal" href="#id43">实现</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#serverless-function-compute-fc">方法8：Serverless部署：函数计算（Function Compute, FC）</a><ul>
+<li><a class="reference internal" href="#id44">特性</a></li>
 <li><a class="reference internal" href="#fc">FC 部署前置条件</a></li>
-<li><a class="reference internal" href="#id32">实现</a></li>
-<li><a class="reference internal" href="#id33">配置说明</a><ul>
-<li><a class="reference internal" href="#id34">OSSConfig</a></li>
+<li><a class="reference internal" href="#id45">实现</a></li>
+<li><a class="reference internal" href="#id46">配置说明</a><ul>
+<li><a class="reference internal" href="#id47">OSSConfig</a></li>
 <li><a class="reference internal" href="#fcconfig">FCConfig</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id35">高级用法</a><ul>
-<li><a class="reference internal" href="#id36">更新现有函数</a></li>
-<li><a class="reference internal" href="#id37">从项目目录部署</a></li>
+<li><a class="reference internal" href="#id48">高级用法</a><ul>
+<li><a class="reference internal" href="#id49">更新现有函数</a></li>
+<li><a class="reference internal" href="#id50">从项目目录部署</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id38">测试部署的服务</a></li>
+<li><a class="reference internal" href="#id51">测试部署的服务</a></li>
 </ul>
 </li>
 </ul>

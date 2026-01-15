@@ -636,10 +636,10 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <section id="advanced-deployment-guide">
 <h1>Advanced Deployment Guide<a class="headerlink" href="#advanced-deployment-guide" title="Link to this heading">¶</a></h1>
-<p>This guide covers the seven advanced deployment methods available in AgentScope Runtime, providing production-ready solutions for different scenarios: <strong>Local Daemon</strong>, <strong>Detached Process</strong>, <strong>Kubernetes Deployment</strong>, <strong>ModelStudio Deployment</strong>, <strong>AgentRun Deployment</strong>, <strong>Knative Deployment</strong> and <strong>Function Compute (FC) Deployment</strong>.</p>
+<p>This guide covers the multiple advanced deployment methods available in AgentScope Runtime, providing production-ready solutions for different scenarios: <strong>Local Daemon</strong>, <strong>Detached Process</strong>, <strong>Kubernetes Deployment</strong>, <strong>ModelStudio Deployment</strong>, <strong>AgentRun Deployment</strong>, <strong>PAI Deployment</strong>, <strong>Knative Deployment</strong> and <strong>Function Compute (FC) Deployment</strong>.</p>
 <section id="overview-of-deployment-methods">
 <h2>Overview of Deployment Methods<a class="headerlink" href="#overview-of-deployment-methods" title="Link to this heading">¶</a></h2>
-<p>AgentScope Runtime offers seven distinct deployment approaches, each tailored for specific use cases:</p>
+<p>AgentScope Runtime offers multiple distinct deployment approaches, each tailored for specific use cases:</p>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -681,13 +681,19 @@ body.preview-active {
 <td><p>Platform-managed</p></td>
 <td><p>Container-level</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>Knative</strong></p></td>
+<tr class="row-odd"><td><p><strong>PAI</strong></p></td>
+<td><p>Alibaba Cloud PAI Platform</p></td>
+<td><p>Cloud-managed</p></td>
+<td><p>Platform-managed</p></td>
+<td><p>Container-level</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Knative</strong></p></td>
 <td><p>Enterprise &amp; Cloud</p></td>
 <td><p>Single-node (multi-node support coming)</p></td>
 <td><p>Orchestrated</p></td>
 <td><p>Container-level</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>Function Compute (FC)</strong></p></td>
+<tr class="row-odd"><td><p><strong>Function Compute (FC)</strong></p></td>
 <td><p>Alibaba Cloud Serverless</p></td>
 <td><p>Cloud-managed</p></td>
 <td><p>Platform-managed</p></td>
@@ -1524,11 +1530,457 @@ docker<span class="w"> </span>login<span class="w">  </span>your-registry
 </section>
 </section>
 </section>
-<section id="method-6-knative-deployment">
-<h2>Method 6: Knative Deployment<a class="headerlink" href="#method-6-knative-deployment" title="Link to this heading">¶</a></h2>
-<p><strong>Best for</strong>: Enterprise production environments requiring scalability, high availability, and cloud-native serverless container orchestration.</p>
+<section id="method-6-pai-deployment-platform-for-ai">
+<h2>Method 6: PAI Deployment (Platform for AI)<a class="headerlink" href="#method-6-pai-deployment-platform-for-ai" title="Link to this heading">¶</a></h2>
+<p><strong>Best for</strong>: Enterprise users who need to deploy on Alibaba Cloud PAI platform, leveraging LangStudio for project management and EAS (Elastic Algorithm Service) for service deployment.</p>
 <section id="id10">
 <h3>Features<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Fully managed deployment on Alibaba Cloud PAI platform</p></li>
+<li><p>Integrated LangStudio project and snapshot management</p></li>
+<li><p>EAS (Elastic Algorithm Service) service deployment</p></li>
+<li><p>Three resource types: Public Resource Pool, Dedicated Resource Group, Quota</p></li>
+<li><p>VPC network configuration support</p></li>
+<li><p>RAM role and permission configuration</p></li>
+<li><p>Tracing support</p></li>
+<li><p>Automatic/manual approval workflow</p></li>
+<li><p>Auto-generated deployment tags</p></li>
+</ul>
+</section>
+<section id="prerequisites-for-pai-deployment">
+<h3>Prerequisites for PAI Deployment<a class="headerlink" href="#prerequisites-for-pai-deployment" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set required environment variables</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_ACCESS_KEY_ID</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span><span class="o">=</span><span class="s2">&quot;your-access-key-secret&quot;</span>
+
+<span class="c1"># Optional configuration</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PAI_WORKSPACE_ID</span><span class="o">=</span><span class="s2">&quot;your-workspace-id&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">REGION_ID</span><span class="o">=</span><span class="s2">&quot;cn-hangzhou&quot;</span><span class="w">  </span><span class="c1"># or ALIBABA_CLOUD_REGION_ID</span>
+</pre></div>
+</div>
+<p>You can set the following environment variables or use config file/CLI parameters to customize deployment:</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_ID</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>-</p></td>
+<td><p>Alibaba Cloud Access Key ID</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>-</p></td>
+<td><p>Alibaba Cloud Access Key Secret</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PAI_WORKSPACE_ID</span></code></p></td>
+<td><p>No</p></td>
+<td><p>-</p></td>
+<td><p>PAI Workspace ID (can be specified via CLI or config file)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">REGION_ID</span></code> / <code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_REGION_ID</span></code></p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cn-hangzhou</span></code></p></td>
+<td><p>Region ID</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_SECURITY_TOKEN</span></code></p></td>
+<td><p>No</p></td>
+<td><p>-</p></td>
+<td><p>STS Security Token (when using STS)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="pai-workspace-requirements">
+<h3>PAI Workspace Requirements<a class="headerlink" href="#pai-workspace-requirements" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>If using a RAM user account, PAI Developer Role must be assigned</p></li>
+<li><p>OSS bucket must be configured for storing build artifacts</p></li>
+<li><p>(Optional) VPC with public network access if using DashScope models</p></li>
+</ul>
+<blockquote>
+<div><p><strong>Note</strong>: Services deployed to PAI EAS have no public network access by default. If using DashScope models, configure a VPC with public network access. Reference: <a class="reference external" href="https://help.aliyun.com/zh/pai/user-guide/configure-network-connectivity">Configure Network Connectivity</a></p>
+</div></blockquote>
+</section>
+<section id="implementation-sdk">
+<h3>Implementation (SDK)<a class="headerlink" href="#implementation-sdk" title="Link to this heading">¶</a></h3>
+<p>Using the agent and endpoints defined in the <a class="reference internal" href="#common-agent-setup"><span class="std std-ref">Common Agent Setup</span></a> section:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># pai_deploy.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.pai_deployer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PAIDeployManager</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agent_app</span><span class="w"> </span><span class="kn">import</span> <span class="n">app</span>  <span class="c1"># Import configured app</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">deploy_to_pai</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deploy AgentApp to Alibaba Cloud PAI&quot;&quot;&quot;</span>
+
+    <span class="c1"># Create PAI deploy manager</span>
+    <span class="n">deployer</span> <span class="o">=</span> <span class="n">PAIDeployManager</span><span class="p">(</span>
+        <span class="n">workspace_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;PAI_WORKSPACE_ID&quot;</span><span class="p">),</span>
+        <span class="n">region_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;REGION_ID&quot;</span><span class="p">,</span> <span class="s2">&quot;cn-hangzhou&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Execute deployment</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
+        <span class="n">deployer</span><span class="p">,</span>
+        <span class="n">service_name</span><span class="o">=</span><span class="s2">&quot;my-agent-service&quot;</span><span class="p">,</span>
+        <span class="n">project_dir</span><span class="o">=</span><span class="s2">&quot;./my_agent&quot;</span><span class="p">,</span>
+        <span class="n">entrypoint</span><span class="o">=</span><span class="s2">&quot;agent.py&quot;</span><span class="p">,</span>
+        <span class="n">resource_type</span><span class="o">=</span><span class="s2">&quot;public&quot;</span><span class="p">,</span>
+        <span class="n">instance_type</span><span class="o">=</span><span class="s2">&quot;ecs.c6.large&quot;</span><span class="p">,</span>
+        <span class="n">instance_count</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">environment</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
+        <span class="p">},</span>
+        <span class="n">enable_trace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">wait</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ Deployment successful: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📍 Deployment ID: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;deploy_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📦 Project ID: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;flow_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">deploy_to_pai</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>Key Points</strong>:</p>
+<ul class="simple">
+<li><p>Automatically packages project and uploads to OSS</p></li>
+<li><p>Creates LangStudio project and snapshot</p></li>
+<li><p>Deploys as EAS service</p></li>
+<li><p>Supports multiple resource type configurations</p></li>
+</ul>
+</section>
+<section id="implementation-cli">
+<h3>Implementation (CLI)<a class="headerlink" href="#implementation-cli" title="Link to this heading">¶</a></h3>
+<p>PAI deployment recommends using configuration files for clarity and maintainability:</p>
+<p><strong>Method 1: Using Configuration File (Recommended)</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Navigate to example directory</span>
+<span class="nb">cd</span><span class="w"> </span>examples/deployments/pai_deploy
+
+<span class="c1"># Deploy using config file</span>
+agentscope<span class="w"> </span>deploy<span class="w"> </span>pai<span class="w"> </span>--config<span class="w"> </span>deploy_config.yaml
+
+<span class="c1"># Deploy with CLI overrides</span>
+agentscope<span class="w"> </span>deploy<span class="w"> </span>pai<span class="w"> </span>--config<span class="w"> </span>deploy_config.yaml<span class="w"> </span>--name<span class="w"> </span>new-service-name
+</pre></div>
+</div>
+<p><strong>Method 2: Using CLI Only</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>deploy<span class="w"> </span>pai<span class="w"> </span>./my_agent<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--name<span class="w"> </span>my-service<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--workspace-id<span class="w"> </span><span class="m">12345</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--region<span class="w"> </span>cn-hangzhou<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--instance-type<span class="w"> </span>ecs.c6.large<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--env<span class="w"> </span><span class="nv">DASHSCOPE_API_KEY</span><span class="o">=</span>your-key
+</pre></div>
+</div>
+<p><strong>Full CLI Options</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>deploy<span class="w"> </span>pai<span class="w"> </span><span class="o">[</span>SOURCE<span class="o">]</span><span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+
+Arguments:
+<span class="w">  </span>SOURCE<span class="w">                  </span>Source<span class="w"> </span>directory<span class="w"> </span>or<span class="w"> </span>file<span class="w"> </span><span class="o">(</span>optional<span class="w"> </span><span class="k">if</span><span class="w"> </span>using<span class="w"> </span>config<span class="o">)</span>
+
+Options:
+<span class="w">  </span>--config,<span class="w"> </span>-c<span class="w"> </span>PATH<span class="w">       </span>Path<span class="w"> </span>to<span class="w"> </span>deployment<span class="w"> </span>config<span class="w"> </span>file<span class="w"> </span><span class="o">(</span>.yaml<span class="o">)</span>
+<span class="w">  </span>--name<span class="w"> </span>TEXT<span class="w">             </span>Service<span class="w"> </span>name<span class="w"> </span><span class="o">(</span>required<span class="o">)</span>
+<span class="w">  </span>--workspace-id<span class="w"> </span>TEXT<span class="w">     </span>PAI<span class="w"> </span>workspace<span class="w"> </span>ID
+<span class="w">  </span>--region<span class="w"> </span>TEXT<span class="w">           </span>Region<span class="w"> </span>ID<span class="w"> </span><span class="o">(</span>e.g.,<span class="w"> </span>cn-hangzhou<span class="o">)</span>
+<span class="w">  </span>--entrypoint<span class="w"> </span>TEXT<span class="w">       </span>Entrypoint<span class="w"> </span>file<span class="w"> </span><span class="o">(</span>default:<span class="w"> </span>app.py,<span class="w"> </span>agent.py,<span class="w"> </span>main.py<span class="o">)</span>
+<span class="w">  </span>--oss-path<span class="w"> </span>TEXT<span class="w">         </span>OSS<span class="w"> </span>work<span class="w"> </span>directory
+<span class="w">  </span>--instance-type<span class="w"> </span>TEXT<span class="w">    </span>Instance<span class="w"> </span><span class="nb">type</span><span class="w"> </span><span class="o">(</span><span class="k">for</span><span class="w"> </span>public<span class="w"> </span>resource<span class="o">)</span>
+<span class="w">  </span>--instance-count<span class="w"> </span>INT<span class="w">    </span>Number<span class="w"> </span>of<span class="w"> </span>instances
+<span class="w">  </span>--resource-id<span class="w"> </span>TEXT<span class="w">      </span>EAS<span class="w"> </span>resource<span class="w"> </span>group<span class="w"> </span>ID<span class="w"> </span><span class="o">(</span><span class="k">for</span><span class="w"> </span>resource<span class="w"> </span>mode<span class="o">)</span>
+<span class="w">  </span>--quota-id<span class="w"> </span>TEXT<span class="w">         </span>PAI<span class="w"> </span>quota<span class="w"> </span>ID<span class="w"> </span><span class="o">(</span><span class="k">for</span><span class="w"> </span>quota<span class="w"> </span>mode<span class="o">)</span>
+<span class="w">  </span>--cpu<span class="w"> </span>INT<span class="w">               </span>CPU<span class="w"> </span>cores
+<span class="w">  </span>--memory<span class="w"> </span>INT<span class="w">            </span>Memory<span class="w"> </span><span class="k">in</span><span class="w"> </span>MB
+<span class="w">  </span>--service-group<span class="w"> </span>TEXT<span class="w">    </span>Service<span class="w"> </span>group<span class="w"> </span>name
+<span class="w">  </span>--resource-type<span class="w"> </span>TEXT<span class="w">    </span>Resource<span class="w"> </span>type:<span class="w"> </span>public,<span class="w"> </span>resource,<span class="w"> </span>quota
+<span class="w">  </span>--vpc-id<span class="w"> </span>TEXT<span class="w">           </span>VPC<span class="w"> </span>ID
+<span class="w">  </span>--vswitch-id<span class="w"> </span>TEXT<span class="w">       </span>VSwitch<span class="w"> </span>ID
+<span class="w">  </span>--security-group-id<span class="w"> </span>TEXT<span class="w">  </span>Security<span class="w"> </span>group<span class="w"> </span>ID
+<span class="w">  </span>--ram-role-arn<span class="w"> </span>TEXT<span class="w">     </span>RAM<span class="w"> </span>role<span class="w"> </span>ARN
+<span class="w">  </span>--enable-trace/--no-trace<span class="w">  </span>Enable/disable<span class="w"> </span>tracing
+<span class="w">  </span>--wait/--no-wait<span class="w">        </span>Wait<span class="w"> </span><span class="k">for</span><span class="w"> </span>deployment<span class="w"> </span>to<span class="w"> </span><span class="nb">complete</span>
+<span class="w">  </span>--timeout<span class="w"> </span>INT<span class="w">           </span>Deployment<span class="w"> </span>timeout<span class="w"> </span><span class="k">in</span><span class="w"> </span>seconds
+<span class="w">  </span>--auto-approve/--no-auto-approve<span class="w">  </span>Auto<span class="w"> </span>approve<span class="w"> </span>deployment
+<span class="w">  </span>--env,<span class="w"> </span>-E<span class="w"> </span>TEXT<span class="w">          </span>Environment<span class="w"> </span>variable<span class="w"> </span><span class="o">(</span><span class="nv">KEY</span><span class="o">=</span>VALUE,<span class="w"> </span>repeatable<span class="o">)</span>
+<span class="w">  </span>--env-file<span class="w"> </span>PATH<span class="w">         </span>Path<span class="w"> </span>to<span class="w"> </span>.env<span class="w"> </span>file
+<span class="w">  </span>--tag,<span class="w"> </span>-T<span class="w"> </span>TEXT<span class="w">          </span>Tag<span class="w"> </span><span class="o">(</span><span class="nv">KEY</span><span class="o">=</span>VALUE,<span class="w"> </span>repeatable<span class="o">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id11">
+<h3>Configuration<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
+<section id="paideployconfig-structure">
+<h4>PAIDeployConfig Structure<a class="headerlink" href="#paideployconfig-structure" title="Link to this heading">¶</a></h4>
+<p>PAI deployment uses YAML configuration files with the following structure:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># deploy_config.yaml</span>
+<span class="nt">context</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># PAI workspace ID (required)</span>
+<span class="w">  </span><span class="nt">workspace_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-workspace-id&quot;</span>
+<span class="w">  </span><span class="c1"># Region (e.g., cn-hangzhou, cn-shanghai)</span>
+<span class="w">  </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;cn-hangzhou&quot;</span>
+
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Service name (required, unique within region)</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_agent_service&quot;</span>
+
+<span class="w">  </span><span class="nt">code</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># Source directory (relative to config file location)</span>
+<span class="w">    </span><span class="nt">source_dir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_agent&quot;</span>
+<span class="w">    </span><span class="c1"># Entrypoint file</span>
+<span class="w">    </span><span class="nt">entrypoint</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;agent.py&quot;</span>
+
+<span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># Resource type: public, resource, quota</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;public&quot;</span>
+<span class="w">    </span><span class="c1"># Instance type (required for public mode)</span>
+<span class="w">    </span><span class="nt">instance_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ecs.c6.large&quot;</span>
+<span class="w">    </span><span class="c1"># Number of instances</span>
+<span class="w">    </span><span class="nt">instance_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+
+<span class="w">  </span><span class="c1"># VPC configuration (optional)</span>
+<span class="w">  </span><span class="nt">vpc_config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vpc_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;vpc-xxxxx&quot;</span>
+<span class="w">    </span><span class="nt">vswitch_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;vsw-xxxxx&quot;</span>
+<span class="w">    </span><span class="nt">security_group_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sg-xxxxx&quot;</span>
+
+<span class="w">  </span><span class="c1"># RAM role configuration (optional)</span>
+<span class="w">  </span><span class="nt">identity</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">ram_role_arn</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;acs:ram::xxx:role/xxx&quot;</span>
+
+<span class="w">  </span><span class="c1"># Observability configuration</span>
+<span class="w">  </span><span class="nt">observability</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enable_trace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="c1"># Environment variables</span>
+<span class="w">  </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">DASHSCOPE_API_KEY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-dashscope-api-key&quot;</span>
+
+<span class="w">  </span><span class="c1"># Tags</span>
+<span class="w">  </span><span class="nt">tags</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">team</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ai-team&quot;</span>
+<span class="w">    </span><span class="nt">project</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;agent-demo&quot;</span>
+</pre></div>
+</div>
+<blockquote>
+<div><p><strong>Note</strong>: <code class="docutils literal notranslate"><span class="pre">code.source_dir</span></code> is resolved relative to the config file location.</p>
+</div></blockquote>
+</section>
+<section id="configuration-structure-reference">
+<h4>Configuration Structure Reference<a class="headerlink" href="#configuration-structure-reference" title="Link to this heading">¶</a></h4>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Section</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">context</span></code></p></td>
+<td><p>Deployment target (workspace, region, storage)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">spec.name</span></code></p></td>
+<td><p>Service name (required)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">spec.code</span></code></p></td>
+<td><p>Source directory and entrypoint</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">spec.resources</span></code></p></td>
+<td><p>Resource allocation settings</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">spec.vpc_config</span></code></p></td>
+<td><p>VPC network configuration (optional)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">spec.identity</span></code></p></td>
+<td><p>RAM role configuration (optional)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">spec.observability</span></code></p></td>
+<td><p>Tracing settings</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">spec.env</span></code></p></td>
+<td><p>Environment variables</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">spec.tags</span></code></p></td>
+<td><p>Deployment tags</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+<section id="resource-types">
+<h3>Resource Types<a class="headerlink" href="#resource-types" title="Link to this heading">¶</a></h3>
+<p>PAI supports three resource types:</p>
+<section id="public-resource-pool-type-public">
+<h4>1. Public Resource Pool (<code class="docutils literal notranslate"><span class="pre">type:</span> <span class="pre">&quot;public&quot;</span></code>)<a class="headerlink" href="#public-resource-pool-type-public" title="Link to this heading">¶</a></h4>
+<p>Deploy on shared ECS instances, suitable for development/testing and small-scale deployments:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;public&quot;</span>
+<span class="w">    </span><span class="nt">instance_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ecs.c6.large&quot;</span><span class="w">  </span><span class="c1"># Required</span>
+<span class="w">    </span><span class="nt">instance_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+</pre></div>
+</div>
+</section>
+<section id="dedicated-resource-group-type-resource">
+<h4>2. Dedicated Resource Group (<code class="docutils literal notranslate"><span class="pre">type:</span> <span class="pre">&quot;resource&quot;</span></code>)<a class="headerlink" href="#dedicated-resource-group-type-resource" title="Link to this heading">¶</a></h4>
+<p>Deploy on dedicated EAS resource group, suitable for production environments requiring resource isolation:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;resource&quot;</span>
+<span class="w">    </span><span class="nt">resource_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;eas-r-xxxxx&quot;</span><span class="w">  </span><span class="c1"># Required</span>
+<span class="w">    </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4096</span>
+</pre></div>
+</div>
+</section>
+<section id="quota-based-type-quota">
+<h4>3. Quota-based (<code class="docutils literal notranslate"><span class="pre">type:</span> <span class="pre">&quot;quota&quot;</span></code>)<a class="headerlink" href="#quota-based-type-quota" title="Link to this heading">¶</a></h4>
+<p>Deploy using PAI quota, suitable for enterprise-level resource management:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;quota&quot;</span>
+<span class="w">    </span><span class="nt">quota_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;quota-xxxxxxxx&quot;</span><span class="w">  </span><span class="c1"># Required</span>
+<span class="w">    </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4096</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="vpc-configuration">
+<h3>VPC Configuration<a class="headerlink" href="#vpc-configuration" title="Link to this heading">¶</a></h3>
+<p>Private network deployment configuration for scenarios requiring access to public or internal resources:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">vpc_config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vpc_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;vpc-xxxxx&quot;</span>
+<span class="w">    </span><span class="nt">vswitch_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;vsw-xxxxx&quot;</span>
+<span class="w">    </span><span class="nt">security_group_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sg-xxxxx&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="id12">
+<h3>Advanced Usage<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
+<section id="manual-approval-workflow">
+<h4>Manual Approval Workflow<a class="headerlink" href="#manual-approval-workflow" title="Link to this heading">¶</a></h4>
+<p>By default, deployments are auto-approved. For manual approval:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use --no-auto-approve option</span>
+agentscope<span class="w"> </span>deploy<span class="w"> </span>pai<span class="w"> </span>--config<span class="w"> </span>deploy_config.yaml<span class="w"> </span>--no-auto-approve
+</pre></div>
+</div>
+<p>In interactive terminal, CLI will prompt you to choose:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">[A]pprove</span></code> - Approve and start deployment</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[C]ancel</span></code> - Cancel deployment</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[S]kip</span></code> - Skip, approve later in console</p></li>
+</ul>
+</section>
+<section id="environment-variable-injection">
+<h4>Environment Variable Injection<a class="headerlink" href="#environment-variable-injection" title="Link to this heading">¶</a></h4>
+<p><strong>Method 1: Configuration File</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">DASHSCOPE_API_KEY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-key&quot;</span>
+<span class="w">    </span><span class="nt">MY_CONFIG</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;value&quot;</span>
+</pre></div>
+</div>
+<p><strong>Method 2: CLI Parameters</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>deploy<span class="w"> </span>pai<span class="w"> </span>./my_agent<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--env<span class="w"> </span><span class="nv">DASHSCOPE_API_KEY</span><span class="o">=</span>your-key<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--env<span class="w"> </span><span class="nv">MY_CONFIG</span><span class="o">=</span>value
+</pre></div>
+</div>
+<p><strong>Method 3: .env File</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>agentscope<span class="w"> </span>deploy<span class="w"> </span>pai<span class="w"> </span>./my_agent<span class="w"> </span>--env-file<span class="w"> </span>.env
+</pre></div>
+</div>
+</section>
+<section id="auto-generated-tags">
+<h4>Auto-Generated Tags<a class="headerlink" href="#auto-generated-tags" title="Link to this heading">¶</a></h4>
+<p>The following tags are automatically added to deployments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">deployed-by:</span> <span class="pre">agentscope-runtime</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">client-version:</span> <span class="pre">&lt;version&gt;</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">deploy-method:</span> <span class="pre">cli</span></code></p></li>
+</ul>
+</section>
+<section id="managing-deployments">
+<h4>Managing Deployments<a class="headerlink" href="#managing-deployments" title="Link to this heading">¶</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Stop deployment</span>
+agentscope<span class="w"> </span>stop<span class="w"> </span>&lt;deploy-id&gt;
+
+<span class="c1"># View deployment status</span>
+<span class="c1"># Visit the PAI console URL provided after deployment</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h3>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">¶</a></h3>
+<section id="common-issues">
+<h4>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading">¶</a></h4>
+<ol class="arabic">
+<li><p><strong>“PAI deployer is not available”</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;agentscope-runtime[ext]&#39;</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>“Workspace ID is required”</strong></p>
+<ul class="simple">
+<li><p>Set <code class="docutils literal notranslate"><span class="pre">PAI_WORKSPACE_ID</span></code> environment variable, or</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">--workspace-id</span></code> CLI option, or</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">context.workspace_id</span></code> in config file</p></li>
+</ul>
+</li>
+<li><p><strong>“Service name is owned by another user”</strong></p>
+<ul class="simple">
+<li><p>Choose a different service name (must be unique within region)</p></li>
+</ul>
+</li>
+<li><p><strong>Credential errors</strong></p>
+<ul class="simple">
+<li><p>Verify <code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_ID</span></code> and <code class="docutils literal notranslate"><span class="pre">ALIBABA_CLOUD_ACCESS_KEY_SECRET</span></code></p></li>
+<li><p>Check RAM permissions for PAI/EAS/OSS access</p></li>
+</ul>
+</li>
+<li><p><strong>OSS upload failures</strong></p>
+<ul class="simple">
+<li><p>Ensure OSS bucket exists and is accessible</p></li>
+<li><p>Check region matches between workspace and OSS bucket</p></li>
+</ul>
+</li>
+</ol>
+</section>
+</section>
+<section id="complete-example">
+<h3>Complete Example<a class="headerlink" href="#complete-example" title="Link to this heading">¶</a></h3>
+<p>For more detailed PAI deployment examples, refer to:</p>
+<ul class="simple">
+<li><p>Example directory: <code class="docutils literal notranslate"><span class="pre">examples/deployments/pai_deploy/</span></code></p></li>
+<li><p>Config file example: <code class="docutils literal notranslate"><span class="pre">examples/deployments/pai_deploy/deploy_config.yaml</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="method-7-knative-deployment">
+<h2>Method 7: Knative Deployment<a class="headerlink" href="#method-7-knative-deployment" title="Link to this heading">¶</a></h2>
+<p><strong>Best for</strong>: Enterprise production environments requiring scalability, high availability, and cloud-native serverless container orchestration.</p>
+<section id="id13">
+<h3>Features<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Container-based Serverless deployment</p></li>
 <li><p>Provides automatic scaling from zero to thousands of instances, intelligent traffic routing</p></li>
@@ -1537,8 +1989,8 @@ docker<span class="w"> </span>login<span class="w">  </span>your-registry
 <li><p>Health checks and auto-recovery</p></li>
 </ul>
 </section>
-<section id="id11">
-<h3>Prerequisites for Kubernetes Deployment<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
+<section id="id14">
+<h3>Prerequisites for Kubernetes Deployment<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Ensure Docker is running</span>
 docker<span class="w"> </span>--version
 
@@ -1553,8 +2005,8 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 </pre></div>
 </div>
 </section>
-<section id="id12">
-<h3>Implementation<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
+<section id="id15">
+<h3>Implementation<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h3>
 <p>Using the agent and endpoints defined in the <a class="reference internal" href="#common-agent-setup"><span class="std std-ref">Common Agent Setup</span></a> section:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1625,11 +2077,11 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 </ul>
 </section>
 </section>
-<section id="method-7-serverless-deployment-function-compute-fc">
-<h2>Method 7: Serverless Deployment: Function Compute (FC)<a class="headerlink" href="#method-7-serverless-deployment-function-compute-fc" title="Link to this heading">¶</a></h2>
+<section id="method-8-serverless-deployment-function-compute-fc">
+<h2>Method 8: Serverless Deployment: Function Compute (FC)<a class="headerlink" href="#method-8-serverless-deployment-function-compute-fc" title="Link to this heading">¶</a></h2>
 <p><strong>Best For</strong>: Alibaba Cloud users who need to deploy agents to Function Compute (FC) service with automated build, upload, and deployment workflows. FC provides a true serverless experience with pay-per-use pricing and automatic scaling.</p>
-<section id="id13">
-<h3>Features<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h3>
+<section id="id16">
+<h3>Features<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Serverless deployment on Alibaba Cloud Function Compute</p></li>
 <li><p>Automatic project building and packaging with Docker</p></li>
@@ -1766,8 +2218,8 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 </table>
 </div>
 </section>
-<section id="id14">
-<h3>Implementation<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
+<section id="id17">
+<h3>Implementation<a class="headerlink" href="#id17" title="Link to this heading">¶</a></h3>
 <p>Using the agent and endpoints defined in the <a class="reference internal" href="#common-agent-setup"><span class="std std-ref">Common Agent Setup</span></a> section:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -1832,10 +2284,10 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 <li><p>Supports updating existing deployments (via <code class="docutils literal notranslate"><span class="pre">function_name</span></code> parameter)</p></li>
 </ul>
 </section>
-<section id="id15">
-<h3>Configuration<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h3>
-<section id="id16">
-<h4>OSSConfig<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h4>
+<section id="id18">
+<h3>Configuration<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h3>
+<section id="id19">
+<h4>OSSConfig<a class="headerlink" href="#id19" title="Link to this heading">¶</a></h4>
 <p>OSS configuration for storing build artifacts:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">OSSConfig</span><span class="p">(</span>
     <span class="n">access_key_id</span><span class="o">=</span><span class="s2">&quot;your-access-key-id&quot;</span><span class="p">,</span>
@@ -1862,8 +2314,8 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 </div>
 </section>
 </section>
-<section id="id17">
-<h3>Advanced Usage<a class="headerlink" href="#id17" title="Link to this heading">¶</a></h3>
+<section id="id20">
+<h3>Advanced Usage<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h3>
 <section id="updating-existing-function">
 <h4>Updating Existing Function<a class="headerlink" href="#updating-existing-function" title="Link to this heading">¶</a></h4>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
@@ -1887,8 +2339,8 @@ kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w">
 </div>
 </section>
 </section>
-<section id="id18">
-<h3>Testing the Deployed Service<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h3>
+<section id="id21">
+<h3>Testing the Deployed Service<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h3>
 <p>Once deployed, you can test the endpoints using curl:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Health check</span>
 curl<span class="w"> </span>https://&lt;your-endpoint-url&gt;/health
@@ -2084,27 +2536,59 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#method-6-knative-deployment">Method 6: Knative Deployment</a><ul>
+<li><a class="reference internal" href="#method-6-pai-deployment-platform-for-ai">Method 6: PAI Deployment (Platform for AI)</a><ul>
 <li><a class="reference internal" href="#id10">Features</a></li>
-<li><a class="reference internal" href="#id11">Prerequisites for Kubernetes Deployment</a></li>
-<li><a class="reference internal" href="#id12">Implementation</a></li>
+<li><a class="reference internal" href="#prerequisites-for-pai-deployment">Prerequisites for PAI Deployment</a></li>
+<li><a class="reference internal" href="#pai-workspace-requirements">PAI Workspace Requirements</a></li>
+<li><a class="reference internal" href="#implementation-sdk">Implementation (SDK)</a></li>
+<li><a class="reference internal" href="#implementation-cli">Implementation (CLI)</a></li>
+<li><a class="reference internal" href="#id11">Configuration</a><ul>
+<li><a class="reference internal" href="#paideployconfig-structure">PAIDeployConfig Structure</a></li>
+<li><a class="reference internal" href="#configuration-structure-reference">Configuration Structure Reference</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#method-7-serverless-deployment-function-compute-fc">Method 7: Serverless Deployment: Function Compute (FC)</a><ul>
+<li><a class="reference internal" href="#resource-types">Resource Types</a><ul>
+<li><a class="reference internal" href="#public-resource-pool-type-public">1. Public Resource Pool (<code class="docutils literal notranslate"><span class="pre">type:</span> <span class="pre">&quot;public&quot;</span></code>)</a></li>
+<li><a class="reference internal" href="#dedicated-resource-group-type-resource">2. Dedicated Resource Group (<code class="docutils literal notranslate"><span class="pre">type:</span> <span class="pre">&quot;resource&quot;</span></code>)</a></li>
+<li><a class="reference internal" href="#quota-based-type-quota">3. Quota-based (<code class="docutils literal notranslate"><span class="pre">type:</span> <span class="pre">&quot;quota&quot;</span></code>)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#vpc-configuration">VPC Configuration</a></li>
+<li><a class="reference internal" href="#id12">Advanced Usage</a><ul>
+<li><a class="reference internal" href="#manual-approval-workflow">Manual Approval Workflow</a></li>
+<li><a class="reference internal" href="#environment-variable-injection">Environment Variable Injection</a></li>
+<li><a class="reference internal" href="#auto-generated-tags">Auto-Generated Tags</a></li>
+<li><a class="reference internal" href="#managing-deployments">Managing Deployments</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
+<li><a class="reference internal" href="#common-issues">Common Issues</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#complete-example">Complete Example</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#method-7-knative-deployment">Method 7: Knative Deployment</a><ul>
 <li><a class="reference internal" href="#id13">Features</a></li>
+<li><a class="reference internal" href="#id14">Prerequisites for Kubernetes Deployment</a></li>
+<li><a class="reference internal" href="#id15">Implementation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#method-8-serverless-deployment-function-compute-fc">Method 8: Serverless Deployment: Function Compute (FC)</a><ul>
+<li><a class="reference internal" href="#id16">Features</a></li>
 <li><a class="reference internal" href="#fc-deployment-prerequisites">FC Deployment Prerequisites</a></li>
-<li><a class="reference internal" href="#id14">Implementation</a></li>
-<li><a class="reference internal" href="#id15">Configuration</a><ul>
-<li><a class="reference internal" href="#id16">OSSConfig</a></li>
+<li><a class="reference internal" href="#id17">Implementation</a></li>
+<li><a class="reference internal" href="#id18">Configuration</a><ul>
+<li><a class="reference internal" href="#id19">OSSConfig</a></li>
 <li><a class="reference internal" href="#fcconfig">FCConfig</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id17">Advanced Usage</a><ul>
+<li><a class="reference internal" href="#id20">Advanced Usage</a><ul>
 <li><a class="reference internal" href="#updating-existing-function">Updating Existing Function</a></li>
 <li><a class="reference internal" href="#deploying-from-project-directory">Deploying from Project Directory</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id18">Testing the Deployed Service</a></li>
+<li><a class="reference internal" href="#id21">Testing the Deployed Service</a></li>
 </ul>
 </li>
 </ul>
