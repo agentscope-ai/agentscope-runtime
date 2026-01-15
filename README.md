@@ -38,7 +38,7 @@
 
 ***Plus:***
 
-***Full-stack observability** (logs / metrics / traces)*
+***Full-stack observability** (logs / traces)*
 
 ***Framework compatibility** with mainstream agent frameworks*
 
