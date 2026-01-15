@@ -29,17 +29,19 @@
 
 ***Core capabilities:***
 
-***Tool Sandboxing** — tool call runs inside a **hardened sandbox***
+**Tool Sandboxing** — tool call runs inside a **hardened sandbox**
+**Agent-as-a-Service (AaaS) APIs** — expose agents as **streaming, production-ready APIs**
+**Scalable Deployment** — deploy locally, on Kubernetes, or serverless for **elastic scale**
 
-***Agent-as-a-Service (AaaS) APIs** — expose agents as **streaming, production-ready APIs***
+<details>
+<summary><b>Plus</b></summary>
 
-***Scalable Deployment** — deploy locally, on Kubernetes, or serverless for **elastic scale***
+<br>
 
-***Plus:***
+**Full-stack observability** (logs / traces)
+**Framework compatibility** with mainstream agent frameworks
 
-***Full-stack observability** (logs / traces)*
-
-***Framework compatibility** with mainstream agent frameworks*
+</details>
 
 </div>
 
