@@ -10,7 +10,7 @@
         <title>AgentApp API Invocation - AgentScope Runtime</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
-    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-thebe.css?v=4fa983c6" />
@@ -636,7 +636,7 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <section id="agentapp-api-invocation">
 <h1>AgentApp API Invocation<a class="headerlink" href="#agentapp-api-invocation" title="Link to this heading">¶</a></h1>
-<p>Once an <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> is deployed and listening on <code class="docutils literal notranslate"><span class="pre">127.0.0.1:8090</span></code>, you can issue inference calls via the streaming endpoint or the OpenAI-compatible endpoint.</p>
+<p>Once an <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> is deployed and listening on <code class="docutils literal notranslate"><span class="pre">127.0.0.1:8090</span></code>, you can issue inference calls via the streaming endpoint, the OpenAI-compatible endpoint, and the AG-UI endpoint.</p>
 <section id="prerequisites">
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
 <ul class="simple">
@@ -787,6 +787,179 @@ body.preview-active {
 </div>
 <p>The endpoint reuses the Responses API schema. The <code class="docutils literal notranslate"><span class="pre">test_openai_compatible_mode</span></code> test also confirms that the model replies with its agent name “Friday”.</p>
 </section>
+<section id="ag-ui-ag-ui-protocol-compatible-endpoint">
+<h2><code class="docutils literal notranslate"><span class="pre">/ag-ui</span></code>: AG-UI Protocol Compatible Endpoint<a class="headerlink" href="#ag-ui-ag-ui-protocol-compatible-endpoint" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">AgentScope</span> <span class="pre">Runtime</span></code> supports the <a class="reference external" href="https://docs.ag-ui.com/introduction"><code class="docutils literal notranslate"><span class="pre">AG-UI</span> <span class="pre">Protocol</span></code></a> through an adapter pattern. Agent APIs built with the <code class="docutils literal notranslate"><span class="pre">&#64;app.query</span></code> decorator are automatically adapted to the AG-UI Protocol request format.</p>
+<section id="ag-ui-request-body-format">
+<h3>AG-UI Request Body Format<a class="headerlink" href="#ag-ui-request-body-format" title="Link to this heading">¶</a></h3>
+<p>In the HTTP API, the body of POST <code class="docutils literal notranslate"><span class="pre">/ag-ui</span></code> is a RunAgentInput.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;thread_123&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;runId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;run_456&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;parentRunId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;run_000&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">  </span><span class="nt">&quot;messages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;msg_1&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hello, please introduce yourself&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;tools&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">  </span><span class="nt">&quot;forwardedProps&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<section id="field-descriptions">
+<h4>Field Descriptions<a class="headerlink" href="#field-descriptions" title="Link to this heading">¶</a></h4>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">threadId</span></code></strong> (required): Conversation thread ID, used to identify a dialogue session</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">runId</span></code></strong> (required): Current run ID, should use a unique ID for each request</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">messages</span></code></strong> (required): Message list, supporting multiple message types:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">role:</span> <span class="pre">&quot;user&quot;</span></code>: User message</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">role:</span> <span class="pre">&quot;assistant&quot;</span></code>: Assistant message (can include text or tool calls)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">role:</span> <span class="pre">&quot;system&quot;</span></code>: System message</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">role:</span> <span class="pre">&quot;tool&quot;</span></code>: Tool execution result message</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">tools</span></code></strong> (optional): Available tool list</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">context</span></code></strong> (optional): Context information</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">state</span></code></strong> (optional): State information</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">forwardedProps</span></code></strong> (optional): Forwarded properties</p></li>
+</ul>
+</section>
+<section id="api-response">
+<h4>API Response<a class="headerlink" href="#api-response" title="Link to this heading">¶</a></h4>
+<p>The server returns SSE (Server-Sent Events) format streaming responses, with each event starting with <code class="docutils literal notranslate"><span class="pre">data:</span></code> and containing JSON format event data. Currently supported event types include:</p>
+</section>
+<section id="event-types">
+<h4>Event Types<a class="headerlink" href="#event-types" title="Link to this heading">¶</a></h4>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Event Type</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example Fields</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">run_started</span></code></p></td>
+<td><p>Run started</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">thread_id</span></code>, <code class="docutils literal notranslate"><span class="pre">run_id</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">text_message_start</span></code></p></td>
+<td><p>Text message started</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">message_id</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">text_message_content</span></code></p></td>
+<td><p>Text message incremental content</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">message_id</span></code>, <code class="docutils literal notranslate"><span class="pre">delta</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">text_message_end</span></code></p></td>
+<td><p>Text message ended</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">message_id</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tool_call_start</span></code></p></td>
+<td><p>Tool call started</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tool_call_id</span></code>, <code class="docutils literal notranslate"><span class="pre">tool_call_name</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tool_call_args</span></code></p></td>
+<td><p>Tool call arguments</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tool_call_id</span></code>, <code class="docutils literal notranslate"><span class="pre">delta</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tool_call_end</span></code></p></td>
+<td><p>Tool call ended</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tool_call_id</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tool_call_result</span></code></p></td>
+<td><p>Tool execution result</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tool_call_id</span></code>, <code class="docutils literal notranslate"><span class="pre">content</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">run_finished</span></code></p></td>
+<td><p>Run completed</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">thread_id</span></code>, <code class="docutils literal notranslate"><span class="pre">run_id</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">run_error</span></code></p></td>
+<td><p>Run error</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">run_id</span></code>, <code class="docutils literal notranslate"><span class="pre">message</span></code>, <code class="docutils literal notranslate"><span class="pre">code</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="usage-example">
+<h4>Usage Example<a class="headerlink" href="#usage-example" title="Link to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">aiohttp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call_ag_ui_endpoint</span><span class="p">():</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;http://localhost:8080/ag-ui&quot;</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;threadId&quot;</span><span class="p">:</span> <span class="s2">&quot;thread_1234&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;runId&quot;</span><span class="p">:</span> <span class="s2">&quot;run_4567&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;msg_1&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;What&#39;s the weather like in Beijing today?&quot;</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">}</span>
+
+    <span class="k">async</span> <span class="k">with</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="p">)</span> <span class="k">as</span> <span class="n">resp</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">resp</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">200</span>
+            <span class="k">assert</span> <span class="n">resp</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;Content-Type&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;text/event-stream&quot;</span><span class="p">)</span>
+
+            <span class="k">async</span> <span class="k">for</span> <span class="n">chunk</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">resp</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">iter_chunks</span><span class="p">():</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">chunk</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="n">line</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;data:&quot;</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">line</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+</pre></div>
+</div>
+<p>Response example:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="err">da</span><span class="kc">ta</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RUN_STARTED&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;thread_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;thread_1234&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;run_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;run_4567&quot;</span><span class="p">}</span>
+
+<span class="err">da</span><span class="kc">ta</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TOOL_CALL_START&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tool_call_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;call_c51915f8d0ab4c6aac85e1&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tool_call_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;get_weather&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;message_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;msg_57562f7d-e96d-4de9-8899-1334fc101e23_0&quot;</span><span class="p">}</span>
+
+<span class="err">da</span><span class="kc">ta</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TOOL_CALL_ARGS&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tool_call_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;call_c51915f8d0ab4c6aac85e1&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;delta&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{\&quot;location\&quot;: \&quot;Beijing\&quot;}&quot;</span><span class="p">}</span>
+
+<span class="err">da</span><span class="kc">ta</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TOOL_CALL_END&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tool_call_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;call_c51915f8d0ab4c6aac85e1&quot;</span><span class="p">}</span>
+
+<span class="err">da</span><span class="kc">ta</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TOOL_CALL_RESULT&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;message_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;msg_0ca9a23b-0674-496b-91c8-5bd699945e70_0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tool_call_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;call_c51915f8d0ab4c6aac85e1&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[{\&quot;type\&quot;: \&quot;text\&quot;, \&quot;text\&quot;: \&quot;The weather in Beijing is sunny with a temperature of 25°C.\&quot;}]&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tool&quot;</span><span class="p">}</span>
+
+<span class="err">da</span><span class="kc">ta</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TEXT_MESSAGE_START&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;message_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;msg_8debb51f-3226-4f1a-a573-5f80db132f80_0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;assistant&quot;</span><span class="p">}</span>
+
+<span class="err">da</span><span class="kc">ta</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TEXT_MESSAGE_CONTENT&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;message_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;msg_8debb51f-3226-4f1a-a573-5f80db132f80_0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;delta&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;The weather&quot;</span><span class="p">}</span>
+
+<span class="err">da</span><span class="kc">ta</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TEXT_MESSAGE_CONTENT&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;message_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;msg_8debb51f-3226-4f1a-a573-5f80db132f80_0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;delta&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot; in Beijing today&quot;</span><span class="p">}</span>
+
+<span class="err">da</span><span class="kc">ta</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TEXT_MESSAGE_CONTENT&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;message_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;msg_8debb51f-3226-4f1a-a573-5f80db132f80_0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;delta&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot; is sunny,&quot;</span><span class="p">}</span>
+
+<span class="err">da</span><span class="kc">ta</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TEXT_MESSAGE_CONTENT&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;message_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;msg_8debb51f-3226-4f1a-a573-5f80db132f80_0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;delta&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot; with a temperature of 25&quot;</span><span class="p">}</span>
+
+<span class="err">da</span><span class="kc">ta</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TEXT_MESSAGE_CONTENT&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;message_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;msg_8debb51f-3226-4f1a-a573-5f80db132f80_0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;delta&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;°C.&quot;</span><span class="p">}</span>
+
+<span class="err">da</span><span class="kc">ta</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TEXT_MESSAGE_END&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;message_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;msg_8debb51f-3226-4f1a-a573-5f80db132f80_0&quot;</span><span class="p">}</span>
+
+<span class="err">da</span><span class="kc">ta</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RUN_FINISHED&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;thread_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;thread_1234&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;run_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;run_4567&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="frontend-integration">
+<h4>Frontend Integration<a class="headerlink" href="#frontend-integration" title="Link to this heading">¶</a></h4>
+<p>Using <code class="docutils literal notranslate"><span class="pre">CopilotKit</span></code>, you can quickly build Agent applications based on existing AG-UI Protocol APIs. For details, refer to the <code class="docutils literal notranslate"><span class="pre">CopilotKit</span></code> <a class="reference external" href="https://docs.copilotkit.ai/">documentation</a>.</p>
+</section>
+</section>
+</section>
 <section id="troubleshooting">
 <h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">¶</a></h2>
 <ul class="simple">
@@ -851,7 +1024,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-14</div>
+              Last updated on 2026-01-15</div>
           </div>
           <div class="right-details">
             <div class="icons">
@@ -895,6 +1068,17 @@ body.preview-active {
 </ul>
 </li>
 <li><a class="reference internal" href="#compatible-mode-v1-responses-openai-compatible-endpoint"><code class="docutils literal notranslate"><span class="pre">/compatible-mode/v1/responses</span></code>: OpenAI-Compatible Endpoint</a></li>
+<li><a class="reference internal" href="#ag-ui-ag-ui-protocol-compatible-endpoint"><code class="docutils literal notranslate"><span class="pre">/ag-ui</span></code>: AG-UI Protocol Compatible Endpoint</a><ul>
+<li><a class="reference internal" href="#ag-ui-request-body-format">AG-UI Request Body Format</a><ul>
+<li><a class="reference internal" href="#field-descriptions">Field Descriptions</a></li>
+<li><a class="reference internal" href="#api-response">API Response</a></li>
+<li><a class="reference internal" href="#event-types">Event Types</a></li>
+<li><a class="reference internal" href="#usage-example">Usage Example</a></li>
+<li><a class="reference internal" href="#frontend-integration">Frontend Integration</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
 </ul>
 </li>
@@ -917,7 +1101,7 @@ body.preview-active {
     <script>let toggleHintShow = 'Click to show';</script>
     <script>let toggleHintHide = 'Click to hide';</script>
     <script>let toggleOpenOnPrint = 'true';</script>
-    <script src="../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script src="../_static/togglebutton.js?v=1ae7504c"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
