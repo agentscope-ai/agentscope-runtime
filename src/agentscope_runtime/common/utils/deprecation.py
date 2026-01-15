@@ -9,6 +9,11 @@ from typing import Callable, TypeVar
 T = TypeVar("T", bound=object)
 
 
+def _toplevel_pkg() -> str:
+    pkg = __package__ or __name__
+    return pkg.split(".", 1)[0]
+
+
 @dataclass(frozen=True)
 class DeprecationInfo:
     reason: str = ""
@@ -41,14 +46,19 @@ def warn_deprecated(
     stacklevel: int = 2,
     once: bool = False,
 ) -> None:
+    message = format_deprecation_message(subject, info)
+
     if once:
-        # applies process-wide for this category; acceptable for most libs
-        warnings.simplefilter("once", category)
-    warnings.warn(
-        format_deprecation_message(subject, info),
-        category=category,
-        stacklevel=stacklevel,
-    )
+        top = _toplevel_pkg()
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "once",
+                category=category,
+                module=rf"^{top}(\.|$)",
+            )
+            warnings.warn(message, category=category, stacklevel=stacklevel)
+    else:
+        warnings.warn(message, category=category, stacklevel=stacklevel)
 
 
 def deprecated(

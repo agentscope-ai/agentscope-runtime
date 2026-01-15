@@ -561,7 +561,7 @@ deployer = LocalDeployManager(
 # Deploy the app as a streaming service
 deploy_result = await app.deploy(
     deployer=deployer,
-  	endpoint_path="/process"
+    endpoint_path="/process"
 )
 ```
 
