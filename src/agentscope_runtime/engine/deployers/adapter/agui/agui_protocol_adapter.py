@@ -166,6 +166,10 @@ class AGUIDefaultAdapter(ProtocolAdapter):
                 request,
             )
             async for event in self._execution_func(agent_request):
+                logger.debug(
+                    "Streaming Agent API Event: %s",
+                    event.model_dump(),
+                )
                 agui_events = adapter.convert_agent_event_to_agui_events(event)
                 for agui_event in agui_events:
                     yield self.as_sse_data(agui_event)
