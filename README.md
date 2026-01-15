@@ -25,13 +25,38 @@
 [[中文README]](README_zh.md)
 [[Samples]](https://github.com/agentscope-ai/agentscope-samples)
 
-**A Production-Ready Runtime Framework for Intelligent Agent Applications**
+**A Production-Ready Runtime Framework for Agent Applications**
 
-***AgentScope Runtime** is a full-stack agent runtime that tackles two core challenges: **efficient agent deployment** and **secure sandbox execution**. It ships with foundational services such as short- and long-term memory plus agent state persistence, along with hardened sandbox infrastructure. Whether you need to orchestrate production-grade agents or guarantee safe tool interactions, AgentScope Runtime provides developer-friendly workflows with complete observability.*
-
-*In V1.0, these services are exposed via an **adapter pattern**, enabling seamless integration with the native modules of different agent frameworks while preserving their native interfaces and behaviors, ensuring both compatibility and flexibility.*
+***AgentScope Runtime** is AgentScope’s production-grade runtime for agent applications, built around three core capabilities: **tool sandboxing** (all tool calls run in a hardened sandbox), **Agent-as-a-Service (AaaS) APIs**, and **scalable deployment**. It provides full-stack observability and is also compatible with other mainstream agent frameworks.*
 
 </div>
+
+---
+
+## Table of Contents
+
+> [!NOTE]
+>
+> **Recommended reading order:**
+>
+> - **I want to run an agent app in 5 minutes**: Quick Start (Agent App example) → verify with curl (SSE streaming)
+> - **I care about secure tool execution / automation**: Quick Start (Sandbox examples) → sandbox image registry/namespace/tag configuration → (optional) production-grade serverless sandbox deployment
+> - **I want production deployment / expose APIs**: Quick Start (Agent App example) → Quick Start (Deployment example) → Guides
+> - **I want to contribute**: Contributing → Contact
+
+- [News](#-news)
+- [Key Features](#-key-features)
+- [Quick Start](#-quick-start): From installation to running a minimal Agent API service. Learn the three-stage `AgentApp` development pattern: `init` / `query` / `shutdown`.
+  - [Prerequisites](#prerequisites): Required runtime environment and dependencies
+  - [Installation](#installation): Install from PyPI or from source
+  - [Agent App Example](#agent-app-example): How to build a streaming (SSE) Agent-as-a-Service API
+  - [Sandbox Example](#sandbox-example): How to safely execute Python/Shell/GUI/Browser/Filesystem/Mobile tools in an isolated sandbox
+  - [Deployment Example](#deployment-example): Learn to deploy with `DeployManager` locally or in a serverless environment, and access the service via A2A, Response API, or the OpenAI SDK in compatible mode
+- [Guides](#-guides): A tutorial site covering AgentScope Runtime concepts, architecture, APIs, and sample projects—helping you move from “it runs” to “scalable and maintainable”.
+- [Contact](#-contact)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Contributors](#-contributors)
 
 ---
 
@@ -44,12 +69,12 @@
 
 ## ✨ Key Features
 
-- **🏗️ Deployment Infrastructure**: Built-in services for agent state management, conversation history, long-term memory, and sandbox lifecycle control
-- **🔧 Framework-Agnostic**: Not tied to any specific agent framework; seamlessly integrates with popular open-source and custom implementations
-- ⚡ **Developer-Friendly**: Offers `AgentApp` for easy deployment with powerful customization options
-- **📊 Observability**: Comprehensive tracking and monitoring of runtime operations
-- **🔒 Sandboxed Tool Execution**: Isolated sandbox ensures safe tool execution without affecting the system
-- **🛠️ Out-of-the-Box Tools & One-Click Adaptation**: Rich set of ready-to-use tools, with adapters enabling quick integration into different frameworks
+- **Deployment Infrastructure**: Built-in services for agent state management, conversation history, long-term memory, and sandbox lifecycle control
+- **Framework-Agnostic**: Not tied to any specific agent framework; seamlessly integrates with popular open-source and custom implementations
+- **Developer-Friendly**: Offers `AgentApp` for easy deployment with powerful customization options
+- **Observability**: Comprehensive tracking and monitoring of runtime operations
+- **Sandboxed Tool Execution**: Isolated sandbox ensures safe tool execution without affecting the system
+- **Out-of-the-Box Tools & One-Click Adaptation**: Rich set of ready-to-use tools, with adapters enabling quick integration into different frameworks
 
 > [!NOTE]
 >
@@ -62,26 +87,6 @@
 > | [Microsoft Agent Framework](https://runtime.agentscope.io/en/ms_agent_framework_guidelines.html) | ✅             | ✅    | 🚧       |
 > | [Agno](https://runtime.agentscope.io/en/agno_guidelines.html) | ✅             | ✅    | 🚧       |
 > | AutoGen                                                      | 🚧             | ✅    | 🚧       |
-
----
-
-## 💬 Contact
-
-Welcome to join our community on
-
-| [Discord](https://discord.gg/eYMpfnkG8h)                     | DingTalk                                                     |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| <img src="https://gw.alicdn.com/imgextra/i1/O1CN01hhD1mu1Dd3BWVUvxN_!!6000000000238-2-tps-400-400.png" width="100" height="100"> | <img src="https://img.alicdn.com/imgextra/i4/O1CN014mhqFq1ZlgNuYjxrz_!!6000000003235-2-tps-400-400.png" width="100" height="100"> |
-
----
-
-## 📋 Table of Contents
-
-- [🚀 Quick Start](#-quick-start)
-- [📚 Cookbook](#-cookbook)
-- [🏗️ Deployment](#️-deployment)
-- [🤝 Contributing](#-contributing)
-- [📄 License](#-license)
 
 ---
 
@@ -370,23 +375,23 @@ A GUI-based sandbox with **file system operations** such as creating, reading, a
 
 ```python
 # --- Synchronous version ---
-from agentscope_runtime.sandbox import BrowserSandbox
+from agentscope_runtime.sandbox import FilesystemSandbox
 
-with BrowserSandbox() as box:
-    # By default, pulls `agentscope/runtime-sandbox-browser:latest` from DockerHub
+with FilesystemSandbox() as box:
+    # By default, pulls `agentscope/runtime-sandbox-filesystem:latest` from DockerHub
     print(box.list_tools())  # List all available tools
     print(box.desktop_url)  # Web desktop access URL
-    box.browser_navigate("https://www.google.com/")  # Open a webpage
+    box.create_directory("test")  # Create a directory
     input("Press Enter to continue...")
 
 # --- Asynchronous version ---
-from agentscope_runtime.sandbox import BrowserSandboxAsync
+from agentscope_runtime.sandbox import FilesystemSandboxAsync
 
-async with BrowserSandboxAsync() as box:
-    # Default image is `agentscope/runtime-sandbox-browser:latest`
+async with FilesystemSandboxAsync() as box:
+    # Default image is `agentscope/runtime-sandbox-filesystem:latest`
     print(await box.list_tools())  # List all available tools
     print(box.desktop_url)  # Web desktop access URL
-    await box.browser_navigate("https://www.google.com/")  # Open a webpage
+    await box.create_directory("test")  # Create a directory
     input("Press Enter to continue...")
 ```
 
@@ -521,17 +526,7 @@ runtime-sandbox-server --config fc.env
 ```
 After the server starts, you can access the sandbox server at baseurl `http://localhost:8000` and invoke sandbox tools described above.
 
-## 📚 Cookbook
-
-- **[📖 Cookbook](https://runtime.agentscope.io/en/intro.html)**: Comprehensive tutorials
-- **[💡 Concept](https://runtime.agentscope.io/en/concept.html)**: Core concepts and architecture overview
-- **[🚀 Quick Start](https://runtime.agentscope.io/en/quickstart.html)**: Quick start tutorial
-- **[🏠 Demo House](https://runtime.agentscope.io/en/demohouse.html)**: Rich example projects
-- **[📋 API Reference](https://runtime.agentscope.io/en/api/index.html)**: Complete API documentation
-
----
-
-## 🏗️ Deployment
+### Deployment Example
 
 The `AgentApp` exposes a `deploy` method that takes a `DeployManager` instance and deploys the agent.
 
@@ -552,8 +547,10 @@ deployer = LocalDeployManager(
 )
 
 # Deploy the app as a streaming service
-deploy_result = await app.deploy(deployer=deployer)
-
+deploy_result = await app.deploy(
+    deployer=deployer,
+  	endpoint_path="/process"
+)
 ```
 
 After deployment, users can also access this service using the Response API of the OpenAI SDK:
@@ -571,11 +568,16 @@ response = client.responses.create(
 print(response)
 ```
 
-Besides, `DeployManager` also supports serverless deployments, such as deploying your agent app
-to [ModelStudio](https://bailian.console.aliyun.com/?admin=1&tab=doc#/doc/?type=app&url=2983030).
+Besides, `DeployManager` also supports serverless deployments, such as deploying your agent app to [ModelStudio](https://bailian.console.aliyun.com/?admin=1&tab=doc#/doc/?type=app&url=2983030).
 
 ```python
-from agentscope_runtime.engine.deployers import ModelStudioDeployManager
+import os
+from agentscope_runtime.engine.deployers.modelstudio_deployer import (
+    ModelstudioDeployManager,
+    OSSConfig,
+    ModelstudioConfig,
+)
+
 # Create deployment manager
 deployer = ModelstudioDeployManager(
     oss_config=OSSConfig(
@@ -604,6 +606,22 @@ result = await app.deploy(
 ```
 
 For more advanced serverless deployment guides, please refer to the [documentation](https://runtime.agentscope.io/en/advanced_deployment.html#method-4-modelstudio-deployment).
+
+---
+
+## 📚 Guides
+
+For a more detailed tutorial, please refer to:[![Cookbook](https://img.shields.io/badge/📚_Cookbook-English|中文-teal.svg)](https://runtime.agentscope.io)
+
+---
+
+## 💬 Contact
+
+Welcome to join our community on
+
+| [Discord](https://discord.gg/eYMpfnkG8h)                     | DingTalk                                                     |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| <img src="https://gw.alicdn.com/imgextra/i1/O1CN01hhD1mu1Dd3BWVUvxN_!!6000000000238-2-tps-400-400.png" width="100" height="100"> | <img src="https://img.alicdn.com/imgextra/i4/O1CN014mhqFq1ZlgNuYjxrz_!!6000000003235-2-tps-400-400.png" width="100" height="100"> |
 
 ---
 
@@ -652,7 +670,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
-## Contributors ✨
+## ✨ Contributors
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 [![All Contributors](https://img.shields.io/badge/all_contributors-32-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
