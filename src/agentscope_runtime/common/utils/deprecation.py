@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# deprecation.py
 from __future__ import annotations
 
 import functools
