@@ -27,7 +27,7 @@
 
 **AgentScope Runtime** is a **production-grade runtime** for agent applications.
 
-> ***Core capabilities:***
+> **Core capabilities:**
 >
 > **Tool Sandboxing** — tool call runs inside a **hardened sandbox**
 >
