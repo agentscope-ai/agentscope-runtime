@@ -27,18 +27,16 @@
 
 **AgentScope Runtime** 是一个面向生产环境的 **Agent 应用运行时**。
 
-> **AgentScope Runtime = 工具沙箱 + AaaS API + 可扩展部署**
-
 ***核心能力：***
 
-- ***工具沙箱（Tool Sandboxing）** —— 工具调用在 **加固的沙箱** 内运行*
-- ***Agent 即服务（AaaS）API** —— 将 Agent 以 **流式、可用于生产的 API** 形式对外提供*
-- ***可扩展部署（Scalable Deployment）** —— 可在本地、Kubernetes 或无服务器环境部署，实现 **弹性扩缩容***
+***工具沙箱（Tool Sandboxing）** —— 工具调用在 **加固的沙箱** 内运行*
+***Agent 即服务（AaaS）API** —— 将 Agent 以 **流式、可用于生产的 API** 形式对外提供*
+***可扩展部署（Scalable Deployment）** —— 可在本地、Kubernetes 或无服务器环境部署，实现 **弹性扩缩容***
 
 ***此外：***
 
-- ***全栈可观测性**（日志 / 指标 / 链路追踪）*
-- ***框架兼容性**，兼容主流 Agent 框架*
+***全栈可观测性**（日志 / 指标 / 链路追踪）*
+***框架兼容性**，兼容主流 Agent 框架*
 
 </div>
 
