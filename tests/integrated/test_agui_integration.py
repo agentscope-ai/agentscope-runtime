@@ -106,7 +106,7 @@ def launch_agentscope_app():
         agent = ReActAgent(
             name="Friday",
             model=DashScopeChatModel(
-                "qwen-max",
+                "qwen-plus",
                 api_key=os.getenv("DASHSCOPE_API_KEY"),
                 enable_thinking=False,
                 stream=True,
