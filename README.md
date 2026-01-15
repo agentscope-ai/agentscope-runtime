@@ -1,6 +1,6 @@
 <div align="center">
 
-# AgentScope Runtime v1.0
+# AgentScope Runtime: A Production-grade Runtime for Agent Applications
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/agentscope-ai/agentscope-runtime)
 [![WebUI](https://img.shields.io/badge/Try_WebUI-Online-green.svg?logo=googlechrome)](http://webui.runtime.agentscope.io/)
@@ -24,8 +24,6 @@
 [[Try WebUI]](http://webui.runtime.agentscope.io/)
 [[中文README]](README_zh.md)
 [[Samples]](https://github.com/agentscope-ai/agentscope-samples)
-
-**AgentScope Runtime** is a **production-grade runtime** for agent applications.
 
 > **Core capabilities:**
 >

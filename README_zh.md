@@ -1,6 +1,6 @@
 <div align="center">
 
-# AgentScope Runtime v1.0
+# AgentScope Runtime：一个生产级的智能体应用运行时框架
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/agentscope-ai/agentscope-runtime)
 [![WebUI](https://img.shields.io/badge/Try_WebUI-Online-green.svg?logo=googlechrome)](http://webui.runtime.agentscope.io/)
@@ -24,8 +24,6 @@
 [[体验WebUI]](http://webui.runtime.agentscope.io/)
 [[English README]](README.md)
 [[示例]](https://github.com/agentscope-ai/agentscope-samples)
-
-**AgentScope Runtime** 是一个面向生产环境的 **Agent 应用运行时**。
 
 > **核心能力：**
 >
