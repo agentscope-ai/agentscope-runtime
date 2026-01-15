@@ -35,7 +35,6 @@
 
 ***Scalable Deployment** — deploy locally, on Kubernetes, or serverless for **elastic scale***
 
-
 ***Plus:***
 
 ***Full-stack observability** (logs / traces)*
@@ -624,7 +623,7 @@ For more advanced serverless deployment guides, please refer to the [documentati
 
 ## 📚 Guides
 
-For a more detailed tutorial, please refer to:[![Cookbook](https://img.shields.io/badge/📚_Cookbook-English|中文-teal.svg)](https://runtime.agentscope.io)
+For a more detailed tutorial, please refer to: [![Cookbook](https://img.shields.io/badge/📚_Cookbook-English|中文-teal.svg)](https://runtime.agentscope.io)
 
 ---
 
