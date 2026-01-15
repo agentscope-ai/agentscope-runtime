@@ -540,7 +540,7 @@ The `AgentApp` exposes a `deploy` method that takes a `DeployManager` instance a
 
 * The deployer will automatically add common agent protocols, such as **A2A**, **Response API**.
 
-After deployment, users can access the service at `http://localhost:8090/process:
+After deployment, users can access the service at http://localhost:8090/process:
 
 ```python
 from agentscope_runtime.engine.deployers import LocalDeployManager
