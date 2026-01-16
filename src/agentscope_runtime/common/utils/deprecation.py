@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import functools
+import threading
 from dataclasses import dataclass
 from typing import Callable, TypeVar
 
@@ -41,6 +42,7 @@ def format_deprecation_message(subject: str, info: DeprecationInfo) -> str:
 
 
 _LOGGED_ONCE_MESSAGES: set[str] = set()
+_LOGGED_ONCE_LOCK = threading.Lock()
 
 
 def warn_deprecated(
@@ -53,14 +55,12 @@ def warn_deprecated(
     message = format_deprecation_message(subject, info)
 
     if once:
-        if message in _LOGGED_ONCE_MESSAGES:
-            return
-        _LOGGED_ONCE_MESSAGES.add(message)
+        with _LOGGED_ONCE_LOCK:
+            if message in _LOGGED_ONCE_MESSAGES:
+                return
+            _LOGGED_ONCE_MESSAGES.add(message)
 
-    try:
-        logger.warning(message, stacklevel=stacklevel)
-    except TypeError:
-        logger.warning(message)
+    logger.warning(message, stacklevel=stacklevel)
 
 
 def deprecated(
