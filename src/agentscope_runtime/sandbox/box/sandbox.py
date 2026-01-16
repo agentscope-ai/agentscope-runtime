@@ -16,6 +16,36 @@ logger = logging.getLogger(__name__)
 class SandboxBase:
     """
     Common base class for both sync and async Sandbox interfaces.
+
+    This class holds shared configuration and lifecycle behaviors used by
+    `Sandbox` (sync) and `SandboxAsync` (async). It can operate in:
+
+    - Embedded mode: `base_url` is not provided; a local `SandboxManager`
+      is used.
+    - Remote mode: `base_url` is provided; operations are delegated to a remote
+      `SandboxManager` over HTTP.
+
+    Args:
+        sandbox_id: Existing sandbox/container identifier to attach to. If not
+            provided, a new sandbox will be created when entering the context
+            manager.
+        timeout: HTTP request timeout in seconds for client-side calls to the
+            sandbox runtime/manager (e.g., `list_tools`, `call_tool`, and other
+            network requests). This does not control sandbox idle
+            recycle/heartbeat timeout unless explicitly wired to do so.
+        base_url: Remote SandboxManager service URL. If provided, the sandbox
+            runs in remote mode; otherwise, embedded mode is used.
+        bearer_token: Optional bearer token for authenticating to the remote
+            manager.
+        sandbox_type: Sandbox runtime type/image selection.
+
+    Attributes:
+        base_url: Remote manager URL, if any.
+        embed_mode: Whether the sandbox is running with an embedded local
+            manager.
+        sandbox_type: Selected sandbox type.
+        timeout: HTTP request timeout in seconds.
+        _sandbox_id: The bound sandbox id (may be None until created).
     """
 
     def __init__(

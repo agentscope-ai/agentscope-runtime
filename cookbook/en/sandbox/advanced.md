@@ -120,6 +120,10 @@ KUBECONFIG_PATH=
 | `DEFAULT_MOUNT_DIR` | Default mount directory | `sessions_mount_dir`       | For persistent storage path where the `/workspace` file is stored |
 | `READONLY_MOUNTS` | Read-only directory mounts | `None` | A dictionary mapping **host paths** to **container paths**, mounted in **read-only** mode. Used to share files/configurations without allowing container writes. Example:<br/>`{"\/Users\/alice\/data": "\/data"}` mounts the host's `/Users/alice/data` to `/data` inside the container as read-only. |
 | `PORT_RANGE` | Available port range | `[49152,59152]`            | For service port allocation |
+| `HEARTBEAT_TIMEOUT` | Session heartbeat timeout (seconds) | `300` | If a `session_ctx_id` has no “touch” activities (e.g., list_tools/call_tool/check_health/add_mcp_servers) within this period, it is considered idle and can be reaped by the scanner. |
+| `HEARTBEAT_SCAN_INTERVAL` | Heartbeat scan interval (seconds) | `0` | Interval for the background watcher to run the heartbeat scan. Set to `0` to disable the watcher (you may run `scan_heartbeat_once()` via an external cron instead). |
+| `HEARTBEAT_LOCK_TTL` | Distributed lock TTL for scan/reap (seconds) | `120` | In multi-instance deployments, used to ensure only one instance reaps a given `session_ctx_id` at a time. Should be larger than the typical reap duration; too small may cause duplicate reaping after lock expiry. |
+| `MAX_SANDBOX_INSTANCES` | Maximum sandbox instances (total container cap) | `0` | Limits the total number of sandbox instances (containers) the SandboxManager can create/keep. When the current container count reaches or exceeds this value, new creation requests are denied (e.g., returning `None` or raising an exception, depending on implementation). Values: • `0`: unlimited • `N>0`: at most `N` instances Examples: • `MAX_SANDBOX_INSTANCES=20` |
 
 ##### Backend Comparison
 
