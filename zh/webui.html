@@ -636,26 +636,34 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <section id="webui">
 <h1>WebUI<a class="headerlink" href="#webui" title="Link to this heading">¶</a></h1>
-<p>在 <strong>WebUI</strong> 中调用智能体（Agent）主要有两种方式：</p>
+<p>在 <strong>WebUI</strong> 中，主要有三种方式调用 Agent：</p>
 <ol class="arabic simple">
-<li><p><strong>使用 <code class="docutils literal notranslate"><span class="pre">npx</span></code> 直接启动</strong></p></li>
+<li><p><strong>使用 <a class="reference external" href="http://webui.runtime.agentscope.io/">托管版 WebUI</a>（推荐，无需安装）</strong></p></li>
+<li><p><strong>直接使用 <code class="docutils literal notranslate"><span class="pre">npx</span></code> 启动</strong></p></li>
 <li><p><strong>本地安装并启动开发环境</strong></p></li>
 </ol>
-<p>在开始之前，我们假设您已经完成了 <strong>Agent 的部署</strong>。例如，部署在 <code class="docutils literal notranslate"><span class="pre">localhost:8090</span></code>，WebUI 会通过其 <code class="docutils literal notranslate"><span class="pre">process</span></code> 端点进行调用，因此完整的调用地址为：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>http://localhost:8090/process
+<p>在开始之前，我们假设你已经<strong>部署好了 Agent</strong>。
+例如，如果部署在 <code class="docutils literal notranslate"><span class="pre">localhost:8090</span></code>，WebUI 会通过 <code class="docutils literal notranslate"><span class="pre">process</span></code> 端点调用它，因此完整请求 URL 为： http://localhost:8090/process</p>
+<p>本指南还需要 <strong>Node.js</strong> 环境以及 <code class="docutils literal notranslate"><span class="pre">npm</span></code> 或 <code class="docutils literal notranslate"><span class="pre">npx</span></code>（仅方法 2/3/4 需要）。请确保它们已正确安装。</p>
+<section id="id1">
+<h2>方法 1（推荐）：使用托管 WebUI（无需安装）<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
+<p>如果你不想在本地安装或运行 WebUI，推荐直接使用托管 WebUI：</p>
+<p><strong>http://webui.runtime.agentscope.io/</strong></p>
+<p>在浏览器中打开页面，并将 Agent 端点设置为你已部署的 <code class="docutils literal notranslate"><span class="pre">process</span></code> URL，例如：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">8090</span><span class="o">/</span><span class="n">process</span>
 </pre></div>
 </div>
-<p>此外，本章节需要依赖 <strong>Node.js</strong> 环境，并使用 <code class="docutils literal notranslate"><span class="pre">npm</span></code> 或 <code class="docutils literal notranslate"><span class="pre">npx</span></code> 工具，请先确保它们已正确安装。</p>
+</section>
 <section id="python-agent-webui">
-<h2>方法一：直接在 Python 中启动 Agent 并启用 WebUI<a class="headerlink" href="#python-agent-webui" title="Link to this heading">¶</a></h2>
-<p>这种方式适合直接在 Python 环境中运行智能体（Agent）并启动内置的 WebUI，只需确保你已经部署了 Agent 所需模型环境，并设置好 API Key。</p>
+<h2>方法 2：在 Python 中直接启动 Agent 并启用 WebUI<a class="headerlink" href="#python-agent-webui" title="Link to this heading">¶</a></h2>
+<p>这种方式适合在 Python 环境中直接运行 Agent，并启用内置 WebUI。你只需要确保 Agent 所需的模型环境已部署，并且 API Key 已正确配置。</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
 
 <span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
     <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
     <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="c1"># 此处省略智能体构建逻辑</span>
+<span class="c1"># 此处省略 Agent 构建逻辑</span>
 
 <span class="c1"># 启动服务并同时启用 WebUI</span>
 <span class="n">agent_app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8090</span><span class="p">,</span> <span class="n">web_ui</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -663,22 +671,22 @@ body.preview-active {
 </div>
 </section>
 <section id="npx">
-<h2>方法二：使用 <code class="docutils literal notranslate"><span class="pre">npx</span></code> 快速启动<a class="headerlink" href="#npx" title="Link to this heading">¶</a></h2>
-<p>如果您只是想快速体验，或者不需要改动代码，可直接在终端运行以下命令：</p>
+<h2>方法 3：通过 <code class="docutils literal notranslate"><span class="pre">npx</span></code> 快速启动<a class="headerlink" href="#npx" title="Link to this heading">¶</a></h2>
+<p>如果你只是想快速体验或不需要修改代码，可以直接在终端运行以下命令：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>npx<span class="w"> </span>@agentscope-ai/chat<span class="w"> </span>agentscope-runtime-webui<span class="w"> </span>--url<span class="w"> </span>http://localhost:8090/process
 </pre></div>
 </div>
 <blockquote>
-<div><p><strong>注意</strong>：请确认 URL 与您的 Agent 部署地址一致。</p>
+<div><p><strong>注意</strong>：请确保该 URL 与你的 Agent 部署地址一致。</p>
 </div></blockquote>
-<p>执行后，前端服务会启动在：</p>
+<p>执行后，前端服务将启动在：</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">5173</span>
 </pre></div>
 </div>
-<p>启动完成后，在浏览器打开 <a class="reference external" href="http://localhost:5173/">http://localhost:5173</a>，即可进入 WebUI，并以对话的方式直接调用您的 Agent。</p>
+<p>在浏览器中打开 <a class="reference external" href="http://localhost:5173/">http://localhost:5173</a> ，即可进入 WebUI，通过聊天界面与 Agent 交互。</p>
 </section>
-<section id="id1">
-<h2>方法三：本地安装并启动（适用于开发与二次定制）<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
+<section id="id2">
+<h2>方法 4：本地安装与启动（用于开发与自定义）<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
 <p>如果您计划深入开发或想详细了解 WebUI 细节，可以在 <strong>AgentScope-Runtime</strong> 的 <code class="docutils literal notranslate"><span class="pre">web/starter_webui</span></code> 目录下启动本地环境：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 进入 WebUI 启动目录</span>
 <span class="nb">cd</span><span class="w"> </span>web/starter_webui
@@ -696,8 +704,8 @@ npm<span class="w"> </span>run<span class="w"> </span>dev
 </div>
 <p>浏览器访问该地址，即可打开 WebUI，并与 Agent进行对话。</p>
 </section>
-<section id="id2">
-<h2>页面预览<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
+<section id="id3">
+<h2>页面预览<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h2>
 <p>在 WebUI 中，您可以通过可视化界面与 Agent 交互，并调用工具：</p>
 <p><strong>首页</strong></p>
 <p><img alt="img" src="https://img.alicdn.com/imgextra/i1/O1CN01r1DlU81iSI9YHYIJQ_!!6000000004411-0-tps-2980-1712.jpg" /></p>
@@ -799,10 +807,11 @@ npm<span class="w"> </span>run<span class="w"> </span>dev
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">WebUI</a><ul>
-<li><a class="reference internal" href="#python-agent-webui">方法一：直接在 Python 中启动 Agent 并启用 WebUI</a></li>
-<li><a class="reference internal" href="#npx">方法二：使用 <code class="docutils literal notranslate"><span class="pre">npx</span></code> 快速启动</a></li>
-<li><a class="reference internal" href="#id1">方法三：本地安装并启动（适用于开发与二次定制）</a></li>
-<li><a class="reference internal" href="#id2">页面预览</a></li>
+<li><a class="reference internal" href="#id1">方法 1（推荐）：使用托管 WebUI（无需安装）</a></li>
+<li><a class="reference internal" href="#python-agent-webui">方法 2：在 Python 中直接启动 Agent 并启用 WebUI</a></li>
+<li><a class="reference internal" href="#npx">方法 3：通过 <code class="docutils literal notranslate"><span class="pre">npx</span></code> 快速启动</a></li>
+<li><a class="reference internal" href="#id2">方法 4：本地安装与启动（用于开发与自定义）</a></li>
+<li><a class="reference internal" href="#id3">页面预览</a></li>
 </ul>
 </li>
 </ul>

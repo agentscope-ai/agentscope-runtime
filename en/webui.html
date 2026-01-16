@@ -636,19 +636,26 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <section id="webui">
 <h1>WebUI<a class="headerlink" href="#webui" title="Link to this heading">¶</a></h1>
-<p>In <strong>WebUI</strong>, there are mainly two ways to call an Agent:</p>
+<p>In <strong>WebUI</strong>, there are mainly three ways to call an Agent:</p>
 <ol class="arabic simple">
+<li><p><strong>Use the <a class="reference external" href="http://webui.runtime.agentscope.io/">hosted WebUI</a> (recommended, no installation)</strong></p></li>
 <li><p><strong>Start directly using <code class="docutils literal notranslate"><span class="pre">npx</span></code></strong></p></li>
 <li><p><strong>Install locally and start the development environment</strong></p></li>
 </ol>
 <p>Before you begin, we assume you have already <strong>deployed your Agent</strong>.
-For example, if it’s deployed at <code class="docutils literal notranslate"><span class="pre">localhost:8090</span></code>, the WebUI will call it via the <code class="docutils literal notranslate"><span class="pre">process</span></code> endpoint, so the full request URL will be:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>http://localhost:8090/process
+For example, if it’s deployed at <code class="docutils literal notranslate"><span class="pre">localhost:8090</span></code>, the WebUI will call it via the <code class="docutils literal notranslate"><span class="pre">process</span></code> endpoint, so the full request URL will be: http://localhost:8090/process</p>
+<p>This guide also requires a <strong>Node.js</strong> environment along with <code class="docutils literal notranslate"><span class="pre">npm</span></code> or <code class="docutils literal notranslate"><span class="pre">npx</span></code> (only needed for Method 2/3/4). Please make sure they are properly installed.</p>
+<section id="method-1-recommended-use-the-hosted-webui-no-installation">
+<h2>Method 1 (Recommended): Use the Hosted WebUI (No Installation)<a class="headerlink" href="#method-1-recommended-use-the-hosted-webui-no-installation" title="Link to this heading">¶</a></h2>
+<p>If you don’t want to install or run the WebUI locally, we recommend using the hosted WebUI directly:</p>
+<p><strong>http://webui.runtime.agentscope.io/</strong></p>
+<p>Open the page in your browser, and set your Agent endpoint to your deployed <code class="docutils literal notranslate"><span class="pre">process</span></code> URL, for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">8090</span><span class="o">/</span><span class="n">process</span>
 </pre></div>
 </div>
-<p>This guide also requires a <strong>Node.js</strong> environment along with <code class="docutils literal notranslate"><span class="pre">npm</span></code> or <code class="docutils literal notranslate"><span class="pre">npx</span></code>. Please make sure they are properly installed.</p>
-<section id="method-1-start-the-agent-directly-in-python-and-enable-the-webui">
-<h2>Method 1: Start the Agent Directly in Python and Enable the WebUI<a class="headerlink" href="#method-1-start-the-agent-directly-in-python-and-enable-the-webui" title="Link to this heading">¶</a></h2>
+</section>
+<section id="method-2-start-the-agent-directly-in-python-and-enable-the-webui">
+<h2>Method 2: Start the Agent Directly in Python and Enable the WebUI<a class="headerlink" href="#method-2-start-the-agent-directly-in-python-and-enable-the-webui" title="Link to this heading">¶</a></h2>
 <p>This approach is suitable for running the Agent directly in a Python environment and enabling the built‑in WebUI. You only need to ensure that the Agent’s required model environment has been deployed and that the API key is properly configured.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
 
@@ -663,8 +670,8 @@ For example, if it’s deployed at <code class="docutils literal notranslate"><s
 </pre></div>
 </div>
 </section>
-<section id="method-2-quick-start-via-npx">
-<h2>Method 2: Quick Start via <code class="docutils literal notranslate"><span class="pre">npx</span></code><a class="headerlink" href="#method-2-quick-start-via-npx" title="Link to this heading">¶</a></h2>
+<section id="method-3-quick-start-via-npx">
+<h2>Method 3: Quick Start via <code class="docutils literal notranslate"><span class="pre">npx</span></code><a class="headerlink" href="#method-3-quick-start-via-npx" title="Link to this heading">¶</a></h2>
 <p>If you just want to try it out quickly or don’t need to modify code, you can simply run the following command in your terminal:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>npx<span class="w"> </span>@agentscope-ai/chat<span class="w"> </span>agentscope-runtime-webui<span class="w"> </span>--url<span class="w"> </span>http://localhost:8090/process
 </pre></div>
@@ -678,8 +685,8 @@ For example, if it’s deployed at <code class="docutils literal notranslate"><s
 </div>
 <p>Open <a class="reference external" href="http://localhost:5173/">http://localhost:5173</a> in your browser, and you can enter the WebUI to interact with your Agent via a chat interface.</p>
 </section>
-<section id="method-3-local-installation-and-startup-for-development-and-customization">
-<h2>Method 3: Local Installation and Startup (for development and customization)<a class="headerlink" href="#method-3-local-installation-and-startup-for-development-and-customization" title="Link to this heading">¶</a></h2>
+<section id="method-4-local-installation-and-startup-for-development-and-customization">
+<h2>Method 4: Local Installation and Startup (for development and customization)<a class="headerlink" href="#method-4-local-installation-and-startup-for-development-and-customization" title="Link to this heading">¶</a></h2>
 <p>If you plan to go deeper into development or want to customize the WebUI, you can start a local environment in the <strong>AgentScope-Runtime</strong> <code class="docutils literal notranslate"><span class="pre">web/starter_webui</span></code> directory:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Go to the WebUI startup directory</span>
 <span class="nb">cd</span><span class="w"> </span>web/starter_webui
@@ -800,9 +807,10 @@ npm<span class="w"> </span>run<span class="w"> </span>dev
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">WebUI</a><ul>
-<li><a class="reference internal" href="#method-1-start-the-agent-directly-in-python-and-enable-the-webui">Method 1: Start the Agent Directly in Python and Enable the WebUI</a></li>
-<li><a class="reference internal" href="#method-2-quick-start-via-npx">Method 2: Quick Start via <code class="docutils literal notranslate"><span class="pre">npx</span></code></a></li>
-<li><a class="reference internal" href="#method-3-local-installation-and-startup-for-development-and-customization">Method 3: Local Installation and Startup (for development and customization)</a></li>
+<li><a class="reference internal" href="#method-1-recommended-use-the-hosted-webui-no-installation">Method 1 (Recommended): Use the Hosted WebUI (No Installation)</a></li>
+<li><a class="reference internal" href="#method-2-start-the-agent-directly-in-python-and-enable-the-webui">Method 2: Start the Agent Directly in Python and Enable the WebUI</a></li>
+<li><a class="reference internal" href="#method-3-quick-start-via-npx">Method 3: Quick Start via <code class="docutils literal notranslate"><span class="pre">npx</span></code></a></li>
+<li><a class="reference internal" href="#method-4-local-installation-and-startup-for-development-and-customization">Method 4: Local Installation and Startup (for development and customization)</a></li>
 <li><a class="reference internal" href="#page-preview">Page Preview</a></li>
 </ul>
 </li>
