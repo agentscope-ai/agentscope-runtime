@@ -68,6 +68,11 @@ sphinx:
       python: ['https://docs.python.org/3', null]
       numpy: ['https://numpy.org/doc/stable/', null]
 
+    # Mermaid Configuration (for China network access)
+    # Note: sphinxcontrib.mermaid loads Mermaid from CDN which may be inaccessible in China.
+    # We use a custom loader script (mermaid-loader.js) to replace the CDN with
+    # a China-accessible CDN (jsDelivr) at runtime.
+
     # Theme Configuration
     html_theme: furo
     pygments_style: "friendly"
@@ -81,6 +86,7 @@ sphinx:
       - "_static"
     use_multitoc_numbering: false
     html_js_files:
+      - mermaid-loader.js
       - language.js
     html_sidebars:
       "**":

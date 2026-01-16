@@ -592,10 +592,11 @@ data_builder.complete()
 
 ### 适配器架构
 
-AgentScope Runtime 提供了两种内置协议适配器：
+AgentScope Runtime 提供了三种内置协议适配器：
 
 - **A2A 协议适配器**（`A2AFastAPIDefaultAdapter`）：支持 Agent-to-Agent 协议
 - **Response API 协议适配器**（`ResponseAPIDefaultAdapter`）：支持 OpenAI Responses API 协议
+- **AG-UI 协议适配器**（`AGUIDefaultAdapter`）：支持 AG-UI 前端框架协议
 
 ### 使用内置适配器
 
@@ -605,6 +606,7 @@ AgentApp 默认会自动注册内置适配器：
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.deployers.adapter.a2a import A2AFastAPIDefaultAdapter
 from agentscope_runtime.engine.deployers.adapter.responses import ResponseAPIDefaultAdapter
+from agentscope_runtime.engine.deployers.adapter.agui import AGUIDefaultAdapter
 
 app = AgentApp(agent=agent)
 
@@ -618,6 +620,7 @@ app = AgentApp(
             agent_description="A helpful assistant",
         ),
         ResponseAPIDefaultAdapter(),
+        AGUIDefaultAdapter(),
     ],
 )
 ```

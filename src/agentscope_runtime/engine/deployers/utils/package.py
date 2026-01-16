@@ -593,60 +593,64 @@ def package(
     Package an AgentApp or Runner for deployment.
 
     This function supports two deployment patterns:
+
     1. Object-style: package(app=my_app) or package(runner=my_runner)
-    2. Entrypoint-style: package(entrypoint="app.py") or package(
-    entrypoint="project_dir/")
+    2. Entrypoint-style: package(entrypoint="app.py") or
+       package(entrypoint="project_dir/")
 
     For object-style deployment, this function will:
-    1. Extract the project directory containing the app/runner
-    2. Generate a new main.py that imports and runs the app/runner
-    3. Package the project with the generated main.py as entrypoint
+
+    1. Extract the project directory containing the app/runner.
+    2. Generate a new main.py that imports and runs the app/runner.
+    3. Package the project with the generated main.py as entrypoint.
 
     Build directory naming:
+
     - When output_dir=None (default), creates workspace directory with
-                platform-aware naming
-    - Directory format: cwd/.agentscope_runtime/builds/<platform>_
-                 <timestamp>_<code>/
-    - Explicit output_dir uses the provided path
+      platform-aware naming.
+    - Directory format: cwd/.agentscope_runtime/builds/
+      <platform>_<timestamp>_<code>/
+    - Explicit output_dir uses the provided path.
 
     Args:
-        app: AgentApp instance (for object-style deployment)
-        runner: Runner instance (for object-style deployment)
-        entrypoint: Entrypoint specification (for CLI-style deployment)
-        output_dir: Output directory (creates temp dir if None)
-        host: Default host for the service (default: "0.0.0.0")
-        port: Default port for the service (default: 8090)
-        extra_parameters: Additional runtime parameters to expose via CLI
-        requirements: Additional pip requirements
-        platform: Deployment platform (k8s, modelstudio, agentrun, local)
-        **kwargs: Additional keyword arguments (ignored)
+        app: AgentApp instance (for object-style deployment).
+        runner: Runner instance (for object-style deployment).
+        entrypoint: Entrypoint specification (for CLI-style deployment).
+        output_dir: Output directory (creates temp dir if None).
+        host: Default host for the service (default: "0.0.0.0").
+        port: Default port for the service (default: 8090).
+        extra_parameters: Additional runtime parameters to expose via CLI.
+        requirements: Additional pip requirements.
+        platform: Deployment platform (k8s, modelstudio, agentrun, local).
+        **kwargs: Additional keyword arguments (ignored).
 
     Returns:
-        Tuple of (package_path, project_info)
-        - package_path: Path to the deployment package directory
-        - project_info: ProjectInfo with project metadata
+        Tuple of (package_path, project_info).
+
+        - package_path: Path to the deployment package directory.
+        - project_info: ProjectInfo with project metadata.
 
     Raises:
-        ValueError: If neither app/runner nor entrypoint is provided
-        RuntimeError: If packaging fails
+        ValueError: If neither app/runner nor entrypoint is provided.
+        RuntimeError: If packaging fails.
 
-    Example:
-        >>> # Package with extra parameters
-        >>> extra_params = [
-        ...     RuntimeParameter(
-        ...         name="log_level",
-        ...         type="str",
-        ...         default="info",
-        ...         help="Logging level"
-        ...     ),
-        ...     RuntimeParameter(
-        ...         name="workers",
-        ...         type="int",
-        ...         default=4,
-        ...         help="Number of worker threads"
-        ...     ),
-        ... ]
-        >>> package(app=my_app, extra_parameters=extra_params, platform="k8s")
+    Example::
+
+        extra_params = [
+            RuntimeParameter(
+                name="log_level",
+                type="str",
+                default="info",
+                help="Logging level",
+            ),
+            RuntimeParameter(
+                name="workers",
+                type="int",
+                default=4,
+                help="Number of worker threads",
+            ),
+        ]
+        package(app=my_app, extra_parameters=extra_params, platform="k8s")
     """
     # Determine project info and target object
     target_obj = None

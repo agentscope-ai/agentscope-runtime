@@ -622,15 +622,17 @@ class Message(Event):
 
         # new content
         if new_content.index is None:
+            content_index = len(self.content)
             copy = deepcopy(new_content)
             copy.delta = None
-            copy.index = None
-            copy.msg_id = None
+            copy.index = content_index
+            copy.msg_id = self.id
             self.content.append(copy)
 
-            new_content.index = len(self.content) - 1
+            new_content.index = content_index
             new_content.msg_id = self.id
             new_content.in_progress()
+
             return new_content
 
         # delta content

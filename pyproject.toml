@@ -1,6 +1,6 @@
 [project]
 name = "agentscope-runtime"
-version = "1.0.5a1"
+version = "1.0.5"
 description = "A production-ready runtime framework for agent applications, providing secure sandboxed execution environments and scalable deployment solutions with multi-framework support."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -28,6 +28,7 @@ dependencies = [
     "asgiref",
     "click>=8.0.0",
     "rich>=13.0.0",
+    "ag-ui-protocol>=0.1.10"
 ]
 
 [tool.setuptools]
@@ -91,8 +92,10 @@ ext = [
     "PyYAML",
     "agno>=2.3.8",
     "nacos-sdk-python>=3.0.0",
-    "agent-framework>=1.0.0b251120",
+    "agent-framework>=1.0.0b251120,<1.0.0b260114",
     "boxlite>=0.5.2",
+    "alibabacloud-eas20210701>=7.0.0,<8.0.0",
+    "alibabacloud-aiworkspace20210204>=7.0.0,<8.0.0",
 ]
 
 [tool.pytest.ini_options]

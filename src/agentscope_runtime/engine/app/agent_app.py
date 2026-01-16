@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E501
 import logging
 import os
 import types
@@ -20,6 +21,7 @@ from ..deployers.adapter.a2a import (
 from ..deployers.adapter.responses.response_api_protocol_adapter import (
     ResponseAPIDefaultAdapter,
 )
+from ..deployers.adapter.agui import AGUIDefaultAdapter, AGUIAdaptorConfig
 from ..deployers.utils.deployment_modes import DeploymentMode
 from ..deployers.utils.service_utils.fastapi_factory import FastAPIAppFactory
 from ..runner import Runner
@@ -52,6 +54,7 @@ class AgentApp(BaseApp):
         runner: Optional[Runner] = None,
         enable_embedded_worker: bool = False,
         a2a_config: Optional["AgentCardWithRuntimeConfig"] = None,
+        agui_config: Optional[AGUIAdaptorConfig] = None,
         **kwargs,
     ):
         """
@@ -74,11 +77,14 @@ class AgentApp(BaseApp):
                 Must be an ``AgentCardWithRuntimeConfig`` instance, which
                 contains ``agent_card`` (AgentCard object or dict) and runtime
                 settings (host, port, registry, task_timeout, etc.).
-                Example:
-                    from a2a.types import AgentCard, AgentCapabilities
-                    from agentscope_runtime.engine.deployers.adapter.a2a import (  # noqa: E501
+
+                Example::
+
+                    from a2a.types import AgentCapabilities
+                    from agentscope_runtime.engine.deployers.adapter.a2a import (
                         AgentCardWithRuntimeConfig,
                     )
+
                     config = AgentCardWithRuntimeConfig(
                         agent_card={
                             "name": "MyAgent",
@@ -93,6 +99,7 @@ class AgentApp(BaseApp):
                         registry=[nacos_registry],
                         task_timeout=120,
                     )
+            agui_config: Config for AGUI adaptor.
             **kwargs: Additional keyword arguments passed to FastAPI app
         """
 
@@ -125,7 +132,12 @@ class AgentApp(BaseApp):
         )
 
         response_protocol = ResponseAPIDefaultAdapter()
-        self.protocol_adapters = [a2a_protocol, response_protocol]
+        agui_protocol = AGUIDefaultAdapter(config=agui_config)
+        self.protocol_adapters = [
+            a2a_protocol,
+            response_protocol,
+            agui_protocol,
+        ]
 
         self._app_kwargs = {
             "title": "Agent Service",

@@ -1,5 +1,46 @@
 # CHANGELOG
 
+## v1.0.5
+
+**AgentScope Runtime v1.0.5** focuses on improving deployment flexibility and UI/protocol integrations. This release adds a new PAI deployer with CLI support, introduces Boxlite as an additional sandbox backend, and provides a container client factory to unify container-based deployments. It also brings AG-UI protocol support, integrates ModelStudio Memory SDK and demos, and includes multiple hotfixes for FC replacement maps, MS-Agent-Framework compatibility, and message streaming tool-call handling. Documentation has been refreshed across several sections, and contributor acknowledgements were updated.
+
+### Added
+
+- **PAI Deployer + CLI Support**
+  Added a PAI deployer with CLI support, documentation, and tests.
+- **Boxlite Sandbox Backend**
+  Added Boxlite as a Sandbox backend via `CONTAINER_DEPLOYMENT=boxlite`.
+- **Container Client Factory**
+  Introduced a container client factory to standardize container client creation and usage.
+- **AG-UI Protocol Support**
+  Added support for the AG-UI protocol to improve UI interoperability.
+- **ModelStudio Memory SDK + Demo**
+  Integrated ModelStudio Memory SDK along with demo examples.
+
+### Changed
+
+- **Expose AgentResponse to query_handler**
+  `AgentResponse` is now exposed to `query_handler` via `kwargs` for better extensibility.
+- **Deployment Lazy Import Loader**
+  Added a lazy import loader for deployment to reduce import overhead and improve startup behavior.
+
+### Fixed
+
+- **FC replacement_map Hotfix**
+  Fixed `replacement_map` in Function Compute (FC) deployment.
+- **BaseResponse completed_at**
+  Ensured `completed_at` is properly set in `BaseResponse`.
+- **A2A Registry Optional Config**
+  Fixed issues when A2A registry support is enabled but not configured.
+- **MS-Agent-Framework Compatibility**
+  Temporarily pinned/limited `ms-agent-framework` to versions **below `v1.0.0b260114`** to avoid breaking changes and keep runtime stable. A proper adaptation/upgrade will be delivered in a follow-up release.
+- **LangGraph Message Stream Tool Calls**
+  Enhanced tool call handling in LangGraph message streams.
+
+### Documentation
+
+- Multiple README and docs fixes and updates (deployment, custom sandbox, general docs refinements).
+
 ## v1.0.4
 
 Building on the extensibility and consistency of the v1.x framework, **AgentScope Runtime v1.0.4** introduces several new deployment features, including Knative and Serverless FC deployers, native support for the MS-Agent-Framework, and an asynchronous Sandbox SDK to reduce blocking and improve responsiveness.

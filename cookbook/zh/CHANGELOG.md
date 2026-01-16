@@ -1,5 +1,46 @@
 # CHANGELOG
 
+## v1.0.5
+
+**AgentScope Runtime v1.0.5** 主要聚焦于提升部署灵活性以及 UI/协议层的集成能力。本次版本新增了带 CLI 支持的 PAI 部署器，引入 Boxlite 作为新的沙箱后端，并提供容器客户端工厂以统一容器化部署相关能力。同时新增 AG-UI 协议支持，集成 ModelStudio Memory SDK 及 Demo，并修复了 FC replacement_map、MS-Agent-Framework 兼容性、以及消息流工具调用处理等多个问题。文档也在多个章节进行了更新，并补充了贡献者信息。
+
+### Added
+
+- **PAI 部署器 + CLI 支持**
+  新增 PAI 部署器，提供 CLI 支持，并补充了相关文档与测试。
+- **Boxlite 沙箱后端**
+  新增 Boxlite 作为沙箱后端，可通过 `CONTAINER_DEPLOYMENT=boxlite` 启用。
+- **容器客户端工厂（Container Client Factory）**
+  引入容器客户端工厂，用于规范化/统一容器客户端的创建与使用。
+- **AG-UI 协议支持**
+  新增对 AG-UI 协议的支持，提升与 UI 的互操作性。
+- **ModelStudio Memory SDK + Demo**
+  集成 ModelStudio Memory SDK，并提供示例 Demo。
+
+### Changed
+
+- **向 query_handler 暴露 AgentResponse**
+  通过 `kwargs` 将 `AgentResponse` 暴露给 `query_handler`，增强可扩展性。
+- **部署模块懒加载导入（Lazy Import Loader）**
+  为部署相关模块引入懒加载导入机制，减少导入开销并改善启动表现。
+
+### Fixed
+
+- **FC replacement_map 热修复**
+  修复 Function Compute（FC）部署中的 `replacement_map` 问题。
+- **BaseResponse completed_at**
+  确保 `BaseResponse` 正确设置 `completed_at` 字段。
+- **A2A Registry 可选配置**
+  修复启用 A2A registry 支持但未配置时引发的问题。
+- **MS-Agent-Framework 兼容性**
+  为避免 `ms-agent-framework v1.0.0b260114` 引入的破坏性变更，临时将 `ms-agent-framework` 版本限制在 **低于 `v1.0.0b260114`** 的范围内，以保证运行稳定；后续版本将提供正式适配/升级。
+- **LangGraph 消息流工具调用**
+  增强 LangGraph message stream 中的 tool call 处理逻辑。
+
+### Documentation
+
+- 对 README 与多处文档进行了修正与更新（包括部署、自定义沙箱及其他说明性内容）。
+
 ## v1.0.4
 
 在保持 AgentScope Runtime v1.x 框架可扩展性与一致性的基础上，**AgentScope Runtime v1.0.4** 引入了多项部署支持的新特性，包括 Knative 与 Serverless FC 部署器、对 MS-Agent-Framework 的支持，以及异步 Sandbox SDK 以减少阻塞并提升响应速度。同时，本版本优化了 OpenTelemetry Tracer Provider 的安全处理，更新了依赖，并修复了非流式工具的调用问题。文档部分新增了 WebUI 试用入口与部署示例修正，并增添了多位新贡献者。

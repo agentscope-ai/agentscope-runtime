@@ -61,6 +61,22 @@ def _create_deployer(
             )
 
             return AgentRunDeployManager()
+
+        elif platform == "pai":
+            from agentscope_runtime.engine.deployers.pai_deployer import (
+                PAIDeployManager,
+            )
+
+            # Extract workspace_id from deployment config
+            config = deployment_state.get("config", {})
+            workspace_id = config.get("workspace_id")
+            region = config.get("region_id")
+            oss_path = config.get("oss_path")
+            return PAIDeployManager(
+                workspace_id=workspace_id,
+                region_id=region,
+                oss_path=oss_path,
+            )
         else:
             echo_warning(f"Unknown platform: {platform}")
             return None

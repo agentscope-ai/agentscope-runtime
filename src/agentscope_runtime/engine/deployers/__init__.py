@@ -28,6 +28,13 @@ install_lazy_loader(
     },
 )
 
+try:
+    from .pai_deployer import (
+        PAIDeployManager,
+    )
+except ImportError:
+    PAIDeployManager = None  # type: ignore
+
 __all__ = [
     "K8sConfig",
     "DeployManager",
@@ -37,4 +44,5 @@ __all__ = [
     "AgentRunDeployManager",
     "KnativeDeployManager",
     "FCDeployManager",
+    "PAIDeployManager",
 ]

@@ -1,6 +1,6 @@
 <div align="center">
 
-# AgentScope Runtime v1.0
+# AgentScope Runtime：一个生产级的智能体应用运行时框架
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/agentscope-ai/agentscope-runtime)
 [![WebUI](https://img.shields.io/badge/Try_WebUI-Online-green.svg?logo=googlechrome)](http://webui.runtime.agentscope.io/)
@@ -25,13 +25,53 @@
 [[English README]](README.md)
 [[示例]](https://github.com/agentscope-ai/agentscope-samples)
 
-**智能体应用的生产就绪运行时框架**
-
-***AgentScope Runtime** 是一个全面的智能体运行时框架，旨在解决两个关键挑战：**高效的智能体部署**和**沙箱执行**。它内置了基础服务（长短期记忆、智能体状态持久化）和安全沙箱基础设施。无论您需要大规模部署智能体还是确保安全的工具交互，AgentScope Runtime 都能提供具有完整可观测性和开发者友好部署的核心基础设施。*
-
-*在 V1.0 中，这些运行时服务通过 **适配器模式** 对外开放，允许开发者在保留原有智能体框架接口与行为的基础上，将 AgentScope 的状态管理、会话记录、工具调用等模块按需嵌入到应用生命周期中。从过去的 “黑盒化替换” 变为 “白盒化集成”，开发者可以显式地控制服务初始化、工具注册与状态持久化流程，从而在不同框架间实现无缝整合，同时获得更高的扩展性与灵活性。*
+> **核心能力：**
+>
+> **工具沙箱化（Tool Sandboxing）** —— 工具调用在**加固的沙箱**中运行
+>
+> **Agent 即服务（AaaS）API** —— 将智能体以**支持流式输出、可用于生产环境的 API** 形式对外提供
+>
+> **可扩展部署** —— 支持本地、Kubernetes 或无服务器（Serverless）部署，实现**弹性扩缩容**
+>
+> <details>
+> <summary><b>此外</b></summary>
+>
+> <br>
+>
+> **全栈可观测性**（日志 / 链路追踪）
+>
+> **框架兼容性** —— 兼容主流智能体框架
+>
+> </details>
 
 </div>
+
+---
+
+## 📋 目录
+
+> [!NOTE]
+>
+> **<u>推荐阅读顺序：</u>**
+>
+> - **我只想 5 分钟跑起来Agent应用**：快速开始 （Agent App 示例） → curl 调用验证
+> - **我关心安全工具执行/自动化环境**：快速开始 （沙箱示例） → 镜像配置 →（需要时）生产级 Serverless 沙箱部署
+> - **我要做生产部署/对外提供 API**：快速开始 （Agent App 示例）→ 快速开始 （部署示例） → 指南
+> - **我要参与共建**：贡献 → 联系我们
+
+- [新闻](#-新闻)
+- [关键特性](#-关键特性)
+- [快速开始](#-快速开始)：从安装到跑通一个最小 Agent API 服务，掌握 AgentApp 的 init/query/shutdown 三段式开发范式。
+  - [前提条件](#前提条件)：运行环境与依赖要求
+  - [安装](#安装)：PyPI/源码安装方式
+  - [Agent App 示例](#agent-app-示例)：如何写一个可流式输出（SSE）的 Agent-as-a-Service API
+  - [沙箱示例](#沙箱示例)：如何在隔离环境里安全执行 Python/Shell/GUI/Browser/Filesystem/Mobile 工具
+  - [部署示例](#部署示例) ：学会用 DeployManager 本地/Serverless 部署，并了解兼容 A2A、Response API 与 OpenAI SDK 的访问方式。
+- [指南](#-指南)：进一步学习关于 AgentScope Runtime 的概念、架构、API 与示例项目的教程网站，从“能跑”走向“可扩展/可维护”。
+- [联系我们](#-联系我们)
+- [贡献](#-贡献)
+- [许可证](#-许可证)
+- [贡献者](#-贡献者)
 
 ---
 
@@ -45,12 +85,12 @@
 
 ## ✨ 关键特性
 
-- **🏗️ 部署基础设施**：内置多种服务用于智能体状态管理、历史会话管理、长期记忆和沙盒环境生命周期控制等
-- **🔧 框架无关**：不绑定任何特定智能体框架，与流行的开源智能体框架和自定义实现无缝集成
-- ⚡ **对开发者友好**：提供`AgentApp`方便部署并提供强大的自定义选项
-- **📊 可观察性**：对运行时操作进行全面跟踪和监控
-- **🔒 沙盒工具执行**：隔离的沙盒确保安全工具执行，不会影响系统
-- **🛠️ 开箱即用 & 一键适配**：提供种类丰富的开箱即用工具，适配器快速接入不同框架
+- **部署基础设施**：内置多种服务用于智能体状态管理、历史会话管理、长期记忆和沙盒环境生命周期控制等
+- **框架无关**：不绑定任何特定智能体框架，与流行的开源智能体框架和自定义实现无缝集成
+- **对开发者友好**：提供`AgentApp`方便部署并提供强大的自定义选项
+- **可观察性**：对运行时操作进行全面跟踪和监控
+- **沙盒工具执行**：隔离的沙盒确保安全工具执行，不会影响系统
+- **开箱即用 & 一键适配**：提供种类丰富的开箱即用工具，适配器快速接入不同框架
 
 > [!NOTE]
 >
@@ -63,26 +103,6 @@
 > | [Microsoft Agent Framework](https://runtime.agentscope.io/zh/ms_agent_framework_guidelines.html) | ✅             | ✅    | 🚧       |
 > | [Agno](https://runtime.agentscope.io/zh/agno_guidelines.html) | ✅             | ✅    | 🚧       |
 > | AutoGen                                                      | 🚧             | ✅    | 🚧       |
-
----
-
-## 💬 联系我们
-
-欢迎加入我们的社区，获取最新的更新和支持！
-
-| [Discord](https://discord.gg/eYMpfnkG8h)                     | 钉钉群                                                       |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| <img src="https://gw.alicdn.com/imgextra/i1/O1CN01hhD1mu1Dd3BWVUvxN_!!6000000000238-2-tps-400-400.png" width="100" height="100"> | <img src="https://img.alicdn.com/imgextra/i4/O1CN014mhqFq1ZlgNuYjxrz_!!6000000003235-2-tps-400-400.png" width="100" height="100"> |
-
----
-
-## 📋 目录
-
-- [🚀 快速开始](#-快速开始)
-- [📚 指南](#-指南)
-- [🏗️ 部署](#️-部署)
-- [🤝 贡献](#-贡献)
-- [📄 许可证](#-许可证)
 
 ---
 
@@ -525,19 +545,7 @@ runtime-sandbox-server --config fc.env
 ```
 服务器启动后，您可以通过URL `http://localhost:8000` 访问沙箱服务器，并调用上述描述的沙箱工具。
 
----
-
-## 📚 指南
-
-- **[📖 Cookbook](https://runtime.agentscope.io/zh/intro.html)**: 全面教程
-- **[💡 概念](https://runtime.agentscope.io/zh/concept.html)**: 核心概念和架构概述
-- **[🚀 快速开始](https://runtime.agentscope.io/zh/quickstart.html)**: 快速入门教程
-- **[🏠 展示厅](https://runtime.agentscope.io/zh/demohouse.html)**: 丰富的示例项目
-- **[📋 API 参考](https://runtime.agentscope.io/zh/api/index.html)**: 完整的API文档
-
----
-
-## 🏗️ 部署
+### 部署示例
 
 `AgentApp` 提供了一个 `deploy` 方法，该方法接收一个 `DeployManager` 实例并部署代理（agent）。
 
@@ -582,7 +590,13 @@ print(response)
 [ModelStudio](https://bailian.console.aliyun.com/?admin=1&tab=doc#/doc/?type=app&url=2983030)。
 
 ```python
-from agentscope_runtime.engine.deployers import ModelStudioDeployManager
+import os
+from agentscope_runtime.engine.deployers.modelstudio_deployer import (
+    ModelstudioDeployManager,
+    OSSConfig,
+    ModelstudioConfig,
+)
+
 # 创建部署管理器
 deployer = ModelstudioDeployManager(
     oss_config=OSSConfig(
@@ -611,6 +625,22 @@ result = await app.deploy(
 ```
 
 有关更高级的 serverless 部署指南，请参考[文档](https://runtime.agentscope.io/zh/advanced_deployment.html#method-4-modelstudio-deployment)。
+
+---
+
+## 📚 教程
+
+更详细的教程请参考：[![Cookbook](https://img.shields.io/badge/📚_Cookbook-English|中文-teal.svg)](https://runtime.agentscope.io)
+
+---
+
+## 💬 联系我们
+
+欢迎加入我们的社区，获取最新的更新和支持！
+
+| [Discord](https://discord.gg/eYMpfnkG8h)                     | 钉钉群                                                       |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| <img src="https://gw.alicdn.com/imgextra/i1/O1CN01hhD1mu1Dd3BWVUvxN_!!6000000000238-2-tps-400-400.png" width="100" height="100"> | <img src="https://img.alicdn.com/imgextra/i4/O1CN014mhqFq1ZlgNuYjxrz_!!6000000003235-2-tps-400-400.png" width="100" height="100"> |
 
 ---
 
@@ -662,9 +692,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
-## 贡献者 ✨
+## ✨ 贡献者
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-31-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-32-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 
@@ -715,6 +745,7 @@ limitations under the License.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/RTsama"><img src="https://avatars.githubusercontent.com/u/100779257?v=4?s=100" width="100px;" alt="RTsama"/><br /><sub><b>RTsama</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3ARTsama" title="Bug reports">🐛</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=RTsama" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://allenli178.top"><img src="https://avatars.githubusercontent.com/u/53218750?v=4?s=100" width="100px;" alt="YuYan"/><br /><sub><b>YuYan</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=allenli178" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/rlp2006"><img src="https://avatars.githubusercontent.com/u/212365247?v=4?s=100" width="100px;" alt="Li Peng (Yuan Yi)"/><br /><sub><b>Li Peng (Yuan Yi)</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=rlp2006" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=rlp2006" title="Documentation">📖</a> <a href="#example-rlp2006" title="Examples">💡</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://dorianzheng.github.io"><img src="https://avatars.githubusercontent.com/u/8065637?v=4?s=100" width="100px;" alt="dorianzheng"/><br /><sub><b>dorianzheng</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/pulls?q=is%3Apr+reviewed-by%3ADorianZheng" title="Reviewed Pull Requests">👀</a> <a href="#platform-DorianZheng" title="Packaging/porting to new platform">📦</a></td>
     </tr>
   </tbody>
   <tfoot>
