@@ -29,7 +29,7 @@ class ColorFormatter(logging.Formatter):
 
 
 def setup_logger(level=logging.INFO):
-    log_format = "%(asctime)s %(message)s"
+    log_format = "%(asctime)s | %(message)s"
     datefmt = "%Y-%m-%d %H:%M:%S"
 
     formatter = ColorFormatter(log_format, datefmt)

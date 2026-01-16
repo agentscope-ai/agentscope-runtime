@@ -77,7 +77,7 @@ class Runner:
             else:
                 init_fn()
         else:
-            logger.warning("[Runner] init_handler is not callable")
+            logger.warning("init_handler is not callable")
         self._health = True
         return self
 
@@ -90,7 +90,7 @@ class Runner:
                 else:
                     shutdown_fn()
         except Exception as e:
-            logger.warning(f"[Runner] Exception in shutdown handler: {e}")
+            logger.warning(f"Exception in shutdown handler: {e}")
         try:
             await self._exit_stack.aclose()
         except Exception:

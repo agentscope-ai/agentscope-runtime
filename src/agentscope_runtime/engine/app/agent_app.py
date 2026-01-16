@@ -245,11 +245,11 @@ class AgentApp(BaseApp):
 
         try:
             logger.info(
-                "[AgentApp] Starting AgentApp with FastAPIAppFactory...",
+                "Starting AgentApp with FastAPIAppFactory...",
             )
             fastapi_app = self.get_fastapi_app(**kwargs)
 
-            logger.info(f"[AgentApp] Starting server on {host}:{port}")
+            logger.info(f"Starting server on {host}:{port}")
 
             if web_ui:
                 webui_url = f"http://{host}:{port}{self.endpoint_path}"
@@ -257,9 +257,9 @@ class AgentApp(BaseApp):
                     f"npx @agentscope-ai/chat agentscope-runtime-webui "
                     f"--url {webui_url}"
                 )
-                logger.info(f"[AgentApp] WebUI started at {webui_url}")
+                logger.info(f"WebUI started at {webui_url}")
                 logger.info(
-                    "[AgentApp] Note: First WebUI launch may take extra time "
+                    "Note: First WebUI launch may take extra time "
                     "as dependencies are installed.",
                 )
 
@@ -287,7 +287,7 @@ class AgentApp(BaseApp):
 
         except KeyboardInterrupt:
             logger.info(
-                "[AgentApp] KeyboardInterrupt received, shutting down...",
+                "KeyboardInterrupt received, shutting down...",
             )
 
     def get_fastapi_app(self, **kwargs):
