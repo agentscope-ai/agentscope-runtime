@@ -1,5 +1,7 @@
 # CHANGELOG
 
+## v1.0.5
+
 **AgentScope Runtime v1.0.5** 主要聚焦于提升部署灵活性以及 UI/协议层的集成能力。本次版本新增了带 CLI 支持的 PAI 部署器，引入 Boxlite 作为新的沙箱后端，并提供容器客户端工厂以统一容器化部署相关能力。同时新增 AG-UI 协议支持，集成 ModelStudio Memory SDK 及 Demo，并修复了 FC replacement_map、MS-Agent-Framework 兼容性、以及消息流工具调用处理等多个问题。文档也在多个章节进行了更新，并补充了贡献者信息。
 
 ### Added
