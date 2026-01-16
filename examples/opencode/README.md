@@ -65,6 +65,15 @@ session filter in `examples/opencode/run_opencode_agent.py` to track child
 sessions and allow them through:
 
 ```python
+async with client.stream(
+    "GET",
+    f"{BASE_URL}/event",
+    # Do not filter /event by directory so child sessions are visible.
+    params=None,
+) as resp:
+```
+
+```python
 INCLUDE_SUBAGENTS = os.getenv("OPENCODE_INCLUDE_SUBAGENTS", "").lower() in {
     "1",
     "true",
