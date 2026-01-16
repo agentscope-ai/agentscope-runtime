@@ -892,11 +892,11 @@ body.preview-active {
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="s2">&quot;[AgentApp] Starting AgentApp with FastAPIAppFactory...&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Starting AgentApp with FastAPIAppFactory...&quot;</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">fastapi_app</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fastapi_app</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[AgentApp] Starting server on </span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting server on </span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">web_ui</span><span class="p">:</span>
                 <span class="n">webui_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;http://</span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">port</span><span class="si">}{</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -904,9 +904,9 @@ body.preview-active {
                     <span class="sa">f</span><span class="s2">&quot;npx @agentscope-ai/chat agentscope-runtime-webui &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;--url </span><span class="si">{</span><span class="n">webui_url</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[AgentApp] WebUI started at </span><span class="si">{</span><span class="n">webui_url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;WebUI started at </span><span class="si">{</span><span class="n">webui_url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                    <span class="s2">&quot;[AgentApp] Note: First WebUI launch may take extra time &quot;</span>
+                    <span class="s2">&quot;Note: First WebUI launch may take extra time &quot;</span>
                     <span class="s2">&quot;as dependencies are installed.&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
 
@@ -934,7 +934,7 @@ body.preview-active {
 
         <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="s2">&quot;[AgentApp] KeyboardInterrupt received, shutting down...&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;KeyboardInterrupt received, shutting down...&quot;</span><span class="p">,</span>
             <span class="p">)</span></div>
 
 
