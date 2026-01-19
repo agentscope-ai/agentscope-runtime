@@ -575,7 +575,7 @@ deploy_result = await app.deploy(
 ```python
 from openai import OpenAI
 
-client = OpenAI(base_url="http://0.0.0.0:8090/compatible-mode/v1")
+client = OpenAI(base_url="http://localhost:8090/compatible-mode/v1")
 
 response = client.responses.create(
   model="any_name",
