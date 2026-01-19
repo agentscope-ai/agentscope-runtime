@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import logging
 import functools
-import warnings
+import threading
 from dataclasses import dataclass
 from typing import Callable, TypeVar
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=object)
 
@@ -38,27 +41,26 @@ def format_deprecation_message(subject: str, info: DeprecationInfo) -> str:
     return " ".join(parts)
 
 
+_LOGGED_ONCE_MESSAGES: set[str] = set()
+_LOGGED_ONCE_LOCK = threading.Lock()
+
+
 def warn_deprecated(
     subject: str,
     info: DeprecationInfo,
     *,
-    category=DeprecationWarning,
     stacklevel: int = 2,
     once: bool = False,
 ) -> None:
     message = format_deprecation_message(subject, info)
 
     if once:
-        top = _toplevel_pkg()
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "once",
-                category=category,
-                module=rf"^{top}(\.|$)",
-            )
-            warnings.warn(message, category=category, stacklevel=stacklevel)
-    else:
-        warnings.warn(message, category=category, stacklevel=stacklevel)
+        with _LOGGED_ONCE_LOCK:
+            if message in _LOGGED_ONCE_MESSAGES:
+                return
+            _LOGGED_ONCE_MESSAGES.add(message)
+
+    logger.warning(message, stacklevel=stacklevel)
 
 
 def deprecated(
@@ -68,7 +70,6 @@ def deprecated(
     removed_in: str | None = None,
     alternative: str | None = None,
     issue: str | int | None = None,
-    category=DeprecationWarning,
     stacklevel: int = 2,
     once: bool = False,
 ) -> Callable[[T], T]:
@@ -104,7 +105,6 @@ def deprecated(
                 warn_deprecated(
                     subject,
                     info,
-                    category=category,
                     stacklevel=stacklevel,
                     once=once,
                 )
@@ -118,7 +118,6 @@ def deprecated(
             warn_deprecated(
                 subject,
                 info,
-                category=category,
                 stacklevel=stacklevel,
                 once=once,
             )
@@ -137,7 +136,6 @@ def deprecated_module(
     removed_in: str | None = None,
     alternative: str | None = None,
     issue: str | int | None = None,
-    category=DeprecationWarning,
     stacklevel: int = 2,
     once: bool = True,
 ) -> None:
@@ -158,7 +156,6 @@ def deprecated_module(
     warn_deprecated(
         f"Module `{module_name}`",
         info,
-        category=category,
         stacklevel=stacklevel,
         once=once,
     )
