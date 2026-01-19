@@ -41,14 +41,21 @@ class CeleryMixin:
         self._registered_queues.add(queue)
 
         def _coerce_result(x):
+            # Normalize Pydantic models first
             if hasattr(x, "model_dump"):  # pydantic v2
-                return x.model_dump()
-            if hasattr(x, "dict"):  # pydantic v1
-                return x.dict()
+                x = x.model_dump()
+            elif hasattr(x, "dict"):  # pydantic v1
+                x = x.dict()
+            # Preserve simple primitives as-is
             if isinstance(x, (str, int, float, bool)) or x is None:
                 return x
-            if isinstance(x, (list, dict)):
-                return x
+            # Recursively coerce dictionaries
+            if isinstance(x, dict):
+                return {k: _coerce_result(v) for k, v in x.items()}
+            # Recursively coerce lists
+            if isinstance(x, list):
+                return [_coerce_result(item) for item in x]
+            # Fallback: string representation for anything else
             return str(x)
 
         async def _collect_async_gen(agen):
@@ -62,21 +69,21 @@ class CeleryMixin:
 
         @self.celery_app.task(queue=queue)
         def wrapper(*args, **kwargs):
-            # 1) async function
-            if inspect.iscoroutinefunction(func):
+            # 1) async generator function
+            if inspect.isasyncgenfunction(func):
+                result = func(*args, **kwargs)
+            # 2) async function
+            elif inspect.iscoroutinefunction(func):
                 result = asyncio.run(func(*args, **kwargs))
             else:
                 result = func(*args, **kwargs)
-
-            # 2) async generator
+            # 3) async generator
             if inspect.isasyncgen(result):
                 return asyncio.run(_collect_async_gen(result))
-
-            # 3) sync generator
+            # 4) sync generator
             if inspect.isgenerator(result):
                 return _collect_gen(result)
-
-            # 4) normal return
+            # 5) normal return
             return _coerce_result(result)
 
         return wrapper
