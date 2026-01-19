@@ -292,6 +292,19 @@ class FastAPIAppFactory:
             def start_celery_worker():
                 try:
                     celery_mixin = app.state.celery_mixin
+
+                    for ep in app.state.custom_endpoints:
+                        if ep.get("task_type"):
+                            func = ep["handler"]
+                            queue = ep.get("queue", "celery")
+                            if not hasattr(func, "celery_task"):
+                                func.celery_task = (
+                                    celery_mixin.register_celery_task(
+                                        func,
+                                        queue,
+                                    )
+                                )
+
                     # Get registered queues or use default
                     queues = (
                         list(celery_mixin.get_registered_queues())

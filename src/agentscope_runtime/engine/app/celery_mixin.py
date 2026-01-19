@@ -40,12 +40,44 @@ class CeleryMixin:
 
         self._registered_queues.add(queue)
 
+        def _coerce_result(x):
+            if hasattr(x, "model_dump"):  # pydantic v2
+                return x.model_dump()
+            if hasattr(x, "dict"):  # pydantic v1
+                return x.dict()
+            if isinstance(x, (str, int, float, bool)) or x is None:
+                return x
+            if isinstance(x, (list, dict)):
+                return x
+            return str(x)
+
+        async def _collect_async_gen(agen):
+            items = []
+            async for x in agen:
+                items.append(_coerce_result(x))
+            return items
+
+        def _collect_gen(gen):
+            return [_coerce_result(x) for x in gen]
+
         @self.celery_app.task(queue=queue)
         def wrapper(*args, **kwargs):
+            # 1) async function
             if inspect.iscoroutinefunction(func):
-                return asyncio.run(func(*args, **kwargs))
+                result = asyncio.run(func(*args, **kwargs))
             else:
-                return func(*args, **kwargs)
+                result = func(*args, **kwargs)
+
+            # 2) async generator
+            if inspect.isasyncgen(result):
+                return asyncio.run(_collect_async_gen(result))
+
+            # 3) sync generator
+            if inspect.isgenerator(result):
+                return _collect_gen(result)
+
+            # 4) normal return
+            return _coerce_result(result)
 
         return wrapper
 
@@ -63,7 +95,7 @@ class CeleryMixin:
         if concurrency:
             cmd.append(f"--concurrency={concurrency}")
         if queues:
-            cmd.append(f"-Q {','.join(queues)}")
+            cmd += ["-Q", ",".join(queues)]
 
         self.celery_app.worker_main(cmd)
 
