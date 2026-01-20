@@ -129,7 +129,7 @@ def _append_json_text_part(
 ) -> None:
     try:
         text = json.dumps(payload, ensure_ascii=False)
-    except Exception:
+    except TypeError:
         text = str(payload)
     if text:
         parts.append({"type": "text", "text": text})

@@ -86,12 +86,16 @@ async def query_func(
             prompt_resp.raise_for_status()
 
             async for event in iter_sse_events(resp):
-                event_type = event.get("type")
-                props = (
-                    event.get("properties")
-                    if isinstance(event, dict)
+                event_payload = _unwrap_event_payload(event)
+                if event_payload is None:
+                    continue
+                event_type_value = event_payload.get("type")
+                event_type = (
+                    event_type_value
+                    if isinstance(event_type_value, str)
                     else None
                 )
+                props = event_payload.get("properties")
                 event_session_id = _event_session_id(event_type, props)
                 if session_id:
                     if event_session_id and event_session_id != session_id:
@@ -104,7 +108,7 @@ async def query_func(
                         if event_session_id == session_id:
                             break
                     continue
-                yield event
+                yield event_payload
                 if _is_session_idle(event_type, props):
                     if event_session_id == session_id:
                         break
@@ -148,10 +152,29 @@ def _event_session_id(
 
 
 def _is_session_idle(event_type: Optional[str], props: Any) -> bool:
+    if event_type == "session.idle":
+        return True
     if event_type != "session.status" or not isinstance(props, dict):
         return False
     status = props.get("status")
     return isinstance(status, dict) and status.get("type") == "idle"
+
+
+def _unwrap_event_payload(event: Any) -> Optional[Dict[str, Any]]:
+    if not isinstance(event, dict):
+        return None
+
+    current = event
+    while isinstance(current, dict) and "type" not in current:
+        if "payload" in current and isinstance(current.get("payload"), dict):
+            current = current["payload"]
+            continue
+        if "data" in current and isinstance(current.get("data"), dict):
+            current = current["data"]
+            continue
+        break
+
+    return current if isinstance(current, dict) else None
 
 
 async def iter_sse_events(response: Any) -> AsyncIterator[Dict]:

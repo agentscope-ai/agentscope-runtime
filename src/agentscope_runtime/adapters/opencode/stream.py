@@ -123,6 +123,9 @@ async def adapt_opencode_message_stream(
                 {"opencode_error": detail},
             )
 
+        if event_type == "session.idle":
+            break
+
         if event_type == "session.status":
             props = _get_event_properties(event)
             status = props.get("status") if isinstance(props, dict) else None
@@ -165,12 +168,7 @@ def _normalize_event(event: Any) -> Optional[Dict[str, Any]]:
         return None
 
     if isinstance(event, dict):
-        # Some transports wrap the actual payload under "data".
-        if "data" in event and "type" not in event:
-            inner = event.get("data")
-            if isinstance(inner, dict):
-                event = inner
-        return event
+        return _unwrap_event_payload(event)
 
     # The OpenCode SDK models expose to_dict() that emits API field names.
     to_dict = getattr(event, "to_dict", None)
@@ -198,8 +196,23 @@ def _normalize_event(event: Any) -> Optional[Dict[str, Any]]:
             maybe_dict = as_dict()
             if isinstance(maybe_dict, dict):
                 normalized = maybe_dict
+    if normalized is None:
+        return None
+    return _unwrap_event_payload(normalized)
 
-    return normalized
+
+def _unwrap_event_payload(event: Dict[str, Any]) -> Dict[str, Any]:
+    # Global event streams wrap payloads under "payload".
+    current = event
+    while isinstance(current, dict) and "type" not in current:
+        if "payload" in current and isinstance(current.get("payload"), dict):
+            current = current["payload"]
+            continue
+        if "data" in current and isinstance(current.get("data"), dict):
+            current = current["data"]
+            continue
+        break
+    return current
 
 
 def _get_event_properties(event: Dict[str, Any]) -> Dict[str, Any]:
