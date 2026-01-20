@@ -243,14 +243,17 @@ class SandboxManagerEnvConfig(BaseModel):
     heartbeat_timeout: int = Field(
         default=300,
         description="Idle timeout in seconds before session is reaped.",
+        gt=0,
     )
     heartbeat_scan_interval: int = Field(
         default=0,
         description="Heartbeat scan interval in seconds. 0 disables scanning.",
+        gt=0,
     )
     heartbeat_lock_ttl: int = Field(
         default=120,
         description="Redis distributed lock TTL in seconds for reaping.",
+        gt=0,
     )
     max_sandbox_instances: int = Field(
         default=0,

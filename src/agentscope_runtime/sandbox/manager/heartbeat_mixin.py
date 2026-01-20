@@ -67,12 +67,7 @@ def touch_session(identity_arg: str = "identity"):
                     if session_ctx_id:
                         self.update_heartbeat(session_ctx_id)
                         if self.needs_restore(session_ctx_id):
-                            logger.warning(
-                                f"Session {session_ctx_id} is marked "
-                                f"recycled; restore_session() is stubbed and "
-                                f"not enforced yet.",
-                            )
-                            # self.restore_session(session_ctx_id)
+                            self.restore_session(session_ctx_id)
             except Exception as e:
                 logger.debug(f"touch_session failed (ignored): {e}")
 
@@ -175,7 +170,24 @@ class HeartbeatMixin:
 
     # ---------- helpers ----------
     def get_session_ctx_id_by_identity(self, identity: str) -> Optional[str]:
-        info = ContainerModel(**self.get_info(identity))
+        """
+        Resolve session_ctx_id from a container identity.
+        Returns None if the container cannot be found (get_info raises
+        RuntimeError), which is an expected situation for recycled/removed
+        containers during heartbeat touches.
+        """
+        try:
+            info_dict = self.get_info(identity)
+        except RuntimeError as exc:
+            # Missing container is a normal condition during heartbeat checks.
+            logger.debug(
+                "get_session_ctx_id_by_identity: container not found for "
+                "identity %s: %s",
+                identity,
+                exc,
+            )
+            return None
+        info = ContainerModel(**info_dict)
         return (info.meta or {}).get("session_ctx_id")
 
     # ---------- redis distributed lock ----------

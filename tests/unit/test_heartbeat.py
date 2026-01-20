@@ -36,8 +36,8 @@ class FakeManager(HeartbeatMixin):
         return obj
 
     def create_for_session(self, identity: str, session_ctx_id: str):
-        # minimal container record compatible with
-        # get_session_ctx_id_by_identity()
+        # simulate session creation by setting up container and
+        # session mappings compatible with get_session_ctx_id_by_identity()
         self.container_mapping.set(
             identity,
             {"meta": {"session_ctx_id": session_ctx_id}},
@@ -210,8 +210,14 @@ def test_heartbeat_watcher_inmemory_real_manager(monkeypatch):
 
         mgr.start_heartbeat_watcher()
 
-        # wait long enough for: timeout + (at least one scan interval)
-        time.sleep(cfg.heartbeat_timeout + cfg.heartbeat_scan_interval + 0.5)
+        # wait (polling) for: timeout + at least one scan interval, or until
+        # the heartbeat has been cleared by the watcher
+        max_wait = cfg.heartbeat_timeout + cfg.heartbeat_scan_interval + 0.5
+        start_time = time.time()
+        while time.time() - start_time < max_wait:
+            if mgr.get_heartbeat(session_ctx_id) is None:
+                break
+            time.sleep(0.1)
 
         assert mgr.get_heartbeat(session_ctx_id) is None
         assert mgr.needs_restore(session_ctx_id) is True

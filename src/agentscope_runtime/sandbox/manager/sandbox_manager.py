@@ -289,6 +289,7 @@ class SandboxManager(HeartbeatMixin):
 
         self._heartbeat_stop_event = threading.Event()
         self._heartbeat_thread = None
+        self._heartbeat_thread_lock = threading.Lock()
 
         logger.debug(str(config))
 
@@ -297,8 +298,8 @@ class SandboxManager(HeartbeatMixin):
             "Entering SandboxManager context (sync). "
             "Cleanup will be performed automatically on exit.",
         )
+        # local mode: watcher starts
         if self.http_session is None:
-            # remote mode: watcher should run on server side, not client side
             self.start_heartbeat_watcher()
 
         return self
@@ -334,8 +335,8 @@ class SandboxManager(HeartbeatMixin):
             "Entering SandboxManager context (async). "
             "Cleanup will be performed automatically on async exit.",
         )
+        # local mode: watcher starts
         if self.http_session is None:
-            # remote mode: watcher should run on server side, not client side
             self.start_heartbeat_watcher()
 
         return self
@@ -505,43 +506,50 @@ class SandboxManager(HeartbeatMixin):
             )
             return False
 
-        if self._heartbeat_thread and self._heartbeat_thread.is_alive():
-            return True  # already running
+        with self._heartbeat_thread_lock:
+            if self._heartbeat_thread and self._heartbeat_thread.is_alive():
+                return True  # already running
 
-        self._heartbeat_stop_event.clear()
+            self._heartbeat_stop_event.clear()
 
-        def _loop():
-            logger.info(f"heartbeat watcher started, interval={interval}s")
-            while not self._heartbeat_stop_event.is_set():
-                try:
-                    metrics = self.scan_heartbeat_once()
-                    logger.debug(f"heartbeat scan metrics: {metrics}")
-                except Exception as e:
-                    logger.warning(f"heartbeat watcher loop error: {e}")
-                    logger.debug(traceback.format_exc())
+            def _loop():
+                logger.info(f"heartbeat watcher started, interval={interval}s")
+                while not self._heartbeat_stop_event.is_set():
+                    try:
+                        metrics = self.scan_heartbeat_once()
+                        logger.debug(f"heartbeat scan metrics: {metrics}")
+                    except Exception as e:
+                        logger.warning(f"heartbeat watcher loop error: {e}")
+                        logger.debug(traceback.format_exc())
 
-                # wait with stop support
-                self._heartbeat_stop_event.wait(interval)
+                    # wait with stop support
+                    self._heartbeat_stop_event.wait(interval)
 
-            logger.info("heartbeat watcher stopped")
+                logger.info("heartbeat watcher stopped")
 
-        self._heartbeat_thread = threading.Thread(
-            target=_loop,
-            name="heartbeat-watcher",
-            daemon=True,
-        )
-        self._heartbeat_thread.start()
-        return True
+            t = threading.Thread(
+                target=_loop,
+                name="heartbeat-watcher",
+                daemon=True,
+            )
+            self._heartbeat_thread = t
+            t.start()
+            return True
 
     def stop_heartbeat_watcher(self, join_timeout: float = 5.0) -> None:
         """
         Stop background watcher thread (if running).
         """
-        self._heartbeat_stop_event.set()
-        t = self._heartbeat_thread
+        with self._heartbeat_thread_lock:
+            self._heartbeat_stop_event.set()
+            t = self._heartbeat_thread
+
         if t and t.is_alive():
             t.join(timeout=join_timeout)
-        self._heartbeat_thread = None
+
+        with self._heartbeat_thread_lock:
+            if self._heartbeat_thread is t:
+                self._heartbeat_thread = None
 
     @remote_wrapper()
     def cleanup(self):
@@ -712,7 +720,7 @@ class SandboxManager(HeartbeatMixin):
         storage_path=None,
         environment: Optional[Dict] = None,
         meta: Optional[Dict] = None,
-    ):
+    ):  # pylint: disable=too-many-return-statements
         # Enforce max sandbox instances
         try:
             limit = self.config.max_sandbox_instances
@@ -724,6 +732,10 @@ class SandboxManager(HeartbeatMixin):
                     )
         except RuntimeError as e:
             logger.warning(str(e))
+            return None
+        except Exception:
+            # Handle unexpected errors from container_mapping.scan() gracefully
+            logger.exception("Failed to check sandbox instance limit")
             return None
 
         if sandbox_type is not None:
@@ -917,12 +929,12 @@ class SandboxManager(HeartbeatMixin):
                 container_json = self.container_mapping.get(
                     self._generate_container_key(identity),
                 )
-            if container_json is None:
-                logger.debug(
-                    f"release: container not found for {identity}, "
-                    f"treat as already released",
-                )
-                return True
+                if container_json is None:
+                    logger.warning(
+                        f"release: container not found for {identity}, "
+                        f"treat as already released",
+                    )
+                    return True
 
             container_info = ContainerModel(**container_json)
 
@@ -941,7 +953,23 @@ class SandboxManager(HeartbeatMixin):
                 if env_ids:
                     self.session_mapping.set(session_ctx_id, env_ids)
                 else:
+                    # last container of this session is gone;
+                    # keep state consistent
                     self.session_mapping.delete(session_ctx_id)
+                    try:
+                        self.delete_heartbeat(session_ctx_id)
+                    except Exception as e:
+                        logger.debug(
+                            f"delete_heartbeat failed for {session_ctx_id}:"
+                            f" {e}",
+                        )
+                    try:
+                        self.clear_session_recycled(session_ctx_id)
+                    except Exception as e:
+                        logger.debug(
+                            f"clear_session_recycled failed for"
+                            f" {session_ctx_id}: {e}",
+                        )
 
             self.client.stop(container_info.container_id, timeout=1)
             self.client.remove(container_info.container_id, force=True)
@@ -1250,7 +1278,6 @@ class SandboxManager(HeartbeatMixin):
         beyond timeout. Uses redis distributed lock to avoid multi-instance
         double reap.
         """
-        now = time.time()
         timeout = int(self.config.heartbeat_timeout)
 
         result = {
@@ -1270,7 +1297,9 @@ class SandboxManager(HeartbeatMixin):
                 result["skipped_no_heartbeat"] += 1
                 continue
 
-            if now - last_active <= timeout:
+            # Use time.time() consistently to avoid subtle timing skew if
+            # the scan loop itself takes a while under load.
+            if time.time() - last_active <= timeout:
                 continue
 
             token = self.acquire_heartbeat_lock(session_ctx_id)
@@ -1279,8 +1308,7 @@ class SandboxManager(HeartbeatMixin):
                 continue
 
             try:
-                # double-check after lock
-                # (avoid racing with a fresh heartbeat update)
+                # double-check after lock (avoid racing with a fresh heartbeat)
                 last_active2 = self.get_heartbeat(session_ctx_id)
                 if last_active2 is None:
                     result["skipped_no_heartbeat"] += 1
@@ -1296,6 +1324,7 @@ class SandboxManager(HeartbeatMixin):
                 )
                 if ok:
                     result["reaped_sessions"] += 1
+
             except Exception:
                 result["errors"] += 1
                 logger.warning(
