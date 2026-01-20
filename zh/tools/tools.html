@@ -492,8 +492,6 @@ body.preview-active {
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../en/service/service.html">5. Services and Adapters</a><input aria-label="Toggle navigation of 5. Services and Adapters" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../en/service/session_history.html">Session History Service</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../en/service/memory.html">Memory Service</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../en/service/sandbox.html">Sandbox Service</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../en/service/state.html">Agent State Service</a></li>
 </ul>
@@ -559,8 +557,6 @@ body.preview-active {
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../service/service.html">5. 服务与适配器</a><input aria-label="Toggle navigation of 5. 服务与适配器" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../service/session_history.html">会话历史服务</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../service/memory.html">记忆服务</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../service/sandbox.html">沙箱服务</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../service/state.html">智能体状态服务</a></li>
 </ul>
@@ -634,7 +630,7 @@ body.preview-active {
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="tools">
+          <section class="tex2jax_ignore mathjax_ignore" id="tools">
 <h1>Tools<a class="headerlink" href="#tools" title="Link to this heading">¶</a></h1>
 <p>AgentScope Runtime 通过组件化方案，支持将API转成原子能力，供mcp，agent快速使用。<strong>Tool（工具）</strong> 为常见原子能力提供统一、类型安全的封装，任何编排框架都能即插即用，无需重复接入。</p>
 <p>当你需要把某项能力暴露给多个 Agent 或不同执行引擎时，新增一个 Tool 是最推荐的路径。Tool 自带 IO Schema、限流策略、链路追踪 Hook 与重试默认值，可注册成 ReAct Agent 的工具、接入 LangGraph/MCP 流程，或作为 MCP Server Function 发布。团队通常借助 Tool 解决重复出现的合规约束、封装第三方 API，或者把同一业务操作下发给值班 Bot、Copilot 与自动化流程。</p>

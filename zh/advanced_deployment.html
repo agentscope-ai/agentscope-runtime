@@ -492,8 +492,6 @@ body.preview-active {
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../en/service/service.html">5. Services and Adapters</a><input aria-label="Toggle navigation of 5. Services and Adapters" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../en/service/session_history.html">Session History Service</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../en/service/memory.html">Memory Service</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../en/service/sandbox.html">Sandbox Service</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../en/service/state.html">Agent State Service</a></li>
 </ul>
@@ -559,8 +557,6 @@ body.preview-active {
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="service/service.html">5. 服务与适配器</a><input aria-label="Toggle navigation of 5. 服务与适配器" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="service/session_history.html">会话历史服务</a></li>
-<li class="toctree-l2"><a class="reference internal" href="service/memory.html">记忆服务</a></li>
 <li class="toctree-l2"><a class="reference internal" href="service/sandbox.html">沙箱服务</a></li>
 <li class="toctree-l2"><a class="reference internal" href="service/state.html">智能体状态服务</a></li>
 </ul>
@@ -634,7 +630,7 @@ body.preview-active {
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="id1">
+          <section class="tex2jax_ignore mathjax_ignore" id="id1">
 <h1>高级部署<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h1>
 <p>章节演示了AgentScope Runtime中可用的八种高级部署方法，为不同场景提供生产就绪的解决方案：<strong>本地守护进程</strong>、<strong>独立进程</strong>、<strong>Kubernetes部署</strong>、<strong>ModelStudio部署</strong>、<strong>AgentRun部署</strong>、<strong>PAI部署</strong>、<strong>Knative</strong>和<strong>函数计算（Function Compute, FC）部署</strong>。</p>
 <section id="id2">
@@ -774,7 +770,7 @@ pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot
 <p>所有部署方法共享相同的智能体和端点配置。让我们首先创建基础智能体并定义端点：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># agent_app.py - Shared configuration for all deployment methods</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># agent_app.py - 所有的部署方式共享</span>
 <span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
@@ -783,17 +779,12 @@ pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">stream_printing_messages</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">Toolkit</span><span class="p">,</span> <span class="n">execute_python_code</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryMemory</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.adapters.agentscope.memory</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">AgentScopeSessionHistoryMemory</span><span class="p">,</span>
-<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.app</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentRequest</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.agent_state</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">InMemoryStateService</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.session_history</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">InMemorySessionHistoryService</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
@@ -805,16 +796,12 @@ pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot
 <span class="nd">@app</span><span class="o">.</span><span class="n">init</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">state_service</span> <span class="o">=</span> <span class="n">InMemoryStateService</span><span class="p">()</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">session_service</span> <span class="o">=</span> <span class="n">InMemorySessionHistoryService</span><span class="p">()</span>
-
     <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_service</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_service</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 
 
 <span class="nd">@app</span><span class="o">.</span><span class="n">shutdown</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_service</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_service</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
 
 
 <span class="nd">@app</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">framework</span><span class="o">=</span><span class="s2">&quot;agentscope&quot;</span><span class="p">)</span>
@@ -846,11 +833,7 @@ pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot
         <span class="p">),</span>
         <span class="n">sys_prompt</span><span class="o">=</span><span class="s2">&quot;You&#39;re a helpful assistant named Friday.&quot;</span><span class="p">,</span>
         <span class="n">toolkit</span><span class="o">=</span><span class="n">toolkit</span><span class="p">,</span>
-        <span class="n">memory</span><span class="o">=</span><span class="n">AgentScopeSessionHistoryMemory</span><span class="p">(</span>
-            <span class="n">service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">session_service</span><span class="p">,</span>
-            <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
-            <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
-        <span class="p">),</span>
+        <span class="n">memory</span><span class="o">=</span><span class="n">InMemoryMemory</span><span class="p">(),</span>
         <span class="n">formatter</span><span class="o">=</span><span class="n">DashScopeChatFormatter</span><span class="p">(),</span>
     <span class="p">)</span>
 
@@ -870,6 +853,7 @@ pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot
         <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
         <span class="n">state</span><span class="o">=</span><span class="n">state</span><span class="p">,</span>
     <span class="p">)</span>
+
 
 <span class="c1"># 2. 创建带有多个端点的 AgentApp</span>
 <span class="nd">@app</span><span class="o">.</span><span class="n">endpoint</span><span class="p">(</span><span class="s2">&quot;/sync&quot;</span><span class="p">)</span>

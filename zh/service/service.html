@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="会话历史服务" href="session_history.html"><link rel="prev" title="实时客户端组件 (Realtime Clients)" href="../tools/realtime_clients.html">
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="沙箱服务" href="sandbox.html"><link rel="prev" title="实时客户端组件 (Realtime Clients)" href="../tools/realtime_clients.html">
         <link rel="prefetch" href="../../_static/logo.svg" as="image">
 
     <link rel="shortcut icon" href="../../_static/logo.svg"><!-- Generated with Sphinx 7.4.7 and Furo 2025.12.19 -->
@@ -492,8 +492,6 @@ body.preview-active {
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../en/service/service.html">5. Services and Adapters</a><input aria-label="Toggle navigation of 5. Services and Adapters" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../en/service/session_history.html">Session History Service</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../en/service/memory.html">Memory Service</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../en/service/sandbox.html">Sandbox Service</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../en/service/state.html">Agent State Service</a></li>
 </ul>
@@ -559,8 +557,6 @@ body.preview-active {
 </ul>
 </li>
 <li class="toctree-l1 current has-children current-page"><a class="current reference internal" href="#">5. 服务与适配器</a><input aria-label="Toggle navigation of 5. 服务与适配器" checked="" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="session_history.html">会话历史服务</a></li>
-<li class="toctree-l2"><a class="reference internal" href="memory.html">记忆服务</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sandbox.html">沙箱服务</a></li>
 <li class="toctree-l2"><a class="reference internal" href="state.html">智能体状态服务</a></li>
 </ul>
@@ -634,14 +630,12 @@ body.preview-active {
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="id1">
+          <section class="tex2jax_ignore mathjax_ignore" id="id1">
 <h1><span class="section-number">5. </span>服务与适配器<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h1>
 <section id="id2">
 <h2>概述<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
 <p>AgentScope Runtime 中的服务（<code class="docutils literal notranslate"><span class="pre">Service</span></code>）为智能体运行环境提供核心能力，包括：</p>
 <ul class="simple">
-<li><p><strong>会话历史管理</strong></p></li>
-<li><p><strong>记忆存储</strong></p></li>
 <li><p><strong>沙箱管理</strong></p></li>
 <li><p><strong>智能体状态管理</strong></p></li>
 </ul>
@@ -651,15 +645,6 @@ body.preview-active {
 <li><p><code class="docutils literal notranslate"><span class="pre">stop()</span></code>：停止服务</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">health()</span></code>：检查服务健康状态</p></li>
 </ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>在实际编写智能体应用时，我们通常<strong>不会直接操作这些服务的各种底层方法</strong>，而是通过<strong>框架适配器Adapters</strong>来使用。适配器会：</p>
-<ol class="arabic simple">
-<li><p>负责把 Runtime 的服务对象注入到智能体框架的兼容模块中</p></li>
-<li><p>让框架内的 agent 能无缝调用 Runtime 提供的功能（如会话记忆、工具沙箱等）</p></li>
-<li><p>保证服务生命周期与 Runner/Engine 一致</p></li>
-</ol>
-</div>
 </section>
 <section id="id3">
 <h2>为什么要通过适配器使用服务？<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h2>
@@ -672,61 +657,11 @@ body.preview-active {
 </section>
 <section id="id4">
 <h2>可用服务及适配器用法<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h2>
-<section id="sessionhistoryservice">
-<h3>1. 会话历史服务（SessionHistoryService）<a class="headerlink" href="#sessionhistoryservice" title="Link to this heading">¶</a></h3>
-<p>管理用户-智能体的对话会话，存储并检索会话消息历史。</p>
+<section id="sandboxservice">
+<h3>1. 沙箱服务（SandboxService）<a class="headerlink" href="#sandboxservice" title="Link to this heading">¶</a></h3>
+<p><strong>沙箱服务</strong> 管理并为不同用户和会话提供沙箱化工具执行环境的访问。沙箱通过会话ID和用户ID的复合键组织，为每个用户会话提供隔离的执行环境。</p>
 <section id="agentscope">
 <h4>AgentScope用法<a class="headerlink" href="#agentscope" title="Link to this heading">¶</a></h4>
-<p>在 AgentScope 框架中，通过Runtime的<code class="docutils literal notranslate"><span class="pre">AgentScopeSessionHistoryMemory</span></code>适配器来绑定会话历史服务到<code class="docutils literal notranslate"><span class="pre">Memory</span></code>模块：</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.session_history</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemorySessionHistoryService</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.adapters.agentscope.memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentScopeSessionHistoryMemory</span>
-
-<span class="n">session_service</span> <span class="o">=</span> <span class="n">InMemorySessionHistoryService</span><span class="p">()</span>
-
-<span class="n">memory</span> <span class="o">=</span> <span class="n">AgentScopeSessionHistoryMemory</span><span class="p">(</span>
-    <span class="n">service</span><span class="o">=</span><span class="n">session_service</span><span class="p">,</span>
-    <span class="n">session_id</span><span class="o">=</span><span class="s2">&quot;Test Session&quot;</span><span class="p">,</span>
-    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;User1&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-<p>更多可用服务类型与详细的用法请参见<a class="reference internal" href="session_history.html"><span class="doc">会话历史服务</span></a>。</p>
-</section>
-</section>
-<section id="memoryservice">
-<h3>2. 记忆服务（MemoryService）<a class="headerlink" href="#memoryservice" title="Link to this heading">¶</a></h3>
-<p><code class="docutils literal notranslate"><span class="pre">MemoryService</span></code> 管理长期记忆存储。在Agent 中，记忆储存终端用户之前的对话。 例如，终端用户可能在之前的对话中提到他们的姓名。 记忆服务通常用来<strong>跨会话</strong>的存储这些信息，以便智能体在下次对话中使用。</p>
-<section id="id5">
-<h4>AgentScope用法<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h4>
-<p>在 AgentScope 框架中，通过Runtime的<code class="docutils literal notranslate"><span class="pre">AgentScopeLongTermMemory</span></code>适配器来绑定会话历史服务到<code class="docutils literal notranslate"><span class="pre">LongTermMemory</span></code>模块：</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.services.memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryMemoryService</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.adapters.agentscope.long_term_memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentScopeLongTermMemory</span>
-
-<span class="n">memory_service</span> <span class="o">=</span> <span class="n">InMemoryMemoryService</span><span class="p">()</span>
-
-<span class="n">long_term_memory</span> <span class="o">=</span> <span class="n">AgentScopeLongTermMemory</span><span class="p">(</span>
-    <span class="n">service</span><span class="o">=</span><span class="n">memory_service</span><span class="p">,</span>
-    <span class="n">session_id</span><span class="o">=</span><span class="s2">&quot;Test Session&quot;</span><span class="p">,</span>
-    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;User1&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-<p>更多可用服务类型与详细的用法请参见<a class="reference internal" href="memory.html"><span class="doc">记忆服务</span></a>。</p>
-</section>
-</section>
-<section id="sandboxservice">
-<h3>3. 沙箱服务（SandboxService）<a class="headerlink" href="#sandboxservice" title="Link to this heading">¶</a></h3>
-<p><strong>沙箱服务</strong> 管理并为不同用户和会话提供沙箱化工具执行环境的访问。沙箱通过会话ID和用户ID的复合键组织，为每个用户会话提供隔离的执行环境。</p>
-<section id="id6">
-<h4>AgentScope用法<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h4>
 <p>在 AgentScope 框架中，通过Runtime的<code class="docutils literal notranslate"><span class="pre">sandbox_tool_adapter</span></code>适配器来绑定沙箱服务提供的沙箱的方法到<code class="docutils literal notranslate"><span class="pre">ToolKit</span></code>模块：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -752,10 +687,10 @@ body.preview-active {
 </section>
 </section>
 <section id="stateservice">
-<h3>4. StateService<a class="headerlink" href="#stateservice" title="Link to this heading">¶</a></h3>
+<h3>2. StateService<a class="headerlink" href="#stateservice" title="Link to this heading">¶</a></h3>
 <p>存取智能体的可序列化状态，让智能体在多轮会话甚至跨会话间保持上下文。</p>
-<section id="id7">
-<h4>AgentScope用法<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h4>
+<section id="id5">
+<h4>AgentScope用法<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h4>
 <p>在 AgentScope 框架中，无需通过适配器，直接调用<code class="docutils literal notranslate"><span class="pre">StateService</span></code>的<code class="docutils literal notranslate"><span class="pre">export_state</span></code>和<code class="docutils literal notranslate"><span class="pre">save_state</span></code>来保：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -774,8 +709,8 @@ body.preview-active {
 </section>
 </section>
 </section>
-<section id="id8">
-<h2>服务的接口<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h2>
+<section id="id6">
+<h2>服务的接口<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h2>
 <p>所有服务必须实现 <code class="docutils literal notranslate"><span class="pre">ServiceWithLifecycleManager</span></code> 抽象类，例如：</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -819,7 +754,7 @@ body.preview-active {
 </section>
 <section id="servicefactory">
 <h2>ServiceFactory：统一的服务创建模式<a class="headerlink" href="#servicefactory" title="Link to this heading">¶</a></h2>
-<p>在实际使用中，同一种服务（如 SessionHistory、Memory、Sandbox、State）可能会有多种实现后端，例如内存版、Redis、数据库版等。
+<p>在实际使用中，同一种服务（如 Sandbox、State）可能会有多种实现后端，例如内存版、Redis、数据库版等。
 为了让服务的创建更灵活、可配置，AgentScope Runtime 提供了一个通用的 <strong>服务工厂基类</strong> <code class="docutils literal notranslate"><span class="pre">ServiceFactory</span></code>：</p>
 <ul class="simple">
 <li><p><strong>统一注册</strong>多种后端构造方法（<code class="docutils literal notranslate"><span class="pre">register_backend</span></code>）</p></li>
@@ -829,8 +764,8 @@ body.preview-active {
 <li><p><strong>异步创建实例</strong>，适合需要 <code class="docutils literal notranslate"><span class="pre">start()</span></code> 异步初始化的服务</p></li>
 <li><p><strong>镜像复用优势</strong>：同一运行镜像下，可通过改变环境变量快速切换不同后端实现，无需重新构建镜像，从而便于部署和测试</p></li>
 </ul>
-<section id="id9">
-<h3>创建流程示例<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
+<section id="id7">
+<h3>创建流程示例<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 以状态服务为例</span>
@@ -856,8 +791,8 @@ body.preview-active {
 </div>
 </div>
 </section>
-<section id="id10">
-<h3>常用<code class="docutils literal notranslate"><span class="pre">ServiceFactory</span></code>与默认后端<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
+<section id="id8">
+<h3>常用<code class="docutils literal notranslate"><span class="pre">ServiceFactory</span></code>与默认后端<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
 <div class="table-wrapper colwidths-auto docutils container">
 <table class="docutils align-default">
 <thead>
@@ -875,35 +810,23 @@ body.preview-active {
 <td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code>、<code class="docutils literal notranslate"><span class="pre">redis</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">MemoryServiceFactory</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">MemoryService</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">MEMORY_</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code>、<code class="docutils literal notranslate"><span class="pre">redis</span></code>、<code class="docutils literal notranslate"><span class="pre">mem0</span></code>、<code class="docutils literal notranslate"><span class="pre">reme_personal</span></code>、<code class="docutils literal notranslate"><span class="pre">reme_task</span></code>、<code class="docutils literal notranslate"><span class="pre">tablestore</span></code>(可选)</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SandboxServiceFactory</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SandboxServiceFactory</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">SandboxService</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">SANDBOX_</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">default</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">default</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SessionHistoryServiceFactory</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">SessionHistoryService</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">SESSION_HISTORY_</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">in_memory</span></code>、<code class="docutils literal notranslate"><span class="pre">redis</span></code>、<code class="docutils literal notranslate"><span class="pre">tablestore</span></code>(可选)</p></td>
-</tr>
 </tbody>
 </table>
 </div>
 </section>
-<section id="id11">
-<h3>使用提示<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
+<section id="id9">
+<h3>使用提示<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
 <ul>
 <li><p>选择后端：通过设置<code class="docutils literal notranslate"><span class="pre">&lt;PREFIX&gt;BACKEND</span></code>环境变量选择实现</p>
 <p>例如：</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">MEMORY_BACKEND</span><span class="o">=</span>redis
-<span class="nb">export</span><span class="w"> </span><span class="nv">MEMORY_REDIS_REDIS_URL</span><span class="o">=</span><span class="s2">&quot;redis://localhost:6379/5&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">STATE_BACKEND</span><span class="o">=</span>redis
+<span class="nb">export</span><span class="w"> </span><span class="nv">STATE_REDIS_REDIS_URL</span><span class="o">=</span><span class="s2">&quot;redis://localhost:6379/5&quot;</span>
 </pre></div>
 </div>
 </li>
@@ -940,12 +863,12 @@ body.preview-active {
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="session_history.html">
+          <a class="next-page" href="sandbox.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">会话历史服务</div>
+                <div class="title">沙箱服务</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -1008,29 +931,21 @@ body.preview-active {
 <li><a class="reference internal" href="#id2">概述</a></li>
 <li><a class="reference internal" href="#id3">为什么要通过适配器使用服务？</a></li>
 <li><a class="reference internal" href="#id4">可用服务及适配器用法</a><ul>
-<li><a class="reference internal" href="#sessionhistoryservice">1. 会话历史服务（SessionHistoryService）</a><ul>
+<li><a class="reference internal" href="#sandboxservice">1. 沙箱服务（SandboxService）</a><ul>
 <li><a class="reference internal" href="#agentscope">AgentScope用法</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#memoryservice">2. 记忆服务（MemoryService）</a><ul>
+<li><a class="reference internal" href="#stateservice">2. StateService</a><ul>
 <li><a class="reference internal" href="#id5">AgentScope用法</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#sandboxservice">3. 沙箱服务（SandboxService）</a><ul>
-<li><a class="reference internal" href="#id6">AgentScope用法</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#stateservice">4. StateService</a><ul>
-<li><a class="reference internal" href="#id7">AgentScope用法</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference internal" href="#id8">服务的接口</a></li>
+<li><a class="reference internal" href="#id6">服务的接口</a></li>
 <li><a class="reference internal" href="#servicefactory">ServiceFactory：统一的服务创建模式</a><ul>
-<li><a class="reference internal" href="#id9">创建流程示例</a></li>
-<li><a class="reference internal" href="#id10">常用<code class="docutils literal notranslate"><span class="pre">ServiceFactory</span></code>与默认后端</a></li>
-<li><a class="reference internal" href="#id11">使用提示</a></li>
+<li><a class="reference internal" href="#id7">创建流程示例</a></li>
+<li><a class="reference internal" href="#id8">常用<code class="docutils literal notranslate"><span class="pre">ServiceFactory</span></code>与默认后端</a></li>
+<li><a class="reference internal" href="#id9">使用提示</a></li>
 </ul>
 </li>
 </ul>

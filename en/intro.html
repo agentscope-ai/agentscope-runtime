@@ -492,8 +492,6 @@ body.preview-active {
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="service/service.html">5. Services and Adapters</a><input aria-label="Toggle navigation of 5. Services and Adapters" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="service/session_history.html">Session History Service</a></li>
-<li class="toctree-l2"><a class="reference internal" href="service/memory.html">Memory Service</a></li>
 <li class="toctree-l2"><a class="reference internal" href="service/sandbox.html">Sandbox Service</a></li>
 <li class="toctree-l2"><a class="reference internal" href="service/state.html">Agent State Service</a></li>
 </ul>
@@ -559,8 +557,6 @@ body.preview-active {
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../zh/service/service.html">5. 服务与适配器</a><input aria-label="Toggle navigation of 5. 服务与适配器" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../zh/service/session_history.html">会话历史服务</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../zh/service/memory.html">记忆服务</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zh/service/sandbox.html">沙箱服务</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../zh/service/state.html">智能体状态服务</a></li>
 </ul>
@@ -634,7 +630,7 @@ body.preview-active {
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="welcome-to-agentscope-runtime-cookbook">
+          <section class="tex2jax_ignore mathjax_ignore" id="welcome-to-agentscope-runtime-cookbook">
 <h1>Welcome to AgentScope Runtime Cookbook<a class="headerlink" href="#welcome-to-agentscope-runtime-cookbook" title="Link to this heading">¶</a></h1>
 <p><a class="reference external" href="https://github.com/agentscope-ai/agentscope-runtime"><img alt="GitHub Repo" src="https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github" /></a>
 <a class="reference external" href="http://webui.runtime.agentscope.io/"><img alt="WebUI" src="https://img.shields.io/badge/Try_WebUI-Online-green.svg?logo=googlechrome" /></a>
@@ -670,9 +666,22 @@ body.preview-active {
 </section>
 <section id="what-is-agentscope-runtime">
 <h2>What is AgentScope Runtime?<a class="headerlink" href="#what-is-agentscope-runtime" title="Link to this heading">¶</a></h2>
-<p><strong>AgentScope Runtime</strong> is a full-stack agent runtime that tackles two core challenges: <strong>efficient agent deployment</strong> and <strong>secure sandbox execution</strong>. It ships with foundational services such as short- and long-term memory plus agent-state persistence, along with hardened sandbox infrastructure. Whether you need to orchestrate production-grade agents or guarantee safe tool interactions, AgentScope Runtime provides developer-friendly workflows with complete observability.</p>
-<p>In V1.0, these services are exposed via an <strong>adapter pattern</strong>, enabling seamless integration with the native modules of different agent frameworks while preserving their native interfaces and behaviors, ensuring both compatibility and flexibility.</p>
-<p>This cookbook walks you through building service-ready agent applications with <strong>AgentScope Runtime</strong>.</p>
+<p><strong>AgentScope Runtime</strong> is a full-stack runtime for AI agents designed to solve two core challenges: <strong>efficient deployment &amp; serving</strong> and <strong>secure sandboxed execution</strong>.</p>
+<p>In short:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{aligned}
+\textbf{AgentScope Runtime}
+=&amp;\ \textbf{Tool Sandboxing}
++\ \textbf{AaaS APIs}
++\ \textbf{Scalable Deployment} \\
+&amp;+\ \textbf{Full-stack Observability (Logs/Traces)}
++\ \textbf{Framework Compatibility}
+\end{aligned}
+\end{split}\]</div>
+</div>
+<p>This cookbook guides you through building <strong>service-ready</strong>, production-grade agent applications with <strong>AgentScope Runtime</strong>.</p>
 </section>
 <section id="core-architecture">
 <h2>Core Architecture<a class="headerlink" href="#core-architecture" title="Link to this heading">¶</a></h2>
@@ -682,8 +691,6 @@ body.preview-active {
 <p>Secure, isolated environments that let agents execute code, control browsers, manipulate files, and integrate MCP tools—without exposing your host system.</p>
 <p><strong>🛠️ Production‑Grade Tool Services (Tool)</strong></p>
 <p>Built on trusted third‑party API capabilities (such as Search, RAG, AIGC, Payment, etc.), these services are exposed through a unified SDK that provides standardized call interfaces, enabling agents to integrate and utilize these capabilities in a consistent way without worrying about differences or complexities in the underlying APIs.</p>
-<p><strong>🔌 Adapter Pattern (Adapter)</strong></p>
-<p>Adapts various runtime service modules (state management, session history, tool execution, etc.) to the native module interfaces of agent frameworks, allowing developers to directly invoke these capabilities while preserving native behaviors — enabling seamless integration and flexible extension.</p>
 </section>
 <section id="why-agentscope-runtime">
 <h2>Why AgentScope Runtime?<a class="headerlink" href="#why-agentscope-runtime" title="Link to this heading">¶</a></h2>
@@ -819,6 +826,8 @@ body.preview-active {
     <script async="async" src="../_static/sphinx-thebe.js?v=c100c467"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="../_static/mermaid-loader.js?v=b1db1dab"></script>
     <script src="../_static/language.js?v=c79991d2"></script>
     </body>

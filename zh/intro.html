@@ -492,8 +492,6 @@ body.preview-active {
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../en/service/service.html">5. Services and Adapters</a><input aria-label="Toggle navigation of 5. Services and Adapters" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../en/service/session_history.html">Session History Service</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../en/service/memory.html">Memory Service</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../en/service/sandbox.html">Sandbox Service</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../en/service/state.html">Agent State Service</a></li>
 </ul>
@@ -559,8 +557,6 @@ body.preview-active {
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="service/service.html">5. 服务与适配器</a><input aria-label="Toggle navigation of 5. 服务与适配器" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="service/session_history.html">会话历史服务</a></li>
-<li class="toctree-l2"><a class="reference internal" href="service/memory.html">记忆服务</a></li>
 <li class="toctree-l2"><a class="reference internal" href="service/sandbox.html">沙箱服务</a></li>
 <li class="toctree-l2"><a class="reference internal" href="service/state.html">智能体状态服务</a></li>
 </ul>
@@ -634,7 +630,7 @@ body.preview-active {
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="agentscope-runtime-cookbook">
+          <section class="tex2jax_ignore mathjax_ignore" id="agentscope-runtime-cookbook">
 <h1>欢迎来到AgentScope Runtime Cookbook<a class="headerlink" href="#agentscope-runtime-cookbook" title="Link to this heading">¶</a></h1>
 <p><a class="reference external" href="https://github.com/agentscope-ai/agentscope-runtime"><img alt="GitHub Repo" src="https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github" /></a>
 <a class="reference external" href="http://webui.runtime.agentscope.io/"><img alt="WebUI" src="https://img.shields.io/badge/Try_WebUI-Online-green.svg?logo=googlechrome" /></a>
@@ -670,9 +666,19 @@ body.preview-active {
 </section>
 <section id="agentscope-runtime">
 <h2>什么是AgentScope Runtime？<a class="headerlink" href="#agentscope-runtime" title="Link to this heading">¶</a></h2>
-<p><strong>AgentScope Runtime</strong> 是一个全面的智能体运行时框架，旨在解决两个关键挑战：<strong>高效的智能体部署</strong>和<strong>沙箱执行</strong>。它内置了基础服务（长短期记忆、智能体状态持久化）和安全沙箱基础设施。无论您需要大规模部署智能体还是确保安全的工具交互，AgentScope Runtime 都能提供具有完整可观测性和开发者友好部署的核心基础设施。</p>
-<p>在 V1.0 中，这些运行时服务通过 <strong>适配器模式</strong> 对外开放，允许开发者在保留原有智能体框架接口与行为的基础上，将 AgentScope 的状态管理、会话记录、工具调用等模块按需嵌入到应用生命周期中。从过去的 “黑盒化替换” 变为 “白盒化集成”，开发者可以显式地控制服务初始化、工具注册与状态持久化流程，从而在不同框架间实现无缝整合，同时获得更高的扩展性与灵活性。</p>
-<p>本指南将指导您使用 <strong>AgentScope Runtime</strong> 构建服务级的智能体应用程序。</p>
+<p><strong>AgentScope Runtime</strong> 是一个面向 AI Agent 的全栈运行时，旨在解决两大核心挑战：<strong>高效部署与服务化</strong>以及<strong>安全的沙箱化执行</strong>。</p>
+<p>简而言之：
+$<span class="math notranslate nohighlight">\(
+\begin{aligned}
+\textbf{AgentScope Runtime}
+=&amp;\ \textbf{工具沙箱隔离}
++\ \textbf{AaaS API（Agent 即服务）}
++\ \textbf{可扩展部署} \\
+&amp;+\ \textbf{全栈可观测性（日志/链路追踪）}
++\ \textbf{框架兼容性}
+\end{aligned}
+\)</span>$
+本 cookbook 将引导你使用 <strong>AgentScope Runtime</strong> 构建<strong>可服务化</strong>、面向生产环境的高质量 Agent 应用。</p>
 </section>
 <section id="id1">
 <h2>核心架构<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
@@ -682,8 +688,6 @@ body.preview-active {
 <p>安全隔离的环境，让您的智能体能够安全地执行代码、控制浏览器、管理文件并集成MCP 工具——所有这些都不会危及您的系统安全。</p>
 <p><strong>🛠️ 生产级工具服务 (Tool)</strong></p>
 <p>基于可信第三方 API 能力（如搜索、RAG、AIGC、支付等），通过统一的 SDK 封装对外提供标准化调用接口，使智能体能够以一致的方式集成和使用这些服务，而无需关心底层 API 的差异与复杂性。</p>
-<p><strong>🔌 适配器模式 (Adapter)</strong></p>
-<p>将 Runtime 内的各类服务模块（状态管理、会话记录、工具执行等）适配到智能体框架的原生模块接口中，使开发者能够在保留原生行为的同时直接调用这些能力，实现无缝对接与灵活扩展。</p>
 </section>
 <section id="id2">
 <h2>为什么选择 AgentScope Runtime？<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
@@ -819,6 +823,8 @@ body.preview-active {
     <script async="async" src="../_static/sphinx-thebe.js?v=c100c467"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="../_static/mermaid-loader.js?v=b1db1dab"></script>
     <script src="../_static/language.js?v=c79991d2"></script>
     </body>
