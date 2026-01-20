@@ -248,7 +248,7 @@ class SandboxManagerEnvConfig(BaseModel):
     heartbeat_scan_interval: int = Field(
         default=0,
         description="Heartbeat scan interval in seconds. 0 disables scanning.",
-        gt=0,
+        ge=0,
     )
     heartbeat_lock_ttl: int = Field(
         default=120,
