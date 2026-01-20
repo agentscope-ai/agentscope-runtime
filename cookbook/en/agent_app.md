@@ -190,7 +190,6 @@ This approach has the following advantages:
 ```{code-cell}
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.services.agent_state import InMemoryStateService
-from agentscope_runtime.engine.services.session_history import InMemorySessionHistoryService
 
 app = AgentApp(
     app_name="Friday",
@@ -201,17 +200,14 @@ app = AgentApp(
 async def init_func(self):
     """Initialize service resources"""
     self.state_service = InMemoryStateService()
-    self.session_service = InMemorySessionHistoryService()
 
     await self.state_service.start()
-    await self.session_service.start()
     print("✅ Service initialized")
 
 @app.shutdown
 async def shutdown_func(self):
     """Release service resources"""
     await self.state_service.stop()
-    await self.session_service.stop()
     print("✅ Resources released")
 ```
 
@@ -303,7 +299,7 @@ from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope.pipeline import stream_printing_messages
-from agentscope_runtime.adapters.agentscope.memory import AgentScopeSessionHistoryMemory
+from agentscope.memory import InMemoryMemory
 
 app = AgentApp(
     app_name="Friday",
@@ -336,11 +332,7 @@ async def query_func(
             stream=True,
         ),
         sys_prompt="You're a helpful assistant named Friday.",
-        memory=AgentScopeSessionHistoryMemory(
-            service=self.session_service,
-            session_id=session_id,
-            user_id=user_id,
-        ),
+        memory=InMemoryMemory(),
     )
 
     # Restore state if present
@@ -385,9 +377,8 @@ from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope.tool import Toolkit, execute_python_code
 from agentscope.pipeline import stream_printing_messages
-from agentscope_runtime.adapters.agentscope.memory import AgentScopeSessionHistoryMemory
+from agentscope.memory import InMemoryMemory
 from agentscope_runtime.engine.services.agent_state import InMemoryStateService
-from agentscope_runtime.engine.services.session_history import InMemorySessionHistoryService
 
 app = AgentApp(
     app_name="Friday",
@@ -398,15 +389,12 @@ app = AgentApp(
 async def init_func(self):
     """Start state and session services"""
     self.state_service = InMemoryStateService()
-    self.session_service = InMemorySessionHistoryService()
     await self.state_service.start()
-    await self.session_service.start()
 
 @app.shutdown
 async def shutdown_func(self):
     """Tear down services"""
     await self.state_service.stop()
-    await self.session_service.stop()
 
 @app.query(framework="agentscope")
 async def query_func(
@@ -440,11 +428,7 @@ async def query_func(
         ),
         sys_prompt="You're a helpful assistant named Friday.",
         toolkit=toolkit,
-        memory=AgentScopeSessionHistoryMemory(
-            service=self.session_service,
-            session_id=session_id,
-            user_id=user_id,
-        ),
+        memory=InMemoryMemory(),
     )
     agent.set_console_output_enabled(enabled=False)
 
