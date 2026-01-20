@@ -7,6 +7,7 @@ from typing import Optional
 from functools import wraps
 
 import logging
+from redis.exceptions import ResponseError
 
 from ..model import ContainerModel
 
@@ -224,6 +225,15 @@ end
                 token,
             )
             return bool(res)
+        except ResponseError as e:
+            msg = str(e).lower()
+            if "unknown command" in msg and "eval" in msg:
+                val = self.redis_client.get(key)
+                if val == token:
+                    return bool(self.redis_client.delete(key))
+                return False
+            logger.warning(f"Failed to release heartbeat lock {key}: {e}")
+            raise
         except Exception as e:
             logger.warning(f"Failed to release heartbeat lock {key}: {e}")
             return False
