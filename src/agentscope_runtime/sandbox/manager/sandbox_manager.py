@@ -724,6 +724,9 @@ class SandboxManager(HeartbeatMixin):
         try:
             limit = self.config.max_sandbox_instances
             if limit > 0:
+                # TODO: Avoid SCAN+len(list(...)) here; maintain an atomic
+                #  Redis counter (INCR/DECR or Lua) for O(1) instance limit
+                #  checks.
                 current = len(list(self.container_mapping.scan(self.prefix)))
                 if current >= limit:
                     raise RuntimeError(
