@@ -1,20 +1,29 @@
 # WebUI
 
-In **WebUI**, there are mainly two ways to call an Agent:
+In **WebUI**, there are mainly three ways to call an Agent:
 
-1. **Start directly using `npx`**
-2. **Install locally and start the development environment**
+1. **Use the [hosted WebUI](http://webui.runtime.agentscope.io/) (recommended, no installation)**
+2. **Start directly using `npx`**
+3. **Install locally and start the development environment**
 
 Before you begin, we assume you have already **deployed your Agent**.
-For example, if it’s deployed at `localhost:8090`, the WebUI will call it via the `process` endpoint, so the full request URL will be:
+For example, if it’s deployed at `localhost:8090`, the WebUI will call it via the `process` endpoint, so the full request URL will be: http://localhost:8090/process
 
-```bash
+This guide also requires a **Node.js** environment along with `npm` or `npx` (only needed for Method 2/3/4). Please make sure they are properly installed.
+
+## Method 1 (Recommended): Use the Hosted WebUI (No Installation)
+
+If you don’t want to install or run the WebUI locally, we recommend using the hosted WebUI directly:
+
+**http://webui.runtime.agentscope.io/**
+
+Open the page in your browser, and set your Agent endpoint to your deployed `process` URL, for example:
+
+```
 http://localhost:8090/process
 ```
 
-This guide also requires a **Node.js** environment along with `npm` or `npx`. Please make sure they are properly installed.
-
-## Method 1: Start the Agent Directly in Python and Enable the WebUI
+## Method 2: Start the Agent Directly in Python and Enable the WebUI
 
 This approach is suitable for running the Agent directly in a Python environment and enabling the built‑in WebUI. You only need to ensure that the Agent's required model environment has been deployed and that the API key is properly configured.
 
@@ -31,7 +40,7 @@ agent_app = AgentApp(
 agent_app.run(host="127.0.0.1", port=8090, web_ui=True)
 ```
 
-## Method 2: Quick Start via `npx`
+## Method 3: Quick Start via `npx`
 
 If you just want to try it out quickly or don’t need to modify code, you can simply run the following command in your terminal:
 
@@ -49,7 +58,7 @@ http://localhost:5173
 
 Open [http://localhost:5173](http://localhost:5173/) in your browser, and you can enter the WebUI to interact with your Agent via a chat interface.
 
-## Method 3: Local Installation and Startup (for development and customization)
+## Method 4: Local Installation and Startup (for development and customization)
 
 If you plan to go deeper into development or want to customize the WebUI, you can start a local environment in the **AgentScope-Runtime** `web/starter_webui` directory:
 

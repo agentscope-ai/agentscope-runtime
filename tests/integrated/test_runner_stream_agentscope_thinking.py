@@ -8,20 +8,15 @@ from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
 from agentscope.tool import Toolkit
 from agentscope.pipeline import stream_printing_messages
+from agentscope.memory import InMemoryMemory
 from agentscope_runtime.engine.schemas.agent_schemas import (
     AgentRequest,
     MessageType,
     RunStatus,
 )
 from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.adapters.agentscope.memory import (
-    AgentScopeSessionHistoryMemory,
-)
 from agentscope_runtime.engine.services.agent_state import (
     InMemoryStateService,
-)
-from agentscope_runtime.engine.services.session_history import (
-    InMemorySessionHistoryService,
 )
 from agentscope_runtime.adapters.agentscope.tool import sandbox_tool_adapter
 from agentscope_runtime.engine.services.sandbox import SandboxService
@@ -80,11 +75,7 @@ class MyRunner(Runner):
             ),
             sys_prompt="You're a helpful assistant named Friday.",
             toolkit=toolkit,
-            memory=AgentScopeSessionHistoryMemory(
-                service=self.session_service,
-                session_id=session_id,
-                user_id=user_id,
-            ),
+            memory=InMemoryMemory(),
             formatter=DashScopeChatFormatter(),
         )
         agent.set_console_output_enabled(enabled=False)
@@ -108,10 +99,8 @@ class MyRunner(Runner):
         Init handler.
         """
         self.state_service = InMemoryStateService()
-        self.session_service = InMemorySessionHistoryService()
         self.sandbox_service = SandboxService()
         await self.state_service.start()
-        await self.session_service.start()
         await self.sandbox_service.start()
 
     async def shutdown_handler(self, *args, **kwargs):
@@ -119,7 +108,6 @@ class MyRunner(Runner):
         Shutdown handler.
         """
         await self.state_service.stop()
-        await self.session_service.stop()
         await self.sandbox_service.stop()
 
 

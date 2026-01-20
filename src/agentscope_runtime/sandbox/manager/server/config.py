@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     # Runtime Manager settings
     DEFAULT_SANDBOX_TYPE: Union[str, List[str]] = "base"
-    POOL_SIZE: int = 1
+    POOL_SIZE: int = 0
     AUTO_CLEANUP: bool = True
     CONTAINER_PREFIX_KEY: str = "runtime_sandbox_container_"
     CONTAINER_DEPLOYMENT: Literal[
@@ -30,6 +30,7 @@ class Settings(BaseSettings):
         "agentrun",
         "fc",
         "gvisor",
+        "boxlite",
     ] = "docker"
     DEFAULT_MOUNT_DIR: str = "sessions_mount_dir"
     # Read-only mounts (host_path -> container_path)

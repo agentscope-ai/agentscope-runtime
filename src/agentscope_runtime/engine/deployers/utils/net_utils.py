@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+from functools import lru_cache
 import ipaddress
 import os
 import socket
 from typing import Optional
+from urllib import parse
 
 import psutil
 
@@ -63,3 +65,38 @@ def get_first_non_loopback_ip() -> Optional[str]:
         pass
 
     return None
+
+
+@lru_cache()
+def is_tcp_reachable(
+    endpoint: str,
+    port: int = None,
+    timeout: int = 1,
+) -> bool:
+    """Check if a domain is connectable, intelligently determining the port."""
+
+    parsed_url = parse.urlparse(endpoint)
+
+    scheme = parsed_url.scheme or "http"
+    hostname = parsed_url.hostname or endpoint
+
+    if not hostname:
+        return False
+
+    if port is not None:
+        port_to_use = port
+    elif scheme == "https":
+        port_to_use = 443
+    else:
+        port_to_use = 80
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(timeout)
+    try:
+        ip = socket.gethostbyname(hostname)
+        sock.connect((ip, port_to_use))
+        return True
+    except (socket.timeout, socket.gaierror, socket.error):
+        return False
+    finally:
+        sock.close()

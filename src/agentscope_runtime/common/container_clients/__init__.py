@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from .fc_client import FCClient
     from .agentrun_client import AgentRunClient
     from .gvisor_client import GVisorDockerClient
+    from .boxlite_client import BoxliteClient
 
 install_lazy_loader(
     globals(),
@@ -21,6 +22,7 @@ install_lazy_loader(
         "FCClient": ".fc_client",
         "AgentRunClient": ".agentrun_client",
         "GVisorDockerClient": ".gvisor_client",
+        "BoxliteClient": ".boxlite_client",
     },
 )
 
@@ -33,6 +35,7 @@ class ContainerClientFactory:
         "fc": "FCClient",
         "agentrun": "AgentRunClient",
         "gvisor": "GVisorDockerClient",
+        "boxlite": "BoxliteClient",
     }
 
     @classmethod

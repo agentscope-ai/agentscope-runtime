@@ -157,8 +157,26 @@ def create_nacos_registry_from_env() -> Optional[A2ARegistry]:
     if not _NACOS_SDK_AVAILABLE:
         return None
 
+    # Only create a Nacos registry if the user has explicitly configured
+    # at least one NACOS_* related environment variable. If none of these
+    # are present, we assume the user does NOT want to use any registry.
+    nacos_settings = get_nacos_settings()
+    env_keys = [
+        "NACOS_SERVER_ADDR",
+        "NACOS_USERNAME",
+        "NACOS_PASSWORD",
+        "NACOS_NAMESPACE_ID",
+        "NACOS_ACCESS_KEY",
+        "NACOS_SECRET_KEY",
+    ]
+    if not any(key in os.environ for key in env_keys):
+        logger.info(
+            "[A2A] No NACOS_* environment variables found; "
+            "registry will not be enabled.",
+        )
+        return None
+
     try:
-        nacos_settings = get_nacos_settings()
         nacos_client_config = _build_nacos_client_config(nacos_settings)
         registry = NacosRegistry(nacos_client_config=nacos_client_config)
 

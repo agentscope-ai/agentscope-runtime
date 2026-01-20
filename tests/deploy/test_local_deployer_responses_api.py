@@ -8,10 +8,8 @@ from agentscope.agent import ReActAgent
 from agentscope.formatter import DashScopeChatFormatter
 from agentscope.model import DashScopeChatModel
 from agentscope.pipeline import stream_printing_messages
+from agentscope.memory import InMemoryMemory
 
-from agentscope_runtime.adapters.agentscope.memory import (
-    AgentScopeSessionHistoryMemory,
-)
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.deployers.adapter.responses.response_api_protocol_adapter import (  # noqa: E501
     ResponseAPIDefaultAdapter,
@@ -22,9 +20,6 @@ from agentscope_runtime.engine.deployers.local_deployer import (
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from agentscope_runtime.engine.services.agent_state import (
     InMemoryStateService,
-)
-from agentscope_runtime.engine.services.session_history import (
-    InMemorySessionHistoryService,
 )
 
 
@@ -50,14 +45,11 @@ async def _local_deploy():
     @agent_app.init
     async def init_func(self):
         self.state_service = InMemoryStateService()
-        self.session_service = InMemorySessionHistoryService()
         await self.state_service.start()
-        await self.session_service.start()
 
     @agent_app.shutdown
     async def shutdown_func(self):
         await self.state_service.stop()
-        await self.session_service.stop()
 
     # Define query handler
     @agent_app.query(framework="agentscope")
@@ -83,11 +75,7 @@ async def _local_deploy():
                 stream=True,
             ),
             sys_prompt="You're a helpful assistant named {name}.",
-            memory=AgentScopeSessionHistoryMemory(
-                service=self.session_service,
-                session_id=session_id,
-                user_id=user_id,
-            ),
+            memory=InMemoryMemory(),
             formatter=DashScopeChatFormatter(),
         )
 

@@ -40,12 +40,51 @@ class CeleryMixin:
 
         self._registered_queues.add(queue)
 
+        def _coerce_result(x):
+            # Normalize Pydantic models first
+            if hasattr(x, "model_dump"):  # pydantic v2
+                x = x.model_dump()
+            elif hasattr(x, "dict"):  # pydantic v1
+                x = x.dict()
+            # Preserve simple primitives as-is
+            if isinstance(x, (str, int, float, bool)) or x is None:
+                return x
+            # Recursively coerce dictionaries
+            if isinstance(x, dict):
+                return {k: _coerce_result(v) for k, v in x.items()}
+            # Recursively coerce lists
+            if isinstance(x, list):
+                return [_coerce_result(item) for item in x]
+            # Fallback: string representation for anything else
+            return str(x)
+
+        async def _collect_async_gen(agen):
+            items = []
+            async for x in agen:
+                items.append(_coerce_result(x))
+            return items
+
+        def _collect_gen(gen):
+            return [_coerce_result(x) for x in gen]
+
         @self.celery_app.task(queue=queue)
         def wrapper(*args, **kwargs):
-            if inspect.iscoroutinefunction(func):
-                return asyncio.run(func(*args, **kwargs))
+            # 1) async generator function
+            if inspect.isasyncgenfunction(func):
+                result = func(*args, **kwargs)
+            # 2) async function
+            elif inspect.iscoroutinefunction(func):
+                result = asyncio.run(func(*args, **kwargs))
             else:
-                return func(*args, **kwargs)
+                result = func(*args, **kwargs)
+            # 3) async generator
+            if inspect.isasyncgen(result):
+                return asyncio.run(_collect_async_gen(result))
+            # 4) sync generator
+            if inspect.isgenerator(result):
+                return _collect_gen(result)
+            # 5) normal return
+            return _coerce_result(result)
 
         return wrapper
 
@@ -63,7 +102,7 @@ class CeleryMixin:
         if concurrency:
             cmd.append(f"--concurrency={concurrency}")
         if queues:
-            cmd.append(f"-Q {','.join(queues)}")
+            cmd += ["-Q", ",".join(queues)]
 
         self.celery_app.worker_main(cmd)
 

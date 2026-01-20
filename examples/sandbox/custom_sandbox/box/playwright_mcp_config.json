@@ -1,0 +1,23 @@
+{
+  "browser": {
+    "browserName": "chromium",
+    "launchOptions": {
+      "executablePath": "/usr/bin/chromium"
+    },
+    "contextOptions": {
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      }
+    }
+  },
+  "capabilities": [
+    "core",
+    "tabs",
+    "pdf",
+    "history",
+    "wait",
+    "files"
+  ],
+  "outputDir": "/workspace"
+}

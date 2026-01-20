@@ -1,6 +1,6 @@
 <div align="center">
 
-# AgentScope Runtime v1.0
+# AgentScope Runtime：一个生产级的智能体应用运行时框架
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/agentscope-ai/agentscope-runtime)
 [![WebUI](https://img.shields.io/badge/Try_WebUI-Online-green.svg?logo=googlechrome)](http://webui.runtime.agentscope.io/)
@@ -14,8 +14,7 @@
 [![GitHub Forks](https://img.shields.io/github/forks/agentscope-ai/agentscope-runtime?style=flat&logo=github&color=purple&label=Forks)](https://github.com/agentscope-ai/agentscope-runtime/network)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg?logo=githubactions&label=Build)](https://github.com/agentscope-ai/agentscope-runtime/actions)
 [![Cookbook](https://img.shields.io/badge/📚_Cookbook-English|中文-teal.svg)](https://runtime.agentscope.io)
-[![DeepWiki](https://img.shields.io/badge/DeepWiki-agentscope--runtime-navy.svg?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAyCAYAAAAnWDnqAAAAAXNSR0IArs4c6QAAA05JREFUaEPtmUtyEzEQhtWTQyQLHNak2AB7ZnyXZMEjXMGeK/AIi+QuHrMnbChYY7MIh8g01fJoopFb0uhhEqqcbWTp06/uv1saEDv4O3n3dV60RfP947Mm9/SQc0ICFQgzfc4CYZoTPAswgSJCCUJUnAAoRHOAUOcATwbmVLWdGoH//PB8mnKqScAhsD0kYP3j/Yt5LPQe2KvcXmGvRHcDnpxfL2zOYJ1mFwrryWTz0advv1Ut4CJgf5uhDuDj5eUcAUoahrdY/56ebRWeraTjMt/00Sh3UDtjgHtQNHwcRGOC98BJEAEymycmYcWwOprTgcB6VZ5JK5TAJ+fXGLBm3FDAmn6oPPjR4rKCAoJCal2eAiQp2x0vxTPB3ALO2CRkwmDy5WohzBDwSEFKRwPbknEggCPB/imwrycgxX2NzoMCHhPkDwqYMr9tRcP5qNrMZHkVnOjRMWwLCcr8ohBVb1OMjxLwGCvjTikrsBOiA6fNyCrm8V1rP93iVPpwaE+gO0SsWmPiXB+jikdf6SizrT5qKasx5j8ABbHpFTx+vFXp9EnYQmLx02h1QTTrl6eDqxLnGjporxl3NL3agEvXdT0WmEost648sQOYAeJS9Q7bfUVoMGnjo4AZdUMQku50McDcMWcBPvr0SzbTAFDfvJqwLzgxwATnCgnp4wDl6Aa+Ax283gghmj+vj7feE2KBBRMW3FzOpLOADl0Isb5587h/U4gGvkt5v60Z1VLG8BhYjbzRwyQZemwAd6cCR5/XFWLYZRIMpX39AR0tjaGGiGzLVyhse5C9RKC6ai42ppWPKiBagOvaYk8lO7DajerabOZP46Lby5wKjw1HCRx7p9sVMOWGzb/vA1hwiWc6jm3MvQDTogQkiqIhJV0nBQBTU+3okKCFDy9WwferkHjtxib7t3xIUQtHxnIwtx4mpg26/HfwVNVDb4oI9RHmx5WGelRVlrtiw43zboCLaxv46AZeB3IlTkwouebTr1y2NjSpHz68WNFjHvupy3q8TFn3Hos2IAk4Ju5dCo8B3wP7VPr/FGaKiG+T+v+TQqIrOqMTL1VdWV1DdmcbO8KXBz6esmYWYKPwDL5b5FA1a0hwapHiom0r/cKaoqr+27/XcrS5UwSMbQAAAABJRU5ErkJggg==)](https://deepwiki.com/agentscope-ai/agentscope-runtime)
-[![A2A](https://img.shields.io/badge/A2A-Agent_to_Agent-blue.svg?label=A2A)](https://a2a-protocol.org/)
+[![DeepWiki](https://img.shields.io/badge/DeepWiki-agentscope--runtime-navy.svg?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAyCAYAAAAnWDnqAAAAAXNSR0IArs4c6QAAA05JREFUaEPtmUtyEzEQhtWTQyQLHNak2AB7ZnyXZMEjXMGeK/AIi+QuHrMnbChYY7MIh8g01fJoopFb0uhhEqqcbWTp06/uv1saEDv4O3n3dV60RfP947Mm9/SQc0ICFQgzfc4CYZoTPAswgSJCCUJUnAAoRHOAUOcATwbmVLWdGoH//PB8mnKqScAhsD0kYP3j/Yt5LPQe2KvcXmGvRHcDnpxfL2zOYJ1mFwrryWTz0advv1Ut4CJgf5uhDuDj5eUcAUoahrdY/56ebRWeraTjMt/00Sh3UDtjgHtQNHwcRGOC98BJEAEymycmYcWwOprTgcB6VZ5JK5TAJ+fXGLBm3FDAmn6oPPjR4rKCAoJCal2eAiQp2x0vxTPB3ALO2CRkwmDy5WohzBDwSEFKRwPbknEggCPB/imwrycgxX2NzoMCHhPkDwqYMr9tRcP5qNrMZHkVnOjRMWwLCcr8ohBVb1OMjxLwGCvjTikrsBOiA6fNyCrm8V1rP93iVPpwaE+gO0SsWmPiXB+jikdf6SizrT5qKasx5j8ABbHpFTx+vFXp9EnYQmLx02h1QTTrl6eDqxLnGjporxl3NL3agEvXdT0WmEost648sQOYAeJS9Q7bfUVoMGnjo4AZdUMQku50McDcMWcBPvr0SzbTAFDfvJqwLzgxwATnCgnp4wDl6Aa+Ax283gghmj+vj7feE2KBBRMW3FzOpLOADl0Isb5587h/U4gGvkt5v60Z1VLG8BhYjbzRwyQZemwAd6cCR5/XFWLYZRIMpX39AR0tjaGGiGzLVyhse5C9RKC6ai42ppWPKiBagOvaYk8lO7DajerabOZP46Lby5wKjw1HCRx7p9sVMOWGzb/vA1hwiWc6jm3MvQDTogQkiqIhJV0nBQBTU+3okKCFDy9WwferkHjtxib7t3xIUQtHxnIwtx4mpg26/HfwVNVDb4oI9RHmx5WGelRVlrtiw43zboCLaxv46AZeB3IlTkwouebTr1y2NjSpHz68WNFjHvupy3q8TFn3Hos2IAk4Ju5dCo8B3wP7VPr/FGaKiG+T+v+TQqIrOqMTL1VdWV1DdmcbO8KXBz6esmYWYKPwDL5b5FA1a0hwapHiom0r/cKaoqr+27/XcrS5UwSMbQAAAABJRU5ErkJggg==)](https://deepwiki.com/agentscope-ai/agentscope-runtime)[![A2A](https://img.shields.io/badge/A2A-Agent_to_Agent-blue.svg?label=A2A)](https://a2a-protocol.org/)
 [![MCP](https://img.shields.io/badge/MCP-Model_Context_Protocol-purple.svg?logo=plug&label=MCP)](https://modelcontextprotocol.io/)
 [![Discord](https://img.shields.io/badge/Discord-Join_Us-blueviolet.svg?logo=discord)](https://discord.gg/eYMpfnkG8h)
 [![DingTalk](https://img.shields.io/badge/DingTalk-Join_Us-orange.svg)](https://qr.dingtalk.com/action/joingroup?code=v1,k1,OmDlBXpjW+I2vWjKDsjvI9dhcXjGZi3bQiojOq3dlDw=&_dt_no_comment=1&origin=11)
@@ -25,13 +24,53 @@
 [[English README]](README.md)
 [[示例]](https://github.com/agentscope-ai/agentscope-samples)
 
-**智能体应用的生产就绪运行时框架**
-
-***AgentScope Runtime** 是一个全面的智能体运行时框架，旨在解决两个关键挑战：**高效的智能体部署**和**沙箱执行**。它内置了基础服务（长短期记忆、智能体状态持久化）和安全沙箱基础设施。无论您需要大规模部署智能体还是确保安全的工具交互，AgentScope Runtime 都能提供具有完整可观测性和开发者友好部署的核心基础设施。*
-
-*在 V1.0 中，这些运行时服务通过 **适配器模式** 对外开放，允许开发者在保留原有智能体框架接口与行为的基础上，将 AgentScope 的状态管理、会话记录、工具调用等模块按需嵌入到应用生命周期中。从过去的 “黑盒化替换” 变为 “白盒化集成”，开发者可以显式地控制服务初始化、工具注册与状态持久化流程，从而在不同框架间实现无缝整合，同时获得更高的扩展性与灵活性。*
+> **核心能力：**
+>
+> **工具沙箱化（Tool Sandboxing）** —— 工具调用在**加固的沙箱**中运行
+>
+> **Agent 即服务（AaaS）API** —— 将智能体以**支持流式输出、可用于生产环境的 API** 形式对外提供
+>
+> **可扩展部署** —— 支持本地、Kubernetes 或无服务器（Serverless）部署，实现**弹性扩缩容**
+>
+> <details>
+> <summary><b>此外</b></summary>
+>
+> <br>
+>
+> **全栈可观测性**（日志 / 链路追踪）
+>
+> **框架兼容性** —— 兼容主流智能体框架
+>
+> </details>
 
 </div>
+
+---
+
+## 📋 目录
+
+> [!NOTE]
+>
+> **<u>推荐阅读顺序：</u>**
+>
+> - **我只想 5 分钟跑起来Agent应用**：快速开始 （Agent App 示例） → curl 调用验证
+> - **我关心安全工具执行/自动化环境**：快速开始 （沙箱示例） → 镜像配置 →（需要时）生产级 Serverless 沙箱部署
+> - **我要做生产部署/对外提供 API**：快速开始 （Agent App 示例）→ 快速开始 （部署示例） → 指南
+> - **我要参与共建**：贡献 → 联系我们
+
+- [新闻](#-新闻)
+- [关键特性](#-关键特性)
+- [快速开始](#-快速开始)：从安装到跑通一个最小 Agent API 服务，掌握 AgentApp 的 init/query/shutdown 三段式开发范式。
+  - [前提条件](#前提条件)：运行环境与依赖要求
+  - [安装](#安装)：PyPI/源码安装方式
+  - [Agent App 示例](#agent-app-示例)：如何写一个可流式输出（SSE）的 Agent-as-a-Service API
+  - [沙箱示例](#沙箱示例)：如何在隔离环境里安全执行 Python/Shell/GUI/Browser/Filesystem/Mobile 工具
+  - [部署示例](#部署示例) ：学会用 DeployManager 本地/Serverless 部署，并了解兼容 A2A、Response API 与 OpenAI SDK 的访问方式。
+- [指南](#-指南)：进一步学习关于 AgentScope Runtime 的概念、架构、API 与示例项目的教程网站，从“能跑”走向“可扩展/可维护”。
+- [联系我们](#-联系我们)
+- [贡献](#-贡献)
+- [许可证](#-许可证)
+- [贡献者](#-贡献者)
 
 ---
 
@@ -45,12 +84,12 @@
 
 ## ✨ 关键特性
 
-- **🏗️ 部署基础设施**：内置多种服务用于智能体状态管理、历史会话管理、长期记忆和沙盒环境生命周期控制等
-- **🔧 框架无关**：不绑定任何特定智能体框架，与流行的开源智能体框架和自定义实现无缝集成
-- ⚡ **对开发者友好**：提供`AgentApp`方便部署并提供强大的自定义选项
-- **📊 可观察性**：对运行时操作进行全面跟踪和监控
-- **🔒 沙盒工具执行**：隔离的沙盒确保安全工具执行，不会影响系统
-- **🛠️ 开箱即用 & 一键适配**：提供种类丰富的开箱即用工具，适配器快速接入不同框架
+- **部署基础设施**：内置多种服务用于智能体状态管理、历史会话管理、长期记忆和沙盒环境生命周期控制等
+- **框架无关**：不绑定任何特定智能体框架，与流行的开源智能体框架和自定义实现无缝集成
+- **对开发者友好**：提供`AgentApp`方便部署并提供强大的自定义选项
+- **可观察性**：对运行时操作进行全面跟踪和监控
+- **沙盒工具执行**：隔离的沙盒确保安全工具执行，不会影响系统
+- **开箱即用 & 一键适配**：提供种类丰富的开箱即用工具，适配器快速接入不同框架
 
 > [!NOTE]
 >
@@ -63,26 +102,6 @@
 > | [Microsoft Agent Framework](https://runtime.agentscope.io/zh/ms_agent_framework_guidelines.html) | ✅             | ✅    | 🚧       |
 > | [Agno](https://runtime.agentscope.io/zh/agno_guidelines.html) | ✅             | ✅    | 🚧       |
 > | AutoGen                                                      | 🚧             | ✅    | 🚧       |
-
----
-
-## 💬 联系我们
-
-欢迎加入我们的社区，获取最新的更新和支持！
-
-| [Discord](https://discord.gg/eYMpfnkG8h)                     | 钉钉群                                                       |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| <img src="https://gw.alicdn.com/imgextra/i1/O1CN01hhD1mu1Dd3BWVUvxN_!!6000000000238-2-tps-400-400.png" width="100" height="100"> | <img src="https://img.alicdn.com/imgextra/i4/O1CN014mhqFq1ZlgNuYjxrz_!!6000000003235-2-tps-400-400.png" width="100" height="100"> |
-
----
-
-## 📋 目录
-
-- [🚀 快速开始](#-快速开始)
-- [📚 指南](#-指南)
-- [🏗️ 部署](#️-部署)
-- [🤝 贡献](#-贡献)
-- [📄 许可证](#-许可证)
 
 ---
 
@@ -136,17 +155,13 @@ from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
 from agentscope.tool import Toolkit, execute_python_code
 from agentscope.pipeline import stream_printing_messages
+from agentscope.memory import InMemoryMemory
 
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agentscope_runtime.adapters.agentscope.memory import (
-    AgentScopeSessionHistoryMemory,
-)
+
 from agentscope_runtime.engine.services.agent_state import (
     InMemoryStateService,
-)
-from agentscope_runtime.engine.services.session_history import (
-    InMemorySessionHistoryService,
 )
 
 agent_app = AgentApp(
@@ -158,16 +173,13 @@ agent_app = AgentApp(
 @agent_app.init
 async def init_func(self):
     self.state_service = InMemoryStateService()
-    self.session_service = InMemorySessionHistoryService()
 
     await self.state_service.start()
-    await self.session_service.start()
 
 
 @agent_app.shutdown
 async def shutdown_func(self):
     await self.state_service.stop()
-    await self.session_service.stop()
 
 
 @agent_app.query(framework="agentscope")
@@ -197,11 +209,7 @@ async def query_func(
         ),
         sys_prompt="You're a helpful assistant named Friday.",
         toolkit=toolkit,
-        memory=AgentScopeSessionHistoryMemory(
-            service=self.session_service,
-            session_id=session_id,
-            user_id=user_id,
-        ),
+        memory=InMemoryMemory(),
         formatter=DashScopeChatFormatter(),
     )
     agent.set_console_output_enabled(enabled=False)
@@ -263,9 +271,9 @@ data: {"sequence_number":6,"object":"response","status":"completed", ... }
 
 > [!NOTE]
 >
-> 如果你想本地运行沙箱，当前版本需要安装并运行Docker或者Kubernetes，未来我们将提供更多公有云部署、以及其他虚拟化技术选项。请参考[此教程](https://runtime.agentscope.io/zh/sandbox.html)了解更多详情。
+> 如果你想在本地运行沙箱（sandbox），当前版本支持 **Docker（可选配 gVisor）** 或 **[BoxLite](https://github.com/boxlite-ai/boxlite)** 作为后端，并且可以通过设置环境变量 `CONTAINER_DEPLOYMENT` 来切换（可选值包括 `docker` / `gvisor` / `boxlite` 等，默认 `docker`）。
 >
-> 如果您计划在生产中大规模使用沙箱，推荐直接在阿里云中进行托管部署：[在阿里云一键部署沙箱](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope%20Runtime%20%E6%B2%99%E7%AE%B1%E7%8E%AF%E5%A2%83)
+> 对于大规模远程/生产环境部署，我们推荐使用 **Kubernetes（K8s）**、**函数计算（Function Compute，FC）**，或 **[阿里云容器服务 Kubernetes 版（ACK）](https://computenest.console.aliyun.com/service/instance/create/default?ServiceName=AgentScope Runtime 沙箱环境)** 作为后端。更多细节请参考[本教程](https://runtime.agentscope.io/zh/sandbox/advanced.html)。
 
 > [!TIP]
 > AgentScope Runtime 为每种沙箱类型都提供了 **同步版本** 和 **异步版本**
@@ -525,19 +533,7 @@ runtime-sandbox-server --config fc.env
 ```
 服务器启动后，您可以通过URL `http://localhost:8000` 访问沙箱服务器，并调用上述描述的沙箱工具。
 
----
-
-## 📚 指南
-
-- **[📖 Cookbook](https://runtime.agentscope.io/zh/intro.html)**: 全面教程
-- **[💡 概念](https://runtime.agentscope.io/zh/concept.html)**: 核心概念和架构概述
-- **[🚀 快速开始](https://runtime.agentscope.io/zh/quickstart.html)**: 快速入门教程
-- **[🏠 展示厅](https://runtime.agentscope.io/zh/demohouse.html)**: 丰富的示例项目
-- **[📋 API 参考](https://runtime.agentscope.io/zh/api/index.html)**: 完整的API文档
-
----
-
-## 🏗️ 部署
+### 部署示例
 
 `AgentApp` 提供了一个 `deploy` 方法，该方法接收一个 `DeployManager` 实例并部署代理（agent）。
 
@@ -568,7 +564,7 @@ deploy_result = await app.deploy(
 ```python
 from openai import OpenAI
 
-client = OpenAI(base_url="http://0.0.0.0:8090/compatible-mode/v1")
+client = OpenAI(base_url="http://localhost:8090/compatible-mode/v1")
 
 response = client.responses.create(
   model="any_name",
@@ -582,7 +578,13 @@ print(response)
 [ModelStudio](https://bailian.console.aliyun.com/?admin=1&tab=doc#/doc/?type=app&url=2983030)。
 
 ```python
-from agentscope_runtime.engine.deployers import ModelStudioDeployManager
+import os
+from agentscope_runtime.engine.deployers.modelstudio_deployer import (
+    ModelstudioDeployManager,
+    OSSConfig,
+    ModelstudioConfig,
+)
+
 # 创建部署管理器
 deployer = ModelstudioDeployManager(
     oss_config=OSSConfig(
@@ -611,6 +613,22 @@ result = await app.deploy(
 ```
 
 有关更高级的 serverless 部署指南，请参考[文档](https://runtime.agentscope.io/zh/advanced_deployment.html#method-4-modelstudio-deployment)。
+
+---
+
+## 📚 教程
+
+更详细的教程请参考：[![Cookbook](https://img.shields.io/badge/📚_Cookbook-English|中文-teal.svg)](https://runtime.agentscope.io)
+
+---
+
+## 💬 联系我们
+
+欢迎加入我们的社区，获取最新的更新和支持！
+
+| [Discord](https://discord.gg/eYMpfnkG8h)                     | 钉钉群                                                       |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| <img src="https://gw.alicdn.com/imgextra/i1/O1CN01hhD1mu1Dd3BWVUvxN_!!6000000000238-2-tps-400-400.png" width="100" height="100"> | <img src="https://img.alicdn.com/imgextra/i4/O1CN014mhqFq1ZlgNuYjxrz_!!6000000003235-2-tps-400-400.png" width="100" height="100"> |
 
 ---
 
@@ -662,9 +680,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
-## 贡献者 ✨
+## ✨ 贡献者
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-31-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-32-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 
@@ -715,6 +733,7 @@ limitations under the License.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/RTsama"><img src="https://avatars.githubusercontent.com/u/100779257?v=4?s=100" width="100px;" alt="RTsama"/><br /><sub><b>RTsama</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3ARTsama" title="Bug reports">🐛</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=RTsama" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://allenli178.top"><img src="https://avatars.githubusercontent.com/u/53218750?v=4?s=100" width="100px;" alt="YuYan"/><br /><sub><b>YuYan</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=allenli178" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/rlp2006"><img src="https://avatars.githubusercontent.com/u/212365247?v=4?s=100" width="100px;" alt="Li Peng (Yuan Yi)"/><br /><sub><b>Li Peng (Yuan Yi)</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=rlp2006" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=rlp2006" title="Documentation">📖</a> <a href="#example-rlp2006" title="Examples">💡</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://dorianzheng.github.io"><img src="https://avatars.githubusercontent.com/u/8065637?v=4?s=100" width="100px;" alt="dorianzheng"/><br /><sub><b>dorianzheng</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/pulls?q=is%3Apr+reviewed-by%3ADorianZheng" title="Reviewed Pull Requests">👀</a> <a href="#platform-DorianZheng" title="Packaging/porting to new platform">📦</a></td>
     </tr>
   </tbody>
   <tfoot>

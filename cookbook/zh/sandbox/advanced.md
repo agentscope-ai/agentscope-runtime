@@ -125,6 +125,22 @@ KUBECONFIG_PATH=
 | `HEARTBEAT_LOCK_TTL`      | 心跳扫描/回收分布式锁 TTL（秒） | `120`                      | 多实例部署时用于互斥回收同一 `session_ctx_id` 的锁过期时间，避免重复回收。应大于一次回收的典型耗时；过小可能导致锁过期后被其他实例重复回收。 |
 | `MAX_SANDBOX_INSTANCES`   | 最大沙盒实例数（容器总数上限）  | `0`                        | 用于限制 SandboxManager 可创建/维持的沙盒容器总数量。当当前容器数达到或超过该值时，新的创建请求会被拒绝（例如返回 `None` 或抛异常，取决于实现）。 取值说明： • `0`：不限制 • `N>0`：最多 `N` 个容器实例 示例： • `MAX_SANDBOX_INSTANCES=20` |
 
+##### 后端对比
+
+沙箱支持多种后端，可通过 `CONTAINER_DEPLOYMENT` 选择。下表对比了本地隔离方案与远程/托管部署后端。
+
+| 属性         | Docker（`docker`）  | gVisor（`gvisor`）     | BoxLite（`boxlite`）                                         | Kubernetes（`k8s`）                   | AgentRun（`agentrun`） | 函数计算（`fc`）       | ACK（托管 K8s）                       | Firecracker（不支持）       |
+| ------------ | ------------------- | ---------------------- | ------------------------------------------------------------ | ------------------------------------- | ---------------------- | ---------------------- | ------------------------------------- | --------------------------- |
+| 类别         | 本地容器            | 本地容器（用户态内核） | 本地轻量虚拟机                                               | 远程/集群容器编排                     | 云托管 / 无服务器      | 云无服务器             | 云托管 Kubernetes                     | MicroVM（本地/云）          |
+| 隔离         | 内核命名空间        | 用户态内核             | 硬件虚拟机                                                   | 内核命名空间（Pod/容器）              | 平台隔离（云）         | 平台隔离（云）         | 内核命名空间（托管 K8s）              | 硬件虚拟机                  |
+| 逃逸风险     | 可能发生容器逃逸    | 很低                   | 接近于零                                                     | 可能发生容器逃逸（取决于加固/运行时） | 由平台缓解             | 由平台缓解             | 可能发生容器逃逸（取决于加固/运行时） | 接近于零                    |
+| 典型启动时间 | < 100 ms            | < 200 ms               | < 200 ms                                                     | 数秒（取决于调度/拉取镜像）           | 数秒（取决于冷启动）   | 数秒（取决于冷启动）   | 数秒（取决于调度/拉取镜像）           | < 125 ms                    |
+| 需要守护进程 | 是                  | 是（`runsc`）          | 否                                                           | 是（集群控制面/节点 Agent）           | 否（托管）             | 否（托管）             | 是（托管；用户无需自建控制面）        | 是                          |
+| OCI 镜像支持 | 原生                | 通过 Docker            | 原生                                                         | 原生                                  | 通常支持（依平台而定） | 通常支持（依平台而定） | 原生                                  | 需要额外配置                |
+| 可嵌入       | 否（CLI/API）       | 否                     | 是（库形式）                                                 | 否（控制面 API）                      | 否（平台 API）         | 否（平台 API）         | 否（控制面 API）                      | 部分支持                    |
+| 操作系统支持 | Linux/macOS/Windows | Linux/macOS            | macOS（Apple Silicon）、Linux（x86_64/ARM64）、Windows (WLS2) | Linux（集群节点）                     | 托管（云）             | 托管（云）             | 托管（云）                            | Linux（x86_64/ARM64）       |
+| 最适合       | 本地开发/测试       | 更高安全性的本地运行   | 高隔离 + 可嵌入的本地运行时                                  | 大规模生产调度                        | 托管部署 + 弹性伸缩    | 托管部署 + 弹性伸缩    | 阿里云托管 K8s 生产环境               | 高隔离 + 快速启动（规划中） |
+
 #### （可选）Redis 设置
 
 ```{note}
@@ -350,70 +366,69 @@ class MyCustomSandbox(Sandbox):
 ```dockerfile
 FROM node:22-slim
 
-# Set ENV variables
+# ENV variables
 ENV NODE_ENV=production
 ENV WORKSPACE_DIR=/workspace
 
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --fix-missing \
-    curl \
-    python3 \
-    python3-pip \
+    curl  \
+    python3  \
+    python3-pip  \
     python3-venv \
-    build-essential \
-    libssl-dev \
-    git \
-    supervisor \
-    vim \
+    build-essential  \
+    libssl-dev  \
+    git  \
+    supervisor  \
+    vim  \
     nginx \
-    gettext-base
+    gettext-base \
+    xfce4 \
+    xfce4-terminal \
+    x11vnc \
+    xvfb \
+    novnc \
+    websockify \
+    dbus-x11 \
+    fonts-wqy-zenhei \
+    fonts-wqy-microhei
+
+RUN apt-get update && apt-get install -y --fix-missing \
+    chromium \
+    chromium-sandbox \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
+    libxtst6 \
+    libnss3 \
+    libglib2.0-0 \
+    libdrm2 \
+    libgbm1 \
+    libasound2 \
+    fonts-liberation \
+    libu2f-udev
+
+RUN sed -i 's/^CHROMIUM_FLAGS=""/CHROMIUM_FLAGS="--no-sandbox"/' /usr/bin/chromium
 
 WORKDIR /agentscope_runtime
 RUN python3 -m venv venv
 ENV PATH="/agentscope_runtime/venv/bin:$PATH"
 
-# Copy application files
 COPY src/agentscope_runtime/sandbox/box/shared/app.py ./
 COPY src/agentscope_runtime/sandbox/box/shared/routers/ ./routers/
 COPY src/agentscope_runtime/sandbox/box/shared/dependencies/ ./dependencies/
-COPY src/agentscope_runtime/sandbox/box/shared/artifacts/ ./ext_services/artifacts/
-COPY examples/custom_sandbox/box/third_party/markdownify-mcp/ ./mcp_project/markdownify-mcp/
-COPY examples/custom_sandbox/box/third_party/steel-browser/ ./ext_services/steel-browser/
-COPY examples/custom_sandbox/box/ ./
+COPY examples/sandbox/custom_sandbox/box/ ./
 
 RUN pip install -r requirements.txt
-
-# Install Google Chrome & fonts
-RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list && \
-    apt-get update && apt-get install -y --fix-missing google-chrome-stable \
-    google-chrome-stable \
-    fonts-wqy-zenhei \
-    fonts-wqy-microhei
-
-# Install steel browser
-WORKDIR /agentscope_runtime/ext_services/steel-browser
-RUN npm ci --omit=dev \
-    && npm install -g webpack webpack-cli \
-    && npm run build -w api \
-    && rm -rf node_modules/.cache
-
-# Install artifacts backend
-WORKDIR /agentscope_runtime/ext_services/artifacts
-RUN npm install \
-    && rm -rf node_modules/.cache
-
-# Install mcp_project/markdownify-mcp
-WORKDIR /agentscope_runtime/mcp_project/markdownify-mcp
-RUN npm install -g pnpm \
-    && pnpm install \
-    && pnpm run build \
-    && rm -rf node_modules/.cache
 
 WORKDIR ${WORKSPACE_DIR}
 RUN mv /agentscope_runtime/config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 RUN mv /agentscope_runtime/config/nginx.conf.template /etc/nginx/nginx.conf.template
+RUN mv /agentscope_runtime/vnc_relay.html /usr/share/novnc/vnc_relay.html
 RUN git init \
     && chmod +x /agentscope_runtime/scripts/start.sh
 
@@ -423,7 +438,7 @@ COPY .gitignore ${WORKSPACE_DIR}
 ENV TAVILY_API_KEY=123
 ENV AMAP_MAPS_API_KEY=123
 
-# Cleanup to reduce image size
+# Cleanup
 RUN pip cache purge \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
@@ -440,7 +455,7 @@ CMD ["/bin/sh", "-c", "envsubst '$SECRET_TOKEN' < /etc/nginx/nginx.conf.template
 准备好Dockerfile 和自定义沙箱类后，使用内置构建器工具构建您的自定义沙箱镜像：
 
 ```bash
-runtime-sandbox-builder my_custom_sandbox --dockerfile_path examples/custom_sandbox/Dockerfile --extension PATH_TO_YOUR_SANDBOX_MODULE
+runtime-sandbox-builder my_custom_sandbox --dockerfile_path examples/sandbox/custom_sandbox/Dockerfile --extension PATH_TO_YOUR_SANDBOX_MODULE
 ```
 
 **命令参数：**

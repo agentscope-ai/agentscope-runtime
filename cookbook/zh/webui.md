@@ -1,21 +1,31 @@
 # WebUI
 
-在 **WebUI** 中调用智能体（Agent）主要有两种方式：
+在 **WebUI** 中，主要有三种方式调用 Agent：
 
-1. **使用 `npx` 直接启动**
-2. **本地安装并启动开发环境**
+1. **使用 [托管版 WebUI](http://webui.runtime.agentscope.io/)（推荐，无需安装）**
+2. **直接使用 `npx` 启动**
+3. **本地安装并启动开发环境**
 
-在开始之前，我们假设您已经完成了 **Agent 的部署**。例如，部署在 `localhost:8090`，WebUI 会通过其 `process` 端点进行调用，因此完整的调用地址为：
+在开始之前，我们假设你已经**部署好了 Agent**。
+例如，如果部署在 `localhost:8090`，WebUI 会通过 `process` 端点调用它，因此完整请求 URL 为： http://localhost:8090/process
 
-```bash
+本指南还需要 **Node.js** 环境以及 `npm` 或 `npx`（仅方法 2/3/4 需要）。请确保它们已正确安装。
+
+## 方法 1（推荐）：使用托管 WebUI（无需安装）
+
+如果你不想在本地安装或运行 WebUI，推荐直接使用托管 WebUI：
+
+**http://webui.runtime.agentscope.io/**
+
+在浏览器中打开页面，并将 Agent 端点设置为你已部署的 `process` URL，例如：
+
+```
 http://localhost:8090/process
 ```
 
-此外，本章节需要依赖 **Node.js** 环境，并使用 `npm` 或 `npx` 工具，请先确保它们已正确安装。
+## 方法 2：在 Python 中直接启动 Agent 并启用 WebUI
 
-## 方法一：直接在 Python 中启动 Agent 并启用 WebUI
-
-这种方式适合直接在 Python 环境中运行智能体（Agent）并启动内置的 WebUI，只需确保你已经部署了 Agent 所需模型环境，并设置好 API Key。
+这种方式适合在 Python 环境中直接运行 Agent，并启用内置 WebUI。你只需要确保 Agent 所需的模型环境已部署，并且 API Key 已正确配置。
 
 ```python
 from agentscope_runtime.engine import AgentApp
@@ -24,31 +34,31 @@ agent_app = AgentApp(
     app_name="Friday",
     app_description="A helpful assistant",
 )
-# 此处省略智能体构建逻辑
+# 此处省略 Agent 构建逻辑
 
 # 启动服务并同时启用 WebUI
 agent_app.run(host="127.0.0.1", port=8090, web_ui=True)
 ```
 
-## 方法二：使用 `npx` 快速启动
+## 方法 3：通过 `npx` 快速启动
 
-如果您只是想快速体验，或者不需要改动代码，可直接在终端运行以下命令：
+如果你只是想快速体验或不需要修改代码，可以直接在终端运行以下命令：
 
 ```bash
 npx @agentscope-ai/chat agentscope-runtime-webui --url http://localhost:8090/process
 ```
 
-> **注意**：请确认 URL 与您的 Agent 部署地址一致。
+> **注意**：请确保该 URL 与你的 Agent 部署地址一致。
 
-执行后，前端服务会启动在：
+执行后，前端服务将启动在：
 
 ```
 http://localhost:5173
 ```
 
-启动完成后，在浏览器打开 [http://localhost:5173](http://localhost:5173/)，即可进入 WebUI，并以对话的方式直接调用您的 Agent。
+在浏览器中打开 [http://localhost:5173](http://localhost:5173/) ，即可进入 WebUI，通过聊天界面与 Agent 交互。
 
-## 方法三：本地安装并启动（适用于开发与二次定制）
+## 方法 4：本地安装与启动（用于开发与自定义）
 
 如果您计划深入开发或想详细了解 WebUI 细节，可以在 **AgentScope-Runtime** 的 `web/starter_webui` 目录下启动本地环境：
 
