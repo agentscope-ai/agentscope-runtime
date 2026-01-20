@@ -651,15 +651,19 @@ class SandboxManager(HeartbeatMixin):
                         )
                         if container_model.container_name not in env_ids:
                             env_ids.append(container_model.container_name)
-                        self.session_mapping.set(session_ctx_id, env_ids)
 
                         # Treat "allocated from pool to a session" as first
-                        # activity
+                        # activity: ensure heartbeat is updated before the
+                        # session mapping is persisted, so we never expose a
+                        # session->container binding without a fresh heartbeat.
                         self.update_heartbeat(session_ctx_id)
 
                         # If this session was previously reaped,
-                        # clear restore-required marker
+                        # clear restore-required marker before persisting the
+                        # updated session mapping.
                         self.clear_session_recycled(session_ctx_id)
+
+                        self.session_mapping.set(session_ctx_id, env_ids)
 
                 logger.debug(
                     f"Retrieved container from pool:"

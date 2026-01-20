@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument, redefined-outer-name
 import time
+import threading
 
-from agentscope_runtime.common.collections import InMemoryMapping
+import pytest
+import fakeredis
+
+from agentscope_runtime.common.collections import InMemoryMapping, RedisMapping
 from agentscope_runtime.sandbox.manager.heartbeat_mixin import (
     HeartbeatMixin,
     touch_session,
@@ -10,23 +14,71 @@ from agentscope_runtime.sandbox.manager.heartbeat_mixin import (
 
 
 class _FakeConfig:
-    redis_enabled = False
-    heartbeat_timeout = 1
-    heartbeat_scan_interval = 0
-    heartbeat_lock_ttl = 3
+    def __init__(
+        self,
+        redis_enabled: bool = False,
+        heartbeat_timeout: int = 1,
+        heartbeat_scan_interval: int = 0,
+        heartbeat_lock_ttl: int = 3,
+    ):
+        self.redis_enabled = redis_enabled
+        self.heartbeat_timeout = heartbeat_timeout
+        self.heartbeat_scan_interval = heartbeat_scan_interval
+        self.heartbeat_lock_ttl = heartbeat_lock_ttl
 
 
 class FakeManager(HeartbeatMixin):
-    def __init__(self):
-        self.config = _FakeConfig()
-        self.redis_client = None
+    """
+    One class supports both:
+      - in-memory (old tests)
+      - redis (new tests)
+    """
 
-        self.heartbeat_mapping = InMemoryMapping()
-        self.recycled_mapping = InMemoryMapping()
-        self.session_mapping = InMemoryMapping()
-        self.container_mapping = InMemoryMapping()
+    def __init__(
+        self,
+        mode: str = "memory",
+        redis_client=None,
+        prefix: str = "t:",
+    ):
+        mode = (mode or "memory").lower()
+        if mode not in ("memory", "redis"):
+            raise ValueError("mode must be 'memory' or 'redis'")
+
+        self.config = _FakeConfig(
+            redis_enabled=(mode == "redis"),
+            heartbeat_timeout=1,
+            heartbeat_scan_interval=0,
+            heartbeat_lock_ttl=3,
+        )
 
         self.reaped_sessions = []
+
+        if mode == "redis":
+            if redis_client is None:
+                raise ValueError("redis_client is required for redis mode")
+            self.redis_client = redis_client
+            self.heartbeat_mapping = RedisMapping(
+                redis_client,
+                prefix=prefix + "hb",
+            )
+            self.recycled_mapping = RedisMapping(
+                redis_client,
+                prefix=prefix + "rc",
+            )
+            self.session_mapping = RedisMapping(
+                redis_client,
+                prefix=prefix + "sm",
+            )
+            self.container_mapping = RedisMapping(
+                redis_client,
+                prefix=prefix + "cm",
+            )
+        else:
+            self.redis_client = None
+            self.heartbeat_mapping = InMemoryMapping()
+            self.recycled_mapping = InMemoryMapping()
+            self.session_mapping = InMemoryMapping()
+            self.container_mapping = InMemoryMapping()
 
     # --- minimal APIs required by mixin/decorator ---
     def get_info(self, identity):
@@ -93,7 +145,6 @@ class FakeManager(HeartbeatMixin):
             finally:
                 self.release_heartbeat_lock(session_ctx_id, token)
 
-    # --- a method to trigger touch_session ---
     @touch_session(identity_arg="identity")
     def ping(self, identity: str):
         return True
@@ -224,3 +275,90 @@ def test_heartbeat_watcher_inmemory_real_manager(monkeypatch):
         assert session_ctx_id not in mgr.list_session_keys()
     finally:
         mgr.stop_heartbeat_watcher()
+
+
+@pytest.fixture()
+def fake_redis():
+    return fakeredis.FakeRedis(decode_responses=True)
+
+
+def test_redis_lock_token_semantics_and_ttl(fake_redis):
+    mgr = FakeManager(mode="redis", redis_client=fake_redis, prefix="lock:")
+
+    session = "s_lock"
+    token1 = mgr.acquire_heartbeat_lock(session)
+    assert token1, "first acquire should succeed"
+
+    token2 = mgr.acquire_heartbeat_lock(session)
+    assert not token2, "second acquire should fail while lock held"
+
+    # wrong token should not release
+    mgr.release_heartbeat_lock(session, token="WRONG_TOKEN")
+    token3 = mgr.acquire_heartbeat_lock(session)
+    assert not token3, "lock should still be held after wrong-token release"
+
+    # correct token releases
+    mgr.release_heartbeat_lock(session, token1)
+    token4 = mgr.acquire_heartbeat_lock(session)
+    assert token4, "lock should be acquirable after correct release"
+
+    # ttl expiry allows re-acquire (don't release token4)
+    time.sleep(mgr.config.heartbeat_lock_ttl + 0.2)
+    token5 = mgr.acquire_heartbeat_lock(session)
+    assert token5, "lock should expire after ttl"
+
+
+def test_redis_mapping_roundtrip_for_heartbeat_and_recycled(fake_redis):
+    mgr = FakeManager(mode="redis", redis_client=fake_redis, prefix="state:")
+    session = "s_state"
+    identity = "c_state"
+
+    mgr.create_for_session(identity=identity, session_ctx_id=session)
+
+    # heartbeat written
+    assert mgr.get_heartbeat(session) is not None
+    # recycled cleared
+    assert mgr.needs_restore(session) is False
+
+    # mark/clear recycled in redis
+    mgr.mark_session_recycled(session)
+    assert mgr.needs_restore(session) is True
+    mgr.clear_session_recycled(session)
+    assert mgr.needs_restore(session) is False
+
+    # delete heartbeat in redis
+    mgr.delete_heartbeat(session)
+    assert mgr.get_heartbeat(session) is None
+
+
+def test_multi_instance_scan_race_only_one_reaps(fake_redis):
+    """
+    Two FakeManager instances share same
+    redis/prefix ->simulate multi-instance. Only one should reap due to
+    distributed lock.
+    """
+    prefix = "race:"
+    mgr1 = FakeManager(mode="redis", redis_client=fake_redis, prefix=prefix)
+    mgr2 = FakeManager(mode="redis", redis_client=fake_redis, prefix=prefix)
+
+    session = "s_race"
+
+    # make session visible to scan
+    mgr1.session_mapping.set(session, ["c1", "c2"])
+    # make it expired
+    mgr1.heartbeat_mapping.set(session, time.time() - 100)
+
+    t1 = threading.Thread(target=mgr1.scan_heartbeat_once)
+    t2 = threading.Thread(target=mgr2.scan_heartbeat_once)
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
+
+    total_reaped = len(mgr1.reaped_sessions) + len(mgr2.reaped_sessions)
+    assert total_reaped == 1
+
+    # state after reap
+    assert mgr1.get_heartbeat(session) is None
+    assert mgr1.needs_restore(session) is True
+    assert session not in mgr1.list_session_keys()
