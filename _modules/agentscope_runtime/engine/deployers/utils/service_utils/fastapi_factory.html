@@ -931,6 +931,19 @@ body.preview-active {
             <span class="k">def</span><span class="w"> </span><span class="nf">start_celery_worker</span><span class="p">():</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">celery_mixin</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">celery_mixin</span>
+
+                    <span class="k">for</span> <span class="n">ep</span> <span class="ow">in</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">custom_endpoints</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">ep</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;task_type&quot;</span><span class="p">):</span>
+                            <span class="n">func</span> <span class="o">=</span> <span class="n">ep</span><span class="p">[</span><span class="s2">&quot;handler&quot;</span><span class="p">]</span>
+                            <span class="n">queue</span> <span class="o">=</span> <span class="n">ep</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;queue&quot;</span><span class="p">,</span> <span class="s2">&quot;celery&quot;</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="s2">&quot;celery_task&quot;</span><span class="p">):</span>
+                                <span class="n">func</span><span class="o">.</span><span class="n">celery_task</span> <span class="o">=</span> <span class="p">(</span>
+                                    <span class="n">celery_mixin</span><span class="o">.</span><span class="n">register_celery_task</span><span class="p">(</span>
+                                        <span class="n">func</span><span class="p">,</span>
+                                        <span class="n">queue</span><span class="p">,</span>
+                                    <span class="p">)</span>
+                                <span class="p">)</span>
+
                     <span class="c1"># Get registered queues or use default</span>
                     <span class="n">queues</span> <span class="o">=</span> <span class="p">(</span>
                         <span class="nb">list</span><span class="p">(</span><span class="n">celery_mixin</span><span class="o">.</span><span class="n">get_registered_queues</span><span class="p">())</span>
@@ -1752,7 +1765,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-19</div>
+              Last updated on 2026-01-20</div>
           </div>
           <div class="right-details">
             <div class="icons">
