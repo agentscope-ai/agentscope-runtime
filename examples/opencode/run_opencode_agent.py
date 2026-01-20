@@ -73,7 +73,7 @@ async def query_func(
         async with client.stream(
             "GET",
             f"{BASE_URL}/global/event",
-            params=params,
+            params=None,
         ) as resp:
             resp.raise_for_status()
             endpoint = f"{BASE_URL}/session/{session_id}/prompt_async"
