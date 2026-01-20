@@ -438,7 +438,10 @@ def _handle_tool_part(
         tool_states.pop(call_id, None)
 
         output_payload = _tool_output_from_state(state)
-        output_json = json.dumps(output_payload, ensure_ascii=False)
+        try:
+            output_json = json.dumps(output_payload, ensure_ascii=False)
+        except TypeError:
+            output_json = str(output_payload)
         output_message = Message(
             type=MessageType.PLUGIN_CALL_OUTPUT,
             role="tool",

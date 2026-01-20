@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=all
-
+# pylint: disable=too-many-branches
 import importlib
 import json
 import os
@@ -33,10 +32,10 @@ agent_app = AgentApp(
 
 @agent_app.query("opencode")
 async def query_func(
-    self,
+    _self,
     parts,
     request: Optional[AgentRequest] = None,
-    **kwargs,
+    **_kwargs,
 ):
     """Example: forward AgentApp requests to the OpenCode server."""
     httpx = _load_httpx()
@@ -103,15 +102,18 @@ async def query_func(
                     if target_session_id and event_session_id is None:
                         continue
 
+                is_target_session_idle = (
+                    session_id
+                    and _is_session_idle(event_type, props)
+                    and event_session_id == session_id
+                )
                 if ONLY_PART_UPDATED and event_type != "message.part.updated":
-                    if _is_session_idle(event_type, props):
-                        if event_session_id == session_id:
-                            break
+                    if is_target_session_idle:
+                        break
                     continue
                 yield event_payload
-                if _is_session_idle(event_type, props):
-                    if event_session_id == session_id:
-                        break
+                if is_target_session_idle:
+                    break
 
 
 def _load_httpx() -> Any:
