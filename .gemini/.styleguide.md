@@ -8,8 +8,8 @@ You should conduct a strict code review. Each requirement is labeled with priori
 ## 1. Code Quality
 
 ### [MUST] Lazy Loading
-- Third-party library dependencies should be imported at the point of use, avoid centralized imports at file top
-  - The `Third-party library` refers to libraries not included in the `dependencies` variable in `pyproject.toml`.
+- Optional dependencies should be imported at the point of use (lazy loading), to avoid centralized imports at the top of the file.
+  - This applies to libraries not in the core `dependencies` of `pyproject.toml`, such as those in the `[project.optional-dependencies]` sections.
 - For base class imports, use factory pattern:
 ```python
 def get_xxx_cls() -> "MyClass":
@@ -97,6 +97,6 @@ class MyClass:
 ### [MUST] PR Title
 
 - Follow Conventional Commits
-- Must use prefixes: `feat/fix/docs/ci/refactor/test`, etc.
+- Must use prefixes: `feat`, `fix`, `docs`, `ci`, `refactor`, `test`, etc.
 - Format: `feat(scope): description`
 - Example: `feat(memory): add redis cache support`
