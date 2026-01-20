@@ -1,5 +1,121 @@
 # CHANGELOG
 
+## v1.1.0
+
+AgentScope Runtime v1.1.0 专注于通过移除 Runtime 侧自定义的 Memory/Session 服务抽象，并**统一采用 Agent 框架原生的持久化模块**来**简化持久化与会话连续性**。这降低了心智负担，避免概念重复，并确保持久化行为与底层 Agent 框架保持一致。
+
+**变更的背景与必要性**
+
+在 v1.0 中，Runtime 提供了自定义的**会话历史（Session History）**和**长期记忆（Long-term Memory）**服务（以及适配器），用于支持跨请求的持久化/状态连续性。在实践中，这引入了若干问题：
+
+1. **重复的持久化栈**
+   Runtime 层和 Agent 框架都提供了持久化状态/历史的方法，导致对“哪个才是唯一可信来源（source of truth）”产生困惑。
+
+2. **维护与兼容性负担**
+   Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持同步，增加了升级成本和失败面。
+
+3. **跨框架行为不一致**
+   不同框架暴露的 state/memory/session 语义不同；Runtime 层适配器无法可靠地在所有框架间保持完全一致的行为。
+
+为了解决这些问题，v1.1.0 **弃用并移除**了这些 Runtime 侧服务/适配器，并建议在 `AgentApp` 生命周期中直接使用 **Agent 框架自身的持久化模块**（例如 `JSONSession`、内置 memory 实现）。
+
+### Changed
+
+- 推荐的持久化模式：
+  - 直接使用 Agent 框架的 **Memory** 模块（例如 `InMemoryMemory`，或框架提供的 Redis-backed memory）。
+  - 使用 Agent 框架的 **Session** 模块（例如 `JSONSession`）在 `query` 期间加载/保存 agent 会话状态。
+
+### Breaking Changes
+
+1. **弃用自定义 Memory 与 Session 服务**
+   - 自定义 Runtime **会话历史**和**长期记忆**服务，以及对应的适配器，已被**弃用并移除**。
+   - 这包括**所有相关 Python 文件与文档**。
+   - 任何 v1.0 代码若引用 Runtime 组件，例如：
+     - Runtime 会话历史服务/适配器
+     - Runtime 长期记忆服务/适配器
+     - `AgentScopeSessionHistoryMemory(...)` 风格的适配器用法
+       都必须迁移到 Agent 框架内置的持久化方式。
+
+#### 迁移指南（v1.0 → v1.1）
+
+##### 推荐模式（使用 Agent 框架模块做持久化）
+
+使用 `JSONSession` 或其他子模块来持久化/加载 agent 的会话状态，并在 AgentScope 中直接使用 `InMemoryMemory()`（或其他框架提供的 memory）：
+
+```python
+# -*- coding: utf-8 -*-
+import os
+
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
+from agentscope.formatter import DashScopeChatFormatter
+from agentscope.tool import Toolkit, execute_python_code
+from agentscope.pipeline import stream_printing_messages
+from agentscope.memory import InMemoryMemory
+from agentscope.session import JSONSession
+
+from agentscope_runtime.engine.app import AgentApp
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
+
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+)
+
+
+@agent_app.init
+async def init_func(self):
+    self.session = JSONSession(save_dir="./sessions")  # Use JSONSession here
+
+
+@agent_app.shutdown
+async def shutdown_func(self):
+    # No Runtime state/session services to stop in v1.1
+    pass
+
+
+@agent_app.query(framework="agentscope")
+async def query_func(
+    self,
+    msgs,
+    request: AgentRequest = None,
+    **kwargs,
+):
+    assert kwargs is not None, "kwargs is Required for query_func"
+    session_id = request.session_id
+    user_id = request.user_id
+
+    toolkit = Toolkit()
+    toolkit.register_tool_function(execute_python_code)
+
+    agent = ReActAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+            enable_thinking=True,
+            stream=True,
+        ),
+        sys_prompt="You're a helpful assistant named Friday.",
+        toolkit=toolkit,
+        memory=InMemoryMemory(),  # Use InMemoryMemory() directly
+        formatter=DashScopeChatFormatter(),
+    )
+
+    await self.session.load_session_state(session_id=session_id, agent=agent)
+
+    async for msg, last in stream_printing_messages(
+        agents=[agent],
+        coroutine_task=agent(msgs),
+    ):
+        yield msg, last
+
+    await self.session.save_session_state(session_id=session_id, agent=agent)
+
+
+agent_app.run()
+```
+
 ## v1.0.5
 
 **AgentScope Runtime v1.0.5** 主要聚焦于提升部署灵活性以及 UI/协议层的集成能力。本次版本新增了带 CLI 支持的 PAI 部署器，引入 Boxlite 作为新的沙箱后端，并提供容器客户端工厂以统一容器化部署相关能力。同时新增 AG-UI 协议支持，集成 ModelStudio Memory SDK 及 Demo，并修复了 FC replacement_map、MS-Agent-Framework 兼容性、以及消息流工具调用处理等多个问题。文档也在多个章节进行了更新，并补充了贡献者信息。

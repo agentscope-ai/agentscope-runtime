@@ -1,5 +1,121 @@
 # CHANGELOG
 
+## v1.1.0
+
+AgentScope Runtime v1.1.0 focuses on **simplifying persistence and session continuity** by removing Runtime-side custom Memory/Session service abstractions and **standardizing on the Agent framework’s native persistence modules**. This reduces mental overhead, avoids duplicated concepts, and ensures the persistence behavior is consistent with the underlying agent framework.
+
+**Background & Necessity of the Changes**
+
+In v1.0, Runtime provided custom **Session History** and **Long-term Memory** services (plus adapters) to support persistence/state continuity across requests. In practice, this introduced several issues:
+
+1. **Duplicate persistence stacks**
+   The Runtime layer and the Agent framework both provided ways to persist state/history, causing confusion about “which one is the source of truth”.
+
+2. **Maintenance & compatibility burden**
+   Runtime-specific services/adapters had to be kept in sync with multiple agent frameworks and versions, increasing upgrade cost and failure surface.
+
+3. **Inconsistent behavior across frameworks**
+   Different frameworks expose different state/memory/session semantics; Runtime-level adapters could not reliably preserve identical behavior across all frameworks.
+
+To address this, v1.1.0 **deprecates and removes** these Runtime-side services/adapters, and recommends using the **Agent framework’s own persistence modules** (e.g., `JSONSession`, built-in memory implementations) directly in the `AgentApp` lifecycle.
+
+### Changed
+
+- Recommended persistence pattern:
+  - Use the agent framework’s **Memory** modules directly (e.g., `InMemoryMemory`, Redis-backed memory if provided by the framework).
+  - Use the agent framework’s **Session** modules (e.g., `JSONSession`) to load/save agent session state during `query`.
+
+### Breaking Changes
+
+1. **Deprecation of Custom Memory and Session Services**
+   - The custom Runtime **Session History** and **Long-term Memory** services, along with their corresponding adapters, have been **deprecated and removed**.
+   - This includes **all related Python files and documentation**.
+   - Any v1.0 code referencing Runtime components like:
+     - Runtime session history services/adapters
+     - Runtime long-term memory services/adapters
+     - `AgentScopeSessionHistoryMemory(...)`-style adapter usage
+     must be migrated to the Agent framework’s built-in persistence approach.
+
+#### Migration Guide (v1.0 → v1.1)
+
+##### Recommended Pattern (Use Agent framework modules for persistence)
+
+Use `JSONSession` or other submodule to persist/load the agent’s session state, and use `InMemoryMemory()` (or other framework-provided memory) directly in AgentScope:
+
+```python
+# -*- coding: utf-8 -*-
+import os
+
+from agentscope.agent import ReActAgent
+from agentscope.model import DashScopeChatModel
+from agentscope.formatter import DashScopeChatFormatter
+from agentscope.tool import Toolkit, execute_python_code
+from agentscope.pipeline import stream_printing_messages
+from agentscope.memory import InMemoryMemory
+from agentscope.session import JSONSession
+
+from agentscope_runtime.engine.app import AgentApp
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
+
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+)
+
+
+@agent_app.init
+async def init_func(self):
+    self.session = JSONSession(save_dir="./sessions")  # Use JSONSession here
+
+
+@agent_app.shutdown
+async def shutdown_func(self):
+    # No Runtime state/session services to stop in v1.1
+    pass
+
+
+@agent_app.query(framework="agentscope")
+async def query_func(
+    self,
+    msgs,
+    request: AgentRequest = None,
+    **kwargs,
+):
+    assert kwargs is not None, "kwargs is Required for query_func"
+    session_id = request.session_id
+    user_id = request.user_id
+
+    toolkit = Toolkit()
+    toolkit.register_tool_function(execute_python_code)
+
+    agent = ReActAgent(
+        name="Friday",
+        model=DashScopeChatModel(
+            "qwen-turbo",
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+            enable_thinking=True,
+            stream=True,
+        ),
+        sys_prompt="You're a helpful assistant named Friday.",
+        toolkit=toolkit,
+        memory=InMemoryMemory(),  # Use InMemoryMemory() directly
+        formatter=DashScopeChatFormatter(),
+    )
+
+    await self.session.load_session_state(session_id=session_id, agent=agent)
+
+    async for msg, last in stream_printing_messages(
+        agents=[agent],
+        coroutine_task=agent(msgs),
+    ):
+        yield msg, last
+
+    await self.session.save_session_state(session_id=session_id, agent=agent)
+
+
+agent_app.run()
+```
+
 ## v1.0.5
 
 **AgentScope Runtime v1.0.5** focuses on improving deployment flexibility and UI/protocol integrations. This release adds a new PAI deployer with CLI support, introduces Boxlite as an additional sandbox backend, and provides a container client factory to unify container-based deployments. It also brings AG-UI protocol support, integrates ModelStudio Memory SDK and demos, and includes multiple hotfixes for FC replacement maps, MS-Agent-Framework compatibility, and message streaming tool-call handling. Documentation has been refreshed across several sections, and contributor acknowledgements were updated.
