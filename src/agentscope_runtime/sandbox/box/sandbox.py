@@ -9,7 +9,6 @@ from ..manager.sandbox_manager import SandboxManager
 from ..manager.server.app import get_config
 
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -63,6 +62,7 @@ class SandboxBase:
         self.sandbox_type = sandbox_type
         self.timeout = timeout
         self._sandbox_id = sandbox_id
+        self._warned_sandbox_not_started = False
 
         if base_url:
             # Remote Manager
@@ -79,6 +79,14 @@ class SandboxBase:
 
     @property
     def sandbox_id(self) -> Optional[str]:
+        if self._sandbox_id is None and not self._warned_sandbox_not_started:
+            self._warned_sandbox_not_started = True
+            logger.error(
+                "Sandbox is not started yet (sandbox_id is None). "
+                "Use `with Sandbox(...) as sandbox:` / "
+                "`async with SandboxAsync(...) as sandbox:` "
+                "or call `start() / start_async()` first.",
+            )
         return self._sandbox_id
 
     @sandbox_id.setter
@@ -133,11 +141,11 @@ class SandboxBase:
 class Sandbox(SandboxBase):
     def __enter__(self):
         # Create sandbox if sandbox_id not provided
-        if self.sandbox_id is None:
-            self.sandbox_id = self.manager_api.create_from_pool(
+        if self._sandbox_id is None:
+            self._sandbox_id = self.manager_api.create_from_pool(
                 sandbox_type=SandboxType(self.sandbox_type).value,
             )
-            if self.sandbox_id is None:
+            if self._sandbox_id is None:
                 raise RuntimeError("No sandbox available.")
             if self.embed_mode:
                 atexit.register(self._cleanup)
@@ -146,6 +154,14 @@ class Sandbox(SandboxBase):
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._cleanup()
+
+    def start(self) -> "Sandbox":
+        """Explicitly start sandbox without context manager."""
+        return self.__enter__()
+
+    def close(self) -> None:
+        """Explicitly cleanup sandbox without context manager."""
+        self.__exit__(None, None, None)
 
     def get_info(self) -> dict:
         return self.manager_api.get_info(self.sandbox_id)
@@ -175,11 +191,11 @@ class Sandbox(SandboxBase):
 
 class SandboxAsync(SandboxBase):
     async def __aenter__(self):
-        if self.sandbox_id is None:
-            self.sandbox_id = await self.manager_api.create_from_pool_async(
+        if self._sandbox_id is None:
+            self._sandbox_id = await self.manager_api.create_from_pool_async(
                 sandbox_type=SandboxType(self.sandbox_type).value,
             )
-            if self.sandbox_id is None:
+            if self._sandbox_id is None:
                 raise RuntimeError("No sandbox available.")
             if self.embed_mode:
                 atexit.register(self._cleanup)
@@ -188,6 +204,14 @@ class SandboxAsync(SandboxBase):
 
     async def __aexit__(self, exc_type, exc_value, traceback):
         await self._cleanup_async()
+
+    async def start_async(self) -> "SandboxAsync":
+        """Explicitly start sandbox without async context manager."""
+        return await self.__aenter__()
+
+    async def close_async(self) -> None:
+        """Explicitly cleanup sandbox without async context manager."""
+        await self.__aexit__(None, None, None)
 
     async def _cleanup_async(self):
         try:

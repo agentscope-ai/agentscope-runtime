@@ -25,8 +25,6 @@ from ...model.manager_config import SandboxManagerEnvConfig
 from ...utils import dynamic_import, http_to_ws
 from ....version import __version__
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create FastAPI app

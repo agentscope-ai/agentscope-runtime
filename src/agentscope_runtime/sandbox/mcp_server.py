@@ -9,7 +9,6 @@ from .box.browser.browser_sandbox import BrowserSandbox
 from .box.filesystem.filesystem_sandbox import FilesystemSandbox
 from .enums import SandboxType
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 mcp = FastMCP("AgentRuntime Sandbox MCP Server")

@@ -4,7 +4,6 @@ from urllib.parse import urljoin
 
 DEFAULT_TIMEOUT = 60
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 

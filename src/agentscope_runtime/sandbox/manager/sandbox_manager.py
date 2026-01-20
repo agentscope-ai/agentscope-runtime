@@ -44,7 +44,6 @@ from ...common.collections import (
 )
 from ...common.container_clients import ContainerClientFactory
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
