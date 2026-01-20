@@ -73,7 +73,7 @@ async def query_func(
 
         async with client.stream(
             "GET",
-            f"{BASE_URL}/event",
+            f"{BASE_URL}/global/event",
             params=params,
         ) as resp:
             resp.raise_for_status()

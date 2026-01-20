@@ -54,7 +54,7 @@ OpenCode forks subagents as child sessions. A child session has its own
 
 To observe subagent output:
 
-- Subscribe to `/event` and watch for `session.created`/`session.updated`
+- Subscribe to `/global/event` and watch for `session.created`/`session.updated`
   events where `info.parentID` matches your parent session.
 - Or call `GET /session/{sessionID}/children` to list child sessions.
 - Filter SSE events by `sessionID` depending on whether you want parent-only
@@ -67,9 +67,7 @@ sessions and allow them through:
 ```python
 async with client.stream(
     "GET",
-    f"{BASE_URL}/event",
-    # Do not filter /event by directory so child sessions are visible.
-    params=None,
+    f"{BASE_URL}/global/event",
 ) as resp:
 ```
 
