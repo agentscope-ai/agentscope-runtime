@@ -154,17 +154,13 @@ from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
 from agentscope.tool import Toolkit, execute_python_code
 from agentscope.pipeline import stream_printing_messages
+from agentscope.memory import InMemoryMemory
 
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agentscope_runtime.adapters.agentscope.memory import (
-    AgentScopeSessionHistoryMemory,
-)
+
 from agentscope_runtime.engine.services.agent_state import (
     InMemoryStateService,
-)
-from agentscope_runtime.engine.services.session_history import (
-    InMemorySessionHistoryService,
 )
 
 agent_app = AgentApp(
@@ -176,16 +172,13 @@ agent_app = AgentApp(
 @agent_app.init
 async def init_func(self):
     self.state_service = InMemoryStateService()
-    self.session_service = InMemorySessionHistoryService()
 
     await self.state_service.start()
-    await self.session_service.start()
 
 
 @agent_app.shutdown
 async def shutdown_func(self):
     await self.state_service.stop()
-    await self.session_service.stop()
 
 
 @agent_app.query(framework="agentscope")
@@ -215,11 +208,7 @@ async def query_func(
         ),
         sys_prompt="You're a helpful assistant named Friday.",
         toolkit=toolkit,
-        memory=AgentScopeSessionHistoryMemory(
-            service=self.session_service,
-            session_id=session_id,
-            user_id=user_id,
-        ),
+        memory=InMemoryMemory(),
         formatter=DashScopeChatFormatter(),
     )
     agent.set_console_output_enabled(enabled=False)

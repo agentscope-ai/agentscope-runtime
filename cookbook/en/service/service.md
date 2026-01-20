@@ -18,8 +18,6 @@ kernelspec:
 
 In **AgentScope Runtime**, **Services** (`Service`) provide core capabilities to the agent execution environment, including:
 
-- **Session history management**
-- **Memory storage**
 - **Sandbox management**
 - **Agent state management**
 
@@ -28,15 +26,6 @@ All services implement a unified abstract interface called `ServiceWithLifecycle
 - `start()` — Start the service
 - `stop()` — Stop the service
 - `health()` — Check the health status of the service
-
-```{note}
-When building agent applications, we typically **do not directly call the low-level methods** of these services.
-Instead, we use **framework adapters**:
-
-1. Adapters inject the Runtime’s service objects into the agent framework’s compatible modules.
-2. Agents in the framework can seamlessly call Runtime-provided features (such as session memory, tool sandbox, etc.).
-3. Adapters ensure the service lifecycle is consistent with the Runner/Engine.
-```
 
 ## Why Use Services via Adapters?
 
@@ -47,55 +36,7 @@ Instead, we use **framework adapters**:
 
 ## Available Services and How to Use Their Adapters
 
-### 1. Session History Service (`SessionHistoryService`)
-
-Manages user–agent conversation sessions, storing and retrieving past session messages.
-
-#### Usage in AgentScope
-
-In the AgentScope framework, bind the session history service to the `Memory` module via the `AgentScopeSessionHistoryMemory` adapter:
-
-```{code-cell}
-from agentscope_runtime.engine.services.session_history import InMemorySessionHistoryService
-from agentscope_runtime.adapters.agentscope.memory import AgentScopeSessionHistoryMemory
-
-session_service = InMemorySessionHistoryService()
-
-memory = AgentScopeSessionHistoryMemory(
-    service=session_service,
-    session_id="Test Session",
-    user_id="User1",
-)
-```
-
-For more service types and detailed usage, see {doc}`session_history`.
-
-### 2. Memory Service (`MemoryService`)
-
-The `MemoryService` manages long-term memory storage.
-In agents, long-term memory stores information from previous conversations between the end user and the agent — for example, a user might have told the agent their name earlier.
-Memory services are generally used to store such information **across sessions** so the agent can use it in future conversations.
-
-#### Usage in AgentScope
-
-In AgentScope, bind the memory service to the `LongTermMemory` module via the `AgentScopeLongTermMemory` adapter:
-
-```{code-cell}
-from agentscope_runtime.engine.services.memory import InMemoryMemoryService
-from agentscope_runtime.adapters.agentscope.long_term_memory import AgentScopeLongTermMemory
-
-memory_service = InMemoryMemoryService()
-
-long_term_memory = AgentScopeLongTermMemory(
-    service=memory_service,
-    session_id="Test Session",
-    user_id="User1",
-)
-```
-
-For more service types and detailed usage, see {doc}`memory`.
-
-### 3. Sandbox Service (`SandboxService`)
+### 1. Sandbox Service (`SandboxService`)
 
 **Sandbox Services** manage and provide sandboxed tool execution environments for different users and sessions.
 Sandboxes are organized using a composite key of session ID and user ID, giving each user session an isolated execution environment.
@@ -123,7 +64,7 @@ for tool in [
 
 For more service types and detailed usage, see {doc}`sandbox`.
 
-### 4. State Service (`StateService`)
+### 2. State Service (`StateService`)
 
 Allows saving and retrieving the agent's serializable state, preserving context across multiple turns—or even across sessions.
 
@@ -183,7 +124,7 @@ async def main():
 
 ## ServiceFactory：Unified Service Creation Pattern
 
-In practice, the same type of service (such as `SessionHistory`, `Memory`, `Sandbox`, `State`) may have multiple backend implementations — for example, in-memory, Redis, or database-based.
+In practice, the same type of service (such as `Sandbox`, `State`) may have multiple backend implementations — for example, in-memory, Redis, or database-based.
 
 To make service creation more flexible and configurable, **AgentScope Runtime** provides a general **service factory base class** `ServiceFactory` which supports:
 
@@ -219,12 +160,10 @@ service = await StateServiceFactory.create(backend_type="postgres")
 
 ### Common `ServiceFactory` and Default Backends
 
-| ServiceFactory Subclass        | Managed Service Type    | Environment Variable Prefix | Default Backend | Registered Default Backend Types                             |
-| ------------------------------ | ----------------------- | --------------------------- | --------------- | ------------------------------------------------------------ |
-| `StateServiceFactory`          | `StateService`          | `STATE_`                    | `in_memory`     | `in_memory`, `redis`                                         |
-| `MemoryServiceFactory`         | `MemoryService`         | `MEMORY_`                   | `in_memory`     | `in_memory`, `redis`, `mem0`, `reme_personal`, `reme_task`, `tablestore` (optional) |
-| `SandboxServiceFactory`        | `SandboxService`        | `SANDBOX_`                  | `default`       | `default`                                                    |
-| `SessionHistoryServiceFactory` | `SessionHistoryService` | `SESSION_HISTORY_`          | `in_memory`     | `in_memory`, `redis`, `tablestore` (optional)                |
+| ServiceFactory Subclass | Managed Service Type | Environment Variable Prefix | Default Backend | Registered Default Backend Types |
+| ----------------------- | -------------------- | --------------------------- | --------------- | -------------------------------- |
+| `StateServiceFactory`   | `StateService`       | `STATE_`                    | `in_memory`     | `in_memory`, `redis`             |
+| `SandboxServiceFactory` | `SandboxService`     | `SANDBOX_`                  | `default`       | `default`                        |
 
 ### Usage Tips
 
@@ -233,8 +172,8 @@ service = await StateServiceFactory.create(backend_type="postgres")
   Example:
 
   ```bash
-  export MEMORY_BACKEND=redis
-  export MEMORY_REDIS_REDIS_URL="redis://localhost:6379/5"
+  export STATE_BACKEND=redis
+  export STATE_REDIS_REDIS_URL="redis://localhost:6379/5"
   ```
 
 - **Parameter priority**: `kwargs` > environment variables
