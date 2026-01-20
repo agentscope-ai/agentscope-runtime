@@ -9,14 +9,19 @@ endpoint.
 - OpenCode server is running:
 
 ```bash
-opencode serve --port 1234 --mdns --cors http://127.0.0.1:8080 --cors http://localhost:8080
+mkdir /tmp/opencode-tmp
+cd /tmp/opencode-tmp
+opencode serve --port 1234 --mdns --cors http://127.0.0.1:8080 --cors http://localhost:8080 # --mdns --cors is not necessary
 ```
 
 ## Run
 
 ```bash
-python examples/opencode/run_opencode_agent.py
+python examples/opencode/run_opencode_agent.py # listen on port 8080
 ```
+
+By default it connects to `http://127.0.0.1:1234` and uses
+`/tmp/opencode-tmp` as the directory.
 
 Use curl in another terminal:
 
@@ -26,10 +31,7 @@ curl -s -N -H 'Content-Type: application/json' \
   http://127.0.0.1:8080/process
 ```
 
-By default it connects to `http://127.0.0.1:1234` and uses
-`/tmp/opencode-tmp` as the directory.
-
-## Optional environment variables
+## Optional environment variables in this example
 
 ```bash
 export OPENCODE_BASE_URL=http://127.0.0.1:1234
@@ -59,6 +61,13 @@ To observe subagent output:
 - Or call `GET /session/{sessionID}/children` to list child sessions.
 - Filter SSE events by `sessionID` depending on whether you want parent-only
   output or to include subagent sessions.
+- When parsing `/global/event`, unwrap the `payload` field first (the event
+  `type` and `properties` live under `payload`).
+- For agent names, prefer `message.updated`:
+  `properties.info.agent` is the canonical agent name for that `messageID`.
+  `message.part.updated` does not always include agent info, so cache the
+  name from `message.updated` and apply it to subsequent parts for the same
+  message.
 
 If you want the AgentApp example to emit subagent events, you can expand the
 session filter in `examples/opencode/run_opencode_agent.py` to track child
