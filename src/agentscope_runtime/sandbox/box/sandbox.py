@@ -146,7 +146,12 @@ class Sandbox(SandboxBase):
                 sandbox_type=SandboxType(self.sandbox_type).value,
             )
             if self._sandbox_id is None:
-                raise RuntimeError("No sandbox available.")
+                raise RuntimeError(
+                    "No sandbox available. This may happen if the sandbox "
+                    "pool is exhausted (e.g., max sandbox instances reached) "
+                    "or if sandbox containers failed to start. "
+                    "Check manager logs for the specific error.",
+                )
             if self.embed_mode:
                 atexit.register(self._cleanup)
                 self._register_signal_handlers()
