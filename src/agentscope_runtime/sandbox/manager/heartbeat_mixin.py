@@ -94,13 +94,12 @@ class HeartbeatMixin:
       - self.redis_client (redis client or None)
     """
 
-    _REDIS_RELEASE_LOCK_LUA = """
-    if redis.call("GET", KEYS[1]) == ARGV[1] then
-      return redis.call("DEL", KEYS[1])
-    else
-      return 0
-    end
-    """
+    _REDIS_RELEASE_LOCK_LUA = """if redis.call("GET", KEYS[1]) == ARGV[1] then
+  return redis.call("DEL", KEYS[1])
+else
+  return 0
+end
+"""
 
     # ---------- heartbeat ----------
     def update_heartbeat(
