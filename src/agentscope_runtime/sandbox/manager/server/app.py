@@ -63,6 +63,7 @@ def get_config() -> SandboxManagerEnvConfig:
             container_deployment=settings.CONTAINER_DEPLOYMENT,
             default_mount_dir=settings.DEFAULT_MOUNT_DIR,
             readonly_mounts=settings.READONLY_MOUNTS,
+            allow_mount_dir=settings.ALLOW_MOUNT_DIR,
             storage_folder=settings.STORAGE_FOLDER,
             port_range=settings.PORT_RANGE,
             pool_size=settings.POOL_SIZE,

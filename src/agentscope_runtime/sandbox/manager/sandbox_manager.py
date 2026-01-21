@@ -780,7 +780,7 @@ class SandboxManager(HeartbeatMixin):
                 "default_mount_dir",
             )
 
-        if (not mount_dir) or (mount_dir and not self.config.allow_mount_dir):
+        if not mount_dir or not self.config.allow_mount_dir:
             if self.default_mount_dir:
                 mount_dir = os.path.join(self.default_mount_dir, session_id)
                 os.makedirs(mount_dir, exist_ok=True)
