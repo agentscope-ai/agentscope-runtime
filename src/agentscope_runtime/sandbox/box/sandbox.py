@@ -261,6 +261,9 @@ class SandboxAsync(SandboxBase):
                 f"\n{traceback.format_exc()}",
             )
 
+    def get_info(self) -> dict:
+        return self.manager_api.get_info(self.sandbox_id)
+
     async def get_info_async(self) -> dict:
         return await self.manager_api.get_info_async(self.sandbox_id)
 
