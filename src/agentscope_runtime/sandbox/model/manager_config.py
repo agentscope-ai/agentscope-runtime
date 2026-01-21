@@ -20,7 +20,7 @@ class SandboxManagerEnvConfig(BaseModel):
         description="Type of file system to use: 'local' or 'oss'.",
     )
     storage_folder: Optional[str] = Field(
-        "runtime_sandbox_storage",
+        None,
         description="Folder path in storage.",
     )
     redis_enabled: bool = Field(
@@ -51,6 +51,15 @@ class SandboxManagerEnvConfig(BaseModel):
         description="Read-only mount mapping: host_path -> container_path. "
         "Example: { '/data/shared': '/mnt/shared', '/etc/timezone': "
         "'/etc/timezone' }",
+    )
+
+    allow_mount_dir: bool = Field(
+        default=False,
+        description=(
+            "Whether to allow passing `mount_dir`"
+            "Disable by default to prevent mounting server-local paths when "
+            "running as a manager service."
+        ),
     )
 
     port_range: Tuple[int, int] = Field(

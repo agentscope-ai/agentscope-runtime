@@ -194,9 +194,7 @@ class SandboxManager(HeartbeatMixin):
         self.prefix = self.config.container_prefix_key
         self.default_mount_dir = self.config.default_mount_dir
         self.readonly_mounts = self.config.readonly_mounts
-        self.storage_folder = (
-            self.config.storage_folder or self.default_mount_dir
-        )
+        self.storage_folder = self.config.storage_folder
 
         self.pool_queues = {}
         if self.config.redis_enabled:
@@ -719,7 +717,7 @@ class SandboxManager(HeartbeatMixin):
     def create(
         self,
         sandbox_type=None,
-        mount_dir=None,  # TODO: remove to avoid leaking
+        mount_dir=None,
         storage_path=None,
         environment: Optional[Dict] = None,
         meta: Optional[Dict] = None,
@@ -776,7 +774,13 @@ class SandboxManager(HeartbeatMixin):
         short_uuid = shortuuid.ShortUUID(alphabet=alphabet).uuid()
         session_id = str(short_uuid)
 
-        if not mount_dir:
+        if mount_dir and not self.config.allow_mount_dir:
+            logger.warning(
+                "mount_dir is not allowed by config, fallback to "
+                "default_mount_dir",
+            )
+
+        if (not mount_dir) or (mount_dir and not self.config.allow_mount_dir):
             if self.default_mount_dir:
                 mount_dir = os.path.join(self.default_mount_dir, session_id)
                 os.makedirs(mount_dir, exist_ok=True)

@@ -38,7 +38,8 @@ class Settings(BaseSettings):
     # READONLY_MOUNTS={"\/opt\/shared": "\/mnt\/shared", "\/etc\/timezone":
     # "\/etc\/timezone"}
     READONLY_MOUNTS: Optional[Dict[str, str]] = None
-    STORAGE_FOLDER: str = "runtime_sandbox_storage"
+    ALLOW_MOUNT_DIR: Optional[bool] = False
+    STORAGE_FOLDER: Optional[str] = None
     PORT_RANGE: Tuple[int, int] = (49152, 59152)
 
     # Redis settings

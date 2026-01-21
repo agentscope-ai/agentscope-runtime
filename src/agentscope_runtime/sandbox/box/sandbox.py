@@ -81,8 +81,11 @@ class SandboxBase:
             )
         else:
             # Embedded Manager
+            config = get_config()
+            # Allow in embedded mode
+            config.allow_mount_dir = True
             self.manager_api = SandboxManager(
-                config=get_config(),
+                config=config,
                 default_type=sandbox_type,
             )
 
@@ -151,9 +154,17 @@ class Sandbox(SandboxBase):
     def __enter__(self):
         # Create sandbox if sandbox_id not provided
         if self._sandbox_id is None:
-            self._sandbox_id = self.manager_api.create_from_pool(
-                sandbox_type=SandboxType(self.sandbox_type).value,
-            )
+            if self.workspace_dir:
+                # bypass pool when workspace_dir is set
+                self._sandbox_id = self.manager_api.create(
+                    sandbox_type=SandboxType(self.sandbox_type).value,
+                    mount_dir=self.workspace_dir,
+                )
+            else:
+                self._sandbox_id = self.manager_api.create_from_pool(
+                    sandbox_type=SandboxType(self.sandbox_type).value,
+                )
+
             if self._sandbox_id is None:
                 raise RuntimeError(
                     "No sandbox available. This may happen if: "
@@ -206,9 +217,18 @@ class Sandbox(SandboxBase):
 class SandboxAsync(SandboxBase):
     async def __aenter__(self):
         if self._sandbox_id is None:
-            self._sandbox_id = await self.manager_api.create_from_pool_async(
-                sandbox_type=SandboxType(self.sandbox_type).value,
-            )
+            if self.workspace_dir:
+                self._sandbox_id = await self.manager_api.create_async(
+                    sandbox_type=SandboxType(self.sandbox_type).value,
+                    mount_dir=self.workspace_dir,
+                )
+            else:
+                self._sandbox_id = (
+                    await self.manager_api.create_from_pool_async(
+                        sandbox_type=SandboxType(self.sandbox_type).value,
+                    )
+                )
+
             if self._sandbox_id is None:
                 raise RuntimeError("No sandbox available.")
             if self.embed_mode:
