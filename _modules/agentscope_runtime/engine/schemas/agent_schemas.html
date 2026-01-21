@@ -683,7 +683,8 @@ body.preview-active {
     <span class="n">IMAGE</span> <span class="o">=</span> <span class="s2">&quot;image&quot;</span>
     <span class="n">AUDIO</span> <span class="o">=</span> <span class="s2">&quot;audio&quot;</span>
     <span class="n">FILE</span> <span class="o">=</span> <span class="s2">&quot;file&quot;</span>
-    <span class="n">REFUSAL</span> <span class="o">=</span> <span class="s2">&quot;refusal&quot;</span></div>
+    <span class="n">REFUSAL</span> <span class="o">=</span> <span class="s2">&quot;refusal&quot;</span>
+    <span class="n">VIDEO</span> <span class="o">=</span> <span class="s2">&quot;video&quot;</span></div>
 
 
 
@@ -1094,6 +1095,17 @@ body.preview-active {
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The format of the audio data.</span>
 <span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="VideoContent">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.VideoContent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">VideoContent</span><span class="p">(</span><span class="n">Content</span><span class="p">):</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="n">ContentType</span><span class="o">.</span><span class="n">VIDEO</span><span class="p">]</span> <span class="o">=</span> <span class="n">ContentType</span><span class="o">.</span><span class="n">VIDEO</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The type of the content part.&quot;&quot;&quot;</span>
+
+    <span class="n">video_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The video URL details.&quot;&quot;&quot;</span></div>
 
 
 
@@ -1794,7 +1806,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-20</div>
+              Last updated on 2026-01-21</div>
           </div>
           <div class="right-details">
             <div class="icons">
