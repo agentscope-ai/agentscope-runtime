@@ -649,7 +649,7 @@ body.preview-active {
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Type of file system to use: &#39;local&#39; or &#39;oss&#39;.&quot;</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">storage_folder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-        <span class="s2">&quot;runtime_sandbox_storage&quot;</span><span class="p">,</span>
+        <span class="kc">None</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Folder path in storage.&quot;</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">redis_enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -680,6 +680,15 @@ body.preview-active {
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Read-only mount mapping: host_path -&gt; container_path. &quot;</span>
         <span class="s2">&quot;Example: { &#39;/data/shared&#39;: &#39;/mnt/shared&#39;, &#39;/etc/timezone&#39;: &quot;</span>
         <span class="s2">&quot;&#39;/etc/timezone&#39; }&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">allow_mount_dir</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Whether to allow passing `mount_dir`. &quot;</span>
+            <span class="s2">&quot;Disable by default to prevent mounting server-local paths when &quot;</span>
+            <span class="s2">&quot;running as a manager service.&quot;</span>
+        <span class="p">),</span>
     <span class="p">)</span>
 
     <span class="n">port_range</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>

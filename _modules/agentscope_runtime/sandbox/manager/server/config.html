@@ -667,7 +667,8 @@ body.preview-active {
     <span class="c1"># READONLY_MOUNTS={&quot;\/opt\/shared&quot;: &quot;\/mnt\/shared&quot;, &quot;\/etc\/timezone&quot;:</span>
     <span class="c1"># &quot;\/etc\/timezone&quot;}</span>
     <span class="n">READONLY_MOUNTS</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">STORAGE_FOLDER</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;runtime_sandbox_storage&quot;</span>
+    <span class="n">ALLOW_MOUNT_DIR</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">STORAGE_FOLDER</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">PORT_RANGE</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">49152</span><span class="p">,</span> <span class="mi">59152</span><span class="p">)</span>
 
     <span class="c1"># Redis settings</span>

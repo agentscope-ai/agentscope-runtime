@@ -679,7 +679,7 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 <h4>迁移指南（v1.0 → v1.1）<a class="headerlink" href="#v1-0-v1-1" title="Link to this heading">¶</a></h4>
 <section id="agent">
 <h5>推荐模式（使用 Agent 框架模块做持久化）<a class="headerlink" href="#agent" title="Link to this heading">¶</a></h5>
-<p>使用 <code class="docutils literal notranslate"><span class="pre">JSONSession</span></code> 或其他子模块来持久化/加载 agent 的会话状态，并在 AgentScope 中直接使用 <code class="docutils literal notranslate"><span class="pre">InMemoryMemory()</span></code>（或其他框架提供的 memory）：</p>
+<p>使用 <code class="docutils literal notranslate"><span class="pre">JSONSession</span></code> 或其他子模块来持久化/加载 agent 的会话状态，并在 AgentScope 中直接使用 <code class="docutils literal notranslate"><span class="pre">InMemoryMemory()</span></code>（或框架内提供的其他 memory）：</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 

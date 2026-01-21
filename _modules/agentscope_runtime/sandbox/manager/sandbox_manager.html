@@ -831,9 +831,7 @@ body.preview-active {
         <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">container_prefix_key</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">default_mount_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">default_mount_dir</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">readonly_mounts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">readonly_mounts</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">storage_folder</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">storage_folder</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_mount_dir</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage_folder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">storage_folder</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">pool_queues</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">redis_enabled</span><span class="p">:</span>
@@ -1377,7 +1375,7 @@ body.preview-active {
     <span class="k">def</span><span class="w"> </span><span class="nf">create</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">sandbox_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">mount_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># TODO: remove to avoid leaking</span>
+        <span class="n">mount_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">storage_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">environment</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">meta</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1434,7 +1432,13 @@ body.preview-active {
         <span class="n">short_uuid</span> <span class="o">=</span> <span class="n">shortuuid</span><span class="o">.</span><span class="n">ShortUUID</span><span class="p">(</span><span class="n">alphabet</span><span class="o">=</span><span class="n">alphabet</span><span class="p">)</span><span class="o">.</span><span class="n">uuid</span><span class="p">()</span>
         <span class="n">session_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">short_uuid</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">mount_dir</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">mount_dir</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">allow_mount_dir</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;mount_dir is not allowed by config, fallback to &quot;</span>
+                <span class="s2">&quot;default_mount_dir&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">mount_dir</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">allow_mount_dir</span><span class="p">):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_mount_dir</span><span class="p">:</span>
                 <span class="n">mount_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_mount_dir</span><span class="p">,</span> <span class="n">session_id</span><span class="p">)</span>
                 <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">mount_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
