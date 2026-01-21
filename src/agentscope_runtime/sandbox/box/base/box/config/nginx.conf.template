@@ -9,6 +9,10 @@ http {
         location /fastapi {
             rewrite ^/fastapi(.*)$ $1 break;
 
+            proxy_connect_timeout ${NGINX_TIMEOUT}s;
+            proxy_send_timeout    ${NGINX_TIMEOUT}s;
+            proxy_read_timeout    ${NGINX_TIMEOUT}s;
+
             proxy_pass http://localhost:8000;
         }
     }
