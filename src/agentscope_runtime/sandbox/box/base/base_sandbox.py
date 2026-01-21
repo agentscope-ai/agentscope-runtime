@@ -23,6 +23,7 @@ class BaseSandbox(Sandbox):
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.BASE,
+        workspace_dir: Optional[str] = None,
     ):
         super().__init__(
             sandbox_id,
@@ -30,6 +31,7 @@ class BaseSandbox(Sandbox):
             base_url,
             bearer_token,
             sandbox_type,
+            workspace_dir,
         )
 
     def run_ipython_cell(self, code: str):
@@ -66,6 +68,7 @@ class BaseSandboxAsync(SandboxAsync):
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.BASE_ASYNC,
+        workspace_dir: Optional[str] = None,
     ):
         super().__init__(
             sandbox_id,
@@ -73,6 +76,7 @@ class BaseSandboxAsync(SandboxAsync):
             base_url,
             bearer_token,
             sandbox_type,
+            workspace_dir,
         )
 
     async def run_ipython_cell(self, code: str):

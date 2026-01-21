@@ -25,6 +25,7 @@ class FilesystemSandbox(GUIMixin, BaseSandbox):
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.FILESYSTEM,
+        workspace_dir: Optional[str] = None,
     ):
         super().__init__(
             sandbox_id,
@@ -32,6 +33,7 @@ class FilesystemSandbox(GUIMixin, BaseSandbox):
             base_url,
             bearer_token,
             sandbox_type,
+            workspace_dir,
         )
 
     def read_file(self, path: str):
@@ -171,6 +173,7 @@ class FilesystemSandboxAsync(GUIMixin, AsyncGUIMixin, BaseSandboxAsync):
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.FILESYSTEM_ASYNC,
+        workspace_dir: Optional[str] = None,
     ):
         super().__init__(
             sandbox_id,
@@ -178,6 +181,7 @@ class FilesystemSandboxAsync(GUIMixin, AsyncGUIMixin, BaseSandboxAsync):
             base_url,
             bearer_token,
             sandbox_type,
+            workspace_dir,
         )
 
     async def read_file(self, path: str):

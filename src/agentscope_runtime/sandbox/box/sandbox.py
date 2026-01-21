@@ -56,6 +56,7 @@ class SandboxBase:
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.BASE,
+        workspace_dir: Optional[str] = None,
     ) -> None:
         self.base_url = base_url
         self.embed_mode = not bool(base_url)
@@ -63,6 +64,14 @@ class SandboxBase:
         self.timeout = timeout
         self._sandbox_id = sandbox_id
         self._warned_sandbox_not_started = False
+
+        self.workspace_dir = workspace_dir
+
+        if self.base_url and self.workspace_dir:
+            raise RuntimeError(
+                "workspace_dir is only supported in embedded(local) mode; "
+                "remote mode mounts server paths and is not allowed.",
+            )
 
         if base_url:
             # Remote Manager

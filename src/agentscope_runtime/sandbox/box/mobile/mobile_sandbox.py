@@ -197,6 +197,7 @@ class MobileSandbox(MobileMixin, Sandbox):
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.MOBILE,
+        workspace_dir: Optional[str] = None,
     ):
         if base_url is None and not self.__class__._host_check_done:
             _check_host_readiness()
@@ -208,6 +209,7 @@ class MobileSandbox(MobileMixin, Sandbox):
             base_url,
             bearer_token,
             sandbox_type,
+            workspace_dir,
         )
 
     def adb_use(
@@ -346,6 +348,7 @@ class MobileSandboxAsync(MobileMixin, AsyncMobileMixin, SandboxAsync):
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.MOBILE_ASYNC,
+        workspace_dir: Optional[str] = None,
     ):
         if base_url is None and not self.__class__._host_check_done:
             _check_host_readiness()
@@ -357,6 +360,7 @@ class MobileSandboxAsync(MobileMixin, AsyncMobileMixin, SandboxAsync):
             base_url,
             bearer_token,
             sandbox_type,
+            workspace_dir,
         )
 
     async def adb_use(

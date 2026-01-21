@@ -22,6 +22,13 @@ class DummySandbox(Sandbox):
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.DUMMY,
+        workspace_dir: Optional[str] = None,
     ):
-        self._sandbox_id = sandbox_id
-        self.sandbox_type = sandbox_type
+        super().__init__(
+            sandbox_id,
+            timeout,
+            base_url,
+            bearer_token,
+            sandbox_type,
+            workspace_dir,
+        )
