@@ -56,7 +56,7 @@ class SandboxManagerEnvConfig(BaseModel):
     allow_mount_dir: bool = Field(
         default=False,
         description=(
-            "Whether to allow passing `mount_dir`."
+            "Whether to allow passing `mount_dir`. "
             "Disable by default to prevent mounting server-local paths when "
             "running as a manager service."
         ),
