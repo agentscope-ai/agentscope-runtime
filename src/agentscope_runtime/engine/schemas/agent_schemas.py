@@ -49,6 +49,7 @@ class ContentType:
     AUDIO = "audio"
     FILE = "file"
     REFUSAL = "refusal"
+    VIDEO = "video"
 
 
 class Role:
@@ -381,6 +382,14 @@ class AudioContent(Content):
     """
     The format of the audio data.
     """
+
+
+class VideoContent(Content):
+    type: Literal[ContentType.VIDEO] = ContentType.VIDEO
+    """The type of the content part."""
+
+    video_url: Optional[str] = None
+    """The video URL details."""
 
 
 class FileContent(Content):
