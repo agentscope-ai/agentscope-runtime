@@ -40,7 +40,7 @@ AgentScope Runtime v1.1.0 专注于通过移除 Runtime 侧自定义的 Memory/S
 
 ##### 推荐模式（使用 Agent 框架模块做持久化）
 
-使用 `JSONSession` 或其他子模块来持久化/加载 agent 的会话状态，并在 AgentScope 中直接使用 `InMemoryMemory()`（或其他框架提供的 memory）：
+使用 `JSONSession` 或其他子模块来持久化/加载 agent 的会话状态，并在 AgentScope 中直接使用`InMemoryMemory()`（或框架内提供的其他 memory）：
 
 ```python
 # -*- coding: utf-8 -*-
