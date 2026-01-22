@@ -159,7 +159,10 @@ class BoxliteClient(BaseClient):
             # Convert environment dict to list of tuples
             env_list = []
             if environment:
-                env_list = list(environment.items())
+                env_list = [
+                    (str(k), "" if v is None else str(v))
+                    for k, v in environment.items()
+                ]
 
             # Convert volumes to BoxLite format
             volume_list = []
