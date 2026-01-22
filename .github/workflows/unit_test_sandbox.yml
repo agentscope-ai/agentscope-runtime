@@ -86,7 +86,7 @@ jobs:
 
       - name: Run tests with coverage (default)
         run: |
-          coverage run -m pytest tests/sandbox/test_sandbox.py tests/sandbox/test_sandbox_service.py tests/sandbox/test_heartbeat.py
+          coverage run -m pytest tests/sandbox/test_sandbox.py tests/sandbox/test_sandbox_service.py tests/sandbox/test_heartbeat.py tests/sandbox/test_heartbeat_timeout_restore.py
 
       - name: Generate coverage report
         run: |

@@ -4,6 +4,8 @@ import logging
 import signal
 from typing import Any, Optional
 
+import shortuuid
+
 from ..enums import SandboxType
 from ..manager.sandbox_manager import SandboxManager
 from ..manager.server.app import get_config
@@ -154,16 +156,24 @@ class Sandbox(SandboxBase):
     def __enter__(self):
         # Create sandbox if sandbox_id not provided
         if self._sandbox_id is None:
+            short_uuid = shortuuid.ShortUUID().uuid()
+            session_ctx_id = str(short_uuid)
             if self.workspace_dir:
                 # bypass pool when workspace_dir is set
-                self._sandbox_id = self.manager_api.create(
+                _id = self.manager_api.create(
                     sandbox_type=SandboxType(self.sandbox_type).value,
                     mount_dir=self.workspace_dir,
+                    # TODO: support bind self-define id
+                    meta={"session_ctx_id": session_ctx_id},
                 )
             else:
-                self._sandbox_id = self.manager_api.create_from_pool(
+                _id = self.manager_api.create_from_pool(
                     sandbox_type=SandboxType(self.sandbox_type).value,
+                    # TODO: support bind self-define id
+                    meta={"session_ctx_id": session_ctx_id},
                 )
+
+            self._sandbox_id = _id
 
             if self._sandbox_id is None:
                 raise RuntimeError(
@@ -217,17 +227,23 @@ class Sandbox(SandboxBase):
 class SandboxAsync(SandboxBase):
     async def __aenter__(self):
         if self._sandbox_id is None:
+            short_uuid = shortuuid.ShortUUID().uuid()
+            session_ctx_id = str(short_uuid)
             if self.workspace_dir:
-                self._sandbox_id = await self.manager_api.create_async(
+                _id = await self.manager_api.create_async(
                     sandbox_type=SandboxType(self.sandbox_type).value,
                     mount_dir=self.workspace_dir,
+                    # TODO: support bind self-define id
+                    meta={"session_ctx_id": session_ctx_id},
                 )
             else:
-                self._sandbox_id = (
-                    await self.manager_api.create_from_pool_async(
-                        sandbox_type=SandboxType(self.sandbox_type).value,
-                    )
+                _id = await self.manager_api.create_from_pool_async(
+                    sandbox_type=SandboxType(self.sandbox_type).value,
+                    # TODO: support bind self-define id
+                    meta={"session_ctx_id": session_ctx_id},
                 )
+
+            self._sandbox_id = _id
 
             if self._sandbox_id is None:
                 raise RuntimeError("No sandbox available.")
