@@ -162,11 +162,10 @@ COPY --from=ws-scrcpy-builder /prod_bundle/ ./
 # 5. Copy configuration and startup scripts
 WORKDIR /
 COPY src/agentscope_runtime/sandbox/box/mobile/box/config/supervisord.conf.template /etc/supervisor/supervisord.conf.template
-COPY src/agentscope_runtime/sandbox/box/mobile/box/config/nginx.conf /etc/nginx/nginx.conf
+COPY src/agentscope_runtime/sandbox/box/mobile/box/config/nginx.conf.template /etc/nginx/nginx.conf.template
 COPY src/agentscope_runtime/sandbox/box/mobile/box/mcp_server_configs.json /app/python_app/mcp_server_configs.json
 COPY src/agentscope_runtime/sandbox/box/mobile/box/scripts/start.sh /start.sh
 RUN chmod +x /start.sh
-RUN ["/bin/sh", "-c", "export SECRET_TOKEN=\"${SECRET_TOKEN:-secret_token_123}\" NGINX_TIMEOUT=\"${NGINX_TIMEOUT:-60}\" && envsubst '$SECRET_TOKEN $NGINX_TIMEOUT' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf"]
 
 # 6. Copy the offline redroid image from the fetcher stage
 COPY --from=redroid-fetcher /redroid.tar /redroid.tar
