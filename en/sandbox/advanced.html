@@ -1447,7 +1447,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span>cache<span class="w"> </span>clean<span class="w"> </span>--force<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>~/.npm/_cacache
 
-<span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;/bin/sh&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-c&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;envsubst &#39;$SECRET_TOKEN&#39; &lt; /etc/nginx/nginx.conf.template &gt; /etc/nginx/nginx.conf &amp;&amp; /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf&quot;</span><span class="p">]</span>
+<span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;/bin/sh&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-c&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;export SECRET_TOKEN=${SECRET_TOKEN:-secret_token123} NGINX_TIMEOUT=${NGINX_TIMEOUT:-60}; envsubst &#39;$SECRET_TOKEN $NGINX_TIMEOUT&#39; &lt; /etc/nginx/nginx.conf.template &gt; /etc/nginx/nginx.conf &amp;&amp; /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf&quot;</span><span class="p">]</span>
 </pre></div>
 </div>
 </section>
@@ -1584,7 +1584,7 @@ You can modify any of them as needed to change the image source or version.</p>
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-21</div>
+              Last updated on 2026-01-22</div>
           </div>
           <div class="right-details">
             <div class="icons">
