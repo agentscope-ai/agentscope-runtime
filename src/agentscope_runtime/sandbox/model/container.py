@@ -1,10 +1,22 @@
 # -*- coding: utf-8 -*-
+import time
+from enum import Enum
 from typing import List, Optional, Dict
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict, model_validator
+
+
+class ContainerState(str, Enum):
+    WARM = "warm"
+    RUNNING = "running"
+    RECYCLED = "recycled"
+    RELEASED = "released"
+    ERROR = "error"
 
 
 class ContainerModel(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     session_id: str = Field(
         ...,
         description="Unique identifier for the session",
@@ -59,5 +71,74 @@ class ContainerModel(BaseModel):
         ge=0,
     )
 
-    class Config:
-        extra = "allow"
+    sandbox_type: Optional[str] = Field(
+        default=None,
+        description="Sandbox type (e.g. base/browser/...). Usually "
+        "SandboxType.value.",
+    )
+
+    state: ContainerState = Field(
+        default=ContainerState.RUNNING,
+        description="Lifecycle state",
+    )
+
+    # Pull session_ctx_id up from meta for easier indexing/logic
+    session_ctx_id: Optional[str] = Field(
+        default=None,
+        description="Bound session context id (copied from meta["
+        "'session_ctx_id'] for compatibility)",
+    )
+
+    # Heartbeat timestamp (unix seconds)
+    last_active_at: Optional[float] = Field(
+        default=None,
+        description="Last activity timestamp (unix seconds)",
+    )
+
+    # Recycle/release timestamps
+    recycled_at: Optional[float] = Field(
+        default=None,
+        description="Recycled timestamp (unix seconds)",
+    )
+    released_at: Optional[float] = Field(
+        default=None,
+        description="Released timestamp (unix seconds)",
+    )
+    updated_at: Optional[float] = Field(
+        default=None,
+        description="Last model update timestamp (unix seconds)",
+    )
+
+    recycle_reason: Optional[str] = Field(
+        default=None,
+        description="Reason for recycle",
+    )
+
+    @model_validator(mode="after")
+    def _compat_and_defaults(self):
+        """
+        Compatibility layer:
+        - If session_ctx_id not provided, read from meta['session_ctx_id'].
+        - Optionally write session_ctx_id back into meta to keep old code
+            working.
+        - Ensure updated_at is always populated.
+        """
+        # normalize meta
+        if self.meta is None:
+            self.meta = {}
+
+        # meta -> session_ctx_id
+        if not self.session_ctx_id:
+            v = self.meta.get("session_ctx_id")
+            if v:
+                self.session_ctx_id = v
+
+        # session_ctx_id -> meta
+        if self.session_ctx_id:
+            self.meta["session_ctx_id"] = self.session_ctx_id
+
+        # default updated_at
+        if self.updated_at is None:
+            self.updated_at = time.time()
+
+        return self

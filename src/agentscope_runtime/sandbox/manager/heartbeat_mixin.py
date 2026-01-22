@@ -3,13 +3,13 @@ import asyncio
 import inspect
 import time
 import secrets
-from typing import Optional
+from typing import Optional, List
 from functools import wraps
 
 import logging
 from redis.exceptions import ResponseError
 
-from ..model import ContainerModel
+from ..model import ContainerModel, ContainerState
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,8 @@ def touch_session(identity_arg: str = "identity"):
                         if session_ctx_id:
                             self.update_heartbeat(session_ctx_id)
                             if self.needs_restore(session_ctx_id):
-                                self.restore_session(session_ctx_id)
+                                if hasattr(self, "restore_session"):
+                                    self.restore_session(session_ctx_id)
                 except Exception as e:
                     logger.debug(f"touch_session failed (ignored): {e}")
 
@@ -68,7 +69,8 @@ def touch_session(identity_arg: str = "identity"):
                     if session_ctx_id:
                         self.update_heartbeat(session_ctx_id)
                         if self.needs_restore(session_ctx_id):
-                            self.restore_session(session_ctx_id)
+                            if hasattr(self, "restore_session"):
+                                self.restore_session(session_ctx_id)
             except Exception as e:
                 logger.debug(f"touch_session failed (ignored): {e}")
 
@@ -82,17 +84,20 @@ def touch_session(identity_arg: str = "identity"):
 class HeartbeatMixin:
     """
     Mixin providing:
-      - heartbeat timestamp read/write
-      - recycled (restore-required) marker
+      - heartbeat timestamp read/write (stored on
+        ContainerModel.last_active_at)
+      - recycled (restore-required) marker (stored on
+        ContainerModel.state/recycled_at)
       - redis distributed lock for reaping
 
     Host class must provide:
-      - self.heartbeat_mapping, self.recycled_mapping
-        (Mapping-like with set/get/delete)
+      - self.container_mapping (Mapping-like with set/get/delete/scan)
+      - self.session_mapping (Mapping-like with set/get/delete/scan)
       - self.get_info(identity) -> dict compatible with ContainerModel(**dict)
       - self.config.redis_enabled (bool)
       - self.config.heartbeat_lock_ttl (int)
       - self.redis_client (redis client or None)
+      - self.restore_session (for restore session)
     """
 
     _REDIS_RELEASE_LOCK_LUA = """if redis.call("GET", KEYS[1]) == ARGV[1] then
@@ -102,6 +107,30 @@ else
 end
 """
 
+    def _list_container_names_by_session(
+        self,
+        session_ctx_id: str,
+    ) -> List[str]:
+        if not session_ctx_id:
+            return []
+        # session_mapping stores container_name list
+        try:
+            return self.session_mapping.get(session_ctx_id) or []
+        except Exception:
+            return []
+
+    def _load_container_model(self, identity: str) -> Optional[ContainerModel]:
+        try:
+            info_dict = self.get_info(identity)
+            return ContainerModel(**info_dict)
+        except Exception as e:
+            logger.debug(f"_load_container_model failed for {identity}: {e}")
+            return None
+
+    def _save_container_model(self, model: ContainerModel) -> None:
+        # IMPORTANT: persist back into container_mapping
+        self.container_mapping.set(model.container_name, model.model_dump())
+
     # ---------- heartbeat ----------
     def update_heartbeat(
         self,
@@ -109,85 +138,155 @@ end
         ts: Optional[float] = None,
     ) -> float:
         """
-        heartbeat_mapping[session_ctx_id] = last_active_timestamp
-        (unix seconds).
+        Update heartbeat timestamp onto ALL containers bound to session_ctx_id.
+        Returns the timestamp written.
         """
         if not session_ctx_id:
             raise ValueError("session_ctx_id is required")
+
         ts = float(ts if ts is not None else time.time())
-        self.heartbeat_mapping.set(session_ctx_id, ts)
+        now = time.time()
+
+        container_names = self._list_container_names_by_session(session_ctx_id)
+        for cname in list(container_names):
+            model = self._load_container_model(cname)
+            if not model:
+                continue
+
+            # only update heartbeat for RUNNING containers
+            if model.state != ContainerState.RUNNING:
+                continue
+
+            model.last_active_at = ts
+            model.updated_at = now
+
+            # keep session_ctx_id consistent (migration safety)
+            model.session_ctx_id = session_ctx_id
+
+            self._save_container_model(model)
+
         return ts
 
     def get_heartbeat(self, session_ctx_id: str) -> Optional[float]:
-        val = (
-            self.heartbeat_mapping.get(session_ctx_id)
-            if session_ctx_id
-            else None
-        )
-        return float(val) if val is not None else None
+        """
+        Return session-level heartbeat = max(last_active_at) among bound
+        containers.
+        """
+        if not session_ctx_id:
+            return None
 
-    def delete_heartbeat(self, session_ctx_id: str) -> None:
-        if session_ctx_id:
-            self.heartbeat_mapping.delete(session_ctx_id)
+        container_names = self._list_container_names_by_session(session_ctx_id)
+        last_vals = []
+        for cname in list(container_names):
+            model = self._load_container_model(cname)
+            if not model:
+                continue
+
+            if model.state != ContainerState.RUNNING:
+                continue
+
+            if model.last_active_at is not None:
+                last_vals.append(float(model.last_active_at))
+
+        return max(last_vals) if last_vals else None
 
     # ---------- recycled marker ----------
     def mark_session_recycled(
         self,
         session_ctx_id: str,
         ts: Optional[float] = None,
+        reason: str = "heartbeat_timeout",
     ) -> float:
         """
-        recycled_mapping[session_ctx_id] = recycled_timestamp (unix seconds).
+        Mark ALL containers bound to session_ctx_id as recycled.
+        (Does not stop/remove containers here; reap_session will do that.)
         """
         if not session_ctx_id:
             raise ValueError("session_ctx_id is required")
+
         ts = float(ts if ts is not None else time.time())
-        self.recycled_mapping.set(session_ctx_id, ts)
+        now = time.time()
+
+        container_names = self._list_container_names_by_session(session_ctx_id)
+        for cname in list(container_names):
+            model = self._load_container_model(cname)
+            if not model:
+                continue
+
+            # if already released, don't flip back
+            if model.state == ContainerState.RELEASED:
+                continue
+
+            model.state = ContainerState.RECYCLED
+            model.recycled_at = ts
+            model.recycle_reason = reason
+            model.updated_at = now
+
+            model.session_ctx_id = session_ctx_id
+            self._save_container_model(model)
+
         return ts
 
     def clear_session_recycled(self, session_ctx_id: str) -> None:
-        if session_ctx_id:
-            self.recycled_mapping.delete(session_ctx_id)
+        """
+        Clear recycled marker on containers (if any) for this session.
+        Usually called when session is allocated a new running container.
+        """
+        if not session_ctx_id:
+            return
+
+        now = time.time()
+        container_names = self._list_container_names_by_session(session_ctx_id)
+        for cname in list(container_names):
+            model = self._load_container_model(cname)
+            if not model:
+                continue
+            if model.state == ContainerState.RECYCLED:
+                model.state = ContainerState.RUNNING
+            model.recycled_at = None
+            model.recycle_reason = None
+            model.updated_at = now
+            model.session_ctx_id = session_ctx_id
+            self._save_container_model(model)
 
     def needs_restore(self, session_ctx_id: str) -> bool:
         if not session_ctx_id:
             return False
-        return self.recycled_mapping.get(session_ctx_id) is not None
 
-    def restore_session(self, session_ctx_id: str) -> None:
-        """
-        Stub for snapshot/restore phase.
-        Called when a session is marked recycled (needs_restore == True).
-        """
-        logger.warning(
-            f"restore_session({session_ctx_id}) called but not implemented "
-            f"yet.",
-        )
-        # NOTE: keep recycled mark for now, so future requests still
-        # indicate restore needed. If you prefer "warn once", uncomment next
-        # line:
-        # self.clear_session_recycled(session_ctx_id)
+        container_names = self._list_container_names_by_session(session_ctx_id)
+        for cname in list(container_names):
+            model = self._load_container_model(cname)
+            if not model:
+                continue
+            if (
+                model.state == ContainerState.RECYCLED
+                or model.recycled_at is not None
+            ):
+                return True
+        return False
 
     # ---------- helpers ----------
     def get_session_ctx_id_by_identity(self, identity: str) -> Optional[str]:
         """
         Resolve session_ctx_id from a container identity.
-        Returns None if the container cannot be found (get_info raises
-        RuntimeError), which is an expected situation for recycled/removed
-        containers during heartbeat touches.
         """
         try:
             info_dict = self.get_info(identity)
         except RuntimeError as exc:
-            # Missing container is a normal condition during heartbeat checks.
             logger.debug(
-                "get_session_ctx_id_by_identity: container not found for "
-                "identity %s: %s",
-                identity,
-                exc,
+                f"get_session_ctx_id_by_identity: container not found for "
+                f"identity {identity}: {exc}",
             )
+
             return None
+
         info = ContainerModel(**info_dict)
+
+        # NEW: prefer top-level field
+        if info.session_ctx_id:
+            return info.session_ctx_id
+
+        # fallback for older payloads
         return (info.meta or {}).get("session_ctx_id")
 
     # ---------- redis distributed lock ----------
