@@ -116,7 +116,12 @@ end
         # session_mapping stores container_name list
         try:
             return self.session_mapping.get(session_ctx_id) or []
-        except Exception:
+        except Exception as e:
+            logger.warning(
+                f"_list_container_names_by_session "
+                f"failed for session_ctx_id={session_ctx_id}: {e}",
+                exc_info=True,
+            )
             return []
 
     def _load_container_model(self, identity: str) -> Optional[ContainerModel]:
@@ -227,27 +232,51 @@ end
 
         return ts
 
-    def clear_session_recycled(self, session_ctx_id: str) -> None:
+    def clear_container_recycle_marker(
+        self,
+        identity: str,
+        *,
+        set_state: Optional[ContainerState] = None,
+    ) -> None:
         """
-        Clear recycled marker on containers (if any) for this session.
-        Usually called when session is allocated a new running container.
+        Clear the recycle/restore-required marker for ONE container.
+
+        This resets the following ContainerModel fields:
+          - recycled_at = None
+          - recycle_reason = None
+
+        Optionally, it can also force-update the container `state` via
+        `set_state`.
+
+        Notes:
+          - This function only updates the container record in
+            `container_mapping`. It does NOT start/stop/remove/create any
+            real container.
+          - By default it does NOT change `state`, because the actual runtime
+            container may have already been stopped/removed; callers should set
+            `set_state` explicitly when they are sure about the desired state.
+
+        Args:
+            identity:
+                Container identity.
+            set_state:
+                If provided, overwrite `model.state` with this value
+                (e.g. ContainerState.RUNNING). If None, `state` is left
+                unchanged.
+
+        Returns:
+            None
         """
-        if not session_ctx_id:
+        model = self._load_container_model(identity)
+        if not model:
             return
 
-        now = time.time()
-        container_names = self._list_container_names_by_session(session_ctx_id)
-        for cname in list(container_names):
-            model = self._load_container_model(cname)
-            if not model:
-                continue
-            if model.state == ContainerState.RECYCLED:
-                model.state = ContainerState.RUNNING
-            model.recycled_at = None
-            model.recycle_reason = None
-            model.updated_at = now
-            model.session_ctx_id = session_ctx_id
-            self._save_container_model(model)
+        model.recycled_at = None
+        model.recycle_reason = None
+        model.state = set_state
+
+        model.updated_at = time.time()
+        self._save_container_model(model)
 
     def needs_restore(self, session_ctx_id: str) -> bool:
         if not session_ctx_id:

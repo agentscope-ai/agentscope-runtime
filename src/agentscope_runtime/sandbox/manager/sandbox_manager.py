@@ -684,7 +684,10 @@ class SandboxManager(HeartbeatMixin):
                         self.session_mapping.set(session_ctx_id, env_ids)
 
                         # clear recycled marker (container-level now)
-                        self.clear_session_recycled(session_ctx_id)
+                        self.clear_container_recycle_marker(
+                            container_model.container_name,
+                            set_state=ContainerState.RUNNING,
+                        )
 
                         # first heartbeat
                         self.update_heartbeat(session_ctx_id)
@@ -948,7 +951,10 @@ class SandboxManager(HeartbeatMixin):
                 self.update_heartbeat(session_ctx_id)
 
                 # Session is now alive again; clear restore-required marker
-                self.clear_session_recycled(session_ctx_id)
+                self.clear_container_recycle_marker(
+                    container_model.container_name,
+                    set_state=ContainerState.RUNNING,
+                )
 
             logger.debug(
                 f"Created container {container_name}"
@@ -1004,10 +1010,13 @@ class SandboxManager(HeartbeatMixin):
                     # keep state consistent
                     self.session_mapping.delete(session_ctx_id)
                     try:
-                        self.clear_session_recycled(session_ctx_id)
+                        self.clear_container_recycle_marker(
+                            container_info.container_name,
+                            set_state=ContainerState.RELEASED,
+                        )
                     except Exception as e:
                         logger.debug(
-                            f"clear_session_recycled failed for"
+                            f"clear_container_recycle_marker failed for"
                             f" {session_ctx_id}: {e}",
                         )
 
@@ -1317,12 +1326,18 @@ class SandboxManager(HeartbeatMixin):
                     # stop/remove actual container
                     try:
                         self.client.stop(info.container_id, timeout=1)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(
+                            f"Failed to stop container "
+                            f"{info.container_id}: {e}",
+                        )
                     try:
                         self.client.remove(info.container_id, force=True)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(
+                            f"Failed to remove container "
+                            f"{info.container_id}: {e}",
+                        )
 
                     # upload storage if needed
                     if info.mount_dir and info.storage_path:

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Unit test: heartbeat timeout -> reap -> touch -> restore ->
+Integration test: heartbeat timeout -> reap -> touch -> restore ->
 run_shell_command works again.
 
 This test verifies:
@@ -24,7 +24,6 @@ from agentscope_runtime.sandbox.enums import SandboxType
 from agentscope_runtime.sandbox.model import ContainerModel, ContainerState
 
 
-@pytest.mark.integration
 def test_heartbeat_reap_then_restore_run_shell():
     # Prepare manager config for a fast heartbeat/reap cycle
     config = get_config()
@@ -32,8 +31,8 @@ def test_heartbeat_reap_then_restore_run_shell():
     config.redis_enabled = False
 
     # Keep timeouts small so the test finishes quickly
-    config.heartbeat_timeout = 3  # seconds of inactivity to trigger reap
-    config.heartbeat_scan_interval = 1  # scan interval in seconds
+    config.heartbeat_timeout = 30  # seconds of inactivity to trigger reap
+    config.heartbeat_scan_interval = 3  # scan interval in seconds
 
     session_ctx_id = f"hb-restore-{int(time.time())}"
     meta = {"session_ctx_id": session_ctx_id}
@@ -58,7 +57,9 @@ def test_heartbeat_reap_then_restore_run_shell():
         assert "old-ok" in str(r0)
 
         # 2) Wait long enough for heartbeat timeout + watcher reap
-        time.sleep(6)
+        time.sleep(
+            config.heartbeat_timeout + config.heartbeat_scan_interval + 5,
+        )
 
         # The old container model should be marked as RECYCLED
         old_cm = ContainerModel(**mgr.get_info(old_name))

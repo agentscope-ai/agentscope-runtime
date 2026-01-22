@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import copy
 import time
 from enum import Enum
 from typing import List, Optional, Dict
@@ -85,8 +86,8 @@ class ContainerModel(BaseModel):
     # Pull session_ctx_id up from meta for easier indexing/logic
     session_ctx_id: Optional[str] = Field(
         default=None,
-        description="Bound session context id (copied from meta["
-        "'session_ctx_id'] for compatibility)",
+        description="Bound session context id "
+        "(copied from meta['session_ctx_id'] for compatibility)",
     )
 
     # Heartbeat timestamp (unix seconds)
@@ -135,7 +136,7 @@ class ContainerModel(BaseModel):
 
         # session_ctx_id -> meta
         if self.session_ctx_id:
-            self.meta["session_ctx_id"] = self.session_ctx_id
+            self.meta["session_ctx_id"] = copy.deepcopy(self.session_ctx_id)
 
         # default updated_at
         if self.updated_at is None:
