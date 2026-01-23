@@ -1632,29 +1632,14 @@ class SandboxManager(HeartbeatMixin):
                     result["skipped_not_expired"] += 1
                     continue
 
-                # defensive: ensure session_mapping has no stale binding
-                sess = cm.session_ctx_id or (cm.meta or {}).get(
-                    "session_ctx_id",
-                )
-                if sess:
-                    try:
-                        env_ids = self.session_mapping.get(sess) or []
-                        env_ids = [
-                            x for x in env_ids if x != cm.container_name
-                        ]
-                        if env_ids:
-                            self.session_mapping.set(sess, env_ids)
-                        else:
-                            self.session_mapping.delete(sess)
-                    except Exception:
-                        # don't block deletion because of mapping issues
-                        pass
-
                 self.container_mapping.delete(cm.container_name)
                 result["deleted"] += 1
 
-            except Exception:
+            except Exception as e:
                 result["errors"] += 1
-                logger.debug(traceback.format_exc())
+                logger.debug(
+                    f"scan_released_cleanup_once: {e},"
+                    f" {traceback.format_exc()}",
+                )
 
         return result
