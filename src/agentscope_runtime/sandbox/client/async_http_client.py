@@ -10,6 +10,7 @@ from pydantic import Field
 from .base import SandboxHttpBase
 from ..model import ContainerModel
 
+logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 

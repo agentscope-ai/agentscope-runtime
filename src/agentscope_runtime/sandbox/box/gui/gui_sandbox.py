@@ -77,6 +77,7 @@ class GuiSandbox(GUIMixin, BaseSandbox):
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.GUI,
+        workspace_dir: Optional[str] = None,
     ):
         super().__init__(
             sandbox_id,
@@ -84,6 +85,7 @@ class GuiSandbox(GUIMixin, BaseSandbox):
             base_url,
             bearer_token,
             sandbox_type,
+            workspace_dir,
         )
         if get_platform() == "linux/arm64":
             logger.warning(
@@ -166,6 +168,7 @@ class GuiSandboxAsync(GUIMixin, AsyncGUIMixin, BaseSandboxAsync):
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.GUI_ASYNC,
+        workspace_dir: Optional[str] = None,
     ):
         super().__init__(
             sandbox_id,
@@ -173,6 +176,7 @@ class GuiSandboxAsync(GUIMixin, AsyncGUIMixin, BaseSandboxAsync):
             base_url,
             bearer_token,
             sandbox_type,
+            workspace_dir,
         )
         # Architecture compatibility warning
         if get_platform() == "linux/arm64":

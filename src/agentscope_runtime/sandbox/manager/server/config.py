@@ -38,7 +38,8 @@ class Settings(BaseSettings):
     # READONLY_MOUNTS={"\/opt\/shared": "\/mnt\/shared", "\/etc\/timezone":
     # "\/etc\/timezone"}
     READONLY_MOUNTS: Optional[Dict[str, str]] = None
-    STORAGE_FOLDER: str = "runtime_sandbox_storage"
+    ALLOW_MOUNT_DIR: Optional[bool] = False
+    STORAGE_FOLDER: Optional[str] = None
     PORT_RANGE: Tuple[int, int] = (49152, 59152)
 
     # Redis settings
@@ -97,6 +98,13 @@ class Settings(BaseSettings):
 
     FC_LOG_PROJECT: Optional[str] = None
     FC_LOG_STORE: Optional[str] = None
+
+    # Heartbeat related
+    HEARTBEAT_TIMEOUT: int = 300
+    HEARTBEAT_SCAN_INTERVAL: int = 0  # 0 to disable heartbeat check
+    HEARTBEAT_LOCK_TTL: int = 120
+
+    MAX_SANDBOX_INSTANCES: int = 0  # 0 means unlimited
 
     model_config = ConfigDict(
         case_sensitive=True,

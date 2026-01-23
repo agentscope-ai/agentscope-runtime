@@ -92,6 +92,12 @@ echo "--- Phase 3: Starting Application Services ---"
 mkdir -p /etc/supervisor/conf.d/
 export SECRET_TOKEN="${SECRET_TOKEN:-secret_token123}"
 envsubst '${SECRET_TOKEN}' < /etc/supervisor/supervisord.conf.template > /etc/supervisor/conf.d/supervisord.conf
+if [ -f /etc/nginx/nginx.conf.template ]; then
+  export NGINX_TIMEOUT=${NGINX_TIMEOUT:-60}
+  envsubst '$SECRET_TOKEN $NGINX_TIMEOUT' \
+    < /etc/nginx/nginx.conf.template \
+    > /etc/nginx/nginx.conf
+fi
 /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
 
 sleep 5

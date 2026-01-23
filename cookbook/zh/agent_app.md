@@ -191,7 +191,6 @@ app = AgentApp(
 ```{code-cell}
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.services.agent_state import InMemoryStateService
-from agentscope_runtime.engine.services.session_history import InMemorySessionHistoryService
 
 app = AgentApp(
     app_name="Friday",
@@ -202,17 +201,14 @@ app = AgentApp(
 async def init_func(self):
     """初始化服务资源"""
     self.state_service = InMemoryStateService()
-    self.session_service = InMemorySessionHistoryService()
 
     await self.state_service.start()
-    await self.session_service.start()
     print("✅ 服务初始化完成")
 
 @app.shutdown
 async def shutdown_func(self):
     """清理服务资源"""
     await self.state_service.stop()
-    await self.session_service.stop()
     print("✅ 服务资源已清理")
 ```
 
@@ -308,7 +304,7 @@ from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope.pipeline import stream_printing_messages
-from agentscope_runtime.adapters.agentscope.memory import AgentScopeSessionHistoryMemory
+from agentscope.memory import InMemoryMemory
 
 app = AgentApp(
     app_name="Friday",
@@ -341,11 +337,7 @@ async def query_func(
             stream=True,
         ),
         sys_prompt="You're a helpful assistant named Friday.",
-        memory=AgentScopeSessionHistoryMemory(
-            service=self.session_service,
-            session_id=session_id,
-            user_id=user_id,
-        ),
+        memory=InMemoryMemory(),
     )
 
     # 恢复状态（如果存在）
@@ -391,9 +383,8 @@ from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope.tool import Toolkit, execute_python_code
 from agentscope.pipeline import stream_printing_messages
-from agentscope_runtime.adapters.agentscope.memory import AgentScopeSessionHistoryMemory
+from agentscope.memory import InMemoryMemory
 from agentscope_runtime.engine.services.agent_state import InMemoryStateService
-from agentscope_runtime.engine.services.session_history import InMemorySessionHistoryService
 
 app = AgentApp(
     app_name="Friday",
@@ -404,15 +395,12 @@ app = AgentApp(
 async def init_func(self):
     """初始化状态和会话服务"""
     self.state_service = InMemoryStateService()
-    self.session_service = InMemorySessionHistoryService()
     await self.state_service.start()
-    await self.session_service.start()
 
 @app.shutdown
 async def shutdown_func(self):
     """清理服务"""
     await self.state_service.stop()
-    await self.session_service.stop()
 
 @app.query(framework="agentscope")
 async def query_func(
@@ -446,11 +434,7 @@ async def query_func(
         ),
         sys_prompt="You're a helpful assistant named Friday.",
         toolkit=toolkit,
-        memory=AgentScopeSessionHistoryMemory(
-            service=self.session_service,
-            session_id=session_id,
-            user_id=user_id,
-        ),
+        memory=InMemoryMemory(),
     )
     agent.set_console_output_enabled(enabled=False)
 

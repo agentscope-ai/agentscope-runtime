@@ -162,7 +162,7 @@ COPY --from=ws-scrcpy-builder /prod_bundle/ ./
 # 5. Copy configuration and startup scripts
 WORKDIR /
 COPY src/agentscope_runtime/sandbox/box/mobile/box/config/supervisord.conf.template /etc/supervisor/supervisord.conf.template
-COPY src/agentscope_runtime/sandbox/box/mobile/box/config/nginx.conf /etc/nginx/nginx.conf
+COPY src/agentscope_runtime/sandbox/box/mobile/box/config/nginx.conf.template /etc/nginx/nginx.conf.template
 COPY src/agentscope_runtime/sandbox/box/mobile/box/mcp_server_configs.json /app/python_app/mcp_server_configs.json
 COPY src/agentscope_runtime/sandbox/box/mobile/box/scripts/start.sh /start.sh
 RUN chmod +x /start.sh

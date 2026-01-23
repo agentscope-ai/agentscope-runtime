@@ -37,11 +37,23 @@ For more detailed change descriptions and the migration guide, please refer to: 
 
 ## What is AgentScope Runtime?
 
-**AgentScope Runtime** is a full-stack agent runtime that tackles two core challenges: **efficient agent deployment** and **secure sandbox execution**. It ships with foundational services such as short- and long-term memory plus agent-state persistence, along with hardened sandbox infrastructure. Whether you need to orchestrate production-grade agents or guarantee safe tool interactions, AgentScope Runtime provides developer-friendly workflows with complete observability.
+**AgentScope Runtime** is a full-stack runtime for AI agents designed to solve two core challenges: **efficient deployment & serving** and **secure sandboxed execution**.
 
-In V1.0, these services are exposed via an **adapter pattern**, enabling seamless integration with the native modules of different agent frameworks while preserving their native interfaces and behaviors, ensuring both compatibility and flexibility.
+In short:
 
-This cookbook walks you through building service-ready agent applications with **AgentScope Runtime**.
+$$
+\begin{aligned}
+\textbf{AgentScope Runtime}
+=&\ \textbf{Tool Sandboxing}
++\ \textbf{AaaS APIs}
++\ \textbf{Scalable Deployment} \\
+&+\ \textbf{Full-stack Observability (Logs/Traces)}
++\ \textbf{Framework Compatibility}
+\end{aligned}
+$$
+
+
+This cookbook guides you through building **service-ready**, production-grade agent applications with **AgentScope Runtime**.
 
 ## Core Architecture
 
@@ -56,10 +68,6 @@ Secure, isolated environments that let agents execute code, control browsers, ma
 **🛠️ Production‑Grade Tool Services (Tool)**
 
 Built on trusted third‑party API capabilities (such as Search, RAG, AIGC, Payment, etc.), these services are exposed through a unified SDK that provides standardized call interfaces, enabling agents to integrate and utilize these capabilities in a consistent way without worrying about differences or complexities in the underlying APIs.
-
-**🔌 Adapter Pattern (Adapter)**
-
-Adapts various runtime service modules (state management, session history, tool execution, etc.) to the native module interfaces of agent frameworks, allowing developers to directly invoke these capabilities while preserving native behaviors — enabling seamless integration and flexible extension.
 
 ## Why AgentScope Runtime?
 

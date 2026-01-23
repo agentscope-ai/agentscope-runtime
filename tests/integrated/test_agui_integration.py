@@ -25,6 +25,7 @@ from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
 from agentscope.tool import ToolResponse, Toolkit
 from agentscope.pipeline import stream_printing_messages
+from agentscope.memory import InMemoryMemory
 
 from langchain_core.messages import BaseMessage
 from langchain.agents import AgentState, create_agent
@@ -37,14 +38,8 @@ from langgraph.store.memory import InMemoryStore
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.runner import Runner
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agentscope_runtime.adapters.agentscope.memory import (
-    AgentScopeSessionHistoryMemory,
-)
 from agentscope_runtime.engine.services.agent_state import (
     InMemoryStateService,
-)
-from agentscope_runtime.engine.services.session_history import (
-    InMemorySessionHistoryService,
 )
 
 AGENTSCOPE_APP_PORT = 8091
@@ -79,10 +74,7 @@ def launch_agentscope_app():
     @agent_app.init
     async def init_func(runner: Runner):
         runner.state_service = InMemoryStateService()
-        runner.session_service = InMemorySessionHistoryService()
-
         await runner.state_service.start()
-        await runner.session_service.start()
 
     @agent_app.query(framework="agentscope")
     async def query_func(
@@ -112,11 +104,7 @@ def launch_agentscope_app():
             ),
             sys_prompt="You're a helpful assistant.",
             toolkit=toolkit,
-            memory=AgentScopeSessionHistoryMemory(
-                service=runner.session_service,
-                session_id=session_id,
-                user_id=user_id,
-            ),
+            memory=InMemoryMemory(),
             formatter=DashScopeChatFormatter(),
         )
         agent.set_console_output_enabled(enabled=False)

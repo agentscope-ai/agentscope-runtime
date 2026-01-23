@@ -23,8 +23,6 @@ parts:
         - file: en/tools/realtime_clients.md
   - file: en/service/service.md
     sections:
-      - file: en/service/session_history.md
-      - file: en/service/memory.md
       - file: en/service/sandbox.md
       - file: en/service/state.md
   - file: en/deployment.md
@@ -87,8 +85,6 @@ parts:
           - file: zh/tools/realtime_clients.md
   - file: zh/service/service.md
     sections:
-      - file: zh/service/session_history.md
-      - file: zh/service/memory.md
       - file: zh/service/sandbox.md
       - file: zh/service/state.md
   - file: zh/deployment.md

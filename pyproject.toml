@@ -1,6 +1,6 @@
 [project]
 name = "agentscope-runtime"
-version = "1.0.6a1"
+version = "1.1.0a1"
 description = "A production-ready runtime framework for agent applications, providing secure sandboxed execution environments and scalable deployment solutions with multi-framework support."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -11,7 +11,7 @@ dependencies = [
     "openai",
     "pydantic>=2.11.7",
     "requests>=2.32.4",
-    "agentscope>=1.0.9",
+    "agentscope>=1.0.12",
     "docker>=7.1.0",
     "redis>=6.0.0",
     "oss2>=2.19.1",
@@ -74,7 +74,6 @@ ext = [
     "alibabacloud-agentrun20250910>=2.0.1",
     "alibabacloud_tea_openapi>=0.4.0",
     "alibabacloud-fc20230330>=4.4.0",
-    "tablestore-for-agent-memory>=1.1.0",
     "langchain-community>=0.3.27",
     "wuying-agentbay-sdk>=0.5.0,<0.13.0",
     "alipay-sdk-python",

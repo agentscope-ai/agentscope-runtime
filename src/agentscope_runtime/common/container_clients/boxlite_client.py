@@ -164,22 +164,30 @@ class BoxliteClient(BaseClient):
             # Convert volumes to BoxLite format
             volume_list = []
             if volumes:
-                for vol in volumes:
-                    if isinstance(vol, (list, tuple)) and len(vol) >= 2:
-                        host_path = vol[0]
-                        guest_path = vol[1]
-                        read_only = len(vol) > 2 and vol[2] in (
-                            "ro",
-                            "readonly",
-                            True,
-                        )
+                if isinstance(volumes, dict):
+                    for host_path, spec in volumes.items():
+                        guest_path = spec.get("bind")
+                        mode = (spec.get("mode") or "rw").lower()
+                        read_only = mode in ("ro", "readonly")
                         volume_list.append(
-                            (
-                                host_path,
-                                guest_path,
-                                "ro" if read_only else "rw",
-                            ),
+                            (host_path, guest_path, read_only),
                         )
+                elif isinstance(volumes, (list, tuple)):
+                    for vol in volumes:
+                        if isinstance(vol, (list, tuple)) and len(vol) >= 2:
+                            host_path, guest_path = vol[0], vol[1]
+                            third = vol[2] if len(vol) > 2 else "rw"
+                            read_only = third is True or str(
+                                third,
+                            ).lower() in (
+                                "ro",
+                                "readonly",
+                                "true",
+                                "1",
+                            )
+                            volume_list.append(
+                                (host_path, guest_path, read_only),
+                            )
 
             # Convert ports to BoxLite format
             port_list = []

@@ -78,4 +78,4 @@ RUN pip cache purge \
     && npm cache clean --force \
     && rm -rf ~/.npm/_cacache
 
-CMD ["/bin/sh", "-c", "envsubst '$SECRET_TOKEN' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf"]
+CMD ["/bin/sh", "-c", "export SECRET_TOKEN=${SECRET_TOKEN:-secret_token123} NGINX_TIMEOUT=${NGINX_TIMEOUT:-60}; envsubst '$SECRET_TOKEN $NGINX_TIMEOUT' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf"]

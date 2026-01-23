@@ -43,6 +43,7 @@ class BrowserSandbox(GUIMixin, BaseSandbox):
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.BROWSER,
+        workspace_dir: Optional[str] = None,
     ):
         super().__init__(
             sandbox_id,
@@ -50,6 +51,7 @@ class BrowserSandbox(GUIMixin, BaseSandbox):
             base_url,
             bearer_token,
             sandbox_type,
+            workspace_dir,
         )
 
     def browser_close(self):
@@ -316,6 +318,7 @@ class BrowserSandboxAsync(GUIMixin, AsyncGUIMixin, BaseSandboxAsync):
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.BROWSER_ASYNC,
+        workspace_dir: Optional[str] = None,
     ):
         super().__init__(
             sandbox_id,
@@ -323,6 +326,7 @@ class BrowserSandboxAsync(GUIMixin, AsyncGUIMixin, BaseSandboxAsync):
             base_url,
             bearer_token,
             sandbox_type,
+            workspace_dir,
         )
 
     async def browser_close(self):

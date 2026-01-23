@@ -13,8 +13,6 @@ from ..model import ContainerModel
 
 DEFAULT_TIMEOUT = 60
 
-logging.getLogger("httpx").setLevel(logging.CRITICAL)
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 

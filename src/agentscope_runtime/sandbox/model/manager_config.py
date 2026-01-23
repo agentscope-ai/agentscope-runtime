@@ -20,7 +20,7 @@ class SandboxManagerEnvConfig(BaseModel):
         description="Type of file system to use: 'local' or 'oss'.",
     )
     storage_folder: Optional[str] = Field(
-        "runtime_sandbox_storage",
+        None,
         description="Folder path in storage.",
     )
     redis_enabled: bool = Field(
@@ -51,6 +51,15 @@ class SandboxManagerEnvConfig(BaseModel):
         description="Read-only mount mapping: host_path -> container_path. "
         "Example: { '/data/shared': '/mnt/shared', '/etc/timezone': "
         "'/etc/timezone' }",
+    )
+
+    allow_mount_dir: bool = Field(
+        default=False,
+        description=(
+            "Whether to allow passing `mount_dir`. "
+            "Disable by default to prevent mounting server-local paths when "
+            "running as a manager service."
+        ),
     )
 
     port_range: Tuple[int, int] = Field(
@@ -237,6 +246,29 @@ class SandboxManagerEnvConfig(BaseModel):
     fc_log_store: Optional[str] = Field(
         None,
         description="Log store for FC.",
+    )
+
+    # Heartbeat related
+    heartbeat_timeout: int = Field(
+        default=300,
+        description="Idle timeout in seconds before session is reaped.",
+        gt=0,
+    )
+    heartbeat_scan_interval: int = Field(
+        default=0,
+        description="Heartbeat scan interval in seconds. 0 disables scanning.",
+        ge=0,
+    )
+    heartbeat_lock_ttl: int = Field(
+        default=120,
+        description="Redis distributed lock TTL in seconds for reaping.",
+        gt=0,
+    )
+    max_sandbox_instances: int = Field(
+        default=0,
+        description="Maximum number of sandbox instances allowed. "
+        "0 means unlimited.",
+        ge=0,
     )
 
     @model_validator(mode="after")

@@ -251,7 +251,7 @@ async def call_ag_ui_endpoint():
 
 Response example:
 
-```json
+```
 data: {"type": "RUN_STARTED", "thread_id": "thread_1234", "run_id": "run_4567"}
 
 data: {"type": "TOOL_CALL_START", "tool_call_id": "call_c51915f8d0ab4c6aac85e1", "tool_call_name": "get_weather", "message_id": "msg_57562f7d-e96d-4de9-8899-1334fc101e23_0"}
