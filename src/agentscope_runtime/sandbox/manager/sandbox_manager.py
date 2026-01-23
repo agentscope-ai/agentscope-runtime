@@ -1418,8 +1418,6 @@ class SandboxManager(HeartbeatMixin):
                 # env_ids should be recycled only.
                 continue
 
-            recycled_old_names.append(old_name)
-
             sandbox_type = old.sandbox_type or self.default_type[0].value
             meta = {
                 "session_ctx_id": session_ctx_id,
@@ -1446,6 +1444,7 @@ class SandboxManager(HeartbeatMixin):
                 )
                 continue
 
+            recycled_old_names.append(old_name)
             new_container_names.append(new_name)
 
             # ensure new container is marked RUNNING + bound

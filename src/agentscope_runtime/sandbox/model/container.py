@@ -117,12 +117,17 @@ class ContainerModel(BaseModel):
 
     @model_validator(mode="after")
     def _compat_and_defaults(self):
-        """
-        Compatibility layer:
-        - If session_ctx_id not provided, read from meta['session_ctx_id'].
-        - Optionally write session_ctx_id back into meta to keep old code
-            working.
-        - Ensure updated_at is always populated.
+        """Compatibility layer for ContainerModel.
+
+        This validator ensures backward compatibility and default value
+        population:
+        - Reads session_ctx_id from meta if not provided
+        - Writes session_ctx_id back to meta for old code compatibility
+        - Ensures updated_at is always populated
+
+        Returns:
+            `ContainerModel`:
+                The validated model instance
         """
         # normalize meta
         if self.meta is None:
