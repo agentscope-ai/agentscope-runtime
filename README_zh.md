@@ -309,7 +309,7 @@ from agentscope_runtime.sandbox import BaseSandboxAsync
 
 async with BaseSandboxAsync() as box:
     # 默认使用镜像 `agentscope/runtime-sandbox-base:latest` 从 DockerHub 拉取
-    print(await box.list_tools())  # 列出所有可用工具
+    print(await box.list_tools_async())  # 列出所有可用工具
     print(await box.run_ipython_cell(code="print('你好')"))  # 在沙箱中运行 Python 代码
     print(await box.run_shell_command(command="echo hello"))  # 在沙箱中运行 Shell 命令
     input("按 Enter 键继续...")
@@ -338,7 +338,7 @@ from agentscope_runtime.sandbox import GuiSandboxAsync
 
 async with GuiSandboxAsync() as box:
     # 默认使用镜像 `agentscope/runtime-sandbox-gui:latest` 从 DockerHub 拉取
-    print(await box.list_tools())  # 列出所有可用工具
+    print(await box.list_tools_async())  # 列出所有可用工具
     print(box.desktop_url)  # Web 桌面访问地址
     print(await box.computer_use(action="get_cursor_position"))  # 获取鼠标位置坐标
     print(await box.computer_use(action="get_screenshot"))  # 截取桌面截图
@@ -367,7 +367,7 @@ from agentscope_runtime.sandbox import BrowserSandboxAsync
 
 async with BrowserSandboxAsync() as box:
     # 默认使用镜像 `agentscope/runtime-sandbox-browser:latest` 从 DockerHub 拉取
-    print(await box.list_tools())  # 列出所有可用工具
+    print(await box.list_tools_async())  # 列出所有可用工具
     print(box.desktop_url)  # Web 桌面访问地址
     await box.browser_navigate("https://www.google.com/")  # 打开网页
     input("按 Enter 键继续...")
@@ -395,7 +395,7 @@ from agentscope_runtime.sandbox import FilesystemSandboxAsync
 
 async with FilesystemSandboxAsync() as box:
     # 默认使用镜像 `agentscope/runtime-sandbox-filesystem:latest` 从 DockerHub 拉取
-    print(await box.list_tools())  # 列出所有可用工具
+    print(await box.list_tools_async())  # 列出所有可用工具
     print(box.desktop_url)  # Web 桌面访问地址
     await box.create_directory("test")  # 创建一个目录
     input("按 Enter 键继续...")
@@ -443,7 +443,7 @@ from agentscope_runtime.sandbox import MobileSandboxAsync
 
 async with MobileSandboxAsync() as box:
     # 默认使用镜像 'agentscope/runtime-sandbox-mobile:latest' 从 DockerHub 拉取
-    print(await box.list_tools())  # 列出所有可用工具
+    print(await box.list_tools_async())  # 列出所有可用工具
     print(await box.mobile_get_screen_resolution())  # 获取屏幕分辨率
     print(await box.mobile_tap([500, 1000]))  # 在坐标 (500, 1000) 点击
     print(await box.mobile_input_text("来自 AgentScope 的问候！"))  # 输入文本

@@ -307,7 +307,7 @@ from agentscope_runtime.sandbox import BaseSandboxAsync
 
 async with BaseSandboxAsync() as box:
     # Default image is `agentscope/runtime-sandbox-base:latest`
-    print(await box.list_tools())  # List all available tools
+    print(await box.list_tools_async())  # List all available tools
     print(await box.run_ipython_cell(code="print('hi')"))  # Run Python code
     print(await box.run_shell_command(command="echo hello"))  # Run shell command
     input("Press Enter to continue...")
@@ -336,7 +336,7 @@ from agentscope_runtime.sandbox import GuiSandboxAsync
 
 async with GuiSandboxAsync() as box:
     # Default image is `agentscope/runtime-sandbox-gui:latest`
-    print(await box.list_tools())  # List all available tools
+    print(await box.list_tools_async())  # List all available tools
     print(box.desktop_url)  # Web desktop access URL
     print(await box.computer_use(action="get_cursor_position"))  # Get mouse cursor position
     print(await box.computer_use(action="get_screenshot"))  # Capture screenshot
@@ -365,7 +365,7 @@ from agentscope_runtime.sandbox import BrowserSandboxAsync
 
 async with BrowserSandboxAsync() as box:
     # Default image is `agentscope/runtime-sandbox-browser:latest`
-    print(await box.list_tools())  # List all available tools
+    print(await box.list_tools_async())  # List all available tools
     print(box.desktop_url)  # Web desktop access URL
     await box.browser_navigate("https://www.google.com/")  # Open a webpage
     input("Press Enter to continue...")
@@ -393,7 +393,7 @@ from agentscope_runtime.sandbox import FilesystemSandboxAsync
 
 async with FilesystemSandboxAsync() as box:
     # Default image is `agentscope/runtime-sandbox-filesystem:latest`
-    print(await box.list_tools())  # List all available tools
+    print(await box.list_tools_async())  # List all available tools
     print(box.desktop_url)  # Web desktop access URL
     await box.create_directory("test")  # Create a directory
     input("Press Enter to continue...")
@@ -439,7 +439,7 @@ from agentscope_runtime.sandbox import MobileSandboxAsync
 
 async with MobileSandboxAsync() as box:
     # Default image is 'agentscope/runtime-sandbox-mobile:latest'
-    print(await box.list_tools())  # List all available tools
+    print(await box.list_tools_async())  # List all available tools
     print(await box.mobile_get_screen_resolution())  # Get the screen resolution
     print(await box.mobile_tap([500, 1000]))  # Tap at coordinate (500, 1000)
     print(await box.mobile_input_text("Hello from AgentScope!"))  # Input text
