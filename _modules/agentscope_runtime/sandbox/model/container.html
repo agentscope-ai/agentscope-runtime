@@ -626,14 +626,30 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <h1>Source code for agentscope_runtime.sandbox.model.container</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">ConfigDict</span><span class="p">,</span> <span class="n">model_validator</span>
+
+
+<div class="viewcode-block" id="ContainerState">
+<a class="viewcode-back" href="../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.model.container.ContainerState">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ContainerState</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+    <span class="n">WARM</span> <span class="o">=</span> <span class="s2">&quot;warm&quot;</span>
+    <span class="n">RUNNING</span> <span class="o">=</span> <span class="s2">&quot;running&quot;</span>
+    <span class="n">RECYCLED</span> <span class="o">=</span> <span class="s2">&quot;recycled&quot;</span>
+    <span class="n">ERROR</span> <span class="o">=</span> <span class="s2">&quot;error&quot;</span>
+    <span class="n">RELEASED</span> <span class="o">=</span> <span class="s2">&quot;released&quot;</span></div>
+
 
 
 <div class="viewcode-block" id="ContainerModel">
 <a class="viewcode-back" href="../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.model.container.ContainerModel">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ContainerModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;allow&quot;</span><span class="p">)</span>
+
     <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="o">...</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Unique identifier for the session&quot;</span><span class="p">,</span>
@@ -688,11 +704,82 @@ body.preview-active {
         <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
     <span class="p">)</span>
 
-<div class="viewcode-block" id="ContainerModel.Config">
-<a class="viewcode-back" href="../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.model.container.ContainerModel.Config">[docs]</a>
-    <span class="k">class</span><span class="w"> </span><span class="nc">Config</span><span class="p">:</span>
-        <span class="n">extra</span> <span class="o">=</span> <span class="s2">&quot;allow&quot;</span></div>
-</div>
+    <span class="n">sandbox_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Sandbox type (e.g. base/browser/...). Usually &quot;</span>
+        <span class="s2">&quot;SandboxType.value.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">state</span><span class="p">:</span> <span class="n">ContainerState</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">ContainerState</span><span class="o">.</span><span class="n">RUNNING</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Lifecycle state&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Pull session_ctx_id up from meta for easier indexing/logic</span>
+    <span class="n">session_ctx_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Bound session context id &quot;</span>
+        <span class="s2">&quot;(copied from meta[&#39;session_ctx_id&#39;] for compatibility)&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Heartbeat timestamp (unix seconds)</span>
+    <span class="n">last_active_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Last activity timestamp (unix seconds)&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Recycle/release timestamps</span>
+    <span class="n">recycled_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Recycled timestamp (unix seconds)&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">released_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Released timestamp (unix seconds)&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">updated_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Last model update timestamp (unix seconds)&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">recycle_reason</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Reason for recycle&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compat_and_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compatibility layer for ContainerModel.</span>
+
+<span class="sd">        This validator ensures backward compatibility and default value</span>
+<span class="sd">        population:</span>
+<span class="sd">        - Reads session_ctx_id from meta if not provided</span>
+<span class="sd">        - Writes session_ctx_id back to meta for old code compatibility</span>
+<span class="sd">        - Ensures updated_at is always populated</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            `ContainerModel`:</span>
+<span class="sd">                The validated model instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># normalize meta</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># meta -&gt; session_ctx_id</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_ctx_id</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_ctx_id&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">v</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">session_ctx_id</span> <span class="o">=</span> <span class="n">v</span>
+
+        <span class="c1"># session_ctx_id -&gt; meta</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_ctx_id</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s2">&quot;session_ctx_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session_ctx_id</span><span class="p">)</span>
+
+        <span class="c1"># default updated_at</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">updated_at</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">updated_at</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
 
 </pre></div>
         </article>
@@ -711,7 +798,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-22</div>
+              Last updated on 2026-01-23</div>
           </div>
           <div class="right-details">
             <div class="icons">

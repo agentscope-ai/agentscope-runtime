@@ -734,8 +734,9 @@ body.preview-active {
             <span class="n">fc_log_project</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">FC_LOG_PROJECT</span><span class="p">,</span>
             <span class="n">fc_log_store</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">FC_LOG_STORE</span><span class="p">,</span>
             <span class="n">heartbeat_timeout</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">HEARTBEAT_TIMEOUT</span><span class="p">,</span>
-            <span class="n">heartbeat_scan_interval</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">HEARTBEAT_SCAN_INTERVAL</span><span class="p">,</span>
             <span class="n">heartbeat_lock_ttl</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">HEARTBEAT_LOCK_TTL</span><span class="p">,</span>
+            <span class="n">watcher_scan_interval</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">WATCHER_SCAN_INTERVAL</span><span class="p">,</span>
+            <span class="n">released_key_ttl</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">RELEASE_KET_TTL</span><span class="p">,</span>
             <span class="n">max_sandbox_instances</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MAX_SANDBOX_INSTANCES</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">_config</span></div>
@@ -856,7 +857,7 @@ body.preview-active {
     <span class="n">register_routes</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">_sandbox_manager</span><span class="p">)</span>
 
     <span class="c1"># Start heartbeat watcher on server side</span>
-    <span class="n">_sandbox_manager</span><span class="o">.</span><span class="n">start_heartbeat_watcher</span><span class="p">()</span></div>
+    <span class="n">_sandbox_manager</span><span class="o">.</span><span class="n">start_watcher</span><span class="p">()</span></div>
 
 
 
@@ -871,7 +872,7 @@ body.preview-active {
         <span class="k">return</span>
 
     <span class="c1"># stop watcher first</span>
-    <span class="n">_sandbox_manager</span><span class="o">.</span><span class="n">stop_heartbeat_watcher</span><span class="p">()</span>
+    <span class="n">_sandbox_manager</span><span class="o">.</span><span class="n">stop_watcher</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="n">settings</span><span class="o">.</span><span class="n">AUTO_CLEANUP</span><span class="p">:</span>
         <span class="n">_sandbox_manager</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
@@ -1027,13 +1028,6 @@ body.preview-active {
 
     <span class="n">level</span> <span class="o">=</span> <span class="n">level_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">log_level</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
 
-    <span class="c1"># Reconfigure logging</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
-        <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span>
-        <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> - </span><span class="si">%(name)s</span><span class="s2"> - </span><span class="si">%(levelname)s</span><span class="s2"> - </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># This will reconfigure existing loggers</span>
-    <span class="p">)</span>
-
     <span class="c1"># Update the logger for this module</span>
     <span class="k">global</span> <span class="n">logger</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
@@ -1113,7 +1107,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-22</div>
+              Last updated on 2026-01-23</div>
           </div>
           <div class="right-details">
             <div class="icons">

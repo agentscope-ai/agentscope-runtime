@@ -808,17 +808,22 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 <td><p><code class="docutils literal notranslate"><span class="pre">300</span></code></p></td>
 <td><p>当某个 <code class="docutils literal notranslate"><span class="pre">session_ctx_id</span></code> 在该时间内没有发生任何“触达事件”（如 list_tools/call_tool/check_health/add_mcp_servers），会被判定为闲置，可被扫描任务回收（reap）。</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">HEARTBEAT_SCAN_INTERVAL</span></code></p></td>
-<td><p>心跳扫描间隔（秒）</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p></td>
-<td><p>后台扫描任务的执行间隔。设为 <code class="docutils literal notranslate"><span class="pre">0</span></code> 表示禁用后台 watcher（可改用外部 cron 手动调用 <code class="docutils literal notranslate"><span class="pre">scan_heartbeat_once()</span></code>）。</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">HEARTBEAT_LOCK_TTL</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">HEARTBEAT_LOCK_TTL</span></code></p></td>
 <td><p>心跳扫描/回收分布式锁 TTL（秒）</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">120</span></code></p></td>
 <td><p>多实例部署时用于互斥回收同一 <code class="docutils literal notranslate"><span class="pre">session_ctx_id</span></code> 的锁过期时间，避免重复回收。应大于一次回收的典型耗时；过小可能导致锁过期后被其他实例重复回收。</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">MAX_SANDBOX_INSTANCES</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">WATCHER_SCAN_INTERVAL</span></code></p></td>
+<td><p>后台 watcher 扫描间隔（秒）</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+<td><p>后台 watcher 主循环间隔。watcher 会执行： 1) heartbeat 扫描与回收（reap） 2) 预热池（pool）补齐 3) 过期的 <code class="docutils literal notranslate"><span class="pre">RELEASED</span></code> 容器记录清理 设为 <code class="docutils literal notranslate"><span class="pre">0</span></code> 表示禁用 watcher（也可以用外部 cron 定时调用相关 scan 函数）。</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RELEASED_KEY_TTL</span></code></p></td>
+<td><p>RELEASED 容器记录保留时间（秒）</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">3600</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">container_mapping</span></code> 中 <code class="docutils literal notranslate"><span class="pre">state=RELEASED</span></code> 的记录在超过该 TTL 后会被删除，防止键无限增长。设为 <code class="docutils literal notranslate"><span class="pre">0</span></code> 表示不清理。</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">MAX_SANDBOX_INSTANCES</span></code></p></td>
 <td><p>最大沙盒实例数（容器总数上限）</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p></td>
 <td><p>用于限制 SandboxManager 可创建/维持的沙盒容器总数量。当当前容器数达到或超过该值时，新的创建请求会被拒绝（例如返回 <code class="docutils literal notranslate"><span class="pre">None</span></code> 或抛异常，取决于实现）。 取值说明： • <code class="docutils literal notranslate"><span class="pre">0</span></code>：不限制 • <code class="docutils literal notranslate"><span class="pre">N&gt;0</span></code>：最多 <code class="docutils literal notranslate"><span class="pre">N</span></code> 个容器实例 示例： • <code class="docutils literal notranslate"><span class="pre">MAX_SANDBOX_INSTANCES=20</span></code></p></td>
@@ -1588,7 +1593,7 @@ runtime-sandbox-builder<span class="w"> </span>mobile
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-22</div>
+              Last updated on 2026-01-23</div>
           </div>
           <div class="right-details">
             <div class="icons">

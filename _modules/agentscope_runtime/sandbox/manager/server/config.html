@@ -730,13 +730,13 @@ body.preview-active {
 
     <span class="c1"># Heartbeat related</span>
     <span class="n">HEARTBEAT_TIMEOUT</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span>
-    <span class="n">HEARTBEAT_SCAN_INTERVAL</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># 0 to disable heartbeat check</span>
     <span class="n">HEARTBEAT_LOCK_TTL</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">120</span>
+    <span class="n">WATCHER_SCAN_INTERVAL</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># 0 to disable watcher</span>
+    <span class="n">RELEASE_KET_TTL</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3600</span>
 
     <span class="n">MAX_SANDBOX_INSTANCES</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># 0 means unlimited</span>
 
     <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span>
-        <span class="n">case_sensitive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">extra</span><span class="o">=</span><span class="s2">&quot;allow&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -810,7 +810,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-22</div>
+              Last updated on 2026-01-23</div>
           </div>
           <div class="right-details">
             <div class="icons">

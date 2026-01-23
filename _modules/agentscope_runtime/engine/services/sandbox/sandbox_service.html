@@ -640,11 +640,41 @@ body.preview-active {
 <span class="k">class</span><span class="w"> </span><span class="nc">SandboxService</span><span class="p">(</span><span class="n">ServiceWithLifecycleManager</span><span class="p">):</span>
 <div class="viewcode-block" id="SandboxService.__init__">
 <a class="viewcode-back" href="../../../../../zh/api/engine.html#agentscope_runtime.engine.services.sandbox.sandbox_service.SandboxService.__init__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bearer_token</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">base_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">bearer_token</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">drain_on_stop</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a SandboxService.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            base_url:</span>
+<span class="sd">                Sandbox manager API base URL. If None, runs in embedded mode.</span>
+<span class="sd">            bearer_token:</span>
+<span class="sd">                Bearer token used to authenticate with the sandbox manager API.</span>
+<span class="sd">            drain_on_stop:</span>
+<span class="sd">                Whether to drain (release) all sandboxes associated with this</span>
+<span class="sd">                service instance when `stop()` is called.</span>
+
+<span class="sd">                - True (default): `stop()` will iterate over all known session</span>
+<span class="sd">                  mappings and release all non-AgentBay sandbox environments.</span>
+<span class="sd">                  This helps prevent resource leaks when the service shuts</span>
+<span class="sd">                  down.</span>
+<span class="sd">                - False: `stop()` will NOT release sessions/environments. Use</span>
+<span class="sd">                  this when sandboxes are meant to outlive the service process</span>
+<span class="sd">                  (e.g., managed elsewhere).</span>
+
+<span class="sd">                Note: In embedded mode (`base_url is None`), `stop()` will</span>
+<span class="sd">                  still  call `manager_api.cleanup()` to tear down embedded</span>
+<span class="sd">                  resources.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">manager_api</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">base_url</span> <span class="o">=</span> <span class="n">base_url</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bearer_token</span> <span class="o">=</span> <span class="n">bearer_token</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_health</span> <span class="o">=</span> <span class="kc">False</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_health</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drain_on_stop</span> <span class="o">=</span> <span class="n">drain_on_stop</span></div>
 
 
 <div class="viewcode-block" id="SandboxService.start">
@@ -666,14 +696,16 @@ body.preview-active {
             <span class="bp">self</span><span class="o">.</span><span class="n">_health</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="k">return</span>
 
-        <span class="n">session_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">manager_api</span><span class="o">.</span><span class="n">list_session_keys</span><span class="p">()</span>
-
-        <span class="k">if</span> <span class="n">session_keys</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">session_ctx_id</span> <span class="ow">in</span> <span class="n">session_keys</span><span class="p">:</span>
-                <span class="n">env_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">manager_api</span><span class="o">.</span><span class="n">get_session_mapping</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">env_ids</span><span class="p">:</span>
-                    <span class="k">for</span> <span class="n">env_id</span> <span class="ow">in</span> <span class="n">env_ids</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">manager_api</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">env_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">drain_on_stop</span><span class="p">:</span>
+            <span class="n">session_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">manager_api</span><span class="o">.</span><span class="n">list_session_keys</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">session_keys</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">session_ctx_id</span> <span class="ow">in</span> <span class="n">session_keys</span><span class="p">:</span>
+                    <span class="n">env_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">manager_api</span><span class="o">.</span><span class="n">get_session_mapping</span><span class="p">(</span>
+                        <span class="n">session_ctx_id</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">env_ids</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">env_id</span> <span class="ow">in</span> <span class="n">env_ids</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">manager_api</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">env_id</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_url</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># Embedded mode</span>
@@ -868,7 +900,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-22</div>
+              Last updated on 2026-01-23</div>
           </div>
           <div class="right-details">
             <div class="icons">

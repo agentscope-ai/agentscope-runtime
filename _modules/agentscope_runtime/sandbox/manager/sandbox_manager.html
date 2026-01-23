@@ -660,6 +660,7 @@ body.preview-active {
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ContainerModel</span><span class="p">,</span>
+    <span class="n">ContainerState</span><span class="p">,</span>
     <span class="n">SandboxManagerEnvConfig</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxRegistry</span>
@@ -858,24 +859,6 @@ body.preview-active {
                 <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="p">,</span>
                 <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;session_mapping&quot;</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="c1"># Heartbeat mapping:</span>
-            <span class="c1">#   Key:   session_ctx_id (str)</span>
-            <span class="c1">#   Value: last_active_timestamp (float, unix seconds)</span>
-            <span class="c1"># Used to determine whether a session is idle and should be reaped.</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">heartbeat_mapping</span> <span class="o">=</span> <span class="n">RedisMapping</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="p">,</span>
-                <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;heartbeat_mapping&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="c1"># Recycled/restore-required mapping:</span>
-            <span class="c1">#   Key:   session_ctx_id (str)</span>
-            <span class="c1">#   Value: recycled_timestamp (float, unix seconds) or truthy</span>
-            <span class="c1">#       marker</span>
-            <span class="c1"># Set when a session is reaped. Next user request should trigger</span>
-            <span class="c1"># &quot;restore session&quot; flow (stubbed in this iteration).</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">recycled_mapping</span> <span class="o">=</span> <span class="n">RedisMapping</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="p">,</span>
-                <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;recycled_mapping&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
 
             <span class="c1"># Init multi sand box pool</span>
             <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_type</span><span class="p">:</span>
@@ -885,9 +868,6 @@ body.preview-active {
             <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span> <span class="o">=</span> <span class="n">InMemoryMapping</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">session_mapping</span> <span class="o">=</span> <span class="n">InMemoryMapping</span><span class="p">()</span>
-            <span class="c1"># See comments in Redis branch for semantics.</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">heartbeat_mapping</span> <span class="o">=</span> <span class="n">InMemoryMapping</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">recycled_mapping</span> <span class="o">=</span> <span class="n">InMemoryMapping</span><span class="p">()</span>
 
             <span class="c1"># Init multi sand box pool</span>
             <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_type</span><span class="p">:</span>
@@ -914,16 +894,9 @@ body.preview-active {
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="o">=</span> <span class="n">LocalStorage</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_init_container_pool</span><span class="p">()</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">heartbeat_timeout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">heartbeat_timeout</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">heartbeat_scan_interval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">heartbeat_scan_interval</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">heartbeat_lock_ttl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">heartbeat_lock_ttl</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_heartbeat_stop_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_heartbeat_thread</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_heartbeat_thread_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_watcher_stop_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_watcher_thread</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_watcher_thread_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="p">))</span></div>
 
@@ -935,7 +908,7 @@ body.preview-active {
         <span class="p">)</span>
         <span class="c1"># local mode: watcher starts</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">http_session</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">start_heartbeat_watcher</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start_watcher</span><span class="p">()</span>
 
         <span class="k">return</span> <span class="bp">self</span>
 
@@ -943,7 +916,7 @@ body.preview-active {
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
             <span class="s2">&quot;Exiting SandboxManager context (sync). Cleaning up resources.&quot;</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stop_heartbeat_watcher</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop_watcher</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
 
@@ -972,7 +945,7 @@ body.preview-active {
         <span class="p">)</span>
         <span class="c1"># local mode: watcher starts</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">http_session</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">start_heartbeat_watcher</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start_watcher</span><span class="p">()</span>
 
         <span class="k">return</span> <span class="bp">self</span>
 
@@ -980,7 +953,7 @@ body.preview-active {
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
             <span class="s2">&quot;Exiting SandboxManager context (async). Cleaning up resources.&quot;</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stop_heartbeat_watcher</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop_watcher</span><span class="p">()</span>
 
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">cleanup_async</span><span class="p">()</span>
 
@@ -999,6 +972,7 @@ body.preview-active {
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error closing httpx_client: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_generate_container_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_id</span><span class="p">):</span>
+        <span class="c1"># TODO: refactor this and mapping, use sandbox_id as identity</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">prefix</span><span class="si">}{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_make_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
@@ -1101,134 +1075,148 @@ body.preview-active {
 
         <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_init_container_pool</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Init runtime pool</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_type</span><span class="p">:</span>
-            <span class="n">queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_queues</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
-            <span class="k">while</span> <span class="n">queue</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span><span class="p">:</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="n">container_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">sandbox_type</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-                    <span class="n">container_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-                        <span class="n">container_name</span><span class="p">,</span>
-                    <span class="p">)</span>
-                    <span class="k">if</span> <span class="n">container_model</span><span class="p">:</span>
-                        <span class="c1"># Check the pool size again to avoid race condition</span>
-                        <span class="k">if</span> <span class="n">queue</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span><span class="p">:</span>
-                            <span class="n">queue</span><span class="o">.</span><span class="n">enqueue</span><span class="p">(</span><span class="n">container_model</span><span class="p">)</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="c1"># The pool size has reached the limit</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">container_name</span><span class="p">)</span>
-                            <span class="k">break</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Failed to create container for pool&quot;</span><span class="p">)</span>
-                        <span class="k">break</span>
-                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error initializing runtime pool: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-                    <span class="k">break</span>
-
-<div class="viewcode-block" id="SandboxManager.start_heartbeat_watcher">
-<a class="viewcode-back" href="../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager.start_heartbeat_watcher">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">start_heartbeat_watcher</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<div class="viewcode-block" id="SandboxManager.start_watcher">
+<a class="viewcode-back" href="../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager.start_watcher">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start_watcher</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Start background heartbeat scanning thread.</span>
 <span class="sd">        Default: not started automatically. Caller must invoke explicitly.</span>
-<span class="sd">        If heartbeat_scan_interval == 0 =&gt; disabled, returns False.</span>
+<span class="sd">        If watcher_scan_interval == 0 =&gt; disabled, returns False.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">interval</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">heartbeat_scan_interval</span><span class="p">)</span>
+        <span class="n">interval</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">watcher_scan_interval</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">interval</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="s2">&quot;heartbeat watcher disabled (heartbeat_scan_interval &lt;= 0)&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Watcher disabled (watcher_scan_interval &lt;= 0)&quot;</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="kc">False</span>
 
-        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_heartbeat_thread_lock</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_heartbeat_thread</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_heartbeat_thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">():</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_watcher_thread_lock</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_watcher_thread</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_watcher_thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">():</span>
                 <span class="k">return</span> <span class="kc">True</span>  <span class="c1"># already running</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">_heartbeat_stop_event</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_watcher_stop_event</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
 
             <span class="k">def</span><span class="w"> </span><span class="nf">_loop</span><span class="p">():</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;heartbeat watcher started, interval=</span><span class="si">{</span><span class="n">interval</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
-                <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_heartbeat_stop_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Watcher started, interval=</span><span class="si">{</span><span class="n">interval</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+                <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_watcher_stop_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
                     <span class="k">try</span><span class="p">:</span>
-                        <span class="n">metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scan_heartbeat_once</span><span class="p">()</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;heartbeat scan metrics: </span><span class="si">{</span><span class="n">metrics</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="n">hb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scan_heartbeat_once</span><span class="p">()</span>
+                        <span class="n">pool</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scan_pool_once</span><span class="p">()</span>
+                        <span class="n">gc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scan_released_cleanup_once</span><span class="p">()</span>
+
+                        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                            <span class="s2">&quot;watcher metrics: &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;heartbeat=</span><span class="si">{</span><span class="n">hb</span><span class="si">}</span><span class="s2">, pool=</span><span class="si">{</span><span class="n">pool</span><span class="si">}</span><span class="s2">, released_gc=</span><span class="si">{</span><span class="n">gc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="p">)</span>
                     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;heartbeat watcher loop error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Watcher loop error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">())</span>
 
                     <span class="c1"># wait with stop support</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_heartbeat_stop_event</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">interval</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_watcher_stop_event</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">interval</span><span class="p">)</span>
 
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;heartbeat watcher stopped&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Watcher stopped&quot;</span><span class="p">)</span>
 
             <span class="n">t</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
                 <span class="n">target</span><span class="o">=</span><span class="n">_loop</span><span class="p">,</span>
-                <span class="n">name</span><span class="o">=</span><span class="s2">&quot;heartbeat-watcher&quot;</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">&quot;watcher&quot;</span><span class="p">,</span>
                 <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_heartbeat_thread</span> <span class="o">=</span> <span class="n">t</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_watcher_thread</span> <span class="o">=</span> <span class="n">t</span>
             <span class="n">t</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
             <span class="k">return</span> <span class="kc">True</span></div>
 
 
-<div class="viewcode-block" id="SandboxManager.stop_heartbeat_watcher">
-<a class="viewcode-back" href="../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager.stop_heartbeat_watcher">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">stop_heartbeat_watcher</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">join_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="SandboxManager.stop_watcher">
+<a class="viewcode-back" href="../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager.stop_watcher">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop_watcher</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">join_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Stop background watcher thread (if running).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_heartbeat_thread_lock</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_heartbeat_stop_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
-            <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_heartbeat_thread</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_watcher_thread_lock</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_watcher_stop_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_watcher_thread</span>
 
         <span class="k">if</span> <span class="n">t</span> <span class="ow">and</span> <span class="n">t</span><span class="o">.</span><span class="n">is_alive</span><span class="p">():</span>
             <span class="n">t</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">join_timeout</span><span class="p">)</span>
 
-        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_heartbeat_thread_lock</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_heartbeat_thread</span> <span class="ow">is</span> <span class="n">t</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_heartbeat_thread</span> <span class="o">=</span> <span class="kc">None</span></div>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_watcher_thread_lock</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_watcher_thread</span> <span class="ow">is</span> <span class="n">t</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_watcher_thread</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 <div class="viewcode-block" id="SandboxManager.cleanup">
 <a class="viewcode-back" href="../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager.cleanup">[docs]</a>
     <span class="nd">@remote_wrapper</span><span class="p">()</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-            <span class="s2">&quot;Cleaning up resources.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Destroy all non-terminal containers managed by this SandboxManager.</span>
 
-        <span class="c1"># Clean up pool first</span>
+<span class="sd">        Behavior (local mode):</span>
+<span class="sd">        - Dequeues and destroys containers from the warm pool (WARM/RUNNING).</span>
+<span class="sd">        - Scans container_mapping and destroys any remaining non-terminal</span>
+<span class="sd">            containers.</span>
+<span class="sd">        - Does NOT delete ContainerModel records from container_mapping;</span>
+<span class="sd">            instead it relies on release() to mark them as terminal (RELEASED).</span>
+<span class="sd">        - Skips containers already in terminal states: RELEASED / RECYCLED.</span>
+
+<span class="sd">        Notes:</span>
+<span class="sd">        - Uses container_name as identity to avoid ambiguity with session_id.</span>
+<span class="sd">        - Pool containers (WARM) are also destroyed (per current policy).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Cleaning up resources.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Clean up pool first (destroy warm/running containers; skip</span>
+        <span class="c1"># terminal states)</span>
         <span class="k">for</span> <span class="n">queue</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_queues</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="k">while</span> <span class="n">queue</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="n">container_json</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">dequeue</span><span class="p">()</span>
-                    <span class="k">if</span> <span class="n">container_json</span><span class="p">:</span>
-                        <span class="n">container_model</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="n">container_json</span><span class="p">)</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                            <span class="sa">f</span><span class="s2">&quot;Destroy container&quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                        <span class="p">)</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">container_model</span><span class="o">.</span><span class="n">session_id</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">container_json</span><span class="p">:</span>
+                        <span class="k">continue</span>
+
+                    <span class="n">container_model</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="n">container_json</span><span class="p">)</span>
+
+                    <span class="c1"># Terminal states: already cleaned logically</span>
+                    <span class="k">if</span> <span class="n">container_model</span><span class="o">.</span><span class="n">state</span> <span class="ow">in</span> <span class="p">(</span>
+                        <span class="n">ContainerState</span><span class="o">.</span><span class="n">RELEASED</span><span class="p">,</span>
+                        <span class="n">ContainerState</span><span class="o">.</span><span class="n">RECYCLED</span><span class="p">,</span>
+                    <span class="p">):</span>
+                        <span class="k">continue</span>
+
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Destroy pool container&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_id</span><span class="si">}</span><span class="s2"> &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="c1"># Use container_name to avoid ambiguity</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error cleaning up runtime pool: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Clean up rest container</span>
+        <span class="c1"># Clean up remaining containers in mapping</span>
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prefix</span><span class="p">):</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">container_json</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">container_json</span><span class="p">:</span>
-                    <span class="n">container_model</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="n">container_json</span><span class="p">)</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Destroy container </span><span class="si">{</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                    <span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">container_model</span><span class="o">.</span><span class="n">session_id</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">container_json</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="n">container_model</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="n">container_json</span><span class="p">)</span>
+
+                <span class="c1"># Terminal states: already cleaned logically</span>
+                <span class="k">if</span> <span class="n">container_model</span><span class="o">.</span><span class="n">state</span> <span class="ow">in</span> <span class="p">(</span>
+                    <span class="n">ContainerState</span><span class="o">.</span><span class="n">RELEASED</span><span class="p">,</span>
+                    <span class="n">ContainerState</span><span class="o">.</span><span class="n">RECYCLED</span><span class="p">,</span>
+                <span class="p">):</span>
+                    <span class="k">continue</span>
+
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Destroy container </span><span class="si">{</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_id</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Error cleaning up container </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="p">)</span></div>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error cleaning up container </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="SandboxManager.cleanup_async">
@@ -1252,113 +1240,104 @@ body.preview-active {
 
         <span class="n">queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_queues</span><span class="p">[</span><span class="n">sandbox_type</span><span class="p">]</span>
 
-        <span class="n">cnt</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">cnt</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                        <span class="s2">&quot;No container available in pool after check the pool.&quot;</span><span class="p">,</span>
-                    <span class="p">)</span>
-                <span class="n">cnt</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_bind_meta</span><span class="p">(</span><span class="n">container_model</span><span class="p">:</span> <span class="n">ContainerModel</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">meta</span><span class="p">:</span>
+                <span class="k">return</span>
 
-                <span class="c1"># Add a new one to container</span>
-                <span class="n">container_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">sandbox_type</span><span class="o">=</span><span class="n">sandbox_type</span><span class="p">)</span>
-                <span class="n">new_container_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-                    <span class="n">container_name</span><span class="p">,</span>
+            <span class="n">session_ctx_id</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_ctx_id&quot;</span><span class="p">)</span>
+
+            <span class="n">container_model</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">meta</span>
+            <span class="n">container_model</span><span class="o">.</span><span class="n">session_ctx_id</span> <span class="o">=</span> <span class="n">session_ctx_id</span>
+            <span class="n">container_model</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">ContainerState</span><span class="o">.</span><span class="n">RUNNING</span>
+                <span class="k">if</span> <span class="n">session_ctx_id</span>
+                <span class="k">else</span> <span class="n">ContainerState</span><span class="o">.</span><span class="n">WARM</span>
+            <span class="p">)</span>
+            <span class="n">container_model</span><span class="o">.</span><span class="n">recycled_at</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">container_model</span><span class="o">.</span><span class="n">recycle_reason</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">container_model</span><span class="o">.</span><span class="n">updated_at</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+            <span class="c1"># persist first</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+                <span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span><span class="p">,</span>
+                <span class="n">container_model</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(),</span>
+            <span class="p">)</span>
+
+            <span class="c1"># session mapping + first heartbeat only when session_ctx_id exists</span>
+            <span class="k">if</span> <span class="n">session_ctx_id</span><span class="p">:</span>
+                <span class="n">env_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+                <span class="k">if</span> <span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">env_ids</span><span class="p">:</span>
+                    <span class="n">env_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">session_mapping</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">,</span> <span class="n">env_ids</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">clear_container_recycle_marker</span><span class="p">(</span>
+                    <span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span><span class="p">,</span>
+                    <span class="n">set_state</span><span class="o">=</span><span class="n">ContainerState</span><span class="o">.</span><span class="n">RUNNING</span><span class="p">,</span>
                 <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">update_heartbeat</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span>
 
-                <span class="k">if</span> <span class="n">new_container_model</span><span class="p">:</span>
-                    <span class="n">queue</span><span class="o">.</span><span class="n">enqueue</span><span class="p">(</span>
-                        <span class="n">new_container_model</span><span class="p">,</span>
-                    <span class="p">)</span>
-
-                <span class="n">container_json</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">dequeue</span><span class="p">()</span>
-
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">container_json</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                        <span class="s2">&quot;No container available in pool.&quot;</span><span class="p">,</span>
-                    <span class="p">)</span>
-
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># 1) Try dequeue first</span>
+            <span class="n">container_json</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">dequeue</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">container_json</span><span class="p">:</span>
                 <span class="n">container_model</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="n">container_json</span><span class="p">)</span>
 
-                <span class="c1"># Add meta field to container</span>
-                <span class="k">if</span> <span class="n">meta</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">container_model</span><span class="o">.</span><span class="n">meta</span><span class="p">:</span>
-                    <span class="n">container_model</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">meta</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
-                        <span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span><span class="p">,</span>
-                        <span class="n">container_model</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(),</span>
-                    <span class="p">)</span>
-
-                    <span class="c1"># Update session mapping + first heartbeat</span>
-                    <span class="c1"># (only when session_ctx_id exists)</span>
-                    <span class="n">session_ctx_id</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_ctx_id&quot;</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">session_ctx_id</span><span class="p">:</span>
-                        <span class="n">env_ids</span> <span class="o">=</span> <span class="p">(</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">session_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-                                <span class="n">session_ctx_id</span><span class="p">,</span>
-                            <span class="p">)</span>
-                            <span class="ow">or</span> <span class="p">[]</span>
-                        <span class="p">)</span>
-                        <span class="k">if</span> <span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">env_ids</span><span class="p">:</span>
-                            <span class="n">env_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span><span class="p">)</span>
-
-                        <span class="c1"># Treat &quot;allocated from pool to a session&quot; as first</span>
-                        <span class="c1"># activity: ensure heartbeat is updated before the</span>
-                        <span class="c1"># session mapping is persisted, so we never expose a</span>
-                        <span class="c1"># session-&gt;container binding without a fresh heartbeat.</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">update_heartbeat</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span>
-
-                        <span class="c1"># If this session was previously reaped,</span>
-                        <span class="c1"># clear restore-required marker before persisting the</span>
-                        <span class="c1"># updated session mapping.</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">clear_session_recycled</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span>
-
-                        <span class="bp">self</span><span class="o">.</span><span class="n">session_mapping</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">,</span> <span class="n">env_ids</span><span class="p">)</span>
-
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Retrieved container from pool:&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">container_model</span><span class="o">.</span><span class="n">session_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="p">)</span>
-
+                <span class="c1"># version check</span>
                 <span class="k">if</span> <span class="p">(</span>
                     <span class="n">container_model</span><span class="o">.</span><span class="n">version</span>
-                    <span class="o">!=</span> <span class="n">SandboxRegistry</span><span class="o">.</span><span class="n">get_image_by_type</span><span class="p">(</span>
-                        <span class="n">sandbox_type</span><span class="p">,</span>
-                    <span class="p">)</span>
+                    <span class="o">!=</span> <span class="n">SandboxRegistry</span><span class="o">.</span><span class="n">get_image_by_type</span><span class="p">(</span><span class="n">sandbox_type</span><span class="p">)</span>
                 <span class="p">):</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;Container </span><span class="si">{</span><span class="n">container_model</span><span class="o">.</span><span class="n">session_id</span><span class="si">}</span><span class="s2"> outdated, &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;trying next one in pool&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;dropping it&quot;</span><span class="p">,</span>
                     <span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">container_model</span><span class="o">.</span><span class="n">session_id</span><span class="p">)</span>
-                    <span class="k">continue</span>
-
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">inspect</span><span class="p">(</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_id</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Container </span><span class="si">{</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_id</span><span class="si">}</span><span class="s2"> not found &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;or unexpected error happens.&quot;</span><span class="p">,</span>
-                    <span class="p">)</span>
-                    <span class="k">continue</span>
-
-                <span class="k">if</span> <span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_status</span><span class="p">(</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_id</span><span class="p">)</span>
-                    <span class="o">==</span> <span class="s2">&quot;running&quot;</span>
-                <span class="p">):</span>
-                    <span class="k">return</span> <span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span><span class="p">)</span>
+                    <span class="n">container_json</span> <span class="o">=</span> <span class="kc">None</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Container </span><span class="si">{</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_id</span><span class="si">}</span><span class="s2"> is not &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;running. Trying next one in pool.&quot;</span><span class="p">,</span>
+                    <span class="c1"># inspect + status check</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">inspect</span><span class="p">(</span>
+                            <span class="n">container_model</span><span class="o">.</span><span class="n">container_id</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="ow">is</span> <span class="kc">None</span>
+                    <span class="p">):</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Container </span><span class="si">{</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_id</span><span class="si">}</span><span class="s2"> not &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;found, dropping it&quot;</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span><span class="p">)</span>
+                        <span class="n">container_json</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_status</span><span class="p">(</span>
+                            <span class="n">container_model</span><span class="o">.</span><span class="n">container_id</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="k">if</span> <span class="n">status</span> <span class="o">!=</span> <span class="s2">&quot;running&quot;</span><span class="p">:</span>
+                            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;Container </span><span class="si">{</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_id</span><span class="si">}</span><span class="s2"> &quot;</span>
+                                <span class="sa">f</span><span class="s2">&quot;not running (</span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">), dropping it&quot;</span><span class="p">,</span>
+                            <span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span><span class="p">)</span>
+                            <span class="n">container_json</span> <span class="o">=</span> <span class="kc">None</span>
+
+                <span class="c1"># if still valid, bind meta and return</span>
+                <span class="k">if</span> <span class="n">container_json</span><span class="p">:</span>
+                    <span class="n">_bind_meta</span><span class="p">(</span><span class="n">container_model</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Retrieved container from pool:&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">container_model</span><span class="o">.</span><span class="n">session_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                     <span class="p">)</span>
-                    <span class="c1"># Destroy the stopped container</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">container_model</span><span class="o">.</span><span class="n">session_id</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span>
+
+            <span class="c1"># 2) Pool empty or invalid -&gt; create a new one and return</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">sandbox_type</span><span class="o">=</span><span class="n">sandbox_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="s2">&quot;Error getting container from pool, create a new one.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create</span><span class="p">()</span></div>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">sandbox_type</span><span class="o">=</span><span class="n">sandbox_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="SandboxManager.create_from_pool_async">
@@ -1384,14 +1363,23 @@ body.preview-active {
         <span class="k">try</span><span class="p">:</span>
             <span class="n">limit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_sandbox_instances</span>
             <span class="k">if</span> <span class="n">limit</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="c1"># TODO: Avoid SCAN+len(list(...)) here; maintain an atomic</span>
-                <span class="c1">#  Redis counter (INCR/DECR or Lua) for O(1) instance limit</span>
-                <span class="c1">#  checks.</span>
-                <span class="n">current</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prefix</span><span class="p">)))</span>
-                <span class="k">if</span> <span class="n">current</span> <span class="o">&gt;=</span> <span class="n">limit</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Max sandbox instances reached: </span><span class="si">{</span><span class="n">current</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">limit</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                    <span class="p">)</span>
+                <span class="c1"># Count only ACTIVE containers; exclude terminal states</span>
+                <span class="n">active_states</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="n">ContainerState</span><span class="o">.</span><span class="n">WARM</span><span class="p">,</span>
+                    <span class="n">ContainerState</span><span class="o">.</span><span class="n">RUNNING</span><span class="p">,</span>
+                <span class="p">}</span>
+                <span class="n">current</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prefix</span><span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">container_json</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">container_json</span><span class="p">:</span>
+                            <span class="k">continue</span>
+                        <span class="n">cm</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="n">container_json</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">cm</span><span class="o">.</span><span class="n">state</span> <span class="ow">in</span> <span class="n">active_states</span><span class="p">:</span>
+                            <span class="n">current</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                        <span class="c1"># ignore broken records</span>
+                        <span class="k">continue</span>
         <span class="k">except</span> <span class="ne">RuntimeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
             <span class="k">return</span> <span class="kc">None</span>
@@ -1399,6 +1387,10 @@ body.preview-active {
             <span class="c1"># Handle unexpected errors from container_mapping.scan() gracefully</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Failed to check sandbox instance limit&quot;</span><span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">session_ctx_id</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">meta</span> <span class="ow">and</span> <span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_ctx_id&quot;</span><span class="p">):</span>
+            <span class="n">session_ctx_id</span> <span class="o">=</span> <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;session_ctx_id&quot;</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="n">sandbox_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">target_sandbox_type</span> <span class="o">=</span> <span class="n">SandboxType</span><span class="p">(</span><span class="n">sandbox_type</span><span class="p">)</span>
@@ -1543,6 +1535,12 @@ body.preview-active {
                 <span class="n">version</span><span class="o">=</span><span class="n">image</span><span class="p">,</span>
                 <span class="n">meta</span><span class="o">=</span><span class="n">meta</span> <span class="ow">or</span> <span class="p">{},</span>
                 <span class="n">timeout</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">timeout</span><span class="p">,</span>
+                <span class="n">sandbox_type</span><span class="o">=</span><span class="n">target_sandbox_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                <span class="n">session_ctx_id</span><span class="o">=</span><span class="n">session_ctx_id</span><span class="p">,</span>
+                <span class="n">state</span><span class="o">=</span><span class="n">ContainerState</span><span class="o">.</span><span class="n">RUNNING</span>
+                <span class="k">if</span> <span class="n">session_ctx_id</span>
+                <span class="k">else</span> <span class="n">ContainerState</span><span class="o">.</span><span class="n">WARM</span><span class="p">,</span>
+                <span class="n">updated_at</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
             <span class="p">)</span>
 
             <span class="c1"># Register in mapping</span>
@@ -1570,7 +1568,10 @@ body.preview-active {
                 <span class="bp">self</span><span class="o">.</span><span class="n">update_heartbeat</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span>
 
                 <span class="c1"># Session is now alive again; clear restore-required marker</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">clear_session_recycled</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">clear_container_recycle_marker</span><span class="p">(</span>
+                    <span class="n">container_model</span><span class="o">.</span><span class="n">container_name</span><span class="p">,</span>
+                    <span class="n">set_state</span><span class="o">=</span><span class="n">ContainerState</span><span class="o">.</span><span class="n">RUNNING</span><span class="p">,</span>
+                <span class="p">)</span>
 
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Created container </span><span class="si">{</span><span class="n">container_name</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -1613,11 +1614,11 @@ body.preview-active {
 
             <span class="n">container_info</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="n">container_json</span><span class="p">)</span>
 
-            <span class="c1"># remove key in mapping before we remove container</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">container_json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;container_name&quot;</span><span class="p">))</span>
+            <span class="c1"># remove session key in mapping</span>
+            <span class="n">session_ctx_id</span> <span class="o">=</span> <span class="n">container_info</span><span class="o">.</span><span class="n">session_ctx_id</span> <span class="ow">or</span> <span class="p">(</span>
+                <span class="n">container_info</span><span class="o">.</span><span class="n">meta</span> <span class="ow">or</span> <span class="p">{}</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_ctx_id&quot;</span><span class="p">)</span>
 
-            <span class="c1"># remove key in mapping</span>
-            <span class="n">session_ctx_id</span> <span class="o">=</span> <span class="n">container_info</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_ctx_id&quot;</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">session_ctx_id</span><span class="p">:</span>
                 <span class="n">env_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
                 <span class="n">env_ids</span> <span class="o">=</span> <span class="p">[</span>
@@ -1631,23 +1632,41 @@ body.preview-active {
                     <span class="c1"># last container of this session is gone;</span>
                     <span class="c1"># keep state consistent</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">session_mapping</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span>
-                    <span class="k">try</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">delete_heartbeat</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span>
-                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                            <span class="sa">f</span><span class="s2">&quot;delete_heartbeat failed for </span><span class="si">{</span><span class="n">session_ctx_id</span><span class="si">}</span><span class="s2">:&quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                        <span class="p">)</span>
-                    <span class="k">try</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">clear_session_recycled</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span>
-                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                            <span class="sa">f</span><span class="s2">&quot;clear_session_recycled failed for&quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">session_ctx_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                        <span class="p">)</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="n">container_info</span><span class="o">.</span><span class="n">container_id</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">container_info</span><span class="o">.</span><span class="n">container_id</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="c1"># Mark released (do NOT delete mapping) in model</span>
+            <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="n">container_info</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">ContainerState</span><span class="o">.</span><span class="n">RELEASED</span>
+            <span class="n">container_info</span><span class="o">.</span><span class="n">released_at</span> <span class="o">=</span> <span class="n">now</span>
+            <span class="n">container_info</span><span class="o">.</span><span class="n">updated_at</span> <span class="o">=</span> <span class="n">now</span>
+            <span class="n">container_info</span><span class="o">.</span><span class="n">recycled_at</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">container_info</span><span class="o">.</span><span class="n">recycle_reason</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="c1"># Unbind session in model</span>
+            <span class="n">container_info</span><span class="o">.</span><span class="n">session_ctx_id</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">container_info</span><span class="o">.</span><span class="n">meta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">container_info</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">container_info</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;session_ctx_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+                <span class="n">container_info</span><span class="o">.</span><span class="n">container_name</span><span class="p">,</span>
+                <span class="n">container_info</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(),</span>
+            <span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="n">container_info</span><span class="o">.</span><span class="n">container_id</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;release stop ignored for&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">container_info</span><span class="o">.</span><span class="n">container_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">container_info</span><span class="o">.</span><span class="n">container_id</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;release remove ignored for&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">container_info</span><span class="o">.</span><span class="n">container_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
 
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Container for </span><span class="si">{</span><span class="n">identity</span><span class="si">}</span><span class="s2"> destroyed.&quot;</span><span class="p">)</span>
 
@@ -1980,38 +1999,179 @@ body.preview-active {
         <span class="k">try</span><span class="p">:</span>
             <span class="n">env_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_session_mapping</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
 
-            <span class="c1"># (virtual hook) snapshot/save state before releasing - not</span>
-            <span class="c1"># implemented yet</span>
-            <span class="c1"># self.save_session_snapshot(</span>
-            <span class="c1">#     session_ctx_id,</span>
-            <span class="c1">#     env_ids,</span>
-            <span class="c1">#     reason=reason,</span>
-            <span class="c1"># )</span>
-
             <span class="k">for</span> <span class="n">container_name</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">env_ids</span><span class="p">):</span>
+                <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
                 <span class="k">try</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">container_name</span><span class="p">)</span>
-                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Failed to release container </span><span class="si">{</span><span class="n">container_name</span><span class="si">}</span><span class="s2"> for &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;session </span><span class="si">{</span><span class="n">session_ctx_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">info</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">get_info</span><span class="p">(</span><span class="n">container_name</span><span class="p">))</span>
+
+                    <span class="c1"># stop/remove actual container</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">container_id</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Failed to stop container &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">container_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">container_id</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Failed to remove container &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">container_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="p">)</span>
+
+                    <span class="c1"># upload storage if needed</span>
+                    <span class="k">if</span> <span class="n">info</span><span class="o">.</span><span class="n">mount_dir</span> <span class="ow">and</span> <span class="n">info</span><span class="o">.</span><span class="n">storage_path</span><span class="p">:</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">upload_folder</span><span class="p">(</span>
+                                <span class="n">info</span><span class="o">.</span><span class="n">mount_dir</span><span class="p">,</span>
+                                <span class="n">info</span><span class="o">.</span><span class="n">storage_path</span><span class="p">,</span>
+                            <span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;upload_folder failed for </span><span class="si">{</span><span class="n">container_name</span><span class="si">}</span><span class="s2">:&quot;</span>
+                                <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="p">)</span>
+
+                    <span class="c1"># mark recycled, keep model</span>
+                    <span class="n">info</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">ContainerState</span><span class="o">.</span><span class="n">RECYCLED</span>
+                    <span class="n">info</span><span class="o">.</span><span class="n">recycled_at</span> <span class="o">=</span> <span class="n">now</span>
+                    <span class="n">info</span><span class="o">.</span><span class="n">recycle_reason</span> <span class="o">=</span> <span class="n">reason</span>
+                    <span class="n">info</span><span class="o">.</span><span class="n">updated_at</span> <span class="o">=</span> <span class="n">now</span>
+
+                    <span class="c1"># keep session_ctx_id for restore</span>
+                    <span class="n">info</span><span class="o">.</span><span class="n">session_ctx_id</span> <span class="o">=</span> <span class="n">session_ctx_id</span>
+                    <span class="k">if</span> <span class="n">info</span><span class="o">.</span><span class="n">meta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">info</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="n">info</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s2">&quot;session_ctx_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">session_ctx_id</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+                        <span class="n">info</span><span class="o">.</span><span class="n">container_name</span><span class="p">,</span>
+                        <span class="n">info</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(),</span>
                     <span class="p">)</span>
 
-            <span class="c1"># Mark session as recycled -&gt; next request should go restore</span>
-            <span class="c1"># flow (stub)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">mark_session_recycled</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span>
-
-            <span class="c1"># Heartbeat no longer meaningful after reap</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">delete_heartbeat</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span>
-
-            <span class="c1"># Ensure mapping is cleared even if some releases failed</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">session_mapping</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Failed to recycle container </span><span class="si">{</span><span class="n">container_name</span><span class="si">}</span><span class="s2"> for &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;session </span><span class="si">{</span><span class="n">session_ctx_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
 
             <span class="k">return</span> <span class="kc">True</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to reap session </span><span class="si">{</span><span class="n">session_ctx_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">())</span>
             <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="SandboxManager.restore_session">
+<a class="viewcode-back" href="../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager.restore_session">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">restore_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_ctx_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Restore ALL recycled sandboxes (containers) for a session.</span>
+
+<span class="sd">        For each container record with state==RECYCLED in session_mapping[</span>
+<span class="sd">        session_ctx_id]:</span>
+<span class="sd">        - If mount_dir is empty -&gt; allocate from pool</span>
+<span class="sd">            (prefer same sandbox_type).</span>
+<span class="sd">        - If mount_dir exists -&gt; create a new container with that</span>
+<span class="sd">            mount_dir/storage_path.</span>
+<span class="sd">        - Bind new container to this session and mark RUNNING.</span>
+<span class="sd">        - Archive the old recycled record (mark RELEASED).</span>
+
+<span class="sd">        After restore:</span>
+<span class="sd">        - session_mapping[session_ctx_id] will be replaced with the list of</span>
+<span class="sd">            NEW running containers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">env_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_session_mapping</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">env_ids</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">new_container_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">recycled_old_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># 1) restore each recycled container</span>
+        <span class="k">for</span> <span class="n">old_name</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">env_ids</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">old</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">get_info</span><span class="p">(</span><span class="n">old_name</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">old</span><span class="o">.</span><span class="n">state</span> <span class="o">!=</span> <span class="n">ContainerState</span><span class="o">.</span><span class="n">RECYCLED</span><span class="p">:</span>
+                <span class="c1"># keep non-recycled entries as-is (optional). In practice</span>
+                <span class="c1"># env_ids should be recycled only.</span>
+                <span class="k">continue</span>
+
+            <span class="n">sandbox_type</span> <span class="o">=</span> <span class="n">old</span><span class="o">.</span><span class="n">sandbox_type</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_type</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+            <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;session_ctx_id&quot;</span><span class="p">:</span> <span class="n">session_ctx_id</span><span class="p">,</span>
+            <span class="p">}</span>
+
+            <span class="c1"># allocate new container</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">old</span><span class="o">.</span><span class="n">mount_dir</span><span class="p">:</span>
+                <span class="n">new_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_from_pool</span><span class="p">(</span>
+                    <span class="n">sandbox_type</span><span class="o">=</span><span class="n">sandbox_type</span><span class="p">,</span>
+                    <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">new_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+                    <span class="n">sandbox_type</span><span class="o">=</span><span class="n">sandbox_type</span><span class="p">,</span>
+                    <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span>
+                    <span class="n">mount_dir</span><span class="o">=</span><span class="n">old</span><span class="o">.</span><span class="n">mount_dir</span><span class="p">,</span>
+                    <span class="n">storage_path</span><span class="o">=</span><span class="n">old</span><span class="o">.</span><span class="n">storage_path</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">new_name</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;restore_session: failed to restore container </span><span class="si">{</span><span class="n">old_name</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;for session </span><span class="si">{</span><span class="n">session_ctx_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">recycled_old_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">old_name</span><span class="p">)</span>
+            <span class="n">new_container_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_name</span><span class="p">)</span>
+
+            <span class="c1"># ensure new container is marked RUNNING + bound</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">new_cm</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">get_info</span><span class="p">(</span><span class="n">new_name</span><span class="p">))</span>
+                <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                <span class="n">new_cm</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">ContainerState</span><span class="o">.</span><span class="n">RUNNING</span>
+                <span class="n">new_cm</span><span class="o">.</span><span class="n">session_ctx_id</span> <span class="o">=</span> <span class="n">session_ctx_id</span>
+                <span class="k">if</span> <span class="n">new_cm</span><span class="o">.</span><span class="n">meta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">new_cm</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">new_cm</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s2">&quot;session_ctx_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">session_ctx_id</span>
+                <span class="n">new_cm</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s2">&quot;sandbox_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sandbox_type</span>
+                <span class="n">new_cm</span><span class="o">.</span><span class="n">recycled_at</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">new_cm</span><span class="o">.</span><span class="n">recycle_reason</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">new_cm</span><span class="o">.</span><span class="n">updated_at</span> <span class="o">=</span> <span class="n">now</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+                    <span class="n">new_cm</span><span class="o">.</span><span class="n">container_name</span><span class="p">,</span>
+                    <span class="n">new_cm</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(),</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;restore_session: failed to mark new container running:&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">new_container_names</span><span class="p">:</span>
+            <span class="c1"># nothing restored</span>
+            <span class="k">return</span>
+
+        <span class="c1"># 2) switch session mapping to restored running containers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session_mapping</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">,</span> <span class="n">new_container_names</span><span class="p">)</span>
+
+        <span class="c1"># 3) heartbeat after restore (session-level)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_heartbeat</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span>
+
+        <span class="c1"># 4) archive old recycled records so needs_restore becomes False</span>
+        <span class="k">for</span> <span class="n">old_name</span> <span class="ow">in</span> <span class="n">recycled_old_names</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">old_name</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;restore_session: failed to delete old model&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">old_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="SandboxManager.scan_heartbeat_once">
@@ -2028,6 +2188,7 @@ body.preview-active {
             <span class="s2">&quot;scanned_sessions&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
             <span class="s2">&quot;reaped_sessions&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
             <span class="s2">&quot;skipped_no_heartbeat&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;skipped_no_running_containers&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
             <span class="s2">&quot;skipped_lock_busy&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
             <span class="s2">&quot;skipped_not_idle_after_double_check&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
             <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
@@ -2035,6 +2196,24 @@ body.preview-active {
 
         <span class="k">for</span> <span class="n">session_ctx_id</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session_mapping</span><span class="o">.</span><span class="n">scan</span><span class="p">()):</span>
             <span class="n">result</span><span class="p">[</span><span class="s2">&quot;scanned_sessions&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">has_running</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">env_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_session_mapping</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">cname</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">env_ids</span><span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">cm</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">get_info</span><span class="p">(</span><span class="n">cname</span><span class="p">))</span>
+                    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="n">cm</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="n">ContainerState</span><span class="o">.</span><span class="n">RUNNING</span><span class="p">:</span>
+                        <span class="n">has_running</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="k">break</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">has_running</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">has_running</span><span class="p">:</span>
+                <span class="n">result</span><span class="p">[</span><span class="s2">&quot;skipped_no_running_containers&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">continue</span>
 
             <span class="n">last_active</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_heartbeat</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">last_active</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -2081,13 +2260,131 @@ body.preview-active {
         <span class="k">return</span> <span class="n">result</span></div>
 
 
-<div class="viewcode-block" id="SandboxManager.scan_heartbeat_once_async">
-<a class="viewcode-back" href="../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager.scan_heartbeat_once_async">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">scan_heartbeat_once_async</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<div class="viewcode-block" id="SandboxManager.scan_pool_once">
+<a class="viewcode-back" href="../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager.scan_pool_once">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">scan_pool_once</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Async convenience wrapper (internal use). Not a remote API.</span>
+<span class="sd">        Replenish warm pool for each sandbox_type up to pool_size.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">        - No distributed lock by design (multi-instance may overfill slightly).</span>
+<span class="sd">        - Pool containers are WARM (no session_ctx_id).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scan_heartbeat_once</span><span class="p">)</span></div>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;types&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;created&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;enqueued&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;failed_create&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;skipped_pool_disabled&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;skipped_pool_disabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">result</span>
+
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_type</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;types&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool_queues</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">queue</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">need</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span> <span class="o">-</span> <span class="n">queue</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="c1"># if queue.size() fails for any reason, skip this type</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">need</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">need</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c1"># create a WARM container (no session_ctx_id)</span>
+                    <span class="n">container_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+                        <span class="n">sandbox_type</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                        <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">container_name</span><span class="p">:</span>
+                        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;failed_create&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="k">continue</span>
+
+                    <span class="n">cm_json</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">container_name</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">cm_json</span><span class="p">:</span>
+                        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;failed_create&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="k">continue</span>
+
+                    <span class="n">queue</span><span class="o">.</span><span class="n">enqueue</span><span class="p">(</span><span class="n">cm_json</span><span class="p">)</span>
+                    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;created&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;enqueued&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;failed_create&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="SandboxManager.scan_released_cleanup_once">
+<a class="viewcode-back" href="../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager.scan_released_cleanup_once">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">scan_released_cleanup_once</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_delete</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">200</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Delete container_mapping records whose state == RELEASED and expired.</span>
+
+<span class="sd">        TTL is config.released_key_ttl seconds. 0 disables cleanup.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ttl</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;released_key_ttl&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;ttl&quot;</span><span class="p">:</span> <span class="n">ttl</span><span class="p">,</span>
+            <span class="s2">&quot;scanned&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;deleted&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;skipped_ttl_disabled&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;skipped_not_expired&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;skipped_not_released&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">ttl</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;skipped_ttl_disabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">result</span>
+
+        <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prefix</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;deleted&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">max_delete</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;scanned&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">container_json</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">container_json</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="n">cm</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="n">container_json</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">cm</span><span class="o">.</span><span class="n">state</span> <span class="o">!=</span> <span class="n">ContainerState</span><span class="o">.</span><span class="n">RELEASED</span><span class="p">:</span>
+                    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;skipped_not_released&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">continue</span>
+
+                <span class="n">released_at</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">released_at</span> <span class="ow">or</span> <span class="n">cm</span><span class="o">.</span><span class="n">updated_at</span> <span class="ow">or</span> <span class="mi">0</span>
+                <span class="k">if</span> <span class="n">released_at</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="c1"># no timestamp -&gt; treat as not expired</span>
+                    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;skipped_not_expired&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">continue</span>
+
+                <span class="k">if</span> <span class="n">now</span> <span class="o">-</span> <span class="n">released_at</span> <span class="o">&lt;=</span> <span class="n">ttl</span><span class="p">:</span>
+                    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;skipped_not_expired&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">continue</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">cm</span><span class="o">.</span><span class="n">container_name</span><span class="p">)</span>
+                <span class="n">result</span><span class="p">[</span><span class="s2">&quot;deleted&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">result</span><span class="p">[</span><span class="s2">&quot;errors&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;scan_released_cleanup_once: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">,&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span></div>
 </div>
 
 </pre></div>
@@ -2107,7 +2404,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-22</div>
+              Last updated on 2026-01-23</div>
           </div>
           <div class="right-details">
             <div class="icons">

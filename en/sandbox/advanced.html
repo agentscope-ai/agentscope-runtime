@@ -808,17 +808,22 @@ runtime-sandbox-server<span class="w"> </span>--config<span class="w"> </span>cu
 <td><p><code class="docutils literal notranslate"><span class="pre">300</span></code></p></td>
 <td><p>If a <code class="docutils literal notranslate"><span class="pre">session_ctx_id</span></code> has no “touch” activities (e.g., list_tools/call_tool/check_health/add_mcp_servers) within this period, it is considered idle and can be reaped by the scanner.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">HEARTBEAT_SCAN_INTERVAL</span></code></p></td>
-<td><p>Heartbeat scan interval (seconds)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p></td>
-<td><p>Interval for the background watcher to run the heartbeat scan. Set to <code class="docutils literal notranslate"><span class="pre">0</span></code> to disable the watcher (you may run <code class="docutils literal notranslate"><span class="pre">scan_heartbeat_once()</span></code> via an external cron instead).</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">HEARTBEAT_LOCK_TTL</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">HEARTBEAT_LOCK_TTL</span></code></p></td>
 <td><p>Distributed lock TTL for scan/reap (seconds)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">120</span></code></p></td>
 <td><p>In multi-instance deployments, used to ensure only one instance reaps a given <code class="docutils literal notranslate"><span class="pre">session_ctx_id</span></code> at a time. Should be larger than the typical reap duration; too small may cause duplicate reaping after lock expiry.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">MAX_SANDBOX_INSTANCES</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">WATCHER_SCAN_INTERVAL</span></code></p></td>
+<td><p>Background watcher scan interval (seconds)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+<td><p>Interval for the background watcher loop. The watcher performs: (1) session heartbeat scan/reap, (2) pre-warmed pool replenishment, and (3) cleanup of expired RELEASED container records. Set to <code class="docutils literal notranslate"><span class="pre">0</span></code> to disable the watcher (you may run the scan functions via an external cron instead).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RELEASED_KEY_TTL</span></code></p></td>
+<td><p>TTL for RELEASED container records (seconds)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">3600</span></code></p></td>
+<td><p>Container records in <code class="docutils literal notranslate"><span class="pre">container_mapping</span></code> with state <code class="docutils literal notranslate"><span class="pre">RELEASED</span></code> will be deleted after this TTL to prevent unbounded key growth. Set to <code class="docutils literal notranslate"><span class="pre">0</span></code> to disable cleanup.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">MAX_SANDBOX_INSTANCES</span></code></p></td>
 <td><p>Maximum sandbox instances (total container cap)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p></td>
 <td><p>Limits the total number of sandbox instances (containers) the SandboxManager can create/keep. When the current container count reaches or exceeds this value, new creation requests are denied (e.g., returning <code class="docutils literal notranslate"><span class="pre">None</span></code> or raising an exception, depending on implementation). Values: • <code class="docutils literal notranslate"><span class="pre">0</span></code>: unlimited • <code class="docutils literal notranslate"><span class="pre">N&gt;0</span></code>: at most <code class="docutils literal notranslate"><span class="pre">N</span></code> instances Examples: • <code class="docutils literal notranslate"><span class="pre">MAX_SANDBOX_INSTANCES=20</span></code></p></td>
@@ -1584,7 +1589,7 @@ You can modify any of them as needed to change the image source or version.</p>
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-22</div>
+              Last updated on 2026-01-23</div>
           </div>
           <div class="right-details">
             <div class="icons">

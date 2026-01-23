@@ -883,15 +883,27 @@ body.preview-active {
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Idle timeout in seconds before session is reaped.&quot;</span><span class="p">,</span>
         <span class="n">gt</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="n">heartbeat_scan_interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-        <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Heartbeat scan interval in seconds. 0 disables scanning.&quot;</span><span class="p">,</span>
-        <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-    <span class="p">)</span>
     <span class="n">heartbeat_lock_ttl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Redis distributed lock TTL in seconds for reaping.&quot;</span><span class="p">,</span>
         <span class="n">gt</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">watcher_scan_interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Background watcher loop interval in seconds. &quot;</span>
+            <span class="s2">&quot;0 disables watcher. Watcher includes heartbeat scan, pool &quot;</span>
+            <span class="s2">&quot;replenish, and released-record cleanup.&quot;</span>
+        <span class="p">),</span>
+        <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">released_key_ttl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;TTL in seconds for keeping RELEASED container records in &quot;</span>
+            <span class="s2">&quot;container_mapping. 0 disables cleanup.&quot;</span>
+        <span class="p">),</span>
+        <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">max_sandbox_instances</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
@@ -1011,7 +1023,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-22</div>
+              Last updated on 2026-01-23</div>
           </div>
           <div class="right-details">
             <div class="icons">
