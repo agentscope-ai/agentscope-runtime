@@ -447,7 +447,12 @@ async def adapt_agentscope_message_stream(
                                 == "url"
                             ):
                                 kwargs.update(
-                                    {"image_url": element.get("source")},
+                                    {
+                                        "image_url": element.get(
+                                            "source",
+                                            {},
+                                        ).get("url"),
+                                    },
                                 )
 
                             elif (
@@ -526,7 +531,12 @@ async def adapt_agentscope_message_stream(
                                 == "url"
                             ):
                                 kwargs.update(
-                                    {"video_url": element.get("source")},
+                                    {
+                                        "video_url": element.get(
+                                            "source",
+                                            {},
+                                        ).get("url"),
+                                    },
                                 )
 
                             elif (

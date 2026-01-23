@@ -255,10 +255,29 @@ def message_to_agentscope_msg(
                                 block_cls(type=cnt_type, source=base64_source),
                             )
                 elif cnt_type == "video":
-                    url_source = URLSource(type="url", url=value)
-                    msg_content.append(
-                        block_cls(type=cnt_type, source=url_source),
-                    )
+                    if (
+                        value
+                        and isinstance(value, str)
+                        and value.startswith("data:")
+                    ):
+                        mediatype_part = value.split(";")[0].replace(
+                            "data:",
+                            "",
+                        )
+                        base64_data = value.split(",")[1]
+                        base64_source = Base64Source(
+                            type="base64",
+                            media_type=mediatype_part,
+                            data=base64_data,
+                        )
+                        msg_content.append(
+                            block_cls(type=cnt_type, source=base64_source),
+                        )
+                    else:
+                        url_source = URLSource(type="url", url=value)
+                        msg_content.append(
+                            block_cls(type=cnt_type, source=url_source),
+                        )
                 else:
                     # text & data
                     if isinstance(value, str):
