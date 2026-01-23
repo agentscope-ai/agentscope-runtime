@@ -110,20 +110,21 @@ KUBECONFIG_PATH=
 
 #### Runtime Manager 设置
 
-| Parameter                 | Description                     | Default                    | Notes                                                        |
-| ------------------------- | ------------------------------- | -------------------------- | ------------------------------------------------------------ |
-| `DEFAULT_SANDBOX_TYPE`    | 默认沙箱类型（可多个）          | `base`                     | 可以是单个类型，也可以是多个类型的列表，从而启用多个独立的沙箱预热池。合法取值包括 `base`、`filesystem`、`browser`、`gui` 等。<br/>支持的写法：<br/>• 单类型：`DEFAULT_SANDBOX_TYPE=base`<br/>• 多类型（逗号分隔）：`DEFAULT_SANDBOX_TYPE=base,gui`<br/>• 多类型（JSON 列表）：`DEFAULT_SANDBOX_TYPE=["base","gui"]`<br/>每种类型都会维护自己独立的预热池。 |
-| `POOL_SIZE`               | 预热容器池大小                  | `1`                        | 缓存的容器以实现更快启动。`POOL_SIZE` 参数控制预创建并缓存在就绪状态的容器数量。当用户请求新沙箱时，系统将首先尝试从这个预热池中分配，相比从零开始创建容器显著减少启动时间。例如，使用 `POOL_SIZE=10`，系统维护 10 个就绪容器，可以立即分配给新请求 |
-| `AUTO_CLEANUP`            | 自动容器清理                    | `True`                     | 如果设置为 `True`，服务器关闭后将释放所有沙箱。              |
-| `CONTAINER_PREFIX_KEY`    | 容器名称前缀                    | `agent-runtime-container-` | 用于标识                                                     |
-| `CONTAINER_DEPLOYMENT`    | 容器运行时                      | `docker`                   | 目前支持`docker`、`k8s`、`agentrun`, `fc`、`gvisor`          |
-| `DEFAULT_MOUNT_DIR`       | 默认挂载目录                    | `sessions_mount_dir`       | 用于持久存储路径，存储`/workspace` 文件                      |
-| `READONLY_MOUNTS`         | 只读目录挂载                    | `None`                     | 一个字典，映射 **宿主机路径** → **容器路径**，以 **只读** 方式挂载。用于共享文件 / 配置，但禁止容器修改数据。示例：<br/>`{"\/Users\/alice\/data": "\/data"}` 会把宿主机 `/Users/alice/data` 挂载到容器的 `/data`（只读）。 |
-| `PORT_RANGE`              | 可用端口范围                    | `[49152,59152]`            | 用于服务端口分配                                             |
-| `HEARTBEAT_TIMEOUT`       | 会话心跳超时时间（秒）          | `300`                      | 当某个 `session_ctx_id` 在该时间内没有发生任何“触达事件”（如 list_tools/call_tool/check_health/add_mcp_servers），会被判定为闲置，可被扫描任务回收（reap）。 |
-| `HEARTBEAT_SCAN_INTERVAL` | 心跳扫描间隔（秒）              | `0`                        | 后台扫描任务的执行间隔。设为 `0` 表示禁用后台 watcher（可改用外部 cron 手动调用 `scan_heartbeat_once()`）。 |
-| `HEARTBEAT_LOCK_TTL`      | 心跳扫描/回收分布式锁 TTL（秒） | `120`                      | 多实例部署时用于互斥回收同一 `session_ctx_id` 的锁过期时间，避免重复回收。应大于一次回收的典型耗时；过小可能导致锁过期后被其他实例重复回收。 |
-| `MAX_SANDBOX_INSTANCES`   | 最大沙盒实例数（容器总数上限）  | `0`                        | 用于限制 SandboxManager 可创建/维持的沙盒容器总数量。当当前容器数达到或超过该值时，新的创建请求会被拒绝（例如返回 `None` 或抛异常，取决于实现）。 取值说明： • `0`：不限制 • `N>0`：最多 `N` 个容器实例 示例： • `MAX_SANDBOX_INSTANCES=20` |
+| Parameter               | Description                     | Default                    | Notes                                                        |
+| ----------------------- | ------------------------------- | -------------------------- | ------------------------------------------------------------ |
+| `DEFAULT_SANDBOX_TYPE`  | 默认沙箱类型（可多个）          | `base`                     | 可以是单个类型，也可以是多个类型的列表，从而启用多个独立的沙箱预热池。合法取值包括 `base`、`filesystem`、`browser`、`gui` 等。<br/>支持的写法：<br/>• 单类型：`DEFAULT_SANDBOX_TYPE=base`<br/>• 多类型（逗号分隔）：`DEFAULT_SANDBOX_TYPE=base,gui`<br/>• 多类型（JSON 列表）：`DEFAULT_SANDBOX_TYPE=["base","gui"]`<br/>每种类型都会维护自己独立的预热池。 |
+| `POOL_SIZE`             | 预热容器池大小                  | `1`                        | 缓存的容器以实现更快启动。`POOL_SIZE` 参数控制预创建并缓存在就绪状态的容器数量。当用户请求新沙箱时，系统将首先尝试从这个预热池中分配，相比从零开始创建容器显著减少启动时间。例如，使用 `POOL_SIZE=10`，系统维护 10 个就绪容器，可以立即分配给新请求 |
+| `AUTO_CLEANUP`          | 自动容器清理                    | `True`                     | 如果设置为 `True`，服务器关闭后将释放所有沙箱。              |
+| `CONTAINER_PREFIX_KEY`  | 容器名称前缀                    | `agent-runtime-container-` | 用于标识                                                     |
+| `CONTAINER_DEPLOYMENT`  | 容器运行时                      | `docker`                   | 目前支持`docker`、`k8s`、`agentrun`, `fc`、`gvisor`          |
+| `DEFAULT_MOUNT_DIR`     | 默认挂载目录                    | `sessions_mount_dir`       | 用于持久存储路径，存储`/workspace` 文件                      |
+| `READONLY_MOUNTS`       | 只读目录挂载                    | `None`                     | 一个字典，映射 **宿主机路径** → **容器路径**，以 **只读** 方式挂载。用于共享文件 / 配置，但禁止容器修改数据。示例：<br/>`{"\/Users\/alice\/data": "\/data"}` 会把宿主机 `/Users/alice/data` 挂载到容器的 `/data`（只读）。 |
+| `PORT_RANGE`            | 可用端口范围                    | `[49152,59152]`            | 用于服务端口分配                                             |
+| `HEARTBEAT_TIMEOUT`     | 会话心跳超时时间（秒）          | `300`                      | 当某个 `session_ctx_id` 在该时间内没有发生任何“触达事件”（如 list_tools/call_tool/check_health/add_mcp_servers），会被判定为闲置，可被扫描任务回收（reap）。 |
+| `HEARTBEAT_LOCK_TTL`    | 心跳扫描/回收分布式锁 TTL（秒） | `120`                      | 多实例部署时用于互斥回收同一 `session_ctx_id` 的锁过期时间，避免重复回收。应大于一次回收的典型耗时；过小可能导致锁过期后被其他实例重复回收。 |
+| `WATCHER_SCAN_INTERVAL` | 后台 watcher 扫描间隔（秒）     | `1`                        | 后台 watcher 主循环间隔。watcher 会执行： 1) heartbeat 扫描与回收（reap） 2) 预热池（pool）补齐 3) 过期的 `RELEASED` 容器记录清理 设为 `0` 表示禁用 watcher（也可以用外部 cron 定时调用相关 scan 函数）。 |
+| `RELEASED_KEY_TTL`      | RELEASED 容器记录保留时间（秒） | `3600`                     | `container_mapping` 中 `state=RELEASED` 的记录在超过该 TTL 后会被删除，防止键无限增长。设为 `0` 表示不清理。 |
+| `MAX_SANDBOX_INSTANCES` | 最大沙盒实例数（容器总数上限）  | `0`                        | 用于限制 SandboxManager 可创建/维持的沙盒容器总数量。当当前容器数达到或超过该值时，新的创建请求会被拒绝（例如返回 `None` 或抛异常，取决于实现）。 取值说明： • `0`：不限制 • `N>0`：最多 `N` 个容器实例 示例： • `MAX_SANDBOX_INSTANCES=20` |
 
 ##### 后端对比
 
