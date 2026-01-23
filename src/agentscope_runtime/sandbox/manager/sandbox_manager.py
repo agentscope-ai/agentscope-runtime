@@ -341,6 +341,7 @@ class SandboxManager(HeartbeatMixin):
                 logger.warning(f"Error closing httpx_client: {e}")
 
     def _generate_container_key(self, session_id):
+        # TODO: refactor this and mapping, use sandbox_id as identity
         return f"{self.prefix}{session_id}"
 
     def _make_request(self, method: str, endpoint: str, data: dict):
