@@ -101,13 +101,13 @@ class Settings(BaseSettings):
 
     # Heartbeat related
     HEARTBEAT_TIMEOUT: int = 300
-    HEARTBEAT_SCAN_INTERVAL: int = 0  # 0 to disable heartbeat check
     HEARTBEAT_LOCK_TTL: int = 120
+    WATCHER_SCAN_INTERVAL: int = 1  # 0 to disable watcher
+    RELEASE_KET_TTL: int = 3600
 
     MAX_SANDBOX_INSTANCES: int = 0  # 0 means unlimited
 
     model_config = ConfigDict(
-        case_sensitive=True,
         extra="allow",
     )
 

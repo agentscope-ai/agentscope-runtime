@@ -39,7 +39,7 @@ def test_heartbeat_reap_then_restore_run_shell():
 
     with SandboxManager(config=config, default_type=SandboxType.BASE) as mgr:
         # Start heartbeat watcher explicitly (not started automatically)
-        mgr.start_heartbeat_watcher()
+        mgr.start_watcher()
 
         # Create a session-bound sandbox (required for heartbeat tracking)
         old_name = mgr.create_from_pool(

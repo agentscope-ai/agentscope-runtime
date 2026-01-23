@@ -254,15 +254,27 @@ class SandboxManagerEnvConfig(BaseModel):
         description="Idle timeout in seconds before session is reaped.",
         gt=0,
     )
-    heartbeat_scan_interval: int = Field(
-        default=0,
-        description="Heartbeat scan interval in seconds. 0 disables scanning.",
-        ge=0,
-    )
     heartbeat_lock_ttl: int = Field(
         default=120,
         description="Redis distributed lock TTL in seconds for reaping.",
         gt=0,
+    )
+    watcher_scan_interval: int = Field(
+        default=1,
+        description=(
+            "Background watcher loop interval in seconds. "
+            "0 disables watcher. Watcher includes heartbeat scan, pool "
+            "replenish, and released-record cleanup."
+        ),
+        ge=0,
+    )
+    released_key_ttl: int = Field(
+        default=3600,
+        description=(
+            "TTL in seconds for keeping RELEASED container records in "
+            "container_mapping. 0 disables cleanup."
+        ),
+        ge=0,
     )
     max_sandbox_instances: int = Field(
         default=0,

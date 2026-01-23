@@ -105,8 +105,9 @@ def get_config() -> SandboxManagerEnvConfig:
             fc_log_project=settings.FC_LOG_PROJECT,
             fc_log_store=settings.FC_LOG_STORE,
             heartbeat_timeout=settings.HEARTBEAT_TIMEOUT,
-            heartbeat_scan_interval=settings.HEARTBEAT_SCAN_INTERVAL,
             heartbeat_lock_ttl=settings.HEARTBEAT_LOCK_TTL,
+            watcher_scan_interval=settings.WATCHER_SCAN_INTERVAL,
+            released_key_ttl=settings.RELEASE_KET_TTL,
             max_sandbox_instances=settings.MAX_SANDBOX_INSTANCES,
         )
     return _config
@@ -212,7 +213,7 @@ async def startup_event():
     register_routes(app, _sandbox_manager)
 
     # Start heartbeat watcher on server side
-    _sandbox_manager.start_heartbeat_watcher()
+    _sandbox_manager.start_watcher()
 
 
 @app.on_event("shutdown")
@@ -224,7 +225,7 @@ async def shutdown_event():
         return
 
     # stop watcher first
-    _sandbox_manager.stop_heartbeat_watcher()
+    _sandbox_manager.stop_watcher()
 
     if settings.AUTO_CLEANUP:
         _sandbox_manager.cleanup()
