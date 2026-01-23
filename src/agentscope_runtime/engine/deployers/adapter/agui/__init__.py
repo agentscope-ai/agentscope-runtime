@@ -5,4 +5,11 @@ from .agui_protocol_adapter import (
     AGUIAdaptorConfig,
 )
 
-__all__ = ["AGUIDefaultAdapter", "FlexibleRunAgentInput", "AGUIAdaptorConfig"]
+from .agui_adapter_utils import AGUIAdapterUtils
+
+__all__ = [
+    "AGUIDefaultAdapter",
+    "FlexibleRunAgentInput",
+    "AGUIAdaptorConfig",
+    "AGUIAdapterUtils",
+]

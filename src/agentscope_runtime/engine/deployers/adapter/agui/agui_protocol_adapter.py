@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest, Event
 
 from .agui_adapter_utils import (
-    AGUIAdapter,
+    AGUIAdapterUtils,
     AGUIEvent,
     AGUIEventType,
     RunErrorEvent,
@@ -157,7 +157,7 @@ class AGUIDefaultAdapter(ProtocolAdapter):
         request: FlexibleRunAgentInput,
     ):
         assert self._execution_func is not None
-        adapter = AGUIAdapter(
+        adapter = AGUIAdapterUtils(
             thread_id=request.thread_id,
             run_id=request.run_id,
         )

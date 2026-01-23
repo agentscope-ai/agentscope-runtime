@@ -216,7 +216,7 @@ class AGUI_MESSAGE_STATUS(Enum):
     COMPLETED = "COMPLETED"
 
 
-class AGUIAdapter:
+class AGUIAdapterUtils:
     """
     Utility adapter that converts between Agent API events and AG-UI events.
     """
@@ -285,6 +285,11 @@ class AGUIAdapter:
                 "session_id": self.thread_id,
                 "user_id": user_id,
                 "tools": tools,
+                # extra fields from agui_request
+                "state": agui_request.state,
+                "forwarded_props": agui_request.forwarded_props,
+                "parent_run_id": agui_request.parent_run_id,
+                "context": agui_request.context,
             },
         )
         return agent_request

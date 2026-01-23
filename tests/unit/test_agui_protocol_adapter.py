@@ -5,6 +5,7 @@ import json
 import pytest
 from ag_ui.core import RunAgentInput
 from ag_ui.core.types import (
+    Context,
     UserMessage,
 )
 from fastapi import FastAPI
@@ -12,6 +13,8 @@ from fastapi.testclient import TestClient
 
 from agentscope_runtime.engine.deployers.adapter.agui import (
     AGUIDefaultAdapter,
+    FlexibleRunAgentInput,
+    AGUIAdapterUtils,
 )
 from agentscope_runtime.engine.helpers.agent_api_builder import ResponseBuilder
 from agentscope_runtime.engine.schemas.agent_schemas import (
@@ -206,3 +209,86 @@ class TestAGUIEventStreaming:
         assert (
             len(message_ids) == 1
         ), "All text message events should have the same messageId"
+
+
+class TestAGUIAdapterConversion:
+    """Test AGUIAdapter conversion methods."""
+
+    def test_convert_agui_request_passes_extra_fields(self):
+        """Test that state, forwarded_props, parent_run_id, context
+        are correctly passed to AgentRequest.
+        """
+        adapter = AGUIAdapterUtils(
+            thread_id="test_thread_123",
+            run_id="test_run_456",
+        )
+
+        # Create test data for extra fields
+        test_state = {"key": "value", "count": 42}
+        test_forwarded_props = {"user_id": "user_123", "custom_prop": "test"}
+        test_parent_run_id = "parent_run_789"
+        test_context = [
+            Context(description="Test context", value="Some context value"),
+        ]
+
+        agui_request = FlexibleRunAgentInput(
+            thread_id="test_thread_123",
+            run_id="test_run_456",
+            messages=[
+                UserMessage(id="msg_1", content="Hello"),
+            ],
+            state=test_state,
+            forwarded_props=test_forwarded_props,
+            parent_run_id=test_parent_run_id,
+            context=test_context,
+            tools=[],
+        )
+
+        agent_request = adapter.convert_agui_request_to_agent_request(
+            agui_request,
+        )
+
+        # Verify the extra fields are correctly passed
+        # AgentRequest uses extra="allow" so these fields are accessible
+        # via model_extra or direct attribute access
+        assert (
+            agent_request.state == test_state
+        ), "state should be passed to AgentRequest"
+        assert (
+            agent_request.forwarded_props == test_forwarded_props
+        ), "forwarded_props should be passed to AgentRequest"
+        assert (
+            agent_request.parent_run_id == test_parent_run_id
+        ), "parent_run_id should be passed to AgentRequest"
+        assert (
+            agent_request.context == test_context
+        ), "context should be passed to AgentRequest"
+
+    def test_convert_agui_request_user_id_from_forwarded_props(self):
+        """Test that user_id is extracted from forwarded_props correctly."""
+        adapter = AGUIAdapterUtils(
+            thread_id="test_thread",
+            run_id="test_run",
+        )
+
+        # Test with user_id in forwarded_props
+        agui_request = FlexibleRunAgentInput(
+            thread_id="test_thread",
+            run_id="test_run",
+            messages=[
+                UserMessage(id="msg_1", content="Test"),
+            ],
+            state=None,
+            forwarded_props={"user_id": "custom_user_123"},
+            parent_run_id=None,
+            context=[],
+            tools=[],
+        )
+
+        agent_request = adapter.convert_agui_request_to_agent_request(
+            agui_request,
+        )
+
+        assert (
+            agent_request.user_id == "custom_user_123"
+        ), "user_id should be extracted from forwarded_props"
