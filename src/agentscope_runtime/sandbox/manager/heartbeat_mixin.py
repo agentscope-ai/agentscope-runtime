@@ -236,7 +236,7 @@ end
         self,
         identity: str,
         *,
-        set_state: Optional[ContainerState] = None,
+        set_state: ContainerState,
     ) -> None:
         """
         Clear the recycle/restore-required marker for ONE container.
