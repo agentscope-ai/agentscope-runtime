@@ -756,14 +756,23 @@ class SandboxManager(HeartbeatMixin):
         try:
             limit = self.config.max_sandbox_instances
             if limit > 0:
-                # TODO: Avoid SCAN+len(list(...)) here; maintain an atomic
-                #  Redis counter (INCR/DECR or Lua) for O(1) instance limit
-                #  checks.
-                current = len(list(self.container_mapping.scan(self.prefix)))
-                if current >= limit:
-                    raise RuntimeError(
-                        f"Max sandbox instances reached: {current}/{limit}",
-                    )
+                # Count only ACTIVE containers; exclude terminal states
+                active_states = {
+                    ContainerState.WARM,
+                    ContainerState.RUNNING,
+                }
+                current = 0
+                for key in self.container_mapping.scan(self.prefix):
+                    try:
+                        container_json = self.container_mapping.get(key)
+                        if not container_json:
+                            continue
+                        cm = ContainerModel(**container_json)
+                        if cm.state in active_states:
+                            current += 1
+                    except Exception:
+                        # ignore broken records
+                        continue
         except RuntimeError as e:
             logger.warning(str(e))
             return None
@@ -1010,16 +1019,25 @@ class SandboxManager(HeartbeatMixin):
                     # last container of this session is gone;
                     # keep state consistent
                     self.session_mapping.delete(session_ctx_id)
-                    try:
-                        self.clear_container_recycle_marker(
-                            container_info.container_name,
-                            set_state=ContainerState.RELEASED,
-                        )
-                    except Exception as e:
-                        logger.debug(
-                            f"clear_container_recycle_marker failed for"
-                            f" {session_ctx_id}: {e}",
-                        )
+
+            # Mark released (do NOT delete mapping) in model
+            now = time.time()
+            container_info.state = ContainerState.RELEASED
+            container_info.released_at = now
+            container_info.updated_at = now
+            container_info.recycled_at = now
+            container_info.recycle_reason = now
+
+            # Unbind session in model
+            container_info.session_ctx_id = None
+            if container_info.meta is None:
+                container_info.meta = {}
+            container_info.meta.pop("session_ctx_id", None)
+
+            self.container_mapping.set(
+                container_info.container_name,
+                container_info.model_dump(),
+            )
 
             try:
                 self.client.stop(container_info.container_id, timeout=1)
@@ -1045,23 +1063,6 @@ class SandboxManager(HeartbeatMixin):
                     container_info.mount_dir,
                     container_info.storage_path,
                 )
-
-            # Mark released (do NOT delete mapping)
-            now = time.time()
-            container_info.state = ContainerState.RELEASED
-            container_info.released_at = now
-            container_info.updated_at = now
-
-            # unbind session
-            container_info.session_ctx_id = None
-            if container_info.meta is None:
-                container_info.meta = {}
-            container_info.meta.pop("session_ctx_id", None)
-
-            self.container_mapping.set(
-                container_info.container_name,
-                container_info.model_dump(),
-            )
 
             return True
         except Exception as e:

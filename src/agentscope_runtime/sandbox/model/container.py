@@ -11,8 +11,8 @@ class ContainerState(str, Enum):
     WARM = "warm"
     RUNNING = "running"
     RECYCLED = "recycled"
-    RELEASED = "released"
     ERROR = "error"
+    RELEASED = "released"
 
 
 class ContainerModel(BaseModel):

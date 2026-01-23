@@ -314,7 +314,7 @@ end
             - ``recycle_reason`` to ``None``
 
         .. important:: This only updates the stored record; it does not manage
-           real container lifecycle.
+           real container lifecycle and session mapping.
 
         Args:
             identity (`str`):
