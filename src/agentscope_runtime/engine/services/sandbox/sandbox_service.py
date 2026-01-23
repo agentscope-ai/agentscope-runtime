@@ -9,11 +9,41 @@ from ....engine.services.base import ServiceWithLifecycleManager
 
 
 class SandboxService(ServiceWithLifecycleManager):
-    def __init__(self, base_url=None, bearer_token=None):
+    def __init__(
+        self,
+        base_url=None,
+        bearer_token=None,
+        drain_on_stop: bool = True,
+    ):
+        """
+        Create a SandboxService.
+
+        Args:
+            base_url:
+                Sandbox manager API base URL. If None, runs in embedded mode.
+            bearer_token:
+                Bearer token used to authenticate with the sandbox manager API.
+            drain_on_stop:
+                Whether to drain (release) all sandboxes associated with this
+                service instance when `stop()` is called.
+
+                - True (default): `stop()` will iterate over all known session
+                  mappings and release all non-AgentBay sandbox environments.
+                  This helps prevent resource leaks when the service shuts
+                  down.
+                - False: `stop()` will NOT release sessions/environments. Use
+                  this when sandboxes are meant to outlive the service process
+                  (e.g., managed elsewhere).
+
+                Note: In embedded mode (`base_url is None`), `stop()` will
+                  still  call `manager_api.cleanup()` to tear down embedded
+                  resources.
+        """
         self.manager_api = None
         self.base_url = base_url
         self.bearer_token = bearer_token
         self._health = False
+        self.drain_on_stop = drain_on_stop
 
     async def start(self) -> None:
         if self.manager_api is None:
@@ -29,14 +59,16 @@ class SandboxService(ServiceWithLifecycleManager):
             self._health = False
             return
 
-        session_keys = self.manager_api.list_session_keys()
-
-        if session_keys:
-            for session_ctx_id in session_keys:
-                env_ids = self.manager_api.get_session_mapping(session_ctx_id)
-                if env_ids:
-                    for env_id in env_ids:
-                        self.manager_api.release(env_id)
+        if self.drain_on_stop:
+            session_keys = self.manager_api.list_session_keys()
+            if session_keys:
+                for session_ctx_id in session_keys:
+                    env_ids = self.manager_api.get_session_mapping(
+                        session_ctx_id,
+                    )
+                    if env_ids:
+                        for env_id in env_ids:
+                            self.manager_api.release(env_id)
 
         if self.base_url is None:
             # Embedded mode
