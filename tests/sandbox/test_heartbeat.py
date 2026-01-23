@@ -127,7 +127,7 @@ def mgr(monkeypatch):
         pool_size=0,
         default_mount_dir="sessions_mount_dir",
         heartbeat_timeout=1,
-        heartbeat_scan_interval=0,
+        watcher_scan_interval=0,
         heartbeat_lock_ttl=2,
     )
 

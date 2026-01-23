@@ -32,7 +32,7 @@ def test_heartbeat_reap_then_restore_run_shell():
 
     # Keep timeouts small so the test finishes quickly
     config.heartbeat_timeout = 30  # seconds of inactivity to trigger reap
-    config.heartbeat_scan_interval = 3  # scan interval in seconds
+    config.watcher_scan_interval = 3  # scan interval in seconds
 
     session_ctx_id = f"hb-restore-{int(time.time())}"
     meta = {"session_ctx_id": session_ctx_id}
@@ -58,7 +58,7 @@ def test_heartbeat_reap_then_restore_run_shell():
 
         # 2) Wait long enough for heartbeat timeout + watcher reap
         time.sleep(
-            config.heartbeat_timeout + config.heartbeat_scan_interval + 5,
+            config.heartbeat_timeout + config.watcher_scan_interval + 5,
         )
 
         # The old container model should be marked as RECYCLED

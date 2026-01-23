@@ -369,13 +369,6 @@ def setup_logging(log_level: str):
 
     level = level_mapping.get(log_level.upper(), logging.INFO)
 
-    # Reconfigure logging
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        force=True,  # This will reconfigure existing loggers
-    )
-
     # Update the logger for this module
     global logger
     logger.setLevel(level)
