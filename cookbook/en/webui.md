@@ -3,8 +3,9 @@
 In **WebUI**, there are mainly three ways to call an Agent:
 
 1. **Use the [hosted WebUI](http://webui.runtime.agentscope.io/) (recommended, no installation)**
-2. **Start directly using `npx`**
-3. **Install locally and start the development environment**
+2. **Start the Agent in Python and enable the WebUI**
+3. **Start directly using `npx`**
+4. **Install locally and start the development environment**
 
 Before you begin, we assume you have already **deployed your Agent**.
 For example, if it’s deployed at `localhost:8090`, the WebUI will call it via the `process` endpoint, so the full request URL will be: http://localhost:8090/process
@@ -25,7 +26,7 @@ http://localhost:8090/process
 
 ## Method 2: Start the Agent Directly in Python and Enable the WebUI
 
-This approach is suitable for running the Agent directly in a Python environment and enabling the built‑in WebUI. You only need to ensure that the Agent's required model environment has been deployed and that the API key is properly configured.
+This approach is suitable for running the Agent directly in a Python environment and enabling the built‑in WebUI. You only need to ensure that the Agent's required environment and API key have been properly configured.
 
 ```python
 from agentscope_runtime.engine import AgentApp
