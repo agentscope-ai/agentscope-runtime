@@ -30,12 +30,6 @@ class SandboxBase:
         sandbox_id: Existing sandbox/container identifier to attach to. If not
             provided, a new sandbox will be created when entering the context
             manager.
-        timeout: HTTP request timeout in seconds for client-side calls to the
-            sandbox runtime/manager (e.g., `list_tools`, `call_tool`, and other
-            network requests). This parameter does not control sandbox idle,
-            recycle, or heartbeat timeouts, which are configured separately by
-            the sandbox runtime (for example via the `HEARTBEAT_TIMEOUT`
-            environment variable).
         base_url: Remote SandboxManager service URL. If provided, the sandbox
             runs in remote mode; otherwise, embedded mode is used.
         bearer_token: Optional bearer token for authenticating to the remote
@@ -47,14 +41,12 @@ class SandboxBase:
         embed_mode: Whether the sandbox is running with an embedded local
             manager.
         sandbox_type: Selected sandbox type.
-        timeout: HTTP request timeout in seconds.
         _sandbox_id: The bound sandbox id (may be None until created).
     """
 
     def __init__(
         self,
         sandbox_id: Optional[str] = None,
-        timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.BASE,
@@ -63,7 +55,6 @@ class SandboxBase:
         self.base_url = base_url
         self.embed_mode = not bool(base_url)
         self.sandbox_type = sandbox_type
-        self.timeout = timeout
         self._sandbox_id = sandbox_id
         self._warned_sandbox_not_started = False
 

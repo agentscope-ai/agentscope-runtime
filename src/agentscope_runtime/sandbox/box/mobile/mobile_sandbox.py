@@ -193,7 +193,6 @@ class MobileSandbox(MobileMixin, Sandbox):
     def __init__(  # pylint: disable=useless-parent-delegation
         self,
         sandbox_id: Optional[str] = None,
-        timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.MOBILE,
@@ -205,7 +204,6 @@ class MobileSandbox(MobileMixin, Sandbox):
 
         super().__init__(
             sandbox_id,
-            timeout,
             base_url,
             bearer_token,
             sandbox_type,
@@ -344,7 +342,6 @@ class MobileSandboxAsync(MobileMixin, AsyncMobileMixin, SandboxAsync):
     def __init__(
         self,
         sandbox_id: Optional[str] = None,
-        timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.MOBILE_ASYNC,
@@ -356,7 +353,6 @@ class MobileSandboxAsync(MobileMixin, AsyncMobileMixin, SandboxAsync):
 
         super().__init__(
             sandbox_id,
-            timeout,
             base_url,
             bearer_token,
             sandbox_type,

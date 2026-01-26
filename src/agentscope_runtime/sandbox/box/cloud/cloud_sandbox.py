@@ -34,7 +34,6 @@ class CloudSandbox(Sandbox, ABC):
     def __init__(
         self,
         sandbox_id: Optional[str] = None,
-        timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.AGENTBAY,
@@ -45,7 +44,6 @@ class CloudSandbox(Sandbox, ABC):
 
         Args:
             sandbox_id: Optional sandbox ID for existing sessions
-            timeout: Timeout for operations in seconds
             base_url: Base URL for cloud API (optional, may use default)
             bearer_token: Authentication token for cloud API
             sandbox_type: Type of sandbox (default: AGENTBAY)
@@ -79,7 +77,6 @@ class CloudSandbox(Sandbox, ABC):
 
         self._sandbox_id = sandbox_id
         self.sandbox_type = sandbox_type
-        self.timeout = timeout
 
         logger.info(f"Cloud sandbox initialized with ID: {self._sandbox_id}")
 
@@ -171,7 +168,6 @@ class CloudSandbox(Sandbox, ABC):
             "sandbox_id": self._sandbox_id,
             "sandbox_type": self.sandbox_type.value,
             "cloud_provider": self._get_cloud_provider_name(),
-            "timeout": self.timeout,
         }
 
     @abstractmethod

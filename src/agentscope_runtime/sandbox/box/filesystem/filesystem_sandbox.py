@@ -21,7 +21,6 @@ class FilesystemSandbox(GUIMixin, BaseSandbox):
     def __init__(  # pylint: disable=useless-parent-delegation
         self,
         sandbox_id: Optional[str] = None,
-        timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.FILESYSTEM,
@@ -29,7 +28,6 @@ class FilesystemSandbox(GUIMixin, BaseSandbox):
     ):
         super().__init__(
             sandbox_id,
-            timeout,
             base_url,
             bearer_token,
             sandbox_type,
@@ -169,7 +167,6 @@ class FilesystemSandboxAsync(GUIMixin, AsyncGUIMixin, BaseSandboxAsync):
     def __init__(  # pylint: disable=useless-parent-delegation
         self,
         sandbox_id: Optional[str] = None,
-        timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.FILESYSTEM_ASYNC,
@@ -177,7 +174,6 @@ class FilesystemSandboxAsync(GUIMixin, AsyncGUIMixin, BaseSandboxAsync):
     ):
         super().__init__(
             sandbox_id,
-            timeout,
             base_url,
             bearer_token,
             sandbox_type,
