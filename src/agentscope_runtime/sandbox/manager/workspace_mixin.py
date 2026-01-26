@@ -117,7 +117,7 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
         url = self.proxy_url(identity, "/workspace/file")
 
         if fmt == "stream":
-            r = self.http_session.get(  # type: ignore[attr-defined]
+            r = self.http_session.get(
                 url,
                 params={"path": path, "format": "bytes"},
                 stream=True,
@@ -133,7 +133,7 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
 
             return gen()
 
-        r = self.http_session.get(  # type: ignore[attr-defined]
+        r = self.http_session.get(
             url,
             params={
                 "path": path,
@@ -177,7 +177,7 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
             body = data
             headers["Content-Type"] = content_type
 
-        r = self.http_session.put(  # type: ignore[attr-defined]
+        r = self.http_session.put(
             url,
             params={"path": path},
             data=body,
@@ -225,7 +225,7 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
                 multipart.append(("files", (p, d, ct)))
 
         url = self.proxy_url(identity, "/workspace/files:batch")
-        r = self.http_session.post(  # type: ignore[attr-defined]
+        r = self.http_session.post(
             url,
             files=multipart,
             timeout=TIMEOUT,
@@ -251,7 +251,7 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
             List of dict entries.
         """
         url = self.proxy_url(identity, "/workspace/list")
-        r = self.http_session.get(  # type: ignore[attr-defined]
+        r = self.http_session.get(
             url,
             params={"path": path, "depth": depth},
             timeout=TIMEOUT,
@@ -267,7 +267,7 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
             True if exists.
         """
         url = self.proxy_url(identity, "/workspace/exists")
-        r = self.http_session.get(  # type: ignore[attr-defined]
+        r = self.http_session.get(
             url,
             params={"path": path},
             timeout=TIMEOUT,
@@ -280,7 +280,7 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
         Remove a workspace entry (file or directory) via proxy.
         """
         url = self.proxy_url(identity, "/workspace/entry")
-        r = self.http_session.delete(  # type: ignore[attr-defined]
+        r = self.http_session.delete(
             url,
             params={"path": path},
             timeout=TIMEOUT,
@@ -297,7 +297,7 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
         Move/rename a workspace entry via proxy.
         """
         url = self.proxy_url(identity, "/workspace/move")
-        r = self.http_session.post(  # type: ignore[attr-defined]
+        r = self.http_session.post(
             url,
             json={"source": source, "destination": destination},
             timeout=TIMEOUT,
@@ -313,7 +313,7 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
             True if created.
         """
         url = self.proxy_url(identity, "/workspace/mkdir")
-        r = self.http_session.post(  # type: ignore[attr-defined]
+        r = self.http_session.post(
             url,
             json={"path": path},
             timeout=TIMEOUT,
@@ -394,7 +394,7 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
 
             return gen()
 
-        r = await self.httpx_client.get(  # type: ignore[attr-defined]
+        r = await self.httpx_client.get(
             url,
             params={
                 "path": path,
@@ -431,7 +431,7 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
             body = data
             headers["Content-Type"] = content_type
 
-        r = await self.httpx_client.put(  # type: ignore[attr-defined]
+        r = await self.httpx_client.put(
             url,
             params={"path": path},
             content=body,
@@ -464,7 +464,7 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
                 multipart.append(("files", (p, d, ct)))
 
         url = self.proxy_url(identity, "/workspace/files:batch")
-        r = await self.httpx_client.post(  # type: ignore[attr-defined]
+        r = await self.httpx_client.post(
             url,
             files=multipart,
         )
@@ -481,7 +481,7 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
         Async list workspace entries via proxy.
         """
         url = self.proxy_url(identity, "/workspace/list")
-        r = await self.httpx_client.get(  # type: ignore[attr-defined]
+        r = await self.httpx_client.get(
             url,
             params={"path": path, "depth": depth},
         )
@@ -493,7 +493,7 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
         Async exists check via proxy.
         """
         url = self.proxy_url(identity, "/workspace/exists")
-        r = await self.httpx_client.get(  # type: ignore[attr-defined]
+        r = await self.httpx_client.get(
             url,
             params={"path": path},
         )
@@ -505,7 +505,7 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
         Async remove a workspace entry via proxy.
         """
         url = self.proxy_url(identity, "/workspace/entry")
-        r = await self.httpx_client.delete(  # type: ignore[attr-defined]
+        r = await self.httpx_client.delete(
             url,
             params={"path": path},
         )
@@ -521,7 +521,7 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
         Async move/rename a workspace entry via proxy.
         """
         url = self.proxy_url(identity, "/workspace/move")
-        r = await self.httpx_client.post(  # type: ignore[attr-defined]
+        r = await self.httpx_client.post(
             url,
             json={"source": source, "destination": destination},
         )
@@ -533,7 +533,7 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
         Async mkdir via proxy.
         """
         url = self.proxy_url(identity, "/workspace/mkdir")
-        r = await self.httpx_client.post(  # type: ignore[attr-defined]
+        r = await self.httpx_client.post(
             url,
             json={"path": path},
         )
