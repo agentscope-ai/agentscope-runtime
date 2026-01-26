@@ -1,6 +1,6 @@
 # WebUI
 
-In **WebUI**, there are mainly three ways to call an Agent:
+In **WebUI**, there are mainly four ways to call an Agent:
 
 1. **Use the [hosted WebUI](http://webui.runtime.agentscope.io/) (recommended, no installation)**
 2. **Start the Agent in Python and enable the WebUI**
