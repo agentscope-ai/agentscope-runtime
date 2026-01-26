@@ -1,325 +1,362 @@
 # -*- coding: utf-8 -*-
-import shutil
 import os
-import logging
-import traceback
+import shutil
+from typing import Optional, Literal, List, Dict, Any, Tuple
 
-import aiofiles
+import anyio
+from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, File
+from fastapi.responses import (
+    PlainTextResponse,
+    StreamingResponse,
+    JSONResponse,
+    Response,
+)
 
-from fastapi import APIRouter, HTTPException, Query, Body
-from fastapi.responses import FileResponse
+router = APIRouter()
 
-workspace_router = APIRouter()
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+BASE_DIR = os.getenv("WORKSPACE_DIR", "/workspace")
+CHUNK_SIZE = 1024 * 1024  # 1MB
 
 
-def ensure_within_workspace(
-    path: str,
-    base_directory: str = "/workspace",
-) -> str:
+def ensure_within_workspace(path: str, base_directory: str = BASE_DIR) -> str:
     """
-    Ensure the provided path is within the /workspace directory.
+    Ensure the provided path is within the BASE_DIR directory.
     """
     base_directory = os.path.abspath(base_directory)
 
-    # Determine if the input path is absolute or relative
     if os.path.isabs(path):
         full_path = os.path.abspath(path)
     else:
         full_path = os.path.abspath(os.path.join(base_directory, path))
 
-    # Check for path traversal attacks and ensure path is within base_directory
     if not full_path.startswith(base_directory):
         raise HTTPException(
             status_code=403,
-            detail="Permission error. Access restricted to /workspace "
+            detail=f"Permission error. Access restricted to {BASE_DIR} "
             "directory.",
         )
 
     return full_path
 
 
-@workspace_router.get(
-    "/workspace/files",
-    summary="Retrieve a file within the /workspace directory",
-)
-async def get_workspace_file(
-    file_path: str = Query(
-        ...,
-        description="Path to the file within /workspace relative to its root",
-    ),
-):
+# ---------- threaded helpers (to avoid blocking event loop) ----------
+
+
+async def _exists(p: str) -> bool:
+    return await anyio.to_thread.run_sync(os.path.exists, p)
+
+
+async def _isdir(p: str) -> bool:
+    return await anyio.to_thread.run_sync(os.path.isdir, p)
+
+
+async def _isfile(p: str) -> bool:
+    return await anyio.to_thread.run_sync(os.path.isfile, p)
+
+
+async def _islink(p: str) -> bool:
+    return await anyio.to_thread.run_sync(os.path.islink, p)
+
+
+async def _makedirs(p: str) -> None:
+    if not p:
+        return
+    await anyio.to_thread.run_sync(lambda: os.makedirs(p, exist_ok=True))
+
+
+async def _remove_file(p: str) -> None:
+    await anyio.to_thread.run_sync(os.remove, p)
+
+
+async def _rmtree(p: str) -> None:
+    await anyio.to_thread.run_sync(shutil.rmtree, p)
+
+
+async def _replace(src: str, dst: str) -> None:
+    await anyio.to_thread.run_sync(os.replace, src, dst)
+
+
+async def _lstat(p: str):
+    return await anyio.to_thread.run_sync(os.lstat, p)
+
+
+async def _read_text(p: str) -> str:
+    def _read():
+        with open(p, "r", encoding="utf-8") as f:
+            return f.read()
+
+    return await anyio.to_thread.run_sync(_read)
+
+
+async def _write_bytes_stream_to_file(
+    full_path: str,
+    request: Request,
+) -> None:
     """
-    Get a file within the /workspace directory.
+    Stream request body -> file, chunked, with file writes in a thread.
     """
+
+    def _open():
+        return open(full_path, "wb")
+
+    f = await anyio.to_thread.run_sync(_open)
     try:
-        # Ensure the file path is within the /workspace directory
-        full_path = ensure_within_workspace(file_path)
-
-        # Check if the file exists
-        if not os.path.isfile(full_path):
-            raise HTTPException(status_code=404, detail="File not found.")
-
-        # Return the file using FileResponse
-        return FileResponse(
-            full_path,
-            media_type="application/octet-stream",
-            filename=os.path.basename(full_path),
-        )
-
-    except Exception as e:
-        logger.error(f"{str(e)}:\n{traceback.format_exc()}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"{str(e)}: {traceback.format_exc()}",
-        ) from e
+        async for chunk in request.stream():
+            if not chunk:
+                continue
+            await anyio.to_thread.run_sync(f.write, chunk)
+        await anyio.to_thread.run_sync(f.flush)
+    finally:
+        await anyio.to_thread.run_sync(f.close)
 
 
-@workspace_router.post(
-    "/workspace/files",
-    summary="Create or edit a file within the /workspace directory",
-)
-async def create_or_edit_file(
-    file_path: str = Query(
-        ...,
-        description="Path to the file within /workspace",
-    ),
-    content: str = Body(..., description="Content to write to the file"),
-):
-    try:
-        full_path = ensure_within_workspace(file_path)
-        async with aiofiles.open(full_path, "w", encoding="utf-8") as f:
-            await f.write(content)
-        return {"message": "File created or edited successfully."}
-    except Exception as e:
-        logger.error(
-            f"Error creating or editing file: {str(e)}:\
-            n{traceback.format_exc()}",
-        )
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error creating or editing file: {str(e)}",
-        ) from e
-
-
-@workspace_router.get(
-    "/workspace/list-directories",
-    summary="List file items in the /workspace directory, including nested "
-    "files and directories",
-)
-async def list_workspace_files(
-    directory: str = Query(
-        "/workspace",
-        description="Directory to list files and directories from, default "
-        "is /workspace.",
-    ),
-):
+async def _write_uploadfile_to_path(uf: UploadFile, target: str) -> None:
     """
-    List all files and directories in the specified directory, including
-    nested items, with type indication and statistics.
+    Stream UploadFile -> disk in chunks. UploadFile.read is async; disk
+    write is threaded.
     """
+
+    def _open():
+        return open(target, "wb")
+
+    f = await anyio.to_thread.run_sync(_open)
     try:
-        target_directory = ensure_within_workspace(directory)
-
-        # Verify if the specified directory exists
-        if not os.path.isdir(target_directory):
-            raise HTTPException(status_code=404, detail="Directory not found.")
-
-        nested_items = []
-        file_count = 0
-        directory_count = 0
-
-        for root, dirs, files in os.walk(target_directory):
-            for d in dirs:
-                dir_path = os.path.join(root, d)
-                nested_items.append(
-                    {
-                        "type": "directory",
-                        "path": os.path.relpath(dir_path, target_directory),
-                    },
-                )
-                directory_count += 1
-
-            for f in files:
-                file_path = os.path.join(root, f)
-                nested_items.append(
-                    {
-                        "type": "file",
-                        "path": os.path.relpath(file_path, target_directory),
-                    },
-                )
-                file_count += 1
-
-        return {
-            "items": nested_items,
-            "statistics": {
-                "total_directories": directory_count,
-                "total_files": file_count,
-            },
-        }
-
-    except Exception as e:
-        logger.error(
-            f"Error listing files: {str(e)}:\n{traceback.format_exc()}",
-        )
-        raise HTTPException(
-            status_code=500,
-            detail=f"An error occurred while listing files: {str(e)}",
-        ) from e
+        while True:
+            chunk = await uf.read(CHUNK_SIZE)
+            if not chunk:
+                break
+            await anyio.to_thread.run_sync(f.write, chunk)
+        await anyio.to_thread.run_sync(f.flush)
+    finally:
+        await anyio.to_thread.run_sync(f.close)
 
 
-@workspace_router.post(
-    "/workspace/directories",
-    summary="Create a directory within the /workspace directory",
-)
-async def create_directory(
-    directory_path: str = Query(
-        ...,
-        description="Path to the directory within /workspace",
-    ),
+async def entry_info(full_path: str) -> Dict[str, Any]:
+    st = await _lstat(full_path)
+
+    if await _isdir(full_path):
+        t = "dir"
+    elif await _isfile(full_path):
+        t = "file"
+    elif await _islink(full_path):
+        t = "symlink"
+    else:
+        t = "other"
+
+    return {
+        "path": full_path,
+        "name": os.path.basename(full_path.rstrip("/")),
+        "type": t,
+        "size": st.st_size if t == "file" else None,
+        "mtime_ms": int(st.st_mtime * 1000),
+    }
+
+
+async def _list_dir_recursive(root: str, depth: Optional[int]) -> List[str]:
+    """
+    Return list of absolute paths under root, up to depth.
+    Uses blocking os.scandir in thread, but recursion logic stays async.
+    """
+    results: List[str] = []
+
+    def _scandir(p: str) -> List[Tuple[str, bool]]:
+        out = []
+        with os.scandir(p) as it:
+            for ent in it:
+                # follow_symlinks=False to avoid escaping via symlink dirs
+                is_dir = ent.is_dir(follow_symlinks=False)
+                out.append((ent.path, is_dir))
+        return out
+
+    async def walk(cur: str, d: int):
+        try:
+            items = await anyio.to_thread.run_sync(_scandir, cur)
+        except FileNotFoundError:
+            return
+
+        for p, is_dir in items:
+            results.append(p)
+            if is_dir and (depth is None or d < depth):
+                await walk(p, d + 1)
+
+    await walk(root, 1)
+    return results
+
+
+# -------------------- routes --------------------
+
+
+@router.get("/file")
+async def read_file(
+    path: str = Query(...),
+    fmt: Literal["text", "bytes"] = Query("text", alias="format"),
 ):
-    try:
-        full_path = ensure_within_workspace(directory_path)
-        os.makedirs(full_path, exist_ok=True)
-        return {"message": "Directory created successfully."}
-    except Exception as e:
-        logger.error(
-            f"Error creating directory: {str(e)}:\n{traceback.format_exc()}",
-        )
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error creating directory: {str(e)}",
-        ) from e
+    full_path = ensure_within_workspace(path)
+
+    if not await _exists(full_path) or await _isdir(full_path):
+        raise HTTPException(status_code=404, detail="not found")
+
+    if fmt == "text":
+        text = await _read_text(full_path)
+        return PlainTextResponse(text)
+
+    async def aiter_file_bytes():
+        """
+        Async generator producing file chunks, but file reads happen in a
+        thread.
+        """
+
+        def _open():
+            return open(full_path, "rb")
+
+        f = await anyio.to_thread.run_sync(_open)
+        try:
+            while True:
+                chunk = await anyio.to_thread.run_sync(f.read, CHUNK_SIZE)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            await anyio.to_thread.run_sync(f.close)
+
+    return StreamingResponse(
+        aiter_file_bytes(),
+        media_type="application/octet-stream",
+    )
 
 
-@workspace_router.delete(
-    "/workspace/files",
-    summary="Delete a file within the /workspace directory",
-)
-async def delete_file(
-    file_path: str = Query(
-        ...,
-        description="Path to the file within /workspace",
-    ),
+@router.put("/file")
+async def write_file(
+    request: Request,
+    path: str = Query(...),
 ):
-    try:
-        full_path = ensure_within_workspace(file_path)
-        if os.path.isfile(full_path):
-            os.remove(full_path)
-            return {"message": "File deleted successfully."}
-        else:
-            raise HTTPException(status_code=404, detail="File not found.")
-    except Exception as e:
-        logger.error(
-            f"Error deleting file: {str(e)}:\n{traceback.format_exc()}",
-        )
+    full_path = ensure_within_workspace(path)
+    parent = os.path.dirname(full_path)
+
+    await _makedirs(parent)
+
+    if await _exists(full_path) and await _isdir(full_path):
         raise HTTPException(
-            status_code=500,
-            detail=f"Error deleting file: {str(e)}",
-        ) from e
-
-
-@workspace_router.delete(
-    "/workspace/directories",
-    summary="Delete a directory within the /workspace directory",
-)
-async def delete_directory(
-    directory_path: str = Query(
-        ...,
-        description="Path to the directory within /workspace",
-    ),
-    recursive: bool = Query(
-        False,
-        description="Recursively delete directory contents",
-    ),
-):
-    try:
-        full_path = ensure_within_workspace(directory_path)
-        if recursive:
-            shutil.rmtree(full_path)
-        else:
-            os.rmdir(full_path)
-        return {"message": "Directory deleted successfully."}
-    except Exception as e:
-        logger.error(
-            f"Error deleting directory: {str(e)}:\n{traceback.format_exc()}",
+            status_code=409,
+            detail="path exists and is a directory",
         )
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error deleting directory: {str(e)}",
-        ) from e
 
-
-@workspace_router.put(
-    "/workspace/move",
-    summary="Move or rename a file or directory within the /workspace "
-    "directory",
-)
-async def move_or_rename(
-    source_path: str = Query(
-        ...,
-        description="Source path within /workspace",
-    ),
-    destination_path: str = Query(
-        ...,
-        description="Destination path within /workspace",
-    ),
-):
     try:
-        full_source_path = ensure_within_workspace(source_path)
-        full_destination_path = ensure_within_workspace(destination_path)
-        if not os.path.exists(full_source_path):
+        await _write_bytes_stream_to_file(full_path, request)
+    except Exception:
+        try:
+            if await _exists(full_path):
+                await _remove_file(full_path)
+        except Exception:
+            pass
+        raise
+
+    return JSONResponse(await entry_info(full_path))
+
+
+@router.post("/files:batch")
+async def batch_write(
+    files: List[UploadFile] = File(default=[]),
+):
+    out: List[Dict[str, Any]] = []
+
+    for uf in files:
+        if not uf.filename:
+            raise HTTPException(400, detail="missing filename for a part")
+
+        target = ensure_within_workspace(uf.filename)
+        await _makedirs(os.path.dirname(target))
+
+        if await _exists(target) and await _isdir(target):
             raise HTTPException(
-                status_code=404,
-                detail="Source file or directory not found.",
-            )
-        os.rename(full_source_path, full_destination_path)
-        return {"message": "Move or rename operation successful."}
-    except Exception as e:
-        logger.error(
-            f"Error moving or renaming: {str(e)}:\n{traceback.format_exc()}",
-        )
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error moving or renaming: {str(e)}",
-        ) from e
-
-
-@workspace_router.post(
-    "/workspace/copy",
-    summary="Copy a file or directory within the /workspace directory",
-)
-async def copy(
-    source_path: str = Query(
-        ...,
-        description="Source path within /workspace",
-    ),
-    destination_path: str = Query(
-        ...,
-        description="Destination path within /workspace",
-    ),
-):
-    try:
-        full_source_path = ensure_within_workspace(source_path)
-        full_destination_path = ensure_within_workspace(destination_path)
-        if not os.path.exists(full_source_path):
-            raise HTTPException(
-                status_code=404,
-                detail="Source file or directory not found.",
+                status_code=409,
+                detail=f"target exists and is a directory: {uf.filename}",
             )
 
-        if os.path.isdir(full_source_path):
-            shutil.copytree(full_source_path, full_destination_path)
-        else:
-            shutil.copy2(full_source_path, full_destination_path)
+        await _write_uploadfile_to_path(uf, target)
+        out.append(await entry_info(target))
 
-        return {"message": "Copy operation successful."}
-    except Exception as e:
-        logger.error(f"Error copying: {str(e)}:\n{traceback.format_exc()}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error copying: " f"{str(e)}",
-        ) from e
+    return JSONResponse(out)
+
+
+@router.get("/list")
+async def list_dir(
+    path: str = Query(...),
+    depth: Optional[int] = Query(1, ge=1),
+):
+    full_path = ensure_within_workspace(path)
+
+    if not await _exists(full_path) or not await _isdir(full_path):
+        raise HTTPException(404, detail="not found")
+
+    paths = await _list_dir_recursive(full_path, depth)
+
+    entries: List[Dict[str, Any]] = []
+    for p in paths:
+        if await _exists(p):
+            entries.append(await entry_info(p))
+
+    return JSONResponse(entries)
+
+
+@router.get("/exists")
+async def exists(path: str = Query(...)):
+    full_path = ensure_within_workspace(path)
+    return JSONResponse({"exists": await _exists(full_path)})
+
+
+@router.delete("/entry")
+async def remove(path: str = Query(...)):
+    full_path = ensure_within_workspace(path)
+
+    if not await _exists(full_path):
+        return Response(status_code=204)
+
+    if await _isdir(full_path) and not await _islink(full_path):
+        await _rmtree(full_path)
+    else:
+        await _remove_file(full_path)
+
+    return Response(status_code=204)
+
+
+@router.post("/move")
+async def move(request: Request):
+    body = await request.json()
+    source = body.get("source")
+    destination = body.get("destination")
+
+    if not source or not destination:
+        raise HTTPException(400, detail="source and destination are required")
+
+    src = ensure_within_workspace(source)
+    dst = ensure_within_workspace(destination)
+
+    if not await _exists(src):
+        raise HTTPException(404, detail="source not found")
+
+    await _makedirs(os.path.dirname(dst))
+    await _replace(src, dst)
+
+    return JSONResponse(await entry_info(dst))
+
+
+@router.post("/mkdir")
+async def mkdir(request: Request):
+    body = await request.json()
+    path = body.get("path")
+    if not path:
+        raise HTTPException(400, detail="path is required")
+
+    full_path = ensure_within_workspace(path)
+
+    if await _exists(full_path):
+        if not await _isdir(full_path):
+            raise HTTPException(
+                409,
+                detail="path exists and is not a directory",
+            )
+        return JSONResponse({"created": False})
+
+    await _makedirs(full_path)
+    return JSONResponse({"created": True})
