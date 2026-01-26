@@ -810,7 +810,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 
 <span class="k">async</span> <span class="k">with</span> <span class="n">BaseSandboxAsync</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
     <span class="c1"># 默认使用镜像 `agentscope/runtime-sandbox-base:latest` 从 DockerHub 拉取</span>
-    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>  <span class="c1"># 列出所有可用工具</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">list_tools_async</span><span class="p">())</span>  <span class="c1"># 列出所有可用工具</span>
     <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">run_ipython_cell</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;print(&#39;你好&#39;)&quot;</span><span class="p">))</span>  <span class="c1"># 在沙箱中运行 Python 代码</span>
     <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">run_shell_command</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="s2">&quot;echo hello&quot;</span><span class="p">))</span>  <span class="c1"># 在沙箱中运行 Shell 命令</span>
     <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;按 Enter 键继续...&quot;</span><span class="p">)</span>
@@ -840,7 +840,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 
 <span class="k">async</span> <span class="k">with</span> <span class="n">GuiSandboxAsync</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
     <span class="c1"># 默认使用镜像 `agentscope/runtime-sandbox-gui:latest` 从 DockerHub 拉取</span>
-    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>  <span class="c1"># 列出所有可用工具</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">list_tools_async</span><span class="p">())</span>  <span class="c1"># 列出所有可用工具</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">desktop_url</span><span class="p">)</span>  <span class="c1"># Web 桌面访问地址</span>
     <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_cursor_position&quot;</span><span class="p">))</span>  <span class="c1"># 获取鼠标位置坐标</span>
     <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">computer_use</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;get_screenshot&quot;</span><span class="p">))</span>  <span class="c1"># 截取桌面截图</span>
@@ -870,7 +870,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 
 <span class="k">async</span> <span class="k">with</span> <span class="n">FilesystemSandboxAsync</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
     <span class="c1"># 默认使用镜像 `agentscope/runtime-sandbox-filesystem:latest` 从 DockerHub 拉取</span>
-    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>  <span class="c1"># 列出所有可用工具</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">list_tools_async</span><span class="p">())</span>  <span class="c1"># 列出所有可用工具</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">desktop_url</span><span class="p">)</span>  <span class="c1"># Web 桌面访问地址</span>
     <span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">create_directory</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>  <span class="c1"># 创建一个目录</span>
     <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;按 Enter 键继续...&quot;</span><span class="p">)</span>
@@ -899,7 +899,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 
 <span class="k">async</span> <span class="k">with</span> <span class="n">BrowserSandboxAsync</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
     <span class="c1"># 默认使用镜像 `agentscope/runtime-sandbox-browser:latest` 从 DockerHub 拉取</span>
-    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>  <span class="c1"># 列出所有可用工具</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">list_tools_async</span><span class="p">())</span>  <span class="c1"># 列出所有可用工具</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">desktop_url</span><span class="p">)</span>  <span class="c1"># Web 桌面访问地址</span>
     <span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">browser_navigate</span><span class="p">(</span><span class="s2">&quot;https://www.google.com/&quot;</span><span class="p">)</span>  <span class="c1"># 打开网页</span>
     <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;按 Enter 键继续...&quot;</span><span class="p">)</span>
@@ -953,7 +953,7 @@ docker<span class="w"> </span>pull<span class="w"> </span>agentscope-registry.ap
 
 <span class="k">async</span> <span class="k">with</span> <span class="n">MobileSandboxAsync</span><span class="p">()</span> <span class="k">as</span> <span class="n">box</span><span class="p">:</span>
     <span class="c1"># 默认使用镜像 &#39;agentscope/runtime-sandbox-mobile:latest&#39; 从 DockerHub 拉取</span>
-    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span>  <span class="c1"># 列出所有可用工具</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">list_tools_async</span><span class="p">())</span>  <span class="c1"># 列出所有可用工具</span>
     <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">mobile_get_screen_resolution</span><span class="p">())</span>  <span class="c1"># 获取屏幕分辨率</span>
     <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">mobile_tap</span><span class="p">([</span><span class="mi">500</span><span class="p">,</span> <span class="mi">1000</span><span class="p">]))</span>  <span class="c1"># 在坐标 (500, 1000) 点击</span>
     <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">box</span><span class="o">.</span><span class="n">mobile_input_text</span><span class="p">(</span><span class="s2">&quot;来自 AgentScope 的问候！&quot;</span><span class="p">))</span>  <span class="c1"># 输入文本</span>
