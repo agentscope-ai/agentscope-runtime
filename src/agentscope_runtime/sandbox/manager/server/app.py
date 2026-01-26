@@ -356,6 +356,24 @@ async def websocket_endpoint(
         await websocket.close()
 
 
+@app.api_route(
+    "/proxy/{identity}/{path:path}",
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+)
+async def proxy_to_runtime(
+    identity: str,
+    path: str,
+    request: Request,
+    token=Depends(verify_token),
+):
+    mgr = get_sandbox_manager()
+    return await mgr.proxy_to_runtime(
+        identity=identity,
+        path="/" + path,
+        request=request,
+    )
+
+
 def setup_logging(log_level: str):
     """Setup logging configuration based on log level"""
     # Convert string to logging level
