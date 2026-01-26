@@ -676,7 +676,7 @@ limitations under the License.
 
 ## ✨ Contributors
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-32-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-33-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/emoji-key/)):
@@ -727,6 +727,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/e
       <td align="center" valign="top" width="14.28%"><a href="https://allenli178.top"><img src="https://avatars.githubusercontent.com/u/53218750?v=4?s=100" width="100px;" alt="YuYan"/><br /><sub><b>YuYan</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=allenli178" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/rlp2006"><img src="https://avatars.githubusercontent.com/u/212365247?v=4?s=100" width="100px;" alt="Li Peng (Yuan Yi)"/><br /><sub><b>Li Peng (Yuan Yi)</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=rlp2006" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=rlp2006" title="Documentation">📖</a> <a href="#example-rlp2006" title="Examples">💡</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://dorianzheng.github.io"><img src="https://avatars.githubusercontent.com/u/8065637?v=4?s=100" width="100px;" alt="dorianzheng"/><br /><sub><b>dorianzheng</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/pulls?q=is%3Apr+reviewed-by%3ADorianZheng" title="Reviewed Pull Requests">👀</a> <a href="#platform-DorianZheng" title="Packaging/porting to new platform">📦</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/cainiao1992"><img src="https://avatars.githubusercontent.com/u/18435004?v=4?s=100" width="100px;" alt="Xiangfang Chen"/><br /><sub><b>Xiangfang Chen</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=cainiao1992" title="Documentation">📖</a></td>
     </tr>
   </tbody>
   <tfoot>
