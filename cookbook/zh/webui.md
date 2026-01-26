@@ -26,7 +26,7 @@ http://localhost:8090/process
 
 ## 方法 2：在 Python 中直接启动 Agent 并启用 WebUI
 
-这种方式适合在 Python 环境中直接运行 Agent，并启用内置 WebUI。你只需要确保 Agent 所需的环境和API Key已正确配置。
+这种方式适合在 Python 环境中直接运行 Agent，并启用内置 WebUI。你只需要确保 Agent 所需的环境和 API Key 已正确配置。
 
 ```python
 from agentscope_runtime.engine import AgentApp
