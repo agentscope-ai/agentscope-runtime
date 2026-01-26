@@ -635,6 +635,7 @@ body.preview-active {
 <p>In <strong>WebUI</strong>, there are mainly three ways to call an Agent:</p>
 <ol class="arabic simple">
 <li><p><strong>Use the <a class="reference external" href="http://webui.runtime.agentscope.io/">hosted WebUI</a> (recommended, no installation)</strong></p></li>
+<li><p><strong>Start the Agent in Python and enable the WebUI</strong></p></li>
 <li><p><strong>Start directly using <code class="docutils literal notranslate"><span class="pre">npx</span></code></strong></p></li>
 <li><p><strong>Install locally and start the development environment</strong></p></li>
 </ol>
@@ -652,7 +653,7 @@ For example, if it’s deployed at <code class="docutils literal notranslate"><s
 </section>
 <section id="method-2-start-the-agent-directly-in-python-and-enable-the-webui">
 <h2>Method 2: Start the Agent Directly in Python and Enable the WebUI<a class="headerlink" href="#method-2-start-the-agent-directly-in-python-and-enable-the-webui" title="Link to this heading">¶</a></h2>
-<p>This approach is suitable for running the Agent directly in a Python environment and enabling the built‑in WebUI. You only need to ensure that the Agent’s required model environment has been deployed and that the API key is properly configured.</p>
+<p>This approach is suitable for running the Agent directly in a Python environment and enabling the built‑in WebUI. You only need to ensure that the Agent’s required environment and API key have been properly configured.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
 
 <span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
