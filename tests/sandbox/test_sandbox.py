@@ -187,6 +187,81 @@ async def test_remote_sandbox(env):
                 print(f"Error during cleanup: {cleanup_error}")
 
 
+@pytest.mark.asyncio
+async def test_local_sandbox_fs_async(env):
+    async with BaseSandboxAsync() as box:
+        # create dir + write + read(text)
+        ok = await box.fs.mkdir_async("dir_async")
+        assert isinstance(ok, bool)
+
+        r1 = await box.fs.write_async("dir_async/a.txt", "hello async")
+        assert isinstance(r1, dict)
+
+        txt = await box.fs.read_async("dir_async/a.txt", fmt="text")
+        assert txt == "hello async"
+
+        # exists + list
+        assert await box.fs.exists_async("dir_async/a.txt") is True
+        items = await box.fs.list_async("dir_async", depth=2)
+        assert isinstance(items, list)
+
+        # streaming download
+        stream = await box.fs.read_async("dir_async/a.txt", fmt="stream")
+        assert hasattr(stream, "__aiter__")
+        buf = b""
+        async for chunk in stream:
+            buf += chunk
+        assert buf == b"hello async"
+
+        # move + remove
+        mv = await box.fs.move_async("dir_async/a.txt", "dir_async/b.txt")
+        assert isinstance(mv, dict)
+        assert await box.fs.exists_async("dir_async/b.txt") is True
+
+        await box.fs.remove_async("dir_async/b.txt")
+        assert await box.fs.exists_async("dir_async/b.txt") is False
+
+
+def test_local_sandbox_fs(env, tmp_path):
+    with BaseSandbox() as box:
+        # create dir + write + read(text)
+        ok = box.fs.mkdir("dir")
+        assert isinstance(ok, bool)
+
+        r1 = box.fs.write("dir/a.txt", "hello")
+        assert isinstance(r1, dict)
+
+        txt = box.fs.read("dir/a.txt", fmt="text")
+        assert txt == "hello"
+
+        # exists + list
+        assert box.fs.exists("dir/a.txt") is True
+        items = box.fs.list("dir", depth=2)
+        assert isinstance(items, list)
+
+        # streaming download
+        out = b""
+        for chunk in box.fs.read("dir/a.txt", fmt="stream"):
+            out += chunk
+        assert out == b"hello"
+
+        # write_from_path (stream upload)
+        local_file = tmp_path / "local.txt"
+        local_file.write_text("from local", encoding="utf-8")
+
+        r2 = box.fs.write_from_path("dir/from_local.txt", str(local_file))
+        assert isinstance(r2, dict)
+        assert box.fs.read("dir/from_local.txt", fmt="text") == "from local"
+
+        # move + remove
+        mv = box.fs.move("dir/a.txt", "dir/b.txt")
+        assert isinstance(mv, dict)
+        assert box.fs.exists("dir/b.txt") is True
+
+        box.fs.remove("dir/b.txt")
+        assert box.fs.exists("dir/b.txt") is False
+
+
 if __name__ == "__main__":
     if os.path.exists("../../.env"):
         load_dotenv("../../.env")

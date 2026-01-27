@@ -45,7 +45,7 @@ class WorkspaceMixin:
 
             def gen() -> Iterator[bytes]:
                 # Use raw request to keep the Response open during iteration.
-                r = self._request(  # type: ignore[attr-defined]
+                r = self._request(
                     "get",
                     url,
                     params={"path": path, "format": "bytes"},
@@ -61,7 +61,7 @@ class WorkspaceMixin:
 
             return gen()
 
-        r = self._request(  # type: ignore[attr-defined]
+        r = self._request(
             "get",
             url,
             params={
@@ -97,7 +97,7 @@ class WorkspaceMixin:
             body = data
             headers["Content-Type"] = content_type
 
-        r = self._request(  # type: ignore[attr-defined]
+        r = self._request(
             "put",
             url,
             params={"path": path},
@@ -137,7 +137,7 @@ class WorkspaceMixin:
             else:
                 multipart.append(("files", (p, d, ct)))
 
-        r = self._request(  # type: ignore[attr-defined]
+        r = self._request(
             "post",
             url,
             files=multipart,
@@ -150,14 +150,14 @@ class WorkspaceMixin:
         path: str,
         depth: Optional[int] = 1,
     ) -> List[Dict[str, Any]]:
-        return self.safe_request(  # type: ignore[attr-defined]
+        return self.safe_request(
             "get",
             f"{self.base_url}/workspace/list",
             params={"path": path, "depth": depth},
         )
 
     def workspace_exists(self, path: str) -> bool:
-        data = self.safe_request(  # type: ignore[attr-defined]
+        data = self.safe_request(
             "get",
             f"{self.base_url}/workspace/exists",
             params={"path": path},
@@ -165,7 +165,7 @@ class WorkspaceMixin:
         return bool(isinstance(data, dict) and data.get("exists"))
 
     def workspace_remove(self, path: str) -> None:
-        r = self._request(  # type: ignore[attr-defined]
+        r = self._request(
             "delete",
             f"{self.base_url}/workspace/entry",
             params={"path": path},
@@ -173,14 +173,14 @@ class WorkspaceMixin:
         r.raise_for_status()
 
     def workspace_move(self, source: str, destination: str) -> Dict[str, Any]:
-        return self.safe_request(  # type: ignore[attr-defined]
+        return self.safe_request(
             "post",
             f"{self.base_url}/workspace/move",
             json={"source": source, "destination": destination},
         )
 
     def workspace_mkdir(self, path: str) -> bool:
-        data = self.safe_request(  # type: ignore[attr-defined]
+        data = self.safe_request(
             "post",
             f"{self.base_url}/workspace/mkdir",
             json={"path": path},
@@ -234,7 +234,7 @@ class WorkspaceAsyncMixin:
         if fmt == "stream":
 
             async def gen() -> AsyncIterator[bytes]:
-                async with self.client.stream(  # type: ignore[attr-defined]
+                async with self.client.stream(
                     "GET",
                     url,
                     params={"path": path, "format": "bytes"},
@@ -245,7 +245,7 @@ class WorkspaceAsyncMixin:
 
             return gen()
 
-        r = await self._request(  # type: ignore[attr-defined]
+        r = await self._request(
             "get",
             url,
             params={
@@ -282,7 +282,7 @@ class WorkspaceAsyncMixin:
             body = data
             headers["Content-Type"] = content_type
 
-        r = await self._request(  # type: ignore[attr-defined]
+        r = await self._request(
             "put",
             url,
             params={"path": path},
@@ -322,7 +322,7 @@ class WorkspaceAsyncMixin:
             else:
                 multipart.append(("files", (p, d, ct)))
 
-        r = await self._request(  # type: ignore[attr-defined]
+        r = await self._request(
             "post",
             url,
             files=multipart,
@@ -335,14 +335,14 @@ class WorkspaceAsyncMixin:
         path: str,
         depth: Optional[int] = 1,
     ) -> List[Dict[str, Any]]:
-        return await self.safe_request(  # type: ignore[attr-defined]
+        return await self.safe_request(
             "get",
             f"{self.base_url}/workspace/list",
             params={"path": path, "depth": depth},
         )
 
     async def workspace_exists(self, path: str) -> bool:
-        data = await self.safe_request(  # type: ignore[attr-defined]
+        data = await self.safe_request(
             "get",
             f"{self.base_url}/workspace/exists",
             params={"path": path},
@@ -350,7 +350,7 @@ class WorkspaceAsyncMixin:
         return bool(isinstance(data, dict) and data.get("exists"))
 
     async def workspace_remove(self, path: str) -> None:
-        r = await self._request(  # type: ignore[attr-defined]
+        r = await self._request(
             "delete",
             f"{self.base_url}/workspace/entry",
             params={"path": path},
@@ -362,14 +362,14 @@ class WorkspaceAsyncMixin:
         source: str,
         destination: str,
     ) -> Dict[str, Any]:
-        return await self.safe_request(  # type: ignore[attr-defined]
+        return await self.safe_request(
             "post",
             f"{self.base_url}/workspace/move",
             json={"source": source, "destination": destination},
         )
 
     async def workspace_mkdir(self, path: str) -> bool:
-        data = await self.safe_request(  # type: ignore[attr-defined]
+        data = await self.safe_request(
             "post",
             f"{self.base_url}/workspace/mkdir",
             json={"path": path},
