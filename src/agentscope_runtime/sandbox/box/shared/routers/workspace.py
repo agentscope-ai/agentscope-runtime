@@ -4,7 +4,15 @@ import shutil
 from typing import Optional, Literal, List, Dict, Any, Tuple
 
 import anyio
-from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, File
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    File,
+    Form,
+)
 from fastapi.responses import (
     PlainTextResponse,
     StreamingResponse,
@@ -257,20 +265,43 @@ async def write_file(
 @router.post("/files:batch")
 async def batch_write(
     files: List[UploadFile] = File(default=[]),
+    paths: List[str] = Form(default=[]),
 ):
+    """
+    Batch write workspace files.
+
+    Compatibility:
+      - If `paths` is provided, it must have the same length as `files` and
+        will be used as the target workspace path for each file.
+      - Otherwise, fall back to `UploadFile.filename` (legacy behavior).
+
+    Rationale:
+      Some HTTP clients may sanitize the `filename` field
+      (e.g., dropping directory components). Providing `paths` as an
+      explicit form field is more reliable.
+    """
+    if paths and len(paths) != len(files):
+        raise HTTPException(
+            status_code=400,
+            detail="`paths` length must match `files` length",
+        )
+
     out: List[Dict[str, Any]] = []
 
-    for uf in files:
-        if not uf.filename:
-            raise HTTPException(400, detail="missing filename for a part")
+    for idx, uf in enumerate(files):
+        # choose target path
+        relpath = paths[idx] if paths else uf.filename
 
-        target = ensure_within_workspace(uf.filename)
+        if not relpath:
+            raise HTTPException(400, detail="missing target path for a part")
+
+        target = ensure_within_workspace(relpath)
         await _makedirs(os.path.dirname(target))
 
         if await _exists(target) and await _isdir(target):
             raise HTTPException(
                 status_code=409,
-                detail=f"target exists and is a directory: {uf.filename}",
+                detail=f"target exists and is a directory: {relpath}",
             )
 
         await _write_uploadfile_to_path(uf, target)

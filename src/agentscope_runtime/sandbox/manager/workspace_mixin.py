@@ -19,6 +19,9 @@ works in BOTH SDK modes:
 """
 from __future__ import annotations
 
+import os
+import asyncio
+
 from typing import (
     IO,
     Any,
@@ -206,26 +209,31 @@ class WorkspaceFSSyncMixin(ProxyBaseMixin):
             return client.workspace_write_many(files)
 
         multipart = []
+        form_paths = []
+
         for item in files:
             p = item["path"]
             d = item["data"]
             ct = item.get("content_type", "application/octet-stream")
 
+            form_paths.append(("paths", p))
+
             if isinstance(d, str):
                 d = d.encode("utf-8")
                 ct = "text/plain; charset=utf-8"
 
-            # requests format:
-            #  (field, (filename, fileobj_or_bytes, content_type))
+            filename = os.path.basename(p)
+
             if isinstance(d, (bytes, bytearray)):
-                multipart.append(("files", (p, bytes(d), ct)))
+                multipart.append(("files", (filename, bytes(d), ct)))
             else:
-                multipart.append(("files", (p, d, ct)))
+                multipart.append(("files", (filename, d, ct)))
 
         url = self.proxy_url(identity, "/workspace/files:batch")
         r = self.http_session.post(
             url,
             files=multipart,
+            data=form_paths,
             timeout=TIMEOUT,
         )
         r.raise_for_status()
@@ -377,6 +385,24 @@ class WorkspaceFSAsyncMixin(ProxyBaseMixin):
     async def _runtime_client_async(self, identity: str):
         return await self._establish_connection_async(identity)
 
+    async def _async_iter_file(
+        self,
+        f: IO[bytes],
+        chunk_size: int = 1024 * 1024,
+    ) -> AsyncIterator[bytes]:
+        """
+        Convert a sync file-like object into an async byte iterator.
+
+        httpx.AsyncClient cannot accept a sync file object as `content=...`.
+        This helper reads the file in a worker thread to avoid blocking the
+        event loop.
+        """
+        while True:
+            chunk = await asyncio.to_thread(f.read, chunk_size)
+            if not chunk:
+                break
+            yield chunk
+
     async def fs_read_async(
         self,
         identity: str,
@@ -449,8 +475,8 @@ class WorkspaceFSAsyncMixin(ProxyBaseMixin):
             body = bytes(data)
             headers["Content-Type"] = content_type
         else:
-            body = data
             headers["Content-Type"] = content_type
+            body = self._async_iter_file(data)
 
         r = await self.httpx_client.put(
             url,
@@ -474,24 +500,32 @@ class WorkspaceFSAsyncMixin(ProxyBaseMixin):
             return await client.workspace_write_many(files)
 
         multipart = []
+        form_paths = []
+
         for item in files:
             p = item["path"]
             d = item["data"]
             ct = item.get("content_type", "application/octet-stream")
 
+            form_paths.append(("paths", p))
+
             if isinstance(d, str):
                 d = d.encode("utf-8")
                 ct = "text/plain; charset=utf-8"
 
+            filename = os.path.basename(p)
+
             if isinstance(d, (bytes, bytearray)):
-                multipart.append(("files", (p, bytes(d), ct)))
+                multipart.append(("files", (filename, bytes(d), ct)))
             else:
-                multipart.append(("files", (p, d, ct)))
+                content_bytes = await asyncio.to_thread(d.read)
+                multipart.append(("files", (filename, content_bytes, ct)))
 
         url = self.proxy_url(identity, "/workspace/files:batch")
         r = await self.httpx_client.post(
             url,
             files=multipart,
+            data=form_paths,
         )
         r.raise_for_status()
         return r.json()

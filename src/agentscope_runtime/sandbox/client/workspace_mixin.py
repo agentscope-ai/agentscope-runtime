@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import os
+import asyncio
 from typing import (
     IO,
     Any,
@@ -12,6 +14,21 @@ from typing import (
     Union,
     AsyncIterator,
 )
+
+
+async def _afile_iter(
+    f: IO[bytes],
+    chunk_size: int = 1024 * 1024,
+) -> AsyncIterator[bytes]:
+    """
+    Convert a sync file object into an async byte iterator for
+    httpx.AsyncClient.
+    """
+    while True:
+        chunk = await asyncio.to_thread(f.read, chunk_size)
+        if not chunk:
+            break
+        yield chunk
 
 
 class WorkspaceMixin:
@@ -114,17 +131,24 @@ class WorkspaceMixin:
         """
         Batch upload multiple files via multipart/form-data.
 
-        files item format:
-          {"path": "dir/a.txt", "data": <str|bytes|file-like>,
-          "content_type": "..."}  # content_type optional
+        Server supports:
+          - files: List[UploadFile] = File(...)
+          - paths: List[str] = Form(...)
+
+        We send `paths` explicitly to avoid relying on UploadFile.filename
+        preserving directory components.
         """
         url = f"{self.base_url}/workspace/files:batch"
 
         multipart = []
+        form_paths = []
+
         for item in files:
             p = item["path"]
             d = item["data"]
             ct = item.get("content_type", "application/octet-stream")
+
+            form_paths.append(("paths", p))
 
             if isinstance(d, str):
                 d = d.encode("utf-8")
@@ -132,15 +156,17 @@ class WorkspaceMixin:
 
             # requests `files=` format: (fieldname, (filename,
             # fileobj/bytes, content_type))
+            filename = os.path.basename(p)
             if isinstance(d, (bytes, bytearray)):
-                multipart.append(("files", (p, bytes(d), ct)))
+                multipart.append(("files", (filename, bytes(d), ct)))
             else:
-                multipart.append(("files", (p, d, ct)))
+                multipart.append(("files", (filename, d, ct)))
 
         r = self._request(
             "post",
             url,
             files=multipart,
+            data=form_paths,
         )
         r.raise_for_status()
         return r.json()
@@ -278,9 +304,10 @@ class WorkspaceAsyncMixin:
             body = bytes(data)
             headers["Content-Type"] = content_type
         else:
-            # file-like object; httpx will stream it
-            body = data
+            # IMPORTANT: AsyncClient cannot stream from sync file-like
+            # directly.
             headers["Content-Type"] = content_type
+            body = _afile_iter(data)
 
         r = await self._request(
             "put",
@@ -299,33 +326,42 @@ class WorkspaceAsyncMixin:
         """
         Batch upload multiple files via multipart/form-data.
 
-        files item format:
-          {"path": "dir/a.txt", "data": <str|bytes|file-like>,
-          "content_type": "..."}  # content_type optional
+        Server supports:
+          - files: List[UploadFile] = File(...)
+          - paths: List[str] = Form(...)
+
+        We send `paths` explicitly to avoid relying on UploadFile.filename
+        preserving directory components.
         """
         url = f"{self.base_url}/workspace/files:batch"
 
         multipart = []
+        form_paths = []
+
         for item in files:
             p = item["path"]
             d = item["data"]
             ct = item.get("content_type", "application/octet-stream")
 
+            form_paths.append(("paths", p))
+
             if isinstance(d, str):
                 d = d.encode("utf-8")
                 ct = "text/plain; charset=utf-8"
 
-            # httpx `files=` format: (fieldname, (filename, fileobj/bytes,
-            # content_type))
+            filename = os.path.basename(p)
+
             if isinstance(d, (bytes, bytearray)):
-                multipart.append(("files", (p, bytes(d), ct)))
+                multipart.append(("files", (filename, bytes(d), ct)))
             else:
-                multipart.append(("files", (p, d, ct)))
+                content_bytes = await asyncio.to_thread(d.read)
+                multipart.append(("files", (filename, content_bytes, ct)))
 
         r = await self._request(
             "post",
             url,
             files=multipart,
+            data=form_paths,
         )
         r.raise_for_status()
         return r.json()
