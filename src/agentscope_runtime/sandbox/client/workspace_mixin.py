@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import asyncio
+import secrets
 from typing import (
     IO,
     Any,
@@ -29,6 +30,49 @@ async def _afile_iter(
         if not chunk:
             break
         yield chunk
+
+
+def _encode_multipart_formdata(fields: List[tuple], boundary: str) -> bytes:
+    """
+    fields: list of
+      - ("paths", "dir/a.txt")  # simple field
+      - ("files", (filename, content_bytes, content_type))
+    """
+    lines: List[bytes] = []
+    b = boundary.encode()
+
+    for name, value in fields:
+        lines.append(b"--" + b)
+
+        if isinstance(value, tuple):
+            filename, content, content_type = value
+            if isinstance(content, bytearray):
+                content = bytes(content)
+            if not isinstance(content, (bytes,)):
+                raise TypeError(
+                    f"file content must be bytes, got {type(content)}",
+                )
+
+            lines.append(
+                f'Content-Disposition: form-data; name="{name}"; filename='
+                f'"{filename}"'.encode(),
+            )
+            lines.append(f"Content-Type: {content_type}".encode())
+            lines.append(b"")  # header/body separator
+            lines.append(content)
+        else:
+            # normal text field
+            if not isinstance(value, str):
+                value = str(value)
+            lines.append(
+                f'Content-Disposition: form-data; name="{name}"'.encode(),
+            )
+            lines.append(b"")
+            lines.append(value.encode("utf-8"))
+
+    lines.append(b"--" + b + b"--")
+    lines.append(b"")
+    return b"\r\n".join(lines)
 
 
 class WorkspaceMixin:
@@ -335,34 +379,47 @@ class WorkspaceAsyncMixin:
         """
         url = f"{self.base_url}/workspace/files:batch"
 
-        multipart = []
-        form_paths = []
+        fields: List[tuple] = []
 
         for item in files:
             p = item["path"]
             d = item["data"]
             ct = item.get("content_type", "application/octet-stream")
 
-            form_paths.append(("paths", p))
+            # Form field: paths (repeatable)
+            fields.append(("paths", p))
 
+            # File field: files (repeatable)
             if isinstance(d, str):
-                d = d.encode("utf-8")
+                content = d.encode("utf-8")
                 ct = "text/plain; charset=utf-8"
-
-            filename = os.path.basename(p)
-
-            if isinstance(d, (bytes, bytearray)):
-                multipart.append(("files", (filename, bytes(d), ct)))
+            elif isinstance(d, (bytes, bytearray)):
+                content = bytes(d)
             else:
-                content_bytes = await asyncio.to_thread(d.read)
-                multipart.append(("files", (filename, content_bytes, ct)))
+                if not hasattr(d, "read"):
+                    raise TypeError(
+                        f"files[].data must be str/bytes/bytearray or "
+                        f"file-like, got {type(d)}",
+                    )
+                content = await asyncio.to_thread(d.read)
+                if isinstance(content, str):
+                    content = content.encode("utf-8")
+                if not isinstance(content, (bytes, bytearray)):
+                    raise TypeError(
+                        f"file-like .read() must return bytes, got"
+                        f" {type(content)}",
+                    )
+                content = bytes(content)
 
-        r = await self._request(
-            "post",
-            url,
-            files=multipart,
-            data=form_paths,
-        )
+            filename = os.path.basename(p) or "file"
+            fields.append(("files", (filename, content, ct)))
+
+        boundary = "----agentscope-" + secrets.token_hex(16)
+        body = _encode_multipart_formdata(fields, boundary)
+
+        headers = {"Content-Type": f"multipart/form-data; boundary={boundary}"}
+
+        r = await self._request("post", url, content=body, headers=headers)
         r.raise_for_status()
         return r.json()
 
