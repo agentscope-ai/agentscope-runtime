@@ -20,6 +20,7 @@ import shortuuid
 import httpx
 
 from .heartbeat_mixin import HeartbeatMixin, touch_session
+from .workspace_mixin import WorkspaceFSMixin
 from ..constant import TIMEOUT
 from ..client import (
     SandboxHttpClient,
@@ -133,7 +134,7 @@ def remote_wrapper_async(
     return decorator
 
 
-class SandboxManager(HeartbeatMixin):
+class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
     def __init__(
         self,
         config: Optional[SandboxManagerEnvConfig] = None,

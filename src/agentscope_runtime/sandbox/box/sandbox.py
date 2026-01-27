@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 import shortuuid
 
+from .components import SandboxFS, SandboxFSAsync
 from ..enums import SandboxType
 from ..manager.sandbox_manager import SandboxManager
 from ..manager.server.app import get_config
@@ -57,6 +58,7 @@ class SandboxBase:
         self.sandbox_type = sandbox_type
         self._sandbox_id = sandbox_id
         self._warned_sandbox_not_started = False
+        self.fs = None
 
         self.workspace_dir = workspace_dir
 
@@ -176,6 +178,7 @@ class Sandbox(SandboxBase):
             if self.embed_mode:
                 atexit.register(self._cleanup)
                 self._register_signal_handlers()
+        self.fs = SandboxFS(self)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -241,6 +244,7 @@ class SandboxAsync(SandboxBase):
             if self.embed_mode:
                 atexit.register(self._cleanup)
                 self._register_signal_handlers()
+        self.fs = SandboxFSAsync(self)
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):

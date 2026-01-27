@@ -1,32 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-Workspace proxy mixins for SandboxManager (SDK side).
+Workspace filesystem mixins for SandboxManager.
 
-This file is designed for the "two-layer" architecture:
-  SDK -> Manager(Server) -> Runtime(Container API)
+This module provides a single set of workspace APIs on SandboxManager that
+works in BOTH SDK modes:
 
-In *remote mode*, SandboxManager talks to Manager(Server) via HTTP.
-To support streaming upload/download for workspace APIs, the Manager(Server)
-must expose a generic streaming proxy endpoint:
+1) Embedded/local mode:
+   - SandboxManager has no http_session/httpx_client.
+   - It can connect to the runtime container directly via:
+       _establish_connection(identity) / _establish_connection_async(identity)
+   - Then it calls the runtime client's workspace_* APIs.
 
-  /proxy/{identity}/{path:path}
-
-The proxy endpoint should forward the request to the target runtime container,
-injecting the runtime Authorization token, and streaming request/response
-bodies without JSON-RPC wrapping.
-
-These mixins provide a workspace-like API on SandboxManager by calling the
-proxy endpoint, covering all WorkspaceClient methods:
-
-  - fs_read / fs_write / fs_write_many
-  - fs_list / fs_exists / fs_remove / fs_move / fs_mkdir
-  - fs_write_from_path
-
-Important:
-  - Sync and async method names MUST NOT collide. Therefore, async variants use
-    the `_async` suffix.
+2) Remote mode:
+   - SandboxManager has http_session/httpx_client and base_url.
+   - It calls Manager(Server)'s streaming proxy endpoint:
+       /proxy/{identity}/{path:path}
+   - The proxy forwards request/response to runtime with streaming support.
 """
-
 from __future__ import annotations
 
 from typing import (
@@ -46,51 +36,63 @@ from ..constant import TIMEOUT
 
 class ProxyBaseMixin:
     """
-    Base mixin for building proxy URLs to the Manager(Server).
+    Base helper to build Manager(Server) proxy URL in remote mode.
 
-    Host class requirements (remote mode):
-      - self.base_url: str
+    Host class attributes:
+      - base_url: str (remote mode only)
 
-    The Manager(Server) must expose:
+    Manager(Server) must expose:
       /proxy/{identity}/{path:path}
-
-    which forwards to:
-      {runtime_base_url}/{path}
-
-    and injects runtime Authorization token automatically.
     """
 
     def proxy_url(self, identity: str, runtime_path: str) -> str:
         """
-        Build a Manager(Server) proxy URL for a given runtime path.
+        Build the proxy URL for a runtime path.
 
         Args:
-            identity: Sandbox/container identity (sandbox_id/container_name).
+            identity: Sandbox/container identity
+              (sandbox_id or container_name).
             runtime_path: Runtime path, e.g. "/workspace/file".
 
         Returns:
-            Full URL to Manager(Server) proxy endpoint.
+            A full URL like:
+              {base_url}/proxy/{identity}/workspace/file
         """
         base_url = getattr(self, "base_url", None)
         if not base_url:
             raise RuntimeError(
-                "Proxy is only available in remote mode (base_url required).",
+                "proxy_url is only available in remote mode (base_url "
+                "required).",
             )
-        runtime_path = runtime_path.lstrip("/")
-        return f"{base_url.rstrip('/')}/proxy/{identity}/{runtime_path}"
+        return (
+            f"{base_url.rstrip('/')}/proxy/{identity}"
+            f"/{runtime_path.lstrip('/')}"
+        )
 
 
-class WorkspaceProxySyncMixin(ProxyBaseMixin):
+class WorkspaceFSSyncMixin(ProxyBaseMixin):
     """
-    Synchronous workspace proxy mixin for SandboxManager.
+    Sync workspace filesystem APIs for SandboxManager.
 
-    Host class requirements:
-      - self.http_session: requests.Session
+    Embedded mode requirements:
+      - _establish_connection(identity) ->
+        runtime client implementing workspace_* methods
 
-    This mixin implements workspace APIs by calling the Manager(Server) proxy
-    endpoint. It supports streaming downloads (fmt='stream') and streaming
-    uploads (data is a file-like object).
+    Remote mode requirements:
+      - http_session: requests.Session
+      - base_url: str
+      - Manager(Server) provides /proxy/{identity}/{path:path}
     """
+
+    # -------- internal helpers --------
+
+    def _is_remote_mode(self) -> bool:
+        return bool(getattr(self, "http_session", None))
+
+    def _runtime_client(self, identity: str):
+        return self._establish_connection(identity)
+
+    # -------- public APIs (cover WorkspaceClient) --------
 
     def fs_read(
         self,
@@ -101,19 +103,21 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
         chunk_size: int = 1024 * 1024,
     ) -> Union[str, bytes, Iterator[bytes]]:
         """
-        Read a file from runtime workspace via Manager(Server) proxy.
+        Read a workspace file.
 
         Args:
             identity: Sandbox/container identity.
-            path: Workspace file path.
+            path: Workspace path.
             fmt: "text" | "bytes" | "stream".
-            chunk_size: Chunk size for streaming response iteration.
+            chunk_size: Only used for remote streaming downloads.
 
         Returns:
-            - str when fmt="text"
-            - bytes when fmt="bytes"
-            - Iterator[bytes] when fmt="stream"
+            str / bytes / Iterator[bytes]
         """
+        if not self._is_remote_mode():
+            client = self._runtime_client(identity)
+            return client.workspace_read(path, fmt=fmt)
+
         url = self.proxy_url(identity, "/workspace/file")
 
         if fmt == "stream":
@@ -153,17 +157,16 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
         content_type: str = "application/octet-stream",
     ) -> Dict[str, Any]:
         """
-        Write a file to runtime workspace via Manager(Server) proxy.
-
-        Args:
-            identity: Sandbox/container identity.
-            path: Workspace file path.
-            data: str/bytes/file-like. If file-like, request body is streamed.
-            content_type: Content-Type used when data is bytes or file-like.
-
-        Returns:
-            JSON dict from runtime (as returned by /workspace/file PUT).
+        Write a workspace file. Supports streaming upload via file-like object.
         """
+        if not self._is_remote_mode():
+            client = self._runtime_client(identity)
+            return client.workspace_write(
+                path,
+                data,
+                content_type=content_type,
+            )
+
         url = self.proxy_url(identity, "/workspace/file")
 
         headers: Dict[str, str] = {}
@@ -193,20 +196,15 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
         files: List[Dict[str, Any]],
     ) -> List[Dict[str, Any]]:
         """
-        Batch upload multiple files via Manager(Server) proxy.
+        Batch upload files.
 
-        Args:
-            identity: Sandbox/container identity.
-            files: A list of items:
-                {
-                  "path": "dir/a.txt",
-                  "data": <str|bytes|file-like>,
-                  "content_type": "..."   # optional
-                }
-
-        Returns:
-            List of JSON dicts from runtime.
+        Each item:
+          {"path": "...", "data": <str|bytes|file-like>, "content_type": "..."}
         """
+        if not self._is_remote_mode():
+            client = self._runtime_client(identity)
+            return client.workspace_write_many(files)
+
         multipart = []
         for item in files:
             p = item["path"]
@@ -240,16 +238,12 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
         depth: Optional[int] = 1,
     ) -> List[Dict[str, Any]]:
         """
-        List workspace directory entries via proxy.
-
-        Args:
-            identity: Sandbox/container identity.
-            path: Workspace directory path.
-            depth: Depth of traversal.
-
-        Returns:
-            List of dict entries.
+        List directory entries in workspace.
         """
+        if not self._is_remote_mode():
+            client = self._runtime_client(identity)
+            return client.workspace_list(path, depth=depth)
+
         url = self.proxy_url(identity, "/workspace/list")
         r = self.http_session.get(
             url,
@@ -261,11 +255,12 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
 
     def fs_exists(self, identity: str, path: str) -> bool:
         """
-        Check if a workspace entry exists via proxy.
-
-        Returns:
-            True if exists.
+        Check if workspace entry exists.
         """
+        if not self._is_remote_mode():
+            client = self._runtime_client(identity)
+            return client.workspace_exists(path)
+
         url = self.proxy_url(identity, "/workspace/exists")
         r = self.http_session.get(
             url,
@@ -277,8 +272,13 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
 
     def fs_remove(self, identity: str, path: str) -> None:
         """
-        Remove a workspace entry (file or directory) via proxy.
+        Remove a workspace entry (file or directory).
         """
+        if not self._is_remote_mode():
+            client = self._runtime_client(identity)
+            client.workspace_remove(path)
+            return
+
         url = self.proxy_url(identity, "/workspace/entry")
         r = self.http_session.delete(
             url,
@@ -294,8 +294,12 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
         destination: str,
     ) -> Dict[str, Any]:
         """
-        Move/rename a workspace entry via proxy.
+        Move/rename a workspace entry.
         """
+        if not self._is_remote_mode():
+            client = self._runtime_client(identity)
+            return client.workspace_move(source, destination)
+
         url = self.proxy_url(identity, "/workspace/move")
         r = self.http_session.post(
             url,
@@ -307,11 +311,12 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
 
     def fs_mkdir(self, identity: str, path: str) -> bool:
         """
-        Create a workspace directory via proxy.
-
-        Returns:
-            True if created.
+        Create a directory in workspace.
         """
+        if not self._is_remote_mode():
+            client = self._runtime_client(identity)
+            return client.workspace_mkdir(path)
+
         url = self.proxy_url(identity, "/workspace/mkdir")
         r = self.http_session.post(
             url,
@@ -330,19 +335,19 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
         content_type: str = "application/octet-stream",
     ) -> Dict[str, Any]:
         """
-        Stream upload a local file to runtime workspace via proxy.
+        Stream upload a local file to workspace.
 
-        This avoids loading the whole file into memory on the SDK side.
-
-        Args:
-            identity: Sandbox/container identity.
-            workspace_path: Target workspace path in runtime.
-            local_path: Local filesystem path to upload.
-            content_type: Content-Type for the uploaded file.
-
-        Returns:
-            JSON dict from runtime.
+        In embedded mode: delegated to runtime client implementation.
+        In remote mode: uploads via proxy using a file handle.
         """
+        if not self._is_remote_mode():
+            client = self._runtime_client(identity)
+            return client.workspace_write_from_path(
+                workspace_path,
+                local_path,
+                content_type=content_type,
+            )
+
         with open(local_path, "rb") as f:
             return self.fs_write(
                 identity,
@@ -352,16 +357,25 @@ class WorkspaceProxySyncMixin(ProxyBaseMixin):
             )
 
 
-class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
+class WorkspaceFSAsyncMixin(ProxyBaseMixin):
     """
-    Asynchronous workspace proxy mixin for SandboxManager.
+    Async workspace filesystem APIs for SandboxManager.
 
-    Host class requirements:
-      - self.httpx_client: httpx.AsyncClient
+    Embedded mode requirements:
+      - _establish_connection_async(identity) ->
+        runtime async client implementing workspace_* async methods
 
-    Async method names use the `_async` suffix to avoid name collisions with
-    the sync mixin (Python MRO would otherwise overwrite methods).
+    Remote mode requirements:
+      - httpx_client: httpx.AsyncClient
+      - base_url: str
+      - Manager(Server) provides /proxy/{identity}/{path:path}
     """
+
+    def _is_remote_mode_async(self) -> bool:
+        return bool(getattr(self, "httpx_client", None))
+
+    async def _runtime_client_async(self, identity: str):
+        return await self._establish_connection_async(identity)
 
     async def fs_read_async(
         self,
@@ -370,13 +384,15 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
         fmt: Literal["text", "bytes", "stream"] = "text",
     ) -> Union[str, bytes, AsyncIterator[bytes]]:
         """
-        Async read a file from workspace via proxy.
+        Async read workspace file.
 
         Returns:
-            - str when fmt="text"
-            - bytes when fmt="bytes"
-            - AsyncIterator[bytes] when fmt="stream"
+            str / bytes / AsyncIterator[bytes]
         """
+        if not self._is_remote_mode_async():
+            client = await self._runtime_client_async(identity)
+            return await client.workspace_read(path, fmt=fmt)
+
         url = self.proxy_url(identity, "/workspace/file")
 
         if fmt == "stream":
@@ -413,11 +429,16 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
         content_type: str = "application/octet-stream",
     ) -> Dict[str, Any]:
         """
-        Async write a file to workspace via proxy (streaming supported).
-
-        Returns:
-            JSON dict from runtime.
+        Async write workspace file (stream upload supported).
         """
+        if not self._is_remote_mode_async():
+            client = await self._runtime_client_async(identity)
+            return await client.workspace_write(
+                path,
+                data,
+                content_type=content_type,
+            )
+
         url = self.proxy_url(identity, "/workspace/file")
 
         headers: Dict[str, str] = {}
@@ -446,8 +467,12 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
         files: List[Dict[str, Any]],
     ) -> List[Dict[str, Any]]:
         """
-        Async batch upload files via proxy.
+        Async batch upload files.
         """
+        if not self._is_remote_mode_async():
+            client = await self._runtime_client_async(identity)
+            return await client.workspace_write_many(files)
+
         multipart = []
         for item in files:
             p = item["path"]
@@ -478,8 +503,12 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
         depth: Optional[int] = 1,
     ) -> List[Dict[str, Any]]:
         """
-        Async list workspace entries via proxy.
+        Async list workspace entries.
         """
+        if not self._is_remote_mode_async():
+            client = await self._runtime_client_async(identity)
+            return await client.workspace_list(path, depth=depth)
+
         url = self.proxy_url(identity, "/workspace/list")
         r = await self.httpx_client.get(
             url,
@@ -490,8 +519,12 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
 
     async def fs_exists_async(self, identity: str, path: str) -> bool:
         """
-        Async exists check via proxy.
+        Async exists check.
         """
+        if not self._is_remote_mode_async():
+            client = await self._runtime_client_async(identity)
+            return await client.workspace_exists(path)
+
         url = self.proxy_url(identity, "/workspace/exists")
         r = await self.httpx_client.get(
             url,
@@ -502,8 +535,13 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
 
     async def fs_remove_async(self, identity: str, path: str) -> None:
         """
-        Async remove a workspace entry via proxy.
+        Async remove workspace entry.
         """
+        if not self._is_remote_mode_async():
+            client = await self._runtime_client_async(identity)
+            await client.workspace_remove(path)
+            return
+
         url = self.proxy_url(identity, "/workspace/entry")
         r = await self.httpx_client.delete(
             url,
@@ -518,8 +556,12 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
         destination: str,
     ) -> Dict[str, Any]:
         """
-        Async move/rename a workspace entry via proxy.
+        Async move/rename workspace entry.
         """
+        if not self._is_remote_mode_async():
+            client = await self._runtime_client_async(identity)
+            return await client.workspace_move(source, destination)
+
         url = self.proxy_url(identity, "/workspace/move")
         r = await self.httpx_client.post(
             url,
@@ -530,8 +572,12 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
 
     async def fs_mkdir_async(self, identity: str, path: str) -> bool:
         """
-        Async mkdir via proxy.
+        Async mkdir.
         """
+        if not self._is_remote_mode_async():
+            client = await self._runtime_client_async(identity)
+            return await client.workspace_mkdir(path)
+
         url = self.proxy_url(identity, "/workspace/mkdir")
         r = await self.httpx_client.post(
             url,
@@ -549,12 +595,20 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
         content_type: str = "application/octet-stream",
     ) -> Dict[str, Any]:
         """
-        Async stream upload a local file to workspace via proxy.
+        Async upload local file to workspace_path.
 
         Note:
             Local disk reading here is synchronous (built-in `open`).
-            If you need fully async disk I/O, use aiofiles and pass the stream.
+            If you need fully async disk I/O, use aiofiles.
         """
+        if not self._is_remote_mode_async():
+            client = await self._runtime_client_async(identity)
+            return await client.workspace_write_from_path(
+                workspace_path,
+                local_path,
+                content_type=content_type,
+            )
+
         with open(local_path, "rb") as f:
             return await self.fs_write_async(
                 identity,
@@ -562,3 +616,7 @@ class WorkspaceProxyAsyncMixin(ProxyBaseMixin):
                 f,
                 content_type=content_type,
             )
+
+
+class WorkspaceFSMixin(WorkspaceFSSyncMixin, WorkspaceFSAsyncMixin):
+    pass
