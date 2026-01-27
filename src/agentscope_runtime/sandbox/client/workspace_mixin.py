@@ -179,39 +179,53 @@ class WorkspaceMixin:
           - files: List[UploadFile] = File(...)
           - paths: List[str] = Form(...)
 
-        We send `paths` explicitly to avoid relying on UploadFile.filename
-        preserving directory components.
+        Implementation note:
+          We manually build the multipart/form-data payload (with an explicit
+          boundary) to ensure `paths` (repeatable form fields) are parsed
+          consistently by FastAPI and to avoid client-library multipart quirks.
         """
         url = f"{self.base_url}/workspace/files:batch"
 
-        multipart = []
-        form_paths = []
+        fields: List[tuple] = []
 
         for item in files:
             p = item["path"]
             d = item["data"]
             ct = item.get("content_type", "application/octet-stream")
 
-            form_paths.append(("paths", p))
+            # repeatable form field
+            fields.append(("paths", p))
 
             if isinstance(d, str):
-                d = d.encode("utf-8")
+                content = d.encode("utf-8")
                 ct = "text/plain; charset=utf-8"
-
-            # requests `files=` format: (fieldname, (filename,
-            # fileobj/bytes, content_type))
-            filename = os.path.basename(p)
-            if isinstance(d, (bytes, bytearray)):
-                multipart.append(("files", (filename, bytes(d), ct)))
+            elif isinstance(d, (bytes, bytearray)):
+                content = bytes(d)
             else:
-                multipart.append(("files", (filename, d, ct)))
+                if not hasattr(d, "read"):
+                    raise TypeError(
+                        f"files[].data must be str/bytes/bytearray or "
+                        f"file-like, got {type(d)}",
+                    )
+                content = d.read()
+                if isinstance(content, str):
+                    content = content.encode("utf-8")
+                if not isinstance(content, (bytes, bytearray)):
+                    raise TypeError(
+                        f"file-like .read() must return bytes, got"
+                        f" {type(content)}",
+                    )
+                content = bytes(content)
 
-        r = self._request(
-            "post",
-            url,
-            files=multipart,
-            data=form_paths,
-        )
+            filename = os.path.basename(p) or "file"
+            fields.append(("files", (filename, content, ct)))
+
+        boundary = "----agentscope-" + secrets.token_hex(16)
+        body = _encode_multipart_formdata(fields, boundary)
+
+        headers = {"Content-Type": f"multipart/form-data; boundary={boundary}"}
+
+        r = self._request("post", url, data=body, headers=headers)
         r.raise_for_status()
         return r.json()
 
@@ -368,15 +382,18 @@ class WorkspaceAsyncMixin:
         files: List[Dict[str, Any]],
     ) -> List[Dict[str, Any]]:
         """
-        Batch upload multiple files via multipart/form-data.
+        Encode fields into a multipart/form-data body.
 
-        Server supports:
-          - files: List[UploadFile] = File(...)
-          - paths: List[str] = Form(...)
+        Args:
+          fields: [("paths", "dir/a.txt"), ("files", (filename,
+            content_bytes, content_type)), ...]
+          boundary: multipart boundary (without leading --)
 
-        We send `paths` explicitly to avoid relying on UploadFile.filename
-        preserving directory components.
+        Returns:
+          The full HTTP request body as bytes. Caller must set:
+            Content-Type: multipart/form-data; boundary={boundary}
         """
+
         url = f"{self.base_url}/workspace/files:batch"
 
         fields: List[tuple] = []
