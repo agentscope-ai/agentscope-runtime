@@ -577,9 +577,9 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
                 logger.error(f"Error cleaning up container {key}: {e}")
 
     @remote_wrapper_async()
-    async def cleanup_async(self, *args, **kwargs):
+    async def cleanup_async(self):
         """Async wrapper for cleanup()."""
-        return await asyncio.to_thread(self.cleanup, *args, **kwargs)
+        return await asyncio.to_thread(self.cleanup)
 
     @remote_wrapper()
     def create_from_pool(self, sandbox_type=None, meta: Optional[Dict] = None):
@@ -1026,9 +1026,9 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
             return False
 
     @remote_wrapper_async()
-    async def release_async(self, *args, **kwargs):
+    async def release_async(self, identity: str):
         """Async wrapper for release()."""
-        return await asyncio.to_thread(self.release, *args, **kwargs)
+        return await asyncio.to_thread(self.release, identity)
 
     @remote_wrapper()
     def start(self, identity):

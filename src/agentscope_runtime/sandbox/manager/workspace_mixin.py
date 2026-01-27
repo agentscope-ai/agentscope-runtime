@@ -20,6 +20,7 @@ works in BOTH SDK modes:
 from __future__ import annotations
 
 import os
+import secrets
 import asyncio
 
 from typing import (
@@ -35,6 +36,42 @@ from typing import (
 )
 
 from ..constant import TIMEOUT
+
+
+def _encode_multipart_formdata(fields: List[tuple], boundary: str) -> bytes:
+    lines: List[bytes] = []
+    b = boundary.encode()
+
+    for name, value in fields:
+        lines.append(b"--" + b)
+        if isinstance(value, tuple):
+            filename, content, content_type = value
+            if isinstance(content, bytearray):
+                content = bytes(content)
+            if not isinstance(content, (bytes,)):
+                raise TypeError(
+                    f"file content must be bytes, got {type(content)}",
+                )
+
+            lines.append(
+                f'Content-Disposition: form-data; name="{name}"; filename='
+                f'"{filename}"'.encode(),
+            )
+            lines.append(f"Content-Type: {content_type}".encode())
+            lines.append(b"")
+            lines.append(content)
+        else:
+            if not isinstance(value, str):
+                value = str(value)
+            lines.append(
+                f'Content-Disposition: form-data; name="{name}"'.encode(),
+            )
+            lines.append(b"")
+            lines.append(value.encode("utf-8"))
+
+    lines.append(b"--" + b + b"--")
+    lines.append(b"")
+    return b"\r\n".join(lines)
 
 
 class ProxyBaseMixin:
@@ -499,34 +536,35 @@ class WorkspaceFSAsyncMixin(ProxyBaseMixin):
             client = await self._runtime_client_async(identity)
             return await client.workspace_write_many(files)
 
-        multipart = []
-        form_paths = []
+        url = self.proxy_url(identity, "/workspace/files:batch")
 
+        fields: List[tuple] = []
         for item in files:
             p = item["path"]
             d = item["data"]
             ct = item.get("content_type", "application/octet-stream")
 
-            form_paths.append(("paths", p))
+            fields.append(("paths", p))
 
             if isinstance(d, str):
-                d = d.encode("utf-8")
+                content = d.encode("utf-8")
                 ct = "text/plain; charset=utf-8"
-
-            filename = os.path.basename(p)
-
-            if isinstance(d, (bytes, bytearray)):
-                multipart.append(("files", (filename, bytes(d), ct)))
+            elif isinstance(d, (bytes, bytearray)):
+                content = bytes(d)
             else:
-                content_bytes = await asyncio.to_thread(d.read)
-                multipart.append(("files", (filename, content_bytes, ct)))
+                content = await asyncio.to_thread(d.read)
+                if isinstance(content, str):
+                    content = content.encode("utf-8")
+                content = bytes(content)
 
-        url = self.proxy_url(identity, "/workspace/files:batch")
-        r = await self.httpx_client.post(
-            url,
-            files=multipart,
-            data=form_paths,
-        )
+            filename = os.path.basename(p) or "file"
+            fields.append(("files", (filename, content, ct)))
+
+        boundary = "----agentscope-" + secrets.token_hex(16)
+        body = _encode_multipart_formdata(fields, boundary)
+        headers = {"Content-Type": f"multipart/form-data; boundary={boundary}"}
+
+        r = await self.httpx_client.post(url, content=body, headers=headers)
         r.raise_for_status()
         return r.json()
 
