@@ -241,7 +241,7 @@ class McpApprovalResponse(BaseModel):
     """The unique ID of the approval request."""
 
     approve: bool
-    """A json string of arguments for the tool."""
+    """Whether the request was approved."""
 
     id: Optional[str] = None
     """The unique ID of the approval response."""
