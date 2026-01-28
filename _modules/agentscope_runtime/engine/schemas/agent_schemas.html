@@ -904,6 +904,27 @@ body.preview-active {
 
 
 
+<div class="viewcode-block" id="McpApprovalResponse">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.McpApprovalResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">McpApprovalResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    mcp approval response</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">approval_request_id</span><span class="p">:</span> <span class="nb">str</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The unique ID of the approval request.&quot;&quot;&quot;</span>
+
+    <span class="n">approve</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether the request was approved.&quot;&quot;&quot;</span>
+
+    <span class="nb">id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The unique ID of the approval response.&quot;&quot;&quot;</span>
+
+    <span class="n">reason</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Optional reason for the decision.&quot;&quot;&quot;</span></div>
+
+
+
 <div class="viewcode-block" id="Error">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.Error">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Error</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
@@ -1806,7 +1827,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-01-26</div>
+              Last updated on 2026-01-28</div>
           </div>
           <div class="right-details">
             <div class="icons">
