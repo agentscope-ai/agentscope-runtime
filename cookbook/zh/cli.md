@@ -61,12 +61,10 @@ from agentscope.model import DashScopeChatModel
 from agentscope.pipeline import stream_printing_messages
 from agentscope.tool import Toolkit, execute_python_code
 from agentscope.memory import InMemoryMemory
+from agentscope.session import RedisSession
 
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agentscope_runtime.engine.services.agent_state import (
-    InMemoryStateService,
-)
 
 # Create AgentApp instance
 agent_app = AgentApp(
@@ -78,14 +76,13 @@ agent_app = AgentApp(
 @agent_app.init
 async def init_func(self):
     """Initialize services."""
-    self.state_service = InMemoryStateService()
-    await self.state_service.start()
+    import fakeredis
 
-
-@agent_app.shutdown
-async def shutdown_func(self):
-    """Cleanup services."""
-    await self.state_service.stop()
+    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    # 注意：这个 FakeRedis 实例仅用于开发/测试。
+    # 在生产环境中，请替换为你自己的 Redis 客户端/连接
+    #（例如 aioredis.Redis）。
+    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
 
 
 @agent_app.query(framework="agentscope")
@@ -98,12 +95,6 @@ async def query_func(
     """Process user queries."""
     session_id = request.session_id
     user_id = request.user_id
-
-    # Load state if exists
-    state = await self.state_service.export_state(
-        session_id=session_id,
-        user_id=user_id,
-    )
 
     # Create toolkit with Python execution
     toolkit = Toolkit()
@@ -125,23 +116,22 @@ async def query_func(
     )
     agent.set_console_output_enabled(False)
 
-    # Load state if available
-    if state:
-        agent.load_state_dict(state)
+    await self.session.load_session_state(
+        session_id=session_id,
+        user_id=user_id,
+        agent=agent,
+    )
 
-    # Process query and stream response
     async for msg, last in stream_printing_messages(
         agents=[agent],
         coroutine_task=agent(msgs),
     ):
         yield msg, last
 
-    # Save state
-    state = agent.state_dict()
-    await self.state_service.save_state(
-        user_id=user_id,
+    await self.session.save_session_state(
         session_id=session_id,
-        state=state,
+        user_id=user_id,
+        agent=agent,
     )
 
 

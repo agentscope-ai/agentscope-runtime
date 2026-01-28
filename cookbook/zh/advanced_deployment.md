@@ -106,12 +106,10 @@ from agentscope.model import DashScopeChatModel
 from agentscope.pipeline import stream_printing_messages
 from agentscope.tool import Toolkit, execute_python_code
 from agentscope.memory import InMemoryMemory
+from agentscope.session import RedisSession
 
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agentscope_runtime.engine.services.agent_state import (
-    InMemoryStateService,
-)
 
 app = AgentApp(
     app_name="Friday",
@@ -121,13 +119,13 @@ app = AgentApp(
 
 @app.init
 async def init_func(self):
-    self.state_service = InMemoryStateService()
-    await self.state_service.start()
+    import fakeredis
 
-
-@app.shutdown
-async def shutdown_func(self):
-    await self.state_service.stop()
+    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    # 注意：这个 FakeRedis 实例仅用于开发/测试。
+    # 在生产环境中，请替换为你自己的 Redis 客户端/连接
+    #（例如 aioredis.Redis）。
+    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
 
 
 @app.query(framework="agentscope")
@@ -140,11 +138,6 @@ async def query_func(
     assert kwargs is not None, "kwargs is Required for query_func"
     session_id = request.session_id
     user_id = request.user_id
-
-    state = await self.state_service.export_state(
-        session_id=session_id,
-        user_id=user_id,
-    )
 
     toolkit = Toolkit()
     toolkit.register_tool_function(execute_python_code)
@@ -163,8 +156,11 @@ async def query_func(
         formatter=DashScopeChatFormatter(),
     )
 
-    if state:
-        agent.load_state_dict(state)
+    await self.session.load_session_state(
+        session_id=session_id,
+        user_id=user_id,
+        agent=agent,
+    )
 
     async for msg, last in stream_printing_messages(
         agents=[agent],
@@ -172,12 +168,10 @@ async def query_func(
     ):
         yield msg, last
 
-    state = agent.state_dict()
-
-    await self.state_service.save_state(
-        user_id=user_id,
+    await self.session.save_session_state(
         session_id=session_id,
-        state=state,
+        user_id=user_id,
+        agent=agent,
     )
 
 

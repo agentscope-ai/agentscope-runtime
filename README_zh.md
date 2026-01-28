@@ -96,13 +96,13 @@
 >
 > **关于框架无关**：当前，AgentScope Runtime 支持 **AgentScope** 框架。未来我们计划扩展支持更多智能体开发框架。该表格展示了目前版本针对不同框架的适配器（adapter）支持情况，不同框架在各功能上的支持程度有所差异：
 >
-> | 框架 / 功能项                                                | 消息 / 事件 | 工具 | 服务 |
-> | ------------------------------------------------------------ | ------------- | ---- | ------- |
-> | [AgentScope](https://runtime.agentscope.io/zh/quickstart.html) | ✅             | ✅    | ✅       |
-> | [LangGraph](https://runtime.agentscope.io/zh/langgraph_guidelines.html) | ✅             | 🚧    | 🚧       |
-> | [Microsoft Agent Framework](https://runtime.agentscope.io/zh/ms_agent_framework_guidelines.html) | ✅             | ✅    | 🚧       |
-> | [Agno](https://runtime.agentscope.io/zh/agno_guidelines.html) | ✅             | ✅    | 🚧       |
-> | AutoGen                                                      | 🚧             | ✅    | 🚧       |
+> | 框架 / 功能项                                                | 消息 / 事件 | 工具 |
+> | ------------------------------------------------------------ | ------------- | ---- |
+> | [AgentScope](https://runtime.agentscope.io/zh/quickstart.html) | ✅             | ✅    |
+> | [LangGraph](https://runtime.agentscope.io/zh/langgraph_guidelines.html) | ✅             | 🚧    |
+> | [Microsoft Agent Framework](https://runtime.agentscope.io/zh/ms_agent_framework_guidelines.html) | ✅             | ✅    |
+> | [Agno](https://runtime.agentscope.io/zh/agno_guidelines.html) | ✅             | ✅    |
+> | AutoGen                                                      | 🚧             | ✅    |
 
 ---
 
