@@ -1095,6 +1095,3 @@ class AgentRunClient(BaseClient):
             image_name = image
 
         return replacement_map.get(image_name.strip(), image)
-
-    def _is_browser_image(self, image: str):
-        return image.startswith("agentscope/runtime-sandbox-browser")
