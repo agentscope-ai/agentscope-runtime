@@ -2,21 +2,6 @@
 
 用于管理智能体开发、部署和运行时操作的统一命令行接口。
 
-## 目录
-
-- [快速开始](#快速开始)
-- [完整示例](#完整示例)
-- [核心命令](#核心命令)
-  - [开发：`agentscope chat`](#1-开发agentscope-chat)
-  - [Web UI：`agentscope web`](#2-web-uiagentscope-web)
-  - [运行智能体服务：`agentscope run`](#3-运行智能体服务agentscope-run)
-  - [部署：`agentscope deploy`](#4-部署agentscope-deploy)
-  - [部署管理](#5-部署管理)
-  - [沙箱管理：`agentscope sandbox`](#6-沙箱管理as-runtime-sandbox)
-- [API 参考](#api-参考)
-- [常用工作流](#常用工作流)
-- [故障排除](#故障排除)
-
 ## 快速开始
 
 ### 安装
@@ -1131,8 +1116,8 @@ environment:
 
 ## 下一步
 
-- 查看 [examples/](../../examples/) 获取完整的智能体实现示例
-- 查看 [API 文档](../api/) 了解编程用法
+- 查看 [examples/](https://github.com/agentscope-ai/agentscope-runtime/tree/main/examples) 获取完整的智能体实现示例
+- 查看 [API 文档](https://runtime.agentscope.io/zh/api/index.html) 了解编程用法
 - 加入 Discord/DingTalk 社区获取支持
 
 ## 反馈

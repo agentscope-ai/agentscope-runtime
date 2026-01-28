@@ -102,7 +102,7 @@ Please adapt and replace these components with your own implementations based on
 When the agent endpoint is invoked, we:
 
 - **Load session context** to keep different sessions isolated.
-- **Build an Agent**: includes the model, tools (such as executing Python code), conversation memory modules, and formatter — for details, please refer to {doc}`service/service`.
+- **Build an Agent**: includes the model, tools (such as executing Python code), conversation memory modules, and formatter.
 - **Stream responses** via `stream_printing_messages`, yielding `(msg, last)` so clients receive output as it is generated.
 - **Persist state** so the next request can resume.
 

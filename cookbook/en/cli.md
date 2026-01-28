@@ -2,21 +2,6 @@
 
 The unified command-line interface for managing your agent development, deployment, and runtime operations.
 
-## Table of Contents
-
-- [Quick Start](#quick-start)
-- [Complete Example](#complete-example)
-- [Core Commands](#core-commands)
-  - [Development: `agentscope chat`](#1-development-agentscope-chat)
-  - [Web UI: `agentscope web`](#2-web-ui-agentscope-web)
-  - [Run Agent Service: `agentscope run`](#3-run-agent-service-agentscope-run)
-  - [Deployment: `agentscope deploy`](#4-deployment-agentscope-deploy)
-  - [Deployment Management](#5-deployment-management)
-  - [Sandbox Management: `agentscope sandbox`](#6-sandbox-management-as-runtime-sandbox)
-- [API Reference](#api-reference)
-- [Common Workflows](#common-workflows)
-- [Troubleshooting](#troubleshooting)
-
 ## Quick Start
 
 ### Installation
@@ -1133,8 +1118,8 @@ environment:
 
 ## Next Steps
 
-- See [examples/](../../examples/) for complete agent implementations
-- Check [API documentation](../api/) for programmatic usage
+- See [examples/](https://github.com/agentscope-ai/agentscope-runtime/tree/main/examples) for complete agent implementations
+- Check [API documentation](https://runtime.agentscope.io/en/api/index.html) for programmatic usage
 - Join community on Discord/DingTalk for support
 
 ## Feedback
