@@ -49,13 +49,11 @@ from agentscope.formatter import DashScopeChatFormatter
 from agentscope.tool import Toolkit, execute_python_code
 from agentscope.pipeline import stream_printing_messages
 from agentscope.memory import InMemoryMemory
+from agentscope.session import RedisSession
 
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from agentscope_runtime.engine.deployers import LocalDeployManager
-from agentscope_runtime.engine.services.agent_state import (
-    InMemoryStateService,
-)
 
 print("✅ Dependencies imported successfully")
 ```
@@ -80,12 +78,17 @@ Define what happens when the service starts (state/session services) and how res
 ```{code-cell}
 @agent_app.init
 async def init_func(self):
-    self.state_service = InMemoryStateService()
-    await self.state_service.start()
+    import fakeredis
+
+    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    # NOTE: This FakeRedis instance is for development/testing only.
+    # In production, replace it with your own Redis client/connection
+    # (e.g., aioredis.Redis)
+    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
 
 @agent_app.shutdown
 async def shutdown_func(self):
-    await self.state_service.stop()
+    pass
 ```
 
 ### Step 4: Define the AgentScope Query Logic
@@ -94,7 +97,6 @@ async def shutdown_func(self):
 ⚠️ Important
 The Agent setup shown here (model, tools, conversation memory, formatter, etc.) is provided as an example configuration only.
 Please adapt and replace these components with your own implementations based on your requirements.
-For details on available service types, adapter usage, and how to swap them out, see {doc}`service/service`.
 ```
 
 When the agent endpoint is invoked, we:
@@ -115,11 +117,6 @@ async def query_func(
     session_id = request.session_id
     user_id = request.user_id
 
-    state = await self.state_service.export_state(
-        session_id=session_id,
-        user_id=user_id,
-    )
-
     toolkit = Toolkit()
     toolkit.register_tool_function(execute_python_code)
 
@@ -137,8 +134,11 @@ async def query_func(
     )
     agent.set_console_output_enabled(enabled=False)
 
-    if state:
-        agent.load_state_dict(state)
+    await self.session.load_session_state(
+        session_id=session_id,
+        user_id=user_id,
+        agent=agent,
+    )
 
     async for msg, last in stream_printing_messages(
         agents=[agent],
@@ -146,12 +146,10 @@ async def query_func(
     ):
         yield msg, last
 
-    state = agent.state_dict()
-
-    await self.state_service.save_state(
-        user_id=user_id,
+    await self.session.save_session_state(
         session_id=session_id,
-        state=state,
+        user_id=user_id,
+        agent=agent,
     )
 ```
 
