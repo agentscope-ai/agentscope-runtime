@@ -232,6 +232,24 @@ class McpApprovalRequest(BaseModel):
     """The label of the mcp server making the request."""
 
 
+class McpApprovalResponse(BaseModel):
+    """
+    mcp approval response
+    """
+
+    approval_request_id: str
+    """The unique ID of the approval request."""
+
+    approve: bool
+    """Whether the request was approved."""
+
+    id: Optional[str] = None
+    """The unique ID of the approval response."""
+
+    reason: Optional[str] = None
+    """Optional reason for the decision."""
+
+
 class Error(BaseModel):
     code: str
     """The error code of the message."""
