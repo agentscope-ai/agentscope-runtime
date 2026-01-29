@@ -50,8 +50,6 @@ def run_app():
     @agent_app.init
     async def init_func(self):
         self.thread_storage = {}  # Only for testing
-        self.sandbox_service = SandboxService()
-        await self.sandbox_service.start()
 
     @agent_app.shutdown
     async def shutdown_func(self):
