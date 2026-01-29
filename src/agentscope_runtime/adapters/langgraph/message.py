@@ -4,7 +4,7 @@
 import json
 
 from collections import OrderedDict
-from typing import Union, List
+from typing import Union, List, Callable, Optional, Dict
 
 from langchain_core.messages import (
     AIMessage,
@@ -24,12 +24,18 @@ from ...engine.helpers.agent_api_builder import ResponseBuilder
 
 def langgraph_msg_to_message(
     messages: Union[BaseMessage, List[BaseMessage]],
+    type_converters: Optional[Dict[str, Callable]] = None,
 ) -> List[Message]:
     """
     Convert LangGraph BaseMessage(s) into one or more runtime Message objects
 
     Args:
         messages: LangGraph message(s) from streaming.
+        type_converters: Optional mapping from ``message.type`` to a callable
+            ``converter(message)``. When provided and the current
+            ``message.type`` exists in the mapping, the corresponding converter
+            will be used and the built-in conversion logic will be skipped for
+            that message.
 
     Returns:
         List[Message]: One or more constructed runtime Message objects.
@@ -46,6 +52,11 @@ def langgraph_msg_to_message(
     results: List[Message] = []
 
     for msg in msgs:
+        # Used for custom conversion
+        if type_converters and msg.type in type_converters:
+            results.append(type_converters[msg.type](msg))
+            continue
+
         # Map LangGraph roles to runtime roles
         if isinstance(msg, HumanMessage):
             role = "user"
