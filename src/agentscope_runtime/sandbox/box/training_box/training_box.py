@@ -12,6 +12,7 @@ from ...utils import build_image_uri
 from ...registry import SandboxRegistry
 from ...enums import SandboxType
 from ...box.sandbox import Sandbox
+from ...constant import TIMEOUT
 
 
 class TrainingSandbox(Sandbox):
@@ -25,7 +26,6 @@ class TrainingSandbox(Sandbox):
     def __init__(
         self,
         sandbox_id: Optional[str] = None,
-        timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         box_type: SandboxType = SandboxType.APPWORLD,
@@ -35,13 +35,11 @@ class TrainingSandbox(Sandbox):
 
         Args:
             sandbox_id (Optional[str]): Unique identifier for the sandbox.
-            timeout (int): Maximum time allowed for sandbox operations.
             base_url (Optional[str]): Base URL for sandbox API.
             bearer_token (Optional[str]): Authentication token for API access.
         """
         super().__init__(
             sandbox_id,
-            timeout,
             base_url,
             bearer_token,
             box_type,
@@ -210,7 +208,7 @@ class TrainingSandbox(Sandbox):
     sandbox_type=SandboxType.APPWORLD,
     runtime_config={"shm_size": "5.06gb"},
     security_level="medium",
-    timeout=30,
+    timeout=TIMEOUT,
     description="appworld Sandbox",
 )
 class APPWorldSandbox(TrainingSandbox):
@@ -224,7 +222,6 @@ class APPWorldSandbox(TrainingSandbox):
     def __init__(
         self,
         sandbox_id: Optional[str] = None,
-        timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.APPWORLD,
@@ -234,13 +231,11 @@ class APPWorldSandbox(TrainingSandbox):
 
         Args:
             sandbox_id (Optional[str]): Unique identifier for the sandbox.
-            timeout (int): Maximum time allowed for sandbox operations.
             base_url (Optional[str]): Base URL for sandbox API.
             bearer_token (Optional[str]): Authentication token for API access.
         """
         super().__init__(
             sandbox_id,
-            timeout,
             base_url,
             bearer_token,
             sandbox_type,
@@ -265,7 +260,7 @@ DATASET_SUB_TYPE = os.environ.get("DATASET_SUB_TYPE", "multi_turn")
     },
     # ["all","all_scoring","multi_turn","single_turn",
     # "live","non_live","non_python","python"]
-    timeout=30,
+    timeout=TIMEOUT,
     description="bfcl Sandbox",
 )
 class BFCLSandbox(TrainingSandbox):
@@ -279,7 +274,6 @@ class BFCLSandbox(TrainingSandbox):
     def __init__(
         self,
         sandbox_id: Optional[str] = None,
-        timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.BFCL,
@@ -289,13 +283,11 @@ class BFCLSandbox(TrainingSandbox):
 
         Args:
             sandbox_id (Optional[str]): Unique identifier for the sandbox.
-            timeout (int): Maximum time allowed for sandbox operations.
             base_url (Optional[str]): Base URL for sandbox API.
             bearer_token (Optional[str]): Authentication token for API access.
         """
         super().__init__(
             sandbox_id,
-            timeout,
             base_url,
             bearer_token,
             sandbox_type,

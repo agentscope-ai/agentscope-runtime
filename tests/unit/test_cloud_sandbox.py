@@ -48,7 +48,6 @@ def mock_cloud_sandbox():
     """Create a mock CloudSandbox instance."""
     return MockCloudSandbox(
         sandbox_id="test-sandbox-123",
-        timeout=3000,
         base_url="https://api.example.com",
         bearer_token="test-token",
         sandbox_type=SandboxType.AGENTBAY,
@@ -60,7 +59,6 @@ def mock_cloud_sandbox_with_auto_create():
     """Create a CloudSandbox instance that auto-creates session."""
     return MockCloudSandbox(
         sandbox_id=None,
-        timeout=3000,
         base_url="https://api.example.com",
         bearer_token="test-token",
         sandbox_type=SandboxType.AGENTBAY,
@@ -74,7 +72,6 @@ class TestCloudSandbox:
         """Test initialization with existing sandbox ID."""
         assert mock_cloud_sandbox._sandbox_id == "test-sandbox-123"
         assert mock_cloud_sandbox.sandbox_type == SandboxType.AGENTBAY
-        assert mock_cloud_sandbox.timeout == 3000
         assert mock_cloud_sandbox.base_url == "https://api.example.com"
         assert mock_cloud_sandbox.bearer_token == "test-token"
         assert mock_cloud_sandbox.embed_mode is False
@@ -133,7 +130,6 @@ class TestCloudSandbox:
         assert info["sandbox_id"] == "test-sandbox-123"
         assert info["sandbox_type"] == SandboxType.AGENTBAY.value
         assert info["cloud_provider"] == "MockCloudProvider"
-        assert info["timeout"] == 3000
 
     def test_list_tools(self, mock_cloud_sandbox):
         """Test listing tools."""

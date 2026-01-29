@@ -3,6 +3,7 @@ from typing import Dict, Type, Optional
 from dataclasses import dataclass
 
 from .enums import SandboxType
+from .constant import TIMEOUT
 
 
 @dataclass
@@ -13,7 +14,7 @@ class SandboxConfig:
     sandbox_type: SandboxType | str
     resource_limits: Optional[Dict] = None
     security_level: str = "medium"
-    timeout: int = 60  # Default timeout of 5 minutes
+    timeout: int = TIMEOUT
     description: str = ""
     environment: Optional[Dict] = None
     runtime_config: Optional[Dict] = None
@@ -42,7 +43,7 @@ class SandboxRegistry:
         sandbox_type: SandboxType | str,
         resource_limits: Dict = None,
         security_level: str = "medium",  # Not used for now
-        timeout: int = 60,
+        timeout: int = TIMEOUT,
         description: str = "",
         environment: Dict = None,
         runtime_config: Optional[Dict] = None,
@@ -55,7 +56,7 @@ class SandboxRegistry:
             sandbox_type: Sandbox type
             resource_limits: Resource limit configuration
             security_level: Security level (low/medium/high)
-            timeout: Timeout in seconds
+            timeout: HTTP timeout in seconds in server side
             description: Description
             environment: Environment variables
             runtime_config: runtime configurations

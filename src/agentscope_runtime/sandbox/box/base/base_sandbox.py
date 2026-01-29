@@ -19,7 +19,6 @@ class BaseSandbox(Sandbox):
     def __init__(
         self,
         sandbox_id: Optional[str] = None,
-        timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.BASE,
@@ -27,7 +26,6 @@ class BaseSandbox(Sandbox):
     ):
         super().__init__(
             sandbox_id,
-            timeout,
             base_url,
             bearer_token,
             sandbox_type,
@@ -64,7 +62,6 @@ class BaseSandboxAsync(SandboxAsync):
     def __init__(
         self,
         sandbox_id: Optional[str] = None,
-        timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.BASE_ASYNC,
@@ -72,7 +69,6 @@ class BaseSandboxAsync(SandboxAsync):
     ):
         super().__init__(
             sandbox_id,
-            timeout,
             base_url,
             bearer_token,
             sandbox_type,

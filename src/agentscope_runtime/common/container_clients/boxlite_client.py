@@ -101,6 +101,7 @@ class BoxliteClient(BaseClient):
             raise RuntimeError(
                 f"BoxLite client initialization failed: {str(e)}\n"
                 "Solutions:\n"
+                "• Switch to the sync SDK (async is not supported yet)\n"
                 "• Ensure BoxLite is properly installed\n"
                 "• Check BoxLite runtime configuration",
             ) from e

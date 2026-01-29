@@ -8,13 +8,14 @@ import httpx
 from pydantic import Field
 
 from .base import SandboxHttpBase
+from .workspace_mixin import WorkspaceAsyncMixin
 from ..model import ContainerModel
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
-class SandboxHttpAsyncClient(SandboxHttpBase):
+class SandboxHttpAsyncClient(SandboxHttpBase, WorkspaceAsyncMixin):
     """
     A Python async client for interacting with the runtime API.
     Connect directly to the container.
@@ -211,130 +212,4 @@ class SandboxHttpAsyncClient(SandboxHttpBase):
         return await self.safe_request(
             "get",
             f"{self.base_url}/watcher/git_logs",
-        )
-
-    # -------- Workspace File APIs --------
-
-    async def get_workspace_file(self, file_path: str) -> dict:
-        """
-        Retrieve a file from the /workspace directory.
-        """
-        try:
-            endpoint = f"{self.base_url}/workspace/files"
-            params = {"file_path": file_path}
-            r = await self._request("get", endpoint, params=params)
-            r.raise_for_status()
-
-            # Check for empty content
-            if r.headers.get("Content-Length") == "0":
-                logger.warning(f"The file {file_path} is empty.")
-                return {"data": b""}
-
-            # Accumulate the content in chunks
-            file_content = bytearray()
-            async for chunk in r.aiter_bytes():
-                file_content.extend(chunk)
-
-            return {"data": bytes(file_content)}
-        except httpx.RequestError as e:
-            logger.error(f"An error occurred while retrieving the file: {e}")
-            return {
-                "isError": True,
-                "content": [{"type": "text", "text": str(e)}],
-            }
-
-    async def create_or_edit_workspace_file(
-        self,
-        file_path: str,
-        content: str,
-    ) -> dict:
-        """
-        Create or edit a file within the /workspace directory.
-        """
-        return await self.safe_request(
-            "post",
-            f"{self.base_url}/workspace/files",
-            params={"file_path": file_path},
-            json={"content": content},
-        )
-
-    async def list_workspace_directories(
-        self,
-        directory: str = "/workspace",
-    ) -> dict:
-        """
-        List files in the specified directory within the /workspace.
-        """
-        return await self.safe_request(
-            "get",
-            f"{self.base_url}/workspace/list-directories",
-            params={"directory": directory},
-        )
-
-    async def create_workspace_directory(self, directory_path: str) -> dict:
-        """
-        Create a directory within the /workspace directory.
-        """
-        return await self.safe_request(
-            "post",
-            f"{self.base_url}/workspace/directories",
-            params={"directory_path": directory_path},
-        )
-
-    async def delete_workspace_file(self, file_path: str) -> dict:
-        """
-        Delete a file within the /workspace directory.
-        """
-        return await self.safe_request(
-            "delete",
-            f"{self.base_url}/workspace/files",
-            params={"file_path": file_path},
-        )
-
-    async def delete_workspace_directory(
-        self,
-        directory_path: str,
-        recursive: bool = False,
-    ) -> dict:
-        """
-        Delete a directory within the /workspace directory.
-        """
-        return await self.safe_request(
-            "delete",
-            f"{self.base_url}/workspace/directories",
-            params={"directory_path": directory_path, "recursive": recursive},
-        )
-
-    async def move_or_rename_workspace_item(
-        self,
-        source_path: str,
-        destination_path: str,
-    ) -> dict:
-        """
-        Move or rename a file or directory within the /workspace directory.
-        """
-        return await self.safe_request(
-            "put",
-            f"{self.base_url}/workspace/move",
-            params={
-                "source_path": source_path,
-                "destination_path": destination_path,
-            },
-        )
-
-    async def copy_workspace_item(
-        self,
-        source_path: str,
-        destination_path: str,
-    ) -> dict:
-        """
-        Copy a file or directory within the /workspace directory.
-        """
-        return await self.safe_request(
-            "post",
-            f"{self.base_url}/workspace/copy",
-            params={
-                "source_path": source_path,
-                "destination_path": destination_path,
-            },
         )
