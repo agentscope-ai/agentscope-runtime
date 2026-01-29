@@ -35,6 +35,7 @@ from ...engine.schemas.agent_schemas import (
 
 async def adapt_ms_agent_framework_message_stream(
     source_stream: AsyncIterator[AgentRunResponseUpdate],
+    **kwargs,  # pylint:disable=unused-argument
 ) -> AsyncIterator[Union[Message, Content]]:
     # Initialize variables to avoid uncaught errors
     msg_id = None

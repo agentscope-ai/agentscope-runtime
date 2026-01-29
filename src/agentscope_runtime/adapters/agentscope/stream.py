@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=too-many-nested-blocks,too-many-branches,too-many-statements
 import copy
+import inspect
 import json
 
-from typing import AsyncIterator, Tuple, List, Union
+from typing import AsyncIterator, Tuple, List, Union, Optional, Callable, Dict
 from urllib.parse import urlparse
 
 from agentscope import setup_logger
@@ -30,6 +31,8 @@ setup_logger("ERROR")
 
 async def adapt_agentscope_message_stream(
     source_stream: AsyncIterator[Tuple[Msg, bool]],
+    type_converters: Optional[Dict[str, Callable]] = None,
+    **kwargs,  # pylint:disable=unused-argument
 ) -> AsyncIterator[Union[Message, Content]]:
     # Initialize variables to avoid uncaught errors
     msg_id = None
@@ -137,6 +140,36 @@ async def adapt_agentscope_message_stream(
                     index = text_delta_content.index
                     yield text_delta_content
                 elif isinstance(element, dict):
+                    # Used for custom conversion
+                    if (
+                        type_converters
+                        and element.get("type") in type_converters
+                    ):
+                        blk_type = element.get("type")
+                        if not isinstance(blk_type, str):
+                            continue
+                        fn = type_converters[blk_type]
+                        # Send both message and element
+                        out = fn(element, message)
+                        # Case 1: async generator / async iterator
+                        if hasattr(out, "__aiter__"):
+                            async for ev in out:
+                                yield ev
+                            continue
+
+                        # Case 2: sync generator / iterator
+                        if inspect.isgenerator(out):
+                            for ev in out:
+                                yield ev
+                            continue
+
+                        # Only generator styles are supported
+                        raise TypeError(
+                            f"type_converters['{blk_type}'] must return a "
+                            f"generator/iterator or an async generator/async "
+                            f"iterator, got: {type(out)}",
+                        )
+
                     if element.get("type") == "text":  # Text
                         text = element.get(
                             "text",
