@@ -135,9 +135,16 @@ async def query_func(
         agent=agent,
     )
 
+    unseen_messages = await get_unseen_messages(
+        memory_msgs=await agent.memory.get_memory(),
+        input_messages=msgs,
+    )
+    if not unseen_messages:
+        raise ValueError("No new messages to process in the request")
+
     async for msg, last in stream_printing_messages(
         agents=[agent],
-        coroutine_task=agent(msgs),
+        coroutine_task=agent(unseen_messages),
     ):
         yield msg, last
 

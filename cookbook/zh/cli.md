@@ -60,7 +60,7 @@ agent_app = AgentApp(
 
 @agent_app.init
 async def init_func(self):
-    """Initialize services."""
+    """初始化服务。"""
     import fakeredis
 
     fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)

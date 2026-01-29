@@ -199,7 +199,7 @@ app = AgentApp(
 
 @app.init
 async def init_func(self):
-    """Initialize service resources"""
+    """初始化服务资源"""
     import fakeredis
 
     fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
