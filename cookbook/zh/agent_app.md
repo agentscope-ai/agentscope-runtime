@@ -189,8 +189,8 @@ app = AgentApp(
 2. **可共享成员变量** —— 装饰器定义的函数会接收 `self`，可以访问 `AgentApp` 实例的属性和服务（例如 `@app.init` 中启动的状态服务、会话服务等），方便在不同生命周期或请求处理逻辑中共享和复用资源；
 
 ```{code-cell}
+from agentscope.session import RedisSession
 from agentscope_runtime.engine import AgentApp
-from agentscope_runtime.engine.services.agent_state import InMemoryStateService
 
 app = AgentApp(
     app_name="Friday",
@@ -200,16 +200,19 @@ app = AgentApp(
 @app.init
 async def init_func(self):
     """初始化服务资源"""
-    self.state_service = InMemoryStateService()
+    import fakeredis
 
-    await self.state_service.start()
+    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    # NOTE: This FakeRedis instance is for development/testing only.
+    # In production, replace it with your own Redis client/connection
+    # (e.g., aioredis.Redis)
+    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
     print("✅ 服务初始化完成")
 
 @app.shutdown
 async def shutdown_func(self):
     """清理服务资源"""
-    await self.state_service.stop()
-    print("✅ 服务资源已清理")
+    print("✅ 资源已清理")
 ```
 
 **装饰器说明**
@@ -318,17 +321,12 @@ async def query_func(
     request: AgentRequest = None,
     **kwargs,
 ):
-    """自定义查询处理函数"""
     session_id = request.session_id
     user_id = request.user_id
 
-    # 加载会话状态
-    state = await self.state_service.export_state(
-        session_id=session_id,
-        user_id=user_id,
-    )
+    toolkit = Toolkit()
+    toolkit.register_tool_function(execute_python_code)
 
-    # 创建 Agent 实例
     agent = ReActAgent(
         name="Friday",
         model=DashScopeChatModel(
@@ -337,26 +335,28 @@ async def query_func(
             stream=True,
         ),
         sys_prompt="You're a helpful assistant named Friday.",
+        toolkit=toolkit,
         memory=InMemoryMemory(),
+        formatter=DashScopeChatFormatter(),
+    )
+    agent.set_console_output_enabled(enabled=False)
+
+    await self.session.load_session_state(
+        session_id=session_id,
+        user_id=user_id,
+        agent=agent,
     )
 
-    # 恢复状态（如果存在）
-    if state:
-        agent.load_state_dict(state)
-
-    # 流式处理消息
     async for msg, last in stream_printing_messages(
         agents=[agent],
         coroutine_task=agent(msgs),
     ):
         yield msg, last
 
-    # 保存状态
-    state = agent.state_dict()
-    await self.state_service.save_state(
-        user_id=user_id,
+    await self.session.save_session_state(
         session_id=session_id,
-        state=state,
+        user_id=user_id,
+        agent=agent,
     )
 ```
 
@@ -377,88 +377,82 @@ async def query_func(
 
 ```{code-cell}
 import os
-from agentscope_runtime.engine import AgentApp
-from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
+
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
+from agentscope.formatter import DashScopeChatFormatter
 from agentscope.tool import Toolkit, execute_python_code
 from agentscope.pipeline import stream_printing_messages
 from agentscope.memory import InMemoryMemory
-from agentscope_runtime.engine.services.agent_state import InMemoryStateService
+from agentscope.session import RedisSession
 
-app = AgentApp(
+from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
+
+agent_app = AgentApp(
     app_name="Friday",
-    app_description="A helpful assistant with state management",
+    app_description="A helpful assistant",
 )
 
-@app.init
+
+@agent_app.init
 async def init_func(self):
-    """初始化状态和会话服务"""
-    self.state_service = InMemoryStateService()
-    await self.state_service.start()
+    import fakeredis
 
-@app.shutdown
-async def shutdown_func(self):
-    """清理服务"""
-    await self.state_service.stop()
+    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    # 注意：这个 FakeRedis 实例仅用于开发/测试。
+    # 在生产环境中，请替换为你自己的 Redis 客户端/连接
+    #（例如 aioredis.Redis）。
+    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
 
-@app.query(framework="agentscope")
+
+@agent_app.query(framework="agentscope")
 async def query_func(
     self,
     msgs,
     request: AgentRequest = None,
     **kwargs,
 ):
-    """带状态管理的查询处理"""
     session_id = request.session_id
     user_id = request.user_id
 
-    # 加载历史状态
-    state = await self.state_service.export_state(
-        session_id=session_id,
-        user_id=user_id,
-    )
-
-    # 创建工具包
     toolkit = Toolkit()
     toolkit.register_tool_function(execute_python_code)
 
-    # 创建 Agent
     agent = ReActAgent(
         name="Friday",
         model=DashScopeChatModel(
             "qwen-turbo",
             api_key=os.getenv("DASHSCOPE_API_KEY"),
-            enable_thinking=True,
             stream=True,
         ),
         sys_prompt="You're a helpful assistant named Friday.",
         toolkit=toolkit,
         memory=InMemoryMemory(),
+        formatter=DashScopeChatFormatter(),
     )
     agent.set_console_output_enabled(enabled=False)
 
-    # 恢复状态
-    if state:
-        agent.load_state_dict(state)
+    await self.session.load_session_state(
+        session_id=session_id,
+        user_id=user_id,
+        agent=agent,
+    )
 
-    # 流式处理
     async for msg, last in stream_printing_messages(
         agents=[agent],
         coroutine_task=agent(msgs),
     ):
         yield msg, last
 
-    # 保存状态
-    state = agent.state_dict()
-    await self.state_service.save_state(
-        user_id=user_id,
+    await self.session.save_session_state(
         session_id=session_id,
-        state=state,
+        user_id=user_id,
+        agent=agent,
     )
 
-# 运行服务
-app.run(host="0.0.0.0", port=8090)
+
+agent_app.run(host="127.0.0.1", port=8090)
 ```
 
 ### 与 V0 版本 Agent 参数方式的区别

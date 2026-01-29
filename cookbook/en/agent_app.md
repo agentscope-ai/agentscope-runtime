@@ -188,8 +188,8 @@ This approach has the following advantages:
 2. **Shared member variables** — Functions defined with decorators receive `self`, allowing access to the attributes and services of the `AgentApp` instance (for example, state services or session services started in `@app.init`), enabling convenient sharing and reuse of resources across different lifecycle stages or request handlers.
 
 ```{code-cell}
+from agentscope.session import RedisSession
 from agentscope_runtime.engine import AgentApp
-from agentscope_runtime.engine.services.agent_state import InMemoryStateService
 
 app = AgentApp(
     app_name="Friday",
@@ -199,15 +199,18 @@ app = AgentApp(
 @app.init
 async def init_func(self):
     """Initialize service resources"""
-    self.state_service = InMemoryStateService()
+    import fakeredis
 
-    await self.state_service.start()
+    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    # NOTE: This FakeRedis instance is for development/testing only.
+    # In production, replace it with your own Redis client/connection
+    # (e.g., aioredis.Redis)
+    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
     print("✅ Service initialized")
 
 @app.shutdown
 async def shutdown_func(self):
     """Release service resources"""
-    await self.state_service.stop()
     print("✅ Resources released")
 ```
 
@@ -313,17 +316,12 @@ async def query_func(
     request: AgentRequest = None,
     **kwargs,
 ):
-    """Custom query handler"""
     session_id = request.session_id
     user_id = request.user_id
 
-    # Load session state
-    state = await self.state_service.export_state(
-        session_id=session_id,
-        user_id=user_id,
-    )
+    toolkit = Toolkit()
+    toolkit.register_tool_function(execute_python_code)
 
-    # Build agent
     agent = ReActAgent(
         name="Friday",
         model=DashScopeChatModel(
@@ -332,26 +330,28 @@ async def query_func(
             stream=True,
         ),
         sys_prompt="You're a helpful assistant named Friday.",
+        toolkit=toolkit,
         memory=InMemoryMemory(),
+        formatter=DashScopeChatFormatter(),
+    )
+    agent.set_console_output_enabled(enabled=False)
+
+    await self.session.load_session_state(
+        session_id=session_id,
+        user_id=user_id,
+        agent=agent,
     )
 
-    # Restore state if present
-    if state:
-        agent.load_state_dict(state)
-
-    # Stream responses
     async for msg, last in stream_printing_messages(
         agents=[agent],
         coroutine_task=agent(msgs),
     ):
         yield msg, last
 
-    # Persist state
-    state = agent.state_dict()
-    await self.state_service.save_state(
-        user_id=user_id,
+    await self.session.save_session_state(
         session_id=session_id,
-        state=state,
+        user_id=user_id,
+        agent=agent,
     )
 ```
 
@@ -371,88 +371,82 @@ async def query_func(
 
 ```{code-cell}
 import os
-from agentscope_runtime.engine import AgentApp
-from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
+
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
+from agentscope.formatter import DashScopeChatFormatter
 from agentscope.tool import Toolkit, execute_python_code
 from agentscope.pipeline import stream_printing_messages
 from agentscope.memory import InMemoryMemory
-from agentscope_runtime.engine.services.agent_state import InMemoryStateService
+from agentscope.session import RedisSession
 
-app = AgentApp(
+from agentscope_runtime.engine import AgentApp
+from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
+
+agent_app = AgentApp(
     app_name="Friday",
-    app_description="A helpful assistant with state management",
+    app_description="A helpful assistant",
 )
 
-@app.init
+
+@agent_app.init
 async def init_func(self):
-    """Start state and session services"""
-    self.state_service = InMemoryStateService()
-    await self.state_service.start()
+    import fakeredis
 
-@app.shutdown
-async def shutdown_func(self):
-    """Tear down services"""
-    await self.state_service.stop()
+    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    # NOTE: This FakeRedis instance is for development/testing only.
+    # In production, replace it with your own Redis client/connection
+    # (e.g., aioredis.Redis)
+    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
 
-@app.query(framework="agentscope")
+
+@agent_app.query(framework="agentscope")
 async def query_func(
     self,
     msgs,
     request: AgentRequest = None,
     **kwargs,
 ):
-    """Query handler with state persistence"""
     session_id = request.session_id
     user_id = request.user_id
 
-    # Load historical state
-    state = await self.state_service.export_state(
-        session_id=session_id,
-        user_id=user_id,
-    )
-
-    # Register tools
     toolkit = Toolkit()
     toolkit.register_tool_function(execute_python_code)
 
-    # Build agent
     agent = ReActAgent(
         name="Friday",
         model=DashScopeChatModel(
             "qwen-turbo",
             api_key=os.getenv("DASHSCOPE_API_KEY"),
-            enable_thinking=True,
             stream=True,
         ),
         sys_prompt="You're a helpful assistant named Friday.",
         toolkit=toolkit,
         memory=InMemoryMemory(),
+        formatter=DashScopeChatFormatter(),
     )
     agent.set_console_output_enabled(enabled=False)
 
-    # Restore state if any
-    if state:
-        agent.load_state_dict(state)
+    await self.session.load_session_state(
+        session_id=session_id,
+        user_id=user_id,
+        agent=agent,
+    )
 
-    # Stream output
     async for msg, last in stream_printing_messages(
         agents=[agent],
         coroutine_task=agent(msgs),
     ):
         yield msg, last
 
-    # Save state
-    state = agent.state_dict()
-    await self.state_service.save_state(
-        user_id=user_id,
+    await self.session.save_session_state(
         session_id=session_id,
-        state=state,
+        user_id=user_id,
+        agent=agent,
     )
 
-# Launch service
-app.run(host="0.0.0.0", port=8090)
+
+agent_app.run(host="127.0.0.1", port=8090)
 ```
 
 ### Comparison with the V0 version`agent` Parameter Approach

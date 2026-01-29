@@ -12,14 +12,12 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
 )
 from agentscope_runtime.engine.runner import Runner
 from agentscope_runtime.engine.services.sandbox import SandboxService
-from agentscope_runtime.engine.services.agent_state import InMemoryStateService
 
 
 class MyRunner(Runner):
     def __init__(self) -> None:
         super().__init__()
         self.framework_type = "ms_agent_framework"
-        self.state_service = InMemoryStateService()
 
     async def query_handler(
         self,
@@ -32,11 +30,9 @@ class MyRunner(Runner):
         """
         session_id = request.session_id
         user_id = request.user_id
+        id_key = f"{user_id}_{session_id}"
 
-        thread = await self.state_service.export_state(
-            session_id=session_id,
-            user_id=user_id,
-        )
+        thread = self.thread_storage.get(id_key)
 
         # Get sandbox
         sandboxes = self.sandbox_service.connect(
@@ -77,26 +73,21 @@ class MyRunner(Runner):
             yield event
 
         serialized_thread = await thread.serialize()
-        await self.state_service.save_state(
-            user_id=user_id,
-            session_id=session_id,
-            state=serialized_thread,
-        )
+        self.thread_storage[id_key] = serialized_thread
 
     async def init_handler(self, *args, **kwargs):
         """
         Init handler.
         """
+        self.thread_storage = {}  # Only for testing
         self.sandbox_service = SandboxService()
         await self.sandbox_service.start()
-        await self.state_service.start()
 
     async def shutdown_handler(self, *args, **kwargs):
         """
         Shutdown handler.
         """
         await self.sandbox_service.stop()
-        await self.state_service.stop()
 
 
 @pytest.mark.asyncio(loop_scope="session")

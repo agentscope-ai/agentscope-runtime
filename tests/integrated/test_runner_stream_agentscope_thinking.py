@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=unused-argument
 import os
 
 import pytest
@@ -9,15 +10,14 @@ from agentscope.formatter import DashScopeChatFormatter
 from agentscope.tool import Toolkit
 from agentscope.pipeline import stream_printing_messages
 from agentscope.memory import InMemoryMemory
+from agentscope.session import RedisSession
+
 from agentscope_runtime.engine.schemas.agent_schemas import (
     AgentRequest,
     MessageType,
     RunStatus,
 )
 from agentscope_runtime.engine.runner import Runner
-from agentscope_runtime.engine.services.agent_state import (
-    InMemoryStateService,
-)
 from agentscope_runtime.adapters.agentscope.tool import sandbox_tool_adapter
 from agentscope_runtime.engine.services.sandbox import SandboxService
 
@@ -38,11 +38,6 @@ class MyRunner(Runner):
         """
         session_id = request.session_id
         user_id = request.user_id
-
-        state = await self.state_service.export_state(
-            session_id=session_id,
-            user_id=user_id,
-        )
 
         # Get sandbox
         sandboxes = self.sandbox_service.connect(
@@ -80,34 +75,43 @@ class MyRunner(Runner):
         )
         agent.set_console_output_enabled(enabled=False)
 
-        if state:
-            agent.load_state_dict(state)
+        await self.session.load_session_state(
+            session_id=session_id,
+            user_id=user_id,
+            agent=agent,
+        )
+
         async for msg, last in stream_printing_messages(
             agents=[agent],
             coroutine_task=agent(msgs),
         ):
             yield msg, last
-        state = agent.state_dict()
-        await self.state_service.save_state(
-            user_id=user_id,
+
+        await self.session.save_session_state(
             session_id=session_id,
-            state=state,
+            user_id=user_id,
+            agent=agent,
         )
 
     async def init_handler(self, *args, **kwargs):
         """
         Init handler.
         """
-        self.state_service = InMemoryStateService()
-        self.sandbox_service = SandboxService()
-        await self.state_service.start()
+        import fakeredis
+
+        fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+        # NOTE: This FakeRedis instance is for development/testing only.
+        # In production, replace it with your own Redis client/connection
+        # (e.g., aioredis.Redis)
+        self.session = RedisSession(connection_pool=fake_redis.connection_pool)
+
+        self.sandbox_service = SandboxService(drain_on_stop=True)
         await self.sandbox_service.start()
 
     async def shutdown_handler(self, *args, **kwargs):
         """
         Shutdown handler.
         """
-        await self.state_service.stop()
         await self.sandbox_service.stop()
 
 

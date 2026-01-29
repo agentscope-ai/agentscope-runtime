@@ -36,7 +36,6 @@ from agent_framework.openai import OpenAIChatClient
 
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agentscope_runtime.engine.services.agent_state import InMemoryStateService
 
 PORT = 8090
 
@@ -50,12 +49,13 @@ def run_app():
 
     @agent_app.init
     async def init_func(self):
-        self.state_service = InMemoryStateService()
-        await self.state_service.start()
+        self.thread_storage = {}  # Only for testing
+        self.sandbox_service = SandboxService()
+        await self.sandbox_service.start()
 
     @agent_app.shutdown
     async def shutdown_func(self):
-        await self.state_service.stop()
+        pass
 
     @agent_app.query(framework="agno")
     async def query_func(
@@ -69,10 +69,8 @@ def run_app():
         user_id = request.user_id
 
         # Export historical context
-        thread = await self.state_service.export_state(
-            session_id=session_id,
-            user_id=user_id,
-        )
+        id_key = f"{user_id}_{session_id}"
+        thread = self.thread_storage.get(id_key)
 
         # Create agent
         agent = OpenAIChatClient(
@@ -99,11 +97,7 @@ def run_app():
 
         # Save session state
         serialized_thread = await thread.serialize()
-        await self.state_service.save_state(
-            user_id=user_id,
-            session_id=session_id,
-            state=serialized_thread,
-        )
+        self.thread_storage[id_key] = serialized_thread
 
     agent_app.run(host="127.0.0.1", port=PORT)
 

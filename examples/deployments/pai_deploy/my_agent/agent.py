@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-from typing import AsyncIterator, List, Optional
+from typing import AsyncIterator, List
 
 from agentscope.agent import ReActAgent
 from agentscope.formatter import DashScopeChatFormatter
@@ -8,13 +8,14 @@ from agentscope.message import TextBlock, Msg
 from agentscope.model import OpenAIChatModel
 from agentscope.pipeline import stream_printing_messages
 from agentscope.tool import ToolResponse, Toolkit, execute_python_code
+from agentscope.session import RedisSession
+
 
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.runner import Runner
 from agentscope_runtime.engine.schemas.agent_schemas import (
     AgentRequest,
 )
-from agentscope_runtime.engine.services.agent_state import InMemoryStateService
 
 agent_app = AgentApp(
     app_name="SimpleAgent",
@@ -42,55 +43,13 @@ async def get_weather(location: str) -> ToolResponse:
 
 @agent_app.init
 async def init_func(runner: Runner):
-    runner.state_service = InMemoryStateService()
-    await runner.state_service.start()
+    import fakeredis
 
-
-@agent_app.shutdown
-async def shutdown_func(runner: Runner):
-    await runner.state_service.stop()
-
-
-def create_stateful_agent(
-    state: Optional[dict] = None,
-) -> ReActAgent:
-    """
-    Create a stateful agent with the given session service, session id, user
-    id, and state.
-
-    Args:
-        state (Optional[dict]): State to load into the agent
-
-    Returns:
-        tuple[dict, Toolkit]: Tuple containing the state and toolkit
-
-    """
-
-    toolkit = Toolkit()
-    toolkit.register_tool_function(execute_python_code)
-    toolkit.register_tool_function(get_weather)
-
-    agent = ReActAgent(
-        name="Example Agent for AG-UI",
-        model=OpenAIChatModel(
-            "qwen-max",
-            api_key=os.getenv("DASHSCOPE_API_KEY", "your-dashscope-api-key"),
-            client_args={
-                "base_url": (
-                    "https://dashscope.aliyuncs.com/compatible-mode/v1"
-                ),
-            },
-        ),
-        sys_prompt="You're a helpful assistant named Friday.",
-        toolkit=toolkit,
-        formatter=DashScopeChatFormatter(),
-    )
-    agent.set_console_output_enabled(enabled=False)
-
-    if state:
-        agent.load_state_dict(state)
-
-    return agent
+    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    # NOTE: This FakeRedis instance is for development/testing only.
+    # In production, replace it with your own Redis client/connection
+    # (e.g., aioredis.Redis)
+    runner.session = RedisSession(connection_pool=fake_redis.connection_pool)
 
 
 @agent_app.query(framework="agentscope")
@@ -116,12 +75,31 @@ async def query_func(
     session_id = request.session_id
     user_id = request.user_id
 
-    state = await runner.state_service.export_state(
+    toolkit = Toolkit()
+    toolkit.register_tool_function(execute_python_code)
+    toolkit.register_tool_function(get_weather)
+
+    agent = ReActAgent(
+        name="Example Agent for AG-UI",
+        model=OpenAIChatModel(
+            "qwen-max",
+            api_key=os.getenv("DASHSCOPE_API_KEY", "your-dashscope-api-key"),
+            client_args={
+                "base_url": (
+                    "https://dashscope.aliyuncs.com/compatible-mode/v1"
+                ),
+            },
+        ),
+        sys_prompt="You're a helpful assistant named Friday.",
+        toolkit=toolkit,
+        formatter=DashScopeChatFormatter(),
+    )
+    agent.set_console_output_enabled(enabled=False)
+
+    await runner.session.load_session_state(
         session_id=session_id,
         user_id=user_id,
-    )
-    agent = create_stateful_agent(
-        state=state,
+        agent=agent,
     )
 
     async for msg, last in stream_printing_messages(
@@ -130,10 +108,8 @@ async def query_func(
     ):
         yield msg, last
 
-    state = agent.state_dict()
-
-    await runner.state_service.save_state(
-        user_id=user_id,
+    await runner.session.save_session_state(
         session_id=session_id,
-        state=state,
+        user_id=user_id,
+        agent=agent,
     )

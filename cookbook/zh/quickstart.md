@@ -49,12 +49,11 @@ from agentscope.formatter import DashScopeChatFormatter
 from agentscope.tool import Toolkit, execute_python_code
 from agentscope.pipeline import stream_printing_messages
 from agentscope.memory import InMemoryMemory
+from agentscope.session import RedisSession
 
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agentscope_runtime.engine.services.agent_state import (
-    InMemoryStateService,
-)
+from agentscope_runtime.engine.deployers import LocalDeployManager
 
 print("✅ 依赖导入成功")
 ```
@@ -79,12 +78,17 @@ print("✅ Agent App创建成功")
 ```{code-cell}
 @agent_app.init
 async def init_func(self):
-    self.state_service = InMemoryStateService()
-    await self.state_service.start()
+    import fakeredis
+
+    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    # 注意：这个 FakeRedis 实例仅用于开发/测试。
+    # 在生产环境中，请替换为你自己的 Redis 客户端/连接
+    #（例如 aioredis.Redis）。
+    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
 
 @agent_app.shutdown
 async def shutdown_func(self):
-    await self.state_service.stop()
+    pass
 ```
 
 ### 步骤4：定义 AgentScope Agent 的查询逻辑
@@ -92,9 +96,7 @@ async def shutdown_func(self):
 ```{important}
 ⚠️ **提示**
 
-此处的 Agent 构建（模型、工具、会话记忆、格式化器等）只是一个示例配置，
-您需要根据实际需求替换为自己的模块实现。
-关于可用的服务类型、适配器用法以及如何替换，请参考 {doc}`service/service`。
+此处的 Agent 构建（模型、工具、会话记忆等）只是一个示例配置，您需要根据实际需求替换为自己的模块实现。
 ```
 
 这一部分定义了Agent API 被调用时的业务逻辑：
@@ -115,11 +117,6 @@ async def query_func(
     session_id = request.session_id
     user_id = request.user_id
 
-    state = await self.state_service.export_state(
-        session_id=session_id,
-        user_id=user_id,
-    )
-
     toolkit = Toolkit()
     toolkit.register_tool_function(execute_python_code)
 
@@ -137,8 +134,11 @@ async def query_func(
     )
     agent.set_console_output_enabled(enabled=False)
 
-    if state:
-        agent.load_state_dict(state)
+    await self.session.load_session_state(
+        session_id=session_id,
+        user_id=user_id,
+        agent=agent,
+    )
 
     async for msg, last in stream_printing_messages(
         agents=[agent],
@@ -146,12 +146,10 @@ async def query_func(
     ):
         yield msg, last
 
-    state = agent.state_dict()
-
-    await self.state_service.save_state(
-        user_id=user_id,
+    await self.session.save_session_state(
         session_id=session_id,
-        state=state,
+        user_id=user_id,
+        agent=agent,
     )
 ```
 

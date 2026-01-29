@@ -87,7 +87,7 @@ class GuiSandbox(GUIMixin, BaseSandbox):
             sandbox_type,
             workspace_dir,
         )
-        if get_platform() == "linux/arm64":
+        if "arm" in get_platform():
             logger.warning(
                 "\nCompatibility Notice: This GUI Sandbox may have issues on "
                 "arm64 CPU architectures, due to the computer-use-mcp does "

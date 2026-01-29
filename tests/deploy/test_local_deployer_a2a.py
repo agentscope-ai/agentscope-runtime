@@ -10,6 +10,7 @@ from agentscope.formatter import DashScopeChatFormatter
 from agentscope.model import DashScopeChatModel
 from agentscope.pipeline import stream_printing_messages
 from agentscope.memory import InMemoryMemory
+from agentscope.session import RedisSession
 
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.deployers.adapter.a2a import (
@@ -19,9 +20,6 @@ from agentscope_runtime.engine.deployers.local_deployer import (
     LocalDeployManager,
 )
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agentscope_runtime.engine.services.agent_state import (
-    InMemoryStateService,
-)
 
 
 def local_deploy():
@@ -46,12 +44,13 @@ async def _local_deploy():
     # Initialize services
     @agent_app.init
     async def init_func(self):
-        self.state_service = InMemoryStateService()
-        await self.state_service.start()
+        import fakeredis
 
-    @agent_app.shutdown
-    async def shutdown_func(self):
-        await self.state_service.stop()
+        fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+        # NOTE: This FakeRedis instance is for development/testing only.
+        # In production, replace it with your own Redis client/connection
+        # (e.g., aioredis.Redis)
+        self.session = RedisSession(connection_pool=fake_redis.connection_pool)
 
     # Define query handler
     @agent_app.query(framework="agentscope")
@@ -63,11 +62,6 @@ async def _local_deploy():
     ):
         session_id = request.session_id
         user_id = request.user_id
-
-        state = await self.state_service.export_state(
-            session_id=session_id,
-            user_id=user_id,
-        )
 
         agent = ReActAgent(
             name="Friday",
@@ -81,8 +75,11 @@ async def _local_deploy():
             formatter=DashScopeChatFormatter(),
         )
 
-        if state:
-            agent.load_state_dict(state)
+        await self.session.load_session_state(
+            session_id=session_id,
+            user_id=user_id,
+            agent=agent,
+        )
 
         async for msg, last in stream_printing_messages(
             agents=[agent],
@@ -90,12 +87,10 @@ async def _local_deploy():
         ):
             yield msg, last
 
-        state = agent.state_dict()
-
-        await self.state_service.save_state(
-            user_id=user_id,
+        await self.session.save_session_state(
             session_id=session_id,
-            state=state,
+            user_id=user_id,
+            agent=agent,
         )
 
     # Create A2A protocol adapter
