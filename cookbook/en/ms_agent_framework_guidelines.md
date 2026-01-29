@@ -57,7 +57,7 @@ def run_app():
     async def shutdown_func(self):
         pass
 
-    @agent_app.query(framework="agno")
+    @agent_app.query(framework="ms_agent_framework")
     async def query_func(
         self,
         msgs,
