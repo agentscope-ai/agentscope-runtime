@@ -111,8 +111,9 @@ class ImageToVideoWan25Submit(
 
     name: str = "modelstudio_image_to_video_wan25_submit_task"
     description: str = (
-        "通义万相-图生视频模型的异步任务提交工具。根据首帧图像和文本提示词，生成时长为5秒的无声视频。"
-        "同时支持特效模板，可添加“魔法悬浮”、“气球膨胀”等效果，适用于创意视频制作、娱乐特效展示等场景。"
+        "[版本: wan2.5] 通义万相图生视频模型（wan2.5-i2v）异步提交工具。基于单张首帧图像和文本提示，生成一段流畅的有声视频。\n"  # noqa
+        "支持视频时长：5秒或10秒；分辨率：480P、720P、1080P；支持自动配音或传入自定义音频，实现音画同步。\n"
+        "提供特效模板（如“魔法悬浮”、“气球膨胀”），适用于创意视频、娱乐特效等场景。\n"
     )
 
     @trace(trace_type="AIGC", trace_name="image_to_video_wan25_submit")
