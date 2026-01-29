@@ -332,6 +332,16 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "Eggiverse",
+      "name": "Zhang Shitian",
+      "avatar_url": "https://avatars.githubusercontent.com/u/36877740?v=4",
+      "profile": "https://github.com/Eggiverse",
+      "contributions": [
+        "bug",
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
