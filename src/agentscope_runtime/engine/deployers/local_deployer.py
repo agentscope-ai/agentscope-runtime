@@ -20,7 +20,6 @@ from .utils.detached_app import (
     get_bundle_entry_script,
 )
 from .utils.service_utils import (
-    FastAPIAppFactory,
     ProcessManager,
 )
 
@@ -184,22 +183,16 @@ class LocalDeployManager(DeployManager):
         **kwargs,
     ) -> Dict[str, str]:
         """Deploy in daemon thread mode."""
+        # pylint:disable=unused-argument
+
         self._logger.info("Deploying FastAPI service in daemon thread mode...")
 
-        # Create FastAPI app using factory with Celery support
-        app = FastAPIAppFactory.create_app(
-            runner=runner,
-            mode=DeploymentMode.DAEMON_THREAD,
-            protocol_adapters=protocol_adapters,
-            broker_url=broker_url,
-            backend_url=backend_url,
-            enable_embedded_worker=enable_embedded_worker,
-            **kwargs,
-        )
+        if not self._app:
+            raise ValueError("Daemon process mode requires an app")
 
         # Create uvicorn server
         config = uvicorn.Config(
-            app=app,
+            app=self._app,
             host=self.host,
             port=self.port,
             loop="asyncio",
