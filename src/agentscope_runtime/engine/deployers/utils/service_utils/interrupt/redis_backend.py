@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from typing import AsyncGenerator, Optional
 import redis.asyncio as redis
-from .base import TaskState, BaseInterruptBackend
+from .base_backend import TaskState, BaseInterruptBackend
 
 
 class RedisInterruptBackend(BaseInterruptBackend):

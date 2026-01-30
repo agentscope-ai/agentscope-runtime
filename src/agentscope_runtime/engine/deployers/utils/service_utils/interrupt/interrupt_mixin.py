@@ -2,7 +2,7 @@
 import asyncio
 from typing import Any, AsyncGenerator, Callable, Dict
 
-from .base import BaseInterruptBackend, InterruptSignal, TaskState
+from .base_backend import BaseInterruptBackend, InterruptSignal, TaskState
 
 
 class InterruptMixin:
