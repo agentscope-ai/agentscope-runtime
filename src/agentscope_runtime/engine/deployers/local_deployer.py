@@ -183,16 +183,24 @@ class LocalDeployManager(DeployManager):
         **kwargs,
     ) -> Dict[str, str]:
         """Deploy in daemon thread mode."""
-        # pylint:disable=unused-argument
 
         self._logger.info("Deploying FastAPI service in daemon thread mode...")
 
-        if not self._app:
-            raise ValueError("Daemon process mode requires an app")
+        from agentscope_runtime.engine.app.agent_app import AgentApp
+
+        app = AgentApp(
+            runner=runner,
+            mode=DeploymentMode.DAEMON_THREAD,
+            protocol_adapters=protocol_adapters,
+            broker_url=broker_url,
+            backend_url=backend_url,
+            enable_embedded_worker=enable_embedded_worker,
+            **kwargs,
+        )
 
         # Create uvicorn server
         config = uvicorn.Config(
-            app=self._app,
+            app=app,
             host=self.host,
             port=self.port,
             loop="asyncio",

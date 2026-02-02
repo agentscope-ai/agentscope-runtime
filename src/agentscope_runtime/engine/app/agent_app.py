@@ -9,7 +9,7 @@ import shlex
 import subprocess
 import types
 from contextlib import asynccontextmanager, AsyncExitStack
-from typing import Any, Callable, List, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Type
 
 import uvicorn
 from a2a.types import A2ARequest
@@ -141,6 +141,7 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         lifespan: Optional[Lifespan[Any]] = None,
         mode: DeploymentMode = DeploymentMode.DAEMON_THREAD,
         protocol_adapters: Optional[list[ProtocolAdapter]] = None,
+        custom_endpoints: Optional[List[Dict]] = None,
         **kwargs: Any,
     ):
         self._user_lifespan = lifespan
@@ -199,6 +200,9 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         )
 
         self._setup_builtin_routes()
+
+        if custom_endpoints:
+            self.restore_custom_endpoints(custom_endpoints)
 
     def _setup_interrupt_service(
         self,
@@ -629,8 +633,6 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
 
         self._add_endpoint_router()
 
-        self.sync_routing_metadata()
-
         try:
             logger.info(
                 "Starting AgentApp...",
@@ -680,8 +682,6 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         """Deploy the agent app"""
 
         self._build_runner()
-
-        self.sync_routing_metadata()
 
         deploy_kwargs = {
             "app": self,
