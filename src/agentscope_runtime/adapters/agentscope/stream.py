@@ -149,8 +149,8 @@ async def adapt_agentscope_message_stream(
                         if not isinstance(blk_type, str):
                             continue
                         fn = type_converters[blk_type]
-                        # Send both message and element
-                        out = fn(element, message)
+                        # Send  message, element, last, tool_start, metadata and usage
+                        out = fn(element, message, last, tool_start, metadata, usage)
                         # Case 1: async generator / async iterator
                         if hasattr(out, "__aiter__"):
                             async for ev in out:
