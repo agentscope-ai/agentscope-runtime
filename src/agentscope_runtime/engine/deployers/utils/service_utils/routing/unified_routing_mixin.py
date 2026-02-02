@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import functools
 import inspect
 import asyncio
 import logging
@@ -22,7 +21,7 @@ class UnifiedRoutingMixin(TaskEngineMixin, CustomEndpointMixin):
         backend_url: Optional[str] = None,
     ):
         self.init_task_engine(broker_url, backend_url)
-        self.custom_endpoints: List[Dict[str, Any]] = []
+        self._custom_endpoints: List[Dict[str, Any]] = []
 
     def task(self, path: str, queue: str = "celery"):
         def decorator(func: Callable):
@@ -36,7 +35,6 @@ class UnifiedRoutingMixin(TaskEngineMixin, CustomEndpointMixin):
                 func.celery_task = self.register_celery_task(func, queue)
 
             @self.post(path, tags=["custom"])
-            @functools.wraps(func)
             async def task_endpoint(request: dict):
                 try:
                     task_id = str(uuid.uuid4())
@@ -127,6 +125,11 @@ class UnifiedRoutingMixin(TaskEngineMixin, CustomEndpointMixin):
 
         return decorator
 
+    @property
+    def custom_endpoints(self) -> List[Dict[str, Any]]:
+        self.sync_routing_metadata()
+        return self._custom_endpoints
+
     def sync_routing_metadata(self):
         """
         Synchronize and update routing metadata for discovery.
@@ -139,7 +142,7 @@ class UnifiedRoutingMixin(TaskEngineMixin, CustomEndpointMixin):
             INTERNAL_PATHS.append(endpoint_path)
 
         # Clear existing metadata to ensure idempotency
-        self.custom_endpoints = []
+        self._custom_endpoints = []
 
         for route in self.routes:
             if not isinstance(route, APIRoute):
@@ -186,10 +189,34 @@ class UnifiedRoutingMixin(TaskEngineMixin, CustomEndpointMixin):
                     "function_name": getattr(handler, "__name__", None),
                 }
 
-            if info not in self.custom_endpoints:
-                self.custom_endpoints.append(info)
+            if info not in self._custom_endpoints:
+                self._custom_endpoints.append(info)
 
-        logger.debug(f"Synced {len(self.custom_endpoints)} custom endpoints.")
+    def restore_custom_endpoints(self, custom_endpoints: List[Dict[str, Any]]):
+        """
+        Re-register all custom routes and tasks based on the provided metadata.
+        """
+        for info in custom_endpoints:
+            path = info["path"]
+            methods = info["methods"]
+            if isinstance(methods, (list, set)):
+                methods = [m for m in methods if m.upper() != "OPTIONS"]
+
+            if info.get("task_type") is True:
+                original_func = info["original_func"]
+                queue = info.get("queue", "celery")
+
+                self.task(path=path, queue=queue)(original_func)
+
+            else:
+                handler = info["handler"]
+
+                self.add_api_route(
+                    path=path,
+                    endpoint=handler,
+                    methods=methods,
+                    tags=["custom"],
+                )
 
     @staticmethod
     def internal_route(func: Callable) -> Callable:
