@@ -43,7 +43,7 @@ from ..deployers.utils.service_utils.interrupt import (
     RedisInterruptBackend,
     LocalInterruptBackend,
 )
-from ..deployers.utils.service_utils.routing.unified_routing_mixin import (
+from ..deployers.utils.service_utils.routing import (
     UnifiedRoutingMixin,
 )
 from ..runner import Runner
@@ -238,6 +238,8 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         # pylint: disable=too-many-branches
         self._build_runner()
         try:
+            # aexit any possible running instances before set up
+            # runner
             await self._runner.__aexit__(None, None, None)
             await self._runner.__aenter__()
 
@@ -441,11 +443,20 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         Dispatch stream generation based on interrupt backend status.
         """
         if not self._interrupt_backend:
-            async for chunk in self._common_stream_generator(
-                request,
-                **kwargs,
-            ):
-                yield chunk
+            try:
+                if not self._runner:
+                    yield f"data: {json.dumps({'error': 'No runner'})}\n\n"
+                    return
+
+                async for chunk in self._common_stream_generator(
+                    request,
+                    **kwargs,
+                ):
+                    yield chunk
+
+            except Exception as e:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
         else:
             async for chunk in self._stream_generator_with_interrupt(
                 request,
@@ -462,10 +473,6 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         Execute stream generation wrapped with interrupt management.
         """
         try:
-            if not self._interrupt_backend:
-                yield f"data: {json.dumps({'error': 'No backend'})}\n\n"
-                return
-
             agent_req = AgentRequest(**request)
             async for chunk in self.run_and_stream(
                 agent_req.user_id,
@@ -480,21 +487,17 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
 
     async def _common_stream_generator(self, request: dict, **kwargs):
         """Yield standard SSE formatted chunks from the runner."""
-        try:
-            if not self._runner:
-                yield f"data: {json.dumps({'error': 'No runner'})}\n\n"
-                return
+        if not self._runner:
+            raise RuntimeError("Runner is not initialized.")
 
-            async for chunk in self._runner.stream_query(request, **kwargs):
-                if hasattr(chunk, "model_dump_json"):
-                    data = chunk.model_dump_json()
-                elif hasattr(chunk, "json"):
-                    data = chunk.json()
-                else:
-                    data = json.dumps({"text": str(chunk)})
-                yield f"data: {data}\n\n"
-        except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        async for chunk in self._runner.stream_query(request, **kwargs):
+            if hasattr(chunk, "model_dump_json"):
+                data = chunk.model_dump_json()
+            elif hasattr(chunk, "json"):
+                data = chunk.json()
+            else:
+                data = json.dumps({"text": str(chunk)})
+            yield f"data: {data}\n\n"
 
     @deprecated(
         reason=(

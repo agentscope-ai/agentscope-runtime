@@ -31,6 +31,8 @@ class InterruptMixin:
                     task_to_cancel.cancel()
                     break
         except asyncio.CancelledError:
+            # Listener cancellation is expected during normal shutdown and is
+            # intentionally ignored.
             pass
 
     async def run_and_stream(
@@ -45,10 +47,19 @@ class InterruptMixin:
         # pylint: disable=too-many-statements
         task_id = self._get_interrupt_key(user_id, session_id)
 
-        # Ensure atomicity by checking distributed state before execution
-        current_state = await self._interrupt_backend.get_task_state(task_id)
-        if current_state == TaskState.RUNNING:
-            raise RuntimeError(f"Task {task_id} is already running.")
+        # Atomic check: Transition to RUNNING only if
+        # current state IS NOT RUNNING
+        # This prevents multiple concurrent runners for the same session.
+        success = await self._interrupt_backend.compare_and_set_state(
+            key=task_id,
+            new_state=TaskState.RUNNING,
+            expected_state=TaskState.RUNNING,
+            negate=True,  # Succeed if Current != RUNNING
+            ttl=3600,
+        )
+
+        if not success:
+            raise RuntimeError(f"Task {task_id} is already in RUNNING state.")
 
         queue: asyncio.Queue = asyncio.Queue()
         is_interrupted = False
@@ -100,6 +111,8 @@ class InterruptMixin:
                 try:
                     await listener_task
                 except asyncio.CancelledError:
+                    # Intentionally ignore CancelledError as the task
+                    # is being shut down during cleanup.
                     pass
 
             if not worker_task.done():

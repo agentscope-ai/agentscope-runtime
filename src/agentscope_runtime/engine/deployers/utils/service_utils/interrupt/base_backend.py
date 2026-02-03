@@ -47,6 +47,36 @@ class BaseInterruptBackend(ABC):
         """Set the task state with an optional time-to-live (TTL)."""
 
     @abstractmethod
+    async def compare_and_set_state(
+        self,
+        key: str,
+        new_state: TaskState,
+        expected_state: TaskState,
+        negate: bool = False,
+        ttl: int = 3600,
+    ) -> bool:
+        """
+        Perform an atomic Compare-And-Set (CAS) operation on the task state.
+
+        This method updates the state to `new_state` only if the current state
+        matches the `expected_state` condition.
+
+        Args:
+            key (str): The unique identifier for the task.
+            new_state (TaskState): The state to be set if the condition is met.
+            expected_state (TaskState): The state to compare against the
+            current persisted state.
+            negate (bool): If True, the update occurs only if the current state
+                is NOT equal to `expected_state`. If False (default), the
+                update occurs only if the current state IS equal to
+                `expected_state`.
+            ttl (int): Time-to-live for the state record in seconds.
+
+        Returns:
+            bool: True if the state was successfully updated, False otherwise.
+        """
+
+    @abstractmethod
     async def get_task_state(self, key: str) -> Optional[TaskState]:
         """Retrieve the current state of a task."""
 
