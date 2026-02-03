@@ -41,6 +41,54 @@ class RedisInterruptBackend(BaseInterruptBackend):
             ex=ttl,
         )
 
+    async def compare_and_set_state(
+        self,
+        key: str,
+        new_state: TaskState,
+        expected_state: TaskState,
+        negate: bool = False,
+        ttl: int = 3600,
+    ) -> bool:
+        """
+        Implementation of atomic CAS using Lua scripting for Redis.
+        The script ensures that the 'Get-Compare-Set' cycle is uninterruptible.
+        """
+
+        lua_script = """
+        local current = redis.call('get', KEYS[1])
+        local expected = ARGV[2]
+        local is_negate = (ARGV[3] == '1')
+
+        -- Check if current state matches the expected state
+        local match = (current == expected)
+
+        -- Determine if the condition for update is met:
+        local condition_met = false
+        if is_negate then
+            condition_met = not match
+        else
+            condition_met = match
+        end
+
+        if condition_met then
+            redis.call('set', KEYS[1], ARGV[1], 'ex', ARGV[4])
+            return 1
+        else
+            return 0
+        end
+        """
+
+        result = await self.redis_client.eval(
+            lua_script,
+            1,
+            f"state:{key}",
+            new_state.value,
+            expected_state.value,
+            "1" if negate else "0",
+            ttl,
+        )
+        return bool(result)
+
     async def get_task_state(
         self,
         key: str,
