@@ -342,6 +342,15 @@
         "bug",
         "code"
       ]
+    },
+    {
+      "login": "Shun-Chu",
+      "name": "Chuss",
+      "avatar_url": "https://avatars.githubusercontent.com/u/73324318?v=4",
+      "profile": "https://github.com/Shun-Chu",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,

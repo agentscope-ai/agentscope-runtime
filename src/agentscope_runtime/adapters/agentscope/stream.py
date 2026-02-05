@@ -519,7 +519,7 @@ async def adapt_agentscope_message_stream(
                                 index=index,
                                 **kwargs,
                             )
-                        elif element.get("text") == "audio":
+                        elif element.get("type") == "audio":
                             kwargs = {}
                             if (
                                 isinstance(element.get("source"), dict)
