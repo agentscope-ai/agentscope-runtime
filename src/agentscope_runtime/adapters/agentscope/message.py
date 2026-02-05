@@ -29,6 +29,7 @@ from ...engine.schemas.agent_schemas import (
 )
 
 
+# TODO: support in core framework
 class FileBlock(TypedDict, total=False):
     """The file block"""
 
@@ -304,7 +305,7 @@ def message_to_agentscope_msg(
                             block_cls(type=cnt_type, source=url_source),
                         )
                 elif cnt_type == "file":
-                    filename = cnt.get("filename")
+                    filename = cnt.filename
                     if (
                         value
                         and isinstance(value, str)
