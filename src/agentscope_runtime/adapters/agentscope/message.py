@@ -4,8 +4,9 @@
 import json
 
 from collections import OrderedDict
-from typing import Union, List, Callable, Optional, Dict
+from typing import Union, List, Callable, Optional, Dict, Literal
 from urllib.parse import urlparse
+from typing_extensions import TypedDict, Required
 
 from mcp.types import CallToolResult
 from agentscope.message import (
@@ -26,6 +27,19 @@ from ...engine.schemas.agent_schemas import (
     Message,
     MessageType,
 )
+
+
+class FileBlock(TypedDict, total=False):
+    """The file block"""
+
+    type: Required[Literal["file"]]
+    """The type of the block"""
+
+    source: Required[Base64Source | URLSource]
+    """The src of the file"""
+
+    filename: Optional[str]
+    """Optional filename hint (e.g. `report.pdf`)"""
 
 
 def matches_typed_dict_structure(obj, typed_dict_cls):
@@ -193,6 +207,7 @@ def message_to_agentscope_msg(
                 "audio": (AudioBlock, "data"),
                 "data": (TextBlock, "data"),
                 "video": (VideoBlock, "video_url"),
+                "file": (FileBlock, "file_url"),
             }
 
             msg_content = []
@@ -287,6 +302,39 @@ def message_to_agentscope_msg(
                         url_source = URLSource(type="url", url=value)
                         msg_content.append(
                             block_cls(type=cnt_type, source=url_source),
+                        )
+                elif cnt_type == "file":
+                    filename = cnt.get("filename")
+                    if (
+                        value
+                        and isinstance(value, str)
+                        and value.startswith("data:")
+                    ):
+                        mediatype_part = value.split(";")[0].replace(
+                            "data:",
+                            "",
+                        )
+                        base64_data = value.split(",")[1]
+                        base64_source = Base64Source(
+                            type="base64",
+                            media_type=mediatype_part,
+                            data=base64_data,
+                        )
+                        msg_content.append(
+                            block_cls(
+                                type=cnt_type,
+                                source=base64_source,
+                                filename=filename,
+                            ),
+                        )
+                    else:
+                        url_source = URLSource(type="url", url=value)
+                        msg_content.append(
+                            block_cls(
+                                type=cnt_type,
+                                source=url_source,
+                                filename=filename,
+                            ),
                         )
                 else:
                     # text & data

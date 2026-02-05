@@ -604,7 +604,9 @@ async def adapt_agentscope_message_stream(
                                 **kwargs,
                             )
                         elif element.get("type") == "file":
-                            kwargs = {}
+                            kwargs = {
+                                "filename": element.get("filename"),
+                            }
                             if (
                                 isinstance(element.get("source"), dict)
                                 and element.get("source", {}).get(
