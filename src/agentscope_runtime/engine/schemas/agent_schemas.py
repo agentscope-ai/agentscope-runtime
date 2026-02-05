@@ -31,6 +31,8 @@ class MessageType:
     REASONING = "reasoning"
     HEARTBEAT = "heartbeat"
     ERROR = "error"
+    A2UI_RESPONSE = "a2ui_response"
+    A2UI_ACTION = "a2ui_action"
 
     @classmethod
     def all_values(cls):
