@@ -19,6 +19,7 @@ from ...engine.schemas.agent_schemas import (
     AudioContent,
     VideoContent,
     DataContent,
+    FileContent,
     McpCall,
     McpCallOutput,
     FunctionCall,
@@ -598,6 +599,46 @@ async def adapt_agentscope_message_stream(
                                 url = f"data:{media_type};base64,{base64_data}"
                                 kwargs.update({"video_url": url})
                             delta_content = VideoContent(
+                                delta=True,
+                                index=index,
+                                **kwargs,
+                            )
+                        elif element.get("type") == "file":
+                            kwargs = {}
+                            if (
+                                isinstance(element.get("source"), dict)
+                                and element.get("source", {}).get(
+                                    "type",
+                                )
+                                == "url"
+                            ):
+                                kwargs.update(
+                                    {
+                                        "file_url": element.get(
+                                            "source",
+                                            {},
+                                        ).get("url"),
+                                    },
+                                )
+
+                            elif (
+                                isinstance(element.get("source"), dict)
+                                and element.get("source").get(
+                                    "type",
+                                )
+                                == "base64"
+                            ):
+                                media_type = element.get("source", {}).get(
+                                    "media_type",
+                                    "application/octet-stream",
+                                )
+                                base64_data = element.get("source", {}).get(
+                                    "data",
+                                    "",
+                                )
+                                url = f"data:{media_type};base64,{base64_data}"
+                                kwargs.update({"file_url": url})
+                            delta_content = FileContent(
                                 delta=True,
                                 index=index,
                                 **kwargs,
