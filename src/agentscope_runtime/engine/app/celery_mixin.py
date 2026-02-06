@@ -5,9 +5,21 @@ import logging
 from typing import Callable, Optional, List
 from celery import Celery
 
+from agentscope_runtime.common.utils.deprecation import deprecated
+
 logger = logging.getLogger(__name__)
 
 
+@deprecated(
+    reason=(
+        "Task processing logic has been consolidated into 'TaskEngineMixin'. "
+        "AgentApp now leverages 'TaskEngineMixin' directly for "
+        "task management, making this legacy mixin redundant."
+    ),
+    alternative="TaskEngineMixin",
+    since="1.1.0",
+    removed_in="1.2.0",
+)
 class CeleryMixin:
     """
     Celery task processing mixin that provides core Celery functionality.

@@ -20,7 +20,6 @@ from .utils.detached_app import (
     get_bundle_entry_script,
 )
 from .utils.service_utils import (
-    FastAPIAppFactory,
     ProcessManager,
 )
 
@@ -184,10 +183,12 @@ class LocalDeployManager(DeployManager):
         **kwargs,
     ) -> Dict[str, str]:
         """Deploy in daemon thread mode."""
+
         self._logger.info("Deploying FastAPI service in daemon thread mode...")
 
-        # Create FastAPI app using factory with Celery support
-        app = FastAPIAppFactory.create_app(
+        from agentscope_runtime.engine.app.agent_app import AgentApp
+
+        app = AgentApp(
             runner=runner,
             mode=DeploymentMode.DAEMON_THREAD,
             protocol_adapters=protocol_adapters,
