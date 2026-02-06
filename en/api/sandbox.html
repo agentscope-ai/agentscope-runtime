@@ -4118,6 +4118,20 @@ endpoint.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">agentscope_runtime.sandbox.build.</span></span><span class="sig-name descname"><span class="pre">prepare_redroid_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">platform_choice</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redroid_tar_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/sandbox/build.html#prepare_redroid_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Pulls and saves the redroid image to a tarball in the build context.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True on success, False on failure.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py">
 <span class="sig-prename descclassname"><span class="pre">agentscope_runtime.sandbox.build.</span></span><span class="sig-name descname"><span class="pre">build_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">build_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dockerfile_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform_choice</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linux/amd64'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/sandbox/build.html#build_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd></dd></dl>
 
@@ -4402,7 +4416,7 @@ If empty or whitespace, registry prefix will be omitted.</p></li>
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-02-05</div>
+              Last updated on 2026-02-06</div>
           </div>
           <div class="right-details">
             <div class="icons">
