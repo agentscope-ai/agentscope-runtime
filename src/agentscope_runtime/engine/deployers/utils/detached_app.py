@@ -305,13 +305,29 @@ def _parse_pyproject_toml(pyproject_path: Path) -> List[str]:
 
 def _get_package_version() -> str:
     """
-    Get the package version from pyproject.toml file.
+    Get the package version.
+
+    Tries multiple methods in order:
+    1. Import from agentscope_runtime.version module
+    2. Fallback to parsing pyproject.toml (for development)
 
     Returns:
         str: The version string, or empty string if not found
     """
-    # Try to find pyproject.toml in the current directory and parent
-    # directories
+    # Method 1: Try importing from version module directly
+    try:
+        from agentscope_runtime.version import __version__
+
+        if __version__:
+            # Remove 'v' prefix if present (e.g., "v1.1.0b3" -> "1.1.0b3")
+            return __version__.lstrip("v")
+    except ImportError:
+        pass
+
+    # Method 2: Fallback to pyproject.toml (for development from source)
+    if tomllib is None:
+        return ""
+
     current_dir = Path(__file__).parent
     for _ in range(6):  # Look up to 6 levels up
         pyproject_path = current_dir / "pyproject.toml"
