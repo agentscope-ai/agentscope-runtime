@@ -24,40 +24,39 @@ repos:
     rev: v1.7.0
     hooks:
       - id: mypy
-        exclude:
-          (?x)(
+        exclude: (?x)(
           pb2\.py$
           | grpc\.py$
           | ^docs
           | \.html$
           )
-        args: [
-          --ignore-missing-imports,
-          --disable-error-code=var-annotated,
-          --disable-error-code=union-attr,
-          --disable-error-code=assignment,
-          --disable-error-code=attr-defined,
-          --disable-error-code=import-untyped,
-          --disable-error-code=truthy-function,
-          --follow-imports=skip,
-          --explicit-package-bases,
-        ]
+        args:
+          [
+            --ignore-missing-imports,
+            --disable-error-code=var-annotated,
+            --disable-error-code=union-attr,
+            --disable-error-code=assignment,
+            --disable-error-code=attr-defined,
+            --disable-error-code=import-untyped,
+            --disable-error-code=truthy-function,
+            --follow-imports=skip,
+            --explicit-package-bases,
+          ]
   - repo: https://github.com/psf/black
-    rev: 23.3.0
+    rev: 25.12.0
     hooks:
       - id: black
-        args: [ --line-length=79 ]
+        args: [--line-length=79]
   - repo: https://github.com/PyCQA/flake8
     rev: 6.1.0
     hooks:
       - id: flake8
-        args: [ "--extend-ignore=E203"]
+        args: ["--extend-ignore=E203"]
   - repo: https://github.com/pylint-dev/pylint
     rev: v3.0.2
     hooks:
       - id: pylint
-        exclude:
-          (?x)(
+        exclude: (?x)(
           ^docs
           | pb2\.py$
           | grpc\.py$
@@ -66,57 +65,57 @@ repos:
           | \.html$
           )
         args: [
-          --disable=W0511,
-          --disable=W0718,
-          --disable=W0122,
-          --disable=C0103,
-          --disable=R0913,
-          --disable=E0401,
-          --disable=E1101,
-          --disable=C0415,
-          --disable=W0603,
-          --disable=R1705,
-          --disable=R0914,
-          --disable=E0601,
-          --disable=W0602,
-          --disable=W0604,
-          --disable=R0801,
-          --disable=R0902,
-          --disable=R0903,
-          --disable=C0123,
-          --disable=W0231,
-          --disable=W1113,
-          --disable=W0221,
-          --disable=R0401,
-          --disable=W0632,
-          --disable=W0123,
-          --disable=C3001,
-          --disable=W0201,
-          --disable=C0302,
-          --disable=W1203,
-          --disable=C2801,
-          --disable=C0114,  # Disable missing module docstring for quick dev
-          --disable=C0115,  # Disable missing class docstring for quick dev
-          --disable=C0116,  # Disable missing function or method docstring for quick dev
-        ]
+            --disable=W0511,
+            --disable=W0718,
+            --disable=W0122,
+            --disable=C0103,
+            --disable=R0913,
+            --disable=E0401,
+            --disable=E1101,
+            --disable=C0415,
+            --disable=W0603,
+            --disable=R1705,
+            --disable=R0914,
+            --disable=E0601,
+            --disable=W0602,
+            --disable=W0604,
+            --disable=R0801,
+            --disable=R0902,
+            --disable=R0903,
+            --disable=C0123,
+            --disable=W0231,
+            --disable=W1113,
+            --disable=W0221,
+            --disable=R0401,
+            --disable=W0632,
+            --disable=W0123,
+            --disable=C3001,
+            --disable=W0201,
+            --disable=C0302,
+            --disable=W1203,
+            --disable=C2801,
+            --disable=C0114, # Disable missing module docstring for quick dev
+            --disable=C0115, # Disable missing class docstring for quick dev
+            --disable=C0116, # Disable missing function or method docstring for quick dev
+          ]
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: v7.32.0
     hooks:
       - id: eslint
         files: \.(js|jsx)$
-        exclude: '(?x)(^web/|.*js_third_party.*)'
-        args: [ '--fix' ]
+        exclude: "(?x)(^web/|.*js_third_party.*)"
+        args: ["--fix"]
   - repo: https://github.com/thibaudcolas/pre-commit-stylelint
     rev: v14.4.0
     hooks:
       - id: stylelint
         files: \.(css)$
-        exclude: '(?x)(^web/|.*css_third_party.*)'
-        args: [ '--fix' ]
+        exclude: "(?x)(^web/|.*css_third_party.*)"
+        args: ["--fix"]
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: 'v3.0.0'
+    rev: "v3.0.0"
     hooks:
       - id: prettier
-        additional_dependencies: [ 'prettier@3.0.0' ]
+        additional_dependencies: ["prettier@3.0.0"]
         files: \.(tsx?)$
         exclude: ^web/
