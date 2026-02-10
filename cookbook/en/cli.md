@@ -392,6 +392,8 @@ agentscope deploy PLATFORM SOURCE [OPTIONS]
 - `modelstudio`: Alibaba Cloud ModelStudio
 - `agentrun`: Alibaba Cloud AgentRun
 - `k8s`: Kubernetes/ACK
+- `knative`: Knative/ACK Knative
+- `sandbox`: Kruise Sandbox
 
 #### Common Options (All Platforms)
 
@@ -627,6 +629,73 @@ agentscope deploy knative app_agent.py \
 
 # Custom namespace and resources
 agentscope deploy knative app_agent.py \
+  --namespace production \
+  --cpu-limit 2 \
+  --memory-limit 4Gi \
+  --env DASHSCOPE_API_KEY=sk-xxx
+```
+
+**Note:** `USE_LOCAL_RUNTIME=True` uses local agentscope runtime instead of PyPI version.
+
+#### 4.5. Sandbox Deployment
+
+Deploy to Sandbox custom resource (`agents.kruise.io/v1alpha1`) on a Kubernetes cluster.
+
+Key differences from standard K8s Deployment and Knative:
+- **Instance-level isolation**: Ensures secure environment isolation across different agents
+- **Pause/Resume**: Supports pausing and resuming, effectively saving resource consumption
+- **Auto-created LoadBalancer Service**: Automatically creates load balancer service for external access
+
+##### Command Syntax
+
+```bash
+agentscope deploy sandbox SOURCE [OPTIONS]
+```
+
+##### Platform-Specific Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `--namespace` | string | `"agentscope-runtime"` | Kubernetes namespace |
+| `--kube-config-path` | path | `None` | Path to kubeconfig file |
+| `--port` | integer | `8080` | Container port |
+| `--image-name` | string | `"agent_app"` | Docker image name |
+| `--image-tag` | string | `"linux-amd64"` | Docker image tag |
+| `--registry-url` | string | `"localhost"` | Remote registry URL |
+| `--registry-namespace` | string | `"agentscope-runtime"` | Remote registry namespace |
+| `--push` | flag | `False` | Push image to registry |
+| `--base-image` | string | `"python:3.10-slim-bookworm"` | Base Docker image |
+| `--requirements` | string | `None` | Python requirements (comma-separated or file path) |
+| `--cpu-request` | string | `"200m"` | CPU resource request (e.g., '200m', '1') |
+| `--cpu-limit` | string | `"1000m"` | CPU resource limit (e.g., '1000m', '2') |
+| `--memory-request` | string | `"512Mi"` | Memory resource request (e.g., '512Mi', '1Gi') |
+| `--memory-limit` | string | `"2Gi"` | Memory resource limit (e.g., '2Gi', '4Gi') |
+| `--image-pull-policy` | choice | `"IfNotPresent"` | Image pull policy: `Always`, `IfNotPresent`, `Never` |
+| `--deploy-timeout` | integer | `300` | Deployment timeout in seconds |
+| `--platform` | string | `"linux/amd64"` | Target platform (e.g., 'linux/amd64', 'linux/arm64') |
+| `--pypi-mirror` | string | `None` | PyPI mirror URL for pip package installation (e.g., 'https://pypi.tuna.tsinghua.edu.cn/simple'). If not specified, uses pip default |
+
+##### Prerequisites
+
+- Kubernetes cluster access
+- Sandbox CRD (`agents.kruise.io/v1alpha1`) installed, see [Kruise Agents](https://github.com/openkruise/agents)
+- Docker installed (for building images)
+- `kubectl` configured
+
+##### Examples
+
+```bash
+# Basic deployment
+export USE_LOCAL_RUNTIME=True
+agentscope deploy sandbox app_agent.py \
+  --image-name agent_app \
+  --env DASHSCOPE_API_KEY=sk-xxx \
+  --image-tag linux-amd64-1 \
+  --registry-url your-registry.com \
+  --push
+
+# Custom namespace and resources
+agentscope deploy sandbox app_agent.py \
   --namespace production \
   --cpu-limit 2 \
   --memory-limit 4Gi \

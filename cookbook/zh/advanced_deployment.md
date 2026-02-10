@@ -14,7 +14,7 @@ kernelspec:
 
 # 高级部署
 
-章节演示了AgentScope Runtime中可用的八种高级部署方法，为不同场景提供生产就绪的解决方案：**本地守护进程**、**独立进程**、**Kubernetes部署**、**ModelStudio部署**、**AgentRun部署**、**PAI部署**、**Knative**和**函数计算（Function Compute, FC）部署**。
+章节演示了AgentScope Runtime中可用的九种高级部署方法，为不同场景提供生产就绪的解决方案：**本地守护进程**、**独立进程**、**Kubernetes部署**、**ModelStudio部署**、**AgentRun部署**、**PAI部署**、**Knative**、**Sandbox部署**和**函数计算（Function Compute, FC）部署**。
 
 ## 部署方法概述
 
@@ -29,6 +29,7 @@ AgentScope Runtime提供多种不同的部署方式，每种都针对特定的�
 | **AgentRun**                   | AgentRun平台 | 云端管理 | 平台管理 | 容器级 |
 | **PAI**                       | 阿里云PAI平台   | 云端管理 | 平台管理 | 容器级 |
 | **Knative**                    | 企业与云端 | 单节点（将支持多节点） | 编排 | 容器级 |
+| **Sandbox**                    | 企业与云端 | 单节点 | 编排 | 容器级/微虚拟机级 |
 | **函数计算(FC)** | 阿里云 Serverless | 云端管理 | 平台管理 | 微虚拟机级 |
 
 
@@ -1179,7 +1180,104 @@ if __name__ == "__main__":
 - 支持基于请求自动弹性、缩容至 0
 - 配置资源限制和健康检查
 
-## 方法8：Serverless部署：函数计算（Function Compute, FC）
+## 方法8：Sandbox部署
+
+**最适合**：需要实例级隔离、暂停恢复能力和安全多租户运行环境的场景。
+
+### 特性
+- 基于 Kruise Sandbox CRD（`agents.kruise.io/v1alpha1`）的自定义资源部署
+- 实例级隔离，确保不同 agent 运行环境安全
+- 支持暂停和恢复，有效节省资源消耗
+- 自动创建 LoadBalancer Service 提供外部访问
+- 部署状态持久化管理
+
+### Sandbox 部署前置条件
+
+```bash
+# 确保Docker正在运行
+docker --version
+
+# 验证Kubernetes访问
+kubectl cluster-info
+
+# 检查镜像仓库访问（以阿里云为例）
+docker login your-registry
+
+# 检查 Sandbox CRD 已安装
+# 安装指南：https://github.com/openkruise/agents
+kubectl get crd sandboxes.agents.kruise.io
+```
+
+### 实现
+
+使用 {ref}`通用智能体配置<zh-common-agent-setup>` 部分定义的智能体和端点：
+
+```{code-cell}
+# sandbox_deploy.py
+import asyncio
+import os
+from agentscope_runtime.engine.deployers.sandbox_deployer import (
+    SandboxDeployManager,
+    K8sConfig,
+)
+from agentscope_runtime.engine.deployers.utils.docker_image_utils import (
+    RegistryConfig,
+)
+from agent_app import app  # 导入已配置的 app
+
+async def deploy_to_sandbox():
+    """将 AgentApp 部署到 Sandbox"""
+
+    # 配置镜像仓库和 K8s 连接
+    deployer = SandboxDeployManager(
+        kube_config=K8sConfig(
+            k8s_namespace="agentscope-runtime",
+            kubeconfig_path=None,
+        ),
+        registry_config=RegistryConfig(
+            registry_url="your-registry-url",
+            namespace="agentscope-runtime",
+        ),
+    )
+
+    # 执行部署
+    result = await app.deploy(
+        deployer,
+        port="8090",
+        image_name="agent_app",
+        image_tag="v1.0",
+        requirements=["agentscope", "fastapi", "uvicorn"],
+        base_image="python:3.10-slim-bookworm",
+        environment={
+            "PYTHONPATH": "/app",
+            "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+        },
+        labels={
+            "app": "agent-sandbox",
+        },
+        runtime_config={
+            "resources": {
+                "requests": {"cpu": "200m", "memory": "512Mi"},
+                "limits": {"cpu": "1000m", "memory": "2Gi"},
+            },
+        },
+        platform="linux/amd64",
+        push_to_registry=True,
+    )
+
+    print(f"✅ 部署成功：{result['url']}")
+    return result, deployer
+
+if __name__ == "__main__":
+    asyncio.run(deploy_to_sandbox())
+```
+
+**关键点**：
+- 基于 Sandbox CRD 的隔离部署，每个 agent 独立运行环境
+- 自动创建 LoadBalancer Service，支持本地和云端环境自动切换
+- 部署状态自动持久化，支持通过 CLI 管理生命周期
+
+## 方法9：Serverless部署：函数计算（Function Compute, FC）
 
 **最适合**：阿里云用户，需要将智能体部署到函数计算（FC）服务，实现自动化的构建、上传和部署流程。FC 提供真正的 Serverless 体验，按量付费并自动扩缩容。
 

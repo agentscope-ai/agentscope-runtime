@@ -68,6 +68,16 @@ except ImportError:
     KNATIVE_AVAILABLE = False
 
 try:
+    from agentscope_runtime.engine.deployers.sandbox_deployer import (
+        SandboxDeployManager,
+        K8sConfig as SandboxK8sConfig,
+    )
+
+    SANDBOX_AVAILABLE = True
+except ImportError:
+    SANDBOX_AVAILABLE = False
+
+try:
     from agentscope_runtime.engine.deployers.pai_deployer import (
         PAI_AVAILABLE,
         PAIDeployConfig,
@@ -301,6 +311,7 @@ def deploy():
     - k8s: Kubernetes/ACK
     - local: Local deployment (detached mode)
     - Knative: Knative/ACK Knative
+    - sandbox: Sandbox CR (agents.kruise.io)
 
     Use 'agentscope deploy <platform> --help' for platform-specific options.
     """
@@ -1884,6 +1895,359 @@ def knative(
         deploy_params["labels"] = {
             "app": "agent-ksvc",
         }
+
+        result = asyncio.run(deployer.deploy(**deploy_params))
+
+        deploy_id = result.get("deploy_id")
+        url = result.get("url")
+        resource_name = result.get("resource_name")
+
+        echo_success("Deployment successful!")
+        echo_info(f"Deployment ID: {deploy_id}")
+        echo_info(f"Resource Name: {resource_name}")
+        echo_info(f"URL: {url}")
+        echo_info(f"Namespace: {namespace}")
+
+    except Exception as e:
+        echo_error(f"Deployment failed: {e}")
+        import traceback
+
+        echo_error(traceback.format_exc())
+        sys.exit(1)
+
+
+@deploy.command()
+@click.argument("source", required=True)
+@click.option("--name", help="Deployment name", default=None)
+@click.option(
+    "--namespace",
+    help="Kubernetes namespace",
+    default="agentscope-runtime",
+)
+@click.option(
+    "--kube-config-path",
+    type=click.Path(exists=True),
+    help="Path to kubeconfig file",
+)
+@click.option(
+    "--port",
+    help="Container port",
+    type=int,
+    default=8080,
+)
+@click.option(
+    "--image-name",
+    help="Docker image name",
+    default="agent_app",
+)
+@click.option(
+    "--image-tag",
+    help="Docker image tag",
+    default="linux-amd64",
+)
+@click.option(
+    "--registry-url",
+    help="Remote registry url",
+    default="localhost",
+)
+@click.option(
+    "--registry-namespace",
+    help="Remote registry namespace",
+    default="agentscope-runtime",
+)
+@click.option(
+    "--push",
+    is_flag=True,
+    help="Push image to registry",
+)
+@click.option(
+    "--entrypoint",
+    "-e",
+    help="Entrypoint file name for directory sources (e.g., 'app.py', "
+    "'main.py')",
+    default=None,
+)
+@click.option(
+    "--env",
+    "-E",
+    multiple=True,
+    help="Environment variable in KEY=VALUE format (can be repeated)",
+)
+@click.option(
+    "--env-file",
+    type=click.Path(exists=True),
+    help="Path to .env file with environment variables",
+)
+@click.option(
+    "--config",
+    "-c",
+    type=click.Path(exists=True),
+    help="Path to sandbox deploy config file (.json, .yaml, or .yml)",
+)
+@click.option(
+    "--base-image",
+    help="Base Docker image",
+    default="python:3.10-slim-bookworm",
+)
+@click.option(
+    "--requirements",
+    help="Python requirements (comma-separated or file path)",
+    default=None,
+)
+@click.option(
+    "--cpu-request",
+    help="CPU resource request (e.g., '200m', '1')",
+    default="200m",
+)
+@click.option(
+    "--cpu-limit",
+    help="CPU resource limit (e.g., '1000m', '2')",
+    default="1000m",
+)
+@click.option(
+    "--memory-request",
+    help="Memory resource request (e.g., '512Mi', '1Gi')",
+    default="512Mi",
+)
+@click.option(
+    "--memory-limit",
+    help="Memory resource limit (e.g., '2Gi', '4Gi')",
+    default="2Gi",
+)
+@click.option(
+    "--image-pull-policy",
+    help="Image pull policy",
+    type=click.Choice(["Always", "IfNotPresent", "Never"]),
+    default="IfNotPresent",
+)
+@click.option(
+    "--deploy-timeout",
+    help="Deployment timeout in seconds",
+    type=int,
+    default=300,
+)
+@click.option(
+    "--platform",
+    help="Target platform (e.g., 'linux/amd64', 'linux/arm64')",
+    default="linux/amd64",
+)
+@click.option(
+    "--pypi-mirror",
+    help="PyPI mirror URL for pip package installation (e.g., "
+    "https://pypi.tuna.tsinghua.edu.cn/simple). If not specified, "
+    "uses pip default.",
+    default=None,
+)
+def sandbox(
+    source: str,
+    name: str,
+    namespace: str,
+    kube_config_path: str,
+    port: int,
+    image_name: str,
+    image_tag: str,
+    registry_url: str,
+    registry_namespace: str,
+    push: bool,
+    entrypoint: str,
+    env: tuple,
+    env_file: str,
+    config: str,
+    base_image: str,
+    requirements: str,
+    cpu_request: str,
+    cpu_limit: str,
+    memory_request: str,
+    memory_limit: str,
+    image_pull_policy: str,
+    deploy_timeout: int,
+    platform: str,
+    pypi_mirror: str,
+):
+    """
+    Deploy to Sandbox CR (agents.kruise.io).
+
+    SOURCE can be a Python file or project directory containing an agent.
+
+    This will build a Docker image and deploy it as a Sandbox custom resource
+    in your Kubernetes cluster.
+    """
+    if not SANDBOX_AVAILABLE:
+        echo_error("Sandbox deployer is not available")
+        echo_info(
+            "Please ensure the Sandbox CRD is installed and "
+            "kubernetes dependencies are available",
+        )
+        sys.exit(1)
+
+    try:
+        echo_info(f"Preparing Sandbox deployment from {source}...")
+
+        # Load config file if provided
+        config_dict = {}
+        if config:
+            echo_info(f"Loading configuration from {config}...")
+            config_dict = _load_config_file(config)
+
+        # make sure not to push if use local registry_url
+        if registry_url == "localhost":
+            push = False
+
+        # Merge CLI parameters with config (CLI takes precedence)
+        cli_params = {
+            "name": name,
+            "namespace": namespace,
+            "port": port,
+            "image_name": image_name,
+            "image_tag": image_tag,
+            "registry_url": registry_url,
+            "registry_namespace": registry_namespace,
+            "push_to_registry": push if push else None,
+            "entrypoint": entrypoint,
+            "base_image": base_image,
+            "requirements": requirements,
+            "image_pull_policy": image_pull_policy,
+            "deploy_timeout": deploy_timeout,
+            "platform": platform,
+            "pypi_mirror": pypi_mirror,
+        }
+        merged_config = _merge_config(config_dict, cli_params)
+
+        # Extract parameters with defaults
+        namespace = merged_config.get("namespace", "agentscope-runtime")
+        port = merged_config.get("port", 8080)
+        image_name = merged_config.get("image_name", "agent_app")
+        image_tag = merged_config.get("image_tag", "latest")
+        registry_url = merged_config.get("registry_url", "localhost")
+        registry_namespace = merged_config.get(
+            "registry_namespace",
+            "agentscope-runtime",
+        )
+        push_to_registry = merged_config.get("push_to_registry", False)
+        entrypoint = merged_config.get("entrypoint")
+        base_image = merged_config.get("base_image")
+        deploy_timeout = merged_config.get("deploy_timeout", 300)
+        platform = merged_config.get("platform")
+        pypi_mirror = merged_config.get("pypi_mirror")
+
+        # Handle requirements (can be comma-separated string, list, or file
+        # path)
+        requirements = merged_config.get("requirements")
+        if requirements:
+            if isinstance(requirements, str):
+                # Check if it's a file path
+                if os.path.isfile(requirements):
+                    with open(requirements, "r", encoding="utf-8") as f:
+                        requirements = [
+                            line.strip()
+                            for line in f
+                            if line.strip() and not line.startswith("#")
+                        ]
+                else:
+                    # Treat as comma-separated string
+                    requirements = [r.strip() for r in requirements.split(",")]
+
+        # Handle extra_packages
+        extra_packages = merged_config.get("extra_packages", [])
+
+        # Handle image_pull_policy
+        image_pull_policy = merged_config.get("image_pull_policy")
+
+        # Build runtime_config from resource parameters
+        runtime_config = merged_config.get("runtime_config", {})
+        if not runtime_config.get("resources"):
+            resources = {}
+            if cpu_request or memory_request:
+                resources["requests"] = {}
+                if cpu_request:
+                    resources["requests"]["cpu"] = cpu_request
+                if memory_request:
+                    resources["requests"]["memory"] = memory_request
+            if cpu_limit or memory_limit:
+                resources["limits"] = {}
+                if cpu_limit:
+                    resources["limits"]["cpu"] = cpu_limit
+                if memory_limit:
+                    resources["limits"]["memory"] = memory_limit
+            if resources:
+                runtime_config["resources"] = resources
+
+        if image_pull_policy and "image_pull_policy" not in runtime_config:
+            runtime_config["image_pull_policy"] = image_pull_policy
+
+        # Validate source
+        abs_source, source_type = _validate_source(source)
+
+        # Parse environment variables (from config, env_file, and CLI)
+        environment = merged_config.get("environment", {}).copy()
+        cli_env = _parse_environment(env, env_file)
+        environment.update(cli_env)  # CLI env overrides config env
+
+        if environment:
+            echo_info(f"Using {len(environment)} environment variable(s)")
+
+        # Create deployer
+        sbx_k8s_config = SandboxK8sConfig(
+            k8s_namespace=namespace,
+            kubeconfig_path=kube_config_path,
+        )
+        registry_config = RegistryConfig(
+            registry_url=registry_url,
+            namespace=registry_namespace,
+        )
+        deployer = SandboxDeployManager(
+            kube_config=sbx_k8s_config,
+            registry_config=registry_config,
+        )
+
+        # Prepare entrypoint specification
+        if source_type == "directory":
+            # For directory: find entrypoint and create path
+            project_dir = abs_source
+            entry_script = _find_entrypoint(project_dir, entrypoint)
+            entrypoint_spec = os.path.join(project_dir, entry_script)
+
+            echo_info(f"Using project directory: {project_dir}")
+            echo_info(f"Entry script: {entry_script}")
+        else:
+            # For single file: use file path directly
+            entrypoint_spec = abs_source
+
+            echo_info(f"Using file: {abs_source}")
+
+        # Deploy as Sandbox CR
+        echo_info("Deploying to Sandbox...")
+
+        # Build deploy parameters
+        deploy_params = {
+            "entrypoint": entrypoint_spec,
+            "port": port,
+            "image_name": image_name,
+            "image_tag": image_tag,
+            "push_to_registry": push_to_registry,
+            "environment": environment if environment else None,
+        }
+
+        # Add optional parameters if provided
+        if base_image:
+            deploy_params["base_image"] = base_image
+        if requirements:
+            deploy_params["requirements"] = requirements
+        if extra_packages:
+            deploy_params["extra_packages"] = extra_packages
+        if runtime_config:
+            deploy_params["runtime_config"] = runtime_config
+        if deploy_timeout:
+            deploy_params["deploy_timeout"] = deploy_timeout
+        if platform:
+            deploy_params["platform"] = platform
+        if pypi_mirror:
+            deploy_params["pypi_mirror"] = pypi_mirror
+        if shutdown_time:
+            deploy_params["shutdown_time"] = shutdown_time
+
+        # Add agent_source for state saving
+        deploy_params["agent_source"] = abs_source
 
         result = asyncio.run(deployer.deploy(**deploy_params))
 

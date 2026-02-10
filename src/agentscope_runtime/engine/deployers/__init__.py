@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     )
     from .modelstudio_deployer import ModelstudioDeployManager
     from .knative_deployer import KnativeDeployManager
+    from .sandbox_deployer import SandboxDeployManager
     from .agentrun_deployer import AgentRunDeployManager
     from .fc_deployer import FCDeployManager
 
@@ -23,6 +24,7 @@ install_lazy_loader(
         "K8sConfig": ".kubernetes_deployer",
         "ModelstudioDeployManager": ".modelstudio_deployer",
         "KnativeDeployManager": ".knative_deployer",
+        "SandboxDeployManager": ".sandbox_deployer",
         "AgentRunDeployManager": ".agentrun_deployer",
         "FCDeployManager": ".fc_deployer",
     },
@@ -43,6 +45,7 @@ __all__ = [
     "ModelstudioDeployManager",
     "AgentRunDeployManager",
     "KnativeDeployManager",
+    "SandboxDeployManager",
     "FCDeployManager",
     "PAIDeployManager",
 ]
