@@ -640,12 +640,44 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
             tags=["agent-api"],
         )(agent_api)
 
+    def _apply_runtime_configs(self, kwargs: dict):
+        """
+        Apply runtime configuration updates and synchronize internal services.
+        """
+        self.stream = kwargs.pop("stream", self.stream)
+        self.protocol_adapters = kwargs.pop(
+            "protocol_adapters",
+            self.protocol_adapters,
+        )
+        self.enable_embedded_worker = kwargs.pop(
+            "embed_task_processor",
+            self.enable_embedded_worker,
+        )
+        self.deployment_mode = kwargs.pop("mode", self.deployment_mode)
+
+        if "runner" in kwargs:
+            self._runner = kwargs.pop("runner")
+            self._add_endpoint_router()
+
+        if "endpoint_path" in kwargs:
+            self.router.routes = [
+                route
+                for route in self.router.routes
+                if not (
+                    hasattr(route, "path") and route.path == self.endpoint_path
+                )
+            ]
+            self.endpoint_path = kwargs.pop("endpoint_path")
+            self._add_endpoint_router()
+
+        if "custom_endpoints" in kwargs:
+            custom_endpoints = kwargs.pop("custom_endpoints")
+            self.restore_custom_endpoints(custom_endpoints)
+
     def run(self, host=HOST, port=PORT, web_ui=False, **kwargs):
         """Launch the application server and optional Web UI."""
 
-        if "embed_task_processor" in kwargs:
-            self.enable_embedded_worker = kwargs["embed_task_processor"]
-        self.deployment_mode = kwargs.pop("mode", DeploymentMode.DAEMON_THREAD)
+        self._apply_runtime_configs(kwargs)
 
         try:
             logger.info(

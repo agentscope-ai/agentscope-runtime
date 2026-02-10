@@ -146,6 +146,8 @@ class UnifiedRoutingMixin(TaskEngineMixin, CustomEndpointMixin):
             # Check if the route is an async task
             task_meta = getattr(handler, "_task_meta", None)
 
+            current_tags = list(route.tags or [])
+
             if task_meta:
                 # Extract task metadata
                 info = {
@@ -165,6 +167,7 @@ class UnifiedRoutingMixin(TaskEngineMixin, CustomEndpointMixin):
                     "queue": task_meta["queue"],
                     "task_type": True,
                     "original_func": task_meta["original_func"],
+                    "tags": current_tags,
                 }
             else:
                 # Extract endpoint metadata
@@ -174,6 +177,7 @@ class UnifiedRoutingMixin(TaskEngineMixin, CustomEndpointMixin):
                     "methods": list(route.methods),
                     "module": getattr(handler, "__module__", None),
                     "function_name": getattr(handler, "__name__", None),
+                    "tags": current_tags,
                 }
 
             if info not in self._custom_endpoints:
@@ -183,9 +187,34 @@ class UnifiedRoutingMixin(TaskEngineMixin, CustomEndpointMixin):
         """
         Re-register all custom routes and tasks based on the provided metadata.
         """
+        self.sync_routing_metadata()
+        paths_to_delete = set()
+
+        for old_info in self._custom_endpoints:
+            path = old_info["path"]
+            paths_to_delete.add(path)
+
+            if old_info.get("task_type") is True:
+                status_path = f"{path}/{{task_id}}"
+                paths_to_delete.add(status_path)
+
+        if hasattr(self, "router") and self.router.routes:
+            self.router.routes = [
+                route
+                for route in self.router.routes
+                if not (
+                    isinstance(route, APIRoute)
+                    and route.path in paths_to_delete
+                )
+            ]
+
+        self._custom_endpoints = []
+
         for info in custom_endpoints:
             path = info["path"]
             methods = info["methods"]
+            tags = info.get("tags", [])
+
             if isinstance(methods, (list, set)):
                 methods = [m for m in methods if m.upper() != "OPTIONS"]
 
@@ -202,8 +231,10 @@ class UnifiedRoutingMixin(TaskEngineMixin, CustomEndpointMixin):
                     path=path,
                     endpoint=handler,
                     methods=methods,
-                    tags=["custom"],
+                    tags=tags,
                 )
+
+        self.sync_routing_metadata()
 
     @staticmethod
     def internal_route(func: Callable) -> Callable:
