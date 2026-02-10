@@ -7,7 +7,6 @@ import time
 from typing import Callable, Optional, List, Any, Dict
 from fastapi.routing import APIRoute
 
-from agentscope_runtime.common.utils.deprecation import deprecated
 from .task_engine_mixin import TaskEngineMixin
 from .custom_endpoint_mixin import CustomEndpointMixin
 
@@ -101,18 +100,6 @@ class UnifiedRoutingMixin(TaskEngineMixin, CustomEndpointMixin):
 
         return decorator
 
-    @deprecated(
-        reason=(
-            "AgentApp now inherits directly from FastAPI. "
-            "This method is redundant and kept only for "
-            "backward compatibility."
-        ),
-        alternative=(
-            "native FastAPI routing decorators " "(e.g., @app.get, @app.post)"
-        ),
-        since="1.1.0",
-        removed_in="1.2.0",
-    )
     def endpoint(self, path: str, methods: Optional[List[str]] = None):
         """Decorator to register custom endpoints"""
 

@@ -98,8 +98,11 @@ export KUBECONFIG="/path/to/your/kubeconfig"
 ```{code-cell}
 # agent_app.py - 所有的部署方式共享
 # -*- coding: utf-8 -*-
+import asyncio
 import os
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
 from agentscope.agent import ReActAgent
 from agentscope.formatter import DashScopeChatFormatter
 from agentscope.model import DashScopeChatModel
@@ -111,21 +114,31 @@ from agentscope.session import RedisSession
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 
-app = AgentApp(
-    app_name="Friday",
-    app_description="A helpful assistant",
-)
-
-
-@app.init
-async def init_func(self):
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 启动阶段
     import fakeredis
 
-    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    fake_redis = fakeredis.aioredis.FakeRedis(
+        decode_responses=True
+    )
     # 注意：这个 FakeRedis 实例仅用于开发/测试。
     # 在生产环境中，请替换为你自己的 Redis 客户端/连接
     #（例如 aioredis.Redis）。
-    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
+    app.state.session = RedisSession(
+        connection_pool=fake_redis.connection_pool
+    )
+    try:
+        yield
+    finally:
+        print("关闭 AgentApp...")
+
+# 将定义好的 lifespan 传入 AgentApp
+app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+    lifespan=lifespan,
+)
 
 
 @app.query(framework="agentscope")
@@ -156,26 +169,44 @@ async def query_func(
         formatter=DashScopeChatFormatter(),
     )
 
-    await self.session.load_session_state(
+    await app.state.session.load_session_state(
         session_id=session_id,
         user_id=user_id,
         agent=agent,
     )
 
-    async for msg, last in stream_printing_messages(
-        agents=[agent],
-        coroutine_task=agent(msgs),
-    ):
-        yield msg, last
+    try:
+        async for msg, last in stream_printing_messages(
+            agents=[agent],
+            coroutine_task=agent(msgs),
+        ):
+            yield msg, last
 
-    await self.session.save_session_state(
-        session_id=session_id,
-        user_id=user_id,
-        agent=agent,
+    except asyncio.CancelledError:
+        print(f"Task {session_id} was manually interrupted.")
+        await agent.interrupt()
+        raise
+
+    finally:
+        await app.state.session.save_session_state(
+            session_id=session_id,
+            user_id=user_id,
+            agent=agent,
+        )
+
+
+# 创建带有多个端点的 AgentApp
+@app.post("/stop")
+async def stop_task(request: AgentRequest): # 中断触发路由
+    await app.stop_chat(
+        user_id=request.user_id,
+        session_id=request.session_id,
     )
+    return {
+        "status": "success",
+        "message": "Interrupt signal broadcasted.",
+    }
 
-
-# 2. 创建带有多个端点的 AgentApp
 @app.endpoint("/sync")
 def sync_handler(request: AgentRequest):
     return {"status": "ok", "payload": request}
@@ -196,6 +227,7 @@ def stream_sync_handler(request: AgentRequest):
 
 @app.task("/task", queue="celery1")
 def task_handler(request: AgentRequest):
+    import time
     time.sleep(30)
     return {"status": "ok", "payload": request}
 
@@ -469,6 +501,7 @@ if __name__ == "__main__":
 - 自动扩展和资源管理
 - OSS集成用于制品存储
 - Web控制台进行部署管理
+- **支持 STS 临时凭证（Security Token）认证**
 
 ### ModelStudio部署前置条件
 
@@ -479,9 +512,13 @@ export ALIBABA_CLOUD_ACCESS_KEY_ID="your-access-key-id"
 export ALIBABA_CLOUD_ACCESS_KEY_SECRET="your-access-key-secret"
 export MODELSTUDIO_WORKSPACE_ID="your-workspace-id"
 
+# 可选：如果你使用的是 STS 临时授权（推荐），请设置此变量
+export ALIBABA_CLOUD_SECURITY_TOKEN="your-sts-token"
+
 # 可选的OSS专用凭证
 export OSS_ACCESS_KEY_ID="your-oss-access-key-id"
 export OSS_ACCESS_KEY_SECRET="your-oss-access-key-secret"
+export OSS_SESSION_TOKEN="your-oss-sts-token"
 ```
 
 ### 实现
@@ -507,11 +544,13 @@ async def deploy_to_modelstudio():
         oss_config=OSSConfig(
             access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
             access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+            security_token=os.environ.get("ALIBABA_CLOUD_SECURITY_TOKEN"),
         ),
         modelstudio_config=ModelstudioConfig(
             workspace_id=os.environ.get("MODELSTUDIO_WORKSPACE_ID"),
             access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
             access_key_secret=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+            security_token=os.environ.get("ALIBABA_CLOUD_SECURITY_TOKEN"),
             dashscope_api_key=os.environ.get("DASHSCOPE_API_KEY"),
         ),
     )
@@ -540,6 +579,7 @@ if __name__ == "__main__":
 - 阿里云上的完全托管云部署
 - 内置监控和自动扩展
 - 与 DashScope LLM 服务集成
+- **支持基于 STS Token 的安全身份认证**
 
 ## 方法5：Serverless部署：AgentRun
 

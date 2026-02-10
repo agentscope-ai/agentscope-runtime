@@ -32,6 +32,9 @@ Here’s the core code:
 # ms_agent.py
 # -*- coding: utf-8 -*-
 import os
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
 from agent_framework.openai import OpenAIChatClient
 
 from agentscope_runtime.engine import AgentApp
@@ -42,18 +45,16 @@ PORT = 8090
 
 def run_app():
     """Start AgentApp and enable streaming output."""
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        app.state.thread_storage = {}  # Only for testing
+        yield
+
     agent_app = AgentApp(
         app_name="Friday",
         app_description="A helpful assistant",
+        lifespan=lifespan,
     )
-
-    @agent_app.init
-    async def init_func(self):
-        self.thread_storage = {}  # Only for testing
-
-    @agent_app.shutdown
-    async def shutdown_func(self):
-        pass
 
     @agent_app.query(framework="ms_agent_framework")
     async def query_func(
@@ -68,7 +69,7 @@ def run_app():
 
         # Export historical context
         id_key = f"{user_id}_{session_id}"
-        thread = self.thread_storage.get(id_key)
+        thread = agent_app.state.thread_storage.get(id_key)
 
         # Create agent
         agent = OpenAIChatClient(
@@ -95,7 +96,7 @@ def run_app():
 
         # Save session state
         serialized_thread = await thread.serialize()
-        self.thread_storage[id_key] = serialized_thread
+        agent_app.state.thread_storage[id_key] = serialized_thread
 
     agent_app.run(host="127.0.0.1", port=PORT)
 

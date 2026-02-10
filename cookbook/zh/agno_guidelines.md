@@ -32,6 +32,9 @@ kernelspec:
 # agno_agent.py
 # -*- coding: utf-8 -*-
 import os
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
 from agno.agent import Agent
 from agno.models.dashscope import DashScope
 from agno.db.in_memory import InMemoryDb
@@ -42,15 +45,17 @@ PORT = 8090
 
 def run_app():
     """启动 AgentApp 并启用流式输出功能"""
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        # Agno 内存数据库，详情见 https://docs.agno.com/reference/storage
+        app.state.db = InMemoryDb()
+        yield
+
     agent_app = AgentApp(
         app_name="Friday",
         app_description="A helpful assistant",
+        lifespan=lifespan,
     )
-
-    @agent_app.init
-    async def init_func(self):
-        # Agno 内存数据库，详情见 https://docs.agno.com/reference/storage
-        self.db = InMemoryDb()
 
     @agent_app.query(framework="agno")
     async def query_func(
@@ -69,7 +74,7 @@ def run_app():
                 base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
                 api_key=os.getenv("DASHSCOPE_API_KEY"),
             ),
-            db=self.db,
+            db=agent_app.state.db,
             session_id=session_id,
             add_history_to_context=True,
         )

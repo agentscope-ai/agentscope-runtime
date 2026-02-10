@@ -168,12 +168,16 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         self.backend_url = backend_url
         self.enable_embedded_worker = enable_embedded_worker
 
-        self._runner = runner or Runner()
-
         self._query_handler: Optional[Callable] = None
         self._init_handler: Optional[Callable] = None
         self._shutdown_handler: Optional[Callable] = None
         self._framework_type: Optional[str] = None
+
+        if runner:
+            self._runner = runner
+            self._add_endpoint_router()
+        else:
+            self._runner = Runner()
 
         self.deployment_mode = mode
 
@@ -203,6 +207,8 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
 
         if custom_endpoints:
             self.restore_custom_endpoints(custom_endpoints)
+
+        self._add_middleware()
 
     def _setup_interrupt_service(
         self,
@@ -338,23 +344,17 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
             allow_headers=["*"],
         )
 
-        if self.deployment_mode == DeploymentMode.DETACHED_PROCESS:
-            # Add process management middleware
-            @self.middleware("http")
-            async def process_middleware(request: Request, call_next):
-                # Add process-specific headers
-                response = await call_next(request)
-                response.headers["X-Process-Mode"] = "detached"
-                return response
+        @self.middleware("http")
+        async def dynamic_deployment_middleware(request: Request, call_next):
+            response = await call_next(request)
 
-        elif self.deployment_mode == DeploymentMode.STANDALONE:
-            # Add configuration middleware
-            @self.middleware("http")
-            async def config_middleware(request: Request, call_next):
-                # Add configuration headers
-                response = await call_next(request)
+            if self.deployment_mode == DeploymentMode.DETACHED_PROCESS:
+                response.headers["X-Process-Mode"] = "detached"
+
+            elif self.deployment_mode == DeploymentMode.STANDALONE:
                 response.headers["X-Deployment-Mode"] = "standalone"
-                return response
+
+            return response
 
     def _setup_builtin_routes(self):
         """Register health check and information discovery routes."""
@@ -514,6 +514,7 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
     def init(self, func: Callable) -> Callable:
         """Register init hook (support async and sync functions)."""
         self._init_handler = func
+        self._build_runner()
         return func
 
     def query(self, framework: Optional[str] = "agentscope"):
@@ -528,6 +529,10 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         def decorator(func: Callable):
             self._query_handler = func
             self._framework_type = framework
+
+            self._build_runner()
+            self._add_endpoint_router()
+
             return func
 
         return decorator
@@ -547,6 +552,7 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
     def shutdown(self, func: Callable) -> Callable:
         """Register shutdown hook (support async and sync functions)."""
         self._shutdown_handler = func
+        self._build_runner()
         return func
 
     def _build_runner(self):
@@ -574,6 +580,17 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         """
         Dynamically construct and register the main inference endpoint.
         """
+        if not self._runner:
+            return
+
+        self.router.routes = [
+            route
+            for route in self.router.routes
+            if not (
+                hasattr(route, "path") and route.path == self.endpoint_path
+            )
+        ]
+
         user_func = self._runner.query_handler
 
         async def agent_api(request: dict, **kwargs):
@@ -630,12 +647,6 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
             self.enable_embedded_worker = kwargs["embed_task_processor"]
         self.deployment_mode = kwargs.pop("mode", DeploymentMode.DAEMON_THREAD)
 
-        self._build_runner()
-
-        self._add_middleware()
-
-        self._add_endpoint_router()
-
         try:
             logger.info(
                 "Starting AgentApp...",
@@ -683,9 +694,6 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
 
     async def deploy(self, deployer: DeployManager, **kwargs):
         """Deploy the agent app"""
-
-        self._build_runner()
-
         deploy_kwargs = {
             "app": self,
             "custom_endpoints": self.custom_endpoints,
