@@ -1893,23 +1893,20 @@ If watcher_scan_interval == 0 =&gt; disabled, returns False.</p>
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">cleanup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/sandbox/manager/sandbox_manager.html#SandboxManager.cleanup"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Destroy all non-terminal containers managed by this SandboxManager.</p>
-<p>Behavior (local mode):
-- Dequeues and destroys containers from the warm pool (WARM/RUNNING).
-- Scans container_mapping and destroys any remaining non-terminal</p>
-<blockquote>
-<div><p>containers.</p>
-</div></blockquote>
+<p>Behavior (local mode):</p>
 <ul class="simple">
-<li><dl class="simple">
-<dt>Does NOT delete ContainerModel records from container_mapping;</dt><dd><p>instead it relies on release() to mark them as terminal (RELEASED).</p>
-</dd>
-</dl>
-</li>
+<li><p>Dequeues and destroys containers from the warm pool (WARM/RUNNING).</p></li>
+<li><p>Scans container_mapping and destroys any remaining non-terminal
+containers.</p></li>
+<li><p>Does NOT delete ContainerModel records from container_mapping;
+instead it relies on release() to mark them as terminal (RELEASED).</p></li>
 <li><p>Skips containers already in terminal states: RELEASED / RECYCLED.</p></li>
 </ul>
-<p>Notes:
-- Uses container_name as identity to avoid ambiguity with session_id.
-- Pool containers (WARM) are also destroyed (per current policy).</p>
+<p>Notes:</p>
+<ul class="simple">
+<li><p>Uses container_name as identity to avoid ambiguity with session_id.</p></li>
+<li><p>Pool containers (WARM) are also destroyed (per current policy).</p></li>
+</ul>
 </dd></dl>
 
 <dl class="py method">
@@ -2103,11 +2100,11 @@ If watcher_scan_interval == 0 =&gt; disabled, returns False.</p>
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">reap_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_ctx_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'heartbeat_timeout'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/sandbox/manager/sandbox_manager.html#SandboxManager.reap_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Reap (release) ALL containers bound to session_ctx_id.</p>
-<p>Important:
-- Prewarm pool containers are NOT part of session_mapping</p>
-<blockquote>
-<div><p>(no session_ctx_id), so they won’t be reaped by this flow.</p>
-</div></blockquote>
+<p>Important:</p>
+<ul class="simple">
+<li><p>Prewarm pool containers are NOT part of session_mapping
+(no session_ctx_id), so they won’t be reaped by this flow.</p></li>
+</ul>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -2125,26 +2122,21 @@ If watcher_scan_interval == 0 =&gt; disabled, returns False.</p>
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">restore_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_ctx_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/sandbox/manager/sandbox_manager.html#SandboxManager.restore_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Restore ALL recycled sandboxes (containers) for a session.</p>
-<p>For each container record with state==RECYCLED in session_mapping[
-session_ctx_id]:
-- If mount_dir is empty -&gt; allocate from pool</p>
-<blockquote>
-<div><p>(prefer same sandbox_type).</p>
-</div></blockquote>
+<p>For each container record with state==RECYCLED in
+session_mapping[session_ctx_id]:</p>
 <ul class="simple">
-<li><dl class="simple">
-<dt>If mount_dir exists -&gt; create a new container with that</dt><dd><p>mount_dir/storage_path.</p>
-</dd>
-</dl>
-</li>
+<li><p>If mount_dir is empty -&gt; allocate from pool
+(prefer same sandbox_type).</p></li>
+<li><p>If mount_dir exists -&gt; create a new container with that
+mount_dir/storage_path.</p></li>
 <li><p>Bind new container to this session and mark RUNNING.</p></li>
 <li><p>Archive the old recycled record (mark RELEASED).</p></li>
 </ul>
-<p>After restore:
-- session_mapping[session_ctx_id] will be replaced with the list of</p>
-<blockquote>
-<div><p>NEW running containers.</p>
-</div></blockquote>
+<p>After restore:</p>
+<ul class="simple">
+<li><p>session_mapping[session_ctx_id] will be replaced with the list of
+NEW running containers.</p></li>
+</ul>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>session_ctx_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p>

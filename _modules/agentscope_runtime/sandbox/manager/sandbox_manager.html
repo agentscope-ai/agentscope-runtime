@@ -1149,14 +1149,16 @@ body.preview-active {
 <span class="sd">        Destroy all non-terminal containers managed by this SandboxManager.</span>
 
 <span class="sd">        Behavior (local mode):</span>
+
 <span class="sd">        - Dequeues and destroys containers from the warm pool (WARM/RUNNING).</span>
 <span class="sd">        - Scans container_mapping and destroys any remaining non-terminal</span>
-<span class="sd">            containers.</span>
+<span class="sd">          containers.</span>
 <span class="sd">        - Does NOT delete ContainerModel records from container_mapping;</span>
-<span class="sd">            instead it relies on release() to mark them as terminal (RELEASED).</span>
+<span class="sd">          instead it relies on release() to mark them as terminal (RELEASED).</span>
 <span class="sd">        - Skips containers already in terminal states: RELEASED / RECYCLED.</span>
 
 <span class="sd">        Notes:</span>
+
 <span class="sd">        - Uses container_name as identity to avoid ambiguity with session_id.</span>
 <span class="sd">        - Pool containers (WARM) are also destroyed (per current policy).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1989,6 +1991,7 @@ body.preview-active {
 <span class="sd">        Reap (release) ALL containers bound to session_ctx_id.</span>
 
 <span class="sd">        Important:</span>
+
 <span class="sd">        - Prewarm pool containers are NOT part of session_mapping</span>
 <span class="sd">          (no session_ctx_id), so they won&#39;t be reaped by this flow.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -2065,18 +2068,20 @@ body.preview-active {
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Restore ALL recycled sandboxes (containers) for a session.</span>
 
-<span class="sd">        For each container record with state==RECYCLED in session_mapping[</span>
-<span class="sd">        session_ctx_id]:</span>
+<span class="sd">        For each container record with state==RECYCLED in</span>
+<span class="sd">        session_mapping[session_ctx_id]:</span>
+
 <span class="sd">        - If mount_dir is empty -&gt; allocate from pool</span>
-<span class="sd">            (prefer same sandbox_type).</span>
+<span class="sd">          (prefer same sandbox_type).</span>
 <span class="sd">        - If mount_dir exists -&gt; create a new container with that</span>
-<span class="sd">            mount_dir/storage_path.</span>
+<span class="sd">          mount_dir/storage_path.</span>
 <span class="sd">        - Bind new container to this session and mark RUNNING.</span>
 <span class="sd">        - Archive the old recycled record (mark RELEASED).</span>
 
 <span class="sd">        After restore:</span>
+
 <span class="sd">        - session_mapping[session_ctx_id] will be replaced with the list of</span>
-<span class="sd">            NEW running containers.</span>
+<span class="sd">          NEW running containers.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">env_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_session_mapping</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">env_ids</span><span class="p">:</span>

@@ -725,7 +725,7 @@ body.preview-active {
 <span class="sd">        Add text delta (only applicable to text type)</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            text: Text fragment</span>
+<span class="sd">            text: Text fragment (None treated as empty string)</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Delta content object</span>
@@ -733,7 +733,8 @@ body.preview-active {
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">content_type</span> <span class="o">!=</span> <span class="n">ContentType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;add_text_delta only supported for text content&quot;</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">text_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">safe_text</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="n">text</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">text</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">safe_text</span><span class="p">)</span>
 
         <span class="c1"># Create delta content</span>
         <span class="n">delta_content</span> <span class="o">=</span> <span class="n">TextContent</span><span class="p">(</span>
@@ -741,7 +742,7 @@ body.preview-active {
             <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
             <span class="n">delta</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">msg_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">message_builder</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-            <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">safe_text</span><span class="p">,</span>
         <span class="p">)</span><span class="o">.</span><span class="n">in_progress</span><span class="p">()</span>
 
         <span class="k">return</span> <span class="n">delta_content</span></div>
@@ -969,7 +970,9 @@ body.preview-active {
             <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;text_tokens&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_tokens</span><span class="p">:</span>
                 <span class="c1"># Get existing text, if none then empty string</span>
                 <span class="n">existing_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">text</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
-                <span class="n">token_text</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">text_tokens</span><span class="p">)</span>
+                <span class="n">token_text</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                    <span class="n">t</span> <span class="k">if</span> <span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_tokens</span>
+                <span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">existing_text</span> <span class="o">+</span> <span class="n">token_text</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">delta</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">content_type</span> <span class="o">==</span> <span class="n">ContentType</span><span class="o">.</span><span class="n">DATA</span><span class="p">:</span>
