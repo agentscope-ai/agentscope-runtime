@@ -53,8 +53,11 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 ### 步骤 1：导入依赖
 
 ```{code-cell}
+import asyncio
 import os
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
@@ -115,34 +118,33 @@ asyncio.run(bootstrap_browser_sandbox())
 此处的 Agent 构建（模型、工具、会话记忆、格式化器等）只是一个示例配置，您需要根据实际需求替换为自己的模块实现。
 ```
 
-下面的逻辑与测试用例 `run_app()` 完全一致，包含状态服务初始化、会话记忆以及流式响应：
+下面的逻辑展示了如何利用 `AgentApp` 的特性构建服务，包含生命周期管理、会话记忆、流式响应以及中断处理：
 
 ```{code-cell}
 PORT = 8090
 
-agent_app = AgentApp(
-    app_name="Friday",
-    app_description="A helpful assistant",
-)
-
-
-@agent_app.init
-async def init_func(self):
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     import fakeredis
 
     fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
     # NOTE: This FakeRedis instance is for development/testing only.
     # In production, replace it with your own Redis client/connection
     # (e.g., aioredis.Redis)
-    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
+    app.state.session = RedisSession(connection_pool=fake_redis.connection_pool)
 
-    self.sandbox_service = SandboxService()
-    await self.sandbox_service.start()
+    app.state.sandbox_service = SandboxService()
+    await app.state.sandbox_service.start()
+    try:
+        yield
+    finally:
+        await app.state.sandbox_service.stop()
 
-
-@agent_app.shutdown
-async def shutdown_func(self):
-    await self.sandbox_service.stop()
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+    lifespan=lifespan,
+)
 
 
 @agent_app.query(framework="agentscope")
@@ -150,7 +152,7 @@ async def query_func(self, msgs, request: AgentRequest = None, **kwargs):
     session_id = request.session_id
     user_id = request.user_id
 
-    sandboxes = self.sandbox_service.connect(
+    sandboxes = agent_app.state.sandbox_service.connect(
         session_id=session_id,
         user_id=user_id,
         sandbox_types=["browser"],
@@ -183,23 +185,40 @@ async def query_func(self, msgs, request: AgentRequest = None, **kwargs):
     )
     agent.set_console_output_enabled(enabled=False)
 
-    await self.session.load_session_state(
+    await agent_app.state.session.load_session_state(
         session_id=session_id,
         user_id=user_id,
         agent=agent,
     )
 
-    async for msg, last in stream_printing_messages(
-        agents=[agent],
-        coroutine_task=agent(msgs),
-    ):
-        yield msg, last
+    try:
+        async for msg, last in stream_printing_messages(
+            agents=[agent],
+            coroutine_task=agent(msgs),
+        ):
+            yield msg, last
 
-    await self.session.save_session_state(
-        session_id=session_id,
-        user_id=user_id,
-        agent=agent,
+    except asyncio.CancelledError:
+        await agent.interrupt()
+        raise
+
+    finally:
+        await agent_app.state.session.save_session_state(
+            session_id=session_id,
+            user_id=user_id,
+            agent=agent,
+        )
+
+@agent_app.post("/stop")
+async def stop_task(request: AgentRequest):
+    await agent_app.stop_chat(
+        user_id=request.user_id,
+        session_id=request.session_id,
     )
+    return {
+        "status": "success",
+        "message": "Interrupt signal broadcasted.",
+    }
 ```
 
 上述 `query_func` 会将 Agent 的输出通过 SSE 逐条返回，同时把最新 state 写回内存服务，实现多轮记忆。
@@ -237,7 +256,7 @@ curl -N \
 
 ### 步骤 6：多轮记忆验证
 
-要验证 `AgentScopeSessionHistoryMemory` 是否生效，可以复用测试中「两轮对话」的交互流程：第一次提交 “My name is Alice.” 并携带固定 `session_id`，第二次询问 “What is my name?”，若返回文本包含 “Alice” 即表示记忆成功。
+要验证原生 Session 持久化是否生效，可以复用测试中「两轮对话」的交互流程：第一次提交 “My name is Alice.” 并携带固定 `session_id`，第二次询问 “What is my name?”，若返回文本包含 “Alice” 即表示记忆成功。
 
 ### 步骤 7：OpenAI 兼容模式
 
@@ -257,6 +276,50 @@ print(resp.response["output"][0]["content"][0]["text"])
 
 正常情况下你会得到 “I’m Friday ...” 之类的回答。
 
+### 步骤 8：测试中断功能
+
+在长任务处理过程中，您可能需要手动干预并停止推理。
+
+**1. 启动一个耗时任务**
+在终端 1 中，要求 Agent 执行一个复杂的任务（如写长文或进行复杂的网页浏览）：
+
+```bash
+curl -N -X POST "http://127.0.0.1:8090/process" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Please browse the news today and write a 1000-word detailed report."
+          }
+        ]
+      }
+    ],
+    "session_id": "ss-123",
+    "user_id": "uu-123"
+  }'
+```
+
+**2. 发送中断信号**
+在终端 1 正在流式输出时，打开终端 2 发送中断请求（注意 `session_id` 与 `user_id` 须保持一致）：
+
+```bash
+curl -X POST "http://localhost:8090/stop" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": [],
+    "session_id": "ss-123",
+    "user_id": "uu-123"
+  }'
+```
+
+**3. 预期现象**
+- **终端 2** 将返回 `{"status": "success", "message": "Interrupt signal broadcasted."}`。
+- **终端 1** 的 SSE 数据流将立即停止。
+
 ## 总结
 
-通过本章节的内容，你可以快速获得一个带有流式响应、会话记忆以及 OpenAI 兼容接口的 ReAct 智能体服务。若需部署到远端或扩展更多工具，只需替换 `DashScopeChatModel`、状态服务或工具注册逻辑即可。
+通过本章节的内容，你可以快速获得一个带有流式响应、会话记忆、中断处理以及 OpenAI 兼容接口的 ReAct 智能体服务。若需部署到远端或扩展更多工具，只需替换 `DashScopeChatModel`、状态服务或工具注册逻辑即可。

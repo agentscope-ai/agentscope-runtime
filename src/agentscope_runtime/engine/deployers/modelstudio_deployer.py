@@ -51,6 +51,7 @@ class OSSConfig(BaseModel):
     region: str = Field("cn-hangzhou", description="OSS region")
     access_key_id: Optional[str] = None
     access_key_secret: Optional[str] = None
+    security_token: Optional[str] = None
     bucket_prefix: str = Field(
         "tmpbucket-agentscope-runtime",
         description="Prefix for temporary buckets if creation is needed",
@@ -67,6 +68,10 @@ class OSSConfig(BaseModel):
             access_key_secret=os.environ.get(
                 "OSS_ACCESS_KEY_SECRET",
                 os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
+            ),
+            security_token=os.environ.get(
+                "OSS_SESSION_TOKEN",
+                os.environ.get("ALIBABA_CLOUD_SECURITY_TOKEN"),
             ),
         )
 
@@ -87,6 +92,7 @@ class ModelstudioConfig(BaseModel):
     workspace_id: Optional[str] = None
     access_key_id: Optional[str] = None
     access_key_secret: Optional[str] = None
+    security_token: Optional[str] = None
     dashscope_api_key: Optional[str] = None
 
     @classmethod
@@ -103,6 +109,9 @@ class ModelstudioConfig(BaseModel):
             access_key_id=os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID"),
             access_key_secret=os.environ.get(
                 "ALIBABA_CLOUD_ACCESS_KEY_SECRET",
+            ),
+            security_token=os.environ.get(
+                "ALIBABA_CLOUD_SECURITY_TOKEN",
             ),
             dashscope_api_key=os.environ.get(
                 "DASHSCOPE_API_KEY",
@@ -142,6 +151,8 @@ def _oss_get_client(oss_cfg: OSSConfig):
         and oss_cfg.access_key_secret
     ):
         os.environ["OSS_ACCESS_KEY_SECRET"] = str(oss_cfg.access_key_secret)
+    if not os.environ.get("OSS_SESSION_TOKEN") and oss_cfg.security_token:
+        os.environ["OSS_SESSION_TOKEN"] = str(oss_cfg.security_token)
 
     credentials_provider = (
         oss.credentials.EnvironmentVariableCredentialsProvider()
@@ -298,6 +309,7 @@ def _get_presign_url_and_upload_to_oss(
         config = open_api_models.Config(
             access_key_id=cfg.access_key_id,
             access_key_secret=cfg.access_key_secret,
+            security_token=cfg.security_token,
         )
         config.endpoint = cfg.endpoint
         client_modelstudio = ModelstudioClient(config)
@@ -411,6 +423,7 @@ async def _modelstudio_deploy(
     config = open_api_models.Config(
         access_key_id=cfg.access_key_id,
         access_key_secret=cfg.access_key_secret,
+        security_token=cfg.security_token,
     )
     config.endpoint = cfg.endpoint
     client_modelstudio = ModelstudioClient(config)

@@ -32,6 +32,9 @@ kernelspec:
 # ms_agent.py
 # -*- coding: utf-8 -*-
 import os
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
 from agent_framework.openai import OpenAIChatClient
 
 from agentscope_runtime.engine import AgentApp
@@ -42,18 +45,16 @@ PORT = 8090
 
 def run_app():
     """启动 AgentApp 并启用流式输出功能"""
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        app.state.thread_storage = {}  # 仅测试用
+        yield
+
     agent_app = AgentApp(
         app_name="Friday",
         app_description="A helpful assistant",
+        lifespan=lifespan,
     )
-
-    @agent_app.init
-    async def init_func(self):
-        self.thread_storage = {}  # 仅测试用
-
-    @agent_app.shutdown
-    async def shutdown_func(self):
-        pass
 
     @agent_app.query(framework="ms_agent_framework")
     async def query_func(
@@ -68,7 +69,7 @@ def run_app():
 
         # 导出历史上下文
         id_key = f"{user_id}_{session_id}"
-        thread = self.thread_storage.get(id_key)
+        thread = agent_app.state.thread_storage.get(id_key)
 
         # 创建 agent
         agent = OpenAIChatClient(
@@ -95,7 +96,7 @@ def run_app():
 
         # 保存会话状态
         serialized_thread = await thread.serialize()
-        self.thread_storage[id_key] = serialized_thread
+        agent_app.state.thread_storage[id_key] = serialized_thread
 
     agent_app.run(host="127.0.0.1", port=PORT)
 

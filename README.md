@@ -77,6 +77,7 @@
 
 ## 🆕 NEWS
 
+* **[2026-02]** A major architectural refactor of `AgentApp`. By adopting direct inheritance from `FastAPI` and deprecating the previous factory pattern, `AgentApp` now offers seamless integration with the full FastAPI ecosystem, significantly boosting extensibility. Furthermore, we've introduced a **Distributed Interrupt Service**, enabling manual task preemption during agent execution and allowing developers to customize state persistence and recovery logic flexibly.
 * **[2026-01]** Added **asynchronous sandbox** implementations (`BaseSandboxAsync`, `GuiSandboxAsync`, `BrowserSandboxAsync`, `FilesystemSandboxAsync`, `MobileSandboxAsync`) enabling non-blocking, concurrent tool execution in async program. Improved `run_ipython_cell` and `run_shell_command` methods with enhanced **concurrency and parallel execution** capabilities for more efficient sandbox operations.
 * **[2025-12]** We have released **AgentScope Runtime v1.0**, introducing a unified “Agent as API” white-box development experience, with enhanced multi-agent collaboration, state persistence, and cross-framework integration. This release also streamlines abstractions and modules to ensure consistency between development and production environments. Please refer to the **[CHANGELOG](https://runtime.agentscope.io/en/CHANGELOG.html)** for full update details and migration guide.
 
@@ -141,14 +142,15 @@ pip install -e .
 
 This example demonstrates how to create an agent API server using agentscope `ReActAgent` and `AgentApp`.  To run a minimal `AgentScope` Agent with AgentScope Runtime, you generally need to implement:
 
-1. **`@agent_app.init`** – Initialize services/resources at startup
+1. **`Define lifespan`** – Use `contextlib.asynccontextmanager` to manage resource initialization (e.g., state services) at startup and cleanup on exit.
 2. **`@agent_app.query(framework="agentscope")`** – Core logic for handling requests, **must use** `stream_printing_messages` to `yield msg, last` for streaming output
-3. **`@agent_app.shutdown`** – Clean up services/resources on exit
 
 
 ```python
 import os
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
@@ -160,23 +162,32 @@ from agentscope.session import RedisSession
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 
-agent_app = AgentApp(
-    app_name="Friday",
-    app_description="A helpful assistant",
-)
-
-
-@agent_app.init
-async def init_func(self):
+# 1. Define lifespan manager
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage resources during service startup and shutdown"""
+    # Startup: Initialize Session manager
     import fakeredis
 
     fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
     # NOTE: This FakeRedis instance is for development/testing only.
     # In production, replace it with your own Redis client/connection
     # (e.g., aioredis.Redis)
-    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
+    app.state.session = RedisSession(connection_pool=fake_redis.connection_pool)
 
+    yield  # Service is running
 
+    # Shutdown: Add cleanup logic here (e.g., closing database connections)
+    print("AgentApp is shutting down...")
+
+# 2. Create AgentApp instance
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+    lifespan=lifespan,
+)
+
+# 3. Define request handling logic
 @agent_app.query(framework="agentscope")
 async def query_func(
     self,
@@ -204,7 +215,8 @@ async def query_func(
     )
     agent.set_console_output_enabled(enabled=False)
 
-    await self.session.load_session_state(
+    # Load state
+    await agent_app.state.session.load_session_state(
         session_id=session_id,
         user_id=user_id,
         agent=agent,
@@ -216,13 +228,14 @@ async def query_func(
     ):
         yield msg, last
 
-    await self.session.save_session_state(
+    # Save state
+    await agent_app.state.session.save_session_state(
         session_id=session_id,
         user_id=user_id,
         agent=agent,
     )
 
-
+# 4. Run the application
 agent_app.run(host="127.0.0.1", port=8090)
 ```
 

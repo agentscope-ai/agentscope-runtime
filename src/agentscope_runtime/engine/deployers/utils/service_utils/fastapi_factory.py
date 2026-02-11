@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
 
+from agentscope_runtime.common.utils.deprecation import deprecated
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from agentscope_runtime.engine.schemas.response_api import ResponseAPI
 from ..deployment_modes import DeploymentMode
@@ -99,6 +100,17 @@ async def error_stream(e):
     )
 
 
+@deprecated(
+    reason=(
+        "AgentApp now inherits directly from FastAPI, "
+        "making this factory pattern obsolete. "
+        "You can now instantiate AgentApp directly "
+        "without using a factory."
+    ),
+    alternative="AgentApp() (Direct Instantiation)",
+    since="1.1.0",
+    removed_in="1.2.0",
+)
 class FastAPIAppFactory:
     """Factory for creating FastAPI applications with unified architecture."""
 

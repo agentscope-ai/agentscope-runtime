@@ -8,99 +8,10 @@ import tempfile
 # Mock classes will be provided by pytest-mock plugin
 
 import pytest
-from fastapi import FastAPI
-
-from agentscope_runtime.engine.deployers.adapter.a2a import (
-    A2AFastAPIDefaultAdapter,
-)
-from agentscope_runtime.engine.deployers.adapter.responses import (
-    ResponseAPIDefaultAdapter,
-)
-from agentscope_runtime.engine.deployers.utils.deployment_modes import (
-    DeploymentMode,
-)
 from agentscope_runtime.engine.deployers.utils.service_utils import (
-    FastAPIAppFactory,
     FastAPITemplateManager,
     ProcessManager,
 )
-
-
-class TestFastAPIAppFactory:
-    """Test cases for FastAPIAppFactory class."""
-
-    def test_create_app_basic(self):
-        """Test basic FastAPI app creation."""
-        app = FastAPIAppFactory.create_app()
-
-        assert isinstance(app, FastAPI)
-        assert app.state.deployment_mode == DeploymentMode.DAEMON_THREAD
-        assert app.state.endpoint_path == "/process"
-        assert app.state.stream_enabled is True
-        assert app.state.response_type == "sse"
-
-    def test_create_app_with_runner(self, mocker):
-        """Test FastAPI app creation with runner."""
-        mock_runner = mocker.Mock()
-        app = FastAPIAppFactory.create_app(
-            runner=mock_runner,
-            endpoint_path="/api/process",
-            response_type="json",
-            stream=False,
-        )
-
-        assert app.state.runner == mock_runner
-        assert app.state.endpoint_path == "/api/process"
-        assert app.state.response_type == "json"
-        assert app.state.stream_enabled is False
-
-    def test_create_app_with_protocol_adapters(self, mocker):
-        """Test FastAPI app creation with protocol adapters."""
-        protocol_adapters = [mocker.Mock(), mocker.Mock()]
-        app = FastAPIAppFactory.create_app(protocol_adapters=protocol_adapters)
-        assert app.state.protocol_adapters == protocol_adapters
-
-    def test_openapi_includes_a2a_components(self):
-        """Ensure OpenAPI schema includes A2A components when configured."""
-        adapter = A2AFastAPIDefaultAdapter(
-            agent_name="test-agent",
-            agent_description="Test agent description",
-        )
-        app = FastAPIAppFactory.create_app(protocol_adapters=[adapter])
-        schemas = app.openapi().get("components", {}).get("schemas", {})
-        assert "A2ARequest" in schemas
-
-    def test_openapi_includes_response_api_components(self):
-        """Ensure OpenAPI schema includes Response API components."""
-        adapter = ResponseAPIDefaultAdapter()
-        app = FastAPIAppFactory.create_app(protocol_adapters=[adapter])
-        schemas = app.openapi().get("components", {}).get("schemas", {})
-        assert "ResponseAPI" in schemas
-
-    def test_create_app_deployment_modes(self):
-        """Test FastAPI app creation with different deployment modes."""
-        # Test DAEMON_THREAD mode
-        app_daemon = FastAPIAppFactory.create_app(
-            mode=DeploymentMode.DAEMON_THREAD,
-        )
-        assert app_daemon.state.deployment_mode == DeploymentMode.DAEMON_THREAD
-
-        # Test DETACHED_PROCESS mode
-        app_detached = FastAPIAppFactory.create_app(
-            mode=DeploymentMode.DETACHED_PROCESS,
-        )
-        assert (
-            app_detached.state.deployment_mode
-            == DeploymentMode.DETACHED_PROCESS
-        )
-
-        # Test STANDALONE mode
-        app_standalone = FastAPIAppFactory.create_app(
-            mode=DeploymentMode.STANDALONE,
-        )
-        assert (
-            app_standalone.state.deployment_mode == DeploymentMode.STANDALONE
-        )
 
 
 class TestFastAPITemplateManager:
