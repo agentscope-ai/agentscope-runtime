@@ -189,7 +189,7 @@ async def test_remote_sandbox(env):
 
 
 @pytest.mark.asyncio
-async def test_local_sandbox_fs_async(env):
+async def test_local_sandbox_fs_async(env, tmp_path):
     """
     Full coverage test for SandboxFSAsync facade:
       - mkdir_async
@@ -240,11 +240,11 @@ async def test_local_sandbox_fs_async(env):
         # ---- stream write (file-like) + read bytes + read stream ----
         stream_payload = b"stream-upload-content-" * 1024  # ~22KB
         with tempfile.NamedTemporaryFile("wb", delete=False) as tf:
-            tmp_path = tf.name
+            tmp_file_path = tf.name
             tf.write(stream_payload)
 
         try:
-            with open(tmp_path, "rb") as f:
+            with open(tmp_file_path, "rb") as f:
                 r3 = await box.fs.write_async(
                     f"{base_dir}/c.bin",
                     f,  # file-like streaming upload
@@ -291,6 +291,10 @@ async def test_local_sandbox_fs_async(env):
         ]
         res_batch = await box.fs.write_many_async(batch)
         assert isinstance(res_batch, list)
+        assert len(res_batch) == 2, (
+            f"write_many_async should return 2 entries, got {len(res_batch)}: "
+            f"{res_batch}"
+        )
 
         assert await box.fs.exists_async(f"{base_dir}/batch1.txt") is True
         assert (
@@ -408,11 +412,11 @@ def test_local_sandbox_fs(env, tmp_path):
         # ---- stream write (file-like) + read bytes + read stream ----
         stream_payload = b"stream-upload-content-" * 1024  # ~22KB
         with tempfile.NamedTemporaryFile("wb", delete=False) as tf:
-            tmp_path = tf.name
+            tmp_file_path = tf.name
             tf.write(stream_payload)
 
         try:
-            with open(tmp_path, "rb") as f:
+            with open(tmp_file_path, "rb") as f:
                 r3 = box.fs.write(
                     f"{base_dir}/c.bin",
                     f,  # file-like streaming upload
@@ -429,7 +433,7 @@ def test_local_sandbox_fs(env, tmp_path):
             assert buf == stream_payload
         finally:
             try:
-                os.remove(tmp_path)
+                os.remove(tmp_file_path)
             except Exception:
                 pass
 
@@ -454,6 +458,10 @@ def test_local_sandbox_fs(env, tmp_path):
         ]
         res_batch = box.fs.write_many(batch)
         assert isinstance(res_batch, list)
+        assert len(res_batch) == 2, (
+            f"write_many should return 2 entries, got {len(res_batch)}: "
+            f"{res_batch}"
+        )
 
         assert box.fs.exists(f"{base_dir}/batch1.txt") is True
         assert (

@@ -564,7 +564,14 @@ class WorkspaceFSAsyncMixin(ProxyBaseMixin):
         body = _encode_multipart_formdata(fields, boundary)
         headers = {"Content-Type": f"multipart/form-data; boundary={boundary}"}
 
-        r = await self.httpx_client.post(url, content=body, headers=headers)
+        async def _body_chunks() -> AsyncIterator[bytes]:
+            yield body
+
+        r = await self.httpx_client.post(
+            url,
+            content=_body_chunks(),
+            headers=headers,
+        )
         r.raise_for_status()
         return r.json()
 

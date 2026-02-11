@@ -436,7 +436,18 @@ class WorkspaceAsyncMixin:
 
         headers = {"Content-Type": f"multipart/form-data; boundary={boundary}"}
 
-        r = await self._request("post", url, content=body, headers=headers)
+        # AsyncClient requires an async stream; passing raw bytes can be
+        # encoded as a sync stream in some httpx versions and raise
+        # RuntimeError.
+        async def _body_chunks() -> AsyncIterator[bytes]:
+            yield body
+
+        r = await self._request(
+            "post",
+            url,
+            content=_body_chunks(),
+            headers=headers,
+        )
         r.raise_for_status()
         return r.json()
 
