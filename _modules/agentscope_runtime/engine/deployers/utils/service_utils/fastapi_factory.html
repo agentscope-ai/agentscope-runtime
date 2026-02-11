@@ -636,6 +636,7 @@ body.preview-active {
 <span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">StreamingResponse</span><span class="p">,</span> <span class="n">JSONResponse</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.common.utils.deprecation</span><span class="w"> </span><span class="kn">import</span> <span class="n">deprecated</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentRequest</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.response_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResponseAPI</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..deployment_modes</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeploymentMode</span>
@@ -723,6 +724,17 @@ body.preview-active {
 
 <div class="viewcode-block" id="FastAPIAppFactory">
 <a class="viewcode-back" href="../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.utils.service_utils.fastapi_factory.FastAPIAppFactory">[docs]</a>
+<span class="nd">@deprecated</span><span class="p">(</span>
+    <span class="n">reason</span><span class="o">=</span><span class="p">(</span>
+        <span class="s2">&quot;AgentApp now inherits directly from FastAPI, &quot;</span>
+        <span class="s2">&quot;making this factory pattern obsolete. &quot;</span>
+        <span class="s2">&quot;You can now instantiate AgentApp directly &quot;</span>
+        <span class="s2">&quot;without using a factory.&quot;</span>
+    <span class="p">),</span>
+    <span class="n">alternative</span><span class="o">=</span><span class="s2">&quot;AgentApp() (Direct Instantiation)&quot;</span><span class="p">,</span>
+    <span class="n">since</span><span class="o">=</span><span class="s2">&quot;1.1.0&quot;</span><span class="p">,</span>
+    <span class="n">removed_in</span><span class="o">=</span><span class="s2">&quot;1.2.0&quot;</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">FastAPIAppFactory</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Factory for creating FastAPI applications with unified architecture.&quot;&quot;&quot;</span>
 

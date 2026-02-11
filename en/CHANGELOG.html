@@ -626,7 +626,8 @@ body.preview-active {
 <h1><span class="section-number">8. </span>CHANGELOG<a class="headerlink" href="#changelog" title="Link to this heading">¶</a></h1>
 <section id="v1-1-0">
 <h2>v1.1.0<a class="headerlink" href="#v1-1-0" title="Link to this heading">¶</a></h2>
-<p>AgentScope Runtime v1.1.0 focuses on <strong>simplifying persistence and session continuity</strong> by removing Runtime-side custom Memory/Session service abstractions and <strong>standardizing on the Agent framework’s native persistence modules</strong>. This reduces mental overhead, avoids duplicated concepts, and ensures the persistence behavior is consistent with the underlying agent framework.</p>
+<p>AgentScope Runtime v1.1.0 <strong>simplifies persistence and session continuity</strong> by removing Runtime-side custom Memory/Session service abstractions and <strong>standardizing on the Agent framework’s native persistence modules</strong>. This reduces mental overhead, avoids duplicated concepts, and ensures the persistence behavior is consistent with the underlying agent framework.</p>
+<p>Additionally, this version introduces a <strong>major refactor of the <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> core architecture</strong>: switching to direct inheritance from <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code>, introducing <strong>standard lifespan management</strong>, and adding <strong>task interruption</strong> and <strong>concurrency conflict control</strong> for distributed scenarios.</p>
 <p><strong>Background &amp; Necessity of the Changes</strong></p>
 <p>In v1.0, Runtime provided custom <strong>Session History</strong> and <strong>Long-term Memory</strong> services (plus adapters) to support persistence/state continuity across requests. In practice, this introduced several issues:</p>
 <ol class="arabic simple">
@@ -638,15 +639,32 @@ Runtime-specific services/adapters had to be kept in sync with multiple agent fr
 Different frameworks expose different state/memory/session semantics; Runtime-level adapters could not reliably preserve identical behavior across all frameworks.</p></li>
 </ol>
 <p>To address this, v1.1.0 <strong>deprecates and removes</strong> these Runtime-side services/adapters, and recommends using the <strong>Agent framework’s own persistence modules</strong> (e.g., <code class="docutils literal notranslate"><span class="pre">JSONSession</span></code>, built-in memory implementations) directly in the <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> lifecycle.</p>
+<p><strong>Furthermore, v1.1.0 refactors the core architecture of <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code>, shifting from a “factory creation pattern” to “direct inheritance from <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code>”.</strong> This change stems from the following considerations:</p>
+<ol class="arabic simple">
+<li><p><strong>Addressing limitations of the factory pattern</strong>
+In previous versions, <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> held a FastAPI instance internally through a factory class. This “black box” approach made it difficult for developers to leverage native FastAPI features (e.g., complex middleware, custom route decorators, and dependency injection), and custom lifecycle hooks like <code class="docutils literal notranslate"><span class="pre">&#64;app.init</span></code> deviated from standard web development practices.</p></li>
+<li><p><strong>Embracing native FastAPI ecosystem and extensibility</strong>
+By <strong>directly inheriting from the <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code> class</strong>, <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> is now a standard FastAPI application. This grants developers full control and seamless integration with FastAPI’s community plugins. The class-based architecture also allows us to elegantly introduce advanced features like <strong>Task Interruption</strong> and <strong>State Race Condition Control</strong> via <code class="docutils literal notranslate"><span class="pre">Mixin</span></code> classes, making <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> a core component that is both standard-compliant and deeply optimized for Agent-specific scenarios.</p></li>
+</ol>
+<section id="added">
+<h3>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>Distributed Task Interruption</strong>: Introduced <code class="docutils literal notranslate"><span class="pre">InterruptMixin</span></code> with backend support (Local/Redis), allowing manual interruption via custom interfaces and supporting interrupt signal broadcasting in distributed clusters.</p></li>
+<li><p><strong>Distributed Race Condition Control</strong>: Introduced atomic state-machine checks (Compare-and-Swap) during task startup to effectively prevent duplicate concurrent execution of the same Session ID in distributed environments.</p></li>
+<li><p><strong>Native FastAPI Extensibility</strong>: Since <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> now inherits from <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code>, developers can use native methods like <code class="docutils literal notranslate"><span class="pre">&#64;app.get</span></code> and <code class="docutils literal notranslate"><span class="pre">app.add_middleware</span></code> with full compatibility.</p></li>
+</ul>
+</section>
 <section id="changed">
 <h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">¶</a></h3>
 <ul class="simple">
-<li><p>Recommended persistence pattern:</p>
+<li><p><strong>Recommended persistence pattern</strong>:</p>
 <ul>
 <li><p>Use the agent framework’s <strong>Memory</strong> modules directly (e.g., <code class="docutils literal notranslate"><span class="pre">InMemoryMemory</span></code>, Redis-backed memory if provided by the framework).</p></li>
 <li><p>Use the agent framework’s <strong>Session</strong> modules (e.g., <code class="docutils literal notranslate"><span class="pre">JSONSession</span></code>) to load/save agent session state during <code class="docutils literal notranslate"><span class="pre">query</span></code>.</p></li>
 </ul>
 </li>
+<li><p><strong>Architectural Refactor</strong>: <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> has shifted from a <strong>factory class pattern</strong> to <strong>direct inheritance from <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code></strong>.</p></li>
+<li><p><strong>Lifecycle Unification</strong>: Unified the lifecycle management of internal framework resources and user-defined resources.</p></li>
 </ul>
 </section>
 <section id="breaking-changes">
@@ -666,15 +684,29 @@ must be migrated to the Agent framework’s built-in persistence approach.</p></
 </li>
 </ul>
 </li>
+<li><p><strong>Removal of the Factory Pattern</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">FastAPIAppFactory</span></code> is deprecated. Users should now instantiate <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> objects directly.</p></li>
+</ul>
+</li>
+<li><p><strong>Deprecation of Custom Decorator Hooks</strong></p>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">&#64;app.init</span></code> and <code class="docutils literal notranslate"><span class="pre">&#64;app.shutdown</span></code> decorators are deprecated and marked for removal.</p></li>
+<li><p><strong>Migration Advice</strong>: Please use the standard FastAPI <code class="docutils literal notranslate"><span class="pre">lifespan</span></code> asynchronous context manager (see the example in the Migration Guide below).</p></li>
+</ul>
+</li>
 </ol>
 <section id="migration-guide-v1-0-v1-1">
 <h4>Migration Guide (v1.0 → v1.1)<a class="headerlink" href="#migration-guide-v1-0-v1-1" title="Link to this heading">¶</a></h4>
-<section id="recommended-pattern-use-agent-framework-modules-for-persistence">
-<h5>Recommended Pattern (Use Agent framework modules for persistence)<a class="headerlink" href="#recommended-pattern-use-agent-framework-modules-for-persistence" title="Link to this heading">¶</a></h5>
-<p>Use <code class="docutils literal notranslate"><span class="pre">JSONSession</span></code> or other submodule to persist/load the agent’s session state, and use <code class="docutils literal notranslate"><span class="pre">InMemoryMemory()</span></code> (or other framework-provided memory) directly in AgentScope:</p>
+<section id="recommended-pattern-unified-lifecycle-interruption-handling-and-native-persistence">
+<h5>Recommended Pattern (Unified Lifecycle, Interruption Handling, and Native Persistence)<a class="headerlink" href="#recommended-pattern-unified-lifecycle-interruption-handling-and-native-persistence" title="Link to this heading">¶</a></h5>
+<p>In v1.1.0, we recommend using the <strong>lifespan asynchronous context manager</strong> instead of the old decorators to manage resources. Additionally, catch <code class="docutils literal notranslate"><span class="pre">asyncio.CancelledError</span></code> within the <code class="docutils literal notranslate"><span class="pre">query</span></code> logic to respond to interrupt signals, and use the Agent framework’s native <strong>Session/Memory</strong> modules for state persistence:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.formatter</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatFormatter</span>
@@ -686,22 +718,26 @@ must be migrated to the Agent framework’s built-in persistence approach.</p></
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.app</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentRequest</span>
 
+<span class="c1"># Standard FastAPI lifespan management</span>
+<span class="c1"># (Replaces deprecated @app.init/@app.shutdown)</span>
+<span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+    <span class="c1"># Use JSONSession here</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">JSONSession</span><span class="p">(</span><span class="n">save_dir</span><span class="o">=</span><span class="s2">&quot;./sessions&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># No Runtime state/session services to stop in v1.1</span>
+        <span class="k">pass</span>
+
+<span class="c1"># AgentApp now inherits directly from FastAPI</span>
 <span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
     <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
     <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
+    <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>
+    <span class="c1"># Optional: Enable distributed interrupt by providing interrupt_redis_url</span>
+    <span class="c1"># interrupt_redis_url=&quot;redis://localhost&quot;</span>
 <span class="p">)</span>
-
-
-<span class="nd">@agent_app</span><span class="o">.</span><span class="n">init</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">JSONSession</span><span class="p">(</span><span class="n">save_dir</span><span class="o">=</span><span class="s2">&quot;./sessions&quot;</span><span class="p">)</span>  <span class="c1"># Use JSONSession here</span>
-
-
-<span class="nd">@agent_app</span><span class="o">.</span><span class="n">shutdown</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="c1"># No Runtime state/session services to stop in v1.1</span>
-    <span class="k">pass</span>
-
 
 <span class="nd">@agent_app</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">framework</span><span class="o">=</span><span class="s2">&quot;agentscope&quot;</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_func</span><span class="p">(</span>
@@ -731,15 +767,43 @@ must be migrated to the Agent framework’s built-in persistence approach.</p></
         <span class="n">formatter</span><span class="o">=</span><span class="n">DashScopeChatFormatter</span><span class="p">(),</span>
     <span class="p">)</span>
 
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span><span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span> <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+    <span class="p">)</span>
 
-    <span class="k">async</span> <span class="k">for</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span> <span class="ow">in</span> <span class="n">stream_printing_messages</span><span class="p">(</span>
-        <span class="n">agents</span><span class="o">=</span><span class="p">[</span><span class="n">agent</span><span class="p">],</span>
-        <span class="n">coroutine_task</span><span class="o">=</span><span class="n">agent</span><span class="p">(</span><span class="n">msgs</span><span class="p">),</span>
-    <span class="p">):</span>
-        <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span> <span class="ow">in</span> <span class="n">stream_printing_messages</span><span class="p">(</span>
+            <span class="n">agents</span><span class="o">=</span><span class="p">[</span><span class="n">agent</span><span class="p">],</span>
+            <span class="n">coroutine_task</span><span class="o">=</span><span class="n">agent</span><span class="p">(</span><span class="n">msgs</span><span class="p">),</span>
+        <span class="p">):</span>
+            <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
 
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span><span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span> <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+        <span class="c1"># Handling Interruptions (New in v1.1.0)</span>
+        <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">interrupt</span><span class="p">()</span> <span class="c1"># Explicitly halt the underlying agent execution</span>
+
+        <span class="c1"># Re-raise to ensure AgentApp correctly updates the task state to STOPPED</span>
+        <span class="k">raise</span>
+
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># Persistence: Save state regardless of normal completion or interruption</span>
+        <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="n">agent</span><span class="o">=</span><span class="n">agent</span>
+        <span class="p">)</span>
+
+<span class="c1"># Optional: Explicit endpoint to trigger task interruption</span>
+<span class="nd">@agent_app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/stop&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop_task</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span><span class="p">):</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">stop_chat</span><span class="p">(</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Interrupt signal broadcasted.&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
 
 
 <span class="n">agent_app</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
@@ -752,8 +816,8 @@ must be migrated to the Agent framework’s built-in persistence approach.</p></
 <section id="v1-0-5">
 <h2>v1.0.5<a class="headerlink" href="#v1-0-5" title="Link to this heading">¶</a></h2>
 <p><strong>AgentScope Runtime v1.0.5</strong> focuses on improving deployment flexibility and UI/protocol integrations. This release adds a new PAI deployer with CLI support, introduces Boxlite as an additional sandbox backend, and provides a container client factory to unify container-based deployments. It also brings AG-UI protocol support, integrates ModelStudio Memory SDK and demos, and includes multiple hotfixes for FC replacement maps, MS-Agent-Framework compatibility, and message streaming tool-call handling. Documentation has been refreshed across several sections, and contributor acknowledgements were updated.</p>
-<section id="added">
-<h3>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h3>
+<section id="id1">
+<h3>Added<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>PAI Deployer + CLI Support</strong>
 Added a PAI deployer with CLI support, documentation, and tests.</p></li>
@@ -767,8 +831,8 @@ Added support for the AG-UI protocol to improve UI interoperability.</p></li>
 Integrated ModelStudio Memory SDK along with demo examples.</p></li>
 </ul>
 </section>
-<section id="id1">
-<h3>Changed<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<section id="id2">
+<h3>Changed<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Expose AgentResponse to query_handler</strong>
 <code class="docutils literal notranslate"><span class="pre">AgentResponse</span></code> is now exposed to <code class="docutils literal notranslate"><span class="pre">query_handler</span></code> via <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> for better extensibility.</p></li>
@@ -802,8 +866,8 @@ Enhanced tool call handling in LangGraph message streams.</p></li>
 <h2>v1.0.4<a class="headerlink" href="#v1-0-4" title="Link to this heading">¶</a></h2>
 <p>Building on the extensibility and consistency of the v1.x framework, <strong>AgentScope Runtime v1.0.4</strong> introduces several new deployment features, including Knative and Serverless FC deployers, native support for the MS-Agent-Framework, and an asynchronous Sandbox SDK to reduce blocking and improve responsiveness.
 This release also enhances safety handling for existing OpenTelemetry tracer providers, updates dependencies, and fixes compatibility issues with non-stream tool calls. Documentation has been updated with a quick “Try WebUI” entry, corrections to local deployment examples, and acknowledgements for new contributors.</p>
-<section id="id2">
-<h3>Added<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<section id="id3">
+<h3>Added<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Knative Deployer Support</strong>
 Added a Knative deployer, enabling AgentScope Runtime to be deployed in Knative-based environments.</p></li>
@@ -817,15 +881,15 @@ Released an asynchronous Sandbox SDK to enable non-blocking calls, improving res
 Added a quick access link to try WebUI directly from documentation.</p></li>
 </ul>
 </section>
-<section id="id3">
-<h3>Changed<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<section id="id4">
+<h3>Changed<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Dependency Update</strong>
 Updated <code class="docutils literal notranslate"><span class="pre">nacos-sdk-python</span></code> to a newer version for improved stability and compatibility.</p></li>
 </ul>
 </section>
-<section id="id4">
-<h3>Fixed<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<section id="id5">
+<h3>Fixed<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Non-stream Tool Call Support</strong>
 Fixed compatibility issues with tools invoked in non-stream mode.</p></li>
@@ -833,8 +897,8 @@ Fixed compatibility issues with tools invoked in non-stream mode.</p></li>
 Added safe handling for existing tracer providers to avoid initialization conflicts.</p></li>
 </ul>
 </section>
-<section id="id5">
-<h3>Documentation<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<section id="id6">
+<h3>Documentation<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Updated README to include WebUI URL for quick access.</p></li>
 <li><p>Corrected method call names in local deployment examples.</p></li>
@@ -844,8 +908,8 @@ Added safe handling for existing tracer providers to avoid initialization confli
 <section id="v1-0-3">
 <h2>v1.0.3<a class="headerlink" href="#v1-0-3" title="Link to this heading">¶</a></h2>
 <p>On the basis of maintaining the extensibility and consistency of the v1.x framework, <strong>AgentScope Runtime v1.0.3</strong> brings <strong>A2A protocol registry support</strong>, a more complete error handling and token usage statistics mechanism, a new weather component with enhanced UI interaction capabilities, as well as multiple fixes and optimizations for Sandbox, Redis, and Agent states. It also improves deployment build (Sandbox Image Building), remote desktop custom URL support, PYPI mirror configuration, and other features.</p>
-<section id="id6">
-<h3>Added<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<section id="id7">
+<h3>Added<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>A2A Registry Support</strong>
 Added registration capability for the Google A2A protocol, natively integrated with AgentScope-Runtime, enabling cross-platform agent registration and discovery.</p></li>
@@ -855,15 +919,15 @@ Introduced a function to collect token usage during model calls, even if an exce
 Added GitHub Actions for building Sandbox images within CI/CD, making distribution and deployment automation easier.</p></li>
 </ul>
 </section>
-<section id="id7">
-<h3>Changed<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
+<section id="id8">
+<h3>Changed<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Optimized PYPI Mirror Configuration for Deployment</strong>
 <code class="docutils literal notranslate"><span class="pre">pypi_mirror</span></code> can now be explicitly specified and defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>, allowing customization of Python package sources.</p></li>
 </ul>
 </section>
-<section id="id8">
-<h3>Fixed<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
+<section id="id9">
+<h3>Fixed<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>RedisMapping Key Parsing Issue</strong>
 Fixed incorrect key parsing in <code class="docutils literal notranslate"><span class="pre">RedisMapping.scan</span></code> when running in <code class="docutils literal notranslate"><span class="pre">decode_responses</span></code> mode.</p></li>
@@ -882,8 +946,8 @@ Added expiration time for <code class="docutils literal notranslate"><span class
 <h2>v1.0.2<a class="headerlink" href="#v1-0-2" title="Link to this heading">¶</a></h2>
 <p>This update for <strong>AgentScope Runtime v1.0.2</strong> introduces support for <strong>LangGraph</strong> and <strong>Agno</strong> under the v1.x framework, optimizes tool invocation, enhances the mobile sandbox UI, and includes multiple compatibility and stability fixes.
 Improvements have also been made to the CLI tools, MCP Tool call handling, and unified business exception management.</p>
-<section id="id9">
-<h3>Added<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
+<section id="id10">
+<h3>Added<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>LangGraph Support</strong>: Native compatibility with the LangGraph framework.</p></li>
 <li><p><strong>Multi-framework Support Extension</strong>: Added support for the Agno framework in v1.x.</p></li>
@@ -893,16 +957,16 @@ Improvements have also been made to the CLI tools, MCP Tool call handling, and u
 <li><p><strong>MCP Tool Call/Output Handling</strong>: Added adapters for MCP tool invocation and output.</p></li>
 </ul>
 </section>
-<section id="id10">
-<h3>Changed<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
+<section id="id11">
+<h3>Changed<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Optimized support for streaming tool calls and outputs.</p></li>
 <li><p>Improved <code class="docutils literal notranslate"><span class="pre">adapt_agentscope_message_stream</span></code> to better handle non-JSON outputs.</p></li>
 <li><p>Updated <code class="docutils literal notranslate"><span class="pre">.npmrc</span></code> to disable package-lock and adjusted peer dependency configurations.</p></li>
 </ul>
 </section>
-<section id="id11">
-<h3>Fixed<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
+<section id="id12">
+<h3>Fixed<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Added missing <strong>LangChain</strong> dependencies (including <code class="docutils literal notranslate"><span class="pre">langchain_openai</span></code>).</p></li>
 <li><p>Fixed LangGraph unit tests.</p></li>
@@ -911,8 +975,8 @@ Improvements have also been made to the CLI tools, MCP Tool call handling, and u
 <li><p>Fixed OSS configuration errors in AgentRun scenarios.</p></li>
 </ul>
 </section>
-<section id="id12">
-<h3>Documentation<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
+<section id="id13">
+<h3>Documentation<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Updated community QR code.</p></li>
 <li><p>Minor documentation refinements and error corrections.</p></li>
@@ -923,30 +987,30 @@ Improvements have also been made to the CLI tools, MCP Tool call handling, and u
 <h2>v1.0.1<a class="headerlink" href="#v1-0-1" title="Link to this heading">¶</a></h2>
 <p><strong>AgentScope Runtime v1.0.1</strong> focused on stability fixes, developer experience improvements, runtime configuration enhancements, and compatibility support for Windows WebUI startup.
 It also introduced a <strong>Service Factory</strong> mechanism, differentiation of tool invocation types, and dependency updates to support AgentScope 1.0.9.</p>
-<section id="id13">
-<h3>Added<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h3>
+<section id="id14">
+<h3>Added<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Service Factory</strong> support for more flexible runtime service creation.</p></li>
 <li><p>Differentiation between <strong>Tool Call</strong> and <strong>MCP Tool Call</strong> within AgentScope.</p></li>
 </ul>
 </section>
-<section id="id14">
-<h3>Changed<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
+<section id="id15">
+<h3>Changed<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Implemented a new <strong>runtime config</strong> mechanism.</p></li>
 <li><p>Updated dependencies to support AgentScope 1.0.9.</p></li>
 </ul>
 </section>
-<section id="id15">
-<h3>Fixed<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h3>
+<section id="id16">
+<h3>Fixed<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Fixed message conversion logic in AgentScope.</p></li>
 <li><p>Fixed WebUI startup issues on Windows (<code class="docutils literal notranslate"><span class="pre">subprocess.Popen</span></code> + shell argument handling).</p></li>
 <li><p>Fixed issues related to Table Store.</p></li>
 </ul>
 </section>
-<section id="id16">
-<h3>Documentation<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h3>
+<section id="id17">
+<h3>Documentation<a class="headerlink" href="#id17" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Updated serverless deployment documentation.</p></li>
 </ul>
@@ -994,16 +1058,16 @@ Through <code class="docutils literal notranslate"><span class="pre">AgentApp</s
 <li><p><strong>Rich built‑in toolset</strong> — Search, RAG, AIGC, payment, and production‑ready modules.</p></li>
 <li><p><strong>Flexible deployment modes</strong> — Local thread/process, Docker, Kubernetes, or managed cloud.</p></li>
 </ul>
-<section id="id17">
-<h3>Added<a class="headerlink" href="#id17" title="Link to this heading">¶</a></h3>
+<section id="id18">
+<h3>Added<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Native short/long memory and agent state adapters integrated into the AgentScope Framework.</p></li>
 <li><p>New chat‑style Web UI.</p></li>
 <li><p>New sandbox types (mobile sandbox, AgentBay “shadowless” cloud sandbox).</p></li>
 </ul>
 </section>
-<section id="id18">
-<h3>Changed<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h3>
+<section id="id19">
+<h3>Changed<a class="headerlink" href="#id19" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> no longer accepts <code class="docutils literal notranslate"><span class="pre">Agent</span></code> as a parameter;
 Users now define agent lifecycle and request logic with the <code class="docutils literal notranslate"><span class="pre">query</span></code>, <code class="docutils literal notranslate"><span class="pre">init</span></code>, and <code class="docutils literal notranslate"><span class="pre">shutdown</span></code> decorators.</p></li>
@@ -1011,8 +1075,8 @@ Users now define agent lifecycle and request logic with the <code class="docutil
 Users now define execution‑time lifecycle and request logic with the <code class="docutils literal notranslate"><span class="pre">query_handler</span></code>, <code class="docutils literal notranslate"><span class="pre">init_handler</span></code>, and <code class="docutils literal notranslate"><span class="pre">shutdown_handler</span></code> methods.</p></li>
 </ul>
 </section>
-<section id="id19">
-<h3>Breaking Changes<a class="headerlink" href="#id19" title="Link to this heading">¶</a></h3>
+<section id="id20">
+<h3>Breaking Changes<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h3>
 <p>These changes affect existing v0.x users and require manual adaptation:</p>
 <ol class="arabic">
 <li><p><strong>Agent module API migration</strong></p>
@@ -1275,16 +1339,16 @@ Users must override the parent class methods: <code class="docutils literal notr
 <section id="v0-2-0">
 <h2>v0.2.0<a class="headerlink" href="#v0-2-0" title="Link to this heading">¶</a></h2>
 <p>Simplified agent deployment and ensured consistency between local development and production deployment.</p>
-<section id="id20">
-<h3>Added<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h3>
+<section id="id21">
+<h3>Added<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Agent deployment support</strong> — Docker, Kubernetes, Alibaba Cloud Function Compute (FC).</p></li>
 <li><p><strong>Python SDK for deployed agents</strong> — Interact with deployed agents.</p></li>
 <li><p><strong>App‑style deployment mode</strong> — Package and deploy agents as applications.</p></li>
 </ul>
 </section>
-<section id="id21">
-<h3>Changed<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h3>
+<section id="id22">
+<h3>Changed<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Unified K8S &amp; Docker client</strong> — Moved client to the common module to simplify maintenance.</p></li>
 </ul>
@@ -1293,8 +1357,8 @@ Users must override the parent class methods: <code class="docutils literal notr
 <section id="v0-1-6">
 <h2>v0.1.6<a class="headerlink" href="#v0-1-6" title="Link to this heading">¶</a></h2>
 <p>Enhanced native support for all AgentScope features and improved sandbox interactivity &amp; extensibility.</p>
-<section id="id22">
-<h3>Added<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h3>
+<section id="id23">
+<h3>Added<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>More message/event types</strong> — Extended Agent Framework to support multi‑modal messages and events.</p></li>
 <li><p><strong>Multi‑pool management</strong> — Sandbox Manager supports multiple sandbox pools.</p></li>
@@ -1308,21 +1372,21 @@ Users must override the parent class methods: <code class="docutils literal notr
 <section id="v0-1-5">
 <h2>v0.1.5<a class="headerlink" href="#v0-1-5" title="Link to this heading">¶</a></h2>
 <p>Optimized dependency installation, removed obsolete LLM Agent modules, and enhanced sandbox client features.</p>
-<section id="id23">
-<h3>Added<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h3>
+<section id="id24">
+<h3>Added<a class="headerlink" href="#id24" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>FC (AgentRun) sandbox client</strong> — Run sandbox in function compute environments.</p></li>
 <li><p><strong>Custom container image &amp; multi‑directory binding</strong> — Specify image name and bind multiple directories.</p></li>
 </ul>
 </section>
-<section id="id24">
-<h3>Changed<a class="headerlink" href="#id24" title="Link to this heading">¶</a></h3>
+<section id="id25">
+<h3>Changed<a class="headerlink" href="#id25" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Install option optimization</strong> — Made AgentScope and Sandbox base dependencies for simpler installation.</p></li>
 </ul>
 </section>
-<section id="id25">
-<h3>Removed<a class="headerlink" href="#id25" title="Link to this heading">¶</a></h3>
+<section id="id26">
+<h3>Removed<a class="headerlink" href="#id26" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>LLM Agent &amp; API</strong> — Deleted LLM Agent and related interfaces.</p></li>
 </ul>
@@ -1420,10 +1484,11 @@ Users must override the parent class methods: <code class="docutils literal notr
             <ul>
 <li><a class="reference internal" href="#">8. CHANGELOG</a><ul>
 <li><a class="reference internal" href="#v1-1-0">v1.1.0</a><ul>
+<li><a class="reference internal" href="#added">Added</a></li>
 <li><a class="reference internal" href="#changed">Changed</a></li>
 <li><a class="reference internal" href="#breaking-changes">Breaking Changes</a><ul>
 <li><a class="reference internal" href="#migration-guide-v1-0-v1-1">Migration Guide (v1.0 → v1.1)</a><ul>
-<li><a class="reference internal" href="#recommended-pattern-use-agent-framework-modules-for-persistence">Recommended Pattern (Use Agent framework modules for persistence)</a></li>
+<li><a class="reference internal" href="#recommended-pattern-unified-lifecycle-interruption-handling-and-native-persistence">Recommended Pattern (Unified Lifecycle, Interruption Handling, and Native Persistence)</a></li>
 </ul>
 </li>
 </ul>
@@ -1431,59 +1496,59 @@ Users must override the parent class methods: <code class="docutils literal notr
 </ul>
 </li>
 <li><a class="reference internal" href="#v1-0-5">v1.0.5</a><ul>
-<li><a class="reference internal" href="#added">Added</a></li>
-<li><a class="reference internal" href="#id1">Changed</a></li>
+<li><a class="reference internal" href="#id1">Added</a></li>
+<li><a class="reference internal" href="#id2">Changed</a></li>
 <li><a class="reference internal" href="#fixed">Fixed</a></li>
 <li><a class="reference internal" href="#documentation">Documentation</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v1-0-4">v1.0.4</a><ul>
-<li><a class="reference internal" href="#id2">Added</a></li>
-<li><a class="reference internal" href="#id3">Changed</a></li>
-<li><a class="reference internal" href="#id4">Fixed</a></li>
-<li><a class="reference internal" href="#id5">Documentation</a></li>
+<li><a class="reference internal" href="#id3">Added</a></li>
+<li><a class="reference internal" href="#id4">Changed</a></li>
+<li><a class="reference internal" href="#id5">Fixed</a></li>
+<li><a class="reference internal" href="#id6">Documentation</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v1-0-3">v1.0.3</a><ul>
-<li><a class="reference internal" href="#id6">Added</a></li>
-<li><a class="reference internal" href="#id7">Changed</a></li>
-<li><a class="reference internal" href="#id8">Fixed</a></li>
+<li><a class="reference internal" href="#id7">Added</a></li>
+<li><a class="reference internal" href="#id8">Changed</a></li>
+<li><a class="reference internal" href="#id9">Fixed</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v1-0-2">v1.0.2</a><ul>
-<li><a class="reference internal" href="#id9">Added</a></li>
-<li><a class="reference internal" href="#id10">Changed</a></li>
-<li><a class="reference internal" href="#id11">Fixed</a></li>
-<li><a class="reference internal" href="#id12">Documentation</a></li>
+<li><a class="reference internal" href="#id10">Added</a></li>
+<li><a class="reference internal" href="#id11">Changed</a></li>
+<li><a class="reference internal" href="#id12">Fixed</a></li>
+<li><a class="reference internal" href="#id13">Documentation</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v1-0-1">v1.0.1</a><ul>
-<li><a class="reference internal" href="#id13">Added</a></li>
-<li><a class="reference internal" href="#id14">Changed</a></li>
-<li><a class="reference internal" href="#id15">Fixed</a></li>
-<li><a class="reference internal" href="#id16">Documentation</a></li>
+<li><a class="reference internal" href="#id14">Added</a></li>
+<li><a class="reference internal" href="#id15">Changed</a></li>
+<li><a class="reference internal" href="#id16">Fixed</a></li>
+<li><a class="reference internal" href="#id17">Documentation</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v1-0-0">v1.0.0</a><ul>
-<li><a class="reference internal" href="#id17">Added</a></li>
-<li><a class="reference internal" href="#id18">Changed</a></li>
-<li><a class="reference internal" href="#id19">Breaking Changes</a></li>
+<li><a class="reference internal" href="#id18">Added</a></li>
+<li><a class="reference internal" href="#id19">Changed</a></li>
+<li><a class="reference internal" href="#id20">Breaking Changes</a></li>
 <li><a class="reference internal" href="#removed">Removed</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v0-2-0">v0.2.0</a><ul>
-<li><a class="reference internal" href="#id20">Added</a></li>
-<li><a class="reference internal" href="#id21">Changed</a></li>
+<li><a class="reference internal" href="#id21">Added</a></li>
+<li><a class="reference internal" href="#id22">Changed</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v0-1-6">v0.1.6</a><ul>
-<li><a class="reference internal" href="#id22">Added</a></li>
+<li><a class="reference internal" href="#id23">Added</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v0-1-5">v0.1.5</a><ul>
-<li><a class="reference internal" href="#id23">Added</a></li>
-<li><a class="reference internal" href="#id24">Changed</a></li>
-<li><a class="reference internal" href="#id25">Removed</a></li>
+<li><a class="reference internal" href="#id24">Added</a></li>
+<li><a class="reference internal" href="#id25">Changed</a></li>
+<li><a class="reference internal" href="#id26">Removed</a></li>
 </ul>
 </li>
 </ul>

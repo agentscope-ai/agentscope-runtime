@@ -624,14 +624,15 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <section class="tex2jax_ignore mathjax_ignore" id="simple-deployment">
 <h1>Simple Deployment<a class="headerlink" href="#simple-deployment" title="Link to this heading">¶</a></h1>
-<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> is the all-in-one application service wrapper in <strong>AgentScope Runtime</strong>.
-It provides the HTTP service framework for your agent logic and can expose it as an API with features such as:</p>
+<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> is the all-in-one application service wrapper in <strong>AgentScope Runtime</strong>. It provides an HTTP service framework for your agent logic and exposes it as an API.
+In the current version, <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> <strong>directly inherits from <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code></strong>, allowing it to maintain high flexibility while deeply integrating advanced features specific to Agent business logic. Its core features include:</p>
 <ul class="simple">
-<li><p><strong>Streaming responses (SSE)</strong> for real-time output</p></li>
-<li><p>Built-in <strong>health-check</strong> endpoints</p></li>
-<li><p><strong>Lifecycle hooks</strong> (<code class="docutils literal notranslate"><span class="pre">&#64;app.init</span></code> / <code class="docutils literal notranslate"><span class="pre">&#64;app.shutdown</span></code>) for startup and cleanup logic</p></li>
-<li><p>Optional <strong>Celery</strong> asynchronous task queues</p></li>
-<li><p>Deployment to local or remote targets</p></li>
+<li><p><strong>Full FastAPI Ecosystem Compatibility</strong>: Supports native route registration (GET/POST, etc.), middleware extensions, and standard lifecycle management.</p></li>
+<li><p><strong>Streaming responses (SSE)</strong> for real-time output.</p></li>
+<li><p><strong>Task Interrupt Management</strong>: Provides a task interruption mechanism based on distributed backends (e.g., Redis), supporting precise control over long-running tasks.</p></li>
+<li><p>Built-in <strong>health-check</strong> endpoints.</p></li>
+<li><p>Optional <strong>Celery</strong> asynchronous task queues.</p></li>
+<li><p>Deployment to local or remote targets.</p></li>
 </ul>
 <p><strong>Important</strong>:
 In the current version, <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> does not automatically include a <code class="docutils literal notranslate"><span class="pre">/process</span></code> endpoint.
@@ -751,12 +752,12 @@ data:<span class="w"> </span><span class="o">{</span><span class="s2">&quot;sequ
 </div>
 </section>
 <hr class="docutils" />
-<section id="lifecycle-hooks">
-<h2>Lifecycle Hooks<a class="headerlink" href="#lifecycle-hooks" title="Link to this heading">¶</a></h2>
+<section id="lifecycle-management-lifespan">
+<h2>Lifecycle Management (Lifespan)<a class="headerlink" href="#lifecycle-management-lifespan" title="Link to this heading">¶</a></h2>
 <p><strong>Purpose</strong></p>
-<p>Execute custom logic before startup and after shutdown—handy for loading models, opening connections, or releasing resources.</p>
-<section id="method-1-pass-callables-as-parameters">
-<h3>Method 1: Pass Callables as Parameters<a class="headerlink" href="#method-1-pass-callables-as-parameters" title="Link to this heading">¶</a></h3>
+<p>Loading models, initializing database connections before the app starts, or releasing resources upon shutdown are common requirements for production environments.</p>
+<section id="method-1-pass-callables-as-parameters-simple-logic">
+<h3>Method 1: Pass Callables as Parameters (Simple Logic)<a class="headerlink" href="#method-1-pass-callables-as-parameters-simple-logic" title="Link to this heading">¶</a></h3>
 <p><strong>Key Parameters</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">before_start</span></code>: invoked before the API server starts</p></li>
@@ -780,50 +781,59 @@ data:<span class="w"> </span><span class="o">{</span><span class="s2">&quot;sequ
 </div>
 </div>
 </section>
-<section id="method-2-use-decorators-recommended">
-<h3>Method 2: Use Decorators (Recommended)<a class="headerlink" href="#method-2-use-decorators-recommended" title="Link to this heading">¶</a></h3>
-<p>In addition to passing hook functions via constructor parameters, you can also register lifecycle hooks using decorators.
-This approach has the following advantages:</p>
+<section id="method-2-use-lifespan-functions-recommended">
+<h3>Method 2: Use Lifespan Functions (Recommended)<a class="headerlink" href="#method-2-use-lifespan-functions-recommended" title="Link to this heading">¶</a></h3>
+<p>This is the modern approach recommended by <strong>AgentScope Runtime</strong>. Thanks to its inheritance from <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code>, <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> supports standard <code class="docutils literal notranslate"><span class="pre">lifespan</span></code> management, which offers the following advantages:</p>
 <ol class="arabic simple">
-<li><p><strong>More flexible and intuitive</strong> — The lifecycle logic is placed directly alongside the application definition, making the structure clearer and code more readable.</p></li>
-<li><p><strong>Shared member variables</strong> — Functions defined with decorators receive <code class="docutils literal notranslate"><span class="pre">self</span></code>, allowing access to the attributes and services of the <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> instance (for example, state services or session services started in <code class="docutils literal notranslate"><span class="pre">&#64;app.init</span></code>), enabling convenient sharing and reuse of resources across different lifecycle stages or request handlers.</p></li>
+<li><p><strong>Native FastAPI Experience</strong> — <strong>This method is identical to the standard FastAPI implementation.</strong> If you are familiar with FastAPI development, you can apply native programming patterns seamlessly, significantly reducing learning costs.</p></li>
+<li><p><strong>Structured Management</strong> — Startup and cleanup logic are concentrated in a single function, separated by <code class="docutils literal notranslate"><span class="pre">yield</span></code>, making the logic more compact.</p></li>
+<li><p><strong>State Sharing</strong> — Resources can be attached to <code class="docutils literal notranslate"><span class="pre">app.state</span></code> during the startup phase and accessed via <code class="docutils literal notranslate"><span class="pre">app.state</span></code> throughout the application lifecycle (including request handlers).</p></li>
+<li><p><strong>Built-in Compatibility</strong> — Even with a custom <code class="docutils literal notranslate"><span class="pre">lifespan</span></code>, <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> internally coordinates the preparation of the Runner, the mounting of protocol adapters, and the lifecycle of interruption services.</p></li>
 </ol>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.session</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisSession</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.session</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisSession</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
 
+<span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+    <span class="c1"># Startup Phase</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">fakeredis</span>
+
+    <span class="n">fake_redis</span> <span class="o">=</span> <span class="n">fakeredis</span><span class="o">.</span><span class="n">aioredis</span><span class="o">.</span><span class="n">FakeRedis</span><span class="p">(</span>
+        <span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="c1"># NOTE: This FakeRedis instance is for development/testing only.</span>
+    <span class="c1"># In production, replace it with your own Redis client/connection</span>
+    <span class="c1"># (e.g., aioredis.Redis).</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">RedisSession</span><span class="p">(</span>
+        <span class="n">connection_pool</span><span class="o">=</span><span class="n">fake_redis</span><span class="o">.</span><span class="n">connection_pool</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ Service initialized&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># yield transfers control to AgentApp</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># Cleanup Phase</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ Resources released&quot;</span><span class="p">)</span>
+
+<span class="c1"># Pass the defined lifespan to AgentApp</span>
 <span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
     <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
     <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
+    <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>
 <span class="p">)</span>
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">init</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize service resources&quot;&quot;&quot;</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">fakeredis</span>
-
-    <span class="n">fake_redis</span> <span class="o">=</span> <span class="n">fakeredis</span><span class="o">.</span><span class="n">aioredis</span><span class="o">.</span><span class="n">FakeRedis</span><span class="p">(</span><span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="c1"># NOTE: This FakeRedis instance is for development/testing only.</span>
-    <span class="c1"># In production, replace it with your own Redis client/connection</span>
-    <span class="c1"># (e.g., aioredis.Redis)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">RedisSession</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">fake_redis</span><span class="o">.</span><span class="n">connection_pool</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ Service initialized&quot;</span><span class="p">)</span>
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">shutdown</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Release service resources&quot;&quot;&quot;</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ Resources released&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<p><strong>Decorator Notes</strong></p>
+<p><strong>Key Notes</strong></p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&#64;app.init</span></code>: runs before the service starts</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&#64;app.shutdown</span></code>: runs as the service stops</p></li>
-<li><p>Decorated functions receive <code class="docutils literal notranslate"><span class="pre">self</span></code>, so they can access the <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> instance</p></li>
-<li><p>Works with sync or async functions</p></li>
+<li><p><strong>Function Signature</strong>: The <code class="docutils literal notranslate"><span class="pre">lifespan</span></code> function must accept a <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code> instance as a parameter and be decorated with <code class="docutils literal notranslate"><span class="pre">&#64;asynccontextmanager</span></code>.</p></li>
+<li><p><strong>Execution Order</strong>: <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> handles scheduling internally. It first executes internal framework logic, then your defined <code class="docutils literal notranslate"><span class="pre">lifespan</span></code> startup logic, and finally reverses the cleanup logic when the service stops.</p></li>
+<li><p><strong>Deprecation Notice</strong>: Please note that the <code class="docutils literal notranslate"><span class="pre">&#64;app.init</span></code> and <code class="docutils literal notranslate"><span class="pre">&#64;app.shutdown</span></code> decorators from older versions are now deprecated. Please migrate to the <code class="docutils literal notranslate"><span class="pre">lifespan</span></code> pattern for better stability.</p></li>
 </ul>
 </section>
 </section>
@@ -903,6 +913,7 @@ curl<span class="w"> </span>http://localhost:8090/
 <span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
     <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
     <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
+    <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="nd">@app</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">framework</span><span class="o">=</span><span class="s2">&quot;agentscope&quot;</span><span class="p">)</span>
@@ -932,7 +943,8 @@ curl<span class="w"> </span>http://localhost:8090/
     <span class="p">)</span>
     <span class="n">agent</span><span class="o">.</span><span class="n">set_console_output_enabled</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
+    <span class="c1"># Access session via app.state</span>
+    <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
         <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
         <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
         <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
@@ -944,7 +956,7 @@ curl<span class="w"> </span>http://localhost:8090/
     <span class="p">):</span>
         <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
 
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
+    <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
         <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
         <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
         <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
@@ -960,102 +972,16 @@ curl<span class="w"> </span>http://localhost:8090/
 <li><p><strong>Framework Flexibility</strong>: <code class="docutils literal notranslate"><span class="pre">framework</span></code> accepts <code class="docutils literal notranslate"><span class="pre">&quot;agentscope&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;autogen&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;agno&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;langgraph&quot;</span></code>, etc.</p></li>
 <li><p><strong>Function Signature</strong>:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">self</span></code>: the AgentApp instance (access services, configs, etc.)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">self</span></code>: the Runner instance bound to the AgentApp.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">msgs</span></code>: incoming messages</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">request</span></code>: <code class="docutils literal notranslate"><span class="pre">AgentRequest</span></code> with <code class="docutils literal notranslate"><span class="pre">session_id</span></code>, <code class="docutils literal notranslate"><span class="pre">user_id</span></code>, etc.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">**kwargs</span></code>: extend as needed</p></li>
 </ul>
 </li>
 <li><p><strong>Streaming Friendly</strong>: Handlers can be async generators that yield <code class="docutils literal notranslate"><span class="pre">(msg,</span> <span class="pre">last)</span></code> pairs.</p></li>
-<li><p><strong>Stateful</strong>: Access <code class="docutils literal notranslate"><span class="pre">self.state_service</span></code> to load/store custom state.</p></li>
-<li><p><strong>Session Memory</strong>: Use <code class="docutils literal notranslate"><span class="pre">self.session_service</span></code> to keep chat history per user/session.</p></li>
+<li><p><strong>Stateful</strong>: Access <code class="docutils literal notranslate"><span class="pre">app.state.state_service</span></code> to load/store custom state.</p></li>
+<li><p><strong>Session Memory</strong>: Use <code class="docutils literal notranslate"><span class="pre">app.state.session_service</span></code> to keep chat history per user/session.</p></li>
 </ol>
-</section>
-<section id="full-example-with-state-management">
-<h3>Full Example with State Management<a class="headerlink" href="#full-example-with-state-management" title="Link to this heading">¶</a></h3>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.formatter</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatFormatter</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">Toolkit</span><span class="p">,</span> <span class="n">execute_python_code</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">stream_printing_messages</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryMemory</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.session</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisSession</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentRequest</span>
-
-<span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
-    <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
-    <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-
-
-<span class="nd">@agent_app</span><span class="o">.</span><span class="n">init</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">fakeredis</span>
-
-    <span class="n">fake_redis</span> <span class="o">=</span> <span class="n">fakeredis</span><span class="o">.</span><span class="n">aioredis</span><span class="o">.</span><span class="n">FakeRedis</span><span class="p">(</span><span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="c1"># NOTE: This FakeRedis instance is for development/testing only.</span>
-    <span class="c1"># In production, replace it with your own Redis client/connection</span>
-    <span class="c1"># (e.g., aioredis.Redis)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">RedisSession</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">fake_redis</span><span class="o">.</span><span class="n">connection_pool</span><span class="p">)</span>
-
-
-<span class="nd">@agent_app</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">framework</span><span class="o">=</span><span class="s2">&quot;agentscope&quot;</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_func</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span>
-    <span class="n">msgs</span><span class="p">,</span>
-    <span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-<span class="p">):</span>
-    <span class="n">session_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session_id</span>
-    <span class="n">user_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">user_id</span>
-
-    <span class="n">toolkit</span> <span class="o">=</span> <span class="n">Toolkit</span><span class="p">()</span>
-    <span class="n">toolkit</span><span class="o">.</span><span class="n">register_tool_function</span><span class="p">(</span><span class="n">execute_python_code</span><span class="p">)</span>
-
-    <span class="n">agent</span> <span class="o">=</span> <span class="n">ReActAgent</span><span class="p">(</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
-        <span class="n">model</span><span class="o">=</span><span class="n">DashScopeChatModel</span><span class="p">(</span>
-            <span class="s2">&quot;qwen-turbo&quot;</span><span class="p">,</span>
-            <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
-            <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="p">),</span>
-        <span class="n">sys_prompt</span><span class="o">=</span><span class="s2">&quot;You&#39;re a helpful assistant named Friday.&quot;</span><span class="p">,</span>
-        <span class="n">toolkit</span><span class="o">=</span><span class="n">toolkit</span><span class="p">,</span>
-        <span class="n">memory</span><span class="o">=</span><span class="n">InMemoryMemory</span><span class="p">(),</span>
-        <span class="n">formatter</span><span class="o">=</span><span class="n">DashScopeChatFormatter</span><span class="p">(),</span>
-    <span class="p">)</span>
-    <span class="n">agent</span><span class="o">.</span><span class="n">set_console_output_enabled</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
-        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
-        <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
-        <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="k">async</span> <span class="k">for</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span> <span class="ow">in</span> <span class="n">stream_printing_messages</span><span class="p">(</span>
-        <span class="n">agents</span><span class="o">=</span><span class="p">[</span><span class="n">agent</span><span class="p">],</span>
-        <span class="n">coroutine_task</span><span class="o">=</span><span class="n">agent</span><span class="p">(</span><span class="n">msgs</span><span class="p">),</span>
-    <span class="p">):</span>
-        <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
-
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
-        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
-        <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
-        <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
-    <span class="p">)</span>
-
-
-<span class="n">agent_app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8090</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
 </section>
 <section id="comparison-with-the-v0-versionagent-parameter-approach">
 <h3>Comparison with the V0 version<code class="docutils literal notranslate"><span class="pre">agent</span></code> Parameter Approach<a class="headerlink" href="#comparison-with-the-v0-versionagent-parameter-approach" title="Link to this heading">¶</a></h3>
@@ -1090,12 +1016,50 @@ curl<span class="w"> </span>http://localhost:8090/
 </section>
 </section>
 <hr class="docutils" />
-<section id="custom-endpoints-via-app-endpoint">
-<h2>Custom Endpoints via <code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint</span></code><a class="headerlink" href="#custom-endpoints-via-app-endpoint" title="Link to this heading">¶</a></h2>
-<p>In addition to using <code class="docutils literal notranslate"><span class="pre">&#64;app.query(...)</span></code> for the unified <code class="docutils literal notranslate"><span class="pre">/process</span></code> entry point, <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> also supports registering arbitrary HTTP endpoints via the <code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint(...)</span></code> decorator.</p>
-<p><strong>Key Features</strong>:</p>
+<section id="custom-endpoint-definition">
+<h2>Custom Endpoint Definition<a class="headerlink" href="#custom-endpoint-definition" title="Link to this heading">¶</a></h2>
+<p>You can extend the functional interfaces of AgentApp in two ways. Since <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> directly inherits from <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code>, it not only retains the native flexibility of a Web framework but also provides enhanced tools optimized for Agent business scenarios (such as streaming output and object serialization).</p>
+<section id="native-fastapi-routes">
+<h3>1. Native FastAPI Routes<a class="headerlink" href="#native-fastapi-routes" title="Link to this heading">¶</a></h3>
+<p>This is the most flexible approach. You can use standard FastAPI decorators (such as <code class="docutils literal notranslate"><span class="pre">&#64;app.get</span></code>, <code class="docutils literal notranslate"><span class="pre">&#64;app.post</span></code>, etc.) to define any business interface.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>When you need full control over the <code class="docutils literal notranslate"><span class="pre">Response</span></code> object, status codes, or headers.</p></li>
+<li><p>Defining simple Web console interfaces or monitoring interfaces outside of health checks.</p></li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">()</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/info&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_info</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Interface defined using native FastAPI&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;app name&quot;</span><span class="p">:</span> <span class="n">app</span><span class="o">.</span><span class="n">app_name</span><span class="p">,</span>
+        <span class="s2">&quot;app description&quot;</span><span class="p">:</span> <span class="n">app</span><span class="o">.</span><span class="n">app_description</span><span class="p">,</span>
+        <span class="s2">&quot;custom_metadata&quot;</span><span class="p">:</span> <span class="s2">&quot;v1.0.0&quot;</span>
+    <span class="p">}</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/update_config&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_config</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Standard POST request handling&quot;&quot;&quot;</span>
+    <span class="c1"># Your business logic</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;updated&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Client calls:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span>http://localhost:8090/info
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/update_config<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;config_key&quot;: &quot;max_tokens&quot;, &quot;value&quot;: 512}&#39;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="app-endpoint-convenience-decorator">
+<h3>2. <code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint</span></code> Convenience Decorator<a class="headerlink" href="#app-endpoint-convenience-decorator" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> provides a specialized <code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint</span></code> decorator. It wraps FastAPI’s route registration under the hood, specifically optimized for Agent response scenarios.</p>
+<p><strong>Core Advantages</strong>:</p>
 <ol class="arabic simple">
-<li><p><strong>High flexibility</strong> — Define dedicated API paths for different business needs, rather than routing all traffic through <code class="docutils literal notranslate"><span class="pre">/process</span></code>.</p></li>
 <li><p>Multiple return modes— Supports:</p>
 <ul class="simple">
 <li><p>Regular sync/async functions returning JSON</p></li>
@@ -1112,7 +1076,7 @@ curl<span class="w"> </span>http://localhost:8090/
 </li>
 <li><p><strong>Error handling</strong> — Exceptions raised in streaming generators are automatically wrapped into SSE error events and sent to the client.</p></li>
 </ol>
-<p><strong>Example</strong>：</p>
+<p><strong>Example</strong>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">()</span>
 
 <span class="nd">@app</span><span class="o">.</span><span class="n">endpoint</span><span class="p">(</span><span class="s2">&quot;/hello&quot;</span><span class="p">)</span>
@@ -1127,11 +1091,325 @@ curl<span class="w"> </span>http://localhost:8090/
 </div>
 <p>Client calls:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/hello
-curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/stream_numbers
+curl<span class="w"> </span>-N<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/stream_numbers
 </pre></div>
 </div>
 </section>
+<section id="differences-and-selection">
+<h3>Differences and Selection<a class="headerlink" href="#differences-and-selection" title="Link to this heading">¶</a></h3>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head text-left"><p>Feature</p></th>
+<th class="head text-left"><p>Native FastAPI (<code class="docutils literal notranslate"><span class="pre">&#64;app.post</span></code>, etc.)</p></th>
+<th class="head text-left"><p>Convenience Decorator (<code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint</span></code>)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td class="text-left"><p><strong>Streaming</strong></p></td>
+<td class="text-left"><p>Requires manual <code class="docutils literal notranslate"><span class="pre">StreamingResponse</span></code> and SSE formatting</p></td>
+<td class="text-left"><p><strong>Automatically</strong> identifies generators and converts to SSE</p></td>
+</tr>
+<tr class="row-odd"><td class="text-left"><p><strong>Serialization</strong></p></td>
+<td class="text-left"><p>Relies on FastAPI’s built-in serialization</p></td>
+<td class="text-left"><p>Enhanced deep serialization (supports complex types)</p></td>
+</tr>
+<tr class="row-even"><td class="text-left"><p><strong>Error Handling</strong></p></td>
+<td class="text-left"><p>Requires manual Middleware or Exception Handlers</p></td>
+<td class="text-left"><p>Provides <strong>automatic error encapsulation</strong> for streaming</p></td>
+</tr>
+<tr class="row-odd"><td class="text-left"><p><strong>Flexibility</strong></p></td>
+<td class="text-left"><p><strong>Very High</strong>, supports all native configurations</p></td>
+<td class="text-left"><p><strong>High</strong>, focuses on Agent response standards</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Recommendation</strong>:</p>
+<ul class="simple">
+<li><p>If your interface needs to return <strong>Agent reasoning processes or streaming data</strong>, prioritize <code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint</span></code>.</p></li>
+<li><p>If your interface follows <strong>standard Web business logic</strong> (e.g., config management, status queries), using native FastAPI is suggested.</p></li>
+</ul>
+</section>
+</section>
 <hr class="docutils" />
+<section id="task-interrupt-management">
+<h2>Task Interrupt Management<a class="headerlink" href="#task-interrupt-management" title="Link to this heading">¶</a></h2>
+<p>In long-chain reasoning or complex Agent interaction scenarios, users may need to stop a running task mid-way. Currently, <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> leverages interruption backends (e.g., Redis) to provide precise control over task status, including:</p>
+<ul class="simple">
+<li><p><strong>Distributed Support</strong>: Via a Redis backend, interrupt signals can be sent from any node in a cluster to stop a task running on another node.</p></li>
+<li><p><strong>Status Synchronization</strong>: Automatically manages task states (RUNNING, STOPPED, FINISHED, ERROR) to prevent concurrency conflicts within the same Session.</p></li>
+<li><p><strong>Graceful Cancellation</strong>: Utilizes Python’s <code class="docutils literal notranslate"><span class="pre">asyncio</span></code> cancellation mechanism, allowing developers to execute cleanup logic (such as saving the Agent’s current state) after catching <code class="docutils literal notranslate"><span class="pre">CancelledError</span></code>.</p></li>
+</ul>
+<section id="configuring-the-interrupt-backend">
+<h3>Configuring the Interrupt Backend<a class="headerlink" href="#configuring-the-interrupt-backend" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> supports three backend configurations:</p>
+<ol class="arabic simple">
+<li><p><strong>Local Mode (Default)</strong>: If no config is provided, it uses <code class="docutils literal notranslate"><span class="pre">LocalInterruptBackend</span></code>, suitable for single-machine runs.</p></li>
+<li><p><strong>Redis Mode (Recommended)</strong>: Configured via <code class="docutils literal notranslate"><span class="pre">interrupt_redis_url</span></code>, suitable for distributed deployments.</p></li>
+<li><p><strong>Custom Backend</strong>: Pass an instance inherited from <code class="docutils literal notranslate"><span class="pre">BaseInterruptBackend</span></code> via the <code class="docutils literal notranslate"><span class="pre">interrupt_backend</span></code> parameter.</p></li>
+</ol>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
+    <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;InterruptibleAgent&quot;</span><span class="p">,</span>
+    <span class="c1"># Enable distributed interrupt support</span>
+    <span class="n">interrupt_redis_url</span><span class="o">=</span><span class="s2">&quot;redis://localhost&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="writing-interrupt-aware-handlers">
+<h3>Writing Interrupt-Aware Handlers<a class="headerlink" href="#writing-interrupt-aware-handlers" title="Link to this heading">¶</a></h3>
+<p>In a handler decorated by <code class="docutils literal notranslate"><span class="pre">&#64;app.query</span></code>, when an external interrupt is triggered, the executing coroutine will raise an <code class="docutils literal notranslate"><span class="pre">asyncio.CancelledError</span></code>. Developers should catch this exception to implement state saving and other features.</p>
+<p>Note: When catching an interrupt signal in your handler, it is essential to manually call <code class="docutils literal notranslate"><span class="pre">agent.interrupt()</span></code>. This ensures that underlying model calls or complex loops are correctly truncated. While <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> cancels the outer asynchronous task flow, the underlying Agent might still be performing a blocking call or complex loop. Calling <code class="docutils literal notranslate"><span class="pre">agent.interrupt()</span></code> is a best practice to ensure the reasoning chain is gracefully stopped and accurate state data is generated for subsequent recovery.</p>
+<p><strong>Example Usage</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@agent_app</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">framework</span><span class="o">=</span><span class="s2">&quot;agentscope&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_func</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">msgs</span><span class="p">,</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span>
+    <span class="c1"># Prepare Agent</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">ReActAgent</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+
+    <span class="c1"># Load historical state (useful for recovery after interruption)</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
+        <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># AgentApp injects interrupt listening logic outside this generator</span>
+        <span class="c1"># When agent_app.stop_chat is called, a CancelledError will be raised here</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span> <span class="ow">in</span> <span class="n">stream_printing_messages</span><span class="p">(</span><span class="o">...</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
+
+    <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+        <span class="c1"># Core logic: Respond to interrupt signal</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Detected task </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">session_id</span><span class="si">}</span><span class="s2"> manually interrupted&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Important: Manually stop the underlying Agent task</span>
+        <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">interrupt</span><span class="p">()</span>
+
+        <span class="c1"># Must re-raise the exception to let the system mark status as STOPPED</span>
+        <span class="k">raise</span>
+
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># Save agent state whether task was interrupted or finished normally</span>
+        <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
+            <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="triggering-interrupt-signals">
+<h3>Triggering Interrupt Signals<a class="headerlink" href="#triggering-interrupt-signals" title="Link to this heading">¶</a></h3>
+<p>You can define a custom route and call the <code class="docutils literal notranslate"><span class="pre">agent_app.stop_chat</span></code> method within it to trigger an interrupt.</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@agent_app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/stop&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop_task</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span><span class="p">):</span>
+    <span class="c1"># Send interrupt signal to specific user_id and session_id</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">stop_chat</span><span class="p">(</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">session_id</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Execution</strong>:</p>
+<p>Users simply send a request containing the <code class="docutils literal notranslate"><span class="pre">user_id</span></code> and <code class="docutils literal notranslate"><span class="pre">session_id</span></code> to the <code class="docutils literal notranslate"><span class="pre">/stop</span></code> endpoint to cancel the corresponding running task:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://localhost:8090/stop&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;input&quot;: [],</span>
+<span class="s1">    &quot;session_id&quot;: &quot;Target Session ID&quot;,</span>
+<span class="s1">    &quot;user_id&quot;: &quot;Target User ID&quot;</span>
+<span class="s1">  }&#39;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="full-example-agentapp-with-state-management-and-interruption">
+<h2>Full Example: AgentApp with State Management and Interruption<a class="headerlink" href="#full-example-agentapp-with-state-management-and-interruption" title="Link to this heading">¶</a></h2>
+<p>The following example demonstrates how to integrate the above features to build an Agent service with state recovery and task interruption capabilities.</p>
+<section id="complete-code">
+<h3>Complete Code<a class="headerlink" href="#complete-code" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.formatter</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatFormatter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">Toolkit</span><span class="p">,</span> <span class="n">execute_python_code</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">stream_printing_messages</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryMemory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.session</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisSession</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentRequest</span>
+
+<span class="c1"># 1. Define Lifecycle</span>
+<span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">fakeredis</span>
+
+    <span class="n">fake_redis</span> <span class="o">=</span> <span class="n">fakeredis</span><span class="o">.</span><span class="n">aioredis</span><span class="o">.</span><span class="n">FakeRedis</span><span class="p">(</span>
+        <span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="c1"># NOTE: This FakeRedis instance is for development/testing only.</span>
+    <span class="c1"># In production, replace it with your own Redis client/connection</span>
+    <span class="c1"># (e.g., aioredis.Redis)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">RedisSession</span><span class="p">(</span>
+        <span class="n">connection_pool</span><span class="o">=</span><span class="n">fake_redis</span><span class="o">.</span><span class="n">connection_pool</span>
+    <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;AgentApp is shutting down...&quot;</span><span class="p">)</span>
+
+<span class="c1"># 2. Create AgentApp</span>
+<span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
+    <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+    <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
+    <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>
+
+    <span class="c1"># Note: Using local interrupt backend as no redis url is provided.</span>
+    <span class="c1"># To support distributed interrupts, add:</span>
+    <span class="c1"># interrupt_redis_url=&quot;redis://localhost&quot;,</span>
+<span class="p">)</span>
+
+<span class="c1"># 3. Define Request Handling Logic</span>
+<span class="nd">@agent_app</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">framework</span><span class="o">=</span><span class="s2">&quot;agentscope&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_func</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">msgs</span><span class="p">,</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">session_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session_id</span>
+    <span class="n">user_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">user_id</span>
+
+    <span class="n">toolkit</span> <span class="o">=</span> <span class="n">Toolkit</span><span class="p">()</span>
+    <span class="n">toolkit</span><span class="o">.</span><span class="n">register_tool_function</span><span class="p">(</span><span class="n">execute_python_code</span><span class="p">)</span>
+
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">ReActAgent</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">DashScopeChatModel</span><span class="p">(</span>
+            <span class="s2">&quot;qwen-turbo&quot;</span><span class="p">,</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
+            <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">sys_prompt</span><span class="o">=</span><span class="s2">&quot;You&#39;re a helpful assistant named Friday.&quot;</span><span class="p">,</span>
+        <span class="n">toolkit</span><span class="o">=</span><span class="n">toolkit</span><span class="p">,</span>
+        <span class="n">memory</span><span class="o">=</span><span class="n">InMemoryMemory</span><span class="p">(),</span>
+        <span class="n">formatter</span><span class="o">=</span><span class="n">DashScopeChatFormatter</span><span class="p">(),</span>
+    <span class="p">)</span>
+    <span class="n">agent</span><span class="o">.</span><span class="n">set_console_output_enabled</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Load agent state</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+        <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span> <span class="ow">in</span> <span class="n">stream_printing_messages</span><span class="p">(</span>
+            <span class="n">agents</span><span class="o">=</span><span class="p">[</span><span class="n">agent</span><span class="p">],</span>
+            <span class="n">coroutine_task</span><span class="o">=</span><span class="n">agent</span><span class="p">(</span><span class="n">msgs</span><span class="p">),</span>
+        <span class="p">):</span>
+            <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
+
+    <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+        <span class="c1"># Interruption logic</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Task </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2"> was manually interrupted.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Manually interrupt the agent to fully stop underlying execution</span>
+        <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">interrupt</span><span class="p">()</span>
+
+        <span class="c1"># Re-raise to mark status as STOPPED</span>
+        <span class="k">raise</span>
+
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># Save agent state</span>
+        <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+            <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<span class="c1"># 4. Register Interrupt Route</span>
+<span class="nd">@agent_app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/stop&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop_task</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span><span class="p">):</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">stop_chat</span><span class="p">(</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Interrupt signal broadcasted.&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+<span class="c1"># 5. Run Application</span>
+<span class="n">agent_app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8090</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="interruption-feature-test-example">
+<h3>Interruption Feature Test Example<a class="headerlink" href="#interruption-feature-test-example" title="Link to this heading">¶</a></h3>
+<p>To test the interruption feature, you can use two terminal windows: one to start a long-running task and another to send the interrupt signal.</p>
+<p><strong>1. Start a long-running task</strong></p>
+<p>In the first terminal, send a complex request (e.g., asking the Agent to write a long story) and specify <code class="docutils literal notranslate"><span class="pre">session_id</span></code> and <code class="docutils literal notranslate"><span class="pre">user_id</span></code>. Using the <code class="docutils literal notranslate"><span class="pre">-N</span></code> parameter will allow you to see the streaming output in real-time.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Terminal 1: Initiate inference request</span>
+curl<span class="w"> </span>-N<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://localhost:8090/process&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;input&quot;: [</span>
+<span class="s1">      {</span>
+<span class="s1">        &quot;role&quot;: &quot;user&quot;,</span>
+<span class="s1">        &quot;content&quot;: [</span>
+<span class="s1">          {</span>
+<span class="s1">            &quot;type&quot;: &quot;text&quot;,</span>
+<span class="s1">            &quot;text&quot;: &quot;Please write a very long and detailed story about a robot named Friday exploring a distant galaxy.&quot;</span>
+<span class="s1">          }</span>
+<span class="s1">        ]</span>
+<span class="s1">      }</span>
+<span class="s1">    ],</span>
+<span class="s1">    &quot;session_id&quot;: &quot;ss-123&quot;,</span>
+<span class="s1">    &quot;user_id&quot;: &quot;uu-123&quot;</span>
+<span class="s1">  }&#39;</span>
+</pre></div>
+</div>
+<p><strong>2. Send an interrupt signal</strong></p>
+<p>While the task is running (Terminal 1 is still printing), open a second terminal and send the interrupt request. <strong>Note: the <code class="docutils literal notranslate"><span class="pre">session_id</span></code> and <code class="docutils literal notranslate"><span class="pre">user_id</span></code> must match the previous request.</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Terminal 2: Trigger interrupt</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://localhost:8090/stop&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;input&quot;: [],</span>
+<span class="s1">    &quot;session_id&quot;: &quot;ss-123&quot;,</span>
+<span class="s1">    &quot;user_id&quot;: &quot;uu-123&quot;</span>
+<span class="s1">  }&#39;</span>
+</pre></div>
+</div>
+<p><strong>Expected Result</strong></p>
+<ul class="simple">
+<li><p><strong>Terminal 2</strong>: Will immediately return <code class="docutils literal notranslate"><span class="pre">{&quot;status&quot;:</span> <span class="pre">&quot;success&quot;,</span> <span class="pre">&quot;message&quot;:</span> <span class="pre">&quot;Interrupt</span> <span class="pre">signal</span> <span class="pre">broadcasted.&quot;}</span></code>.</p></li>
+<li><p><strong>Terminal 1</strong>: Streaming output will stop immediately, and the HTTP connection will close. If you caught <code class="docutils literal notranslate"><span class="pre">asyncio.CancelledError</span></code>, you will see your custom log (e.g., “Task ss-123 was manually interrupted.”) in the server logs.</p></li>
+</ul>
+</section>
+</section>
 <section id="deploy-locally-or-remotely">
 <h2>Deploy Locally or Remotely<a class="headerlink" href="#deploy-locally-or-remotely" title="Link to this heading">¶</a></h2>
 <p>Use the unified <code class="docutils literal notranslate"><span class="pre">deploy()</span></code> method to ship the same app to different environments:</p>
@@ -1242,9 +1520,9 @@ See <a class="reference internal" href="advanced_deployment.html"><span class="d
 <li><a class="reference internal" href="#initialization-and-basic-run">Initialization and Basic Run</a></li>
 <li><a class="reference internal" href="#a2a-extension-field-configuration">A2A Extension Field Configuration</a></li>
 <li><a class="reference internal" href="#streaming-output-sse">Streaming Output (SSE)</a></li>
-<li><a class="reference internal" href="#lifecycle-hooks">Lifecycle Hooks</a><ul>
-<li><a class="reference internal" href="#method-1-pass-callables-as-parameters">Method 1: Pass Callables as Parameters</a></li>
-<li><a class="reference internal" href="#method-2-use-decorators-recommended">Method 2: Use Decorators (Recommended)</a></li>
+<li><a class="reference internal" href="#lifecycle-management-lifespan">Lifecycle Management (Lifespan)</a><ul>
+<li><a class="reference internal" href="#method-1-pass-callables-as-parameters-simple-logic">Method 1: Pass Callables as Parameters (Simple Logic)</a></li>
+<li><a class="reference internal" href="#method-2-use-lifespan-functions-recommended">Method 2: Use Lifespan Functions (Recommended)</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#health-check-endpoints">Health Check Endpoints</a></li>
@@ -1252,11 +1530,26 @@ See <a class="reference internal" href="advanced_deployment.html"><span class="d
 <li><a class="reference internal" href="#custom-query-handling">Custom Query Handling</a><ul>
 <li><a class="reference internal" href="#basic-usage">Basic Usage</a></li>
 <li><a class="reference internal" href="#key-characteristics">Key Characteristics</a></li>
-<li><a class="reference internal" href="#full-example-with-state-management">Full Example with State Management</a></li>
 <li><a class="reference internal" href="#comparison-with-the-v0-versionagent-parameter-approach">Comparison with the V0 version<code class="docutils literal notranslate"><span class="pre">agent</span></code> Parameter Approach</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#custom-endpoints-via-app-endpoint">Custom Endpoints via <code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint</span></code></a></li>
+<li><a class="reference internal" href="#custom-endpoint-definition">Custom Endpoint Definition</a><ul>
+<li><a class="reference internal" href="#native-fastapi-routes">1. Native FastAPI Routes</a></li>
+<li><a class="reference internal" href="#app-endpoint-convenience-decorator">2. <code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint</span></code> Convenience Decorator</a></li>
+<li><a class="reference internal" href="#differences-and-selection">Differences and Selection</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#task-interrupt-management">Task Interrupt Management</a><ul>
+<li><a class="reference internal" href="#configuring-the-interrupt-backend">Configuring the Interrupt Backend</a></li>
+<li><a class="reference internal" href="#writing-interrupt-aware-handlers">Writing Interrupt-Aware Handlers</a></li>
+<li><a class="reference internal" href="#triggering-interrupt-signals">Triggering Interrupt Signals</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#full-example-agentapp-with-state-management-and-interruption">Full Example: AgentApp with State Management and Interruption</a><ul>
+<li><a class="reference internal" href="#complete-code">Complete Code</a></li>
+<li><a class="reference internal" href="#interruption-feature-test-example">Interruption Feature Test Example</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#deploy-locally-or-remotely">Deploy Locally or Remotely</a></li>
 </ul>
 </li>

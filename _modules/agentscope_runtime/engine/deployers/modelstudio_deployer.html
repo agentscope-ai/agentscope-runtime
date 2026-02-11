@@ -672,6 +672,7 @@ body.preview-active {
     <span class="n">region</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="s2">&quot;cn-hangzhou&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;OSS region&quot;</span><span class="p">)</span>
     <span class="n">access_key_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">access_key_secret</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">security_token</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">bucket_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="s2">&quot;tmpbucket-agentscope-runtime&quot;</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Prefix for temporary buckets if creation is needed&quot;</span><span class="p">,</span>
@@ -690,6 +691,10 @@ body.preview-active {
             <span class="n">access_key_secret</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
                 <span class="s2">&quot;OSS_ACCESS_KEY_SECRET&quot;</span><span class="p">,</span>
                 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ALIBABA_CLOUD_ACCESS_KEY_SECRET&quot;</span><span class="p">),</span>
+            <span class="p">),</span>
+            <span class="n">security_token</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s2">&quot;OSS_SESSION_TOKEN&quot;</span><span class="p">,</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ALIBABA_CLOUD_SECURITY_TOKEN&quot;</span><span class="p">),</span>
             <span class="p">),</span>
         <span class="p">)</span></div>
 
@@ -717,6 +722,7 @@ body.preview-active {
     <span class="n">workspace_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">access_key_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">access_key_secret</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">security_token</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">dashscope_api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="ModelstudioConfig.from_env">
@@ -735,6 +741,9 @@ body.preview-active {
             <span class="n">access_key_id</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ALIBABA_CLOUD_ACCESS_KEY_ID&quot;</span><span class="p">),</span>
             <span class="n">access_key_secret</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
                 <span class="s2">&quot;ALIBABA_CLOUD_ACCESS_KEY_SECRET&quot;</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">security_token</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s2">&quot;ALIBABA_CLOUD_SECURITY_TOKEN&quot;</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">dashscope_api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
                 <span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">,</span>
@@ -779,6 +788,8 @@ body.preview-active {
         <span class="ow">and</span> <span class="n">oss_cfg</span><span class="o">.</span><span class="n">access_key_secret</span>
     <span class="p">):</span>
         <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;OSS_ACCESS_KEY_SECRET&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">oss_cfg</span><span class="o">.</span><span class="n">access_key_secret</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;OSS_SESSION_TOKEN&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">oss_cfg</span><span class="o">.</span><span class="n">security_token</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;OSS_SESSION_TOKEN&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">oss_cfg</span><span class="o">.</span><span class="n">security_token</span><span class="p">)</span>
 
     <span class="n">credentials_provider</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">oss</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">EnvironmentVariableCredentialsProvider</span><span class="p">()</span>
@@ -935,6 +946,7 @@ body.preview-active {
         <span class="n">config</span> <span class="o">=</span> <span class="n">open_api_models</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
             <span class="n">access_key_id</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">access_key_id</span><span class="p">,</span>
             <span class="n">access_key_secret</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">access_key_secret</span><span class="p">,</span>
+            <span class="n">security_token</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">security_token</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">config</span><span class="o">.</span><span class="n">endpoint</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">endpoint</span>
         <span class="n">client_modelstudio</span> <span class="o">=</span> <span class="n">ModelstudioClient</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
@@ -1048,6 +1060,7 @@ body.preview-active {
     <span class="n">config</span> <span class="o">=</span> <span class="n">open_api_models</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>
         <span class="n">access_key_id</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">access_key_id</span><span class="p">,</span>
         <span class="n">access_key_secret</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">access_key_secret</span><span class="p">,</span>
+        <span class="n">security_token</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">security_token</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">config</span><span class="o">.</span><span class="n">endpoint</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">endpoint</span>
     <span class="n">client_modelstudio</span> <span class="o">=</span> <span class="n">ModelstudioClient</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>

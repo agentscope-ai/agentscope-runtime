@@ -650,7 +650,9 @@ body.preview-active {
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.formatter</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatFormatter</span>
@@ -669,40 +671,44 @@ body.preview-active {
 </div>
 </div>
 </section>
-<section id="step-2-create-the-agent-app">
-<h3>Step 2: Create the Agent App<a class="headerlink" href="#step-2-create-the-agent-app" title="Link to this heading">¶</a></h3>
-<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> is the lifecycle and request hub of the agent application. All initialisation, query handling, and shutdown routines are registered on it:</p>
+<section id="step-2-create-lifecycle-functions">
+<h3>Step 2: Create Lifecycle Functions<a class="headerlink" href="#step-2-create-lifecycle-functions" title="Link to this heading">¶</a></h3>
+<p>Lifecycle functions define the actions to be performed when the service starts (such as state management and session history services) and how resources are released during shutdown.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
-    <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
-    <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ Agent App created successfully&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</section>
-<section id="step-3-register-lifecycle-hooks-init-shutdown">
-<h3>Step 3: Register Lifecycle Hooks (Init &amp; Shutdown)<a class="headerlink" href="#step-3-register-lifecycle-hooks-init-shutdown" title="Link to this heading">¶</a></h3>
-<p>Define what happens when the service starts (state/session services) and how resources are released during shutdown:</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@agent_app</span><span class="o">.</span><span class="n">init</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Manage resources during service startup and shutdown&quot;&quot;&quot;</span>
+    <span class="c1"># Startup: Initialize Session manager</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">fakeredis</span>
 
     <span class="n">fake_redis</span> <span class="o">=</span> <span class="n">fakeredis</span><span class="o">.</span><span class="n">aioredis</span><span class="o">.</span><span class="n">FakeRedis</span><span class="p">(</span><span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="c1"># NOTE: This FakeRedis instance is for development/testing only.</span>
     <span class="c1"># In production, replace it with your own Redis client/connection</span>
     <span class="c1"># (e.g., aioredis.Redis)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">RedisSession</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">fake_redis</span><span class="o">.</span><span class="n">connection_pool</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">RedisSession</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">fake_redis</span><span class="o">.</span><span class="n">connection_pool</span><span class="p">)</span>
 
-<span class="nd">@agent_app</span><span class="o">.</span><span class="n">shutdown</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">pass</span>
+    <span class="k">yield</span>  <span class="c1"># Service is running</span>
+
+    <span class="c1"># Shutdown: Clean up logic (e.g., closing database connections) can be added here</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;AgentApp is shutting down...&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="step-3-create-the-agent-app">
+<h3>Step 3: Create the Agent App<a class="headerlink" href="#step-3-create-the-agent-app" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> is the core of the entire Agent application’s lifecycle and request handling, managing the application lifecycle and the registration of all services.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
+    <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+    <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
+    <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span> <span class="c1"># Pass the lifespan function</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ Agent App created successfully&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -752,7 +758,7 @@ Please adapt and replace these components with your own implementations based on
     <span class="p">)</span>
     <span class="n">agent</span><span class="o">.</span><span class="n">set_console_output_enabled</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
         <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
         <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
         <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
@@ -764,7 +770,7 @@ Please adapt and replace these components with your own implementations based on
     <span class="p">):</span>
         <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
 
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
         <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
         <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
         <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
@@ -953,8 +959,8 @@ data:<span class="w"> </span><span class="o">{</span><span class="s2">&quot;sequ
 </li>
 <li><a class="reference internal" href="#step-by-step-implementation">Step-by-Step Implementation</a><ul>
 <li><a class="reference internal" href="#step-1-import-dependencies">Step 1: Import Dependencies</a></li>
-<li><a class="reference internal" href="#step-2-create-the-agent-app">Step 2: Create the Agent App</a></li>
-<li><a class="reference internal" href="#step-3-register-lifecycle-hooks-init-shutdown">Step 3: Register Lifecycle Hooks (Init &amp; Shutdown)</a></li>
+<li><a class="reference internal" href="#step-2-create-lifecycle-functions">Step 2: Create Lifecycle Functions</a></li>
+<li><a class="reference internal" href="#step-3-create-the-agent-app">Step 3: Create the Agent App</a></li>
 <li><a class="reference internal" href="#step-4-define-the-agentscope-query-logic">Step 4: Define the AgentScope Query Logic</a></li>
 <li><a class="reference internal" href="#step-5-run-the-agent-app">Step 5: Run the Agent App</a></li>
 <li><a class="reference internal" href="#step-6-send-a-request">Step 6: Send a Request</a></li>

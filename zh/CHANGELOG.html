@@ -626,7 +626,8 @@ body.preview-active {
 <h1><span class="section-number">8. </span>CHANGELOG<a class="headerlink" href="#changelog" title="Link to this heading">¶</a></h1>
 <section id="v1-1-0">
 <h2>v1.1.0<a class="headerlink" href="#v1-1-0" title="Link to this heading">¶</a></h2>
-<p>AgentScope Runtime v1.1.0 专注于通过移除 Runtime 侧自定义的 Memory/Session 服务抽象，并<strong>统一采用 Agent 框架原生的持久化模块</strong>来<strong>简化持久化与会话连续性</strong>。这降低了心智负担，避免概念重复，并确保持久化行为与底层 Agent 框架保持一致。</p>
+<p>AgentScope Runtime v1.1.0 通过移除 Runtime 侧自定义的 Memory/Session 服务抽象，并<strong>统一采用 Agent 框架原生的持久化模块</strong>来<strong>简化持久化与会话连续性</strong>。这降低了心智负担，避免概念重复，并确保持久化行为与底层 Agent 框架保持一致。</p>
+<p>此外，本版本对 <strong><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 的底层架构进行了重构</strong>：将其改为直接继承 <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code>，引入了<strong>标准的生命周期管理 (Lifespan)</strong>，并新增了支持分布式场景的<strong>任务中断功能</strong>与<strong>并发冲突控制</strong>。</p>
 <p><strong>变更的背景与必要性</strong></p>
 <p>在 v1.0 中，Runtime 提供了自定义的**会话历史（Session History）<strong>和</strong>长期记忆（Long-term Memory）**服务（以及适配器），用于支持跨请求的持久化/状态连续性。在实践中，这引入了若干问题：</p>
 <ol class="arabic simple">
@@ -638,15 +639,32 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 不同框架暴露的 state/memory/session 语义不同；Runtime 层适配器无法可靠地在所有框架间保持完全一致的行为。</p></li>
 </ol>
 <p>为了解决这些问题，v1.1.0 <strong>弃用并移除</strong>了这些 Runtime 侧服务/适配器，并建议在 <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 生命周期中直接使用 <strong>Agent 框架自身的持久化模块</strong>（例如 <code class="docutils literal notranslate"><span class="pre">JSONSession</span></code>、内置 memory 实现）。</p>
+<p><strong>此外，v1.1.0 针对 <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 的核心架构进行了重构，将其从“工厂类创建模式”转变为“直接继承 <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code> 模式”。</strong> 这一变更源于以下考量：</p>
+<ol class="arabic simple">
+<li><p><strong>解决原有工厂模式的局限性</strong>
+在旧版本中，<code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 内部通过工厂类创建并持有 FastAPI 对象。这种包装方式产生了一层“黑盒”，使得开发者难以直接利用 FastAPI 原生的强大功能（如复杂的中间件配置、自定义路由装饰器以及依赖注入系统），且自定义的生命周期钩子（如 <code class="docutils literal notranslate"><span class="pre">&#64;app.init</span></code>）也与标准 Web 开发规范存在偏差。</p></li>
+<li><p><strong>拥抱原生 FastAPI 生态与扩展性</strong>
+通过改为<strong>直接继承 <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code> 类</strong>，<code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 现在即是一个标准的 FastAPI 应用。这种架构赋予了开发者完全的控制权，可以无缝集成 FastAPI 社区的中间件和插件。同时，基于类继承的架构允许我们通过 <code class="docutils literal notranslate"><span class="pre">Mixin</span></code>（混入类）的方式优雅地引入<strong>任务中断（Interrupt）</strong>、<strong>并发状态竞争控制</strong>等高级功能，使 <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 成为一个既符合现代 Web 开发标准，又深度适配 Agent 业务场景的核心组件。</p></li>
+</ol>
+<section id="added">
+<h3>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><strong>分布式任务中断功能</strong>：引入 <code class="docutils literal notranslate"><span class="pre">InterruptMixin</span></code> 及其后端支持（Local/Redis），允许用户自定义接口在任务执行过程中手动触发中断，并支持在分布式集群环境下广播中断信号。</p></li>
+<li><p><strong>分布式竞态控制</strong>：在任务启动阶段引入基于状态机的原子检查（Compare-and-Swap），有效防止同一 Session ID 在分布式环境下被重复并发执行。</p></li>
+<li><p><strong>原生 FastAPI 扩展性</strong>：由于 <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 现在直接继承自 <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code>，开发者可以直接使用 <code class="docutils literal notranslate"><span class="pre">&#64;app.get</span></code>、<code class="docutils literal notranslate"><span class="pre">app.add_middleware</span></code> 等原生方法，完全兼容 FastAPI 生态。</p></li>
+</ul>
+</section>
 <section id="changed">
 <h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">¶</a></h3>
 <ul class="simple">
-<li><p>推荐的持久化模式：</p>
+<li><p><strong>推荐的持久化模式</strong>：</p>
 <ul>
 <li><p>直接使用 Agent 框架的 <strong>Memory</strong> 模块（例如 <code class="docutils literal notranslate"><span class="pre">InMemoryMemory</span></code>，或框架提供的 Redis-backed memory）。</p></li>
 <li><p>使用 Agent 框架的 <strong>Session</strong> 模块（例如 <code class="docutils literal notranslate"><span class="pre">JSONSession</span></code>）在 <code class="docutils literal notranslate"><span class="pre">query</span></code> 期间加载/保存 agent 会话状态。</p></li>
 </ul>
 </li>
+<li><p><strong>架构重构</strong>：<code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 由原先的 <strong>工厂类模式</strong> 改为<strong>直接继承 <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code></strong>。</p></li>
+<li><p><strong>生命周期统一</strong>：统一了内部框架资源与用户自定义资源的生命周期管理逻辑。</p></li>
 </ul>
 </section>
 <section id="breaking-changes">
@@ -666,15 +684,29 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 </li>
 </ul>
 </li>
+<li><p><strong>移除工厂类模式</strong></p>
+<ul class="simple">
+<li><p>废弃 <code class="docutils literal notranslate"><span class="pre">FastAPIAppFactory</span></code>。现在应直接实例化 <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 对象。</p></li>
+</ul>
+</li>
+<li><p><strong>弃用自定义装饰器钩子</strong></p>
+<ul class="simple">
+<li><p>弃用并标记了旧版本中的 <code class="docutils literal notranslate"><span class="pre">&#64;app.init</span></code> 和 <code class="docutils literal notranslate"><span class="pre">&#64;app.shutdown</span></code> 装饰器。</p></li>
+<li><p><strong>迁移建议</strong>：请使用 FastAPI 标准的 <code class="docutils literal notranslate"><span class="pre">lifespan</span></code> 异步上下文管理器（详见下方迁移指南中的示例）。</p></li>
+</ul>
+</li>
 </ol>
 <section id="v1-0-v1-1">
 <h4>迁移指南（v1.0 → v1.1）<a class="headerlink" href="#v1-0-v1-1" title="Link to this heading">¶</a></h4>
-<section id="agent">
-<h5>推荐模式（使用 Agent 框架模块做持久化）<a class="headerlink" href="#agent" title="Link to this heading">¶</a></h5>
-<p>使用 <code class="docutils literal notranslate"><span class="pre">JSONSession</span></code> 或其他子模块来持久化/加载 agent 的会话状态，并在 AgentScope 中直接使用 <code class="docutils literal notranslate"><span class="pre">InMemoryMemory()</span></code>（或框架内提供的其他 memory）：</p>
+<section id="id1">
+<h5>推荐模式（统一生命周期管理、中断处理与原生持久化）<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h5>
+<p>在 v1.1.0 中，我们建议使用 <strong>Lifespan 异步上下文管理器</strong> 代替原有的装饰器来管理资源。同时，在 <code class="docutils literal notranslate"><span class="pre">query</span></code> 逻辑中捕获 <code class="docutils literal notranslate"><span class="pre">asyncio.CancelledError</span></code> 以响应中断信号，并使用 Agent 框架原生的 <strong>Session/Memory</strong> 模块进行状态持久化：</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.formatter</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatFormatter</span>
@@ -686,22 +718,26 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.app</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentRequest</span>
 
+<span class="c1"># Standard FastAPI lifespan management</span>
+<span class="c1"># (Replaces deprecated @app.init/@app.shutdown)</span>
+<span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+    <span class="c1"># Use JSONSession here</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">JSONSession</span><span class="p">(</span><span class="n">save_dir</span><span class="o">=</span><span class="s2">&quot;./sessions&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># No Runtime state/session services to stop in v1.1</span>
+        <span class="k">pass</span>
+
+<span class="c1"># AgentApp now inherits directly from FastAPI</span>
 <span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
     <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
     <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
+    <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>
+    <span class="c1"># Optional: Enable distributed interrupt by providing interrupt_redis_url</span>
+    <span class="c1"># interrupt_redis_url=&quot;redis://localhost&quot;</span>
 <span class="p">)</span>
-
-
-<span class="nd">@agent_app</span><span class="o">.</span><span class="n">init</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">JSONSession</span><span class="p">(</span><span class="n">save_dir</span><span class="o">=</span><span class="s2">&quot;./sessions&quot;</span><span class="p">)</span>  <span class="c1"># Use JSONSession here</span>
-
-
-<span class="nd">@agent_app</span><span class="o">.</span><span class="n">shutdown</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="c1"># No Runtime state/session services to stop in v1.1</span>
-    <span class="k">pass</span>
-
 
 <span class="nd">@agent_app</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">framework</span><span class="o">=</span><span class="s2">&quot;agentscope&quot;</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_func</span><span class="p">(</span>
@@ -731,15 +767,43 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
         <span class="n">formatter</span><span class="o">=</span><span class="n">DashScopeChatFormatter</span><span class="p">(),</span>
     <span class="p">)</span>
 
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span><span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span> <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+    <span class="p">)</span>
 
-    <span class="k">async</span> <span class="k">for</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span> <span class="ow">in</span> <span class="n">stream_printing_messages</span><span class="p">(</span>
-        <span class="n">agents</span><span class="o">=</span><span class="p">[</span><span class="n">agent</span><span class="p">],</span>
-        <span class="n">coroutine_task</span><span class="o">=</span><span class="n">agent</span><span class="p">(</span><span class="n">msgs</span><span class="p">),</span>
-    <span class="p">):</span>
-        <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span> <span class="ow">in</span> <span class="n">stream_printing_messages</span><span class="p">(</span>
+            <span class="n">agents</span><span class="o">=</span><span class="p">[</span><span class="n">agent</span><span class="p">],</span>
+            <span class="n">coroutine_task</span><span class="o">=</span><span class="n">agent</span><span class="p">(</span><span class="n">msgs</span><span class="p">),</span>
+        <span class="p">):</span>
+            <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
 
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span><span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span> <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+        <span class="c1"># Handling Interruptions (New in v1.1.0)</span>
+        <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">interrupt</span><span class="p">()</span> <span class="c1"># Explicitly halt the underlying agent execution</span>
+
+        <span class="c1"># Re-raise to ensure AgentApp correctly updates the task state to STOPPED</span>
+        <span class="k">raise</span>
+
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># Persistence: Save state regardless of normal completion or interruption</span>
+        <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="n">agent</span><span class="o">=</span><span class="n">agent</span>
+        <span class="p">)</span>
+
+<span class="c1"># Optional: Explicit endpoint to trigger task interruption</span>
+<span class="nd">@agent_app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/stop&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop_task</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span><span class="p">):</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">stop_chat</span><span class="p">(</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Interrupt signal broadcasted.&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
 
 
 <span class="n">agent_app</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
@@ -752,8 +816,8 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 <section id="v1-0-5">
 <h2>v1.0.5<a class="headerlink" href="#v1-0-5" title="Link to this heading">¶</a></h2>
 <p><strong>AgentScope Runtime v1.0.5</strong> 主要聚焦于提升部署灵活性以及 UI/协议层的集成能力。本次版本新增了带 CLI 支持的 PAI 部署器，引入 Boxlite 作为新的沙箱后端，并提供容器客户端工厂以统一容器化部署相关能力。同时新增 AG-UI 协议支持，集成 ModelStudio Memory SDK 及 Demo，并修复了 FC replacement_map、MS-Agent-Framework 兼容性、以及消息流工具调用处理等多个问题。文档也在多个章节进行了更新，并补充了贡献者信息。</p>
-<section id="added">
-<h3>Added<a class="headerlink" href="#added" title="Link to this heading">¶</a></h3>
+<section id="id2">
+<h3>Added<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>PAI 部署器 + CLI 支持</strong>
 新增 PAI 部署器，提供 CLI 支持，并补充了相关文档与测试。</p></li>
@@ -767,8 +831,8 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 集成 ModelStudio Memory SDK，并提供示例 Demo。</p></li>
 </ul>
 </section>
-<section id="id1">
-<h3>Changed<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<section id="id3">
+<h3>Changed<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>向 query_handler 暴露 AgentResponse</strong>
 通过 <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> 将 <code class="docutils literal notranslate"><span class="pre">AgentResponse</span></code> 暴露给 <code class="docutils literal notranslate"><span class="pre">query_handler</span></code>，增强可扩展性。</p></li>
@@ -801,8 +865,8 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 <section id="v1-0-4">
 <h2>v1.0.4<a class="headerlink" href="#v1-0-4" title="Link to this heading">¶</a></h2>
 <p>在保持 AgentScope Runtime v1.x 框架可扩展性与一致性的基础上，<strong>AgentScope Runtime v1.0.4</strong> 引入了多项部署支持的新特性，包括 Knative 与 Serverless FC 部署器、对 MS-Agent-Framework 的支持，以及异步 Sandbox SDK 以减少阻塞并提升响应速度。同时，本版本优化了 OpenTelemetry Tracer Provider 的安全处理，更新了依赖，并修复了非流式工具的调用问题。文档部分新增了 WebUI 试用入口与部署示例修正，并增添了多位新贡献者。</p>
-<section id="id2">
-<h3>Added<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<section id="id4">
+<h3>Added<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Knative Deployer 支持</strong>
 新增 Knative 部署器功能，支持在 Knative 环境中快速部署 AgentScope Runtime。</p></li>
@@ -816,15 +880,15 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 在文档中新增试用 WebUI 的快速访问链接，方便用户体验最新功能。</p></li>
 </ul>
 </section>
-<section id="id3">
-<h3>Changed<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<section id="id5">
+<h3>Changed<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>依赖更新</strong>
 更新 <code class="docutils literal notranslate"><span class="pre">nacos-sdk-python</span></code> 依赖版本，增强稳定性与兼容性。</p></li>
 </ul>
 </section>
-<section id="id4">
-<h3>Fixed<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<section id="id6">
+<h3>Fixed<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>非流式工具调用支持</strong>
 修复不同类型工具在非流式调用模式下的兼容性问题。</p></li>
@@ -832,8 +896,8 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 增加对已有 Tracer Provider 的安全检测与合理处理，避免冲突。</p></li>
 </ul>
 </section>
-<section id="id5">
-<h3>Documentation<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<section id="id7">
+<h3>Documentation<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>更新 README，增加 WebUI 访问 URL。</p></li>
 <li><p>部署示例（本地部署）中修正方法调用名称。</p></li>
@@ -843,8 +907,8 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 <section id="v1-0-3">
 <h2>v1.0.3<a class="headerlink" href="#v1-0-3" title="Link to this heading">¶</a></h2>
 <p>AgentScope Runtime v1.0.3 在保持 v1.x 框架可扩展性与一致性的基础上，带来了 <strong>A2A 协议注册支持</strong>、更完整的异常与 Token 使用统计机制、新的天气组件与 UI 交互能力，以及多个 Sandbox、Redis、Agent 状态的修复与优化。同时改进了部署构建（Sandbox Image Building）、远程桌面自定义 URL 支持、PYPI 镜像配置等功能。</p>
-<section id="id6">
-<h3>Added<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<section id="id8">
+<h3>Added<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>A2A Registry 支持</strong>
 新增对 Google A2A 协议的注册能力，可与 AgentScope-Runtime 原生集成，实现跨平台智能体注册与发现。</p></li>
@@ -854,15 +918,15 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 在 CI/CD 中新增构建 Sandbox 镜像的 GitHub Actions，方便分发与部署自动化。</p></li>
 </ul>
 </section>
-<section id="id7">
-<h3>Changed<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
+<section id="id9">
+<h3>Changed<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>部署 PYPI 镜像配置优化</strong>
 <code class="docutils literal notranslate"><span class="pre">pypi_mirror</span></code> 改为可指定输入并默认为 <code class="docutils literal notranslate"><span class="pre">None</span></code>，便于自定义 Python 包源。</p></li>
 </ul>
 </section>
-<section id="id8">
-<h3>Fixed<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
+<section id="id10">
+<h3>Fixed<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>RedisMapping 扫描键解析问题</strong>
 修复 <code class="docutils literal notranslate"><span class="pre">RedisMapping.scan</span></code> 在 <code class="docutils literal notranslate"><span class="pre">decode_responses</span></code> 模式下的键解析错误。</p></li>
@@ -881,8 +945,8 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 <h2>v1.0.2<a class="headerlink" href="#v1-0-2" title="Link to this heading">¶</a></h2>
 <p>本次更新为 AgentScope Runtime v1.0.2，带来了 LangGraph 与 Agno 在 v1.x 框架下的支持、工具调用优化、移动端沙箱 UI 增强，以及多个兼容性与稳定性修复。
 同时改进了 CLI 工具、MCP Tool 调用处理，并统一了业务异常管理。</p>
-<section id="id9">
-<h3>Added<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
+<section id="id11">
+<h3>Added<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>LangGraph 支持</strong>：新增对 LangGraph 框架的原生兼容。</p></li>
 <li><p><strong>多框架支持扩展</strong>：在 v1.x 中加入对 Agno 框架的支持。</p></li>
@@ -892,16 +956,16 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 <li><p><strong>MCP Tool Call/Output 处理</strong>：新增 MCP 工具调用与输出的适配。</p></li>
 </ul>
 </section>
-<section id="id10">
-<h3>Changed<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
+<section id="id12">
+<h3>Changed<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>优化工具流式调用与输出的支持。</p></li>
 <li><p>改进 <code class="docutils literal notranslate"><span class="pre">adapt_agentscope_message_stream</span></code> 对非 JSON 输出的兼容处理。</p></li>
 <li><p>更新 <code class="docutils literal notranslate"><span class="pre">.npmrc</span></code> 以禁用 package-lock，并调整 peer dependency 配置。</p></li>
 </ul>
 </section>
-<section id="id11">
-<h3>Fixed<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
+<section id="id13">
+<h3>Fixed<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>LangChain</strong> 依赖补充（含 <code class="docutils literal notranslate"><span class="pre">langchain_openai</span></code>）。</p></li>
 <li><p>修复 LangGraph 单元测试。</p></li>
@@ -910,8 +974,8 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 <li><p>修复 OSS 配置在 AgentRun 场景下的异常。</p></li>
 </ul>
 </section>
-<section id="id12">
-<h3>Documentation<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
+<section id="id14">
+<h3>Documentation<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>更新社区二维码。</p></li>
 <li><p>文档微调与错误修正。</p></li>
@@ -921,30 +985,30 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 <section id="v1-0-1">
 <h2>v1.0.1<a class="headerlink" href="#v1-0-1" title="Link to this heading">¶</a></h2>
 <p>AgentScope Runtime v1.0.1 主要包括稳定性修复、开发体验优化、运行时配置增强，以及 Windows WebUI 启动兼容性支持。同时引入服务工厂机制、工具调用类型区分，以及依赖更新对 AgentScope 1.0.9 的支持。</p>
-<section id="id13">
-<h3>Added<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h3>
+<section id="id15">
+<h3>Added<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>服务工厂（Service Factory）</strong> 支持，更灵活创建运行时服务。</p></li>
 <li><p>在 AgentScope 内区分 <strong>Tool Call</strong> 与 <strong>MCP Tool Call</strong>。</p></li>
 </ul>
 </section>
-<section id="id14">
-<h3>Changed<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
+<section id="id16">
+<h3>Changed<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>引入新的 <strong>runtime config</strong> 运行时配置机制。</p></li>
 <li><p>更新依赖以支持 AgentScope 1.0.9。</p></li>
 </ul>
 </section>
-<section id="id15">
-<h3>Fixed<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h3>
+<section id="id17">
+<h3>Fixed<a class="headerlink" href="#id17" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>修复 AgentScope 消息转换逻辑。</p></li>
 <li><p>修复 Windows 平台下 WebUI 启动问题（<code class="docutils literal notranslate"><span class="pre">subprocess.Popen</span></code> + shell 参数处理）。</p></li>
 <li><p>修复表格存储（Table Store）相关问题。</p></li>
 </ul>
 </section>
-<section id="id16">
-<h3>Documentation<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h3>
+<section id="id18">
+<h3>Documentation<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>更新 serverless 部署文档。</p></li>
 </ul>
@@ -988,23 +1052,23 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 <li><p><strong>丰富的内置工具集</strong>：面向生产的搜索、RAG、AIGC、支付等模块。</p></li>
 <li><p><strong>灵活的部署模式</strong>：支持本地线程/进程、Docker、Kubernetes、或托管云端部署。</p></li>
 </ul>
-<section id="id17">
-<h3>Added<a class="headerlink" href="#id17" title="Link to this heading">¶</a></h3>
+<section id="id19">
+<h3>Added<a class="headerlink" href="#id19" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>原生Short/Long Memory、智能体 State 适配器集成至 AgentScope Framework。</p></li>
 <li><p>新聊天式 Web UI。</p></li>
 <li><p>新增多种 Sandbox 类型（移动端沙箱、AgentBay无影云沙箱）。</p></li>
 </ul>
 </section>
-<section id="id18">
-<h3>Changed<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h3>
+<section id="id20">
+<h3>Changed<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code>不再接受<code class="docutils literal notranslate"><span class="pre">Agent</span></code>作为入参数，用户需要通过<code class="docutils literal notranslate"><span class="pre">query</span></code>、<code class="docutils literal notranslate"><span class="pre">init</span></code>、<code class="docutils literal notranslate"><span class="pre">shutdown</span></code>装饰器自定义智能体应用的生命周期与请求逻辑。</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">Runner</span></code>不再接受<code class="docutils literal notranslate"><span class="pre">Agent</span></code>作为入参数，用户需要通过<code class="docutils literal notranslate"><span class="pre">query_handler</span></code>、<code class="docutils literal notranslate"><span class="pre">init_handler</span></code>、<code class="docutils literal notranslate"><span class="pre">shutdown_handler</span></code>自定义执行期的生命周期与请求逻辑。</p></li>
 </ul>
 </section>
-<section id="id19">
-<h3>Breaking Changes<a class="headerlink" href="#id19" title="Link to this heading">¶</a></h3>
+<section id="id21">
+<h3>Breaking Changes<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h3>
 <p>以下变更会影响现有 v0.x 用户，需要手动适配：</p>
 <ol class="arabic">
 <li><p><strong>Agent模块接口迁移</strong></p>
@@ -1265,16 +1329,16 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 <section id="v0-2-0">
 <h2>v0.2.0<a class="headerlink" href="#v0-2-0" title="Link to this heading">¶</a></h2>
 <p>简化 agent 部署，并确保本地开发与生产部署的一致性。</p>
-<section id="id20">
-<h3>Added<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h3>
+<section id="id22">
+<h3>Added<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Agent 部署支持</strong>：可部署到 Docker、Kubernetes、以及阿里云函数计算（FC）。</p></li>
 <li><p><strong>Python SDK for Deployed Agent</strong>：用于与已部署 agent 交互。</p></li>
 <li><p><strong>类 App 部署模式</strong>：支持打包部署成应用形式。</p></li>
 </ul>
 </section>
-<section id="id21">
-<h3>Changed<a class="headerlink" href="#id21" title="Link to this heading">¶</a></h3>
+<section id="id23">
+<h3>Changed<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>统一 K8S &amp; Docker 客户端</strong>：将客户端移动到公共模块，简化维护。</p></li>
 </ul>
@@ -1283,8 +1347,8 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 <section id="v0-1-6">
 <h2>v0.1.6<a class="headerlink" href="#v0-1-6" title="Link to this heading">¶</a></h2>
 <p>提升对 AgentScope 全特性的原生支持，并增强 sandbox 的可交互性与可扩展性。</p>
-<section id="id22">
-<h3>Added<a class="headerlink" href="#id22" title="Link to this heading">¶</a></h3>
+<section id="id24">
+<h3>Added<a class="headerlink" href="#id24" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>更多消息/事件类型</strong>：扩展 Agent Framework 对多模态消息、事件的支持。</p></li>
 <li><p><strong>多 pool 管理</strong>：Sandbox Manager 支持管理多个 sandbox pool。</p></li>
@@ -1298,21 +1362,21 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 <section id="v0-1-5">
 <h2>v0.1.5<a class="headerlink" href="#v0-1-5" title="Link to this heading">¶</a></h2>
 <p>优化依赖安装，移除不再需要的 LLM Agent 模块，增强 sandbox 客户端功能。</p>
-<section id="id23">
-<h3>Added<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h3>
+<section id="id25">
+<h3>Added<a class="headerlink" href="#id25" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>FC (AgentRun) Sandbox 客户端</strong>：支持在函数计算环境中运行 Sandbox。</p></li>
 <li><p><strong>自定义容器镜像与多目录绑定</strong>：可指定镜像名及绑定多个目录。</p></li>
 </ul>
 </section>
-<section id="id24">
-<h3>Changed<a class="headerlink" href="#id24" title="Link to this heading">¶</a></h3>
+<section id="id26">
+<h3>Changed<a class="headerlink" href="#id26" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>安装选项优化</strong>：将 AgentScope 和 Sandbox 作为基础依赖，简化安装。</p></li>
 </ul>
 </section>
-<section id="id25">
-<h3>Removed<a class="headerlink" href="#id25" title="Link to this heading">¶</a></h3>
+<section id="id27">
+<h3>Removed<a class="headerlink" href="#id27" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p><strong>LLM Agent &amp; API</strong>：删除 LLM Agent 及相关接口。</p></li>
 </ul>
@@ -1410,10 +1474,11 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
             <ul>
 <li><a class="reference internal" href="#">8. CHANGELOG</a><ul>
 <li><a class="reference internal" href="#v1-1-0">v1.1.0</a><ul>
+<li><a class="reference internal" href="#added">Added</a></li>
 <li><a class="reference internal" href="#changed">Changed</a></li>
 <li><a class="reference internal" href="#breaking-changes">Breaking Changes</a><ul>
 <li><a class="reference internal" href="#v1-0-v1-1">迁移指南（v1.0 → v1.1）</a><ul>
-<li><a class="reference internal" href="#agent">推荐模式（使用 Agent 框架模块做持久化）</a></li>
+<li><a class="reference internal" href="#id1">推荐模式（统一生命周期管理、中断处理与原生持久化）</a></li>
 </ul>
 </li>
 </ul>
@@ -1421,59 +1486,59 @@ Runtime 特有的服务/适配器需要与多个 Agent 框架及其版本保持�
 </ul>
 </li>
 <li><a class="reference internal" href="#v1-0-5">v1.0.5</a><ul>
-<li><a class="reference internal" href="#added">Added</a></li>
-<li><a class="reference internal" href="#id1">Changed</a></li>
+<li><a class="reference internal" href="#id2">Added</a></li>
+<li><a class="reference internal" href="#id3">Changed</a></li>
 <li><a class="reference internal" href="#fixed">Fixed</a></li>
 <li><a class="reference internal" href="#documentation">Documentation</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v1-0-4">v1.0.4</a><ul>
-<li><a class="reference internal" href="#id2">Added</a></li>
-<li><a class="reference internal" href="#id3">Changed</a></li>
-<li><a class="reference internal" href="#id4">Fixed</a></li>
-<li><a class="reference internal" href="#id5">Documentation</a></li>
+<li><a class="reference internal" href="#id4">Added</a></li>
+<li><a class="reference internal" href="#id5">Changed</a></li>
+<li><a class="reference internal" href="#id6">Fixed</a></li>
+<li><a class="reference internal" href="#id7">Documentation</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v1-0-3">v1.0.3</a><ul>
-<li><a class="reference internal" href="#id6">Added</a></li>
-<li><a class="reference internal" href="#id7">Changed</a></li>
-<li><a class="reference internal" href="#id8">Fixed</a></li>
+<li><a class="reference internal" href="#id8">Added</a></li>
+<li><a class="reference internal" href="#id9">Changed</a></li>
+<li><a class="reference internal" href="#id10">Fixed</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v1-0-2">v1.0.2</a><ul>
-<li><a class="reference internal" href="#id9">Added</a></li>
-<li><a class="reference internal" href="#id10">Changed</a></li>
-<li><a class="reference internal" href="#id11">Fixed</a></li>
-<li><a class="reference internal" href="#id12">Documentation</a></li>
+<li><a class="reference internal" href="#id11">Added</a></li>
+<li><a class="reference internal" href="#id12">Changed</a></li>
+<li><a class="reference internal" href="#id13">Fixed</a></li>
+<li><a class="reference internal" href="#id14">Documentation</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v1-0-1">v1.0.1</a><ul>
-<li><a class="reference internal" href="#id13">Added</a></li>
-<li><a class="reference internal" href="#id14">Changed</a></li>
-<li><a class="reference internal" href="#id15">Fixed</a></li>
-<li><a class="reference internal" href="#id16">Documentation</a></li>
+<li><a class="reference internal" href="#id15">Added</a></li>
+<li><a class="reference internal" href="#id16">Changed</a></li>
+<li><a class="reference internal" href="#id17">Fixed</a></li>
+<li><a class="reference internal" href="#id18">Documentation</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v1-0-0">v1.0.0</a><ul>
-<li><a class="reference internal" href="#id17">Added</a></li>
-<li><a class="reference internal" href="#id18">Changed</a></li>
-<li><a class="reference internal" href="#id19">Breaking Changes</a></li>
+<li><a class="reference internal" href="#id19">Added</a></li>
+<li><a class="reference internal" href="#id20">Changed</a></li>
+<li><a class="reference internal" href="#id21">Breaking Changes</a></li>
 <li><a class="reference internal" href="#removed">Removed</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v0-2-0">v0.2.0</a><ul>
-<li><a class="reference internal" href="#id20">Added</a></li>
-<li><a class="reference internal" href="#id21">Changed</a></li>
+<li><a class="reference internal" href="#id22">Added</a></li>
+<li><a class="reference internal" href="#id23">Changed</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v0-1-6">v0.1.6</a><ul>
-<li><a class="reference internal" href="#id22">Added</a></li>
+<li><a class="reference internal" href="#id24">Added</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#v0-1-5">v0.1.5</a><ul>
-<li><a class="reference internal" href="#id23">Added</a></li>
-<li><a class="reference internal" href="#id24">Changed</a></li>
-<li><a class="reference internal" href="#id25">Removed</a></li>
+<li><a class="reference internal" href="#id25">Added</a></li>
+<li><a class="reference internal" href="#id26">Changed</a></li>
+<li><a class="reference internal" href="#id27">Removed</a></li>
 </ul>
 </li>
 </ul>

@@ -645,7 +645,9 @@ Recommend to use python 3.11 or above for stream mode, refer to <a class="refere
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">langchain.agents</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentState</span><span class="p">,</span> <span class="n">create_agent</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">langchain.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">tool</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">langchain_openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChatOpenAI</span>
@@ -668,34 +670,34 @@ Recommend to use python 3.11 or above for stream mode, refer to <a class="refere
     <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;The weather in </span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s2"> is sunny with a temperature of 25°C.&quot;</span>
 
 
+<span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+    <span class="c1"># Initialize services as instance variables</span>
+    <span class="k">global</span> <span class="n">global_short_term_memory</span>
+    <span class="k">global</span> <span class="n">global_long_term_memory</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">short_term_mem</span> <span class="o">=</span> <span class="n">InMemorySaver</span><span class="p">()</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">long_term_mem</span> <span class="o">=</span> <span class="n">InMemoryStore</span><span class="p">()</span>
+    <span class="n">global_short_term_memory</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">short_term_mem</span>
+    <span class="n">global_long_term_memory</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">long_term_mem</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># Shutdown services, in this case,</span>
+        <span class="c1"># we don&#39;t use any resources, so we don&#39;t need to do anything here</span>
+        <span class="k">pass</span>
+
+
 <span class="c1"># Create the AgentApp instance</span>
 <span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
     <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;LangGraphAgent&quot;</span><span class="p">,</span>
     <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A LangGraph-based research assistant&quot;</span><span class="p">,</span>
+    <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>
 <span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">CustomAgentState</span><span class="p">(</span><span class="n">AgentState</span><span class="p">):</span>
     <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">session_id</span><span class="p">:</span> <span class="nb">dict</span>
-
-
-<span class="c1"># Initialize services as instance variables</span>
-<span class="nd">@agent_app</span><span class="o">.</span><span class="n">init</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">global</span> <span class="n">global_short_term_memory</span>
-    <span class="k">global</span> <span class="n">global_long_term_memory</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">short_term_mem</span> <span class="o">=</span> <span class="n">InMemorySaver</span><span class="p">()</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">long_term_mem</span> <span class="o">=</span> <span class="n">InMemoryStore</span><span class="p">()</span>
-    <span class="n">global_short_term_memory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">short_term_mem</span>
-    <span class="n">global_long_term_memory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">long_term_mem</span>
-
-
-<span class="c1"># Shutdown services, in this case,</span>
-<span class="c1"># we don&#39;t use any resources, so we don&#39;t need to do anything here</span>
-<span class="nd">@agent_app</span><span class="o">.</span><span class="n">shutdown</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">pass</span>
 
 
 <span class="nd">@agent_app</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">framework</span><span class="o">=</span><span class="s2">&quot;langgraph&quot;</span><span class="p">)</span>
@@ -724,8 +726,8 @@ Recommend to use python 3.11 or above for stream mode, refer to <a class="refere
         <span class="n">llm</span><span class="p">,</span>
         <span class="n">tools</span><span class="p">,</span>
         <span class="n">system_prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span>
-        <span class="n">checkpointer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">short_term_mem</span><span class="p">,</span>
-        <span class="n">store</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">long_term_mem</span><span class="p">,</span>
+        <span class="n">checkpointer</span><span class="o">=</span><span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">short_term_mem</span><span class="p">,</span>
+        <span class="n">store</span><span class="o">=</span><span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">long_term_mem</span><span class="p">,</span>
         <span class="n">state_schema</span><span class="o">=</span><span class="n">CustomAgentState</span><span class="p">,</span>
         <span class="n">name</span><span class="o">=</span><span class="s2">&quot;LangGraphAgent&quot;</span><span class="p">,</span>
     <span class="p">)</span>

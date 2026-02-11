@@ -641,6 +641,9 @@ body.preview-active {
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># agno_agent.py</span>
 <span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agno.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agno.models.dashscope</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScope</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agno.db.in_memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryDb</span>
@@ -651,15 +654,17 @@ body.preview-active {
 
 <span class="k">def</span><span class="w"> </span><span class="nf">run_app</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;启动 AgentApp 并启用流式输出功能&quot;&quot;&quot;</span>
+    <span class="nd">@asynccontextmanager</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+        <span class="c1"># Agno 内存数据库，详情见 https://docs.agno.com/reference/storage</span>
+        <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">InMemoryDb</span><span class="p">()</span>
+        <span class="k">yield</span>
+
     <span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
         <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
         <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
+        <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>
     <span class="p">)</span>
-
-    <span class="nd">@agent_app</span><span class="o">.</span><span class="n">init</span>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># Agno 内存数据库，详情见 https://docs.agno.com/reference/storage</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">InMemoryDb</span><span class="p">()</span>
 
     <span class="nd">@agent_app</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">framework</span><span class="o">=</span><span class="s2">&quot;agno&quot;</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_func</span><span class="p">(</span>
@@ -678,7 +683,7 @@ body.preview-active {
                 <span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://dashscope.aliyuncs.com/compatible-mode/v1&quot;</span><span class="p">,</span>
                 <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
             <span class="p">),</span>
-            <span class="n">db</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">,</span>
+            <span class="n">db</span><span class="o">=</span><span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">db</span><span class="p">,</span>
             <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
             <span class="n">add_history_to_context</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>

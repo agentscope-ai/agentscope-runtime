@@ -624,12 +624,13 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <section class="tex2jax_ignore mathjax_ignore" id="id1">
 <h1>简单部署<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h1>
-<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 是 <strong>AgentScope Runtime</strong> 中的全能型应用服务封装器。
-它为你的 agent 逻辑提供 HTTP 服务框架，并可将其作为 API 暴露，支持以下功能：</p>
+<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 是 <strong>AgentScope Runtime</strong> 中的全能型应用服务封装器。它为你的 agent 逻辑提供 HTTP 服务框架，并可将其作为 API 暴露。
+在当前版本中，<code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> <strong>直接继承自 <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code></strong>，这使得它在保持高度灵活性的同时，深度集成了 Agent 业务特有的高级功能。其核心特性包括：</p>
 <ul class="simple">
+<li><p><strong>完全兼容 FastAPI 生态</strong>：支持原生路由注册（GET/POST 等）、中间件扩展及标准生命周期管理。</p></li>
 <li><p><strong>流式响应（SSE）</strong>，实现实时输出</p></li>
+<li><p><strong>任务中断管理</strong>：提供基于分布式后端（如 Redis）的任务中断机制，支持对长耗时任务的精确控制。</p></li>
 <li><p>内置 <strong>健康检查</strong> 接口</p></li>
-<li><p><strong>生命周期钩子</strong>（<code class="docutils literal notranslate"><span class="pre">&#64;app.init</span></code> / <code class="docutils literal notranslate"><span class="pre">&#64;app.shutdown</span></code>），用于启动与清理逻辑</p></li>
 <li><p>可选的 <strong>Celery</strong> 异步任务队列</p></li>
 <li><p>部署到本地或远程目标</p></li>
 </ul>
@@ -751,12 +752,12 @@ data:<span class="w"> </span><span class="o">{</span><span class="s2">&quot;sequ
 </div>
 </section>
 <hr class="docutils" />
-<section id="id3">
-<h2>生命周期钩子<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h2>
+<section id="lifespan">
+<h2>生命周期管理(Lifespan)<a class="headerlink" href="#lifespan" title="Link to this heading">¶</a></h2>
 <p><strong>功能</strong></p>
-<p>在应用启动前和停止后执行自定义逻辑，例如加载模型或关闭连接。</p>
-<section id="id4">
-<h3>方式1：使用参数传递<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<p>在应用启动前加载模型、初始化数据库连接，或在关闭时释放资源，是生产环境的常见需求。</p>
+<section id="id3">
+<h3>方式1：参数传递（简单逻辑）<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
 <p><strong>关键参数</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">before_start</span></code>：在 API 服务启动之前执行</p></li>
@@ -781,56 +782,65 @@ data:<span class="w"> </span><span class="o">{</span><span class="s2">&quot;sequ
 </div>
 </div>
 </section>
-<section id="id5">
-<h3>方式2：使用装饰器（推荐）<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
-<p>除了通过构造函数参数传递钩子函数外，还可以使用装饰器的方式来注册生命周期钩子。
-这种写法有以下优点：</p>
+<section id="id4">
+<h3>方式2：使用 Lifespan 函数（推荐）<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<p>这是 <strong>AgentScope Runtime</strong> 推荐的现代写法。得益于对 <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code> 的继承，<code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 支持标准的 <code class="docutils literal notranslate"><span class="pre">lifespan</span></code> 管理方式，这种方式具有以下优点：</p>
 <ol class="arabic simple">
-<li><p><strong>更灵活直观</strong> —— 生命周期逻辑直接贴近应用定义，结构更清晰，可读性更高；</p></li>
-<li><p><strong>可共享成员变量</strong> —— 装饰器定义的函数会接收 <code class="docutils literal notranslate"><span class="pre">self</span></code>，可以访问 <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 实例的属性和服务（例如 <code class="docutils literal notranslate"><span class="pre">&#64;app.init</span></code> 中启动的状态服务、会话服务等），方便在不同生命周期或请求处理逻辑中共享和复用资源；</p></li>
+<li><p><strong>原生 FastAPI 体验</strong> —— <strong>该方法与原生 FastAPI 的标准写法完全一致。</strong> 如果你熟悉 FastAPI 开发，可以无缝应用原生的编程模式，显著降低学习成本。</p></li>
+<li><p><strong>结构化管理</strong> —— 启动与清理逻辑集中在一个函数内，通过 <code class="docutils literal notranslate"><span class="pre">yield</span></code> 分隔，逻辑更紧凑。</p></li>
+<li><p><strong>状态共享</strong> —— 可以在启动阶段将资源挂载到 <code class="docutils literal notranslate"><span class="pre">app.state</span></code> 上，在整个应用生命周期（包括请求处理函数）中通过 <code class="docutils literal notranslate"><span class="pre">app.state</span></code> 访问。</p></li>
+<li><p><strong>内置兼容性</strong> —— 即使使用了自定义 <code class="docutils literal notranslate"><span class="pre">lifespan</span></code>，<code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 内部仍会自动协同处理 Runner 的准备、协议适配器的挂载以及中断服务的生命周期。</p></li>
 </ol>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.session</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisSession</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.session</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisSession</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
 
+<span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+    <span class="c1"># 启动阶段</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">fakeredis</span>
+
+    <span class="n">fake_redis</span> <span class="o">=</span> <span class="n">fakeredis</span><span class="o">.</span><span class="n">aioredis</span><span class="o">.</span><span class="n">FakeRedis</span><span class="p">(</span>
+        <span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="c1"># 注意：这个 FakeRedis 实例仅用于开发/测试。</span>
+    <span class="c1"># 在生产环境中，请替换为你自己的 Redis 客户端/连接</span>
+    <span class="c1">#（例如 aioredis.Redis）。</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">RedisSession</span><span class="p">(</span>
+        <span class="n">connection_pool</span><span class="o">=</span><span class="n">fake_redis</span><span class="o">.</span><span class="n">connection_pool</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ 服务初始化完成&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># yield 将程序控制权交给 AgentApp</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># 清理阶段</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ 资源已清理&quot;</span><span class="p">)</span>
+
+<span class="c1"># 将定义好的 lifespan 传入 AgentApp</span>
 <span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
     <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
     <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
+    <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>
 <span class="p">)</span>
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">init</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;初始化服务资源&quot;&quot;&quot;</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">fakeredis</span>
-
-    <span class="n">fake_redis</span> <span class="o">=</span> <span class="n">fakeredis</span><span class="o">.</span><span class="n">aioredis</span><span class="o">.</span><span class="n">FakeRedis</span><span class="p">(</span><span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="c1"># NOTE: This FakeRedis instance is for development/testing only.</span>
-    <span class="c1"># In production, replace it with your own Redis client/connection</span>
-    <span class="c1"># (e.g., aioredis.Redis)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">RedisSession</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">fake_redis</span><span class="o">.</span><span class="n">connection_pool</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ 服务初始化完成&quot;</span><span class="p">)</span>
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">shutdown</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;清理服务资源&quot;&quot;&quot;</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ 资源已清理&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<p><strong>装饰器说明</strong></p>
+<p><strong>关键说明</strong></p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&#64;app.init</span></code>：注册初始化钩子，在服务启动前执行</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&#64;app.shutdown</span></code>：注册关闭钩子，在服务停止时执行</p></li>
-<li><p>装饰器函数接收 <code class="docutils literal notranslate"><span class="pre">self</span></code> 参数，可以访问 <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 实例</p></li>
-<li><p>支持同步和异步函数</p></li>
+<li><p><strong>参数签名</strong>：<code class="docutils literal notranslate"><span class="pre">lifespan</span></code> 函数必须接收一个 <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code> 实例作为参数，并使用 <code class="docutils literal notranslate"><span class="pre">&#64;asynccontextmanager</span></code> 装饰。</p></li>
+<li><p><strong>执行顺序</strong>：<code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 内部会自动调度。首先执行内部框架逻辑，接着执行你定义的 <code class="docutils literal notranslate"><span class="pre">lifespan</span></code> 启动逻辑，最后在服务关闭时反向执行清理逻辑。</p></li>
+<li><p><strong>废弃说明</strong>：请注意，旧版本中的 <code class="docutils literal notranslate"><span class="pre">&#64;app.init</span></code> 和 <code class="docutils literal notranslate"><span class="pre">&#64;app.shutdown</span></code> 装饰器现已被标记为废弃，请统一迁移至 <code class="docutils literal notranslate"><span class="pre">lifespan</span></code> 模式以获得更好的稳定性。</p></li>
 </ul>
 </section>
 </section>
 <hr class="docutils" />
-<section id="id6">
-<h2>健康检查接口<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h2>
+<section id="id5">
+<h2>健康检查接口<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h2>
 <p><strong>功能</strong></p>
 <p>自动提供健康探针接口，方便容器或集群部署。</p>
 <p><strong>接口列表</strong></p>
@@ -888,12 +898,12 @@ curl<span class="w"> </span>http://localhost:8090/
 </div>
 </section>
 <hr class="docutils" />
-<section id="id7">
-<h2>自定义查询处理<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h2>
+<section id="id6">
+<h2>自定义查询处理<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h2>
 <p><strong>功能</strong></p>
 <p>使用 <code class="docutils literal notranslate"><span class="pre">&#64;app.query()</span></code> 装饰器可以完全自定义查询处理逻辑，实现更灵活的控制，包括状态管理、会话历史管理等。</p>
-<section id="id8">
-<h3>基本用法<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
+<section id="id7">
+<h3>基本用法<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
@@ -906,6 +916,7 @@ curl<span class="w"> </span>http://localhost:8090/
 <span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
     <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
     <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
+    <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="nd">@app</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">framework</span><span class="o">=</span><span class="s2">&quot;agentscope&quot;</span><span class="p">)</span>
@@ -935,7 +946,7 @@ curl<span class="w"> </span>http://localhost:8090/
     <span class="p">)</span>
     <span class="n">agent</span><span class="o">.</span><span class="n">set_console_output_enabled</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
+    <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
         <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
         <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
         <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
@@ -947,7 +958,7 @@ curl<span class="w"> </span>http://localhost:8090/
     <span class="p">):</span>
         <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
 
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
+    <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
         <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
         <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
         <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
@@ -957,108 +968,22 @@ curl<span class="w"> </span>http://localhost:8090/
 </div>
 </div>
 </section>
-<section id="id9">
-<h3>关键特性<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h3>
+<section id="id8">
+<h3>关键特性<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
 <ol class="arabic simple">
 <li><p><strong>框架支持</strong>：<code class="docutils literal notranslate"><span class="pre">framework</span></code> 参数支持 <code class="docutils literal notranslate"><span class="pre">&quot;agentscope&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;autogen&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;agno&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;langgraph&quot;</span></code> 等</p></li>
 <li><p><strong>函数签名</strong>：</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">self</span></code>：AgentApp 实例，可以访问注册的服务</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">self</span></code>：AgentApp 绑定的 Runner 实例</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">msgs</span></code>：输入消息列表</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">request</span></code>：AgentRequest 对象，包含 <code class="docutils literal notranslate"><span class="pre">session_id</span></code>, <code class="docutils literal notranslate"><span class="pre">user_id</span></code> 等信息</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">**kwargs</span></code>：其他扩展参数</p></li>
 </ul>
 </li>
 <li><p><strong>流式输出</strong>：函数可以是生成器，支持流式返回结果</p></li>
-<li><p><strong>状态管理</strong>：可以访问 <code class="docutils literal notranslate"><span class="pre">self.state_service</span></code> 进行状态保存和恢复</p></li>
-<li><p><strong>会话历史</strong>：可以访问 <code class="docutils literal notranslate"><span class="pre">self.session_service</span></code> 管理会话历史</p></li>
+<li><p><strong>状态管理</strong>：可以访问 <code class="docutils literal notranslate"><span class="pre">app.state.state_service</span></code> 进行状态保存和恢复</p></li>
+<li><p><strong>会话历史</strong>：可以访问 <code class="docutils literal notranslate"><span class="pre">app.state.session_service</span></code> 管理会话历史</p></li>
 </ol>
-</section>
-<section id="agentapp">
-<h3>完整示例：带状态管理的 AgentApp<a class="headerlink" href="#agentapp" title="Link to this heading">¶</a></h3>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.formatter</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatFormatter</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">Toolkit</span><span class="p">,</span> <span class="n">execute_python_code</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">stream_printing_messages</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryMemory</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.session</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisSession</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentRequest</span>
-
-<span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
-    <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
-    <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-
-
-<span class="nd">@agent_app</span><span class="o">.</span><span class="n">init</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">fakeredis</span>
-
-    <span class="n">fake_redis</span> <span class="o">=</span> <span class="n">fakeredis</span><span class="o">.</span><span class="n">aioredis</span><span class="o">.</span><span class="n">FakeRedis</span><span class="p">(</span><span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="c1"># 注意：这个 FakeRedis 实例仅用于开发/测试。</span>
-    <span class="c1"># 在生产环境中，请替换为你自己的 Redis 客户端/连接</span>
-    <span class="c1">#（例如 aioredis.Redis）。</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">RedisSession</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">fake_redis</span><span class="o">.</span><span class="n">connection_pool</span><span class="p">)</span>
-
-
-<span class="nd">@agent_app</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">framework</span><span class="o">=</span><span class="s2">&quot;agentscope&quot;</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_func</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span>
-    <span class="n">msgs</span><span class="p">,</span>
-    <span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-<span class="p">):</span>
-    <span class="n">session_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session_id</span>
-    <span class="n">user_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">user_id</span>
-
-    <span class="n">toolkit</span> <span class="o">=</span> <span class="n">Toolkit</span><span class="p">()</span>
-    <span class="n">toolkit</span><span class="o">.</span><span class="n">register_tool_function</span><span class="p">(</span><span class="n">execute_python_code</span><span class="p">)</span>
-
-    <span class="n">agent</span> <span class="o">=</span> <span class="n">ReActAgent</span><span class="p">(</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
-        <span class="n">model</span><span class="o">=</span><span class="n">DashScopeChatModel</span><span class="p">(</span>
-            <span class="s2">&quot;qwen-turbo&quot;</span><span class="p">,</span>
-            <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
-            <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="p">),</span>
-        <span class="n">sys_prompt</span><span class="o">=</span><span class="s2">&quot;You&#39;re a helpful assistant named Friday.&quot;</span><span class="p">,</span>
-        <span class="n">toolkit</span><span class="o">=</span><span class="n">toolkit</span><span class="p">,</span>
-        <span class="n">memory</span><span class="o">=</span><span class="n">InMemoryMemory</span><span class="p">(),</span>
-        <span class="n">formatter</span><span class="o">=</span><span class="n">DashScopeChatFormatter</span><span class="p">(),</span>
-    <span class="p">)</span>
-    <span class="n">agent</span><span class="o">.</span><span class="n">set_console_output_enabled</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
-        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
-        <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
-        <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="k">async</span> <span class="k">for</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span> <span class="ow">in</span> <span class="n">stream_printing_messages</span><span class="p">(</span>
-        <span class="n">agents</span><span class="o">=</span><span class="p">[</span><span class="n">agent</span><span class="p">],</span>
-        <span class="n">coroutine_task</span><span class="o">=</span><span class="n">agent</span><span class="p">(</span><span class="n">msgs</span><span class="p">),</span>
-    <span class="p">):</span>
-        <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
-
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
-        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
-        <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
-        <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
-    <span class="p">)</span>
-
-
-<span class="n">agent_app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8090</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
 </section>
 <section id="v0-agent">
 <h3>与 V0 版本 Agent 参数方式的区别<a class="headerlink" href="#v0-agent" title="Link to this heading">¶</a></h3>
@@ -1093,12 +1018,50 @@ curl<span class="w"> </span>http://localhost:8090/
 </section>
 </section>
 <hr class="docutils" />
+<section id="id9">
+<h2>自定义接口定义<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h2>
+<p>你可以通过两种方式扩展 AgentApp 的功能接口。由于 <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 直接继承自 <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code>，它不仅保留了 Web 框架原生的灵活性，还针对 Agent 业务场景（如流式输出、对象序列化）提供了增强的工具。</p>
+<section id="fastapi">
+<h3>1. 原生 FastAPI 路由<a class="headerlink" href="#fastapi" title="Link to this heading">¶</a></h3>
+<p>这是最灵活的方式。你可以使用标准的 FastAPI 装饰器（如 <code class="docutils literal notranslate"><span class="pre">&#64;app.get</span></code> 和 <code class="docutils literal notranslate"><span class="pre">&#64;app.post</span></code>等）来定义任何业务接口。</p>
+<p><strong>适用场景</strong>：</p>
+<ul class="simple">
+<li><p>需要完全控制 <code class="docutils literal notranslate"><span class="pre">Response</span></code> 对象、状态码或 Header。</p></li>
+<li><p>定义简单的 Web 控制台接口或健康检查之外的监控接口。</p></li>
+</ul>
+<p><strong>用法示例</strong>：</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">()</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/info&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_info</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;使用原生 FastAPI 定义的接口&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;app name&quot;</span><span class="p">:</span> <span class="n">app</span><span class="o">.</span><span class="n">app_name</span><span class="p">,</span>
+        <span class="s2">&quot;app description&quot;</span><span class="p">:</span> <span class="n">app</span><span class="o">.</span><span class="n">app_description</span><span class="p">,</span>
+        <span class="s2">&quot;custom_metadata&quot;</span><span class="p">:</span> <span class="s2">&quot;v1.0.0&quot;</span>
+    <span class="p">}</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/update_config&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_config</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;标准的 POST 请求处理&quot;&quot;&quot;</span>
+    <span class="c1"># 你的业务逻辑</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;updated&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>调用：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span>http://localhost:8090/info
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/update_config<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;config_key&quot;: &quot;max_tokens&quot;, &quot;value&quot;: 512}&#39;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
 <section id="app-endpoint">
-<h2>通过 <code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint</span></code> 自定义接口<a class="headerlink" href="#app-endpoint" title="Link to this heading">¶</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 除了可以用 <code class="docutils literal notranslate"><span class="pre">&#64;app.query(...)</span></code> 定义统一的 <code class="docutils literal notranslate"><span class="pre">/process</span></code> 请求入口外，还支持通过 <code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint(...)</span></code> 装饰器为应用注册任意路径的 HTTP 接口。</p>
-<p><strong>主要特点</strong>：</p>
+<h3>2. <code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint</span></code> 便利装饰器<a class="headerlink" href="#app-endpoint" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 提供了特有的 <code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint</span></code> 装饰器。它在底层对 FastAPI 的路由注册进行了封装，专门针对 Agent 的返回场景做了优化。</p>
+<p><strong>核心优势</strong>：</p>
 <ol class="arabic simple">
-<li><p><strong>灵活性高</strong> —— 你可以为不同业务定义专门的 API 路径，而不是都走 <code class="docutils literal notranslate"><span class="pre">/process</span></code>；</p></li>
 <li><p>多种返回模式—— 支持</p>
 <ul class="simple">
 <li><p>普通同步/异步函数返回 JSON 对象</p></li>
@@ -1115,7 +1078,7 @@ curl<span class="w"> </span>http://localhost:8090/
 </li>
 <li><p><strong>异常处理</strong> —— 流式生成器抛出的异常会自动封装到 SSE 错误事件中返回给客户端。</p></li>
 </ol>
-<p><strong>示例</strong>：</p>
+<p><strong>用法示例</strong>：</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">()</span>
 
 <span class="nd">@app</span><span class="o">.</span><span class="n">endpoint</span><span class="p">(</span><span class="s2">&quot;/hello&quot;</span><span class="p">)</span>
@@ -1130,13 +1093,330 @@ curl<span class="w"> </span>http://localhost:8090/
 </div>
 <p>调用：</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/hello
-curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/stream_numbers
+curl<span class="w"> </span>-N<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8090/stream_numbers
 </pre></div>
 </div>
 </section>
-<hr class="docutils" />
 <section id="id10">
-<h2>部署到本地或远程<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h2>
+<h3>两种方式的区别与选择<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h3>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head text-left"><p>特性</p></th>
+<th class="head text-left"><p>原生 FastAPI (<code class="docutils literal notranslate"><span class="pre">&#64;app.post</span></code> 等)</p></th>
+<th class="head text-left"><p>便利装饰器 (<code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint</span></code>)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td class="text-left"><p><strong>流式返回</strong></p></td>
+<td class="text-left"><p>需手动构造 <code class="docutils literal notranslate"><span class="pre">StreamingResponse</span></code> 并处理 SSE 格式</p></td>
+<td class="text-left"><p><strong>自动</strong> 识别生成器并转换为 SSE 格式</p></td>
+</tr>
+<tr class="row-odd"><td class="text-left"><p><strong>序列化</strong></p></td>
+<td class="text-left"><p>依赖 FastAPI 内置序列化</p></td>
+<td class="text-left"><p>增强的深度序列化（支持更多复杂对象类型）</p></td>
+</tr>
+<tr class="row-even"><td class="text-left"><p><strong>错误处理</strong></p></td>
+<td class="text-left"><p>需自行通过 Middleware 或 Exception Handler 处理</p></td>
+<td class="text-left"><p>针对流式过程中的异常提供了 <strong>自动封装回显</strong></p></td>
+</tr>
+<tr class="row-odd"><td class="text-left"><p><strong>灵活性</strong></p></td>
+<td class="text-left"><p><strong>极高</strong>，支持所有原生配置</p></td>
+<td class="text-left"><p><strong>较高</strong>，专注于 Agent 响应规范</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>建议</strong>：</p>
+<ul class="simple">
+<li><p>如果你的接口需要返回 <strong>Agent 的推理过程或流式数据</strong>，优先使用 <code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint</span></code>。</p></li>
+<li><p>如果你的接口是 <strong>标准的 Web 业务逻辑</strong>（如配置管理、状态查询），建议使用原生 FastAPI 方式。</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="interrupt-management">
+<h2>任务中断与管理 (Interrupt Management)<a class="headerlink" href="#interrupt-management" title="Link to this heading">¶</a></h2>
+<p>在长链条推理或复杂 Agent 交互场景中，用户可能需要中途停止正在运行的任务。目前 <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 利用中断后端（如 Redis），提供了对任务状态的精准控制，包含如下功能：</p>
+<ul class="simple">
+<li><p><strong>分布式支持</strong>：通过 Redis 后端，可以在集群环境下的任意节点发送中断信号，停止运行在另一节点上的任务。</p></li>
+<li><p><strong>状态同步</strong>：自动管理任务的运行状态（RUNNING, STOPPED, FINISHED, ERROR），防止同一 Session 的并发冲突。</p></li>
+<li><p><strong>优雅取消</strong>：利用 Python 的 <code class="docutils literal notranslate"><span class="pre">asyncio</span></code> 取消机制，允许开发者在捕获 <code class="docutils literal notranslate"><span class="pre">CancelledError</span></code> 后执行清理逻辑（如保存 Agent 当前状态）。</p></li>
+</ul>
+<section id="id11">
+<h3>配置中断后端<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 支持三种后端配置方式：</p>
+<ol class="arabic simple">
+<li><p><strong>本地模式（默认）</strong>：若未提供配置，使用 <code class="docutils literal notranslate"><span class="pre">LocalInterruptBackend</span></code>，适用于单机运行。</p></li>
+<li><p><strong>Redis 模式（推荐）</strong>：通过 <code class="docutils literal notranslate"><span class="pre">interrupt_redis_url</span></code> 配置，适用于分布式部署。</p></li>
+<li><p><strong>自定义后端</strong>：通过 <code class="docutils literal notranslate"><span class="pre">interrupt_backend</span></code> 参数传入继承自 <code class="docutils literal notranslate"><span class="pre">BaseInterruptBackend</span></code> 的自定义中断后端实例。</p></li>
+</ol>
+<p><strong>示例</strong>：</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
+    <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;InterruptibleAgent&quot;</span><span class="p">,</span>
+    <span class="c1"># 开启分布式中断支持</span>
+    <span class="n">interrupt_redis_url</span><span class="o">=</span><span class="s2">&quot;redis://localhost&quot;</span> <span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id12">
+<h3>编写支持中断的处理函数<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
+<p>在 <code class="docutils literal notranslate"><span class="pre">&#64;app.query</span></code> 装饰的处理函数中，当外部触发中断时，正在执行的协程会抛出 <code class="docutils literal notranslate"><span class="pre">asyncio.CancelledError</span></code>。开发者应当捕获此异常以实现状态保存等功能。</p>
+<p>注意，当你在处理函数中捕获中断信号时，务必手动调用 <code class="docutils literal notranslate"><span class="pre">agent.interrupt()</span></code> 方法确保底层模型调用或复杂循环被正确截断。这是因为虽然 <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 取消了外层的异步任务流，但底层 Agent 可能正在进行复杂的循环或阻塞调用。
+在捕获 <code class="docutils literal notranslate"><span class="pre">CancelledError</span></code> 后调用 <code class="docutils literal notranslate"><span class="pre">agent.interrupt()</span></code> 是最佳实践，它能确保 Agent 内部的推理链条被优雅地截断，并生成一份准确的状态数据用于后续恢复。</p>
+<p><strong>用法示例</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@agent_app</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">framework</span><span class="o">=</span><span class="s2">&quot;agentscope&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_func</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">msgs</span><span class="p">,</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span>
+    <span class="c1"># 准备 Agent</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">ReActAgent</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+
+    <span class="c1"># 尝试恢复历史状态，适用于中断恢复时的状态恢复等场景</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+        <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># AgentApp 会在此生成器外层注入中断监听逻辑</span>
+        <span class="c1"># 当调用 AgentApp 的 stop_chat 方法触发中断时，此处会抛出 CancelledError 异常</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span> <span class="ow">in</span> <span class="n">stream_printing_messages</span><span class="p">(</span><span class="o">...</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
+
+    <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+        <span class="c1"># 核心逻辑：响应中断信号</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;检测到任务 </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">session_id</span><span class="si">}</span><span class="s2"> 被手动中断&quot;</span><span class="p">)</span>
+
+        <span class="c1"># 重要：手动停止底层 Agent 任务的执行</span>
+        <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">interrupt</span><span class="p">()</span>
+
+        <span class="c1"># 必须重新抛出异常，让系统将任务状态标记为 STOPPED</span>
+        <span class="k">raise</span>
+
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># 无论是任务是被手动中断还是正常执行结束，均保存 agent 状态，以便下次恢复</span>
+        <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+            <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id13">
+<h3>触发中断信号<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h3>
+<p>你可以通过自定义路由，在其中调用 <code class="docutils literal notranslate"><span class="pre">agent_app.stop_chat</span></code> 方法来触发中断。</p>
+<p><strong>代码示例</strong>：</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@agent_app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/stop&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop_task</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span><span class="p">):</span>
+    <span class="c1"># 发送中断信号给指定的 user_id 和 session_id</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">stop_chat</span><span class="p">(</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">session_id</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>调用</strong>：</p>
+<p>用户只需向 <code class="docutils literal notranslate"><span class="pre">/stop</span></code> 接口发送包含 <code class="docutils literal notranslate"><span class="pre">user_id</span></code> 和 <code class="docutils literal notranslate"><span class="pre">session_id</span></code> 的请求，对应的正在运行的查询任务将被立即取消：</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://localhost:8090/stop&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;input&quot;: [],</span>
+<span class="s1">    &quot;session_id&quot;: &quot;目标任务的 Session ID&quot;,</span>
+<span class="s1">    &quot;user_id&quot;: &quot;目标任务的 User ID&quot;</span>
+<span class="s1">  }&#39;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="agentapp">
+<h2>完整应用示例：具有状态管理与中断处理功能的 AgentApp<a class="headerlink" href="#agentapp" title="Link to this heading">¶</a></h2>
+<p>下面的示例展示了如何整合上述特性，构建一个具备状态恢复和任务中断能力的 Agent 服务。</p>
+<section id="id14">
+<h3>完整代码<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.formatter</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatFormatter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">Toolkit</span><span class="p">,</span> <span class="n">execute_python_code</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">stream_printing_messages</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryMemory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.session</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisSession</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentRequest</span>
+
+<span class="c1"># 1. 定义生命周期</span>
+<span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">fakeredis</span>
+
+    <span class="n">fake_redis</span> <span class="o">=</span> <span class="n">fakeredis</span><span class="o">.</span><span class="n">aioredis</span><span class="o">.</span><span class="n">FakeRedis</span><span class="p">(</span>
+        <span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="c1"># 注意：这个 FakeRedis 实例仅用于开发/测试。</span>
+    <span class="c1"># 在生产环境中，请替换为你自己的 Redis 客户端/连接</span>
+    <span class="c1">#（例如 aioredis.Redis）。</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">RedisSession</span><span class="p">(</span>
+        <span class="n">connection_pool</span><span class="o">=</span><span class="n">fake_redis</span><span class="o">.</span><span class="n">connection_pool</span>
+    <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;AgentApp is shutting down...&quot;</span><span class="p">)</span>
+
+<span class="c1"># 2. 创建 AgentApp</span>
+<span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
+    <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+    <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
+    <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>
+
+    <span class="c1"># 注意: 由于&#39;interrupt_redis_url&#39;和&#39;interrupt_backend&#39;</span>
+    <span class="c1"># 均未被传入，当前采用的是本地中断后端。</span>
+    <span class="c1"># 为了支持分布式中断，你可以添加如下配置:</span>
+    <span class="c1"># interrupt_redis_url=&quot;redis://localhost&quot;,</span>
+<span class="p">)</span>
+
+<span class="c1"># 3. 定义请求处理逻辑</span>
+<span class="nd">@agent_app</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">framework</span><span class="o">=</span><span class="s2">&quot;agentscope&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_func</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">msgs</span><span class="p">,</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">session_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session_id</span>
+    <span class="n">user_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">user_id</span>
+
+    <span class="n">toolkit</span> <span class="o">=</span> <span class="n">Toolkit</span><span class="p">()</span>
+    <span class="n">toolkit</span><span class="o">.</span><span class="n">register_tool_function</span><span class="p">(</span><span class="n">execute_python_code</span><span class="p">)</span>
+
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">ReActAgent</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">DashScopeChatModel</span><span class="p">(</span>
+            <span class="s2">&quot;qwen-turbo&quot;</span><span class="p">,</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DASHSCOPE_API_KEY&quot;</span><span class="p">),</span>
+            <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">sys_prompt</span><span class="o">=</span><span class="s2">&quot;You&#39;re a helpful assistant named Friday.&quot;</span><span class="p">,</span>
+        <span class="n">toolkit</span><span class="o">=</span><span class="n">toolkit</span><span class="p">,</span>
+        <span class="n">memory</span><span class="o">=</span><span class="n">InMemoryMemory</span><span class="p">(),</span>
+        <span class="n">formatter</span><span class="o">=</span><span class="n">DashScopeChatFormatter</span><span class="p">(),</span>
+    <span class="p">)</span>
+    <span class="n">agent</span><span class="o">.</span><span class="n">set_console_output_enabled</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># 加载 agent 状态</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+        <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span> <span class="ow">in</span> <span class="n">stream_printing_messages</span><span class="p">(</span>
+            <span class="n">agents</span><span class="o">=</span><span class="p">[</span><span class="n">agent</span><span class="p">],</span>
+            <span class="n">coroutine_task</span><span class="o">=</span><span class="n">agent</span><span class="p">(</span><span class="n">msgs</span><span class="p">),</span>
+        <span class="p">):</span>
+            <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
+
+    <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+        <span class="c1"># 中断处理逻辑</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Task </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2"> was manually interrupted.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># 为彻底停止底层 agent 的运行，此处须手动中断 agent</span>
+        <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">interrupt</span><span class="p">()</span>
+
+        <span class="c1"># 重新抛出异常，让系统将任务状态标记为 STOPPED</span>
+        <span class="k">raise</span>
+
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># 保存 agent 状态</span>
+        <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+            <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<span class="c1"># 4. 注册中断触发路由</span>
+<span class="nd">@agent_app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/stop&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop_task</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">AgentRequest</span><span class="p">):</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">stop_chat</span><span class="p">(</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Interrupt signal broadcasted.&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+<span class="c1"># 5. 启动应用</span>
+<span class="n">agent_app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8090</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="id15">
+<h3>中断功能测试示例<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h3>
+<p>为了方便测试中断功能，你可以使用两个终端窗口：一个用于启动长耗时的任务，另一个用于发送中断信号。</p>
+<p><strong>1. 启动一个长耗时任务</strong></p>
+<p>在第一个终端中，发送一个复杂的请求（例如让 Agent 写一篇长文章），并指定 <code class="docutils literal notranslate"><span class="pre">session_id</span></code> 和 <code class="docutils literal notranslate"><span class="pre">user_id</span></code>。
+由于使用了 <code class="docutils literal notranslate"><span class="pre">-N</span></code> 参数，你会看到流式输出的结果实时打印。</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 终端 1: 发起推理请求</span>
+curl<span class="w"> </span>-N<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://localhost:8090/process&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;input&quot;: [</span>
+<span class="s1">      {</span>
+<span class="s1">        &quot;role&quot;: &quot;user&quot;,</span>
+<span class="s1">        &quot;content&quot;: [</span>
+<span class="s1">          {</span>
+<span class="s1">            &quot;type&quot;: &quot;text&quot;,</span>
+<span class="s1">            &quot;text&quot;: &quot;Please write a very long and detailed story about a robot named Friday exploring a distant galaxy.&quot;</span>
+<span class="s1">          }</span>
+<span class="s1">        ]</span>
+<span class="s1">      }</span>
+<span class="s1">    ],</span>
+<span class="s1">    &quot;session_id&quot;: &quot;ss-123&quot;,</span>
+<span class="s1">    &quot;user_id&quot;: &quot;uu-123&quot;</span>
+<span class="s1">  }&#39;</span>
+</pre></div>
+</div>
+<p><strong>2. 发送中断信号</strong></p>
+<p>在上述任务执行过程中（终端 1 还在打印结果时），打开第二个终端，发送中断请求。<strong>注意：<code class="docutils literal notranslate"><span class="pre">session_id</span></code> 和 <code class="docutils literal notranslate"><span class="pre">user_id</span></code> 必须与上方请求保持一致。</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 终端 2: 触发中断</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;http://localhost:8090/stop&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;input&quot;: [],</span>
+<span class="s1">    &quot;session_id&quot;: &quot;ss-123&quot;,</span>
+<span class="s1">    &quot;user_id&quot;: &quot;uu-123&quot;</span>
+<span class="s1">  }&#39;</span>
+</pre></div>
+</div>
+<p><strong>预期结果</strong></p>
+<ul class="simple">
+<li><p><strong>终端 2</strong>：会立即返回 <code class="docutils literal notranslate"><span class="pre">{&quot;status&quot;:</span> <span class="pre">&quot;success&quot;,</span> <span class="pre">&quot;message&quot;:</span> <span class="pre">&quot;Interrupt</span> <span class="pre">signal</span> <span class="pre">broadcasted.&quot;}</span></code>。</p></li>
+<li><p><strong>终端 1</strong>：流式输出将立即停止，HTTP 连接关闭。如果你在代码中捕获了 <code class="docutils literal notranslate"><span class="pre">asyncio.CancelledError</span></code>，你会在服务端日志中看到自定义的中断处理逻辑（如“Task ss-123 was manually interrupted.”）。</p></li>
+</ul>
+</section>
+</section>
+<section id="id16">
+<h2>部署到本地或远程<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h2>
 <p><strong>功能</strong></p>
 <p>通过 <code class="docutils literal notranslate"><span class="pre">deploy()</span></code> 方法统一部署到不同运行环境。</p>
 <p><strong>用法示例</strong></p>
@@ -1247,22 +1527,37 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 <li><a class="reference internal" href="#id2">初始化与基本运行</a></li>
 <li><a class="reference internal" href="#a2a">A2A 扩展字段配置</a></li>
 <li><a class="reference internal" href="#sse">流式输出（SSE）</a></li>
-<li><a class="reference internal" href="#id3">生命周期钩子</a><ul>
-<li><a class="reference internal" href="#id4">方式1：使用参数传递</a></li>
-<li><a class="reference internal" href="#id5">方式2：使用装饰器（推荐）</a></li>
+<li><a class="reference internal" href="#lifespan">生命周期管理(Lifespan)</a><ul>
+<li><a class="reference internal" href="#id3">方式1：参数传递（简单逻辑）</a></li>
+<li><a class="reference internal" href="#id4">方式2：使用 Lifespan 函数（推荐）</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#id6">健康检查接口</a></li>
+<li><a class="reference internal" href="#id5">健康检查接口</a></li>
 <li><a class="reference internal" href="#celery">Celery 异步任务队列（可选）</a></li>
-<li><a class="reference internal" href="#id7">自定义查询处理</a><ul>
-<li><a class="reference internal" href="#id8">基本用法</a></li>
-<li><a class="reference internal" href="#id9">关键特性</a></li>
-<li><a class="reference internal" href="#agentapp">完整示例：带状态管理的 AgentApp</a></li>
+<li><a class="reference internal" href="#id6">自定义查询处理</a><ul>
+<li><a class="reference internal" href="#id7">基本用法</a></li>
+<li><a class="reference internal" href="#id8">关键特性</a></li>
 <li><a class="reference internal" href="#v0-agent">与 V0 版本 Agent 参数方式的区别</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#app-endpoint">通过 <code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint</span></code> 自定义接口</a></li>
-<li><a class="reference internal" href="#id10">部署到本地或远程</a></li>
+<li><a class="reference internal" href="#id9">自定义接口定义</a><ul>
+<li><a class="reference internal" href="#fastapi">1. 原生 FastAPI 路由</a></li>
+<li><a class="reference internal" href="#app-endpoint">2. <code class="docutils literal notranslate"><span class="pre">&#64;app.endpoint</span></code> 便利装饰器</a></li>
+<li><a class="reference internal" href="#id10">两种方式的区别与选择</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#interrupt-management">任务中断与管理 (Interrupt Management)</a><ul>
+<li><a class="reference internal" href="#id11">配置中断后端</a></li>
+<li><a class="reference internal" href="#id12">编写支持中断的处理函数</a></li>
+<li><a class="reference internal" href="#id13">触发中断信号</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#agentapp">完整应用示例：具有状态管理与中断处理功能的 AgentApp</a><ul>
+<li><a class="reference internal" href="#id14">完整代码</a></li>
+<li><a class="reference internal" href="#id15">中断功能测试示例</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id16">部署到本地或远程</a></li>
 </ul>
 </li>
 </ul>

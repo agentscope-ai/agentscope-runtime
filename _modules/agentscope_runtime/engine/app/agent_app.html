@@ -618,58 +618,142 @@ body.preview-active {
         <article role="main" id="furo-main-content">
           <h1>Source code for agentscope_runtime.engine.app.agent_app</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="c1"># flake8: noqa: E501</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">types</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">shlex</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">types</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span><span class="p">,</span> <span class="n">AsyncExitStack</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Type</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">a2a.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">A2ARequest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">Request</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.middleware.cors</span><span class="w"> </span><span class="kn">import</span> <span class="n">CORSMiddleware</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.params</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span> <span class="k">as</span> <span class="n">DependsClass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">StreamingResponse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">starlette.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Lifespan</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.base_app</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseApp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.common.utils.deprecation</span><span class="w"> </span><span class="kn">import</span> <span class="n">deprecated</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.deployers.adapter.protocol_adapter</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ProtocolAdapter</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.response_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResponseAPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...version</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..deployers</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeployManager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..deployers.adapter.a2a</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">A2AFastAPIDefaultAdapter</span><span class="p">,</span>
     <span class="n">AgentCardWithRuntimeConfig</span><span class="p">,</span>
     <span class="n">extract_a2a_config</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..deployers.adapter.agui</span><span class="w"> </span><span class="kn">import</span> <span class="n">AGUIDefaultAdapter</span><span class="p">,</span> <span class="n">AGUIAdaptorConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..deployers.adapter.responses.response_api_protocol_adapter</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ResponseAPIDefaultAdapter</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..deployers.adapter.agui</span><span class="w"> </span><span class="kn">import</span> <span class="n">AGUIDefaultAdapter</span><span class="p">,</span> <span class="n">AGUIAdaptorConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..deployers.utils.deployment_modes</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeploymentMode</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..deployers.utils.service_utils.fastapi_factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIAppFactory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..deployers.utils.service_utils.interrupt</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BaseInterruptBackend</span><span class="p">,</span>
+    <span class="n">InterruptMixin</span><span class="p">,</span>
+    <span class="n">RedisInterruptBackend</span><span class="p">,</span>
+    <span class="n">LocalInterruptBackend</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..deployers.utils.service_utils.routing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">UnifiedRoutingMixin</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..runner</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runner</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentRequest</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">...version</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
 <span class="n">HOST</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;0.0.0.0&quot;</span><span class="p">)</span>
 <span class="n">PORT</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;PORT&quot;</span><span class="p">,</span> <span class="s2">&quot;8080&quot;</span><span class="p">))</span>
 
 
 <div class="viewcode-block" id="AgentApp">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.app.agent_app.AgentApp">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">AgentApp</span><span class="p">(</span><span class="n">BaseApp</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AgentApp</span><span class="p">(</span><span class="n">FastAPI</span><span class="p">,</span> <span class="n">UnifiedRoutingMixin</span><span class="p">,</span> <span class="n">InterruptMixin</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    The AgentApp class represents an application that runs as an agent.</span>
+<span class="sd">    Agent application integrating FastAPI and Runner</span>
+<span class="sd">    with support for distributed interrupts.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_REF_TEMPLATE</span> <span class="o">=</span> <span class="s2">&quot;#/components/schemas/</span><span class="si">{model}</span><span class="s2">&quot;</span>
+
+<div class="viewcode-block" id="AgentApp.openapi">
+<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.app.agent_app.AgentApp.openapi">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">openapi</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate OpenAPI schema with protocol-specific components.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">openapi_schema</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">openapi</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">protocol_adapters</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">A2AFastAPIDefaultAdapter</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">adapter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">protocol_adapters</span>
+            <span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_inject_schema</span><span class="p">(</span>
+                    <span class="n">openapi_schema</span><span class="p">,</span>
+                    <span class="s2">&quot;A2ARequest&quot;</span><span class="p">,</span>
+                    <span class="n">A2ARequest</span><span class="o">.</span><span class="n">model_json_schema</span><span class="p">(</span>
+                        <span class="n">ref_template</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_REF_TEMPLATE</span><span class="p">,</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">ResponseAPIDefaultAdapter</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">adapter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">protocol_adapters</span>
+            <span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_inject_schema</span><span class="p">(</span>
+                    <span class="n">openapi_schema</span><span class="p">,</span>
+                    <span class="s2">&quot;ResponseAPI&quot;</span><span class="p">,</span>
+                    <span class="n">ResponseAPI</span><span class="o">.</span><span class="n">model_json_schema</span><span class="p">(</span>
+                        <span class="n">ref_template</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_REF_TEMPLATE</span><span class="p">,</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inject_schema</span><span class="p">(</span>
+            <span class="n">openapi_schema</span><span class="p">,</span>
+            <span class="s2">&quot;AgentRequest&quot;</span><span class="p">,</span>
+            <span class="n">AgentRequest</span><span class="o">.</span><span class="n">model_json_schema</span><span class="p">(</span>
+                <span class="n">ref_template</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_REF_TEMPLATE</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">openapi_schema</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_inject_schema</span><span class="p">(</span>
+        <span class="n">openapi_schema</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">schema_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">schema_definition</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Insert schema definition (and nested defs) into OpenAPI.&quot;&quot;&quot;</span>
+        <span class="n">components</span> <span class="o">=</span> <span class="n">openapi_schema</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;components&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">component_schemas</span> <span class="o">=</span> <span class="n">components</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;schemas&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+        <span class="n">defs</span> <span class="o">=</span> <span class="n">schema_definition</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;$defs&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">for</span> <span class="n">def_name</span><span class="p">,</span> <span class="n">def_schema</span> <span class="ow">in</span> <span class="n">defs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">component_schemas</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">def_name</span><span class="p">,</span> <span class="n">def_schema</span><span class="p">)</span>
+
+        <span class="n">component_schemas</span><span class="p">[</span><span class="n">schema_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">schema_definition</span>
 
 <div class="viewcode-block" id="AgentApp.__init__">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.app.agent_app.AgentApp.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
-        <span class="n">app_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">app_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;AgentScope Runtime API&quot;</span><span class="p">,</span>
         <span class="n">app_description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="n">endpoint_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/process&quot;</span><span class="p">,</span>
         <span class="n">response_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;sse&quot;</span><span class="p">,</span>
         <span class="n">stream</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-        <span class="n">request_model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">type</span><span class="p">[</span><span class="n">BaseModel</span><span class="p">]]</span> <span class="o">=</span> <span class="n">AgentRequest</span><span class="p">,</span>
+        <span class="n">request_model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">BaseModel</span><span class="p">]]</span> <span class="o">=</span> <span class="n">AgentRequest</span><span class="p">,</span>
         <span class="n">before_start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">after_finish</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">broker_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -678,53 +762,27 @@ body.preview-active {
         <span class="n">enable_embedded_worker</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">a2a_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;AgentCardWithRuntimeConfig&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">agui_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AGUIAdaptorConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="n">interrupt_backend</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseInterruptBackend</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">interrupt_redis_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">lifespan</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Lifespan</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mode</span><span class="p">:</span> <span class="n">DeploymentMode</span> <span class="o">=</span> <span class="n">DeploymentMode</span><span class="o">.</span><span class="n">DAEMON_THREAD</span><span class="p">,</span>
+        <span class="n">protocol_adapters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">ProtocolAdapter</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">custom_endpoints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Initialize the AgentApp.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_user_lifespan</span> <span class="o">=</span> <span class="n">lifespan</span>
 
-<span class="sd">        Args:</span>
-<span class="sd">            app_name: Name of the agent application</span>
-<span class="sd">            app_description: Description of the agent application</span>
-<span class="sd">            endpoint_path: API endpoint path for processing requests</span>
-<span class="sd">            response_type: Type of response (default: &quot;sse&quot;)</span>
-<span class="sd">            stream: Whether to enable streaming responses</span>
-<span class="sd">            request_model: Request model class</span>
-<span class="sd">            before_start: Callback function to execute before starting</span>
-<span class="sd">            after_finish: Callback function to execute after finishing</span>
-<span class="sd">            broker_url: URL for message broker</span>
-<span class="sd">            backend_url: URL for backend service</span>
-<span class="sd">            runner: Optional runner instance</span>
-<span class="sd">            enable_embedded_worker: Whether to enable embedded worker</span>
-<span class="sd">            a2a_config: Optional A2A runtime configuration.</span>
-<span class="sd">                Must be an ``AgentCardWithRuntimeConfig`` instance, which</span>
-<span class="sd">                contains ``agent_card`` (AgentCard object or dict) and runtime</span>
-<span class="sd">                settings (host, port, registry, task_timeout, etc.).</span>
+        <span class="n">fastapi_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="n">app_name</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">app_description</span><span class="p">,</span>
+            <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="n">__version__</span><span class="p">,</span>
+            <span class="s2">&quot;lifespan&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lifespan_manager</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">}</span>
 
-<span class="sd">                Example::</span>
+        <span class="n">FastAPI</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">fastapi_kwargs</span><span class="p">)</span>
 
-<span class="sd">                    from a2a.types import AgentCapabilities</span>
-<span class="sd">                    from agentscope_runtime.engine.deployers.adapter.a2a import (</span>
-<span class="sd">                        AgentCardWithRuntimeConfig,</span>
-<span class="sd">                    )</span>
-
-<span class="sd">                    config = AgentCardWithRuntimeConfig(</span>
-<span class="sd">                        agent_card={</span>
-<span class="sd">                            &quot;name&quot;: &quot;MyAgent&quot;,</span>
-<span class="sd">                            &quot;version&quot;: &quot;1.0.0&quot;,</span>
-<span class="sd">                            &quot;description&quot;: &quot;My agent&quot;,</span>
-<span class="sd">                            &quot;url&quot;: &quot;http://localhost:8080&quot;,</span>
-<span class="sd">                            &quot;capabilities&quot;: AgentCapabilities(),</span>
-<span class="sd">                            &quot;default_input_modes&quot;: [&quot;text&quot;],</span>
-<span class="sd">                            &quot;default_output_modes&quot;: [&quot;text&quot;],</span>
-<span class="sd">                            &quot;skills&quot;: [],</span>
-<span class="sd">                        },</span>
-<span class="sd">                        registry=[nacos_registry],</span>
-<span class="sd">                        task_timeout=120,</span>
-<span class="sd">                    )</span>
-<span class="sd">            agui_config: Config for AGUI adaptor.</span>
-<span class="sd">            **kwargs: Additional keyword arguments passed to FastAPI app</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_routing_manager</span><span class="p">(</span><span class="n">broker_url</span><span class="p">,</span> <span class="n">backend_url</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span> <span class="o">=</span> <span class="n">endpoint_path</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">response_type</span> <span class="o">=</span> <span class="n">response_type</span>
@@ -736,31 +794,28 @@ body.preview-active {
         <span class="bp">self</span><span class="o">.</span><span class="n">backend_url</span> <span class="o">=</span> <span class="n">backend_url</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">enable_embedded_worker</span> <span class="o">=</span> <span class="n">enable_embedded_worker</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span> <span class="o">=</span> <span class="n">runner</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">custom_endpoints</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Store custom endpoints</span>
-
-        <span class="c1"># Custom Handlers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_query_handler</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_init_handler</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_shutdown_handler</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_framework_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="c1"># Prepare A2A protocol adapter configuration</span>
-        <span class="n">a2a_config</span> <span class="o">=</span> <span class="n">extract_a2a_config</span><span class="p">(</span><span class="n">a2a_config</span><span class="o">=</span><span class="n">a2a_config</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">runner</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span> <span class="o">=</span> <span class="n">runner</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_endpoint_router</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span> <span class="o">=</span> <span class="n">Runner</span><span class="p">()</span>
 
-        <span class="n">a2a_protocol</span> <span class="o">=</span> <span class="n">A2AFastAPIDefaultAdapter</span><span class="p">(</span>
-            <span class="n">agent_name</span><span class="o">=</span><span class="n">app_name</span><span class="p">,</span>
-            <span class="n">agent_description</span><span class="o">=</span><span class="n">app_description</span><span class="p">,</span>
-            <span class="n">a2a_config</span><span class="o">=</span><span class="n">a2a_config</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">deployment_mode</span> <span class="o">=</span> <span class="n">mode</span>
 
-        <span class="n">response_protocol</span> <span class="o">=</span> <span class="n">ResponseAPIDefaultAdapter</span><span class="p">()</span>
-        <span class="n">agui_protocol</span> <span class="o">=</span> <span class="n">AGUIDefaultAdapter</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">agui_config</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">protocol_adapters</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">a2a_protocol</span><span class="p">,</span>
-            <span class="n">response_protocol</span><span class="p">,</span>
-            <span class="n">agui_protocol</span><span class="p">,</span>
-        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">protocol_adapters</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">protocol_adapters</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">protocol_adapters</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">protocol_adapters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_protocol_adapters</span><span class="p">(</span>
+                <span class="n">app_name</span><span class="p">,</span>
+                <span class="n">app_description</span><span class="p">,</span>
+                <span class="n">a2a_config</span><span class="p">,</span>
+                <span class="n">agui_config</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_app_kwargs</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Agent Service&quot;</span><span class="p">,</span>
@@ -769,20 +824,326 @@ body.preview-active {
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">}</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="n">broker_url</span><span class="o">=</span><span class="n">broker_url</span><span class="p">,</span>
-            <span class="n">backend_url</span><span class="o">=</span><span class="n">backend_url</span><span class="p">,</span>
-        <span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setup_interrupt_service</span><span class="p">(</span>
+            <span class="n">interrupt_backend</span><span class="p">,</span>
+            <span class="n">interrupt_redis_url</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setup_builtin_routes</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">custom_endpoints</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">restore_custom_endpoints</span><span class="p">(</span><span class="n">custom_endpoints</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_middleware</span><span class="p">()</span></div>
 
 
-        <span class="c1"># Store custom endpoints for deployment</span>
-        <span class="c1"># FastAPIAppFactory will handle adding them to FastAPI</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_interrupt_service</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">backend</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseInterruptBackend</span><span class="p">],</span>
+        <span class="n">redis_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Setup the interrupt service backend based on configuration.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">backend</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Initializing interrupt service using an &quot;</span>
+                <span class="s2">&quot;externally provided backend instance.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_init_interrupt_service</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">redis_url</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Initializing distributed interrupt service &quot;</span>
+                <span class="s2">&quot;with Redis backend.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_init_interrupt_service</span><span class="p">(</span><span class="n">RedisInterruptBackend</span><span class="p">(</span><span class="n">redis_url</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;No distributed backend configuration detected. &quot;</span>
+                <span class="s2">&quot;Falling back to LocalInterruptBackend for &quot;</span>
+                <span class="s2">&quot;single-node execution.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_init_interrupt_service</span><span class="p">(</span><span class="n">LocalInterruptBackend</span><span class="p">())</span>
+
+    <span class="nd">@asynccontextmanager</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_internal_framework_lifespan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Lifecycle manager for internal runner and hooks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint: disable=too-many-branches</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_build_runner</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># aexit any possible running instances before set up</span>
+            <span class="c1"># runner</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="fm">__aexit__</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="fm">__aenter__</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">before_start</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">iscoroutinefunction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">before_start</span><span class="p">):</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">before_start</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">before_start</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+            <span class="n">func</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">stream_query</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream</span>
+                <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">query</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">adapter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">protocol_adapters</span><span class="p">:</span>
+                <span class="n">adapter</span><span class="o">.</span><span class="n">add_endpoint</span><span class="p">(</span><span class="n">app</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="n">func</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_embedded_worker</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">celery_app</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">start_embedded_celery_worker</span><span class="p">()</span>
+
+            <span class="k">yield</span>
+
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">after_finish</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">iscoroutinefunction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">after_finish</span><span class="p">):</span>
+                        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">after_finish</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">after_finish</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error in after_finish hook: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="fm">__aexit__</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Error during runner cleanup: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interrupt_backend</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">close_interrupt_service</span><span class="p">()</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                        <span class="s2">&quot;Warning: Error occurred while &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;closing the interrupt service: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+    <span class="nd">@asynccontextmanager</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_lifespan_manager</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Main lifespan orchestrator combining internal and user logic.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">AsyncExitStack</span><span class="p">()</span> <span class="k">as</span> <span class="n">stack</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">stack</span><span class="o">.</span><span class="n">enter_async_context</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_internal_framework_lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">),</span>
+                <span class="p">)</span>
+
+                <span class="n">user_state</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_lifespan</span><span class="p">:</span>
+                    <span class="n">user_state</span> <span class="o">=</span> <span class="k">await</span> <span class="n">stack</span><span class="o">.</span><span class="n">enter_async_context</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_user_lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">),</span>
+                    <span class="p">)</span>
+
+                <span class="k">yield</span> <span class="n">user_state</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Application runtime error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_init_protocol_adapters</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">app_name</span><span class="p">,</span>
+        <span class="n">app_description</span><span class="p">,</span>
+        <span class="n">a2a_config</span><span class="p">,</span>
+        <span class="n">agui_config</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize supported protocol adapters for the agent.&quot;&quot;&quot;</span>
+        <span class="n">a2a_config</span> <span class="o">=</span> <span class="n">extract_a2a_config</span><span class="p">(</span><span class="n">a2a_config</span><span class="o">=</span><span class="n">a2a_config</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">A2AFastAPIDefaultAdapter</span><span class="p">(</span>
+                <span class="n">agent_name</span><span class="o">=</span><span class="n">app_name</span><span class="p">,</span>
+                <span class="n">agent_description</span><span class="o">=</span><span class="n">app_description</span><span class="p">,</span>
+                <span class="n">a2a_config</span><span class="o">=</span><span class="n">a2a_config</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">ResponseAPIDefaultAdapter</span><span class="p">(),</span>
+            <span class="n">AGUIDefaultAdapter</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">agui_config</span><span class="p">),</span>
+        <span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_middleware</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add middleware based on deployment mode.&quot;&quot;&quot;</span>
+        <span class="c1"># Common middleware</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
+            <span class="n">CORSMiddleware</span><span class="p">,</span>
+            <span class="n">allow_origins</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">],</span>
+            <span class="n">allow_credentials</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">allow_methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">],</span>
+            <span class="n">allow_headers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="nd">@self</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">&quot;http&quot;</span><span class="p">)</span>
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">dynamic_deployment_middleware</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">deployment_mode</span> <span class="o">==</span> <span class="n">DeploymentMode</span><span class="o">.</span><span class="n">DETACHED_PROCESS</span><span class="p">:</span>
+                <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;X-Process-Mode&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;detached&quot;</span>
+
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">deployment_mode</span> <span class="o">==</span> <span class="n">DeploymentMode</span><span class="o">.</span><span class="n">STANDALONE</span><span class="p">:</span>
+                <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;X-Deployment-Mode&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;standalone&quot;</span>
+
+            <span class="k">return</span> <span class="n">response</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_builtin_routes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Register health check and information discovery routes.&quot;&quot;&quot;</span>
+
+        <span class="nd">@self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/health&quot;</span><span class="p">)</span>
+        <span class="nd">@UnifiedRoutingMixin</span><span class="o">.</span><span class="n">internal_route</span>
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health_check</span><span class="p">():</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Health check endpoint.&quot;&quot;&quot;</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;healthy&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">deployment_mode</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="p">}</span>
+
+            <span class="c1"># Add service health checks</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="p">:</span>
+                <span class="n">status</span><span class="p">[</span><span class="s2">&quot;runner&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;ready&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">status</span><span class="p">[</span><span class="s2">&quot;runner&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;not_ready&quot;</span>
+
+            <span class="k">return</span> <span class="n">status</span>
+
+        <span class="nd">@self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+        <span class="nd">@UnifiedRoutingMixin</span><span class="o">.</span><span class="n">internal_route</span>
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">root</span><span class="p">():</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;service&quot;</span><span class="p">:</span> <span class="s2">&quot;AgentScope Runtime&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">deployment_mode</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                <span class="s2">&quot;endpoints&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;process&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span><span class="p">,</span>
+                    <span class="s2">&quot;stream&quot;</span><span class="p">:</span> <span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span><span class="si">}</span><span class="s2">/stream&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream</span> <span class="k">else</span> <span class="kc">None</span>
+                    <span class="p">),</span>
+                    <span class="s2">&quot;health&quot;</span><span class="p">:</span> <span class="s2">&quot;/health&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_process_control_endpoints</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_process_control_endpoints</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add process control endpoints for detached mode.&quot;&quot;&quot;</span>
+
+        <span class="nd">@self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/shutdown&quot;</span><span class="p">)</span>
+        <span class="nd">@UnifiedRoutingMixin</span><span class="o">.</span><span class="n">internal_route</span>
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown_process_simple</span><span class="p">():</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Gracefully shutdown the process (simple endpoint).&quot;&quot;&quot;</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">signal</span>
+
+            <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delayed_shutdown</span><span class="p">():</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">kill</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">(),</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIGTERM</span><span class="p">)</span>
+
+            <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">delayed_shutdown</span><span class="p">())</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;shutting down&quot;</span><span class="p">}</span>
+
+        <span class="nd">@self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/admin/shutdown&quot;</span><span class="p">)</span>
+        <span class="nd">@UnifiedRoutingMixin</span><span class="o">.</span><span class="n">internal_route</span>
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown_process</span><span class="p">():</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Gracefully shutdown the process.&quot;&quot;&quot;</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">signal</span>
+
+            <span class="c1"># Schedule shutdown after response</span>
+            <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delayed_shutdown</span><span class="p">():</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">kill</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">(),</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIGTERM</span><span class="p">)</span>
+
+            <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">delayed_shutdown</span><span class="p">())</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Shutdown initiated&quot;</span><span class="p">}</span>
+
+        <span class="nd">@self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/admin/status&quot;</span><span class="p">)</span>
+        <span class="nd">@UnifiedRoutingMixin</span><span class="o">.</span><span class="n">internal_route</span>
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_process_status</span><span class="p">():</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Get process status information.&quot;&quot;&quot;</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">psutil</span>
+
+            <span class="n">proc</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;pid&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">(),</span>
+                <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">proc</span><span class="o">.</span><span class="n">status</span><span class="p">(),</span>
+                <span class="s2">&quot;memory_usage&quot;</span><span class="p">:</span> <span class="n">proc</span><span class="o">.</span><span class="n">memory_info</span><span class="p">()</span><span class="o">.</span><span class="n">rss</span><span class="p">,</span>
+                <span class="s2">&quot;cpu_percent&quot;</span><span class="p">:</span> <span class="n">proc</span><span class="o">.</span><span class="n">cpu_percent</span><span class="p">(),</span>
+                <span class="s2">&quot;uptime&quot;</span><span class="p">:</span> <span class="n">proc</span><span class="o">.</span><span class="n">create_time</span><span class="p">(),</span>
+            <span class="p">}</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_stream_generator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Dispatch stream generation based on interrupt backend status.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interrupt_backend</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="sa">f</span><span class="s2">&quot;data: </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s1">&#39;error&#39;</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;No runner&#39;</span><span class="p">})</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                    <span class="k">return</span>
+
+                <span class="k">async</span> <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_common_stream_generator</span><span class="p">(</span>
+                    <span class="n">request</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+                <span class="p">):</span>
+                    <span class="k">yield</span> <span class="n">chunk</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="sa">f</span><span class="s2">&quot;data: </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s1">&#39;error&#39;</span><span class="p">:</span><span class="w"> </span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)})</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream_generator_with_interrupt</span><span class="p">(</span>
+                <span class="n">request</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">):</span>
+                <span class="k">yield</span> <span class="n">chunk</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_stream_generator_with_interrupt</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Execute stream generation wrapped with interrupt management.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">agent_req</span> <span class="o">=</span> <span class="n">AgentRequest</span><span class="p">(</span><span class="o">**</span><span class="n">request</span><span class="p">)</span>
+            <span class="k">async</span> <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_and_stream</span><span class="p">(</span>
+                <span class="n">agent_req</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
+                <span class="n">agent_req</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_common_stream_generator</span><span class="p">,</span>
+                <span class="n">request</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">):</span>
+                <span class="k">yield</span> <span class="n">chunk</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="sa">f</span><span class="s2">&quot;data: </span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s1">&#39;error&#39;</span><span class="p">:</span><span class="w"> </span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)})</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_common_stream_generator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Yield standard SSE formatted chunks from the runner.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Runner is not initialized.&quot;</span><span class="p">)</span>
+
+        <span class="k">async</span> <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">stream_query</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="s2">&quot;model_dump_json&quot;</span><span class="p">):</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">model_dump_json</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="s2">&quot;json&quot;</span><span class="p">):</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">chunk</span><span class="p">)})</span>
+            <span class="k">yield</span> <span class="sa">f</span><span class="s2">&quot;data: </span><span class="si">{</span><span class="n">data</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
 
 <div class="viewcode-block" id="AgentApp.init">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.app.agent_app.AgentApp.init">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+    <span class="nd">@deprecated</span><span class="p">(</span>
+        <span class="n">reason</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Manual initialization is deprecated. &quot;</span>
+            <span class="s2">&quot;Lifecycle management has been unified &quot;</span>
+            <span class="s2">&quot;under FastAPI&#39;s &#39;lifespan&#39; parameter. &quot;</span>
+            <span class="s2">&quot;Please move your startup logic to &quot;</span>
+            <span class="s2">&quot;a lifespan context manager.&quot;</span>
+        <span class="p">),</span>
+        <span class="n">alternative</span><span class="o">=</span><span class="s2">&quot;the &#39;lifespan&#39; argument in AgentApp constructor&quot;</span><span class="p">,</span>
+        <span class="n">since</span><span class="o">=</span><span class="s2">&quot;1.1.0&quot;</span><span class="p">,</span>
+        <span class="n">removed_in</span><span class="o">=</span><span class="s2">&quot;1.2.0&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register init hook (support async and sync functions).&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_init_handler</span> <span class="o">=</span> <span class="n">func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_build_runner</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">func</span></div>
 
 
@@ -793,14 +1154,17 @@ body.preview-active {
 <span class="sd">        Register run hook and optionally specify agent framework.</span>
 <span class="sd">        Allowed framework values: &#39;agentscope&#39;, &#39;autogen&#39;, &#39;agno&#39;, &#39;langgraph&#39;.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="n">allowed_frameworks</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;agentscope&quot;</span><span class="p">,</span> <span class="s2">&quot;autogen&quot;</span><span class="p">,</span> <span class="s2">&quot;agno&quot;</span><span class="p">,</span> <span class="s2">&quot;langgraph&quot;</span><span class="p">}</span>
         <span class="k">if</span> <span class="n">framework</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed_frameworks</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;framework must be one of </span><span class="si">{</span><span class="n">allowed_frameworks</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">decorator</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">decorator</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_query_handler</span> <span class="o">=</span> <span class="n">func</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_framework_type</span> <span class="o">=</span> <span class="n">framework</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_build_runner</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_endpoint_router</span><span class="p">()</span>
+
             <span class="k">return</span> <span class="n">func</span>
 
         <span class="k">return</span> <span class="n">decorator</span></div>
@@ -808,82 +1172,155 @@ body.preview-active {
 
 <div class="viewcode-block" id="AgentApp.shutdown">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.app.agent_app.AgentApp.shutdown">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">shutdown</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+    <span class="nd">@deprecated</span><span class="p">(</span>
+        <span class="n">reason</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">&quot;Manual shutdown is deprecated. &quot;</span>
+            <span class="s2">&quot;Lifecycle management has been unified &quot;</span>
+            <span class="s2">&quot;under FastAPI&#39;s &#39;lifespan&#39; parameter. &quot;</span>
+            <span class="s2">&quot;Please move your shutdown logic to &quot;</span>
+            <span class="s2">&quot;a lifespan context manager.&quot;</span>
+        <span class="p">),</span>
+        <span class="n">alternative</span><span class="o">=</span><span class="s2">&quot;the &#39;lifespan&#39; argument in AgentApp constructor&quot;</span><span class="p">,</span>
+        <span class="n">since</span><span class="o">=</span><span class="s2">&quot;1.1.0&quot;</span><span class="p">,</span>
+        <span class="n">removed_in</span><span class="o">=</span><span class="s2">&quot;1.2.0&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">shutdown</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register shutdown hook (support async and sync functions).&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_shutdown_handler</span> <span class="o">=</span> <span class="n">func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_build_runner</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">func</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_build_runner</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Bind decorated handlers to the internal Runner instance.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span> <span class="o">=</span> <span class="n">Runner</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_framework_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_framework_type</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">framework_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_framework_type</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_query_handler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">query_handler</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">MethodType</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_query_handler</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="p">,</span>
+        <span class="n">handlers</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;query_handler&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_query_handler</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;init_handler&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_handler</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;shutdown_handler&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shutdown_handler</span><span class="p">),</span>
+        <span class="p">]</span>
+        <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">handler</span> <span class="ow">in</span> <span class="n">handlers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">handler</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="p">,</span>
+                    <span class="n">attr</span><span class="p">,</span>
+                    <span class="n">types</span><span class="o">.</span><span class="n">MethodType</span><span class="p">(</span><span class="n">handler</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="p">),</span>
+                <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_endpoint_router</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Dynamically construct and register the main inference endpoint.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">route</span>
+            <span class="k">for</span> <span class="n">route</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">routes</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+                <span class="nb">hasattr</span><span class="p">(</span><span class="n">route</span><span class="p">,</span> <span class="s2">&quot;path&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">route</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span>
+            <span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="n">user_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">query_handler</span>
+
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">agent_api</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">StreamingResponse</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_stream_generator</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+                <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;text/event-stream&quot;</span><span class="p">,</span>
+                <span class="n">headers</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;Cache-Control&quot;</span><span class="p">:</span> <span class="s2">&quot;no-cache&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Connection&quot;</span><span class="p">:</span> <span class="s2">&quot;keep-alive&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
             <span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_handler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">init_handler</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">MethodType</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_init_handler</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="p">,</span>
-            <span class="p">)</span>
+        <span class="n">full_sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">user_func</span><span class="p">)</span>
+        <span class="n">new_params</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span>
+                <span class="s2">&quot;request&quot;</span><span class="p">,</span>
+                <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span><span class="p">,</span>
+                <span class="n">annotation</span><span class="o">=</span><span class="nb">dict</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">]</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shutdown_handler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">shutdown_handler</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">MethodType</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_shutdown_handler</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="p">,</span>
-            <span class="p">)</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">full_sig</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">default</span><span class="p">,</span> <span class="n">DependsClass</span><span class="p">):</span>
+                <span class="n">new_params</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+
+        <span class="n">agent_api</span><span class="o">.</span><span class="n">__signature__</span> <span class="o">=</span> <span class="n">full_sig</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">parameters</span><span class="o">=</span><span class="n">new_params</span><span class="p">)</span>
+        <span class="n">agent_api</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">user_func</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="n">agent_api</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">user_func</span><span class="o">.</span><span class="vm">__doc__</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span><span class="p">,</span>
+            <span class="n">openapi_extra</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;requestBody&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;application/json&quot;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s2">&quot;schema&quot;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="s2">&quot;$ref&quot;</span><span class="p">:</span> <span class="s2">&quot;#/components/schemas/AgentRequest&quot;</span><span class="p">,</span>
+                            <span class="p">},</span>
+                        <span class="p">},</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Agent API Request Format. &quot;</span>
+                    <span class="s2">&quot;See https://runtime.agentscope.io/en/protocol.html for &quot;</span>
+                    <span class="s2">&quot;more details.&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">},</span>
+            <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;agent-api&quot;</span><span class="p">],</span>
+        <span class="p">)(</span><span class="n">agent_api</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_runtime_configs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Apply runtime configuration updates and synchronize internal services.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;stream&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">protocol_adapters</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span>
+            <span class="s2">&quot;protocol_adapters&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">protocol_adapters</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enable_embedded_worker</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span>
+            <span class="s2">&quot;embed_task_processor&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">enable_embedded_worker</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">deployment_mode</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">deployment_mode</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;runner&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;runner&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_endpoint_router</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="s2">&quot;endpoint_path&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">routes</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">route</span>
+                <span class="k">for</span> <span class="n">route</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">router</span><span class="o">.</span><span class="n">routes</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+                    <span class="nb">hasattr</span><span class="p">(</span><span class="n">route</span><span class="p">,</span> <span class="s2">&quot;path&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">route</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span>
+                <span class="p">)</span>
+            <span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;endpoint_path&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_endpoint_router</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="s2">&quot;custom_endpoints&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">custom_endpoints</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;custom_endpoints&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">restore_custom_endpoints</span><span class="p">(</span><span class="n">custom_endpoints</span><span class="p">)</span>
 
 <div class="viewcode-block" id="AgentApp.run">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.app.agent_app.AgentApp.run">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">host</span><span class="o">=</span><span class="n">HOST</span><span class="p">,</span>
-        <span class="n">port</span><span class="o">=</span><span class="n">PORT</span><span class="p">,</span>
-        <span class="n">web_ui</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Launch the AgentApp HTTP API server.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">HOST</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">PORT</span><span class="p">,</span> <span class="n">web_ui</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Launch the application server and optional Web UI.&quot;&quot;&quot;</span>
 
-<span class="sd">        This method starts a FastAPI server for the agent service.</span>
-<span class="sd">        Optionally, it can also launch a browser-based Web UI for</span>
-<span class="sd">        interacting with the agent.</span>
-
-<span class="sd">        Note:</span>
-<span class="sd">        If `web_ui=True` and this is the **first time** launching the Web UI,</span>
-<span class="sd">        additional time may be required to initialize. This happens because the</span>
-<span class="sd">        underlying Node.js command (`npx @agentscope-ai/chat</span>
-<span class="sd">        agentscope-runtime-webui`) might install dependencies and set up</span>
-<span class="sd">        the runtime environment.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            host (str): Host address to bind to. Default &quot;0.0.0.0&quot;.</span>
-<span class="sd">            port (int): Port number to serve the application on. Default 8080.</span>
-<span class="sd">            web_ui (bool): If True, launches the Agentscope Web UI in a</span>
-<span class="sd">                separate process, pointing it to the API endpoint. This</span>
-<span class="sd">                allows interactive use via browser. Default False.</span>
-<span class="sd">            **kwargs: Additional keyword arguments passed to FastAPIAppFactory</span>
-<span class="sd">                when creating the FastAPI application.</span>
-
-<span class="sd">        Example:</span>
-<span class="sd">            &gt;&gt;&gt; app = AgentApp(app_name=&quot;MyAgent&quot;)</span>
-<span class="sd">            &gt;&gt;&gt; app.chat(host=&quot;127.0.0.1&quot;, port=8080, web_ui=True)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Build runner</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_build_runner</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_apply_runtime_configs</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="s2">&quot;Starting AgentApp with FastAPIAppFactory...&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Starting AgentApp...&quot;</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">fastapi_app</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fastapi_app</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting server on </span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">web_ui</span><span class="p">:</span>
@@ -905,7 +1342,7 @@ body.preview-active {
                     <span class="n">cmd</span> <span class="o">=</span> <span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
                 <span class="k">with</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="o">**</span><span class="n">cmd_kwarg</span><span class="p">):</span>
                     <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-                        <span class="n">fastapi_app</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="p">,</span>
                         <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span>
                         <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span>
                         <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
@@ -913,7 +1350,7 @@ body.preview-active {
                     <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-                    <span class="n">fastapi_app</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="p">,</span>
                     <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span>
                     <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span>
                     <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
@@ -926,41 +1363,10 @@ body.preview-active {
             <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="AgentApp.get_fastapi_app">
-<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.app.agent_app.AgentApp.get_fastapi_app">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_fastapi_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the FastAPI application&quot;&quot;&quot;</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_build_runner</span><span class="p">()</span>
-        <span class="n">mode</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="n">DeploymentMode</span><span class="o">.</span><span class="n">DAEMON_THREAD</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">FastAPIAppFactory</span><span class="o">.</span><span class="n">create_app</span><span class="p">(</span>
-            <span class="n">runner</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="p">,</span>
-            <span class="n">endpoint_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span><span class="p">,</span>
-            <span class="n">request_model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">request_model</span><span class="p">,</span>
-            <span class="n">response_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">response_type</span><span class="p">,</span>
-            <span class="n">stream</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="p">,</span>
-            <span class="n">before_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">before_start</span><span class="p">,</span>
-            <span class="n">after_finish</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">after_finish</span><span class="p">,</span>
-            <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
-            <span class="n">protocol_adapters</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">protocol_adapters</span><span class="p">,</span>
-            <span class="n">custom_endpoints</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">custom_endpoints</span><span class="p">,</span>
-            <span class="n">broker_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">broker_url</span><span class="p">,</span>
-            <span class="n">backend_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">backend_url</span><span class="p">,</span>
-            <span class="n">enable_embedded_worker</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">enable_embedded_worker</span><span class="p">,</span>
-            <span class="n">app_kwargs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_app_kwargs</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-        <span class="p">)</span></div>
-
-
 <div class="viewcode-block" id="AgentApp.deploy">
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.app.agent_app.AgentApp.deploy">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">deploy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deployer</span><span class="p">:</span> <span class="n">DeployManager</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deploy the agent app with custom endpoints support&quot;&quot;&quot;</span>
-        <span class="c1"># Pass custom endpoints and tasks to the deployer</span>
-        <span class="c1"># Build runner</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_build_runner</span><span class="p">()</span>
-
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deploy the agent app&quot;&quot;&quot;</span>
         <span class="n">deploy_kwargs</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;app&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="p">,</span>
             <span class="s2">&quot;custom_endpoints&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_endpoints</span><span class="p">,</span>
@@ -971,54 +1377,6 @@ body.preview-active {
         <span class="p">}</span>
         <span class="n">deploy_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">deployer</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span><span class="o">**</span><span class="n">deploy_kwargs</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="AgentApp.endpoint">
-<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.app.agent_app.AgentApp.endpoint">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">endpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">methods</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Decorator to register custom endpoints&quot;&quot;&quot;</span>
-
-        <span class="k">if</span> <span class="n">methods</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">methods</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">]</span>
-
-        <span class="k">def</span><span class="w"> </span><span class="nf">decorator</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">):</span>
-            <span class="n">endpoint_info</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">path</span><span class="p">,</span>
-                <span class="s2">&quot;handler&quot;</span><span class="p">:</span> <span class="n">func</span><span class="p">,</span>
-                <span class="s2">&quot;methods&quot;</span><span class="p">:</span> <span class="n">methods</span><span class="p">,</span>
-                <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="s2">&quot;__module__&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-                <span class="s2">&quot;function_name&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="s2">&quot;__name__&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-            <span class="p">}</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">custom_endpoints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">endpoint_info</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">func</span>
-
-        <span class="k">return</span> <span class="n">decorator</span></div>
-
-
-<div class="viewcode-block" id="AgentApp.task">
-<a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.app.agent_app.AgentApp.task">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">queue</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Decorator to register custom task endpoints&quot;&quot;&quot;</span>
-
-        <span class="k">def</span><span class="w"> </span><span class="nf">decorator</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">):</span>
-            <span class="c1"># Store task configuration for FastAPIAppFactory to handle</span>
-            <span class="n">task_info</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">path</span><span class="p">,</span>
-                <span class="s2">&quot;handler&quot;</span><span class="p">:</span> <span class="n">func</span><span class="p">,</span>  <span class="c1"># Store original function</span>
-                <span class="s2">&quot;methods&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">],</span>
-                <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="s2">&quot;__module__&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-                <span class="s2">&quot;function_name&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="s2">&quot;__name__&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-                <span class="s2">&quot;queue&quot;</span><span class="p">:</span> <span class="n">queue</span><span class="p">,</span>
-                <span class="s2">&quot;task_type&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>  <span class="c1"># Mark as task endpoint</span>
-                <span class="s2">&quot;original_func&quot;</span><span class="p">:</span> <span class="n">func</span><span class="p">,</span>
-            <span class="p">}</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">custom_endpoints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="n">task_info</span><span class="p">,</span>
-            <span class="p">)</span>  <span class="c1"># Add to endpoints for deployment</span>
-
-            <span class="k">return</span> <span class="n">func</span>
-
-        <span class="k">return</span> <span class="n">decorator</span></div>
 </div>
 
 </pre></div>

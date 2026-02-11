@@ -639,7 +639,6 @@ body.preview-active {
     <span class="n">get_bundle_entry_script</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils.service_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">FastAPIAppFactory</span><span class="p">,</span>
     <span class="n">ProcessManager</span><span class="p">,</span>
 <span class="p">)</span>
 
@@ -811,18 +810,28 @@ body.preview-active {
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Deploy in daemon thread mode.&quot;&quot;&quot;</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Deploying FastAPI service in daemon thread mode...&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Create FastAPI app using factory with Celery support</span>
-        <span class="n">app</span> <span class="o">=</span> <span class="n">FastAPIAppFactory</span><span class="o">.</span><span class="n">create_app</span><span class="p">(</span>
-            <span class="n">runner</span><span class="o">=</span><span class="n">runner</span><span class="p">,</span>
-            <span class="n">mode</span><span class="o">=</span><span class="n">DeploymentMode</span><span class="o">.</span><span class="n">DAEMON_THREAD</span><span class="p">,</span>
-            <span class="n">protocol_adapters</span><span class="o">=</span><span class="n">protocol_adapters</span><span class="p">,</span>
-            <span class="n">broker_url</span><span class="o">=</span><span class="n">broker_url</span><span class="p">,</span>
-            <span class="n">backend_url</span><span class="o">=</span><span class="n">backend_url</span><span class="p">,</span>
-            <span class="n">enable_embedded_worker</span><span class="o">=</span><span class="n">enable_embedded_worker</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.app.agent_app</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_app</span><span class="p">:</span>
+            <span class="n">app</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_app</span>
+        <span class="k">elif</span> <span class="n">runner</span><span class="p">:</span>
+            <span class="n">app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
+                <span class="n">runner</span><span class="o">=</span><span class="n">runner</span><span class="p">,</span>
+                <span class="n">mode</span><span class="o">=</span><span class="n">DeploymentMode</span><span class="o">.</span><span class="n">DAEMON_THREAD</span><span class="p">,</span>
+                <span class="n">protocol_adapters</span><span class="o">=</span><span class="n">protocol_adapters</span><span class="p">,</span>
+                <span class="n">broker_url</span><span class="o">=</span><span class="n">broker_url</span><span class="p">,</span>
+                <span class="n">backend_url</span><span class="o">=</span><span class="n">backend_url</span><span class="p">,</span>
+                <span class="n">enable_embedded_worker</span><span class="o">=</span><span class="n">enable_embedded_worker</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Daemon thread mode requires either an existing &#39;app&#39; &quot;</span>
+                <span class="s2">&quot;or a &#39;runner&#39; to create one&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="c1"># Create uvicorn server</span>
         <span class="n">config</span> <span class="o">=</span> <span class="n">uvicorn</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span>

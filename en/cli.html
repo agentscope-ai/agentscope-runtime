@@ -659,7 +659,9 @@ agentscope<span class="w"> </span>--help
 <p>Create <code class="docutils literal notranslate"><span class="pre">app_agent.py</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.formatter</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatFormatter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
@@ -671,24 +673,32 @@ agentscope<span class="w"> </span>--help
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.app</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentApp</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope_runtime.engine.schemas.agent_schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentRequest</span>
 
+<span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize service.&quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">fakeredis</span>
+
+    <span class="n">fake_redis</span> <span class="o">=</span> <span class="n">fakeredis</span><span class="o">.</span><span class="n">aioredis</span><span class="o">.</span><span class="n">FakeRedis</span><span class="p">(</span>
+        <span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="c1"># NOTE: This FakeRedis instance is for development/testing only.</span>
+    <span class="c1"># In production, replace it with your own Redis client/connection</span>
+    <span class="c1"># (e.g., aioredis.Redis)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">RedisSession</span><span class="p">(</span>
+        <span class="n">connection_pool</span><span class="o">=</span><span class="n">fake_redis</span><span class="o">.</span><span class="n">connection_pool</span>
+    <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;AgentApp is shutting down...&quot;</span><span class="p">)</span>
+
+
 <span class="c1"># Create AgentApp instance</span>
 <span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
     <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;MyAssistant&quot;</span><span class="p">,</span>
     <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant agent&quot;</span><span class="p">,</span>
+    <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>
 <span class="p">)</span>
-
-
-<span class="nd">@agent_app</span><span class="o">.</span><span class="n">init</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize services.&quot;&quot;&quot;</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">fakeredis</span>
-
-    <span class="n">fake_redis</span> <span class="o">=</span> <span class="n">fakeredis</span><span class="o">.</span><span class="n">aioredis</span><span class="o">.</span><span class="n">FakeRedis</span><span class="p">(</span><span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="c1"># 注意：这个 FakeRedis 实例仅用于开发/测试。</span>
-    <span class="c1"># 在生产环境中，请替换为你自己的 Redis 客户端/连接</span>
-    <span class="c1">#（例如 aioredis.Redis）。</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">RedisSession</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">fake_redis</span><span class="o">.</span><span class="n">connection_pool</span><span class="p">)</span>
-
 
 <span class="nd">@agent_app</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">framework</span><span class="o">=</span><span class="s2">&quot;agentscope&quot;</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_func</span><span class="p">(</span>
@@ -721,7 +731,7 @@ agentscope<span class="w"> </span>--help
     <span class="p">)</span>
     <span class="n">agent</span><span class="o">.</span><span class="n">set_console_output_enabled</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
         <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
         <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
         <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
@@ -733,7 +743,7 @@ agentscope<span class="w"> </span>--help
     <span class="p">):</span>
         <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
 
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
         <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
         <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
         <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>

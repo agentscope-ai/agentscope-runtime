@@ -650,7 +650,9 @@ body.preview-active {
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReActAgent</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">agentscope.formatter</span><span class="w"> </span><span class="kn">import</span> <span class="n">DashScopeChatFormatter</span>
@@ -669,40 +671,44 @@ body.preview-active {
 </div>
 </div>
 </section>
-<section id="agent-app">
-<h3>步骤2：创建Agent App<a class="headerlink" href="#agent-app" title="Link to this heading">¶</a></h3>
-<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 是整个 Agent 应用的生命周期和请求调用的核心，接下来所有的初始化、查询处理、关闭资源等都基于它来注册。</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
-    <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
-    <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ Agent App创建成功&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</section>
 <section id="id6">
-<h3>步骤3：注册生命周期方法（初始化 &amp; 关闭）<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
-<p>这里定义了应用在启动时要做的事情（启动状态管理、会话历史服务），以及关闭时释放这些资源。</p>
+<h3>步骤2：创建生命周期函数<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<p>生命周期函数定义了应用在启动时要做的事情（启动状态管理、会话历史服务），以及在关闭时释放这些资源。</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@agent_app</span><span class="o">.</span><span class="n">init</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;管理服务启动和关闭时的资源&quot;&quot;&quot;</span>
+    <span class="c1"># 启动时：初始化 Session 管理器</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">fakeredis</span>
 
     <span class="n">fake_redis</span> <span class="o">=</span> <span class="n">fakeredis</span><span class="o">.</span><span class="n">aioredis</span><span class="o">.</span><span class="n">FakeRedis</span><span class="p">(</span><span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="c1"># 注意：这个 FakeRedis 实例仅用于开发/测试。</span>
     <span class="c1"># 在生产环境中，请替换为你自己的 Redis 客户端/连接</span>
     <span class="c1">#（例如 aioredis.Redis）。</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">RedisSession</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">fake_redis</span><span class="o">.</span><span class="n">connection_pool</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">RedisSession</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">fake_redis</span><span class="o">.</span><span class="n">connection_pool</span><span class="p">)</span>
 
-<span class="nd">@agent_app</span><span class="o">.</span><span class="n">shutdown</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">pass</span>
+    <span class="k">yield</span>  <span class="c1"># 服务运行中</span>
+
+    <span class="c1"># 关闭时：可以在此处添加清理逻辑（如关闭数据库连接）</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;AgentApp is shutting down...&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="agent-app">
+<h3>步骤3：创建Agent App<a class="headerlink" href="#agent-app" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 是整个 Agent 应用的生命周期和请求调用的核心，管理应用的生命周期以及所有服务的注册。</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">agent_app</span> <span class="o">=</span> <span class="n">AgentApp</span><span class="p">(</span>
+    <span class="n">app_name</span><span class="o">=</span><span class="s2">&quot;Friday&quot;</span><span class="p">,</span>
+    <span class="n">app_description</span><span class="o">=</span><span class="s2">&quot;A helpful assistant&quot;</span><span class="p">,</span>
+    <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span> <span class="c1"># 传入生命周期函数</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ Agent App创建成功&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -751,7 +757,7 @@ body.preview-active {
     <span class="p">)</span>
     <span class="n">agent</span><span class="o">.</span><span class="n">set_console_output_enabled</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">load_session_state</span><span class="p">(</span>
         <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
         <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
         <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
@@ -763,7 +769,7 @@ body.preview-active {
     <span class="p">):</span>
         <span class="k">yield</span> <span class="n">msg</span><span class="p">,</span> <span class="n">last</span>
 
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
+    <span class="k">await</span> <span class="n">agent_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">save_session_state</span><span class="p">(</span>
         <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
         <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
         <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
@@ -952,8 +958,8 @@ data:<span class="w"> </span><span class="o">{</span><span class="s2">&quot;sequ
 </li>
 <li><a class="reference internal" href="#id4">分步实现</a><ul>
 <li><a class="reference internal" href="#id5">步骤1：导入依赖</a></li>
-<li><a class="reference internal" href="#agent-app">步骤2：创建Agent App</a></li>
-<li><a class="reference internal" href="#id6">步骤3：注册生命周期方法（初始化 &amp; 关闭）</a></li>
+<li><a class="reference internal" href="#id6">步骤2：创建生命周期函数</a></li>
+<li><a class="reference internal" href="#agent-app">步骤3：创建Agent App</a></li>
 <li><a class="reference internal" href="#agentscope-agent">步骤4：定义 AgentScope Agent 的查询逻辑</a></li>
 <li><a class="reference internal" href="#id7">步骤5：启动Agent App</a></li>
 <li><a class="reference internal" href="#id8">步骤6：发送一个请求</a></li>

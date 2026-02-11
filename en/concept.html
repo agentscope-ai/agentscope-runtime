@@ -743,31 +743,30 @@ body.preview-active {
 </section>
 <section id="agentapp">
 <h4>2. AgentApp<a class="headerlink" href="#agentapp" title="Link to this heading">¶</a></h4>
-<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> is the <strong>application entry point</strong> in AgentScope Runtime. It is used to deploy an agent as an externally accessible API application.</p>
+<p>Serving as the core <strong>application entry point</strong> within AgentScope Runtime, <code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> inherits directly from <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code> to deploy and expose Agents as externally accessible API services.</p>
 <p>Its responsibilities include:</p>
 <ul class="simple">
 <li><p>Initializing and binding the <strong>Agent</strong> and <strong>Runner</strong>, delegating requests to the runtime for processing</p></li>
 <li><p>Providing standardized <strong>HTTP API endpoints</strong> (including health checks)</p></li>
 <li><p>Supporting <strong>Server-Sent Events (SSE)</strong> as well as standard JSON responses</p></li>
 <li><p>Allowing registration of task queues (Celery) and custom routes</p></li>
-<li><p>Managing the application lifecycle (supports <code class="docutils literal notranslate"><span class="pre">before_start</span></code> / <code class="docutils literal notranslate"><span class="pre">after_finish</span></code> hooks)</p></li>
+<li><p>Managing the application lifecycle (supports <code class="docutils literal notranslate"><span class="pre">lifespan</span></code> lifecycle management, as well as <code class="docutils literal notranslate"><span class="pre">before_start</span></code> / <code class="docutils literal notranslate"><span class="pre">after_finish</span></code> hooks)</p></li>
+<li><p>Service deployment via the <code class="docutils literal notranslate"><span class="pre">deploy()</span></code> method</p></li>
 </ul>
 </section>
 <section id="runner">
 <h4>3. Runner<a class="headerlink" href="#runner" title="Link to this heading">¶</a></h4>
 <p>The <code class="docutils literal notranslate"><span class="pre">Runner</span></code> class offers a flexible and extensible runtime that orchestrates agent execution and enables deployment. It manages:</p>
 <ul class="simple">
-<li><p>Agent lifecycle through <code class="docutils literal notranslate"><span class="pre">init_handler</span></code> and <code class="docutils literal notranslate"><span class="pre">shutdown_handler</span></code></p></li>
 <li><p>Request processing through <code class="docutils literal notranslate"><span class="pre">query_handler</span></code></p></li>
-<li><p>Streaming responses</p></li>
-<li><p>Service deployment via the <code class="docutils literal notranslate"><span class="pre">deploy()</span></code> method</p></li>
+<li><p>Streaming responses and message format conversion</p></li>
 </ul>
 </section>
 <section id="deployer">
 <h4>4. Deployer<a class="headerlink" href="#deployer" title="Link to this heading">¶</a></h4>
 <p>The <code class="docutils literal notranslate"><span class="pre">Deployer</span></code> (implemented as <code class="docutils literal notranslate"><span class="pre">DeployManager</span></code>) provides production-grade deployment capabilities:</p>
 <ul class="simple">
-<li><p>Deploying the Runner as a service</p></li>
+<li><p>Deploying the AgentApp (or Runner) as a service</p></li>
 <li><p>Health checks, monitoring, and lifecycle management</p></li>
 <li><p>SSE-based real-time response streaming</p></li>
 <li><p>Error handling, logging, and graceful shutdown</p></li>

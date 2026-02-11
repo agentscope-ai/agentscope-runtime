@@ -744,31 +744,30 @@ body.preview-active {
 </section>
 <section id="agentapp">
 <h4>2. AgentApp<a class="headerlink" href="#agentapp" title="Link to this heading">¶</a></h4>
-<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 是 AgentScope Runtime 中的 <strong>应用入口点</strong>，用于将 Agent 部署为可对外提供服务的 API 应用。</p>
+<p><code class="docutils literal notranslate"><span class="pre">AgentApp</span></code> 是 AgentScope Runtime 的核心<strong>应用入口点</strong>。它直接继承自 <code class="docutils literal notranslate"><span class="pre">FastAPI</span></code>，旨在将 Agent 部署并封装为可对外提供服务的标准化 API 应用。</p>
 <p>它的职责是：</p>
 <ul class="simple">
 <li><p>初始化并绑定 <strong>Agent</strong> 和 <strong>Runner</strong>，将请求委托给运行时处理</p></li>
 <li><p>提供标准化的 <strong>HTTP API 接口</strong>（含健康检查）</p></li>
 <li><p>支持 <strong>Server-Sent Events (SSE)</strong> 以及标准 JSON 响应</p></li>
 <li><p>允许注册任务队列（Celery）以及自定义路由</p></li>
-<li><p>管理应用生命周期（支持 <code class="docutils literal notranslate"><span class="pre">before_start</span></code> / <code class="docutils literal notranslate"><span class="pre">after_finish</span></code> 钩子）</p></li>
+<li><p>管理应用生命周期（支持 <code class="docutils literal notranslate"><span class="pre">lifespan</span></code> 生命周期管理，以及 <code class="docutils literal notranslate"><span class="pre">before_start</span></code> / <code class="docutils literal notranslate"><span class="pre">after_finish</span></code> 钩子）</p></li>
+<li><p>通过 <code class="docutils literal notranslate"><span class="pre">deploy()</span></code> 方法进行服务部署</p></li>
 </ul>
 </section>
 <section id="runner">
 <h4>3. Runner<a class="headerlink" href="#runner" title="Link to this heading">¶</a></h4>
-<p><code class="docutils literal notranslate"><span class="pre">Runner</span></code> 类提供灵活且可扩展的运行时来编排智能体执行并提供部署功能。它管理：</p>
+<p><code class="docutils literal notranslate"><span class="pre">Runner</span></code> 类负责处理请求委托的智能体核心处理逻辑。它管理：</p>
 <ul class="simple">
-<li><p>通过 <code class="docutils literal notranslate"><span class="pre">init_handler</span></code> 和 <code class="docutils literal notranslate"><span class="pre">shutdown_handler</span></code> 管理智能体生命周期</p></li>
 <li><p>通过 <code class="docutils literal notranslate"><span class="pre">query_handler</span></code> 处理请求</p></li>
-<li><p>流式响应</p></li>
-<li><p>通过 <code class="docutils literal notranslate"><span class="pre">deploy()</span></code> 方法进行服务部署</p></li>
+<li><p>流式响应以及消息格式转换</p></li>
 </ul>
 </section>
 <section id="deployer">
 <h4>4. Deployer<a class="headerlink" href="#deployer" title="Link to this heading">¶</a></h4>
 <p><code class="docutils literal notranslate"><span class="pre">Deployer</span></code>（实现为 <code class="docutils literal notranslate"><span class="pre">DeployManager</span></code>）提供生产级别的部署功能：</p>
 <ul class="simple">
-<li><p>将Runner部署为服务</p></li>
+<li><p>将 AgentApp（或者 Runner）部署为服务</p></li>
 <li><p>健康检查、监控和生命周期管理</p></li>
 <li><p>使用SSE的实时响应流式传输</p></li>
 <li><p>错误处理、日志记录和优雅关闭</p></li>
