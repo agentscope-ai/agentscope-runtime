@@ -35,6 +35,7 @@ app.include_router(generic_router, dependencies=[Depends(verify_secret_token)])
 app.include_router(watcher_router, dependencies=[Depends(verify_secret_token)])
 app.include_router(
     workspace_router,
+    prefix="/workspace",
     dependencies=[Depends(verify_secret_token)],
 )
 

@@ -39,7 +39,6 @@ class BrowserSandbox(GUIMixin, BaseSandbox):
     def __init__(  # pylint: disable=useless-parent-delegation
         self,
         sandbox_id: Optional[str] = None,
-        timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.BROWSER,
@@ -47,7 +46,6 @@ class BrowserSandbox(GUIMixin, BaseSandbox):
     ):
         super().__init__(
             sandbox_id,
-            timeout,
             base_url,
             bearer_token,
             sandbox_type,
@@ -314,7 +312,6 @@ class BrowserSandboxAsync(GUIMixin, AsyncGUIMixin, BaseSandboxAsync):
     def __init__(  # pylint: disable=useless-parent-delegation
         self,
         sandbox_id: Optional[str] = None,
-        timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.BROWSER_ASYNC,
@@ -322,7 +319,6 @@ class BrowserSandboxAsync(GUIMixin, AsyncGUIMixin, BaseSandboxAsync):
     ):
         super().__init__(
             sandbox_id,
-            timeout,
             base_url,
             bearer_token,
             sandbox_type,

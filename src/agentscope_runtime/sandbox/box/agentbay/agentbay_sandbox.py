@@ -9,9 +9,10 @@ import logging
 import os
 from typing import Any, Dict, Optional
 
+from ..cloud.cloud_sandbox import CloudSandbox
 from ...registry import SandboxRegistry
 from ...enums import SandboxType
-from ..cloud.cloud_sandbox import CloudSandbox
+from ...constant import TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
     "agentbay-cloud",  # Virtual image name indicating cloud service
     sandbox_type=SandboxType.AGENTBAY,
     security_level="high",
-    timeout=300,
+    timeout=TIMEOUT,
     description="AgentBay Cloud Sandbox Environment",
 )
 class AgentbaySandbox(CloudSandbox):
@@ -42,7 +43,6 @@ class AgentbaySandbox(CloudSandbox):
     def __init__(
         self,
         sandbox_id: Optional[str] = None,
-        timeout: int = 3000,
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = SandboxType.AGENTBAY,
@@ -56,7 +56,6 @@ class AgentbaySandbox(CloudSandbox):
 
         Args:
             sandbox_id: Optional sandbox ID for existing sessions
-            timeout: Timeout for operations in seconds
             base_url: Base URL for AgentBay API (optional)
             bearer_token: Authentication token (deprecated, use api_key)
             sandbox_type: Type of sandbox (default: AGENTBAY)
@@ -80,7 +79,6 @@ class AgentbaySandbox(CloudSandbox):
 
         super().__init__(
             sandbox_id=sandbox_id,
-            timeout=timeout,
             base_url=base_url,
             bearer_token=self.api_key,
             sandbox_type=sandbox_type,

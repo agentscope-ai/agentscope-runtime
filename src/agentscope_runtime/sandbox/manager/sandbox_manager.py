@@ -19,7 +19,11 @@ import requests
 import shortuuid
 import httpx
 
+from fastapi import Request, HTTPException
+from fastapi.responses import StreamingResponse
+
 from .heartbeat_mixin import HeartbeatMixin, touch_session
+from .workspace_mixin import WorkspaceFSMixin
 from ..constant import TIMEOUT
 from ..client import (
     SandboxHttpClient,
@@ -133,7 +137,7 @@ def remote_wrapper_async(
     return decorator
 
 
-class SandboxManager(HeartbeatMixin):
+class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
     def __init__(
         self,
         config: Optional[SandboxManagerEnvConfig] = None,
@@ -573,9 +577,9 @@ class SandboxManager(HeartbeatMixin):
                 logger.error(f"Error cleaning up container {key}: {e}")
 
     @remote_wrapper_async()
-    async def cleanup_async(self, *args, **kwargs):
+    async def cleanup_async(self):
         """Async wrapper for cleanup()."""
-        return await asyncio.to_thread(self.cleanup, *args, **kwargs)
+        return await asyncio.to_thread(self.cleanup)
 
     @remote_wrapper()
     def create_from_pool(self, sandbox_type=None, meta: Optional[Dict] = None):
@@ -1022,9 +1026,9 @@ class SandboxManager(HeartbeatMixin):
             return False
 
     @remote_wrapper_async()
-    async def release_async(self, *args, **kwargs):
+    async def release_async(self, identity: str):
         """Async wrapper for release()."""
-        return await asyncio.to_thread(self.release, *args, **kwargs)
+        return await asyncio.to_thread(self.release, identity)
 
     @remote_wrapper()
     def start(self, identity):
@@ -1643,3 +1647,117 @@ class SandboxManager(HeartbeatMixin):
                 )
 
         return result
+
+    @staticmethod
+    def _filter_hop_by_hop_headers(headers: Dict[str, str]) -> Dict[str, str]:
+        hop_by_hop = {
+            "host",
+            "connection",
+            "keep-alive",
+            "proxy-authenticate",
+            "proxy-authorization",
+            "te",
+            "trailers",
+            "transfer-encoding",
+            "upgrade",
+        }
+        return {
+            k: v for k, v in headers.items() if k.lower() not in hop_by_hop
+        }
+
+    async def proxy_to_runtime(
+        self,
+        identity: str,
+        path: str,
+        request: Request,
+    ):
+        # 1) locate runtime
+        try:
+            info = self.get_info(identity)
+            client = self._establish_connection(identity)
+            client.check_health()
+        except Exception as e:
+            raise HTTPException(
+                status_code=404,
+                detail=f"sandbox not found: {identity}",
+            ) from e
+
+        cm = ContainerModel(**info)
+        if not cm.url:
+            raise HTTPException(
+                status_code=404,
+                detail="runtime url not found",
+            )
+
+        # 2) build target url (+ query)
+        target_url = f"{cm.url.rstrip('/')}/fastapi/{path.lstrip('/')}"
+
+        if request.url.query:
+            target_url = f"{target_url}?{request.url.query}"
+
+        print(f"--{target_url}---")
+
+        # 3) forward headers
+        headers = self._filter_hop_by_hop_headers(dict(request.headers))
+        if cm.runtime_token:
+            headers["Authorization"] = f"Bearer {cm.runtime_token}"
+
+        hop_by_hop = {
+            "host",
+            "connection",
+            "keep-alive",
+            "proxy-authenticate",
+            "proxy-authorization",
+            "te",
+            "trailers",
+            "transfer-encoding",
+            "upgrade",
+        }
+
+        client = httpx.AsyncClient(timeout=None)
+        upstream = None
+        try:
+            req = client.build_request(
+                method=request.method,
+                url=target_url,
+                headers=headers,
+                content=request.stream(),  # stream request body to runtime
+            )
+            upstream = await client.send(req, stream=True)
+
+            resp_headers = {
+                k: v
+                for k, v in upstream.headers.items()
+                if k.lower() not in hop_by_hop
+            }
+            media_type = upstream.headers.get("content-type")
+
+            async def body_iter():
+                try:
+                    async for chunk in upstream.aiter_raw():
+                        if chunk:
+                            yield chunk
+                finally:
+                    try:
+                        await upstream.aclose()
+                    finally:
+                        await client.aclose()
+
+            return StreamingResponse(
+                body_iter(),
+                status_code=upstream.status_code,
+                headers=resp_headers,
+                media_type=media_type,
+            )
+
+        except httpx.RequestError as e:
+            if upstream is not None:
+                try:
+                    await upstream.aclose()
+                except Exception:
+                    pass
+            await client.aclose()
+            raise HTTPException(
+                status_code=502,
+                detail=f"proxy upstream error: {e}",
+            ) from e
