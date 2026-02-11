@@ -72,7 +72,13 @@ class ImageGenerationWan25(Tool[ImageGenInput, ImageGenOutput]):
     """
 
     name: str = "modelstudio_image_gen_wan25"
-    description: str = "AI绘画（图像生成）服务，输入文本描述和图像分辨率，返回根据文本信息绘制的图片URL。"
+    description: str = (
+        "[版本: wan2.5] 通义万相文生图模型（wan2.5-t2i-preview）。"
+        "AI绘画服务，根据文本描述生成高质量图像，并返回图片URL。\n"
+        "支持自定义分辨率：图像面积介于 768×768 至 1440×1440 像素之间，"
+        "可在该范围内自由设置宽高比（例如 768×2700）。\n"
+        "可生成摄影、动漫、油画等多种艺术风格，支持中英文复杂语义理解与文本渲染。\n"
+    )
 
     @trace(trace_type="AIGC", trace_name="image_generation_wan25")
     async def arun(self, args: ImageGenInput, **kwargs: Any) -> ImageGenOutput:
