@@ -99,7 +99,7 @@ class ContentBuilder:
         Add text delta (only applicable to text type)
 
         Args:
-            text: Text fragment
+            text: Text fragment (None treated as empty string)
 
         Returns:
             Delta content object
@@ -107,7 +107,8 @@ class ContentBuilder:
         if self.content_type != ContentType.TEXT:
             raise ValueError("add_text_delta only supported for text content")
 
-        self.text_tokens.append(text)
+        safe_text = "" if text is None else text
+        self.text_tokens.append(safe_text)
 
         # Create delta content
         delta_content = TextContent(
@@ -115,7 +116,7 @@ class ContentBuilder:
             index=self.index,
             delta=True,
             msg_id=self.message_builder.message.id,
-            text=text,
+            text=safe_text,
         ).in_progress()
 
         return delta_content
@@ -319,7 +320,9 @@ class ContentBuilder:
             if hasattr(self, "text_tokens") and self.text_tokens:
                 # Get existing text, if none then empty string
                 existing_text = self.content.text or ""
-                token_text = "".join(self.text_tokens)
+                token_text = "".join(
+                    t if t is not None else "" for t in self.text_tokens
+                )
                 self.content.text = existing_text + token_text
             self.content.delta = False
         elif self.content_type == ContentType.DATA:

@@ -511,14 +511,16 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
         Destroy all non-terminal containers managed by this SandboxManager.
 
         Behavior (local mode):
+
         - Dequeues and destroys containers from the warm pool (WARM/RUNNING).
         - Scans container_mapping and destroys any remaining non-terminal
-            containers.
+          containers.
         - Does NOT delete ContainerModel records from container_mapping;
-            instead it relies on release() to mark them as terminal (RELEASED).
+          instead it relies on release() to mark them as terminal (RELEASED).
         - Skips containers already in terminal states: RELEASED / RECYCLED.
 
         Notes:
+
         - Uses container_name as identity to avoid ambiguity with session_id.
         - Pool containers (WARM) are also destroyed (per current policy).
         """
@@ -1267,6 +1269,7 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
         Reap (release) ALL containers bound to session_ctx_id.
 
         Important:
+
         - Prewarm pool containers are NOT part of session_mapping
           (no session_ctx_id), so they won't be reaped by this flow.
         """
@@ -1340,18 +1343,20 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
         """
         Restore ALL recycled sandboxes (containers) for a session.
 
-        For each container record with state==RECYCLED in session_mapping[
-        session_ctx_id]:
+        For each container record with state==RECYCLED in
+        session_mapping[session_ctx_id]:
+
         - If mount_dir is empty -> allocate from pool
-            (prefer same sandbox_type).
+          (prefer same sandbox_type).
         - If mount_dir exists -> create a new container with that
-            mount_dir/storage_path.
+          mount_dir/storage_path.
         - Bind new container to this session and mark RUNNING.
         - Archive the old recycled record (mark RELEASED).
 
         After restore:
+
         - session_mapping[session_ctx_id] will be replaced with the list of
-            NEW running containers.
+          NEW running containers.
         """
         env_ids = self.get_session_mapping(session_ctx_id) or []
         if not env_ids:
