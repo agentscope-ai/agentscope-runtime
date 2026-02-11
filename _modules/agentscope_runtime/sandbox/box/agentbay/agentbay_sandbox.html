@@ -628,9 +628,10 @@ body.preview-active {
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">..cloud.cloud_sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">CloudSandbox</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxRegistry</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxType</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..cloud.cloud_sandbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">CloudSandbox</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...constant</span><span class="w"> </span><span class="kn">import</span> <span class="n">TIMEOUT</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -641,7 +642,7 @@ body.preview-active {
     <span class="s2">&quot;agentbay-cloud&quot;</span><span class="p">,</span>  <span class="c1"># Virtual image name indicating cloud service</span>
     <span class="n">sandbox_type</span><span class="o">=</span><span class="n">SandboxType</span><span class="o">.</span><span class="n">AGENTBAY</span><span class="p">,</span>
     <span class="n">security_level</span><span class="o">=</span><span class="s2">&quot;high&quot;</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="o">=</span><span class="n">TIMEOUT</span><span class="p">,</span>
     <span class="n">description</span><span class="o">=</span><span class="s2">&quot;AgentBay Cloud Sandbox Environment&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">AgentbaySandbox</span><span class="p">(</span><span class="n">CloudSandbox</span><span class="p">):</span>
@@ -665,7 +666,6 @@ body.preview-active {
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">sandbox_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">,</span>
         <span class="n">base_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">bearer_token</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">sandbox_type</span><span class="p">:</span> <span class="n">SandboxType</span> <span class="o">=</span> <span class="n">SandboxType</span><span class="o">.</span><span class="n">AGENTBAY</span><span class="p">,</span>
@@ -679,7 +679,6 @@ body.preview-active {
 
 <span class="sd">        Args:</span>
 <span class="sd">            sandbox_id: Optional sandbox ID for existing sessions</span>
-<span class="sd">            timeout: Timeout for operations in seconds</span>
 <span class="sd">            base_url: Base URL for AgentBay API (optional)</span>
 <span class="sd">            bearer_token: Authentication token (deprecated, use api_key)</span>
 <span class="sd">            sandbox_type: Type of sandbox (default: AGENTBAY)</span>
@@ -703,7 +702,6 @@ body.preview-active {
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">sandbox_id</span><span class="o">=</span><span class="n">sandbox_id</span><span class="p">,</span>
-            <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
             <span class="n">base_url</span><span class="o">=</span><span class="n">base_url</span><span class="p">,</span>
             <span class="n">bearer_token</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
             <span class="n">sandbox_type</span><span class="o">=</span><span class="n">sandbox_type</span><span class="p">,</span>

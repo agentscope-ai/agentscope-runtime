@@ -622,6 +622,7 @@ body.preview-active {
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">SandboxType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.constant</span><span class="w"> </span><span class="kn">import</span> <span class="n">TIMEOUT</span>
 
 
 <div class="viewcode-block" id="SandboxConfig">
@@ -634,7 +635,7 @@ body.preview-active {
     <span class="n">sandbox_type</span><span class="p">:</span> <span class="n">SandboxType</span> <span class="o">|</span> <span class="nb">str</span>
     <span class="n">resource_limits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">security_level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;medium&quot;</span>
-    <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span>  <span class="c1"># Default timeout of 5 minutes</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">TIMEOUT</span>
     <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
     <span class="n">environment</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">runtime_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -668,7 +669,7 @@ body.preview-active {
         <span class="n">sandbox_type</span><span class="p">:</span> <span class="n">SandboxType</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">resource_limits</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">security_level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span>  <span class="c1"># Not used for now</span>
-        <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">TIMEOUT</span><span class="p">,</span>
         <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="n">environment</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">runtime_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -681,7 +682,7 @@ body.preview-active {
 <span class="sd">            sandbox_type: Sandbox type</span>
 <span class="sd">            resource_limits: Resource limit configuration</span>
 <span class="sd">            security_level: Security level (low/medium/high)</span>
-<span class="sd">            timeout: Timeout in seconds</span>
+<span class="sd">            timeout: HTTP timeout in seconds in server side</span>
 <span class="sd">            description: Description</span>
 <span class="sd">            environment: Environment variables</span>
 <span class="sd">            runtime_config: runtime configurations</span>

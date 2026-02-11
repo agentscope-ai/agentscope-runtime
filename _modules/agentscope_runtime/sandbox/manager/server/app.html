@@ -1005,6 +1005,27 @@ body.preview-active {
 
 
 
+<div class="viewcode-block" id="proxy_to_runtime">
+<a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.manager.server.app.proxy_to_runtime">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">api_route</span><span class="p">(</span>
+    <span class="s2">&quot;/proxy/</span><span class="si">{identity}</span><span class="s2">/{path:path}&quot;</span><span class="p">,</span>
+    <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;POST&quot;</span><span class="p">,</span> <span class="s2">&quot;PUT&quot;</span><span class="p">,</span> <span class="s2">&quot;DELETE&quot;</span><span class="p">,</span> <span class="s2">&quot;PATCH&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">proxy_to_runtime</span><span class="p">(</span>
+    <span class="n">identity</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span>
+    <span class="n">token</span><span class="o">=</span><span class="n">Depends</span><span class="p">(</span><span class="n">verify_token</span><span class="p">),</span>
+<span class="p">):</span>
+    <span class="n">mgr</span> <span class="o">=</span> <span class="n">get_sandbox_manager</span><span class="p">()</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">mgr</span><span class="o">.</span><span class="n">proxy_to_runtime</span><span class="p">(</span>
+        <span class="n">identity</span><span class="o">=</span><span class="n">identity</span><span class="p">,</span>
+        <span class="n">path</span><span class="o">=</span><span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">path</span><span class="p">,</span>
+        <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
 <div class="viewcode-block" id="setup_logging">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.manager.server.app.setup_logging">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">setup_logging</span><span class="p">(</span><span class="n">log_level</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>

@@ -744,7 +744,12 @@ body.preview-active {
 
 <div class="viewcode-block" id="Settings.parse_default_type">
 <a class="viewcode-back" href="../../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.manager.server.config.Settings.parse_default_type">[docs]</a>
-    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;DEFAULT_SANDBOX_TYPE&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
+    <span class="nd">@field_validator</span><span class="p">(</span>
+        <span class="s2">&quot;DEFAULT_SANDBOX_TYPE&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;FC_VSWITCH_IDS&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;AGENT_RUN_VSWITCH_IDS&quot;</span><span class="p">,</span>
+        <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">parse_default_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
