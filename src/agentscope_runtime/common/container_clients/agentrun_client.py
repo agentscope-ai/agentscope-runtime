@@ -1016,15 +1016,15 @@ class AgentRunClient(BaseClient):
         """
         replacement_map = {
             "agentscope/runtime-sandbox-base": "serverless-registry.cn-hangzhou.cr.aliyuncs.com/functionai"  # noqa: E501
-            "/agentscope_runtime-sandbox-base:20260106",
+            "/agentscope_runtime-sandbox-base:20260127",
             "agentscope/runtime-sandbox-browser": "serverless-registry.cn-hangzhou.cr.aliyuncs.com/functionai"  # noqa: E501
-            "/agentscope_runtime-sandbox-browser:20260106",
+            "/agentscope_runtime-sandbox-browser:20260127",
             "agentscope/runtime-sandbox-filesystem": "serverless-registry.cn-hangzhou.cr.aliyuncs.com/functionai"  # noqa: E501
-            "/agentscope_runtime-sandbox-filesystem:20260106",
+            "/agentscope_runtime-sandbox-filesystem:20260127",
             "agentscope/runtime-sandbox-gui": "serverless-registry.cn-hangzhou.cr.aliyuncs.com/functionai"  # noqa: E501
-            "/agentscope_runtime-sandbox-gui:20260106",
+            "/agentscope_runtime-sandbox-gui:20260127",
             "agentscope/runtime-sandbox-mobile": "serverless-registry.cn-hangzhou.cr.aliyuncs.com/functionai"  # noqa: E501
-            "/agentscope_runtime-sandbox-mobile:20251217",
+            "/agentscope_runtime-sandbox-mobile:20260206",
         }
 
         if ":" in image:

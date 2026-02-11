@@ -12,6 +12,7 @@ parts:
     - file: en/sandbox/sandbox.md
       sections:
         - file: en/sandbox/sandbox_service.md
+        - file: en/sandbox/sandbox_fs.md
         - file: en/sandbox/advanced.md
         - file: en/sandbox/training_sandbox.md
         - file: en/sandbox/troubleshooting.md
@@ -71,6 +72,7 @@ parts:
       - file: zh/sandbox/sandbox.md
         sections:
           - file: zh/sandbox/sandbox_service.md
+          - file: zh/sandbox/sandbox_fs.md
           - file: zh/sandbox/advanced.md
           - file: zh/sandbox/training_sandbox.md
           - file: zh/sandbox/troubleshooting.md
