@@ -27,6 +27,7 @@ from ...engine.schemas.agent_schemas import (
 
 async def adapt_langgraph_message_stream(
     source_stream: AsyncIterator[Tuple[BaseMessage, bool]],
+    **kwargs,  # pylint:disable=unused-argument
 ) -> AsyncIterator[Message]:
     """
     Optimized version of the stream adapter for LangGraph messages.

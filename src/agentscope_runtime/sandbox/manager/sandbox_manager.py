@@ -846,7 +846,7 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
                 volumes=volume_bindings,
                 environment={
                     "SECRET_TOKEN": runtime_token,
-                    "NGINX_TIMEOUT": TIMEOUT,
+                    "NGINX_TIMEOUT": str(TIMEOUT) if TIMEOUT else "60",
                     **environment,
                 },
                 runtime_config=config.runtime_config,

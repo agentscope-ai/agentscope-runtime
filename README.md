@@ -95,13 +95,13 @@
 >
 > **About Framework-Agnostic**: Currently, AgentScope Runtime supports the **AgentScope** framework. We plan to extend compatibility to more agent development frameworks in the future. This table shows the current version’s adapter support for different frameworks. The level of support for each functionality varies across frameworks:
 >
-> | Framework/Feature                                            | Message/Event | Tool | Service |
-> | ------------------------------------------------------------ | ------------- | ---- | ------- |
-> | [AgentScope](https://runtime.agentscope.io/en/quickstart.html) | ✅             | ✅    | ✅       |
-> | [LangGraph](https://runtime.agentscope.io/en/langgraph_guidelines.html) | ✅             | 🚧    | 🚧       |
-> | [Microsoft Agent Framework](https://runtime.agentscope.io/en/ms_agent_framework_guidelines.html) | ✅             | ✅    | 🚧       |
-> | [Agno](https://runtime.agentscope.io/en/agno_guidelines.html) | ✅             | ✅    | 🚧       |
-> | AutoGen                                                      | 🚧             | ✅    | 🚧       |
+> | Framework/Feature                                            | Message/Event | Tool |
+> | ------------------------------------------------------------ | ------------- | ---- |
+> | [AgentScope](https://runtime.agentscope.io/en/quickstart.html) | ✅             | ✅    |
+> | [LangGraph](https://runtime.agentscope.io/en/langgraph_guidelines.html) | ✅             | 🚧    |
+> | [Microsoft Agent Framework](https://runtime.agentscope.io/en/ms_agent_framework_guidelines.html) | ✅             | ✅    |
+> | [Agno](https://runtime.agentscope.io/en/agno_guidelines.html) | ✅             | ✅    |
+> | AutoGen                                                      | 🚧             | ✅    |
 
 ---
 
@@ -155,13 +155,10 @@ from agentscope.formatter import DashScopeChatFormatter
 from agentscope.tool import Toolkit, execute_python_code
 from agentscope.pipeline import stream_printing_messages
 from agentscope.memory import InMemoryMemory
+from agentscope.session import RedisSession
 
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-
-from agentscope_runtime.engine.services.agent_state import (
-    InMemoryStateService,
-)
 
 agent_app = AgentApp(
     app_name="Friday",
@@ -171,14 +168,13 @@ agent_app = AgentApp(
 
 @agent_app.init
 async def init_func(self):
-    self.state_service = InMemoryStateService()
+    import fakeredis
 
-    await self.state_service.start()
-
-
-@agent_app.shutdown
-async def shutdown_func(self):
-    await self.state_service.stop()
+    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    # NOTE: This FakeRedis instance is for development/testing only.
+    # In production, replace it with your own Redis client/connection
+    # (e.g., aioredis.Redis)
+    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
 
 
 @agent_app.query(framework="agentscope")
@@ -190,11 +186,6 @@ async def query_func(
 ):
     session_id = request.session_id
     user_id = request.user_id
-
-    state = await self.state_service.export_state(
-        session_id=session_id,
-        user_id=user_id,
-    )
 
     toolkit = Toolkit()
     toolkit.register_tool_function(execute_python_code)
@@ -213,8 +204,11 @@ async def query_func(
     )
     agent.set_console_output_enabled(enabled=False)
 
-    if state:
-        agent.load_state_dict(state)
+    await self.session.load_session_state(
+        session_id=session_id,
+        user_id=user_id,
+        agent=agent,
+    )
 
     async for msg, last in stream_printing_messages(
         agents=[agent],
@@ -222,12 +216,10 @@ async def query_func(
     ):
         yield msg, last
 
-    state = agent.state_dict()
-
-    await self.state_service.save_state(
-        user_id=user_id,
+    await self.session.save_session_state(
         session_id=session_id,
-        state=state,
+        user_id=user_id,
+        agent=agent,
     )
 
 
@@ -676,7 +668,7 @@ limitations under the License.
 
 ## ✨ Contributors
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-33-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-36-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/emoji-key/)):
@@ -728,6 +720,11 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/e
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/rlp2006"><img src="https://avatars.githubusercontent.com/u/212365247?v=4?s=100" width="100px;" alt="Li Peng (Yuan Yi)"/><br /><sub><b>Li Peng (Yuan Yi)</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=rlp2006" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=rlp2006" title="Documentation">📖</a> <a href="#example-rlp2006" title="Examples">💡</a></td>
       <td align="center" valign="top" width="14.28%"><a href="http://dorianzheng.github.io"><img src="https://avatars.githubusercontent.com/u/8065637?v=4?s=100" width="100px;" alt="dorianzheng"/><br /><sub><b>dorianzheng</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/pulls?q=is%3Apr+reviewed-by%3ADorianZheng" title="Reviewed Pull Requests">👀</a> <a href="#platform-DorianZheng" title="Packaging/porting to new platform">📦</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/cainiao1992"><img src="https://avatars.githubusercontent.com/u/18435004?v=4?s=100" width="100px;" alt="Xiangfang Chen"/><br /><sub><b>Xiangfang Chen</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=cainiao1992" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Eggiverse"><img src="https://avatars.githubusercontent.com/u/36877740?v=4?s=100" width="100px;" alt="Zhang Shitian"/><br /><sub><b>Zhang Shitian</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3AEggiverse" title="Bug reports">🐛</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Eggiverse" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Shun-Chu"><img src="https://avatars.githubusercontent.com/u/73324318?v=4?s=100" width="100px;" alt="Chuss"/><br /><sub><b>Chuss</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3AShun-Chu" title="Bug reports">🐛</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/bcfre"><img src="https://avatars.githubusercontent.com/u/209150938?v=4?s=100" width="100px;" alt="bcfre"/><br /><sub><b>bcfre</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=bcfre" title="Code">💻</a></td>
     </tr>
   </tbody>
   <tfoot>

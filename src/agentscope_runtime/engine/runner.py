@@ -14,6 +14,7 @@ from typing import (
     Union,
     Dict,
     AsyncIterator,
+    Callable,
 )
 
 from .deployers import (
@@ -48,6 +49,9 @@ class Runner:
         Initializes a runner as core instance.
         """
         self.framework_type = None
+
+        self.in_type_converters: Optional[Dict[str, Callable]] = None
+        self.out_type_converters: Optional[Dict[str, Callable]] = None
 
         self._deploy_managers = {}
         self._health = False
@@ -251,7 +255,12 @@ class Runner:
 
             stream_adapter = adapt_agentscope_message_stream
             kwargs.update(
-                {"msgs": message_to_agentscope_msg(request.input)},
+                {
+                    "msgs": message_to_agentscope_msg(
+                        request.input,
+                        type_converters=self.in_type_converters,
+                    ),
+                },
             )
         elif self.framework_type == "langgraph":
             from ..adapters.langgraph.stream import (
@@ -261,7 +270,12 @@ class Runner:
 
             stream_adapter = adapt_langgraph_message_stream
             kwargs.update(
-                {"msgs": message_to_langgraph_msg(request.input)},
+                {
+                    "msgs": message_to_langgraph_msg(
+                        request.input,
+                        type_converters=self.in_type_converters,
+                    ),
+                },
             )
         elif self.framework_type == "agno":
             from ..adapters.agno.stream import (
@@ -271,7 +285,12 @@ class Runner:
 
             stream_adapter = adapt_agno_message_stream
             kwargs.update(
-                {"msgs": await message_to_agno_message(request.input)},
+                {
+                    "msgs": await message_to_agno_message(
+                        request.input,
+                        type_converters=self.in_type_converters,
+                    ),
+                },
             )
         elif self.framework_type == "ms_agent_framework":
             from ..adapters.ms_agent_framework.stream import (
@@ -283,7 +302,12 @@ class Runner:
 
             stream_adapter = adapt_ms_agent_framework_message_stream
             kwargs.update(
-                {"msgs": message_to_ms_agent_framework_message(request.input)},
+                {
+                    "msgs": message_to_ms_agent_framework_message(
+                        request.input,
+                        type_converters=self.in_type_converters,
+                    ),
+                },
             )
         # TODO: support other frameworks
         else:
@@ -303,6 +327,7 @@ class Runner:
                     **query_kwargs,
                     **kwargs,
                 ),
+                type_converters=self.out_type_converters,
             ):
                 if (
                     event.status == RunStatus.Completed

@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=too-many-nested-blocks,too-many-branches,too-many-statements
 import copy
+import inspect
 import json
 
-from typing import AsyncIterator, Tuple, List, Union
+from typing import AsyncIterator, Tuple, List, Union, Optional, Callable, Dict
 from urllib.parse import urlparse
 
 from agentscope import setup_logger
@@ -18,6 +19,7 @@ from ...engine.schemas.agent_schemas import (
     AudioContent,
     VideoContent,
     DataContent,
+    FileContent,
     McpCall,
     McpCallOutput,
     FunctionCall,
@@ -30,6 +32,8 @@ setup_logger("ERROR")
 
 async def adapt_agentscope_message_stream(
     source_stream: AsyncIterator[Tuple[Msg, bool]],
+    type_converters: Optional[Dict[str, Callable]] = None,
+    **kwargs,  # pylint:disable=unused-argument
 ) -> AsyncIterator[Union[Message, Content]]:
     # Initialize variables to avoid uncaught errors
     msg_id = None
@@ -137,6 +141,44 @@ async def adapt_agentscope_message_stream(
                     index = text_delta_content.index
                     yield text_delta_content
                 elif isinstance(element, dict):
+                    # Used for custom conversion
+                    if (
+                        type_converters
+                        and element.get("type") in type_converters
+                    ):
+                        blk_type = element.get("type")
+                        if not isinstance(blk_type, str):
+                            continue
+                        fn = type_converters[blk_type]
+                        # Send  message, element, last, tool_start, metadata
+                        # and usage
+                        out = fn(
+                            element,
+                            message,
+                            last,
+                            tool_start,
+                            metadata,
+                            usage,
+                        )
+                        # Case 1: async generator / async iterator
+                        if hasattr(out, "__aiter__"):
+                            async for ev in out:
+                                yield ev
+                            continue
+
+                        # Case 2: sync generator / iterator
+                        if inspect.isgenerator(out):
+                            for ev in out:
+                                yield ev
+                            continue
+
+                        # Only generator styles are supported
+                        raise TypeError(
+                            f"type_converters['{blk_type}'] must return a "
+                            f"generator/iterator or an async generator/async "
+                            f"iterator, got: {type(out)}",
+                        )
+
                     if element.get("type") == "text":  # Text
                         text = element.get(
                             "text",
@@ -477,7 +519,7 @@ async def adapt_agentscope_message_stream(
                                 index=index,
                                 **kwargs,
                             )
-                        elif element.get("text") == "audio":
+                        elif element.get("type") == "audio":
                             kwargs = {}
                             if (
                                 isinstance(element.get("source"), dict)
@@ -557,6 +599,48 @@ async def adapt_agentscope_message_stream(
                                 url = f"data:{media_type};base64,{base64_data}"
                                 kwargs.update({"video_url": url})
                             delta_content = VideoContent(
+                                delta=True,
+                                index=index,
+                                **kwargs,
+                            )
+                        elif element.get("type") == "file":
+                            kwargs = {
+                                "filename": element.get("filename"),
+                            }
+                            if (
+                                isinstance(element.get("source"), dict)
+                                and element.get("source", {}).get(
+                                    "type",
+                                )
+                                == "url"
+                            ):
+                                kwargs.update(
+                                    {
+                                        "file_url": element.get(
+                                            "source",
+                                            {},
+                                        ).get("url"),
+                                    },
+                                )
+
+                            elif (
+                                isinstance(element.get("source"), dict)
+                                and element.get("source").get(
+                                    "type",
+                                )
+                                == "base64"
+                            ):
+                                media_type = element.get("source", {}).get(
+                                    "media_type",
+                                    "application/octet-stream",
+                                )
+                                base64_data = element.get("source", {}).get(
+                                    "data",
+                                    "",
+                                )
+                                url = f"data:{media_type};base64,{base64_data}"
+                                kwargs.update({"file_url": url})
+                            delta_content = FileContent(
                                 delta=True,
                                 index=index,
                                 **kwargs,

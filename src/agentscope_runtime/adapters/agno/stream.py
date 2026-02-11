@@ -31,6 +31,7 @@ from ...engine.helpers.agent_api_builder import ResponseBuilder
 
 async def adapt_agno_message_stream(
     source_stream: AsyncIterator[BaseAgentRunEvent],
+    **kwargs,  # pylint:disable=unused-argument
 ) -> AsyncIterator[Union[Message, Content]]:
     rb = ResponseBuilder()
     mb = None

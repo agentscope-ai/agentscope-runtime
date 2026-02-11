@@ -783,14 +783,3 @@ class FCClient(BaseClient):
             image_name = image
 
         return replacement_map.get(image_name.strip(), image)
-
-    def _is_browser_image(self, image: str) -> bool:
-        """Check if the image is a browser image.
-
-        Args:
-            image (str): The image name to check.
-
-        Returns:
-            bool: True if the image is a browser image, False otherwise.
-        """
-        return image.startswith("agentscope/runtime-sandbox-browser")

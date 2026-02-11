@@ -31,6 +31,8 @@ class MessageType:
     REASONING = "reasoning"
     HEARTBEAT = "heartbeat"
     ERROR = "error"
+    A2UI_RESPONSE = "a2ui_response"
+    A2UI_ACTION = "a2ui_action"
 
     @classmethod
     def all_values(cls):
@@ -230,6 +232,24 @@ class McpApprovalRequest(BaseModel):
 
     server_label: str
     """The label of the mcp server making the request."""
+
+
+class McpApprovalResponse(BaseModel):
+    """
+    mcp approval response
+    """
+
+    approval_request_id: str
+    """The unique ID of the approval request."""
+
+    approve: bool
+    """Whether the request was approved."""
+
+    id: Optional[str] = None
+    """The unique ID of the approval response."""
+
+    reason: Optional[str] = None
+    """Optional reason for the decision."""
 
 
 class Error(BaseModel):
@@ -451,6 +471,7 @@ AgentContent = Annotated[
         AudioContent,
         FileContent,
         RefusalContent,
+        VideoContent,
     ],
     Field(discriminator="type"),
 ]

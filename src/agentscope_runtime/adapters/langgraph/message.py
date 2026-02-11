@@ -4,7 +4,7 @@
 import json
 
 from collections import OrderedDict
-from typing import Union, List
+from typing import Union, List, Callable, Optional, Dict
 
 from langchain_core.messages import (
     AIMessage,
@@ -16,129 +16,34 @@ from langchain_core.messages import (
 
 from ...engine.schemas.agent_schemas import (
     Message,
-    FunctionCall,
     MessageType,
 )
-from ...engine.helpers.agent_api_builder import ResponseBuilder
-
-
-def langgraph_msg_to_message(
-    messages: Union[BaseMessage, List[BaseMessage]],
-) -> List[Message]:
-    """
-    Convert LangGraph BaseMessage(s) into one or more runtime Message objects
-
-    Args:
-        messages: LangGraph message(s) from streaming.
-
-    Returns:
-        List[Message]: One or more constructed runtime Message objects.
-    """
-    if isinstance(messages, BaseMessage):
-        msgs = [messages]
-    elif isinstance(messages, list):
-        msgs = messages
-    else:
-        raise TypeError(
-            f"Expected BaseMessage or list[BaseMessage], got {type(messages)}",
-        )
-
-    results: List[Message] = []
-
-    for msg in msgs:
-        # Map LangGraph roles to runtime roles
-        if isinstance(msg, HumanMessage):
-            role = "user"
-        elif isinstance(msg, AIMessage):
-            role = "assistant"
-        elif isinstance(msg, SystemMessage):
-            role = "system"
-        elif isinstance(msg, ToolMessage):
-            role = "tool"
-        else:
-            role = "assistant"  # default fallback
-
-        # Handle tool calls in AIMessage
-        if isinstance(msg, AIMessage) and msg.tool_calls:
-            # Convert each tool call to a PLUGIN_CALL message
-            for tool_call in msg.tool_calls:
-                rb = ResponseBuilder()
-                mb = rb.create_message_builder(
-                    role=role,
-                    message_type=MessageType.PLUGIN_CALL,
-                )
-                # Add metadata
-                mb.message.metadata = {
-                    "original_id": getattr(msg, "id", None),
-                    "name": getattr(msg, "name", None),
-                    "metadata": getattr(msg, "additional_kwargs", {}),
-                }
-                cb = mb.create_content_builder(content_type="data")
-
-                call_data = FunctionCall(
-                    call_id=tool_call.get("id", ""),
-                    name=tool_call.get("name", ""),
-                    arguments=json.dumps(tool_call.get("args", {})),
-                ).model_dump()
-                cb.set_data(call_data)
-                cb.complete()
-                mb.complete()
-                results.append(mb.get_message_data())
-
-            # If there's content in addition to tool calls,
-            # create a separate message
-            if msg.content:
-                rb = ResponseBuilder()
-                mb = rb.create_message_builder(
-                    role=role,
-                    message_type=MessageType.MESSAGE,
-                )
-                mb.message.metadata = {
-                    "original_id": getattr(msg, "id", None),
-                    "name": getattr(msg, "name", None),
-                    "metadata": getattr(msg, "additional_kwargs", {}),
-                }
-                cb = mb.create_content_builder(content_type="text")
-                cb.set_text(str(msg.content))
-                cb.complete()
-                mb.complete()
-                results.append(mb.get_message_data())
-        else:
-            # Regular message conversion
-            rb = ResponseBuilder()
-            mb = rb.create_message_builder(
-                role=role,
-                message_type=MessageType.MESSAGE,
-            )
-            # Add metadata
-            mb.message.metadata = {
-                "original_id": getattr(msg, "id", None),
-                "name": getattr(msg, "name", None),
-                "metadata": getattr(msg, "additional_kwargs", {}),
-            }
-            cb = mb.create_content_builder(content_type="text")
-            cb.set_text(str(msg.content) if msg.content else "")
-            cb.complete()
-            mb.complete()
-            results.append(mb.get_message_data())
-
-    return results
 
 
 def message_to_langgraph_msg(
     messages: Union[Message, List[Message]],
+    type_converters: Optional[Dict[str, Callable]] = None,
 ) -> Union[BaseMessage, List[BaseMessage]]:
     """
     Convert AgentScope runtime Message(s) to LangGraph BaseMessage(s).
 
     Args:
         messages: A single AgentScope runtime Message or list of Messages.
+        type_converters: Optional mapping from ``message.type`` to a callable
+            ``converter(message)``. When provided and the current
+            ``message.type`` exists in the mapping, the corresponding converter
+            will be used and the built-in conversion logic will be skipped for
+            that message.
 
     Returns:
         A single BaseMessage object or a list of BaseMessage objects.
     """
 
     def _convert_one(message: Message) -> BaseMessage:
+        # Used for custom conversion
+        if type_converters and message.type in type_converters:
+            return type_converters[message.type](message)
+
         # Map runtime roles to LangGraph roles
         role_map = {
             "user": HumanMessage,

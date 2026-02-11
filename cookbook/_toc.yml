@@ -11,6 +11,7 @@ parts:
     sections:
     - file: en/sandbox/sandbox.md
       sections:
+        - file: en/sandbox/sandbox_service.md
         - file: en/sandbox/advanced.md
         - file: en/sandbox/training_sandbox.md
         - file: en/sandbox/troubleshooting.md
@@ -21,10 +22,6 @@ parts:
         - file: en/tools/modelstudio_generations.md
         - file: en/tools/alipay.md
         - file: en/tools/realtime_clients.md
-  - file: en/service/service.md
-    sections:
-      - file: en/service/sandbox.md
-      - file: en/service/state.md
   - file: en/deployment.md
     sections:
       - file: en/agent_app.md
@@ -73,6 +70,7 @@ parts:
     sections:
       - file: zh/sandbox/sandbox.md
         sections:
+          - file: zh/sandbox/sandbox_service.md
           - file: zh/sandbox/advanced.md
           - file: zh/sandbox/training_sandbox.md
           - file: zh/sandbox/troubleshooting.md
@@ -83,10 +81,6 @@ parts:
           - file: zh/tools/modelstudio_generations.md
           - file: zh/tools/alipay.md
           - file: zh/tools/realtime_clients.md
-  - file: zh/service/service.md
-    sections:
-      - file: zh/service/sandbox.md
-      - file: zh/service/state.md
   - file: zh/deployment.md
     sections:
       - file: zh/agent_app.md

@@ -1,6 +1,25 @@
 #!/bin/sh
 set -e
 
+RUN_MODE="NORMAL"
+LOCK_FILE="/var/run/agentscope_first_run.lock"
+
+if [ "$BUILT_BY_SCRIPT" = "true" ]; then
+    echo "--> 'BUILT_BY_SCRIPT' flag detected. Activating advanced run-mode detection."
+    if [ ! -f "$LOCK_FILE" ]; then
+        RUN_MODE="HEALTH_CHECK"
+        echo "--> First run under build script detected (Health Check Mode). Creating lock file..."
+        mkdir -p "$(dirname "$LOCK_FILE")"
+        touch "$LOCK_FILE"
+    else
+        RUN_MODE="NORMAL"
+        echo "--> Subsequent run under build script detected (Normal Mode)."
+    fi
+else
+    echo "--> 'BUILT_BY_SCRIPT' flag not found. Assuming standard Normal Mode."
+    RUN_MODE="NORMAL"
+fi
+
 echo "--- Phase 1: Starting internal Docker Daemon ---"
 dockerd-entrypoint.sh &
 dockerd_pid=$!
@@ -11,20 +30,30 @@ done
 echo "--> Internal Docker Daemon is UP!"
 
 echo "--- Phase 2: Loading and starting nested Redroid container ---"
-REDROID_IMAGE="redroid/redroid:11.0.0-240527"
+REDROID_IMAGE="agentscope/redroid:internal"
 
 if [ -z "$(docker images -q "$REDROID_IMAGE")" ]; then
     if [ -f /redroid.tar ]; then
         echo "--> Loading Redroid image from /redroid.tar..."
         docker load -i /redroid.tar
         echo "--> Successfully loaded Redroid image."
-        rm /redroid.tar
+        if [ "$RUN_MODE" = "NORMAL" ]; then
+            echo "--> Normal mode: Removing /redroid.tar."
+            rm /redroid.tar
+        else # RUN_MODE is "HEALTH_CHECK"
+            echo "--> Health check mode: Preserving /redroid.tar for commit."
+        fi
     else
         echo "[FATAL ERROR] Built-in /redroid.tar not found!"
         exit 1
     fi
 else
     echo "--> Redroid image already exists."
+fi
+
+if [ -z "$(docker images -q "$REDROID_IMAGE")" ]; then
+    echo "[FATAL ERROR] Failed to load Redroid image '$REDROID_IMAGE' from tarball."
+    exit 1
 fi
 
 if [ "$(docker ps -q -f name=redroid_nested)" ]; then
@@ -106,4 +135,3 @@ supervisorctl status
 
 echo "--> Orchestration complete. System is fully operational."
 wait $dockerd_pid
-

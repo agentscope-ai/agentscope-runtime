@@ -11,6 +11,7 @@ from ...engine.helpers.agent_api_builder import ResponseBuilder
 
 async def adapt_text_stream(
     source_stream: AsyncIterator[str],
+    **kwargs,  # pylint:disable=unused-argument
 ) -> AsyncIterator[Message]:
     rb = ResponseBuilder()
     mb = rb.create_message_builder(

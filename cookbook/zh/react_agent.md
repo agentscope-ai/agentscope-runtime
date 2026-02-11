@@ -61,10 +61,10 @@ from agentscope.formatter import DashScopeChatFormatter
 from agentscope.tool import Toolkit, execute_python_code
 from agentscope.pipeline import stream_printing_messages
 from agentscope.memory import InMemoryMemory
+from agentscope.session import RedisSession
 
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agentscope_runtime.engine.services.agent_state import InMemoryStateService
 from agentscope_runtime.engine.services.sandbox import SandboxService
 from agentscope_runtime.sandbox import BrowserSandbox
 ```
@@ -112,9 +112,7 @@ asyncio.run(bootstrap_browser_sandbox())
 ```{important}
 ⚠️ **提示**
 
-此处的 Agent 构建（模型、工具、会话记忆、格式化器等）只是一个示例配置，
-您需要根据实际需求替换为自己的模块实现。
-关于可用的服务类型、适配器用法以及如何替换，请参考 {doc}`service/service`。
+此处的 Agent 构建（模型、工具、会话记忆、格式化器等）只是一个示例配置，您需要根据实际需求替换为自己的模块实现。
 ```
 
 下面的逻辑与测试用例 `run_app()` 完全一致，包含状态服务初始化、会话记忆以及流式响应：
@@ -130,16 +128,20 @@ agent_app = AgentApp(
 
 @agent_app.init
 async def init_func(self):
-    self.state_service = InMemoryStateService()
-    self.sandbox_service = SandboxService()
+    import fakeredis
 
-    await self.state_service.start()
+    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    # NOTE: This FakeRedis instance is for development/testing only.
+    # In production, replace it with your own Redis client/connection
+    # (e.g., aioredis.Redis)
+    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
+
+    self.sandbox_service = SandboxService()
     await self.sandbox_service.start()
 
 
 @agent_app.shutdown
 async def shutdown_func(self):
-    await self.state_service.stop()
     await self.sandbox_service.stop()
 
 
@@ -147,11 +149,6 @@ async def shutdown_func(self):
 async def query_func(self, msgs, request: AgentRequest = None, **kwargs):
     session_id = request.session_id
     user_id = request.user_id
-
-    state = await self.state_service.export_state(
-        session_id=session_id,
-        user_id=user_id,
-    )
 
     sandboxes = self.sandbox_service.connect(
         session_id=session_id,
@@ -186,8 +183,11 @@ async def query_func(self, msgs, request: AgentRequest = None, **kwargs):
     )
     agent.set_console_output_enabled(enabled=False)
 
-    if state:
-        agent.load_state_dict(state)
+    await self.session.load_session_state(
+        session_id=session_id,
+        user_id=user_id,
+        agent=agent,
+    )
 
     async for msg, last in stream_printing_messages(
         agents=[agent],
@@ -195,10 +195,10 @@ async def query_func(self, msgs, request: AgentRequest = None, **kwargs):
     ):
         yield msg, last
 
-    await self.state_service.save_state(
-        user_id=user_id,
+    await self.session.save_session_state(
         session_id=session_id,
-        state=agent.state_dict(),
+        user_id=user_id,
+        agent=agent,
     )
 ```
 

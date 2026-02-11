@@ -14,12 +14,10 @@ from agentscope.formatter import DashScopeChatFormatter
 from agentscope.tool import Toolkit, execute_python_code
 from agentscope.pipeline import stream_printing_messages
 from agentscope.memory import InMemoryMemory
+from agentscope.session import RedisSession
 
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
-from agentscope_runtime.engine.services.agent_state import (
-    InMemoryStateService,
-)
 
 PORT = 8090
 
@@ -33,13 +31,13 @@ def run_app():
 
     @agent_app.init
     async def init_func(self):
-        self.state_service = InMemoryStateService()
+        import fakeredis
 
-        await self.state_service.start()
-
-    @agent_app.shutdown
-    async def shutdown_func(self):
-        await self.state_service.stop()
+        fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+        # NOTE: This FakeRedis instance is for development/testing only.
+        # In production, replace it with your own Redis client/connection
+        # (e.g., aioredis.Redis)
+        self.session = RedisSession(connection_pool=fake_redis.connection_pool)
 
     @agent_app.query(framework="agentscope")
     async def query_func(
@@ -50,11 +48,6 @@ def run_app():
     ):
         session_id = request.session_id
         user_id = request.user_id
-
-        state = await self.state_service.export_state(
-            session_id=session_id,
-            user_id=user_id,
-        )
 
         toolkit = Toolkit()
         toolkit.register_tool_function(execute_python_code)
@@ -74,8 +67,11 @@ def run_app():
         )
         agent.set_console_output_enabled(enabled=False)
 
-        if state:
-            agent.load_state_dict(state)
+        await self.session.load_session_state(
+            session_id=session_id,
+            user_id=user_id,
+            agent=agent,
+        )
 
         async for msg, last in stream_printing_messages(
             agents=[agent],
@@ -83,12 +79,10 @@ def run_app():
         ):
             yield msg, last
 
-        state = agent.state_dict()
-
-        await self.state_service.save_state(
-            user_id=user_id,
+        await self.session.save_session_state(
             session_id=session_id,
-            state=state,
+            user_id=user_id,
+            agent=agent,
         )
 
     agent_app.run(host="127.0.0.1", port=PORT)

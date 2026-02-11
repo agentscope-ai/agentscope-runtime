@@ -96,6 +96,18 @@ jobs:
           export PIP_DEFAULT_TIMEOUT=300
           pip install -q -e ".[dev,ext]"
 
+      - name: Attempt to load Android kernel modules
+        if: contains(github.event.inputs.build_types, 'mobile')
+        run: |
+          echo "1/4: Installing linux-modules-extra for kernel $(uname -r)..."
+          sudo apt-get update -y && sudo apt-get install -y linux-modules-extra-$(uname -r) || echo "WARNING: apt-get install failed, but continuing."
+          echo "2/4: Attempting to load binder_linux module..."
+          sudo modprobe binder_linux devices="binder,hwbinder,vndbinder" || echo "INFO: modprobe binder_linux failed."
+          echo "3/4: Attempting to load ashmem_linux module..."
+          sudo modprobe ashmem_linux || echo "INFO: modprobe ashmem_linux failed as expected."
+          echo "4/4: Checking loaded modules with lsmod..."
+          lsmod | grep -E "binder|ashmem" || echo "INFO: No 'binder' or 'ashmem' modules found in lsmod output."
+
       - name: Run build script for all types
         env:
           AUTO_BUILD: "true"

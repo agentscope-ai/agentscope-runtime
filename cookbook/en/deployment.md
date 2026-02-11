@@ -28,10 +28,6 @@ Most deployments follow these stages:
 
 ## Section Guide
 
-### Service
-
-The `Service` chapter explains the built-in session history, memory, sandbox, and state services, as well as the shared lifecycle interface. It helps you pick the right implementations (in-memory, Redis, Tablestore, and more) and shows how to manage them via `start()`, `stop()`, and `health()` so your deployment has a reliable backbone. See {doc}`service/service`.
-
 ### Simple Deployment
 
 Runtime includes a lightweight deployment helper named `agent_app`, which chains multiple agents, tools, and context sources into an application. This section covers:

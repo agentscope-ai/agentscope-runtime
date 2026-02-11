@@ -12,6 +12,10 @@ import requests
 from .enums import SandboxType
 from .registry import SandboxRegistry
 from .utils import dynamic_import, get_platform
+from .box.mobile.box.host_checker import (
+    check_mobile_sandbox_host_readiness,
+    HostPrerequisiteError,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -20,6 +24,18 @@ DOCKER_PLATFORMS = [
     "linux/amd64",
     "linux/arm64",
 ]
+
+REDROID_DIGESTS = {
+    "linux/amd64": (
+        "sha256:d1ca0815eb68139a43d25a835e"
+        "374559e9d18f5d5cea1a4288d4657c0074fb8d"
+    ),
+    "linux/arm64": (
+        "sha256:f070231146ba5043bdb225a1f5"
+        "1c77ef0765c1157131b26cb827078bf536c922"
+    ),
+}
+INTERNAL_REDROID_TAG = "agentscope/redroid:internal"
 
 
 def find_free_port(start_port, end_port):
@@ -60,6 +76,64 @@ def check_health(url, secret_token, timeout=120, interval=5):
     return False
 
 
+def prepare_redroid_image(platform_choice, redroid_tar_path):
+    """
+    Pulls and saves the redroid image to a tarball in the build context.
+
+    Returns:
+        bool: True on success, False on failure.
+    """
+    if platform_choice not in REDROID_DIGESTS:
+        raise ValueError(
+            f"Unsupported platform for Redroid: {platform_choice}",
+        )
+
+    redroid_digest = REDROID_DIGESTS[platform_choice]
+    image_with_digest = f"redroid/redroid@{redroid_digest}"
+
+    logger.info(f"Preparing Redroid image for platform {platform_choice}...")
+    logger.info(f"Pulling {image_with_digest}...")
+
+    try:
+        subprocess.run(
+            ["docker", "pull", image_with_digest],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        logger.info(f"Tagging image with internal tag: {INTERNAL_REDROID_TAG}")
+        subprocess.run(
+            ["docker", "tag", image_with_digest, INTERNAL_REDROID_TAG],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        logger.info(
+            f"Saving image '{INTERNAL_REDROID_TAG}' to {redroid_tar_path}...",
+        )
+        subprocess.run(
+            ["docker", "save", "-o", redroid_tar_path, INTERNAL_REDROID_TAG],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        logger.info(f"Cleaning up local tag: {INTERNAL_REDROID_TAG}")
+        subprocess.run(
+            ["docker", "rmi", INTERNAL_REDROID_TAG],
+            check=False,
+        )
+
+        logger.info("Redroid image prepared successfully.")
+        return True
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr if getattr(e, "stderr", None) else str(e)
+        logger.error(f"Failed to prepare Redroid image: {error_msg}")
+        return False
+
+
 def build_image(
     build_type,
     dockerfile_path=None,
@@ -87,8 +161,6 @@ def build_image(
         ["git", "submodule", "update", "--init", "--recursive"],
         check=True,
     )
-
-    secret_token = "secret_token123"
 
     # Add platform tag
     image_name = SandboxRegistry.get_image_by_type(build_type)
@@ -123,57 +195,87 @@ def build_image(
             f"build custom images?",
         )
 
-    # Build Docker image
-    if not buildx_enable:
-        subprocess.run(
-            [
-                "docker",
-                "build",
-                "-f",
-                dockerfile_path,
-                "-t",
-                f"{image_name}dev",
-                ".",
-            ],
-            check=False,
-        )
-    else:
-        subprocess.run(
-            [
-                "docker",
-                "buildx",
-                "build",
-                "--platform",
-                platform_choice,
-                "-f",
-                dockerfile_path,
-                "-t",
-                f"{image_name}dev",
-                "--load",
-                ".",
-            ],
-            check=False,
-        )
+    redroid_tar_path = None
+    try:
+        if build_type == "mobile":
+            try:
+                check_mobile_sandbox_host_readiness()
+            except HostPrerequisiteError as e:
+                logger.error(e)
+                logger.error(
+                    "Build process aborted due to host environment issue.",
+                )
+                return
+            except Exception as e:
+                logger.error(
+                    f"An unexpected error occurred during host check: {e}",
+                )
+                return
 
-    logger.info(f"Docker image {image_name}dev built successfully.")
+            redroid_tar_path = os.path.join(
+                os.path.dirname(__file__),
+                "box",
+                build_type,
+                "redroid.tar",
+            )
 
-    if buildx_enable:
-        logger.warning(
-            "Cross-platform build detected; "
-            "skipping health checks and tagging the final image directly.",
-        )
-        subprocess.run(
-            ["docker", "tag", f"{image_name}dev", image_name],
-            check=True,
-        )
-        logger.info(f"Docker image {image_name} tagged successfully.")
-    else:
-        logger.info(f"Start to build image {image_name}.")
+            if not prepare_redroid_image(platform_choice, redroid_tar_path):
+                raise RuntimeError(
+                    "Failed to prepare Redroid image. Build aborted.",
+                )
 
-        # Run the container with port mapping and environment variable
-        free_port = find_free_port(8080, 8090)
-        result = subprocess.run(
-            [
+        secret_token = "secret_token123"
+
+        # Build Docker image
+        if not buildx_enable:
+            subprocess.run(
+                [
+                    "docker",
+                    "build",
+                    "-f",
+                    dockerfile_path,
+                    "-t",
+                    f"{image_name}dev",
+                    ".",
+                ],
+                check=True,
+            )
+        else:
+            subprocess.run(
+                [
+                    "docker",
+                    "buildx",
+                    "build",
+                    "--platform",
+                    platform_choice,
+                    "-f",
+                    dockerfile_path,
+                    "-t",
+                    f"{image_name}dev",
+                    "--load",
+                    ".",
+                ],
+                check=True,
+            )
+
+        logger.info(f"Docker image {image_name}dev built successfully.")
+
+        if buildx_enable:
+            logger.warning(
+                "Cross-platform build detected; "
+                "skipping health checks and tagging the final image directly.",
+            )
+            subprocess.run(
+                ["docker", "tag", f"{image_name}dev", image_name],
+                check=True,
+            )
+            logger.info(f"Docker image {image_name} tagged successfully.")
+        else:
+            logger.info(f"Start to build image {image_name}.")
+
+            # Run the container with port mapping and environment variable
+            free_port = find_free_port(8080, 8090)
+            run_command = [
                 "docker",
                 "run",
                 "-d",
@@ -181,49 +283,89 @@ def build_image(
                 f"{free_port}:80",
                 "-e",
                 f"SECRET_TOKEN={secret_token}",
-                f"{image_name}dev",
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        container_id = result.stdout.strip()
-        logger.info(f"Running container {container_id} on port {free_port}")
+            ]
 
-        # Check health endpoints
-        fastapi_health_url = f"http://localhost:{free_port}/fastapi/healthz"
-        fastapi_healthy = check_health(fastapi_health_url, secret_token)
+            if build_type == "mobile":
+                run_command.extend(["-e", "BUILT_BY_SCRIPT=true"])
+                run_command.append("--privileged")
 
-        if fastapi_healthy:
-            logger.info("Health checks passed.")
+            run_command.append(f"{image_name}dev")
+
+            result = subprocess.run(
+                run_command,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            if result.returncode != 0:
+                logger.error(
+                    "Failed to start Docker container for image %s: %s",
+                    f"{image_name}dev",
+                    (result.stderr or "").strip()
+                    or (result.stdout or "").strip(),
+                )
+                raise RuntimeError(
+                    "Failed to start Docker container for "
+                    f"image {image_name}dev",
+                )
+            container_id = (result.stdout or "").strip()
+            if not container_id:
+                logger.error(
+                    "Docker run command did not return a container ID "
+                    "for image %s.",
+                    f"{image_name}dev",
+                )
+                raise RuntimeError(
+                    "Docker run did not return a container ID "
+                    f"for image {image_name}dev",
+                )
+
+            logger.info(
+                f"Running container {container_id} on port {free_port}",
+            )
+
+            # Check health endpoints
+            fastapi_health_url = (
+                f"http://localhost:{free_port}/fastapi/healthz"
+            )
+            fastapi_healthy = check_health(fastapi_health_url, secret_token)
+
+            if fastapi_healthy:
+                logger.info("Health checks passed.")
+                subprocess.run(
+                    ["docker", "commit", container_id, f"{image_name}"],
+                    check=True,
+                )
+                logger.info(
+                    f"Docker image {image_name} committed successfully.",
+                )
+                subprocess.run(["docker", "stop", container_id], check=True)
+                subprocess.run(["docker", "rm", container_id], check=True)
+            else:
+                logger.error("Health checks failed.")
+                subprocess.run(["docker", "stop", container_id], check=True)
+                subprocess.run(["docker", "rm", container_id], check=True)
+
+        if auto_build:
+            choice = "y"
+        else:
+            choice = input(
+                f"Do you want to delete the dev image {image_name}dev? ("
+                f"y/N): ",
+            )
+        if choice.lower() == "y":
             subprocess.run(
-                ["docker", "commit", container_id, f"{image_name}"],
+                ["docker", "rmi", "-f", f"{image_name}dev"],
                 check=True,
             )
-            logger.info(
-                f"Docker image {image_name} committed successfully.",
-            )
-            subprocess.run(["docker", "stop", container_id], check=True)
-            subprocess.run(["docker", "rm", container_id], check=True)
+            logger.info(f"Dev image {image_name}dev deleted.")
         else:
-            logger.error("Health checks failed.")
-            subprocess.run(["docker", "stop", container_id], check=True)
-
-    if auto_build:
-        choice = "y"
-    else:
-        choice = input(
-            f"Do you want to delete the dev image {image_name}dev? ("
-            f"y/N): ",
-        )
-    if choice.lower() == "y":
-        subprocess.run(
-            ["docker", "rmi", "-f", f"{image_name}dev"],
-            check=True,
-        )
-        logger.info(f"Dev image {image_name}dev deleted.")
-    else:
-        logger.info(f"Dev image {image_name}dev retained.")
+            logger.info(f"Dev image {image_name}dev retained.")
+    finally:
+        if redroid_tar_path and os.path.exists(redroid_tar_path):
+            logger.info(f"Cleaning up temporary file: {redroid_tar_path}")
+            os.remove(redroid_tar_path)
 
 
 def main():

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=too-many-branches,too-many-statements
 import json
-from typing import Union, List
+from typing import Union, List, Callable, Optional, Dict
 from collections import OrderedDict
 
 from agent_framework import (
@@ -22,6 +22,7 @@ from ...engine.schemas.agent_schemas import (
 
 def message_to_ms_agent_framework_message(
     messages: Union[Message, List[Message]],
+    type_converters: Optional[Dict[str, Callable]] = None,
 ) -> Union[ChatMessage, List[ChatMessage]]:
     """
     Convert AgentScope runtime Message(s) to Microsoft agent framework
@@ -33,6 +34,11 @@ def message_to_ms_agent_framework_message(
 
     Args:
         messages: A single AgentScope runtime Message or list of Messages.
+        type_converters: Optional mapping from ``message.type`` to a callable
+            ``converter(message)``. When provided and the current
+            ``message.type`` exists in the mapping, the corresponding converter
+            will be used and the built-in conversion logic will be skipped for
+            that message.
 
     Returns:
         A single Microsoft agent framework Message object or a list of
@@ -50,6 +56,10 @@ def message_to_ms_agent_framework_message(
         return default
 
     def _convert_one(message: Message) -> ChatMessage:
+        # Used for custom conversion
+        if type_converters and message.type in type_converters:
+            return type_converters[message.type](message)
+
         result = {
             "author_name": getattr(message, "name", message.role),
             "role": message.role or "assistant",
