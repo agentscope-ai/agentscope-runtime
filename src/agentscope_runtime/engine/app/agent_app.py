@@ -438,66 +438,98 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
                 "uptime": proc.create_time(),
             }
 
-    async def _stream_generator(self, request: dict, **kwargs):
+    async def _non_stream_query(self, request: dict, **kwargs):
         """
-        Dispatch stream generation based on interrupt backend status.
+        Execute non-streaming query and return the final response object.
+        """
+        final_response = None
+        try:
+            async for chunk in self._managed_data_generator(
+                request,
+                **kwargs,
+            ):
+                final_response = chunk
+
+            if final_response is None:
+                raise RuntimeError("No data received from managed generator.")
+
+            return final_response
+
+        except Exception as e:
+            logger.error(f"Non-stream execution error: {e}", exc_info=True)
+            return {"error": str(e)}
+
+    async def _sse_stream_generator(self, request: dict, **kwargs):
+        """
+        Convert raw data chunks into standard SSE format for streaming.
+        """
+        try:
+            async for chunk in self._managed_data_generator(request, **kwargs):
+                if hasattr(chunk, "model_dump_json"):
+                    data = chunk.model_dump_json()
+                elif hasattr(chunk, "json"):
+                    data = chunk.json()
+                else:
+                    data = json.dumps({"text": str(chunk)})
+                yield f"data: {data}\n\n"
+        except Exception as e:
+            logger.error(f"Streaming error: {e}", exc_info=True)
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    async def _managed_data_generator(self, request: dict, **kwargs):
+        """
+        Manage the data generation process with optional interrupt handling.
         """
         if not self._interrupt_backend:
-            try:
-                if not self._runner:
-                    yield f"data: {json.dumps({'error': 'No runner'})}\n\n"
-                    return
-
-                async for chunk in self._common_stream_generator(
-                    request,
-                    **kwargs,
-                ):
-                    yield chunk
-
-            except Exception as e:
-                yield f"data: {json.dumps({'error': str(e)})}\n\n"
-
+            async for chunk in self._core_data_generator(
+                request,
+                **kwargs,
+            ):
+                yield chunk
         else:
-            async for chunk in self._stream_generator_with_interrupt(
+            async for chunk in self._core_data_generator_with_interrupt(
                 request,
                 **kwargs,
             ):
                 yield chunk
 
-    async def _stream_generator_with_interrupt(
+    async def _core_data_generator_with_interrupt(
         self,
         request: dict,
         **kwargs,
     ):
         """
-        Execute stream generation wrapped with interrupt management.
+        Wrapped core generation with interrupt lifecycle management.
         """
-        try:
-            agent_req = AgentRequest(**request)
-            async for chunk in self.run_and_stream(
-                agent_req.user_id,
-                agent_req.session_id,
-                self._common_stream_generator,
-                request,
-                **kwargs,
-            ):
-                yield chunk
-        except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        agent_req = (
+            request
+            if isinstance(request, AgentRequest)
+            else AgentRequest(**request)
+        )
 
-    async def _common_stream_generator(self, request: dict, **kwargs):
-        """Yield standard SSE formatted chunks from the runner."""
+        async for chunk in self.run_and_stream(
+            agent_req.user_id,
+            agent_req.session_id,
+            self._core_data_generator,
+            request,
+            **kwargs,
+        ):
+            yield chunk
+
+    async def _core_data_generator(self, request: dict, **kwargs):
+        """
+        The foundational data fetcher that interacts with the runner.
+        """
         if not self._runner:
             raise RuntimeError("Runner is not initialized.")
 
-        async for chunk in self._runner.stream_query(request, **kwargs):
-            if hasattr(chunk, "model_dump_json"):
-                data = chunk.model_dump_json()
-            elif hasattr(chunk, "json"):
-                data = chunk.json()
-            else:
-                data = json.dumps({"text": str(chunk)})
-            yield f"data: {data}\n\n"
+        if self.stream:
+            target_method = self._runner.stream_query
+        else:
+            target_method = self._runner.query
+
+        async for chunk in target_method(request, **kwargs):
+            yield chunk
 
     @deprecated(
         reason=(
@@ -594,14 +626,17 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         user_func = self._runner.query_handler
 
         async def agent_api(request: dict, **kwargs):
-            return StreamingResponse(
-                self._stream_generator(request, **kwargs),
-                media_type="text/event-stream",
-                headers={
-                    "Cache-Control": "no-cache",
-                    "Connection": "keep-alive",
-                },
-            )
+            if self.stream:
+                return StreamingResponse(
+                    self._sse_stream_generator(request, **kwargs),
+                    media_type="text/event-stream",
+                    headers={
+                        "Cache-Control": "no-cache",
+                        "Connection": "keep-alive",
+                    },
+                )
+            else:
+                return await self._non_stream_query(request, **kwargs)
 
         full_sig = inspect.signature(user_func)
         new_params = [
