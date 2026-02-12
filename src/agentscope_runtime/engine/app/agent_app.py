@@ -490,7 +490,12 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         if not self._runner:
             raise RuntimeError("Runner is not initialized.")
 
-        async for chunk in self._runner.stream_query(request, **kwargs):
+        if self.stream:
+            target_method = self._runner.stream_query
+        else:
+            target_method = self._runner.query
+
+        async for chunk in target_method(request, **kwargs):
             if hasattr(chunk, "model_dump_json"):
                 data = chunk.model_dump_json()
             elif hasattr(chunk, "json"):
@@ -594,14 +599,45 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         user_func = self._runner.query_handler
 
         async def agent_api(request: dict, **kwargs):
-            return StreamingResponse(
-                self._stream_generator(request, **kwargs),
-                media_type="text/event-stream",
-                headers={
-                    "Cache-Control": "no-cache",
-                    "Connection": "keep-alive",
-                },
-            )
+            if self.stream:
+                return StreamingResponse(
+                    self._stream_generator(request, **kwargs),
+                    media_type="text/event-stream",
+                    headers={
+                        "Cache-Control": "no-cache",
+                        "Connection": "keep-alive",
+                    },
+                )
+            else:
+                final_json_data = None
+                try:
+                    async for sse_chunk in self._stream_generator(
+                        request,
+                        **kwargs,
+                    ):
+                        if sse_chunk.startswith("data: "):
+                            raw_data = sse_chunk[6:].strip()
+                            if raw_data:
+                                final_json_data = json.loads(raw_data)
+                    if final_json_data is None:
+                        err_msg = "No data received from runner"
+                        logger.error(err_msg)
+                        return {
+                            "error": err_msg,
+                            "error_type": "RuntimeError",
+                            "message": "Error in non-stream traversal",
+                        }
+                    return final_json_data
+                except Exception as e:
+                    logger.error(
+                        f"Error in non-stream traversal: {e}",
+                        exc_info=True,
+                    )
+                    return {
+                        "error": str(e),
+                        "error_type": e.__class__.__name__,
+                        "message": "Error in non-stream traversal",
+                    }
 
         full_sig = inspect.signature(user_func)
         new_params = [
