@@ -77,7 +77,7 @@
 
 ## 🆕 新闻
 
-* **[2026-02]** 我们对 `AgentApp` 进行了核心架构重构。新版本采用直接继承 `FastAPI` 的设计，废弃了原有的工厂类模式，使开发者能够直接利用完整的 FastAPI 生态，显著提升了应用的可扩展性。此外，新版本引入了分布式**任务中断管理服务**，支持在 Agent 推理过程中进行实时干预，并允许灵活自定义中断前后的状态保存与恢复逻辑。
+* **[2026-02]** 我们在**v1.1.0版本**对 `AgentApp` 进行了核心架构重构。新版本采用直接继承 `FastAPI` 的设计，废弃了原有的工厂类模式，使开发者能够直接利用完整的 FastAPI 生态，显著提升了应用的可扩展性。此外，新版本引入了分布式**任务中断管理服务**，支持在 Agent 推理过程中进行实时干预，并允许灵活自定义中断前后的状态保存与恢复逻辑。完整更新内容与迁移说明请参考 **[CHANGELOG](https://runtime.agentscope.io/zh/CHANGELOG.html)**。
 * **[2026-01]** 新增 **异步沙箱** 实现（`BaseSandboxAsync`、`GuiSandboxAsync`、`BrowserSandboxAsync`、`FilesystemSandboxAsync`、`MobileSandboxAsync`），支持在异步编程中进行非阻塞的并发工具执行。
   同时优化了 `run_ipython_cell` 和 `run_shell_command` 方法的 **并发与并行执行能力**，提升沙箱运行效率。
 * **[2025-12]** 我们发布了 **AgentScope Runtime v1.0**，该版本引入统一的 “Agent 作为 API” 白盒化开发体验，并全面强化多智能体协作、状态持久化与跨框架组合能力，同时对抽象与模块进行了简化优化，确保开发与生产环境一致性。完整更新内容与迁移说明请参考 **[CHANGELOG](https://runtime.agentscope.io/zh/CHANGELOG.html)**。
