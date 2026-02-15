@@ -69,6 +69,24 @@ def list_deployments(
             echo_info("No deployments found")
             return
 
+        # Filter out incomplete deployments (missing required fields like
+        # agent_source)
+        complete_deployments = []
+        for d in deployments:
+            # Check if the deployment has complete information
+            # A complete deployment should have agent_source and other
+            # required fields
+            if d.agent_source:  # Filter out deployments without agent_source
+                complete_deployments.append(d)
+
+        # Sort the final list by created_at (newest first) to maintain
+        # consistency
+        deployments = sorted(
+            complete_deployments,
+            key=lambda x: x.created_at,
+            reverse=True,
+        )
+
         if output_format == "json":
             # JSON output
             output = [d.to_dict() for d in deployments]
@@ -79,8 +97,8 @@ def list_deployments(
             rows = []
 
             for d in deployments:
-                # Truncate long IDs and URLs
-                deploy_id = d.id if len(d.id) <= 30 else d.id[:27] + "..."
+                # Show full ID, but truncate URL to prevent table overflow
+                deploy_id = d.id
                 url = d.url if len(d.url) <= 40 else d.url[:37] + "..."
                 created = (
                     d.created_at[:19]
