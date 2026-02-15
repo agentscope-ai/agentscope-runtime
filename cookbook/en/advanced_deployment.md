@@ -14,7 +14,7 @@ kernelspec:
 
 # Advanced Deployment Guide
 
-This guide covers the multiple advanced deployment methods available in AgentScope Runtime, providing production-ready solutions for different scenarios: **Local Daemon**, **Detached Process**, **Kubernetes Deployment**, **ModelStudio Deployment**, **AgentRun Deployment**, **PAI Deployment**, **Knative Deployment** and **Function Compute (FC) Deployment**.
+This guide covers the multiple advanced deployment methods available in AgentScope Runtime, providing production-ready solutions for different scenarios: **Local Daemon**, **Detached Process**, **Kubernetes Deployment**, **ModelStudio Deployment**, **AgentRun Deployment**, **PAI Deployment**, **Knative Deployment**, **Sandbox Deployment** and **Function Compute (FC) Deployment**.
 
 ## Overview of Deployment Methods
 
@@ -29,6 +29,7 @@ AgentScope Runtime offers multiple distinct deployment approaches, each tailored
 | **AgentRun**              | AgentRun Platform | Cloud-managed | Platform-managed | Container-level |
 | **PAI**                   | Alibaba Cloud PAI Platform | Cloud-managed | Platform-managed | Container-level |
 | **Knative**               | Enterprise & Cloud | Single-node (multi-node support coming) | Orchestrated | Container-level |
+| **Sandbox**               | Enterprise & Cloud | Single-node | Orchestrated | Container-level / MicroVM-level |
 | **Function Compute (FC)** | Alibaba Cloud Serverless | Cloud-managed | Platform-managed | MicroVM-level |
 
 ### Deployment Modes (DeploymentMode)
@@ -1222,7 +1223,104 @@ if __name__ == "__main__":
 - Provides automatic scaling from zero to thousands of instances, intelligent traffic routing
 - Resource limits and health checks configured
 
-## Method 8: Serverless Deployment: Function Compute (FC)
+## Method 8: Sandbox Deployment
+
+**Best For**: Scenarios requiring instance-level isolation, pause/resume capabilities, and secure multi-tenant runtime environments.
+
+### Features
+- Custom resource deployment based on Kruise Sandbox CRD (`agents.kruise.io/v1alpha1`)
+- Instance-level isolation, ensuring secure runtime environments across different agents
+- Supports pausing and resuming, effectively saving resource consumption
+- Automatically creates LoadBalancer Service for external access
+- Deployment state persistence management
+
+### Sandbox Deployment Prerequisites
+
+```bash
+# Ensure Docker is running
+docker --version
+
+# Verify Kubernetes access
+kubectl cluster-info
+
+# Check registry access (e.g., Alibaba Cloud)
+docker login your-registry
+
+# Check Sandbox is installed
+# Installation guide: https://github.com/openkruise/agents
+kubectl get crd sandboxes.agents.kruise.io
+```
+
+### Implementation
+
+Using the agent and endpoints defined in the {ref}`Common Agent Setup <en-common-agent-setup>` section:
+
+```{code-cell}
+# sandbox_deploy.py
+import asyncio
+import os
+from agentscope_runtime.engine.deployers.sandbox_deployer import (
+    SandboxDeployManager,
+    K8sConfig,
+)
+from agentscope_runtime.engine.deployers.utils.docker_image_utils import (
+    RegistryConfig,
+)
+from agent_app import app  # Import the configured app
+
+async def deploy_to_sandbox():
+    """Deploy AgentApp to Sandbox"""
+
+    # Configure registry and K8s connection
+    deployer = SandboxDeployManager(
+        kube_config=K8sConfig(
+            k8s_namespace="agentscope-runtime",
+            kubeconfig_path=None,
+        ),
+        registry_config=RegistryConfig(
+            registry_url="your-registry-url",
+            namespace="agentscope-runtime",
+        ),
+    )
+
+    # Execute deployment
+    result = await app.deploy(
+        deployer,
+        port="8090",
+        image_name="agent_app",
+        image_tag="v1.0",
+        requirements=["agentscope", "fastapi", "uvicorn"],
+        base_image="python:3.10-slim-bookworm",
+        environment={
+            "PYTHONPATH": "/app",
+            "DASHSCOPE_API_KEY": os.environ.get("DASHSCOPE_API_KEY"),
+        },
+        labels={
+            "app": "agent-sandbox",
+        },
+        runtime_config={
+            "resources": {
+                "requests": {"cpu": "200m", "memory": "512Mi"},
+                "limits": {"cpu": "1000m", "memory": "2Gi"},
+            },
+        },
+        platform="linux/amd64",
+        push_to_registry=True,
+    )
+
+    print(f"Deployment successful: {result['url']}")
+    return result, deployer
+
+if __name__ == "__main__":
+    asyncio.run(deploy_to_sandbox())
+```
+
+**Key Points**:
+- Isolated deployment based on Sandbox CRD, each agent runs in an independent environment
+- Automatically creates LoadBalancer Service, supports automatic switching between local and cloud environments
+- Deployment state is automatically persisted, supports lifecycle management via CLI
+
+## Method 9: Serverless Deployment: Function Compute (FC)
 
 **Best For**: Alibaba Cloud users who need to deploy agents to Function Compute (FC) service with automated build, upload, and deployment workflows. FC provides a true serverless experience with pay-per-use pricing and automatic scaling.
 

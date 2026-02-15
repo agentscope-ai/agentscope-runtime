@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from .docker_client import DockerClient
     from .kubernetes_client import KubernetesClient
     from .knative_client import KnativeClient
+    from .sandbox_client import SandboxClient
     from .fc_client import FCClient
     from .agentrun_client import AgentRunClient
     from .gvisor_client import GVisorDockerClient
@@ -19,6 +20,7 @@ install_lazy_loader(
         "DockerClient": ".docker_client",
         "KubernetesClient": ".kubernetes_client",
         "KnativeClient": ".knative_client",
+        "SandboxClient": ".sandbox_client",
         "FCClient": ".fc_client",
         "AgentRunClient": ".agentrun_client",
         "GVisorDockerClient": ".gvisor_client",
@@ -32,6 +34,7 @@ class ContainerClientFactory:
         "docker": "DockerClient",
         "k8s": "KubernetesClient",
         "knative": "KnativeClient",
+        "sandbox": "SandboxClient",
         "fc": "FCClient",
         "agentrun": "AgentRunClient",
         "gvisor": "GVisorDockerClient",
