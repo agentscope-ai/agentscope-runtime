@@ -27,7 +27,7 @@ def _create_deployer(
     """Create deployer instance for platform.
 
     Args:
-        platform: Platform name (local, k8s, modelstudio, agentrun)
+        platform: Platform name (local, k8s, modelstudio, agentrun, kruise)
         deployment_state: Deployment state dictionary
 
     Returns:
@@ -62,6 +62,14 @@ def _create_deployer(
 
             return AgentRunDeployManager()
 
+        elif platform == "kruise":
+            from agentscope_runtime.engine.deployers.kruise_deployer import (
+                KruiseDeployManager,
+                K8sConfig,
+            )
+
+            k8s_config = K8sConfig(k8s_namespace="agentscope-runtime")
+            return KruiseDeployManager(kube_config=k8s_config)
         elif platform == "pai":
             from agentscope_runtime.engine.deployers.pai_deployer import (
                 PAIDeployManager,
