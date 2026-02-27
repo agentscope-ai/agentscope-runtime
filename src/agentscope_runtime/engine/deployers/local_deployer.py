@@ -20,7 +20,6 @@ from .utils.detached_app import (
     get_bundle_entry_script,
 )
 from .utils.service_utils import (
-    FastAPIAppFactory,
     ProcessManager,
 )
 
@@ -184,18 +183,28 @@ class LocalDeployManager(DeployManager):
         **kwargs,
     ) -> Dict[str, str]:
         """Deploy in daemon thread mode."""
+
         self._logger.info("Deploying FastAPI service in daemon thread mode...")
 
-        # Create FastAPI app using factory with Celery support
-        app = FastAPIAppFactory.create_app(
-            runner=runner,
-            mode=DeploymentMode.DAEMON_THREAD,
-            protocol_adapters=protocol_adapters,
-            broker_url=broker_url,
-            backend_url=backend_url,
-            enable_embedded_worker=enable_embedded_worker,
-            **kwargs,
-        )
+        from agentscope_runtime.engine.app.agent_app import AgentApp
+
+        if self._app:
+            app = self._app
+        elif runner:
+            app = AgentApp(
+                runner=runner,
+                mode=DeploymentMode.DAEMON_THREAD,
+                protocol_adapters=protocol_adapters,
+                broker_url=broker_url,
+                backend_url=backend_url,
+                enable_embedded_worker=enable_embedded_worker,
+                **kwargs,
+            )
+        else:
+            raise ValueError(
+                "Daemon thread mode requires either an existing 'app' "
+                "or a 'runner' to create one",
+            )
 
         # Create uvicorn server
         config = uvicorn.Config(

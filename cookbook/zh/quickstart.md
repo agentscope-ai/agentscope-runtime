@@ -42,7 +42,9 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 
 ```{code-cell}
 import os
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
@@ -58,37 +60,41 @@ from agentscope_runtime.engine.deployers import LocalDeployManager
 print("✅ 依赖导入成功")
 ```
 
-### 步骤2：创建Agent App
+### 步骤2：创建生命周期函数
 
-`AgentApp` 是整个 Agent 应用的生命周期和请求调用的核心，接下来所有的初始化、查询处理、关闭资源等都基于它来注册。
-
-```{code-cell}
-agent_app = AgentApp(
-    app_name="Friday",
-    app_description="A helpful assistant",
-)
-
-print("✅ Agent App创建成功")
-```
-
-### 步骤3：注册生命周期方法（初始化 & 关闭）
-
-这里定义了应用在启动时要做的事情（启动状态管理、会话历史服务），以及关闭时释放这些资源。
+生命周期函数定义了应用在启动时要做的事情（启动状态管理、会话历史服务），以及在关闭时释放这些资源。
 
 ```{code-cell}
-@agent_app.init
-async def init_func(self):
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """管理服务启动和关闭时的资源"""
+    # 启动时：初始化 Session 管理器
     import fakeredis
 
     fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
     # 注意：这个 FakeRedis 实例仅用于开发/测试。
     # 在生产环境中，请替换为你自己的 Redis 客户端/连接
     #（例如 aioredis.Redis）。
-    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
+    app.state.session = RedisSession(connection_pool=fake_redis.connection_pool)
 
-@agent_app.shutdown
-async def shutdown_func(self):
-    pass
+    yield  # 服务运行中
+
+    # 关闭时：可以在此处添加清理逻辑（如关闭数据库连接）
+    print("AgentApp is shutting down...")
+```
+
+### 步骤3：创建Agent App
+
+`AgentApp` 是整个 Agent 应用的生命周期和请求调用的核心，管理应用的生命周期以及所有服务的注册。
+
+```{code-cell}
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+    lifespan=lifespan, # 传入生命周期函数
+)
+
+print("✅ Agent App创建成功")
 ```
 
 ### 步骤4：定义 AgentScope Agent 的查询逻辑
@@ -134,7 +140,7 @@ async def query_func(
     )
     agent.set_console_output_enabled(enabled=False)
 
-    await self.session.load_session_state(
+    await agent_app.state.session.load_session_state(
         session_id=session_id,
         user_id=user_id,
         agent=agent,
@@ -146,7 +152,7 @@ async def query_func(
     ):
         yield msg, last
 
-    await self.session.save_session_state(
+    await agent_app.state.session.save_session_state(
         session_id=session_id,
         user_id=user_id,
         agent=agent,

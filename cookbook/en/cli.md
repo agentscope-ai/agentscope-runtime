@@ -39,7 +39,9 @@ Create `app_agent.py`:
 ```python
 # -*- coding: utf-8 -*-
 import os
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
 from agentscope.agent import ReActAgent
 from agentscope.formatter import DashScopeChatFormatter
 from agentscope.model import DashScopeChatModel
@@ -51,24 +53,32 @@ from agentscope.session import RedisSession
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize service."""
+    import fakeredis
+
+    fake_redis = fakeredis.aioredis.FakeRedis(
+        decode_responses=True
+    )
+    # NOTE: This FakeRedis instance is for development/testing only.
+    # In production, replace it with your own Redis client/connection
+    # (e.g., aioredis.Redis)
+    app.state.session = RedisSession(
+        connection_pool=fake_redis.connection_pool
+    )
+    try:
+        yield
+    finally:
+        print("AgentApp is shutting down...")
+
+
 # Create AgentApp instance
 agent_app = AgentApp(
     app_name="MyAssistant",
     app_description="A helpful assistant agent",
+    lifespan=lifespan,
 )
-
-
-@agent_app.init
-async def init_func(self):
-    """Initialize services."""
-    import fakeredis
-
-    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
-    # 注意：这个 FakeRedis 实例仅用于开发/测试。
-    # 在生产环境中，请替换为你自己的 Redis 客户端/连接
-    #（例如 aioredis.Redis）。
-    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
-
 
 @agent_app.query(framework="agentscope")
 async def query_func(
@@ -101,7 +111,7 @@ async def query_func(
     )
     agent.set_console_output_enabled(False)
 
-    await self.session.load_session_state(
+    await agent_app.state.session.load_session_state(
         session_id=session_id,
         user_id=user_id,
         agent=agent,
@@ -113,7 +123,7 @@ async def query_func(
     ):
         yield msg, last
 
-    await self.session.save_session_state(
+    await agent_app.state.session.save_session_state(
         session_id=session_id,
         user_id=user_id,
         agent=agent,

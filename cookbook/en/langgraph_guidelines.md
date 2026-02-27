@@ -36,7 +36,9 @@ Here is the core code:
 
 import os
 import uuid
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
 from langchain.agents import AgentState, create_agent
 from langchain.tools import tool
 from langchain_openai import ChatOpenAI
@@ -59,34 +61,34 @@ def get_weather(location: str, date: str) -> str:
     return f"The weather in {location} is sunny with a temperature of 25°C."
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize services as instance variables
+    global global_short_term_memory
+    global global_long_term_memory
+    app.state.short_term_mem = InMemorySaver()
+    app.state.long_term_mem = InMemoryStore()
+    global_short_term_memory = app.state.short_term_mem
+    global_long_term_memory = app.state.long_term_mem
+    try:
+        yield
+    finally:
+        # Shutdown services, in this case,
+        # we don't use any resources, so we don't need to do anything here
+        pass
+
+
 # Create the AgentApp instance
 agent_app = AgentApp(
     app_name="LangGraphAgent",
     app_description="A LangGraph-based research assistant",
+    lifespan=lifespan,
 )
 
 
 class CustomAgentState(AgentState):
     user_id: str
     session_id: dict
-
-
-# Initialize services as instance variables
-@agent_app.init
-async def init_func(self):
-    global global_short_term_memory
-    global global_long_term_memory
-    self.short_term_mem = InMemorySaver()
-    self.long_term_mem = InMemoryStore()
-    global_short_term_memory = self.short_term_mem
-    global_long_term_memory = self.long_term_mem
-
-
-# Shutdown services, in this case,
-# we don't use any resources, so we don't need to do anything here
-@agent_app.shutdown
-async def shutdown_func(self):
-    pass
 
 
 @agent_app.query(framework="langgraph")
@@ -115,8 +117,8 @@ async def query_func(
         llm,
         tools,
         system_prompt=prompt,
-        checkpointer=self.short_term_mem,
-        store=self.long_term_mem,
+        checkpointer=agent_app.state.short_term_mem,
+        store=agent_app.state.long_term_mem,
         state_schema=CustomAgentState,
         name="LangGraphAgent",
     )

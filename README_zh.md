@@ -77,6 +77,7 @@
 
 ## 🆕 新闻
 
+* **[2026-02]** 我们在**v1.1.0版本**对 `AgentApp` 进行了核心架构重构。新版本采用直接继承 `FastAPI` 的设计，废弃了原有的工厂类模式，使开发者能够直接利用完整的 FastAPI 生态，显著提升了应用的可扩展性。此外，新版本引入了分布式**任务中断管理服务**，支持在 Agent 推理过程中进行实时干预，并允许灵活自定义中断前后的状态保存与恢复逻辑。完整更新内容与迁移说明请参考 **[CHANGELOG](https://runtime.agentscope.io/zh/CHANGELOG.html)**。
 * **[2026-01]** 新增 **异步沙箱** 实现（`BaseSandboxAsync`、`GuiSandboxAsync`、`BrowserSandboxAsync`、`FilesystemSandboxAsync`、`MobileSandboxAsync`），支持在异步编程中进行非阻塞的并发工具执行。
   同时优化了 `run_ipython_cell` 和 `run_shell_command` 方法的 **并发与并行执行能力**，提升沙箱运行效率。
 * **[2025-12]** 我们发布了 **AgentScope Runtime v1.0**，该版本引入统一的 “Agent 作为 API” 白盒化开发体验，并全面强化多智能体协作、状态持久化与跨框架组合能力，同时对抽象与模块进行了简化优化，确保开发与生产环境一致性。完整更新内容与迁移说明请参考 **[CHANGELOG](https://runtime.agentscope.io/zh/CHANGELOG.html)**。
@@ -143,14 +144,14 @@ pip install -e .
 这个示例演示了如何使用 AgentScope 的 `ReActAgent` 和 `AgentApp` 创建一个代理 API 服务器。
 要在 AgentScope Runtime 中运行一个最小化的 `AgentScope` Agent，通常需要实现以下内容：
 
-1. **`@agent_app.init`** – 在启动时初始化服务或资源
+1. **`定义生命周期 (lifespan) `** – 使用 contextlib.asynccontextmanager 管理服务启动时的资源初始化（如状态服务）和退出时的清理
 2. **`@agent_app.query(framework="agentscope")`** – 处理请求的核心逻辑，**必须使用** `stream_printing_messages` 并 `yield msg, last` 来实现流式输出
-3. **`@agent_app.shutdown`** – 在退出时清理服务或资源
-
 
 ```python
 import os
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
@@ -162,23 +163,32 @@ from agentscope.session import RedisSession
 from agentscope_runtime.engine import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 
-agent_app = AgentApp(
-    app_name="Friday",
-    app_description="A helpful assistant",
-)
-
-
-@agent_app.init
-async def init_func(self):
+# 1. 定义生命周期管理器
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """管理服务启动和关闭时的资源"""
+    # 启动时：初始化 Session 管理器
     import fakeredis
 
     fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
     # 注意：这个 FakeRedis 实例仅用于开发/测试。
     # 在生产环境中，请替换为你自己的 Redis 客户端/连接
     #（例如 aioredis.Redis）。
-    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
+    app.state.session = RedisSession(connection_pool=fake_redis.connection_pool)
 
+    yield  # 服务运行中
 
+    # 关闭时：可以在此处添加清理逻辑（如关闭数据库连接）
+    print("AgentApp is shutting down...")
+
+# 2. 创建 AgentApp 实例
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+    lifespan=lifespan,
+)
+
+# 3. 定义请求处理逻辑
 @agent_app.query(framework="agentscope")
 async def query_func(
     self,
@@ -206,7 +216,8 @@ async def query_func(
     )
     agent.set_console_output_enabled(enabled=False)
 
-    await self.session.load_session_state(
+    # 加载状态
+    await agent_app.state.session.load_session_state(
         session_id=session_id,
         user_id=user_id,
         agent=agent,
@@ -218,13 +229,14 @@ async def query_func(
     ):
         yield msg, last
 
-    await self.session.save_session_state(
+    # 保存状态
+    await agent_app.state.session.save_session_state(
         session_id=session_id,
         user_id=user_id,
         agent=agent,
     )
 
-
+# 4. 启动应用
 agent_app.run(host="127.0.0.1", port=8090)
 ```
 
@@ -675,7 +687,7 @@ limitations under the License.
 
 ## ✨ 贡献者
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-35-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-36-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 
@@ -730,6 +742,9 @@ limitations under the License.
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/cainiao1992"><img src="https://avatars.githubusercontent.com/u/18435004?v=4?s=100" width="100px;" alt="Xiangfang Chen"/><br /><sub><b>Xiangfang Chen</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=cainiao1992" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Eggiverse"><img src="https://avatars.githubusercontent.com/u/36877740?v=4?s=100" width="100px;" alt="Zhang Shitian"/><br /><sub><b>Zhang Shitian</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3AEggiverse" title="Bug reports">🐛</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=Eggiverse" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Shun-Chu"><img src="https://avatars.githubusercontent.com/u/73324318?v=4?s=100" width="100px;" alt="Chuss"/><br /><sub><b>Chuss</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3AShun-Chu" title="Bug reports">🐛</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/bcfre"><img src="https://avatars.githubusercontent.com/u/209150938?v=4?s=100" width="100px;" alt="bcfre"/><br /><sub><b>bcfre</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=bcfre" title="Code">💻</a></td>
     </tr>
   </tbody>
   <tfoot>

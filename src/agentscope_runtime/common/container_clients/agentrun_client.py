@@ -5,7 +5,6 @@ import random
 import string
 import time
 from http.client import HTTPS_PORT
-from typing import List, Optional, Dict
 from urllib.parse import urlparse
 
 from alibabacloud_agentrun20250910.models import (
@@ -23,72 +22,11 @@ from alibabacloud_agentrun20250910.models import (
 from alibabacloud_agentrun20250910.client import Client
 from alibabacloud_tea_openapi import models as open_api_models
 
-from agentscope_runtime.sandbox.model import SandboxManagerEnvConfig
 from .base_client import BaseClient
+from .utils import SessionManager
+from ...sandbox.model import SandboxManagerEnvConfig
 
 logger = logging.getLogger(__name__)
-
-
-class AgentRunSessionManager:
-    """
-    Manager for AgentRun sessions that handles creation, retrieval,
-    updating, and deletion of sessions.
-    """
-
-    def __init__(self):
-        """Initialize the session manager with an empty session dictionary."""
-        self.sessions = {}
-        logger.debug("AgentRunSessionManager initialized")
-
-    def create_session(self, session_id: str, session_data: Dict):
-        """Create a new session with the given session_id and session_data.
-
-        Args:
-            session_id (str): Unique identifier for the session.
-            session_data (Dict): Data to store in the session.
-        """
-        self.sessions[session_id] = session_data
-        logger.info(f"Created AgentRun session: {session_id}")
-
-    def get_session(self, session_id: str) -> Optional[Dict]:
-        """Retrieve session data by session_id.
-
-        Args:
-            session_id (str): Unique identifier for the session.
-
-        Returns:
-            Optional[Dict]: Session data if found, None otherwise.
-        """
-        return self.sessions.get(session_id)
-
-    def update_session(self, session_id: str, updates: Dict):
-        """Update an existing session with new data.
-
-        Args:
-            session_id (str): Unique identifier for the session.
-            updates (Dict): Data to update in the session.
-        """
-        if session_id in self.sessions:
-            self.sessions[session_id].update(updates)
-            logger.debug(f"Updated AgentRun session: {session_id}")
-
-    def delete_session(self, session_id: str):
-        """Delete a session by session_id.
-
-        Args:
-            session_id (str): Unique identifier for the session.
-        """
-        if session_id in self.sessions:
-            del self.sessions[session_id]
-            logger.info(f"Deleted AgentRun session: {session_id}")
-
-    def list_sessions(self) -> List[str]:
-        """List all session IDs.
-
-        Returns:
-            List[str]: List of all session IDs.
-        """
-        return list(self.sessions.keys())
 
 
 class AgentRunClient(BaseClient):
@@ -117,7 +55,7 @@ class AgentRunClient(BaseClient):
         """
         self.config = config
         self.client = self._create_agent_run_client()
-        self.session_manager = AgentRunSessionManager()
+        self.session_manager = SessionManager(config)
         self.agent_run_prefix = config.agent_run_prefix or "agentscope-sandbox"
         self._get_agent_runtime_status_max_attempts = (
             self.GET_AGENT_RUNTIME_STATUS_MAX_ATTEMPTS
@@ -1078,15 +1016,15 @@ class AgentRunClient(BaseClient):
         """
         replacement_map = {
             "agentscope/runtime-sandbox-base": "serverless-registry.cn-hangzhou.cr.aliyuncs.com/functionai"  # noqa: E501
-            "/agentscope_runtime-sandbox-base:20260106",
+            "/agentscope_runtime-sandbox-base:20260127",
             "agentscope/runtime-sandbox-browser": "serverless-registry.cn-hangzhou.cr.aliyuncs.com/functionai"  # noqa: E501
-            "/agentscope_runtime-sandbox-browser:20260106",
+            "/agentscope_runtime-sandbox-browser:20260127",
             "agentscope/runtime-sandbox-filesystem": "serverless-registry.cn-hangzhou.cr.aliyuncs.com/functionai"  # noqa: E501
-            "/agentscope_runtime-sandbox-filesystem:20260106",
+            "/agentscope_runtime-sandbox-filesystem:20260127",
             "agentscope/runtime-sandbox-gui": "serverless-registry.cn-hangzhou.cr.aliyuncs.com/functionai"  # noqa: E501
-            "/agentscope_runtime-sandbox-gui:20260106",
+            "/agentscope_runtime-sandbox-gui:20260127",
             "agentscope/runtime-sandbox-mobile": "serverless-registry.cn-hangzhou.cr.aliyuncs.com/functionai"  # noqa: E501
-            "/agentscope_runtime-sandbox-mobile:20251217",
+            "/agentscope_runtime-sandbox-mobile:20260206",
         }
 
         if ":" in image:

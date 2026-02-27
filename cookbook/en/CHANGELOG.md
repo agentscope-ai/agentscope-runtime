@@ -1,8 +1,9 @@
 # CHANGELOG
 
 ## v1.1.0
+AgentScope Runtime v1.1.0 **simplifies persistence and session continuity** by removing Runtime-side custom Memory/Session service abstractions and **standardizing on the Agent framework’s native persistence modules**. This reduces mental overhead, avoids duplicated concepts, and ensures the persistence behavior is consistent with the underlying agent framework.
 
-AgentScope Runtime v1.1.0 focuses on **simplifying persistence and session continuity** by removing Runtime-side custom Memory/Session service abstractions and **standardizing on the Agent framework’s native persistence modules**. This reduces mental overhead, avoids duplicated concepts, and ensures the persistence behavior is consistent with the underlying agent framework.
+Additionally, this version introduces a **major refactor of the `AgentApp` core architecture**: switching to direct inheritance from `FastAPI`, introducing **standard lifespan management**, and adding **task interruption** and **concurrency conflict control** for distributed scenarios.
 
 **Background & Necessity of the Changes**
 
@@ -19,11 +20,28 @@ In v1.0, Runtime provided custom **Session History** and **Long-term Memory** se
 
 To address this, v1.1.0 **deprecates and removes** these Runtime-side services/adapters, and recommends using the **Agent framework’s own persistence modules** (e.g., `JSONSession`, built-in memory implementations) directly in the `AgentApp` lifecycle.
 
+**Furthermore, v1.1.0 refactors the core architecture of `AgentApp`, shifting from a "factory creation pattern" to "direct inheritance from `FastAPI`".** This change stems from the following considerations:
+
+1. **Addressing limitations of the factory pattern**
+   In previous versions, `AgentApp` held a FastAPI instance internally through a factory class. This "black box" approach made it difficult for developers to leverage native FastAPI features (e.g., complex middleware, custom route decorators, and dependency injection), and custom lifecycle hooks like `@app.init` deviated from standard web development practices.
+
+2. **Embracing native FastAPI ecosystem and extensibility**
+   By **directly inheriting from the `FastAPI` class**, `AgentApp` is now a standard FastAPI application. This grants developers full control and seamless integration with FastAPI's community plugins. The class-based architecture also allows us to elegantly introduce advanced features like **Task Interruption** and **State Race Condition Control** via `Mixin` classes, making `AgentApp` a core component that is both standard-compliant and deeply optimized for Agent-specific scenarios.
+
+### Added
+
+- **Distributed Task Interruption**: Introduced `InterruptMixin` with backend support (Local/Redis), allowing manual interruption via custom interfaces and supporting interrupt signal broadcasting in distributed clusters.
+- **Distributed Race Condition Control**: Introduced atomic state-machine checks (Compare-and-Swap) during task startup to effectively prevent duplicate concurrent execution of the same Session ID in distributed environments.
+- **Native FastAPI Extensibility**: Since `AgentApp` now inherits from `FastAPI`, developers can use native methods like `@app.get` and `app.add_middleware` with full compatibility.
+
 ### Changed
 
-- Recommended persistence pattern:
+- **Recommended persistence pattern**:
   - Use the agent framework’s **Memory** modules directly (e.g., `InMemoryMemory`, Redis-backed memory if provided by the framework).
   - Use the agent framework’s **Session** modules (e.g., `JSONSession`) to load/save agent session state during `query`.
+- **Architectural Refactor**: `AgentApp` has shifted from a **factory class pattern** to **direct inheritance from `FastAPI`**.
+- **Lifecycle Unification**: Unified the lifecycle management of internal framework resources and user-defined resources.
+
 
 ### Breaking Changes
 
@@ -35,17 +53,25 @@ To address this, v1.1.0 **deprecates and removes** these Runtime-side services/a
      - Runtime long-term memory services/adapters
      - `AgentScopeSessionHistoryMemory(...)`-style adapter usage
      must be migrated to the Agent framework’s built-in persistence approach.
+2. **Removal of the Factory Pattern**
+   - `FastAPIAppFactory` is deprecated. Users should now instantiate `AgentApp` objects directly.
+3. **Deprecation of Custom Decorator Hooks**
+   - The `@app.init` and `@app.shutdown` decorators are deprecated and marked for removal.
+   - **Migration Advice**: Please use the standard FastAPI `lifespan` asynchronous context manager (see the example in the Migration Guide below).
 
 #### Migration Guide (v1.0 → v1.1)
 
-##### Recommended Pattern (Use Agent framework modules for persistence)
+##### Recommended Pattern (Unified Lifecycle, Interruption Handling, and Native Persistence)
 
-Use `JSONSession` or other submodule to persist/load the agent’s session state, and use `InMemoryMemory()` (or other framework-provided memory) directly in AgentScope:
+In v1.1.0, we recommend using the **lifespan asynchronous context manager** instead of the old decorators to manage resources. Additionally, catch `asyncio.CancelledError` within the `query` logic to respond to interrupt signals, and use the Agent framework’s native **Session/Memory** modules for state persistence:
 
 ```python
 # -*- coding: utf-8 -*-
+import asyncio
 import os
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
@@ -57,22 +83,26 @@ from agentscope.session import JSONSession
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 
+# Standard FastAPI lifespan management
+# (Replaces deprecated @app.init/@app.shutdown)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Use JSONSession here
+    app.state.session = JSONSession(save_dir="./sessions")
+    try:
+        yield
+    finally:
+        # No Runtime state/session services to stop in v1.1
+        pass
+
+# AgentApp now inherits directly from FastAPI
 agent_app = AgentApp(
     app_name="Friday",
     app_description="A helpful assistant",
+    lifespan=lifespan,
+    # Optional: Enable distributed interrupt by providing interrupt_redis_url
+    # interrupt_redis_url="redis://localhost"
 )
-
-
-@agent_app.init
-async def init_func(self):
-    self.session = JSONSession(save_dir="./sessions")  # Use JSONSession here
-
-
-@agent_app.shutdown
-async def shutdown_func(self):
-    # No Runtime state/session services to stop in v1.1
-    pass
-
 
 @agent_app.query(framework="agentscope")
 async def query_func(
@@ -102,15 +132,43 @@ async def query_func(
         formatter=DashScopeChatFormatter(),
     )
 
-    await self.session.load_session_state(session_id=session_id, agent=agent)
+    await agent_app.state.session.load_session_state(
+        session_id=session_id,
+        agent=agent,
+    )
 
-    async for msg, last in stream_printing_messages(
-        agents=[agent],
-        coroutine_task=agent(msgs),
-    ):
-        yield msg, last
+    try:
+        async for msg, last in stream_printing_messages(
+            agents=[agent],
+            coroutine_task=agent(msgs),
+        ):
+            yield msg, last
 
-    await self.session.save_session_state(session_id=session_id, agent=agent)
+    except asyncio.CancelledError:
+        # Handling Interruptions (New in v1.1.0)
+        await agent.interrupt() # Explicitly halt the underlying agent execution
+
+        # Re-raise to ensure AgentApp correctly updates the task state to STOPPED
+        raise
+
+    finally:
+        # Persistence: Save state regardless of normal completion or interruption
+        await agent_app.state.session.save_session_state(
+            session_id=session_id,
+            agent=agent
+        )
+
+# Optional: Explicit endpoint to trigger task interruption
+@agent_app.post("/stop")
+async def stop_task(request: AgentRequest):
+    await agent_app.stop_chat(
+        user_id=request.user_id,
+        session_id=request.session_id,
+    )
+    return {
+        "status": "success",
+        "message": "Interrupt signal broadcasted.",
+    }
 
 
 agent_app.run()

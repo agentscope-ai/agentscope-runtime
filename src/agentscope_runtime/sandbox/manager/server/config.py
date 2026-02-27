@@ -118,7 +118,12 @@ class Settings(BaseSettings):
             return 1
         return value
 
-    @field_validator("DEFAULT_SANDBOX_TYPE", mode="before")
+    @field_validator(
+        "DEFAULT_SANDBOX_TYPE",
+        "FC_VSWITCH_IDS",
+        "AGENT_RUN_VSWITCH_IDS",
+        mode="before",
+    )
     @classmethod
     def parse_default_type(cls, v):
         if isinstance(v, str):

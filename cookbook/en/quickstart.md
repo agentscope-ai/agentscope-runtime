@@ -42,7 +42,9 @@ Start by importing every required module:
 
 ```{code-cell}
 import os
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
@@ -58,37 +60,41 @@ from agentscope_runtime.engine.deployers import LocalDeployManager
 print("✅ Dependencies imported successfully")
 ```
 
-### Step 2: Create the Agent App
+### Step 2: Create Lifecycle Functions
 
-`AgentApp` is the lifecycle and request hub of the agent application. All initialisation, query handling, and shutdown routines are registered on it:
-
-```{code-cell}
-agent_app = AgentApp(
-    app_name="Friday",
-    app_description="A helpful assistant",
-)
-
-print("✅ Agent App created successfully")
-```
-
-### Step 3: Register Lifecycle Hooks (Init & Shutdown)
-
-Define what happens when the service starts (state/session services) and how resources are released during shutdown:
+Lifecycle functions define the actions to be performed when the service starts (such as state management and session history services) and how resources are released during shutdown.
 
 ```{code-cell}
-@agent_app.init
-async def init_func(self):
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage resources during service startup and shutdown"""
+    # Startup: Initialize Session manager
     import fakeredis
 
     fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
     # NOTE: This FakeRedis instance is for development/testing only.
     # In production, replace it with your own Redis client/connection
     # (e.g., aioredis.Redis)
-    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
+    app.state.session = RedisSession(connection_pool=fake_redis.connection_pool)
 
-@agent_app.shutdown
-async def shutdown_func(self):
-    pass
+    yield  # Service is running
+
+    # Shutdown: Clean up logic (e.g., closing database connections) can be added here
+    print("AgentApp is shutting down...")
+```
+
+### Step 3: Create the Agent App
+
+`AgentApp` is the core of the entire Agent application's lifecycle and request handling, managing the application lifecycle and the registration of all services.
+
+```{code-cell}
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+    lifespan=lifespan, # Pass the lifespan function
+)
+
+print("✅ Agent App created successfully")
 ```
 
 ### Step 4: Define the AgentScope Query Logic
@@ -134,7 +140,7 @@ async def query_func(
     )
     agent.set_console_output_enabled(enabled=False)
 
-    await self.session.load_session_state(
+    await agent_app.state.session.load_session_state(
         session_id=session_id,
         user_id=user_id,
         agent=agent,
@@ -146,7 +152,7 @@ async def query_func(
     ):
         yield msg, last
 
-    await self.session.save_session_state(
+    await agent_app.state.session.save_session_state(
         session_id=session_id,
         user_id=user_id,
         agent=agent,

@@ -2,7 +2,7 @@
 from .generic import generic_router
 from .mcp import mcp_router
 from .runtime_watcher import watcher_router
-from .workspace import workspace_router
+from .workspace import router as workspace_router
 
 __all__ = [
     "mcp_router",

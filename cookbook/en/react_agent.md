@@ -53,8 +53,11 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 ### Step 1: Import Dependencies
 
 ```{code-cell}
+import asyncio
 import os
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
@@ -116,34 +119,33 @@ The Agent setup shown here (model, tools, conversation memory, formatter, etc.) 
 Please adapt and replace these components with your own implementations based on your requirements.
 ```
 
-The logic mirrors the `run_app()` test: initialize services, wire up session memory, and stream responses.
+The following logic demonstrates how to build a service using AgentApp features, including lifecycle management, session memory, streaming responses, and interruption handling:
 
 ```{code-cell}
 PORT = 8090
 
-agent_app = AgentApp(
-    app_name="Friday",
-    app_description="A helpful assistant",
-)
-
-
-@agent_app.init
-async def init_func(self):
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     import fakeredis
 
     fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
     # NOTE: This FakeRedis instance is for development/testing only.
     # In production, replace it with your own Redis client/connection
     # (e.g., aioredis.Redis)
-    self.session = RedisSession(connection_pool=fake_redis.connection_pool)
+    app.state.session = RedisSession(connection_pool=fake_redis.connection_pool)
 
-    self.sandbox_service = SandboxService()
-    await self.sandbox_service.start()
+    app.state.sandbox_service = SandboxService()
+    await app.state.sandbox_service.start()
+    try:
+        yield
+    finally:
+        await app.state.sandbox_service.stop()
 
-
-@agent_app.shutdown
-async def shutdown_func(self):
-    await self.sandbox_service.stop()
+agent_app = AgentApp(
+    app_name="Friday",
+    app_description="A helpful assistant",
+    lifespan=lifespan,
+)
 
 
 @agent_app.query(framework="agentscope")
@@ -151,7 +153,7 @@ async def query_func(self, msgs, request: AgentRequest = None, **kwargs):
     session_id = request.session_id
     user_id = request.user_id
 
-    sandboxes = self.sandbox_service.connect(
+    sandboxes = agent_app.state.sandbox_service.connect(
         session_id=session_id,
         user_id=user_id,
         sandbox_types=["browser"],
@@ -184,23 +186,40 @@ async def query_func(self, msgs, request: AgentRequest = None, **kwargs):
     )
     agent.set_console_output_enabled(enabled=False)
 
-    await self.session.load_session_state(
+    await agent_app.state.session.load_session_state(
         session_id=session_id,
         user_id=user_id,
         agent=agent,
     )
 
-    async for msg, last in stream_printing_messages(
-        agents=[agent],
-        coroutine_task=agent(msgs),
-    ):
-        yield msg, last
+    try:
+        async for msg, last in stream_printing_messages(
+            agents=[agent],
+            coroutine_task=agent(msgs),
+        ):
+            yield msg, last
 
-    await self.session.save_session_state(
-        session_id=session_id,
-        user_id=user_id,
-        agent=agent,
+    except asyncio.CancelledError:
+        await agent.interrupt()
+        raise
+
+    finally:
+        await agent_app.state.session.save_session_state(
+            session_id=session_id,
+            user_id=user_id,
+            agent=agent,
+        )
+
+@agent_app.post("/stop")
+async def stop_task(request: AgentRequest):
+    await agent_app.stop_chat(
+        user_id=request.user_id,
+        session_id=request.session_id,
     )
+    return {
+        "status": "success",
+        "message": "Interrupt signal broadcasted.",
+    }
 ```
 
 The `query_func` streams SSE responses and persists the latest agent state, enabling multi-turn memory. Because `SandboxService` is scoped to `session_id` / `user_id`, the same browser sandbox is reused until the session ends.
@@ -256,6 +275,50 @@ print(resp.response["output"][0]["content"][0]["text"])
 
 A successful result should look like “I'm Friday ...”.
 
+### Step 8: Test Interruption Feature
+
+During long task processing, you may need to intervene manually and stop the inference.
+
+**1. Start a time-consuming task**
+In Terminal 1, ask the agent to perform a complex task (e.g., writing a long report or performing extensive web browsing):
+
+```bash
+curl -N -X POST "http://127.0.0.1:8090/process" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Please browse the news today and write a 1000-word detailed report."
+          }
+        ]
+      }
+    ],
+    "session_id": "ss-123",
+    "user_id": "uu-123"
+  }'
+```
+
+**2. Send an interrupt signal**
+While Terminal 1 is streaming the output, open Terminal 2 and send an interruption request (ensure the `session_id` and `user_id` match):
+
+```bash
+curl -X POST "http://localhost:8090/stop" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": [],
+    "session_id": "ss-123",
+    "user_id": "uu-123"
+  }'
+```
+
+**3. Expected Behavior**
+- **Terminal 2** will return `{"status": "success", "message": "Interrupt signal broadcasted."}`.
+- **Terminal 1**'s SSE data stream will stop immediately.
+
 ## Summary
 
-Following these steps, you now have a ReAct agent with streaming responses, session memory, browser sandbox tooling, and an OpenAI-compatible endpoint. To deploy remotely or extend the toolset, swap out the model, state services, or registered tools as needed.
+Following these steps, you now have a ReAct agent service with streaming responses, session memory, interruption handling, and an OpenAI-compatible endpoint. To deploy remotely or extend the toolset, swap out the model, state services, or registered tools as needed.

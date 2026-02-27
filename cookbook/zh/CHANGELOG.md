@@ -2,7 +2,9 @@
 
 ## v1.1.0
 
-AgentScope Runtime v1.1.0 专注于通过移除 Runtime 侧自定义的 Memory/Session 服务抽象，并**统一采用 Agent 框架原生的持久化模块**来**简化持久化与会话连续性**。这降低了心智负担，避免概念重复，并确保持久化行为与底层 Agent 框架保持一致。
+AgentScope Runtime v1.1.0 通过移除 Runtime 侧自定义的 Memory/Session 服务抽象，并**统一采用 Agent 框架原生的持久化模块**来**简化持久化与会话连续性**。这降低了心智负担，避免概念重复，并确保持久化行为与底层 Agent 框架保持一致。
+
+此外，本版本对 **`AgentApp` 的底层架构进行了重构**：将其改为直接继承 `FastAPI`，引入了**标准的生命周期管理 (Lifespan)**，并新增了支持分布式场景的**任务中断功能**与**并发冲突控制**。
 
 **变更的背景与必要性**
 
@@ -19,11 +21,27 @@ AgentScope Runtime v1.1.0 专注于通过移除 Runtime 侧自定义的 Memory/S
 
 为了解决这些问题，v1.1.0 **弃用并移除**了这些 Runtime 侧服务/适配器，并建议在 `AgentApp` 生命周期中直接使用 **Agent 框架自身的持久化模块**（例如 `JSONSession`、内置 memory 实现）。
 
+**此外，v1.1.0 针对 `AgentApp` 的核心架构进行了重构，将其从“工厂类创建模式”转变为“直接继承 `FastAPI` 模式”。** 这一变更源于以下考量：
+
+1. **解决原有工厂模式的局限性**
+   在旧版本中，`AgentApp` 内部通过工厂类创建并持有 FastAPI 对象。这种包装方式产生了一层“黑盒”，使得开发者难以直接利用 FastAPI 原生的强大功能（如复杂的中间件配置、自定义路由装饰器以及依赖注入系统），且自定义的生命周期钩子（如 `@app.init`）也与标准 Web 开发规范存在偏差。
+
+2. **拥抱原生 FastAPI 生态与扩展性**
+   通过改为**直接继承 `FastAPI` 类**，`AgentApp` 现在即是一个标准的 FastAPI 应用。这种架构赋予了开发者完全的控制权，可以无缝集成 FastAPI 社区的中间件和插件。同时，基于类继承的架构允许我们通过 `Mixin`（混入类）的方式优雅地引入**任务中断（Interrupt）**、**并发状态竞争控制**等高级功能，使 `AgentApp` 成为一个既符合现代 Web 开发标准，又深度适配 Agent 业务场景的核心组件。
+
+### Added
+
+- **分布式任务中断功能**：引入 `InterruptMixin` 及其后端支持（Local/Redis），允许用户自定义接口在任务执行过程中手动触发中断，并支持在分布式集群环境下广播中断信号。
+- **分布式竞态控制**：在任务启动阶段引入基于状态机的原子检查（Compare-and-Swap），有效防止同一 Session ID 在分布式环境下被重复并发执行。
+- **原生 FastAPI 扩展性**：由于 `AgentApp` 现在直接继承自 `FastAPI`，开发者可以直接使用 `@app.get`、`app.add_middleware` 等原生方法，完全兼容 FastAPI 生态。
+
 ### Changed
 
-- 推荐的持久化模式：
+- **推荐的持久化模式**：
   - 直接使用 Agent 框架的 **Memory** 模块（例如 `InMemoryMemory`，或框架提供的 Redis-backed memory）。
   - 使用 Agent 框架的 **Session** 模块（例如 `JSONSession`）在 `query` 期间加载/保存 agent 会话状态。
+- **架构重构**：`AgentApp` 由原先的 **工厂类模式** 改为**直接继承 `FastAPI`**。
+- **生命周期统一**：统一了内部框架资源与用户自定义资源的生命周期管理逻辑。
 
 ### Breaking Changes
 
@@ -35,17 +53,25 @@ AgentScope Runtime v1.1.0 专注于通过移除 Runtime 侧自定义的 Memory/S
      - Runtime 长期记忆服务/适配器
      - `AgentScopeSessionHistoryMemory(...)` 风格的适配器用法
        都必须迁移到 Agent 框架内置的持久化方式。
+2. **移除工厂类模式**
+   - 废弃 `FastAPIAppFactory`。现在应直接实例化 `AgentApp` 对象。
+3. **弃用自定义装饰器钩子**
+   - 弃用并标记了旧版本中的 `@app.init` 和 `@app.shutdown` 装饰器。
+   - **迁移建议**：请使用 FastAPI 标准的 `lifespan` 异步上下文管理器（详见下方迁移指南中的示例）。
 
 #### 迁移指南（v1.0 → v1.1）
 
-##### 推荐模式（使用 Agent 框架模块做持久化）
+##### 推荐模式（统一生命周期管理、中断处理与原生持久化）
 
-使用 `JSONSession` 或其他子模块来持久化/加载 agent 的会话状态，并在 AgentScope 中直接使用 `InMemoryMemory()`（或框架内提供的其他 memory）：
+在 v1.1.0 中，我们建议使用 **Lifespan 异步上下文管理器** 代替原有的装饰器来管理资源。同时，在 `query` 逻辑中捕获 `asyncio.CancelledError` 以响应中断信号，并使用 Agent 框架原生的 **Session/Memory** 模块进行状态持久化：
 
 ```python
 # -*- coding: utf-8 -*-
+import asyncio
 import os
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
 from agentscope.agent import ReActAgent
 from agentscope.model import DashScopeChatModel
 from agentscope.formatter import DashScopeChatFormatter
@@ -57,22 +83,26 @@ from agentscope.session import JSONSession
 from agentscope_runtime.engine.app import AgentApp
 from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 
+# Standard FastAPI lifespan management
+# (Replaces deprecated @app.init/@app.shutdown)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Use JSONSession here
+    app.state.session = JSONSession(save_dir="./sessions")
+    try:
+        yield
+    finally:
+        # No Runtime state/session services to stop in v1.1
+        pass
+
+# AgentApp now inherits directly from FastAPI
 agent_app = AgentApp(
     app_name="Friday",
     app_description="A helpful assistant",
+    lifespan=lifespan,
+    # Optional: Enable distributed interrupt by providing interrupt_redis_url
+    # interrupt_redis_url="redis://localhost"
 )
-
-
-@agent_app.init
-async def init_func(self):
-    self.session = JSONSession(save_dir="./sessions")  # Use JSONSession here
-
-
-@agent_app.shutdown
-async def shutdown_func(self):
-    # No Runtime state/session services to stop in v1.1
-    pass
-
 
 @agent_app.query(framework="agentscope")
 async def query_func(
@@ -102,15 +132,43 @@ async def query_func(
         formatter=DashScopeChatFormatter(),
     )
 
-    await self.session.load_session_state(session_id=session_id, agent=agent)
+    await agent_app.state.session.load_session_state(
+        session_id=session_id,
+        agent=agent,
+    )
 
-    async for msg, last in stream_printing_messages(
-        agents=[agent],
-        coroutine_task=agent(msgs),
-    ):
-        yield msg, last
+    try:
+        async for msg, last in stream_printing_messages(
+            agents=[agent],
+            coroutine_task=agent(msgs),
+        ):
+            yield msg, last
 
-    await self.session.save_session_state(session_id=session_id, agent=agent)
+    except asyncio.CancelledError:
+        # Handling Interruptions (New in v1.1.0)
+        await agent.interrupt() # Explicitly halt the underlying agent execution
+
+        # Re-raise to ensure AgentApp correctly updates the task state to STOPPED
+        raise
+
+    finally:
+        # Persistence: Save state regardless of normal completion or interruption
+        await agent_app.state.session.save_session_state(
+            session_id=session_id,
+            agent=agent
+        )
+
+# Optional: Explicit endpoint to trigger task interruption
+@agent_app.post("/stop")
+async def stop_task(request: AgentRequest):
+    await agent_app.stop_chat(
+        user_id=request.user_id,
+        session_id=request.session_id,
+    )
+    return {
+        "status": "success",
+        "message": "Interrupt signal broadcasted.",
+    }
 
 
 agent_app.run()

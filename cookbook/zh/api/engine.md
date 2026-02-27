@@ -6,19 +6,7 @@ Engine 模块涵盖 AgentScope Runtime 的核心执行、部署与服务能力�
 
 ### App
 ```{eval-rst}
-.. automodule:: agentscope_runtime.engine.app.base_app
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :no-index:
-
 .. automodule:: agentscope_runtime.engine.app.agent_app
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :no-index:
-
-.. automodule:: agentscope_runtime.engine.app.celery_mixin
    :members:
    :undoc-members:
    :show-inheritance:
@@ -205,6 +193,48 @@ Engine 模块涵盖 AgentScope Runtime 的核心执行、部署与服务能力�
    :no-index:
 
 .. automodule:: agentscope_runtime.engine.deployers.utils.service_utils.process_manager
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+
+.. automodule:: agentscope_runtime.engine.deployers.utils.service_utils.interrupt.interrupt_mixin
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+
+.. automodule:: agentscope_runtime.engine.deployers.utils.service_utils.interrupt.base_backend
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+
+.. automodule:: agentscope_runtime.engine.deployers.utils.service_utils.interrupt.redis_backend
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+
+.. automodule:: agentscope_runtime.engine.deployers.utils.service_utils.interrupt.local_backend
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+
+.. automodule:: agentscope_runtime.engine.deployers.utils.service_utils.routing.unified_routing_mixin
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+
+.. automodule:: agentscope_runtime.engine.deployers.utils.service_utils.routing.task_engine_mixin
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+
+.. automodule:: agentscope_runtime.engine.deployers.utils.service_utils.routing.custom_endpoint_mixin
    :members:
    :undoc-members:
    :show-inheritance:

@@ -137,7 +137,7 @@ flowchart LR
 
 #### 2. AgentApp
 
-`AgentApp` 是 AgentScope Runtime 中的 **应用入口点**，用于将 Agent 部署为可对外提供服务的 API 应用。
+`AgentApp` 是 AgentScope Runtime 的核心**应用入口点**。它直接继承自 `FastAPI`，旨在将 Agent 部署并封装为可对外提供服务的标准化 API 应用。
 
 它的职责是：
 
@@ -145,22 +145,21 @@ flowchart LR
 - 提供标准化的 **HTTP API 接口**（含健康检查）
 - 支持 **Server-Sent Events (SSE)** 以及标准 JSON 响应
 - 允许注册任务队列（Celery）以及自定义路由
-- 管理应用生命周期（支持 `before_start` / `after_finish` 钩子）
+- 管理应用生命周期（支持 `lifespan` 生命周期管理，以及 `before_start` / `after_finish` 钩子）
+- 通过 `deploy()` 方法进行服务部署
 
 #### 3. Runner
 
-`Runner` 类提供灵活且可扩展的运行时来编排智能体执行并提供部署功能。它管理：
+`Runner` 类负责处理请求委托的智能体核心处理逻辑。它管理：
 
-- 通过 `init_handler` 和 `shutdown_handler` 管理智能体生命周期
 - 通过 `query_handler` 处理请求
-- 流式响应
-- 通过 `deploy()` 方法进行服务部署
+- 流式响应以及消息格式转换
 
 #### 4. Deployer
 
 `Deployer`（实现为 `DeployManager`）提供生产级别的部署功能：
 
-- 将Runner部署为服务
+- 将 AgentApp（或者 Runner）部署为服务
 - 健康检查、监控和生命周期管理
 - 使用SSE的实时响应流式传输
 - 错误处理、日志记录和优雅关闭

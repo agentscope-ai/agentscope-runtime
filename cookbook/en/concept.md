@@ -136,7 +136,7 @@ The `Agent` is the core component that processes requests and generates response
 
 #### 2. AgentApp
 
-`AgentApp` is the **application entry point** in AgentScope Runtime. It is used to deploy an agent as an externally accessible API application.
+Serving as the core **application entry point** within AgentScope Runtime, `AgentApp` inherits directly from `FastAPI` to deploy and expose Agents as externally accessible API services.
 
 Its responsibilities include:
 
@@ -144,22 +144,21 @@ Its responsibilities include:
 - Providing standardized **HTTP API endpoints** (including health checks)
 - Supporting **Server-Sent Events (SSE)** as well as standard JSON responses
 - Allowing registration of task queues (Celery) and custom routes
-- Managing the application lifecycle (supports `before_start` / `after_finish` hooks)
+- Managing the application lifecycle (supports `lifespan` lifecycle management, as well as `before_start` / `after_finish` hooks)
+- Service deployment via the `deploy()` method
 
 #### 3. Runner
 
 The `Runner` class offers a flexible and extensible runtime that orchestrates agent execution and enables deployment. It manages:
 
-- Agent lifecycle through `init_handler` and `shutdown_handler`
 - Request processing through `query_handler`
-- Streaming responses
-- Service deployment via the `deploy()` method
+- Streaming responses and message format conversion
 
 #### 4. Deployer
 
 The `Deployer` (implemented as `DeployManager`) provides production-grade deployment capabilities:
 
-- Deploying the Runner as a service
+- Deploying the AgentApp (or Runner) as a service
 - Health checks, monitoring, and lifecycle management
 - SSE-based real-time response streaming
 - Error handling, logging, and graceful shutdown
