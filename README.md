@@ -724,7 +724,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/e
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Shun-Chu"><img src="https://avatars.githubusercontent.com/u/73324318?v=4?s=100" width="100px;" alt="Chuss"/><br /><sub><b>Chuss</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/issues?q=author%3AShun-Chu" title="Bug reports">🐛</a></td>
     </tr>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/bcfre"><img src="https://avatars.githubusercontent.com/u/209150938?v=4?s=100" width="100px;" alt="bcfre"/><br /><sub><b>bcfre</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=bcfre" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/bcfre"><img src="https://avatars.githubusercontent.com/u/209150938?v=4?s=100" width="100px;" alt="bcfre"/><br /><sub><b>bcfre</b></sub></a><br /><a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=bcfre" title="Code">💻</a> <a href="https://github.com/agentscope-ai/agentscope-runtime/commits?author=bcfre" title="Documentation">📖</a></td>
     </tr>
   </tbody>
   <tfoot>
