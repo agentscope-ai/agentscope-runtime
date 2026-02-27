@@ -103,7 +103,7 @@ class KruiseClient:
             volumes: Volume mounts dictionary.
             environment: Environment variables dictionary.
             runtime_config: Runtime configuration dictionary.
-            annotations (`Optional[Dict[str, str]]`): Kruise Sandbox annotations.
+            annotations (`Optional[Dict[str, str]]`): Kruise annotations.
             labels (`Optional[Dict[str, str]]`): Kruise Sandbox labels.
             namespace (`Optional[str]`): Override default namespace.
 
@@ -613,7 +613,9 @@ class KruiseClient:
             if e.status == 404:
                 logger.warning(f"Kruise Sandbox '{name}' not found")
             else:
-                logger.error(f"Failed to get Kruise Sandbox status: {e.reason}")
+                logger.error(
+                    f"Failed to get Kruise Sandbox status: {e.reason}",
+                )
             return None
         except Exception as e:
             logger.error(f"An error occurred: {e}, {traceback.format_exc()}")

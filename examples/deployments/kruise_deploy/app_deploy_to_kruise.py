@@ -117,7 +117,7 @@ async def atask_handler(request: AgentRequest):
 
 
 async def deploy_app_to_kruise():
-    """Deploy AgentApp as a Kruise Sandbox custom resource (agents.kruise.io)"""
+    """Deploy AgentApp as a Kruise Sandbox custom resource"""
 
     from agentscope_runtime.engine.deployers.kruise_deployer import (
         KruiseDeployManager,

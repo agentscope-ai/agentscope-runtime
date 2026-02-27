@@ -272,7 +272,10 @@ class KruiseDeployManager(DeployManager):
                 )
 
             logger.info(
-                f"Kruise Sandbox {resource_name} created, sandbox_ip: {sandbox_ip}",
+                (
+                    f"Kruise Sandbox {resource_name} created, "
+                    f"sandbox_ip: {sandbox_ip}"
+                ),
             )
 
             # Step 2: Create a LoadBalancer Service for external access
@@ -340,8 +343,7 @@ class KruiseDeployManager(DeployManager):
 
             logger.error(f"Kruise deployment {deploy_id} failed: {e}")
             raise RuntimeError(
-                f"Kruise deployment failed: {e}, "
-                f"{traceback.format_exc()}",
+                f"Kruise deployment failed: {e}, " f"{traceback.format_exc()}",
             ) from e
 
     @staticmethod
