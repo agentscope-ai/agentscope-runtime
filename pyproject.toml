@@ -1,6 +1,6 @@
 [project]
 name = "agentscope-runtime"
-version = "1.1.1a1"
+version = "1.1.1"
 description = "A production-ready runtime framework for agent applications, providing secure sandboxed execution environments and scalable deployment solutions with multi-framework support."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -20,7 +20,7 @@ dependencies = [
     "kubernetes>=33.1.0",
     "shortuuid>=1.0.13",
     "celery[redis]>=5.3.1",
-    "a2a-sdk>=0.3.0",
+    "a2a-sdk>=0.3.0,<1.0.0",
     "jinja2",
     "psutil",
     "dashscope>=1.25.0",
