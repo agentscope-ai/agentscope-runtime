@@ -632,6 +632,7 @@ body.preview-active {
     <span class="n">WARM</span> <span class="o">=</span> <span class="s2">&quot;warm&quot;</span>
     <span class="n">RUNNING</span> <span class="o">=</span> <span class="s2">&quot;running&quot;</span>
     <span class="n">RECYCLED</span> <span class="o">=</span> <span class="s2">&quot;recycled&quot;</span>
+    <span class="n">REPLACED</span> <span class="o">=</span> <span class="s2">&quot;replaced&quot;</span>
     <span class="n">ERROR</span> <span class="o">=</span> <span class="s2">&quot;error&quot;</span>
     <span class="n">RELEASED</span> <span class="o">=</span> <span class="s2">&quot;released&quot;</span></div>
 
@@ -737,6 +738,12 @@ body.preview-active {
     <span class="n">recycle_reason</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Reason for recycle&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">redirect_to</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Container name to redirect to when this container is &quot;</span>
+        <span class="s2">&quot;REPLACED&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>

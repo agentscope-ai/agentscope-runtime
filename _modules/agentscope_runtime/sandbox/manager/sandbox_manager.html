@@ -1155,12 +1155,15 @@ body.preview-active {
 <span class="sd">          containers.</span>
 <span class="sd">        - Does NOT delete ContainerModel records from container_mapping;</span>
 <span class="sd">          instead it relies on release() to mark them as terminal (RELEASED).</span>
-<span class="sd">        - Skips containers already in terminal states: RELEASED / RECYCLED.</span>
+<span class="sd">        - Skips containers already in terminal states:</span>
+<span class="sd">          RELEASED / RECYCLED / REPLACED.</span>
 
 <span class="sd">        Notes:</span>
 
 <span class="sd">        - Uses container_name as identity to avoid ambiguity with session_id.</span>
 <span class="sd">        - Pool containers (WARM) are also destroyed (per current policy).</span>
+<span class="sd">        - REPLACED containers are skipped because they are redirect stubs;</span>
+<span class="sd">          their replacement containers will be cleaned up separately.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Cleaning up resources.&quot;</span><span class="p">)</span>
 
@@ -1179,6 +1182,7 @@ body.preview-active {
                     <span class="k">if</span> <span class="n">container_model</span><span class="o">.</span><span class="n">state</span> <span class="ow">in</span> <span class="p">(</span>
                         <span class="n">ContainerState</span><span class="o">.</span><span class="n">RELEASED</span><span class="p">,</span>
                         <span class="n">ContainerState</span><span class="o">.</span><span class="n">RECYCLED</span><span class="p">,</span>
+                        <span class="n">ContainerState</span><span class="o">.</span><span class="n">REPLACED</span><span class="p">,</span>
                     <span class="p">):</span>
                         <span class="k">continue</span>
 
@@ -1205,6 +1209,7 @@ body.preview-active {
                 <span class="k">if</span> <span class="n">container_model</span><span class="o">.</span><span class="n">state</span> <span class="ow">in</span> <span class="p">(</span>
                     <span class="n">ContainerState</span><span class="o">.</span><span class="n">RELEASED</span><span class="p">,</span>
                     <span class="n">ContainerState</span><span class="o">.</span><span class="n">RECYCLED</span><span class="p">,</span>
+                    <span class="n">ContainerState</span><span class="o">.</span><span class="n">REPLACED</span><span class="p">,</span>
                 <span class="p">):</span>
                     <span class="k">continue</span>
 
@@ -1605,7 +1610,21 @@ body.preview-active {
 <a class="viewcode-back" href="../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager.release">[docs]</a>
     <span class="nd">@remote_wrapper</span><span class="p">()</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">release</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identity</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Release (destroy) a container by identity.</span>
+
+<span class="sd">        IMPORTANT: If identity points to a REPLACED container, this method</span>
+<span class="sd">        follows the redirect and releases the actual replacement container</span>
+<span class="sd">        instead. The REPLACED stub is marked as RELEASED afterward.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            identity: Container name or ID to release</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if released successfully, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Get raw container data (without following redirect yet)</span>
             <span class="n">container_json</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">identity</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">container_json</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">container_json</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
@@ -1618,6 +1637,42 @@ body.preview-active {
                     <span class="p">)</span>
                     <span class="k">return</span> <span class="kc">True</span>
 
+            <span class="n">container_info</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="n">container_json</span><span class="p">)</span>
+
+            <span class="c1"># Check if this is a REPLACED container with redirect</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">container_info</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="n">ContainerState</span><span class="o">.</span><span class="n">REPLACED</span>
+                <span class="ow">and</span> <span class="n">container_info</span><span class="o">.</span><span class="n">redirect_to</span>
+                <span class="ow">and</span> <span class="n">container_info</span><span class="o">.</span><span class="n">redirect_to</span> <span class="o">!=</span> <span class="n">identity</span>
+            <span class="p">):</span>
+                <span class="c1"># Follow redirect: release the actual replacement container</span>
+                <span class="n">actual_identity</span> <span class="o">=</span> <span class="n">container_info</span><span class="o">.</span><span class="n">redirect_to</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;release: </span><span class="si">{</span><span class="n">identity</span><span class="si">}</span><span class="s2"> is REPLACED, releasing actual &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;container </span><span class="si">{</span><span class="n">actual_identity</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="c1"># Recursively release the actual container</span>
+                <span class="n">success</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">actual_identity</span><span class="p">)</span>
+
+                <span class="c1"># Mark the REPLACED stub as RELEASED (for cleanup)</span>
+                <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+                    <span class="n">container_info</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">ContainerState</span><span class="o">.</span><span class="n">RELEASED</span>
+                    <span class="n">container_info</span><span class="o">.</span><span class="n">released_at</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                    <span class="n">container_info</span><span class="o">.</span><span class="n">updated_at</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+                        <span class="n">identity</span><span class="p">,</span>
+                        <span class="n">container_info</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(),</span>
+                    <span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;release: marked REPLACED stub </span><span class="si">{</span><span class="n">identity</span><span class="si">}</span><span class="s2"> as &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;RELEASED&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                <span class="k">return</span> <span class="n">success</span>
+
+            <span class="c1"># Normal release flow for non-REPLACED containers</span>
+            <span class="c1"># Re-parse in case we&#39;re in recursive call</span>
             <span class="n">container_info</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="n">container_json</span><span class="p">)</span>
 
             <span class="c1"># remove session key in mapping</span>
@@ -1803,8 +1858,29 @@ body.preview-active {
 <div class="viewcode-block" id="SandboxManager.get_info">
 <a class="viewcode-back" href="../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager.get_info">[docs]</a>
     <span class="nd">@remote_wrapper</span><span class="p">()</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identity</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get container information by container_name or container_id.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identity</span><span class="p">,</span> <span class="n">_redirect_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get container information by container_name or container_id.</span>
+
+<span class="sd">        Automatically follows redirects if container is REPLACED.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            identity: Container name or ID to look up</span>
+<span class="sd">            _redirect_depth: Internal parameter to prevent infinite redirect</span>
+<span class="sd">                loops</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Container information dict</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            RuntimeError: If container not found or redirect loop detected</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Prevent infinite redirect loops</span>
+        <span class="k">if</span> <span class="n">_redirect_depth</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Redirect loop detected for container </span><span class="si">{</span><span class="n">identity</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
         <span class="n">container_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">identity</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">container_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">container_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
@@ -1812,8 +1888,32 @@ body.preview-active {
             <span class="p">)</span>
         <span class="k">if</span> <span class="n">container_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No container found with id: </span><span class="si">{</span><span class="n">identity</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Parse container model</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">container_model</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">cm_dict</span> <span class="o">=</span> <span class="n">container_model</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">container_model</span><span class="p">,</span> <span class="s2">&quot;model_dump&quot;</span><span class="p">):</span>
+            <span class="n">cm_dict</span> <span class="o">=</span> <span class="n">container_model</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cm_dict</span> <span class="o">=</span> <span class="n">container_model</span>
+
+        <span class="c1"># Check if this container has been replaced and needs redirect</span>
+        <span class="n">cm</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="n">cm_dict</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">cm</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="n">ContainerState</span><span class="o">.</span><span class="n">REPLACED</span>
+            <span class="ow">and</span> <span class="n">cm</span><span class="o">.</span><span class="n">redirect_to</span>
+            <span class="ow">and</span> <span class="n">cm</span><span class="o">.</span><span class="n">redirect_to</span> <span class="o">!=</span> <span class="n">identity</span>
+        <span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Container </span><span class="si">{</span><span class="n">identity</span><span class="si">}</span><span class="s2"> is REPLACED, redirecting to &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cm</span><span class="o">.</span><span class="n">redirect_to</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="c1"># Follow the redirect recursively</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_info</span><span class="p">(</span><span class="n">cm</span><span class="o">.</span><span class="n">redirect_to</span><span class="p">,</span> <span class="n">_redirect_depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Return the container model as dict/json</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">container_model</span><span class="p">,</span> <span class="s2">&quot;model_dump_json&quot;</span><span class="p">):</span>
-            <span class="n">container_model</span> <span class="o">=</span> <span class="n">container_model</span><span class="o">.</span><span class="n">model_dump_json</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">container_model</span><span class="o">.</span><span class="n">model_dump_json</span><span class="p">()</span>
 
         <span class="k">return</span> <span class="n">container_model</span></div>
 
@@ -2084,12 +2184,18 @@ body.preview-active {
 <span class="sd">        - If mount_dir exists -&gt; create a new container with that</span>
 <span class="sd">          mount_dir/storage_path.</span>
 <span class="sd">        - Bind new container to this session and mark RUNNING.</span>
-<span class="sd">        - Archive the old recycled record (mark RELEASED).</span>
+<span class="sd">        - Keep the old recycled record and mark it REPLACED with redirect_to</span>
+<span class="sd">          pointing to the new container (for client compatibility;</span>
+<span class="sd">          Issue #451 fix).</span>
 
 <span class="sd">        After restore:</span>
 
 <span class="sd">        - session_mapping[session_ctx_id] will be replaced with the list of</span>
 <span class="sd">          NEW running containers.</span>
+<span class="sd">        - Old REPLACED container records remain in container_mapping until</span>
+<span class="sd">          cleaned up by TTL mechanism (released_key_ttl).</span>
+<span class="sd">        - Clients can continue using old container IDs; get_info()</span>
+<span class="sd">          automatically follows redirects.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">env_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_session_mapping</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">env_ids</span><span class="p">:</span>
@@ -2172,14 +2278,32 @@ body.preview-active {
         <span class="c1"># 3) heartbeat after restore (session-level)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_heartbeat</span><span class="p">(</span><span class="n">session_ctx_id</span><span class="p">)</span>
 
-        <span class="c1"># 4) archive old recycled records so needs_restore becomes False</span>
-        <span class="k">for</span> <span class="n">old_name</span> <span class="ow">in</span> <span class="n">recycled_old_names</span><span class="p">:</span>
+        <span class="c1"># 4) mark old recycled records as REPLACED with redirect info</span>
+        <span class="c1">#    (keep them for client compatibility, don&#39;t delete)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">old_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">recycled_old_names</span><span class="p">):</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">old_name</span><span class="p">)</span>
+                <span class="c1"># Get the raw container data without following redirects</span>
+                <span class="n">old_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">old_name</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">old_data</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;restore_session: old container </span><span class="si">{</span><span class="n">old_name</span><span class="si">}</span><span class="s2"> not &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;found in mapping&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">continue</span>
+
+                <span class="n">old_cm</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="n">old_data</span><span class="p">)</span>
+                <span class="n">old_cm</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">ContainerState</span><span class="o">.</span><span class="n">REPLACED</span>
+                <span class="n">old_cm</span><span class="o">.</span><span class="n">redirect_to</span> <span class="o">=</span> <span class="n">new_container_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">old_cm</span><span class="o">.</span><span class="n">updated_at</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">container_mapping</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">old_name</span><span class="p">,</span> <span class="n">old_cm</span><span class="o">.</span><span class="n">model_dump</span><span class="p">())</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;restore_session: marked </span><span class="si">{</span><span class="n">old_name</span><span class="si">}</span><span class="s2"> as REPLACED -&gt; &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">new_container_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;restore_session: failed to delete old model&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">old_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;restore_session: failed to mark old container &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">old_name</span><span class="si">}</span><span class="s2"> as REPLACED: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                 <span class="p">)</span></div>
 
 
@@ -2336,9 +2460,21 @@ body.preview-active {
 <a class="viewcode-back" href="../../../../zh/api/sandbox.html#agentscope_runtime.sandbox.manager.sandbox_manager.SandboxManager.scan_released_cleanup_once">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">scan_released_cleanup_once</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_delete</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">200</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Delete container_mapping records whose state == RELEASED and expired.</span>
+<span class="sd">        Delete container_mapping records whose state is RELEASED or</span>
+<span class="sd">        REPLACED and expired.</span>
 
 <span class="sd">        TTL is config.released_key_ttl seconds. 0 disables cleanup.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: Metrics with keys:</span>
+<span class="sd">                - ttl: Configured TTL value</span>
+<span class="sd">                - scanned: Total containers scanned</span>
+<span class="sd">                - deleted: Containers successfully deleted</span>
+<span class="sd">                - skipped_ttl_disabled: Set to 1 if TTL is disabled</span>
+<span class="sd">                - skipped_not_expired: Containers not yet expired</span>
+<span class="sd">                - skipped_not_terminal: Containers in non-terminal states</span>
+<span class="sd">                  (not RELEASED/REPLACED)</span>
+<span class="sd">                - errors: Number of errors encountered</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">ttl</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;released_key_ttl&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
         <span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
@@ -2347,7 +2483,7 @@ body.preview-active {
             <span class="s2">&quot;deleted&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
             <span class="s2">&quot;skipped_ttl_disabled&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
             <span class="s2">&quot;skipped_not_expired&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-            <span class="s2">&quot;skipped_not_released&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;skipped_not_terminal&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>  <span class="c1"># Renamed from skipped_not_released</span>
             <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
         <span class="p">}</span>
 
@@ -2369,17 +2505,26 @@ body.preview-active {
 
                 <span class="n">cm</span> <span class="o">=</span> <span class="n">ContainerModel</span><span class="p">(</span><span class="o">**</span><span class="n">container_json</span><span class="p">)</span>
 
-                <span class="k">if</span> <span class="n">cm</span><span class="o">.</span><span class="n">state</span> <span class="o">!=</span> <span class="n">ContainerState</span><span class="o">.</span><span class="n">RELEASED</span><span class="p">:</span>
-                    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;skipped_not_released&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="c1"># Only cleanup RELEASED or REPLACED states</span>
+                <span class="k">if</span> <span class="n">cm</span><span class="o">.</span><span class="n">state</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span>
+                    <span class="n">ContainerState</span><span class="o">.</span><span class="n">RELEASED</span><span class="p">,</span>
+                    <span class="n">ContainerState</span><span class="o">.</span><span class="n">REPLACED</span><span class="p">,</span>
+                <span class="p">):</span>
+                    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;skipped_not_terminal&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>  <span class="c1"># Updated metric name</span>
                     <span class="k">continue</span>
 
-                <span class="n">released_at</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">released_at</span> <span class="ow">or</span> <span class="n">cm</span><span class="o">.</span><span class="n">updated_at</span> <span class="ow">or</span> <span class="mi">0</span>
-                <span class="k">if</span> <span class="n">released_at</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># For RELEASED: use released_at; for REPLACED: use updated_at</span>
+                <span class="n">cleanup_at</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">cm</span><span class="o">.</span><span class="n">released_at</span>
+                    <span class="k">if</span> <span class="n">cm</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="n">ContainerState</span><span class="o">.</span><span class="n">RELEASED</span>
+                    <span class="k">else</span> <span class="n">cm</span><span class="o">.</span><span class="n">updated_at</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">cleanup_at</span> <span class="ow">or</span> <span class="n">cleanup_at</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="c1"># no timestamp -&gt; treat as not expired</span>
                     <span class="n">result</span><span class="p">[</span><span class="s2">&quot;skipped_not_expired&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
                     <span class="k">continue</span>
 
-                <span class="k">if</span> <span class="n">now</span> <span class="o">-</span> <span class="n">released_at</span> <span class="o">&lt;=</span> <span class="n">ttl</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">now</span> <span class="o">-</span> <span class="n">cleanup_at</span> <span class="o">&lt;=</span> <span class="n">ttl</span><span class="p">:</span>
                     <span class="n">result</span><span class="p">[</span><span class="s2">&quot;skipped_not_expired&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
                     <span class="k">continue</span>
 

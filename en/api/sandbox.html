@@ -1900,12 +1900,15 @@ If watcher_scan_interval == 0 =&gt; disabled, returns False.</p>
 containers.</p></li>
 <li><p>Does NOT delete ContainerModel records from container_mapping;
 instead it relies on release() to mark them as terminal (RELEASED).</p></li>
-<li><p>Skips containers already in terminal states: RELEASED / RECYCLED.</p></li>
+<li><p>Skips containers already in terminal states:
+RELEASED / RECYCLED / REPLACED.</p></li>
 </ul>
 <p>Notes:</p>
 <ul class="simple">
 <li><p>Uses container_name as identity to avoid ambiguity with session_id.</p></li>
 <li><p>Pool containers (WARM) are also destroyed (per current policy).</p></li>
+<li><p>REPLACED containers are skipped because they are redirect stubs;
+their replacement containers will be cleaned up separately.</p></li>
 </ul>
 </dd></dl>
 
@@ -1954,7 +1957,22 @@ instead it relies on release() to mark them as terminal (RELEASED).</p></li>
 <dl class="py method">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">release</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identity</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/sandbox/manager/sandbox_manager.html#SandboxManager.release"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd></dd></dl>
+<dd><p>Release (destroy) a container by identity.</p>
+<p>IMPORTANT: If identity points to a REPLACED container, this method
+follows the redirect and releases the actual replacement container
+instead. The REPLACED stub is marked as RELEASED afterward.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>identity</strong> – Container name or ID to release</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if released successfully, False otherwise</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py">
@@ -2003,8 +2021,24 @@ instead it relies on release() to mark them as terminal (RELEASED).</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">get_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identity</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/sandbox/manager/sandbox_manager.html#SandboxManager.get_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="sig-name descname"><span class="pre">get_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_redirect_depth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/sandbox/manager/sandbox_manager.html#SandboxManager.get_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Get container information by container_name or container_id.</p>
+<p>Automatically follows redirects if container is REPLACED.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>identity</strong> – Container name or ID to look up</p></li>
+<li><p><strong>_redirect_depth</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Internal parameter to prevent infinite redirect
+loops</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Container information dict</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.14)"><strong>RuntimeError</strong></a> – If container not found or redirect loop detected</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -2130,12 +2164,18 @@ session_mapping[session_ctx_id]:</p>
 <li><p>If mount_dir exists -&gt; create a new container with that
 mount_dir/storage_path.</p></li>
 <li><p>Bind new container to this session and mark RUNNING.</p></li>
-<li><p>Archive the old recycled record (mark RELEASED).</p></li>
+<li><p>Keep the old recycled record and mark it REPLACED with redirect_to
+pointing to the new container (for client compatibility;
+Issue #451 fix).</p></li>
 </ul>
 <p>After restore:</p>
 <ul class="simple">
 <li><p>session_mapping[session_ctx_id] will be replaced with the list of
 NEW running containers.</p></li>
+<li><p>Old REPLACED container records remain in container_mapping until
+cleaned up by TTL mechanism (released_key_ttl).</p></li>
+<li><p>Clients can continue using old container IDs; get_info()
+automatically follows redirects.</p></li>
 </ul>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -2177,14 +2217,31 @@ double reap.</p>
 <dl class="py method">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">scan_released_cleanup_once</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_delete</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/sandbox/manager/sandbox_manager.html#SandboxManager.scan_released_cleanup_once"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><p>Delete container_mapping records whose state == RELEASED and expired.</p>
+<dd><p>Delete container_mapping records whose state is RELEASED or
+REPLACED and expired.</p>
 <p>TTL is config.released_key_ttl seconds. 0 disables cleanup.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>max_delete</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>Metrics with keys:</dt><dd><ul class="simple">
+<li><p>ttl: Configured TTL value</p></li>
+<li><p>scanned: Total containers scanned</p></li>
+<li><p>deleted: Containers successfully deleted</p></li>
+<li><p>skipped_ttl_disabled: Set to 1 if TTL is disabled</p></li>
+<li><p>skipped_not_expired: Containers not yet expired</p></li>
+<li><p>skipped_not_terminal: Containers in non-terminal states
+(not RELEASED/REPLACED)</p></li>
+<li><p>errors: Number of errors encountered</p></li>
+</ul>
+</dd>
+</dl>
+</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>max_delete</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -3320,6 +3377,11 @@ endpoint.</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">REPLACED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'replaced'</span></em></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">ERROR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'error'</span></em></dt>
 <dd></dd></dl>
 
@@ -3338,7 +3400,7 @@ endpoint.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.sandbox.model.container.</span></span><span class="sig-name descname"><span class="pre">ContainerModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">container_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">container_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ports</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mount_dir=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">storage_path=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runtime_token=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meta=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sandbox_type=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state=ContainerState.RUNNING</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_ctx_id=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_active_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recycled_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">released_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">updated_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recycle_reason=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**extra_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/sandbox/model/container.html#ContainerModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">agentscope_runtime.sandbox.model.container.</span></span><span class="sig-name descname"><span class="pre">ContainerModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">container_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">container_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ports</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mount_dir=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">storage_path=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runtime_token=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meta=&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sandbox_type=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state=ContainerState.RUNNING</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_ctx_id=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_active_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recycled_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">released_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">updated_at=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recycle_reason=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redirect_to=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**extra_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/agentscope_runtime/sandbox/model/container.html#ContainerModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -3362,6 +3424,7 @@ endpoint.</p>
 <li><p><strong>released_at</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>)</p></li>
 <li><p><strong>updated_at</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>)</p></li>
 <li><p><strong>recycle_reason</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>redirect_to</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
 <li><p><strong>extra_data</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>)</p></li>
 </ul>
 </dd>
@@ -3465,6 +3528,11 @@ endpoint.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">recycle_reason</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">redirect_to</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em></dt>
 <dd></dd></dl>
 
 </dd></dl>
