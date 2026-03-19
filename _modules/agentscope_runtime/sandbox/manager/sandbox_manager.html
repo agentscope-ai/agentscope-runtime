@@ -1378,6 +1378,14 @@ body.preview-active {
                     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                         <span class="c1"># ignore broken records</span>
                         <span class="k">continue</span>
+
+                <span class="c1"># Check if limit is exceeded</span>
+                <span class="k">if</span> <span class="n">current</span> <span class="o">&gt;=</span> <span class="n">limit</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Sandbox instance limit reached: &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">current</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">limit</span><span class="si">}</span><span class="s2"> active instances&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">None</span>
         <span class="k">except</span> <span class="ne">RuntimeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
             <span class="k">return</span> <span class="kc">None</span>
