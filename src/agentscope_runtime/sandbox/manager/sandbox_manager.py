@@ -517,12 +517,15 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
           containers.
         - Does NOT delete ContainerModel records from container_mapping;
           instead it relies on release() to mark them as terminal (RELEASED).
-        - Skips containers already in terminal states: RELEASED / RECYCLED.
+        - Skips containers already in terminal states:
+          RELEASED / RECYCLED / REPLACED.
 
         Notes:
 
         - Uses container_name as identity to avoid ambiguity with session_id.
         - Pool containers (WARM) are also destroyed (per current policy).
+        - REPLACED containers are skipped because they are redirect stubs;
+          their replacement containers will be cleaned up separately.
         """
         logger.debug("Cleaning up resources.")
 
@@ -951,7 +954,21 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
 
     @remote_wrapper()
     def release(self, identity):
+        """
+        Release (destroy) a container by identity.
+
+        IMPORTANT: If identity points to a REPLACED container, this method
+        follows the redirect and releases the actual replacement container
+        instead. The REPLACED stub is marked as RELEASED afterward.
+
+        Args:
+            identity: Container name or ID to release
+
+        Returns:
+            bool: True if released successfully, False otherwise
+        """
         try:
+            # Get raw container data (without following redirect yet)
             container_json = self.container_mapping.get(identity)
             if container_json is None:
                 container_json = self.container_mapping.get(
@@ -964,6 +981,42 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
                     )
                     return True
 
+            container_info = ContainerModel(**container_json)
+
+            # Check if this is a REPLACED container with redirect
+            if (
+                container_info.state == ContainerState.REPLACED
+                and container_info.redirect_to
+                and container_info.redirect_to != identity
+            ):
+                # Follow redirect: release the actual replacement container
+                actual_identity = container_info.redirect_to
+                logger.debug(
+                    f"release: {identity} is REPLACED, releasing actual "
+                    f"container {actual_identity}",
+                )
+
+                # Recursively release the actual container
+                success = self.release(actual_identity)
+
+                # Mark the REPLACED stub as RELEASED (for cleanup)
+                if success:
+                    container_info.state = ContainerState.RELEASED
+                    container_info.released_at = time.time()
+                    container_info.updated_at = time.time()
+                    self.container_mapping.set(
+                        identity,
+                        container_info.model_dump(),
+                    )
+                    logger.debug(
+                        f"release: marked REPLACED stub {identity} as "
+                        f"RELEASED",
+                    )
+
+                return success
+
+            # Normal release flow for non-REPLACED containers
+            # Re-parse in case we're in recursive call
             container_info = ContainerModel(**container_json)
 
             # remove session key in mapping
@@ -1406,12 +1459,18 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
         - If mount_dir exists -> create a new container with that
           mount_dir/storage_path.
         - Bind new container to this session and mark RUNNING.
-        - Archive the old recycled record (mark RELEASED).
+        - Keep the old recycled record and mark it REPLACED with redirect_to
+          pointing to the new container (for client compatibility;
+          Issue #451 fix).
 
         After restore:
 
         - session_mapping[session_ctx_id] will be replaced with the list of
           NEW running containers.
+        - Old REPLACED container records remain in container_mapping until
+          cleaned up by TTL mechanism (released_key_ttl).
+        - Clients can continue using old container IDs; get_info()
+          automatically follows redirects.
         """
         env_ids = self.get_session_mapping(session_ctx_id) or []
         if not env_ids:
@@ -1671,6 +1730,17 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
         REPLACED and expired.
 
         TTL is config.released_key_ttl seconds. 0 disables cleanup.
+
+        Returns:
+            dict: Metrics with keys:
+                - ttl: Configured TTL value
+                - scanned: Total containers scanned
+                - deleted: Containers successfully deleted
+                - skipped_ttl_disabled: Set to 1 if TTL is disabled
+                - skipped_not_expired: Containers not yet expired
+                - skipped_not_terminal: Containers in non-terminal states
+                  (not RELEASED/REPLACED)
+                - errors: Number of errors encountered
         """
         ttl = int(getattr(self.config, "released_key_ttl", 0))
         result = {
@@ -1679,7 +1749,7 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
             "deleted": 0,
             "skipped_ttl_disabled": 0,
             "skipped_not_expired": 0,
-            "skipped_not_released": 0,
+            "skipped_not_terminal": 0,  # Renamed from skipped_not_released
             "errors": 0,
         }
 
@@ -1706,7 +1776,7 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
                     ContainerState.RELEASED,
                     ContainerState.REPLACED,
                 ):
-                    result["skipped_not_released"] += 1
+                    result["skipped_not_terminal"] += 1  # Updated metric name
                     continue
 
                 # For RELEASED: use released_at; for REPLACED: use updated_at
