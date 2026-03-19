@@ -728,6 +728,14 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
                     except Exception:
                         # ignore broken records
                         continue
+
+                # Check if limit is exceeded
+                if current >= limit:
+                    logger.warning(
+                        f"Sandbox instance limit reached: "
+                        f"{current}/{limit} active instances",
+                    )
+                    return None
         except RuntimeError as e:
             logger.warning(str(e))
             return None
