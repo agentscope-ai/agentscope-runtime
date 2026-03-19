@@ -287,8 +287,11 @@ end
             if not model:
                 continue
 
-            # if already released, don't flip back
-            if model.state == ContainerState.RELEASED:
+            # if already in terminal state, don't flip back
+            if model.state in (
+                ContainerState.RELEASED,
+                ContainerState.REPLACED,
+            ):
                 continue
 
             model.state = ContainerState.RECYCLED
@@ -342,7 +345,8 @@ end
         """Check whether any container in the session is marked for restore.
 
         A session is considered needing restore if any bound container is in
-        ``ContainerState.RECYCLED`` or has ``recycled_at`` set.
+        ``ContainerState.RECYCLED`` (not REPLACED, as REPLACED containers
+        already have redirects set up).
 
         Args:
             session_ctx_id (`str`):
@@ -360,10 +364,8 @@ end
             model = self._load_container_model(cname)
             if not model:
                 continue
-            if (
-                model.state == ContainerState.RECYCLED
-                or model.recycled_at is not None
-            ):
+            # Only RECYCLED needs restore; REPLACED already has redirect
+            if model.state == ContainerState.RECYCLED:
                 return True
         return False
 

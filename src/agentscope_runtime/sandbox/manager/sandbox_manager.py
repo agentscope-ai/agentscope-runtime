@@ -541,6 +541,7 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
                     if container_model.state in (
                         ContainerState.RELEASED,
                         ContainerState.RECYCLED,
+                        ContainerState.REPLACED,
                     ):
                         continue
 
@@ -567,6 +568,7 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
                 if container_model.state in (
                     ContainerState.RELEASED,
                     ContainerState.RECYCLED,
+                    ContainerState.REPLACED,
                 ):
                     continue
 
@@ -1123,8 +1125,29 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
         return await asyncio.to_thread(self.get_status, *args, **kwargs)
 
     @remote_wrapper()
-    def get_info(self, identity):
-        """Get container information by container_name or container_id."""
+    def get_info(self, identity, _redirect_depth: int = 0):
+        """
+        Get container information by container_name or container_id.
+
+        Automatically follows redirects if container is REPLACED.
+
+        Args:
+            identity: Container name or ID to look up
+            _redirect_depth: Internal parameter to prevent infinite redirect
+                loops
+
+        Returns:
+            Container information dict
+
+        Raises:
+            RuntimeError: If container not found or redirect loop detected
+        """
+        # Prevent infinite redirect loops
+        if _redirect_depth > 10:
+            raise RuntimeError(
+                f"Redirect loop detected for container {identity}",
+            )
+
         container_model = self.container_mapping.get(identity)
         if container_model is None:
             container_model = self.container_mapping.get(
@@ -1132,8 +1155,32 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
             )
         if container_model is None:
             raise RuntimeError(f"No container found with id: {identity}.")
+
+        # Parse container model
+        if isinstance(container_model, dict):
+            cm_dict = container_model
+        elif hasattr(container_model, "model_dump"):
+            cm_dict = container_model.model_dump()
+        else:
+            cm_dict = container_model
+
+        # Check if this container has been replaced and needs redirect
+        cm = ContainerModel(**cm_dict)
+        if (
+            cm.state == ContainerState.REPLACED
+            and cm.redirect_to
+            and cm.redirect_to != identity
+        ):
+            logger.debug(
+                f"Container {identity} is REPLACED, redirecting to "
+                f"{cm.redirect_to}",
+            )
+            # Follow the redirect recursively
+            return self.get_info(cm.redirect_to, _redirect_depth + 1)
+
+        # Return the container model as dict/json
         if hasattr(container_model, "model_dump_json"):
-            container_model = container_model.model_dump_json()
+            return container_model.model_dump_json()
 
         return container_model
 
@@ -1447,14 +1494,32 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
         # 3) heartbeat after restore (session-level)
         self.update_heartbeat(session_ctx_id)
 
-        # 4) archive old recycled records so needs_restore becomes False
-        for old_name in recycled_old_names:
+        # 4) mark old recycled records as REPLACED with redirect info
+        #    (keep them for client compatibility, don't delete)
+        for i, old_name in enumerate(recycled_old_names):
             try:
-                self.container_mapping.delete(old_name)
+                # Get the raw container data without following redirects
+                old_data = self.container_mapping.get(old_name)
+                if not old_data:
+                    logger.warning(
+                        f"restore_session: old container {old_name} not "
+                        f"found in mapping",
+                    )
+                    continue
+
+                old_cm = ContainerModel(**old_data)
+                old_cm.state = ContainerState.REPLACED
+                old_cm.redirect_to = new_container_names[i]
+                old_cm.updated_at = time.time()
+                self.container_mapping.set(old_name, old_cm.model_dump())
+                logger.debug(
+                    f"restore_session: marked {old_name} as REPLACED -> "
+                    f"{new_container_names[i]}",
+                )
             except Exception as e:
                 logger.warning(
-                    f"restore_session: failed to delete old model"
-                    f" {old_name}: {e}",
+                    f"restore_session: failed to mark old container "
+                    f"{old_name} as REPLACED: {e}",
                 )
 
     def scan_heartbeat_once(self) -> dict:
@@ -1602,7 +1667,8 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
 
     def scan_released_cleanup_once(self, max_delete: int = 200) -> dict:
         """
-        Delete container_mapping records whose state == RELEASED and expired.
+        Delete container_mapping records whose state is RELEASED or
+        REPLACED and expired.
 
         TTL is config.released_key_ttl seconds. 0 disables cleanup.
         """
@@ -1635,17 +1701,26 @@ class SandboxManager(HeartbeatMixin, WorkspaceFSMixin):
 
                 cm = ContainerModel(**container_json)
 
-                if cm.state != ContainerState.RELEASED:
+                # Only cleanup RELEASED or REPLACED states
+                if cm.state not in (
+                    ContainerState.RELEASED,
+                    ContainerState.REPLACED,
+                ):
                     result["skipped_not_released"] += 1
                     continue
 
-                released_at = cm.released_at or cm.updated_at or 0
-                if released_at <= 0:
+                # For RELEASED: use released_at; for REPLACED: use updated_at
+                cleanup_at = (
+                    cm.released_at
+                    if cm.state == ContainerState.RELEASED
+                    else cm.updated_at
+                )
+                if not cleanup_at or cleanup_at <= 0:
                     # no timestamp -> treat as not expired
                     result["skipped_not_expired"] += 1
                     continue
 
-                if now - released_at <= ttl:
+                if now - cleanup_at <= ttl:
                     result["skipped_not_expired"] += 1
                     continue
 

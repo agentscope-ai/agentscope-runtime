@@ -11,6 +11,7 @@ class ContainerState(str, Enum):
     WARM = "warm"
     RUNNING = "running"
     RECYCLED = "recycled"
+    REPLACED = "replaced"
     ERROR = "error"
     RELEASED = "released"
 
@@ -113,6 +114,12 @@ class ContainerModel(BaseModel):
     recycle_reason: Optional[str] = Field(
         default=None,
         description="Reason for recycle",
+    )
+
+    redirect_to: Optional[str] = Field(
+        default=None,
+        description="Container name to redirect to when this container is "
+        "REPLACED",
     )
 
     @model_validator(mode="after")
