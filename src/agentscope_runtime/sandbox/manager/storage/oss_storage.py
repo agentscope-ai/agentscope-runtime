@@ -37,7 +37,7 @@ class OSSStorage(DataStorage):
                 os.path.relpath(obj.key, source_path),
             )
 
-            if obj.is_prefix():
+            if obj.is_prefix() or obj.key.endswith("/"):
                 # Create local directory
                 os.makedirs(local_path, exist_ok=True)
             else:
