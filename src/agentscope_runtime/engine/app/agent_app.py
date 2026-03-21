@@ -674,7 +674,14 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
             custom_endpoints = kwargs.pop("custom_endpoints")
             self.restore_custom_endpoints(custom_endpoints)
 
-    def run(self, host=HOST, port=PORT, web_ui=False, **kwargs):
+    def run(
+        self,
+        host=HOST,
+        port=PORT,
+        web_ui=False,
+        timeout_keep_alive=120,
+        **kwargs,
+    ):
         """Launch the application server and optional Web UI."""
 
         self._apply_runtime_configs(kwargs)
@@ -709,6 +716,7 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
                         port=port,
                         log_level="info",
                         access_log=True,
+                        timeout_keep_alive=timeout_keep_alive,
                     )
             else:
                 uvicorn.run(
@@ -717,6 +725,7 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
                     port=port,
                     log_level="info",
                     access_log=True,
+                    timeout_keep_alive=timeout_keep_alive,
                 )
 
         except KeyboardInterrupt:
