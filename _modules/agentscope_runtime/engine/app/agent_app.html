@@ -626,7 +626,9 @@ body.preview-active {
 <span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">shlex</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">types</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span><span class="p">,</span> <span class="n">AsyncExitStack</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Type</span>
 
@@ -760,6 +762,9 @@ body.preview-active {
         <span class="n">backend_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">runner</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Runner</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">enable_embedded_worker</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">enable_stream_task</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">stream_task_queue</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;stream_query&quot;</span><span class="p">,</span>
+        <span class="n">stream_task_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">a2a_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;AgentCardWithRuntimeConfig&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">agui_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AGUIAdaptorConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">interrupt_backend</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseInterruptBackend</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -793,6 +798,10 @@ body.preview-active {
         <span class="bp">self</span><span class="o">.</span><span class="n">broker_url</span> <span class="o">=</span> <span class="n">broker_url</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">backend_url</span> <span class="o">=</span> <span class="n">backend_url</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">enable_embedded_worker</span> <span class="o">=</span> <span class="n">enable_embedded_worker</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enable_stream_task</span> <span class="o">=</span> <span class="n">enable_stream_task</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream_task_queue</span> <span class="o">=</span> <span class="n">stream_task_queue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream_task_timeout</span> <span class="o">=</span> <span class="n">stream_task_timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stream_query_celery_task</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_query_handler</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_init_handler</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -870,6 +879,7 @@ body.preview-active {
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># pylint: disable=too-many-branches</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_build_runner</span><span class="p">()</span>
+        <span class="n">cleanup_task</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># aexit any possible running instances before set up</span>
             <span class="c1"># runner</span>
@@ -893,9 +903,22 @@ body.preview-active {
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_embedded_worker</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">celery_app</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">start_embedded_celery_worker</span><span class="p">()</span>
 
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_stream_task</span><span class="p">:</span>
+                <span class="n">cleanup_task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_task_cleanup_worker</span><span class="p">(),</span>
+                <span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Started task cleanup worker&quot;</span><span class="p">)</span>
+
             <span class="k">yield</span>
 
         <span class="k">finally</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cleanup_task</span><span class="p">:</span>
+                <span class="n">cleanup_task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="n">cleanup_task</span>
+                <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+                    <span class="k">pass</span>
+
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">after_finish</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">iscoroutinefunction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">after_finish</span><span class="p">):</span>
@@ -1006,19 +1029,198 @@ body.preview-active {
         <span class="nd">@self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
         <span class="nd">@UnifiedRoutingMixin</span><span class="o">.</span><span class="n">internal_route</span>
         <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">root</span><span class="p">():</span>
+            <span class="n">endpoints_info</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;process&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span><span class="p">,</span>
+                <span class="s2">&quot;stream&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span><span class="si">}</span><span class="s2">/stream&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="p">),</span>
+                <span class="s2">&quot;health&quot;</span><span class="p">:</span> <span class="s2">&quot;/health&quot;</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_stream_task</span><span class="p">:</span>
+                <span class="n">endpoints_info</span><span class="p">[</span><span class="s2">&quot;task&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span><span class="si">}</span><span class="s2">/task&quot;</span>
+                <span class="n">endpoints_info</span><span class="p">[</span>
+                    <span class="s2">&quot;task_status&quot;</span>
+                <span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span><span class="si">}</span><span class="s2">/task/</span><span class="se">{{</span><span class="s2">task_id</span><span class="se">}}</span><span class="s2">&quot;</span>
+
             <span class="k">return</span> <span class="p">{</span>
                 <span class="s2">&quot;service&quot;</span><span class="p">:</span> <span class="s2">&quot;AgentScope Runtime&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">deployment_mode</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-                <span class="s2">&quot;endpoints&quot;</span><span class="p">:</span> <span class="p">{</span>
-                    <span class="s2">&quot;process&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span><span class="p">,</span>
-                    <span class="s2">&quot;stream&quot;</span><span class="p">:</span> <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span><span class="si">}</span><span class="s2">/stream&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream</span> <span class="k">else</span> <span class="kc">None</span>
-                    <span class="p">),</span>
-                    <span class="s2">&quot;health&quot;</span><span class="p">:</span> <span class="s2">&quot;/health&quot;</span><span class="p">,</span>
-                <span class="p">},</span>
+                <span class="s2">&quot;endpoints&quot;</span><span class="p">:</span> <span class="n">endpoints_info</span><span class="p">,</span>
             <span class="p">}</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_add_process_control_endpoints</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_cleanup_expired_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove completed/failed tasks older than TTL.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Number of tasks cleaned up</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">ttl_seconds</span> <span class="o">=</span> <span class="mi">3600</span>  <span class="c1"># 1 hour</span>
+
+        <span class="n">expired</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_tasks</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">status</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">]:</span>
+                <span class="n">finished_at</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;completed_at&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                    <span class="s2">&quot;failed_at&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">finished_at</span> <span class="ow">and</span> <span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="n">finished_at</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">ttl_seconds</span><span class="p">:</span>
+                    <span class="n">expired</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">task_id</span> <span class="ow">in</span> <span class="n">expired</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;task_locks&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">task_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_locks</span><span class="p">:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_locks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">expired</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Cleaned up </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">expired</span><span class="p">)</span><span class="si">}</span><span class="s2"> expired tasks. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Active tasks: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">active_tasks</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">expired</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_task_cleanup_worker</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Background worker to cleanup expired tasks periodically.&quot;&quot;&quot;</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">300</span><span class="p">)</span>  <span class="c1"># Run every 5 minutes</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cleanup_expired_tasks</span><span class="p">()</span>
+            <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Task cleanup worker stopped&quot;</span><span class="p">)</span>
+                <span class="k">break</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Task cleanup failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_stream_query_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a wrapper function for stream_query that collects only</span>
+<span class="sd">        the final response.</span>
+
+<span class="sd">        This wrapper is used by Celery to execute stream_query as a</span>
+<span class="sd">        background task.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stream_query_wrapper</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Wrapper that collects only final response from stream_query&quot;&quot;&quot;</span>
+            <span class="n">final_response</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">async</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">stream_query</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="s2">&quot;model_dump&quot;</span><span class="p">):</span>
+                    <span class="n">final_response</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
+                <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="s2">&quot;dict&quot;</span><span class="p">):</span>
+                    <span class="n">final_response</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">final_response</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">event</span><span class="p">)}</span>
+
+            <span class="k">return</span> <span class="n">final_response</span>
+
+        <span class="k">return</span> <span class="n">stream_query_wrapper</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_stream_query_task_endpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add background task endpoints for stream_query.</span>
+
+<span class="sd">        Creates POST /process/task and GET /process/task/{task_id}.</span>
+<span class="sd">        Design: Only stores the final response, not intermediate events.</span>
+<span class="sd">        Supports both Celery and in-memory modes.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            self (AgentApp): The application instance on which to register</span>
+<span class="sd">                the task endpoints.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None: This method registers routes on the application and does</span>
+<span class="sd">                not return a value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable_stream_task</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Stream task disabled, skipping task endpoint setup&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Registering stream query task endpoint at &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span><span class="si">}</span><span class="s2">/task&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">task_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint_path</span><span class="si">}</span><span class="s2">/task&quot;</span>
+
+        <span class="nd">@self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+            <span class="n">task_path</span><span class="p">,</span>
+            <span class="n">openapi_extra</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;requestBody&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;application/json&quot;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s2">&quot;schema&quot;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="s2">&quot;$ref&quot;</span><span class="p">:</span> <span class="s2">&quot;#/components/schemas/AgentRequest&quot;</span><span class="p">,</span>
+                            <span class="p">},</span>
+                        <span class="p">},</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                        <span class="s2">&quot;Submit stream query as background task. &quot;</span>
+                        <span class="s2">&quot;Returns task_id for status polling.&quot;</span>
+                    <span class="p">),</span>
+                <span class="p">},</span>
+            <span class="p">},</span>
+            <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;agent-api&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="nd">@UnifiedRoutingMixin</span><span class="o">.</span><span class="n">internal_route</span>
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">submit_stream_query_task</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Submit stream_query as background task&quot;&quot;&quot;</span>
+            <span class="n">task_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">celery_app</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream_query_celery_task</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">wrapper_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_stream_query_wrapper</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_stream_query_celery_task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">register_celery_task</span><span class="p">(</span>
+                        <span class="n">wrapper_func</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">stream_task_queue</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream_query_celery_task</span><span class="o">.</span><span class="n">delay</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+                <span class="k">return</span> <span class="p">{</span>
+                    <span class="s2">&quot;task_id&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                    <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;submitted&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;queue&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream_task_queue</span><span class="p">,</span>
+                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="p">(</span>
+                        <span class="s2">&quot;Stream query task submitted to Celery successfully&quot;</span>
+                    <span class="p">),</span>
+                <span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">active_tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;task_id&quot;</span><span class="p">:</span> <span class="n">task_id</span><span class="p">,</span>
+                    <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;submitted&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;queue&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream_task_queue</span><span class="p">,</span>
+                    <span class="s2">&quot;submitted_at&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="p">}</span>
+
+                <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">execute_stream_query_task</span><span class="p">(</span>
+                        <span class="n">task_id</span><span class="o">=</span><span class="n">task_id</span><span class="p">,</span>
+                        <span class="n">stream_func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">stream_query</span><span class="p">,</span>
+                        <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">,</span>
+                        <span class="n">queue</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stream_task_queue</span><span class="p">,</span>
+                        <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stream_task_timeout</span><span class="p">,</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+
+                <span class="k">return</span> <span class="p">{</span>
+                    <span class="s2">&quot;task_id&quot;</span><span class="p">:</span> <span class="n">task_id</span><span class="p">,</span>
+                    <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;submitted&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;queue&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream_task_queue</span><span class="p">,</span>
+                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Stream query task submitted successfully&quot;</span><span class="p">,</span>
+                <span class="p">}</span>
+
+        <span class="nd">@self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">task_path</span><span class="si">}</span><span class="s2">/</span><span class="se">{{</span><span class="s2">task_id</span><span class="se">}}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;agent-api&quot;</span><span class="p">])</span>
+        <span class="nd">@UnifiedRoutingMixin</span><span class="o">.</span><span class="n">internal_route</span>
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_stream_query_task_status</span><span class="p">(</span><span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Get stream query task status and result&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_task_status</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_add_process_control_endpoints</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add process control endpoints for detached mode.&quot;&quot;&quot;</span>
@@ -1276,6 +1478,8 @@ body.preview-active {
             <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;agent-api&quot;</span><span class="p">],</span>
         <span class="p">)(</span><span class="n">agent_api</span><span class="p">)</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_stream_query_task_endpoint</span><span class="p">()</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_apply_runtime_configs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Apply runtime configuration updates and synchronize internal services.</span>
@@ -1396,7 +1600,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-03-19</div>
+              Last updated on 2026-03-26</div>
           </div>
           <div class="right-details">
             <div class="icons">

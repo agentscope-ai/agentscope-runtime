@@ -642,6 +642,8 @@ body.preview-active {
         <span class="bp">self</span><span class="o">.</span><span class="n">celery_app</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">active_tasks</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_registered_queues</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">task_locks</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Lock</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks_lock</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">asyncio</span><span class="o">.</span><span class="n">Lock</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="k">if</span> <span class="n">broker_url</span> <span class="ow">and</span> <span class="n">backend_url</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
@@ -789,6 +791,24 @@ body.preview-active {
 
         <span class="bp">self</span><span class="o">.</span><span class="n">celery_app</span><span class="o">.</span><span class="n">worker_main</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
 
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_get_task_lock</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Lock</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get or create a lock for a specific task.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            task_id: Task identifier</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            asyncio.Lock for the specified task</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tasks_lock</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tasks_lock</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tasks_lock</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">task_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_locks</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">task_locks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_locks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span>
+
 <div class="viewcode-block" id="TaskEngineMixin.execute_background_task">
 <a class="viewcode-back" href="../../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.utils.service_utils.routing.task_engine_mixin.TaskEngineMixin.execute_background_task">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">execute_background_task</span><span class="p">(</span>
@@ -854,6 +874,117 @@ body.preview-active {
             <span class="p">)</span></div>
 
 
+<div class="viewcode-block" id="TaskEngineMixin.execute_stream_query_task">
+<a class="viewcode-back" href="../../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.utils.service_utils.routing.task_engine_mixin.TaskEngineMixin.execute_stream_query_task">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">execute_stream_query_task</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">stream_func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">queue</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Execute stream query as background task and collect ONLY the final</span>
+<span class="sd">        response.</span>
+
+<span class="sd">        Design: Only store the last event (final response), ignore</span>
+<span class="sd">        intermediate events to reduce memory usage.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            task_id: Unique task identifier</span>
+<span class="sd">            stream_func: Streaming function (runner.stream_query)</span>
+<span class="sd">            request: Request dict</span>
+<span class="sd">            queue: Queue name</span>
+<span class="sd">            timeout: Task execution timeout in seconds</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Final response event as dict</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            TimeoutError: If task exceeds specified timeout</span>
+<span class="sd">            RuntimeError: If stream yields no events</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># pylint:disable=unused-argument</span>
+        <span class="n">task_lock</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_task_lock</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">task_lock</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">active_tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;running&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;started_at&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                    <span class="p">},</span>
+                <span class="p">)</span>
+
+            <span class="n">final_response</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="n">event_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stream_with_collection</span><span class="p">():</span>
+                <span class="k">nonlocal</span> <span class="n">final_response</span><span class="p">,</span> <span class="n">event_count</span>
+                <span class="k">async</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">stream_func</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+                    <span class="n">event_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="s2">&quot;model_dump&quot;</span><span class="p">):</span>
+                        <span class="n">final_response</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
+                    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="s2">&quot;dict&quot;</span><span class="p">):</span>
+                        <span class="n">final_response</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">final_response</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">event</span><span class="p">)}</span>
+
+            <span class="k">if</span> <span class="n">timeout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span>
+                    <span class="n">stream_with_collection</span><span class="p">(),</span>
+                    <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">stream_with_collection</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">event_count</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">final_response</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Stream function yielded no events for task </span><span class="si">{</span><span class="n">task_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="n">elapsed</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+
+            <span class="k">async</span> <span class="k">with</span> <span class="n">task_lock</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">active_tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;result&quot;</span><span class="p">:</span> <span class="n">final_response</span><span class="p">,</span>
+                        <span class="s2">&quot;completed_at&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                        <span class="s2">&quot;elapsed_time&quot;</span><span class="p">:</span> <span class="n">elapsed</span><span class="p">,</span>
+                    <span class="p">},</span>
+                <span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">final_response</span>
+
+        <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">task_lock</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">active_tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;failed&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Task exceeded timeout of </span><span class="si">{</span><span class="n">timeout</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="s2">&quot;TimeoutError&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;failed_at&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                    <span class="p">},</span>
+                <span class="p">)</span>
+            <span class="k">raise</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">task_lock</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">active_tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;failed&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                        <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                        <span class="s2">&quot;failed_at&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                    <span class="p">},</span>
+                <span class="p">)</span>
+            <span class="k">raise</span></div>
+
+
 <div class="viewcode-block" id="TaskEngineMixin.get_task_status">
 <a class="viewcode-back" href="../../../../../../../zh/api/engine.html#agentscope_runtime.engine.deployers.utils.service_utils.routing.task_engine_mixin.TaskEngineMixin.get_task_status">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_task_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
@@ -911,7 +1042,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-03-19</div>
+              Last updated on 2026-03-26</div>
           </div>
           <div class="right-details">
             <div class="icons">
