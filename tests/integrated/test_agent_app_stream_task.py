@@ -19,6 +19,45 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
 PORT = 8095
 
 
+async def wait_for_task_completion(
+    session: aiohttp.ClientSession,
+    task_id: str,
+    timeout: float = 10.0,
+    poll_interval: float = 0.2,
+) -> dict:
+    """
+    Poll and wait for task to complete.
+
+    Args:
+        session: aiohttp client session
+        task_id: Task ID to poll
+        timeout: Maximum wait time in seconds
+        poll_interval: Time between polls in seconds
+
+    Returns:
+        Final task status dict
+
+    Raises:
+        TimeoutError: If task does not complete within timeout
+    """
+    start = time.time()
+
+    while time.time() - start < timeout:
+        status_url = f"http://localhost:{PORT}/process/task/{task_id}"
+        async with session.get(status_url) as resp:
+            assert resp.status == 200
+            data = await resp.json()
+
+            if data["status"] in ["finished", "error", "failed"]:
+                return data
+
+        await asyncio.sleep(poll_interval)
+
+    raise TimeoutError(
+        f"Task {task_id} did not complete within {timeout}s",
+    )
+
+
 def run_app():
     """Start AgentApp with stream task enabled."""
     app = AgentApp(
@@ -64,13 +103,12 @@ def start_app():
     import socket
 
     for _ in range(50):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            s.connect(("localhost", PORT))
-            s.close()
-            break
-        except OSError:
-            time.sleep(0.1)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.connect(("localhost", PORT))
+                break
+            except OSError:
+                time.sleep(0.1)
     else:
         proc.terminate()
         pytest.fail("Server did not start within timeout")
@@ -122,10 +160,6 @@ async def test_submit_stream_query_task(start_app):
             assert data["status"] == "submitted"
             assert data["queue"] == "test_queue"
             assert "message" in data
-
-            task_id = data["task_id"]
-
-    return task_id
 
 
 @pytest.mark.asyncio
@@ -181,20 +215,15 @@ async def test_get_task_status_finished(start_app):
             data = await resp.json()
             task_id = data["task_id"]
 
-        await asyncio.sleep(1.0)
+        status_data = await wait_for_task_completion(session, task_id)
 
-        status_url = f"http://localhost:{PORT}/process/task/{task_id}"
-        async with session.get(status_url) as resp:
-            assert resp.status == 200
-            status_data = await resp.json()
+        assert status_data["status"] == "finished"
+        assert "result" in status_data
+        assert status_data["result"] is not None
 
-            assert status_data["status"] == "finished"
-            assert "result" in status_data
-            assert status_data["result"] is not None
-
-            result = status_data["result"]
-            assert result["object"] == "response"
-            assert result["status"] == RunStatus.Completed
+        result = status_data["result"]
+        assert result["object"] == "response"
+        assert result["status"] == RunStatus.Completed
 
 
 @pytest.mark.asyncio
@@ -221,18 +250,14 @@ async def test_task_only_stores_final_response(start_app):
             data = await resp.json()
             task_id = data["task_id"]
 
-        await asyncio.sleep(1.0)
+        status_data = await wait_for_task_completion(session, task_id)
 
-        status_url = f"http://localhost:{PORT}/process/task/{task_id}"
-        async with session.get(status_url) as resp:
-            status_data = await resp.json()
+        assert status_data["status"] == "finished"
+        result = status_data["result"]
 
-            assert status_data["status"] == "finished"
-            result = status_data["result"]
-
-            assert isinstance(result, dict)
-            assert result["object"] == "response"
-            assert result["status"] == RunStatus.Completed
+        assert isinstance(result, dict)
+        assert result["object"] == "response"
+        assert result["status"] == RunStatus.Completed
 
 
 @pytest.mark.asyncio

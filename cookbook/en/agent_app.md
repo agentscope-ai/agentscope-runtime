@@ -435,10 +435,12 @@ Status query response (completed):
 
 **Important Notes**
 
-1. **In-memory mode**: By default uses in-memory storage; task state is lost on process restart
-2. **Persistence**: For production, configure Celery with Redis for task persistence
-3. **Storage**: Only stores final response; intermediate streaming events are not saved
-4. **Timeout**: Set reasonable timeout based on agent complexity
+1. **Dual mode support**:
+   - **In-memory mode** (default): Task state is lost on restart; suitable for development/testing
+   - **Celery mode**: Configure `broker_url` and `backend_url` to enable; tasks persisted; suitable for production
+2. **Storage**: Only stores final response; intermediate streaming events are not saved
+3. **Timeout**: Set reasonable timeout based on agent complexity
+4. **Worker requirement**: Celery mode requires running workers (use `enable_embedded_worker=True`)
 
 ------
 

@@ -7,7 +7,9 @@ import os
 import platform
 import shlex
 import subprocess
+import time
 import types
+import uuid
 from contextlib import asynccontextmanager, AsyncExitStack
 from typing import Any, Callable, Dict, List, Optional, Type
 
@@ -173,6 +175,7 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         self.enable_stream_task = enable_stream_task
         self.stream_task_queue = stream_task_queue
         self.stream_task_timeout = stream_task_timeout
+        self._stream_query_celery_task: Optional[Callable] = None
 
         self._query_handler: Optional[Callable] = None
         self._init_handler: Optional[Callable] = None
@@ -249,6 +252,7 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         """
         # pylint: disable=too-many-branches
         self._build_runner()
+        cleanup_task = None
         try:
             # aexit any possible running instances before set up
             # runner
@@ -272,9 +276,22 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
             if self.enable_embedded_worker and self.celery_app:
                 self.start_embedded_celery_worker()
 
+            if self.enable_stream_task:
+                cleanup_task = asyncio.create_task(
+                    self._task_cleanup_worker(),
+                )
+                logger.info("Started task cleanup worker")
+
             yield
 
         finally:
+            if cleanup_task:
+                cleanup_task.cancel()
+                try:
+                    await cleanup_task
+                except asyncio.CancelledError:
+                    pass
+
             if self.after_finish:
                 try:
                     if asyncio.iscoroutinefunction(self.after_finish):
@@ -406,12 +423,92 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
 
         self._add_process_control_endpoints()
 
-    def _add_stream_query_task_endpoint(self):
+    async def _cleanup_expired_tasks(self):
+        """
+        Remove completed/failed tasks older than TTL.
+
+        Returns:
+            Number of tasks cleaned up
+        """
+        now = time.time()
+        ttl_seconds = 3600  # 1 hour
+
+        expired = []
+        for task_id, info in self.active_tasks.items():
+            status = info.get("status")
+
+            if status in ["completed", "failed"]:
+                finished_at = info.get("completed_at") or info.get(
+                    "failed_at",
+                )
+                if finished_at and (now - finished_at) > ttl_seconds:
+                    expired.append(task_id)
+
+        for task_id in expired:
+            del self.active_tasks[task_id]
+            if hasattr(self, "task_locks") and task_id in self.task_locks:
+                del self.task_locks[task_id]
+
+        if expired:
+            logger.info(
+                f"Cleaned up {len(expired)} expired tasks. "
+                f"Active tasks: {len(self.active_tasks)}",
+            )
+
+        return len(expired)
+
+    async def _task_cleanup_worker(self):
+        """Background worker to cleanup expired tasks periodically."""
+        while True:
+            try:
+                await asyncio.sleep(300)  # Run every 5 minutes
+                await self._cleanup_expired_tasks()
+            except asyncio.CancelledError:
+                logger.info("Task cleanup worker stopped")
+                break
+            except Exception as e:
+                logger.error(f"Task cleanup failed: {e}")
+
+    def _create_stream_query_wrapper(self):
+        """
+        Create a wrapper function for stream_query that collects only
+        the final response.
+
+        This wrapper is used by Celery to execute stream_query as a
+        background task.
+        """
+
+        async def stream_query_wrapper(request: dict):
+            """Wrapper that collects only final response from stream_query"""
+            final_response = None
+
+            async for event in self._runner.stream_query(request):
+                if hasattr(event, "model_dump"):
+                    final_response = event.model_dump()
+                elif hasattr(event, "dict"):
+                    final_response = event.dict()
+                else:
+                    final_response = {"data": str(event)}
+
+            return final_response
+
+        return stream_query_wrapper
+
+    def _add_stream_query_task_endpoint(self) -> None:
         """
         Add background task endpoints for stream_query.
-        Creates POST /process/task and GET /process/task/{task_id}.
 
+        Creates POST /process/task and GET /process/task/{task_id}.
         Design: Only stores the final response, not intermediate events.
+        Supports both Celery and in-memory modes.
+
+        Args:
+            self (AgentApp): The application instance on which to register
+                the task endpoints.
+
+        Returns:
+            None: This method registers routes on the application and does
+                not return a value.
         """
         if not self.enable_stream_task:
             logger.debug("Stream task disabled, skipping task endpoint setup")
@@ -447,22 +544,27 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         @UnifiedRoutingMixin.internal_route
         async def submit_stream_query_task(request: dict):
             """Submit stream_query as background task"""
-            import uuid
-
             task_id = str(uuid.uuid4())
 
             if self.celery_app:
+                if self._stream_query_celery_task is None:
+                    wrapper_func = self._create_stream_query_wrapper()
+                    self._stream_query_celery_task = self.register_celery_task(
+                        wrapper_func,
+                        self.stream_task_queue,
+                    )
+
+                result = self._stream_query_celery_task.delay(request)
+
                 return {
-                    "error": (
-                        "Celery mode not yet implemented for stream tasks"
-                    ),
-                    "suggestion": (
-                        "Use in-memory mode or contribute implementation"
+                    "task_id": result.id,
+                    "status": "submitted",
+                    "queue": self.stream_task_queue,
+                    "message": (
+                        "Stream query task submitted to Celery successfully"
                     ),
                 }
             else:
-                import time
-
                 self.active_tasks[task_id] = {
                     "task_id": task_id,
                     "status": "submitted",

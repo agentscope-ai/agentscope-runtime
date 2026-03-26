@@ -62,6 +62,7 @@ dev = [
     "sphinx-autoapi>=3.6.0",
     "pytest-mock>=3.15.1",
     "sphinxcontrib-mermaid>=1.2.3",
+    "aiohttp>=3.9.0",
 ]
 
 ext = [
