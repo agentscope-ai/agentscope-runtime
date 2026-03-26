@@ -348,6 +348,13 @@ When enabled, the following endpoints are automatically registered:
 | `/process/task` | POST | Submit background task |
 | `/process/task/{task_id}` | GET | Query task status and result |
 
+**⚠️ Request Format Requirements**
+
+The `input` field in `AgentRequest` must follow this format:
+- `content` must be a **list type**, not a string
+- Wrong: `"content": "Hello"` ❌
+- Correct: `"content": [{"type": "text", "text": "Hello"}]` ✅
+
 **Client Usage Example**
 
 ```python
@@ -362,11 +369,11 @@ response = requests.post(
             {
                 "role": "user",
                 "type": "message",
-                "content": [{"type": "text", "text": "Explain quantum computing"}]
-            }
+                "content": [{"type": "text", "text": "Explain quantum computing"}],
+            },
         ],
-        "session_id": "my-session"
-    }
+        "session_id": "my-session",
+    },
 )
 
 task_data = response.json()

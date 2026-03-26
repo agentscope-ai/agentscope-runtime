@@ -352,6 +352,13 @@ app.run(host="0.0.0.0", port=8080)
 | `/process/task` | POST | 提交后台任务 |
 | `/process/task/{task_id}` | GET | 查询任务状态和结果 |
 
+**⚠️ 请求格式要求**
+
+`AgentRequest` 的 `input` 字段格式必须遵循以下规范：
+- `content` 必须是 **list 类型**，不能是字符串
+- 错误：`"content": "Hello"` ❌
+- 正确：`"content": [{"type": "text", "text": "Hello"}]` ✅
+
 **客户端使用示例**
 
 ```python
@@ -366,11 +373,11 @@ response = requests.post(
             {
                 "role": "user",
                 "type": "message",
-                "content": [{"type": "text", "text": "解释量子计算"}]
-            }
+                "content": [{"type": "text", "text": "解释量子计算"}],
+            },
         ],
-        "session_id": "my-session"
-    }
+        "session_id": "my-session",
+    },
 )
 
 task_data = response.json()
