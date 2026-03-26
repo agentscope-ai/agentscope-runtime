@@ -298,6 +298,143 @@ curl http://localhost:8090/longjob/abc123
 
 ------
 
+## stream_query Background Task Mode
+
+**Purpose**
+
+Execute `stream_query` as a background task, supporting "submit and poll later" use cases. Ideal for long-running agent queries.
+
+**Key Features**
+
+- **Asynchronous Execution**: Returns task_id immediately without keeping connection
+- **Result Polling**: Query task status and final result via task_id
+- **Memory Efficient**: Only stores the final response, not intermediate streaming events
+- **Auto Timeout**: Configurable task execution timeout
+
+**Key Parameters**
+
+- `enable_stream_task=True`: Enable background task feature
+- `stream_task_queue="stream_query"`: Task queue name
+- `stream_task_timeout=300`: Task timeout in seconds
+
+**Usage Example**
+
+```python
+from agentscope_runtime.engine import AgentApp
+
+app = AgentApp(
+    app_name="Friday",
+    enable_stream_task=True,
+    stream_task_queue="stream_query",
+    stream_task_timeout=300,  # 5 minutes timeout
+)
+
+@app.query(framework="agentscope")
+async def query_func(self, msgs, request, **kwargs):
+    # Normal agent implementation
+    async for msg, last in stream_printing_messages(...):
+        yield msg, last
+
+app.run(host="0.0.0.0", port=8080)
+```
+
+**API Endpoints**
+
+When enabled, the following endpoints are automatically registered:
+
+| Endpoint | Method | Function |
+|----------|--------|----------|
+| `/process` | POST | Real-time streaming (SSE) - existing feature |
+| `/process/task` | POST | Submit background task |
+| `/process/task/{task_id}` | GET | Query task status and result |
+
+**Client Usage Example**
+
+```python
+import requests
+import time
+
+# 1. Submit task
+response = requests.post(
+    "http://localhost:8080/process/task",
+    json={
+        "input": [
+            {
+                "role": "user",
+                "type": "message",
+                "content": [{"type": "text", "text": "Explain quantum computing"}]
+            }
+        ],
+        "session_id": "my-session"
+    }
+)
+
+task_data = response.json()
+task_id = task_data["task_id"]
+print(f"Task submitted: {task_id}")
+
+# 2. Poll for status
+while True:
+    status_response = requests.get(
+        f"http://localhost:8080/process/task/{task_id}"
+    )
+    status_data = status_response.json()
+
+    if status_data["status"] == "finished":
+        print("✅ Task completed!")
+        print(f"Result: {status_data['result']}")
+        break
+    elif status_data["status"] == "error":
+        print(f"❌ Task failed: {status_data['result']}")
+        break
+    else:
+        print(f"⏳ Status: {status_data['status']}")
+        time.sleep(2)
+```
+
+**Response Format**
+
+Submit task response:
+```json
+{
+  "task_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "submitted",
+  "queue": "stream_query",
+  "message": "Stream query task submitted successfully"
+}
+```
+
+Status query response (in progress):
+```json
+{
+  "status": "pending",
+  "result": null
+}
+```
+
+Status query response (completed):
+```json
+{
+  "status": "finished",
+  "result": {
+    "object": "response",
+    "status": "completed",
+    "id": "...",
+    "output": [...],
+    "usage": {...}
+  }
+}
+```
+
+**Important Notes**
+
+1. **In-memory mode**: By default uses in-memory storage; task state is lost on process restart
+2. **Persistence**: For production, configure Celery with Redis for task persistence
+3. **Storage**: Only stores final response; intermediate streaming events are not saved
+4. **Timeout**: Set reasonable timeout based on agent complexity
+
+------
+
 ## Custom Query Handling
 
 **Purpose**

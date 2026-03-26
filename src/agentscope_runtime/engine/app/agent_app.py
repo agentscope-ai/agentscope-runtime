@@ -134,6 +134,9 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         backend_url: Optional[str] = None,
         runner: Optional[Runner] = None,
         enable_embedded_worker: bool = False,
+        enable_stream_task: bool = False,
+        stream_task_queue: str = "stream_query",
+        stream_task_timeout: Optional[float] = None,
         a2a_config: Optional["AgentCardWithRuntimeConfig"] = None,
         agui_config: Optional[AGUIAdaptorConfig] = None,
         interrupt_backend: Optional[BaseInterruptBackend] = None,
@@ -167,6 +170,9 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         self.broker_url = broker_url
         self.backend_url = backend_url
         self.enable_embedded_worker = enable_embedded_worker
+        self.enable_stream_task = enable_stream_task
+        self.stream_task_queue = stream_task_queue
+        self.stream_task_timeout = stream_task_timeout
 
         self._query_handler: Optional[Callable] = None
         self._init_handler: Optional[Callable] = None
@@ -379,19 +385,113 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         @self.get("/")
         @UnifiedRoutingMixin.internal_route
         async def root():
+            endpoints_info = {
+                "process": self.endpoint_path,
+                "stream": (
+                    f"{self.endpoint_path}/stream" if self.stream else None
+                ),
+                "health": "/health",
+            }
+            if self.enable_stream_task:
+                endpoints_info["task"] = f"{self.endpoint_path}/task"
+                endpoints_info[
+                    "task_status"
+                ] = f"{self.endpoint_path}/task/{{task_id}}"
+
             return {
                 "service": "AgentScope Runtime",
                 "mode": self.deployment_mode.value,
-                "endpoints": {
-                    "process": self.endpoint_path,
-                    "stream": (
-                        f"{self.endpoint_path}/stream" if self.stream else None
-                    ),
-                    "health": "/health",
-                },
+                "endpoints": endpoints_info,
             }
 
         self._add_process_control_endpoints()
+
+    def _add_stream_query_task_endpoint(self):
+        """
+        Add background task endpoints for stream_query.
+        Creates POST /process/task and GET /process/task/{task_id}.
+
+        Design: Only stores the final response, not intermediate events.
+        """
+        if not self.enable_stream_task:
+            logger.debug("Stream task disabled, skipping task endpoint setup")
+            return
+
+        logger.info(
+            f"Registering stream query task endpoint at "
+            f"{self.endpoint_path}/task",
+        )
+
+        task_path = f"{self.endpoint_path}/task"
+
+        @self.post(
+            task_path,
+            openapi_extra={
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AgentRequest",
+                            },
+                        },
+                    },
+                    "required": True,
+                    "description": (
+                        "Submit stream query as background task. "
+                        "Returns task_id for status polling."
+                    ),
+                },
+            },
+            tags=["agent-api"],
+        )
+        @UnifiedRoutingMixin.internal_route
+        async def submit_stream_query_task(request: dict):
+            """Submit stream_query as background task"""
+            import uuid
+
+            task_id = str(uuid.uuid4())
+
+            if self.celery_app:
+                return {
+                    "error": (
+                        "Celery mode not yet implemented for stream tasks"
+                    ),
+                    "suggestion": (
+                        "Use in-memory mode or contribute implementation"
+                    ),
+                }
+            else:
+                import time
+
+                self.active_tasks[task_id] = {
+                    "task_id": task_id,
+                    "status": "submitted",
+                    "queue": self.stream_task_queue,
+                    "submitted_at": time.time(),
+                }
+
+                asyncio.create_task(
+                    self.execute_stream_query_task(
+                        task_id=task_id,
+                        stream_func=self._runner.stream_query,
+                        request=request,
+                        queue=self.stream_task_queue,
+                        timeout=self.stream_task_timeout,
+                    ),
+                )
+
+                return {
+                    "task_id": task_id,
+                    "status": "submitted",
+                    "queue": self.stream_task_queue,
+                    "message": "Stream query task submitted successfully",
+                }
+
+        @self.get(f"{task_path}/{{task_id}}", tags=["agent-api"])
+        @UnifiedRoutingMixin.internal_route
+        async def get_stream_query_task_status(task_id: str):
+            """Get stream query task status and result"""
+            return self.get_task_status(task_id)
 
     def _add_process_control_endpoints(self):
         """Add process control endpoints for detached mode."""
@@ -639,6 +739,8 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
             },
             tags=["agent-api"],
         )(agent_api)
+
+        self._add_stream_query_task_endpoint()
 
     def _apply_runtime_configs(self, kwargs: dict):
         """

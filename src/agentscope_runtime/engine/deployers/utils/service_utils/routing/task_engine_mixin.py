@@ -218,6 +218,79 @@ class TaskEngineMixin:
                 },
             )
 
+    async def execute_stream_query_task(
+        self,
+        task_id: str,
+        stream_func: Callable,
+        request: dict,
+        queue: str,
+        timeout: Optional[float] = None,
+    ):
+        """
+        Execute stream query as background task and collect ONLY the final
+        response.
+
+        Design: Only store the last event (final response), ignore
+        intermediate events to reduce memory usage.
+
+        Args:
+            task_id: Unique task identifier
+            stream_func: Streaming function (runner.stream_query)
+            request: Request dict
+            queue: Queue name
+            timeout: Task execution timeout in seconds
+
+        Returns:
+            Final response event as dict
+        """
+        # pylint:disable=unused-argument
+        try:
+            self.active_tasks[task_id].update(
+                {
+                    "status": "running",
+                    "started_at": time.time(),
+                },
+            )
+
+            final_response = None
+            start_time = time.time()
+
+            async for event in stream_func(request):
+                if timeout and (time.time() - start_time) > timeout:
+                    raise TimeoutError(
+                        f"Task {task_id} exceeded timeout of {timeout}s",
+                    )
+
+                if hasattr(event, "model_dump"):
+                    final_response = event.model_dump()
+                elif hasattr(event, "dict"):
+                    final_response = event.dict()
+                else:
+                    final_response = {"data": str(event)}
+
+            elapsed = time.time() - start_time
+
+            self.active_tasks[task_id].update(
+                {
+                    "status": "completed",
+                    "result": final_response,
+                    "completed_at": time.time(),
+                    "elapsed_time": elapsed,
+                },
+            )
+
+            return final_response
+
+        except Exception as e:
+            self.active_tasks[task_id].update(
+                {
+                    "status": "failed",
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "failed_at": time.time(),
+                },
+            )
+
     def get_task_status(self, task_id: str):
         # pylint:disable=too-many-return-statements
         if self.celery_app:

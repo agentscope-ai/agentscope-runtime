@@ -302,6 +302,144 @@ curl http://localhost:8090/longjob/abc123
 
 ------
 
+## stream_query 后台任务模式
+
+**功能**
+
+将 `stream_query` 作为后台任务执行，支持"提交后离线查询"的使用场景。适用于长时间运行的 agent 查询。
+
+**核心特性**
+
+- **异步执行**：提交任务后立即返回 task_id，无需保持连接
+- **结果查询**：通过 task_id 轮询查询任务状态和最终结果
+- **只存最终结果**：不存储中间流式事件，只保留最后的 response（减少内存占用）
+- **自动超时**：支持配置任务超时时间
+
+**关键参数**
+
+- `enable_stream_task=True`：启用后台任务功能
+- `stream_task_queue="stream_query"`：任务队列名称
+- `stream_task_timeout=300`：任务超时时间（秒）
+
+**用法示例**
+
+```python
+from agentscope_runtime.engine import AgentApp
+
+app = AgentApp(
+    app_name="Friday",
+    enable_stream_task=True,
+    stream_task_queue="stream_query",
+    stream_task_timeout=300,  # 5 分钟超时
+)
+
+@app.query(framework="agentscope")
+async def query_func(self, msgs, request, **kwargs):
+    # 正常实现 agent 逻辑
+    async for msg, last in stream_printing_messages(...):
+        yield msg, last
+
+app.run(host="0.0.0.0", port=8080)
+```
+
+**API 端点**
+
+启用后会自动注册以下端点：
+
+| 端点 | 方法 | 功能 |
+|------|------|------|
+| `/process` | POST | 流式 SSE 响应（现有功能） |
+| `/process/task` | POST | 提交后台任务 |
+| `/process/task/{task_id}` | GET | 查询任务状态和结果 |
+
+**客户端使用示例**
+
+```python
+import requests
+import time
+
+# 1. 提交任务
+response = requests.post(
+    "http://localhost:8080/process/task",
+    json={
+        "input": [
+            {
+                "role": "user",
+                "type": "message",
+                "content": [{"type": "text", "text": "解释量子计算"}]
+            }
+        ],
+        "session_id": "my-session"
+    }
+)
+
+task_data = response.json()
+task_id = task_data["task_id"]
+print(f"Task submitted: {task_id}")
+print(f"Status: {task_data['status']}")
+
+# 2. 轮询查询状态
+while True:
+    status_response = requests.get(
+        f"http://localhost:8080/process/task/{task_id}"
+    )
+    status_data = status_response.json()
+
+    if status_data["status"] == "finished":
+        print("✅ Task completed!")
+        print(f"Result: {status_data['result']}")
+        break
+    elif status_data["status"] == "error":
+        print(f"❌ Task failed: {status_data['result']}")
+        break
+    else:
+        print(f"⏳ Status: {status_data['status']}")
+        time.sleep(2)
+```
+
+**响应格式**
+
+提交任务响应：
+```json
+{
+  "task_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "submitted",
+  "queue": "stream_query",
+  "message": "Stream query task submitted successfully"
+}
+```
+
+查询状态响应（进行中）：
+```json
+{
+  "status": "pending",
+  "result": null
+}
+```
+
+查询状态响应（完成）：
+```json
+{
+  "status": "finished",
+  "result": {
+    "object": "response",
+    "status": "completed",
+    "id": "...",
+    "output": [...],
+    "usage": {...}
+  }
+}
+```
+
+**注意事项**
+
+1. **内存模式**：默认使用 in-memory 模式，进程重启后任务状态会丢失
+2. **持久化**：生产环境建议配置 Celery（需要 Redis）实现任务持久化
+3. **结果存储**：只存储最终 response，中间流式事件不会被保存
+4. **超时设置**：建议根据 agent 复杂度设置合理的超时时间
+
+------
+
 ## 自定义查询处理
 
 **功能**
