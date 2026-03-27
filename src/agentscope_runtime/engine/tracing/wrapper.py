@@ -466,7 +466,7 @@ def trace(  # pylint: disable=too-many-statements
                         async for resp in iter_entry():
                             yield resp
 
-                    except Exception as e:
+                    except BaseException as e:
                         raise e
 
         @wraps(func)
