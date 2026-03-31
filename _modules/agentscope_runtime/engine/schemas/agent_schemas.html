@@ -1667,6 +1667,8 @@ body.preview-active {
 <a class="viewcode-back" href="../../../../zh/api/engine.html#agentscope_runtime.engine.schemas.agent_schemas.BaseResponse.completed">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">completed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">completed_at</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">timestamp</span><span class="p">())</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">completed</span><span class="p">()</span></div>
 </div>
 
@@ -1822,7 +1824,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-03-30</div>
+              Last updated on 2026-03-31</div>
           </div>
           <div class="right-details">
             <div class="icons">
