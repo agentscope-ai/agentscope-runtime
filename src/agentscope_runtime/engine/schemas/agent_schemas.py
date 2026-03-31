@@ -903,6 +903,8 @@ class BaseResponse(Event):
 
     def completed(self) -> Self:
         self.completed_at = int(datetime.now().timestamp())
+        if self.output is None:
+            self.output = []
         return super().completed()
 
 
