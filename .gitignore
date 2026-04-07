@@ -69,6 +69,8 @@ logs/
 
 # vibe coding
 .claude
+.qwen
 openspec
 AGENTS.md
 CLAUDE.md
+QWEN.md
