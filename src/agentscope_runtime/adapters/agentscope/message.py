@@ -265,7 +265,7 @@ def message_to_agentscope_msg(
                         )
                     else:
                         parsed_url = urlparse(value)
-                        if parsed_url.scheme and parsed_url.netloc:
+                        if parsed_url.scheme:
                             url_source = URLSource(type="url", url=value)
                             msg_content.append(
                                 block_cls(type=cnt_type, source=url_source),
