@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import subprocess
-from typing import Optional, Dict
+from typing import Callable, Optional, Dict
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,7 @@ class BuildConfig(BaseModel):
 
     no_cache: bool = False
     quiet: bool = False
+    print: Callable[[str], None] = print
     build_args: Dict[str, str] = {}
     platform: Optional[str] = None
     target: Optional[str] = None
@@ -177,7 +178,7 @@ class DockerImageBuilder:
                         if output == "" and process.poll() is not None:
                             break
                         if output:
-                            print(output.strip())
+                            config.print(output.strip())
 
                     process.wait()
 
@@ -242,7 +243,7 @@ class DockerImageBuilder:
         self,
         image_name: str,
         registry_config: Optional[RegistryConfig] = None,
-        quiet: bool = False,
+        build_config: Optional[BuildConfig] = None,
     ) -> str:
         """
         Push image to registry.
@@ -251,7 +252,7 @@ class DockerImageBuilder:
             image_name: Full image name to push
             registry_config: Optional registry config
                 (uses instance config if None)
-            quiet: Whether to suppress output
+            build_config: Build configuration
 
         Returns:
             str: Full image name that was pushed
@@ -261,11 +262,12 @@ class DockerImageBuilder:
             ValueError: If no registry configuration is available
         """
         registry_image_name = self.tag_image(image_name, registry_config)
+        build_config = build_config or BuildConfig()
 
         try:
             push_cmd = ["docker", "push", registry_image_name]
 
-            if quiet:
+            if build_config.quiet:
                 result = subprocess.run(
                     push_cmd,
                     check=True,
@@ -292,7 +294,7 @@ class DockerImageBuilder:
                         if output == "" and process.poll() is not None:
                             break
                         if output:
-                            print(output.strip())
+                            build_config.print(output.strip())
 
                     process.wait()
 
@@ -359,7 +361,7 @@ class DockerImageBuilder:
         registry_image = self.push_image(
             image_name=built_image,
             registry_config=registry_config,
-            quiet=build_config.quiet if build_config else False,
+            build_config=build_config,
         )
 
         # make sure return the built name without registry
