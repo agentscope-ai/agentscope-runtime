@@ -9,6 +9,8 @@ from typing import Optional, Dict
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
+build_logger = logging.getLogger(f"{__name__}.build")
+push_logger = logging.getLogger(f"{__name__}.push")
 
 
 class RegistryConfig(BaseModel):
@@ -177,7 +179,7 @@ class DockerImageBuilder:
                         if output == "" and process.poll() is not None:
                             break
                         if output:
-                            print(output.strip())
+                            build_logger.info(output.strip())
 
                     process.wait()
 
@@ -292,7 +294,7 @@ class DockerImageBuilder:
                         if output == "" and process.poll() is not None:
                             break
                         if output:
-                            print(output.strip())
+                            push_logger.info(output.strip())
 
                     process.wait()
 
