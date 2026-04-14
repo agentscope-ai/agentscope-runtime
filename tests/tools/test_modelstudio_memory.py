@@ -82,10 +82,12 @@ async def test_user_id():
     # Cleanup: delete the entity after test
     delete_entity = DeleteEntity()
     try:
-        await delete_entity.arun(DeleteEntityInput(
-            entity_type="user",
-            entity_id=user_id,
-        ))
+        await delete_entity.arun(
+            DeleteEntityInput(
+                entity_type="user",
+                entity_id=user_id,
+            ),
+        )
     except Exception:
         pass
     await delete_entity.close()

@@ -1118,7 +1118,8 @@ class DeleteEntity(
 
         try:
             url = self.config.get_delete_entity_url(
-                args.entity_type, args.entity_id,
+                args.entity_type,
+                args.entity_id,
             )
 
             params = {}

@@ -90,9 +90,9 @@ class MemoryServiceConfig:
         return f"{self.service_endpoint}/memory_nodes/{memory_node_id}"
 
     def get_delete_entity_url(
-        self, entity_type: str, entity_id: str,
+        self,
+        entity_type: str,
+        entity_id: str,
     ) -> str:
         """Get URL for deleting an entity."""
-        return (
-            f"{self.service_endpoint}/entities/{entity_type}/{entity_id}"
-        )
+        return f"{self.service_endpoint}/entities/{entity_type}/{entity_id}"
