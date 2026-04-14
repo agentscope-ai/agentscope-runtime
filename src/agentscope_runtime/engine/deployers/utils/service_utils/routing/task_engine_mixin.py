@@ -19,6 +19,8 @@ class TaskEngineMixin:
         self.celery_app = None
         self.active_tasks: Dict[str, Dict[str, Any]] = {}
         self._registered_queues: set[str] = set()
+        self.task_locks: Dict[str, asyncio.Lock] = {}
+        self._tasks_lock: Optional[asyncio.Lock] = None
 
         if broker_url and backend_url:
             try:
@@ -156,6 +158,24 @@ class TaskEngineMixin:
 
         self.celery_app.worker_main(cmd)
 
+    async def _get_task_lock(self, task_id: str) -> asyncio.Lock:
+        """
+        Get or create a lock for a specific task.
+
+        Args:
+            task_id: Task identifier
+
+        Returns:
+            asyncio.Lock for the specified task
+        """
+        if self._tasks_lock is None:
+            self._tasks_lock = asyncio.Lock()
+
+        async with self._tasks_lock:
+            if task_id not in self.task_locks:
+                self.task_locks[task_id] = asyncio.Lock()
+            return self.task_locks[task_id]
+
     async def execute_background_task(
         self,
         task_id: str,
@@ -217,6 +237,114 @@ class TaskEngineMixin:
                     "failed_at": time.time(),
                 },
             )
+
+    async def execute_stream_query_task(
+        self,
+        task_id: str,
+        stream_func: Callable,
+        request: dict,
+        queue: str,
+        timeout: Optional[float] = None,
+    ):
+        """
+        Execute stream query as background task and collect ONLY the final
+        response.
+
+        Design: Only store the last event (final response), ignore
+        intermediate events to reduce memory usage.
+
+        Args:
+            task_id: Unique task identifier
+            stream_func: Streaming function (runner.stream_query)
+            request: Request dict
+            queue: Queue name
+            timeout: Task execution timeout in seconds
+
+        Returns:
+            Final response event as dict
+
+        Raises:
+            TimeoutError: If task exceeds specified timeout
+            RuntimeError: If stream yields no events
+        """
+        # pylint:disable=unused-argument
+        task_lock = await self._get_task_lock(task_id)
+
+        try:
+            async with task_lock:
+                self.active_tasks[task_id].update(
+                    {
+                        "status": "running",
+                        "started_at": time.time(),
+                    },
+                )
+
+            final_response = None
+            start_time = time.time()
+            event_count = 0
+
+            async def stream_with_collection():
+                nonlocal final_response, event_count
+                async for event in stream_func(request):
+                    event_count += 1
+
+                    if hasattr(event, "model_dump"):
+                        final_response = event.model_dump()
+                    elif hasattr(event, "dict"):
+                        final_response = event.dict()
+                    else:
+                        final_response = {"data": str(event)}
+
+            if timeout is not None:
+                await asyncio.wait_for(
+                    stream_with_collection(),
+                    timeout=timeout,
+                )
+            else:
+                await stream_with_collection()
+
+            if event_count == 0 or final_response is None:
+                raise RuntimeError(
+                    f"Stream function yielded no events for task {task_id}",
+                )
+
+            elapsed = time.time() - start_time
+
+            async with task_lock:
+                self.active_tasks[task_id].update(
+                    {
+                        "status": "completed",
+                        "result": final_response,
+                        "completed_at": time.time(),
+                        "elapsed_time": elapsed,
+                    },
+                )
+
+            return final_response
+
+        except asyncio.TimeoutError:
+            async with task_lock:
+                self.active_tasks[task_id].update(
+                    {
+                        "status": "failed",
+                        "error": f"Task exceeded timeout of {timeout}s",
+                        "error_type": "TimeoutError",
+                        "failed_at": time.time(),
+                    },
+                )
+            raise
+
+        except Exception as e:
+            async with task_lock:
+                self.active_tasks[task_id].update(
+                    {
+                        "status": "failed",
+                        "error": str(e),
+                        "error_type": type(e).__name__,
+                        "failed_at": time.time(),
+                    },
+                )
+            raise
 
     def get_task_status(self, task_id: str):
         # pylint:disable=too-many-return-statements

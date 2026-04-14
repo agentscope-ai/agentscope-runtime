@@ -1,6 +1,6 @@
 [project]
 name = "agentscope-runtime"
-version = "1.1.2b1"
+version = "1.1.4"
 description = "A production-ready runtime framework for agent applications, providing secure sandboxed execution environments and scalable deployment solutions with multi-framework support."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -62,6 +62,7 @@ dev = [
     "sphinx-autoapi>=3.6.0",
     "pytest-mock>=3.15.1",
     "sphinxcontrib-mermaid>=1.2.3",
+    "aiohttp>=3.9.0",
 ]
 
 ext = [

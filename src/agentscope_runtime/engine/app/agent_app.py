@@ -7,7 +7,9 @@ import os
 import platform
 import shlex
 import subprocess
+import time
 import types
+import uuid
 from contextlib import asynccontextmanager, AsyncExitStack
 from typing import Any, Callable, Dict, List, Optional, Type
 
@@ -134,6 +136,9 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         backend_url: Optional[str] = None,
         runner: Optional[Runner] = None,
         enable_embedded_worker: bool = False,
+        enable_stream_task: bool = False,
+        stream_task_queue: str = "stream_query",
+        stream_task_timeout: Optional[float] = None,
         a2a_config: Optional["AgentCardWithRuntimeConfig"] = None,
         agui_config: Optional[AGUIAdaptorConfig] = None,
         interrupt_backend: Optional[BaseInterruptBackend] = None,
@@ -167,6 +172,10 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         self.broker_url = broker_url
         self.backend_url = backend_url
         self.enable_embedded_worker = enable_embedded_worker
+        self.enable_stream_task = enable_stream_task
+        self.stream_task_queue = stream_task_queue
+        self.stream_task_timeout = stream_task_timeout
+        self._stream_query_celery_task: Optional[Callable] = None
 
         self._query_handler: Optional[Callable] = None
         self._init_handler: Optional[Callable] = None
@@ -243,6 +252,7 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         """
         # pylint: disable=too-many-branches
         self._build_runner()
+        cleanup_task = None
         try:
             # aexit any possible running instances before set up
             # runner
@@ -266,9 +276,22 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
             if self.enable_embedded_worker and self.celery_app:
                 self.start_embedded_celery_worker()
 
+            if self.enable_stream_task:
+                cleanup_task = asyncio.create_task(
+                    self._task_cleanup_worker(),
+                )
+                logger.info("Started task cleanup worker")
+
             yield
 
         finally:
+            if cleanup_task:
+                cleanup_task.cancel()
+                try:
+                    await cleanup_task
+                except asyncio.CancelledError:
+                    pass
+
             if self.after_finish:
                 try:
                     if asyncio.iscoroutinefunction(self.after_finish):
@@ -379,19 +402,198 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
         @self.get("/")
         @UnifiedRoutingMixin.internal_route
         async def root():
+            endpoints_info = {
+                "process": self.endpoint_path,
+                "stream": (
+                    f"{self.endpoint_path}/stream" if self.stream else None
+                ),
+                "health": "/health",
+            }
+            if self.enable_stream_task:
+                endpoints_info["task"] = f"{self.endpoint_path}/task"
+                endpoints_info[
+                    "task_status"
+                ] = f"{self.endpoint_path}/task/{{task_id}}"
+
             return {
                 "service": "AgentScope Runtime",
                 "mode": self.deployment_mode.value,
-                "endpoints": {
-                    "process": self.endpoint_path,
-                    "stream": (
-                        f"{self.endpoint_path}/stream" if self.stream else None
-                    ),
-                    "health": "/health",
-                },
+                "endpoints": endpoints_info,
             }
 
         self._add_process_control_endpoints()
+
+    async def _cleanup_expired_tasks(self):
+        """
+        Remove completed/failed tasks older than TTL.
+
+        Returns:
+            Number of tasks cleaned up
+        """
+        now = time.time()
+        ttl_seconds = 3600  # 1 hour
+
+        expired = []
+        for task_id, info in self.active_tasks.items():
+            status = info.get("status")
+
+            if status in ["completed", "failed"]:
+                finished_at = info.get("completed_at") or info.get(
+                    "failed_at",
+                )
+                if finished_at and (now - finished_at) > ttl_seconds:
+                    expired.append(task_id)
+
+        for task_id in expired:
+            del self.active_tasks[task_id]
+            if hasattr(self, "task_locks") and task_id in self.task_locks:
+                del self.task_locks[task_id]
+
+        if expired:
+            logger.info(
+                f"Cleaned up {len(expired)} expired tasks. "
+                f"Active tasks: {len(self.active_tasks)}",
+            )
+
+        return len(expired)
+
+    async def _task_cleanup_worker(self):
+        """Background worker to cleanup expired tasks periodically."""
+        while True:
+            try:
+                await asyncio.sleep(300)  # Run every 5 minutes
+                await self._cleanup_expired_tasks()
+            except asyncio.CancelledError:
+                logger.info("Task cleanup worker stopped")
+                break
+            except Exception as e:
+                logger.error(f"Task cleanup failed: {e}")
+
+    def _create_stream_query_wrapper(self):
+        """
+        Create a wrapper function for stream_query that collects only
+        the final response.
+
+        This wrapper is used by Celery to execute stream_query as a
+        background task.
+        """
+
+        async def stream_query_wrapper(request: dict):
+            """Wrapper that collects only final response from stream_query"""
+            final_response = None
+
+            async for event in self._runner.stream_query(request):
+                if hasattr(event, "model_dump"):
+                    final_response = event.model_dump()
+                elif hasattr(event, "dict"):
+                    final_response = event.dict()
+                else:
+                    final_response = {"data": str(event)}
+
+            return final_response
+
+        return stream_query_wrapper
+
+    def _add_stream_query_task_endpoint(self) -> None:
+        """
+        Add background task endpoints for stream_query.
+
+        Creates POST /process/task and GET /process/task/{task_id}.
+        Design: Only stores the final response, not intermediate events.
+        Supports both Celery and in-memory modes.
+
+        Args:
+            self (AgentApp): The application instance on which to register
+                the task endpoints.
+
+        Returns:
+            None: This method registers routes on the application and does
+                not return a value.
+        """
+        if not self.enable_stream_task:
+            logger.debug("Stream task disabled, skipping task endpoint setup")
+            return
+
+        logger.info(
+            f"Registering stream query task endpoint at "
+            f"{self.endpoint_path}/task",
+        )
+
+        task_path = f"{self.endpoint_path}/task"
+
+        @self.post(
+            task_path,
+            openapi_extra={
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AgentRequest",
+                            },
+                        },
+                    },
+                    "required": True,
+                    "description": (
+                        "Submit stream query as background task. "
+                        "Returns task_id for status polling."
+                    ),
+                },
+            },
+            tags=["agent-api"],
+        )
+        @UnifiedRoutingMixin.internal_route
+        async def submit_stream_query_task(request: dict):
+            """Submit stream_query as background task"""
+            task_id = str(uuid.uuid4())
+
+            if self.celery_app:
+                if self._stream_query_celery_task is None:
+                    wrapper_func = self._create_stream_query_wrapper()
+                    self._stream_query_celery_task = self.register_celery_task(
+                        wrapper_func,
+                        self.stream_task_queue,
+                    )
+
+                result = self._stream_query_celery_task.delay(request)
+
+                return {
+                    "task_id": result.id,
+                    "status": "submitted",
+                    "queue": self.stream_task_queue,
+                    "message": (
+                        "Stream query task submitted to Celery successfully"
+                    ),
+                }
+            else:
+                self.active_tasks[task_id] = {
+                    "task_id": task_id,
+                    "status": "submitted",
+                    "queue": self.stream_task_queue,
+                    "submitted_at": time.time(),
+                }
+
+                asyncio.create_task(
+                    self.execute_stream_query_task(
+                        task_id=task_id,
+                        stream_func=self._runner.stream_query,
+                        request=request,
+                        queue=self.stream_task_queue,
+                        timeout=self.stream_task_timeout,
+                    ),
+                )
+
+                return {
+                    "task_id": task_id,
+                    "status": "submitted",
+                    "queue": self.stream_task_queue,
+                    "message": "Stream query task submitted successfully",
+                }
+
+        @self.get(f"{task_path}/{{task_id}}", tags=["agent-api"])
+        @UnifiedRoutingMixin.internal_route
+        async def get_stream_query_task_status(task_id: str):
+            """Get stream query task status and result"""
+            return self.get_task_status(task_id)
 
     def _add_process_control_endpoints(self):
         """Add process control endpoints for detached mode."""
@@ -639,6 +841,8 @@ class AgentApp(FastAPI, UnifiedRoutingMixin, InterruptMixin):
             },
             tags=["agent-api"],
         )(agent_api)
+
+        self._add_stream_query_task_endpoint()
 
     def _apply_runtime_configs(self, kwargs: dict):
         """
