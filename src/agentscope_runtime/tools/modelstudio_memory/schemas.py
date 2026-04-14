@@ -33,6 +33,18 @@ class MemoryNode(BaseModel):
         None,
         description="Old content of the memory node",
     )
+    created_at: Optional[int] = Field(
+        None,
+        description="Creation timestamp in seconds",
+    )
+    updated_at: Optional[int] = Field(
+        None,
+        description="Last update timestamp in seconds",
+    )
+    meta_data: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Custom metadata",
+    )
 
 
 # ==================== Add Memory ====================
@@ -47,6 +59,26 @@ class AddMemoryInput(BaseModel):
     meta_data: Optional[Dict[str, Any]] = Field(
         None,
         description="Optional metadata",
+    )
+    memory_library_id: Optional[str] = Field(
+        None,
+        description="Memory library ID. Uses default library if not provided",
+    )
+    project_id: Optional[str] = Field(
+        None,
+        description="Project ID within the memory library",
+    )
+    profile_schema: Optional[str] = Field(
+        None,
+        description="Profile schema ID for user profile extraction",
+    )
+    custom_instructions: Optional[str] = Field(
+        None,
+        description="Custom memory extraction instructions (max 512 chars)",
+    )
+    expired_in_days: Optional[int] = Field(
+        None,
+        description="Memory expiration in days (7/30/180 or -1 for never)",
     )
 
     class Config:
@@ -64,15 +96,6 @@ class AddMemoryOutput(BaseModel):
 
 
 # ==================== Search Memory ====================
-class SearchFilters(BaseModel):
-    """Filters for memory search."""
-
-    tags: Optional[List[str]] = Field(
-        None,
-        description="Filter results by tags",
-    )
-
-
 class SearchMemoryInput(BaseModel):
     """Input for searching memory."""
 
@@ -82,12 +105,36 @@ class SearchMemoryInput(BaseModel):
         description="Conversation messages for context",
     )
     top_k: Optional[int] = Field(
-        100,
-        description="Maximum number of results to return",
+        None,
+        description="Maximum number of results to return (server default: 10)",
     )
     min_score: Optional[float] = Field(
-        0.0,
-        description="Minimum similarity score threshold",
+        None,
+        description="Minimum similarity score threshold (server default: 0.3)",
+    )
+    memory_library_id: Optional[str] = Field(
+        None,
+        description="Memory library ID. Uses default library if not provided",
+    )
+    project_ids: Optional[List[str]] = Field(
+        None,
+        description="Project IDs to search in",
+    )
+    source: Optional[str] = Field(
+        None,
+        description="Source identifier filter",
+    )
+    enable_rewrite: Optional[bool] = Field(
+        None,
+        description="Enable query rewrite",
+    )
+    enable_judge: Optional[bool] = Field(
+        None,
+        description="Enable relevance judgment",
+    )
+    enable_rerank: Optional[bool] = Field(
+        None,
+        description="Enable result reranking",
     )
 
     class Config:
@@ -113,6 +160,14 @@ class ListMemoryInput(BaseModel):
     page_size: Optional[int] = Field(
         10,
         description="Number of items per page",
+    )
+    memory_library_id: Optional[str] = Field(
+        None,
+        description="Memory library ID. Uses default library if not provided",
+    )
+    project_id: Optional[str] = Field(
+        None,
+        description="Project ID to list from",
     )
 
     class Config:
@@ -141,6 +196,10 @@ class DeleteMemoryInput(BaseModel):
         ...,
         description="Memory node id to delete",
     )
+    memory_library_id: Optional[str] = Field(
+        None,
+        description="Memory library ID. Uses default library if not provided",
+    )
 
     class Config:
         extra = "allow"  # Allow extra fields
@@ -161,10 +220,6 @@ class ProfileAttribute(BaseModel):
         None,
         description="Attribute description",
     )
-    immutable: Optional[bool] = Field(
-        False,
-        description="Whether the attribute is immutable",
-    )
     default_value: Optional[Any] = Field(
         None,
         description="Default value for the attribute",
@@ -182,6 +237,10 @@ class CreateProfileSchemaInput(BaseModel):
     attributes: List[ProfileAttribute] = Field(
         ...,
         description="List of attribute definitions (must have at least 1)",
+    )
+    memory_library_id: Optional[str] = Field(
+        None,
+        description="Memory library ID. Uses default library if not provided",
     )
 
     @model_validator(mode="after")
@@ -241,6 +300,10 @@ class GetUserProfileInput(BaseModel):
 
     schema_id: str = Field(..., description="Profile schema id")
     user_id: str = Field(..., description="End user id")
+    memory_library_id: Optional[str] = Field(
+        None,
+        description="Memory library ID. Uses default library if not provided",
+    )
 
 
 class GetUserProfileOutput(BaseModel):
@@ -251,3 +314,208 @@ class GetUserProfileOutput(BaseModel):
 
     class Config:
         populate_by_name = True  # Allow both field names and aliases
+
+
+# ==================== Profile Schema CRUD ====================
+class ProfileSchemaAttribute(BaseModel):
+    """Attribute in a profile schema response (includes attribute_id)."""
+
+    attribute_id: str = Field(..., description="Attribute ID")
+    name: str = Field(..., description="Attribute name")
+    description: Optional[str] = Field(
+        None,
+        description="Attribute description",
+    )
+    default_value: Optional[Any] = Field(
+        None,
+        description="Default value for the attribute",
+    )
+
+
+class GetProfileSchemaInput(BaseModel):
+    """Input for getting profile schema details."""
+
+    schema_id: str = Field(..., description="Profile schema id")
+    memory_library_id: Optional[str] = Field(
+        None,
+        description="Memory library ID. Uses default library if not provided",
+    )
+
+
+class GetProfileSchemaOutput(BaseModel):
+    """Output from getting profile schema details."""
+
+    request_id: str = Field(..., description="Request id")
+    name: str = Field(..., description="Schema name")
+    description: Optional[str] = Field(
+        None,
+        description="Schema description",
+    )
+    attributes: List[ProfileSchemaAttribute] = Field(
+        default_factory=list,
+        description="Schema attributes with IDs",
+    )
+
+
+class ProfileSchemaSummary(BaseModel):
+    """Summary of a profile schema in list results."""
+
+    profile_schema_id: str = Field(
+        ...,
+        description="Profile schema ID",
+    )
+    name: str = Field(..., description="Schema name")
+    description: Optional[str] = Field(
+        None,
+        description="Schema description",
+    )
+
+
+class ListProfileSchemasInput(BaseModel):
+    """Input for listing profile schemas."""
+
+    page_num: Optional[int] = Field(1, description="Page number (1-based)")
+    page_size: Optional[int] = Field(
+        10,
+        description="Number of items per page",
+    )
+    memory_library_id: Optional[str] = Field(
+        None,
+        description="Memory library ID. Uses default library if not provided",
+    )
+
+
+class ListProfileSchemasOutput(BaseModel):
+    """Output from listing profile schemas."""
+
+    request_id: str = Field(..., description="Request id")
+    profile_schemas: List[ProfileSchemaSummary] = Field(
+        default_factory=list,
+        description="List of profile schemas",
+    )
+    total: int = Field(..., description="Total number of schemas")
+
+
+class DeleteProfileSchemaInput(BaseModel):
+    """Input for deleting a profile schema."""
+
+    schema_id: str = Field(..., description="Profile schema id")
+    memory_library_id: Optional[str] = Field(
+        None,
+        description="Memory library ID. Uses default library if not provided",
+    )
+
+
+class DeleteProfileSchemaOutput(BaseModel):
+    """Output from deleting a profile schema."""
+
+    request_id: str = Field(..., description="Request id")
+
+
+class AttributeOperation(BaseModel):
+    """An operation on a profile schema attribute."""
+
+    op: str = Field(
+        ...,
+        description="Operation type: add, update, or delete",
+    )
+    attribute_id: Optional[str] = Field(
+        None,
+        description="Attribute ID (required for update/delete)",
+    )
+    name: Optional[str] = Field(
+        None,
+        description="Attribute name (required for add)",
+    )
+    description: Optional[str] = Field(
+        None,
+        description="Attribute description",
+    )
+    default_value: Optional[Any] = Field(
+        None,
+        description="Default value for the attribute",
+    )
+
+
+class UpdateProfileSchemaInput(BaseModel):
+    """Input for updating a profile schema."""
+
+    schema_id: str = Field(..., description="Profile schema id")
+    name: Optional[str] = Field(
+        None,
+        description="New schema name",
+    )
+    description: Optional[str] = Field(
+        None,
+        description="New schema description",
+    )
+    attributes_operations: Optional[List[AttributeOperation]] = Field(
+        None,
+        description="List of attribute operations (add/update/delete)",
+    )
+    memory_library_id: Optional[str] = Field(
+        None,
+        description="Memory library ID. Uses default library if not provided",
+    )
+
+
+class UpdateProfileSchemaOutput(BaseModel):
+    """Output from updating a profile schema."""
+
+    request_id: str = Field(..., description="Request id")
+
+
+# ==================== Update Memory Node ====================
+class UpdateMemoryNodeInput(BaseModel):
+    """Input for updating a memory node."""
+
+    memory_node_id: str = Field(
+        ...,
+        description="Memory node ID to update",
+    )
+    custom_content: str = Field(
+        ...,
+        description="New content for the memory node",
+    )
+    timestamp: Optional[int] = Field(
+        None,
+        description="Timestamp in seconds",
+    )
+    meta_data: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Custom metadata",
+    )
+    memory_library_id: Optional[str] = Field(
+        None,
+        description="Memory library ID. Uses default library if not provided",
+    )
+
+
+class UpdateMemoryNodeOutput(BaseModel):
+    """Output from updating a memory node."""
+
+    request_id: str = Field(..., description="Request id")
+
+
+# ==================== Delete Entity ====================
+class DeleteEntityInput(BaseModel):
+    """Input for deleting an entity and all its associated data."""
+
+    entity_type: str = Field(
+        ...,
+        description="Entity type (e.g. user)",
+    )
+    entity_id: str = Field(
+        ...,
+        description="Entity ID to delete",
+    )
+    memory_library_id: Optional[str] = Field(
+        None,
+        description="Memory library ID. Uses default library if not provided",
+    )
+
+
+class DeleteEntityOutput(BaseModel):
+    """Output from deleting an entity."""
+
+    request_id: str = Field(..., description="Request id")

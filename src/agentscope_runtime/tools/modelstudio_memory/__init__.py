@@ -10,7 +10,13 @@ Components:
     - SearchMemory: Search for relevant memories
     - ListMemory: List memory nodes with pagination
     - DeleteMemory: Delete a specific memory node
+    - UpdateMemoryNode: Update a memory node's content
+    - DeleteEntity: Delete an entity and all its associated data
     - CreateProfileSchema: Create a user profile schema
+    - GetProfileSchema: Retrieve profile schema details
+    - ListProfileSchemas: List profile schemas with pagination
+    - UpdateProfileSchema: Update a profile schema
+    - DeleteProfileSchema: Delete a profile schema
     - GetUserProfile: Retrieve a user profile
 
 Schemas:
@@ -46,25 +52,46 @@ from .core import (
     DeleteMemory,
     CreateProfileSchema,
     GetUserProfile,
+    GetProfileSchema,
+    ListProfileSchemas,
+    DeleteProfileSchema,
+    UpdateProfileSchema,
+    UpdateMemoryNode,
+    DeleteEntity,
 )
 
 # Schemas - Import commonly used schemas for convenience
 from .schemas import (
     AddMemoryInput,
     AddMemoryOutput,
+    AttributeOperation,
     CreateProfileSchemaInput,
     CreateProfileSchemaOutput,
     DeleteMemoryInput,
     DeleteMemoryOutput,
+    DeleteProfileSchemaInput,
+    DeleteProfileSchemaOutput,
+    GetProfileSchemaInput,
+    GetProfileSchemaOutput,
     GetUserProfileInput,
     GetUserProfileOutput,
     ListMemoryInput,
     ListMemoryOutput,
+    ListProfileSchemasInput,
+    ListProfileSchemasOutput,
     MemoryNode,
     Message,
     ProfileAttribute,
+    ProfileSchemaAttribute,
+    ProfileSchemaSummary,
     SearchMemoryInput,
     SearchMemoryOutput,
+    UpdateMemoryNodeInput,
+    UpdateMemoryNodeOutput,
+    UpdateProfileSchemaInput,
+    UpdateProfileSchemaOutput,
+    DeleteEntityInput,
+    DeleteEntityOutput,
     UserProfile,
     UserProfileAttribute,
 )
@@ -77,6 +104,12 @@ __all__ = [
     "DeleteMemory",
     "CreateProfileSchema",
     "GetUserProfile",
+    "GetProfileSchema",
+    "ListProfileSchemas",
+    "DeleteProfileSchema",
+    "UpdateProfileSchema",
+    "UpdateMemoryNode",
+    "DeleteEntity",
     # Configuration
     "MemoryServiceConfig",
     # Exceptions
@@ -97,8 +130,23 @@ __all__ = [
     "DeleteMemoryInput",
     "DeleteMemoryOutput",
     "ProfileAttribute",
+    "ProfileSchemaAttribute",
+    "ProfileSchemaSummary",
+    "AttributeOperation",
     "CreateProfileSchemaInput",
     "CreateProfileSchemaOutput",
+    "GetProfileSchemaInput",
+    "GetProfileSchemaOutput",
+    "ListProfileSchemasInput",
+    "ListProfileSchemasOutput",
+    "DeleteProfileSchemaInput",
+    "DeleteProfileSchemaOutput",
+    "UpdateProfileSchemaInput",
+    "UpdateProfileSchemaOutput",
+    "UpdateMemoryNodeInput",
+    "UpdateMemoryNodeOutput",
+    "DeleteEntityInput",
+    "DeleteEntityOutput",
     "UserProfileAttribute",
     "UserProfile",
     "GetUserProfileInput",

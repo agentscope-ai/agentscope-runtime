@@ -71,16 +71,28 @@ class MemoryServiceConfig:
         """Get URL for listing memory."""
         return f"{self.service_endpoint}/memory_nodes"
 
-    def get_delete_memory_url(self, memory_node_id: str) -> str:
-        """Get URL for deleting a specific memory node."""
-        return f"{self.service_endpoint}/memory_nodes/{memory_node_id}"
-
-    def get_create_profile_schema_url(self) -> str:
-        """Get URL for creating profile schema."""
-        return f"{self.service_endpoint}/profile_schemas"
-
     def get_user_profile_url(self, schema_id: str) -> str:
         """Get URL for getting user profile."""
         return (
             f"{self.service_endpoint}/profile_schemas/{schema_id}/user_profile"
+        )
+
+    def get_profile_schema_url(self, schema_id: str) -> str:
+        """Get URL for a specific profile schema (GET/PATCH/DELETE)."""
+        return f"{self.service_endpoint}/profile_schemas/{schema_id}"
+
+    def get_profile_schemas_url(self) -> str:
+        """Get URL for profile schemas collection (POST/GET list)."""
+        return f"{self.service_endpoint}/profile_schemas"
+
+    def get_memory_node_url(self, memory_node_id: str) -> str:
+        """Get URL for a specific memory node (DELETE/PATCH)."""
+        return f"{self.service_endpoint}/memory_nodes/{memory_node_id}"
+
+    def get_delete_entity_url(
+        self, entity_type: str, entity_id: str,
+    ) -> str:
+        """Get URL for deleting an entity."""
+        return (
+            f"{self.service_endpoint}/entities/{entity_type}/{entity_id}"
         )

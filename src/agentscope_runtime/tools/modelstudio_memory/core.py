@@ -22,15 +22,29 @@ from .schemas import (
     AddMemoryOutput,
     CreateProfileSchemaInput,
     CreateProfileSchemaOutput,
+    DeleteEntityInput,
+    DeleteEntityOutput,
     DeleteMemoryInput,
     DeleteMemoryOutput,
+    DeleteProfileSchemaInput,
+    DeleteProfileSchemaOutput,
+    GetProfileSchemaInput,
+    GetProfileSchemaOutput,
     GetUserProfileInput,
     GetUserProfileOutput,
     ListMemoryInput,
     ListMemoryOutput,
+    ListProfileSchemasInput,
+    ListProfileSchemasOutput,
     MemoryNode,
+    ProfileSchemaAttribute,
+    ProfileSchemaSummary,
     SearchMemoryInput,
     SearchMemoryOutput,
+    UpdateMemoryNodeInput,
+    UpdateMemoryNodeOutput,
+    UpdateProfileSchemaInput,
+    UpdateProfileSchemaOutput,
     UserProfile,
     UserProfileAttribute,
 )
@@ -385,10 +399,19 @@ class DeleteMemory(
 
         try:
             # Build URL with path parameter
-            url = self.config.get_delete_memory_url(args.memory_node_id)
+            url = self.config.get_memory_node_url(args.memory_node_id)
+
+            # Build query params
+            params = {}
+            if args.memory_library_id:
+                params["memory_library_id"] = args.memory_library_id
 
             # Send request
-            result = await self._request("DELETE", url)
+            result = await self._request(
+                "DELETE",
+                url,
+                params=params or None,
+            )
 
             # Parse response
             output = DeleteMemoryOutput(
@@ -470,7 +493,7 @@ class CreateProfileSchema(
             # Send request
             result = await self._request(
                 "POST",
-                self.config.get_create_profile_schema_url(),
+                self.config.get_profile_schemas_url(),
                 json=payload,
             )
 
@@ -553,11 +576,15 @@ class GetUserProfile(
             # Build URL with path parameter
             url = self.config.get_user_profile_url(args.schema_id)
 
-            # Send request with user_id as query parameter
+            # Send request with query parameters
+            params = {"user_id": args.user_id}
+            if args.memory_library_id:
+                params["memory_library_id"] = args.memory_library_id
+
             result = await self._request(
                 "GET",
                 url,
-                params={"user_id": args.user_id},
+                params=params,
             )
 
             # Parse response - handle API's camelCase field names
@@ -590,5 +617,533 @@ class GetUserProfile(
         except Exception:
             logger.exception(
                 f"Failed to get profile for user {args.user_id}",
+            )
+            raise
+
+
+class GetProfileSchema(
+    Tool[GetProfileSchemaInput, GetProfileSchemaOutput],
+    ModelStudioMemoryBase,
+):
+    """
+    Component for retrieving profile schema details.
+
+    This component retrieves the full details of a profile schema including
+    its attribute definitions.
+
+    Environment Variables:
+        DASHSCOPE_API_KEY: Required. API key for authentication
+        MODELSTUDIO_SERVICE_ID: Optional. Service identifier
+        MEMORY_SERVICE_ENDPOINT: Optional. API endpoint URL
+
+    Raises:
+        ValueError: If DASHSCOPE_API_KEY is not set
+        MemoryAPIError: If the API request fails
+        MemoryNotFoundError: If the schema is not found
+    """
+
+    name = "get_profile_schema"
+    description = "Get profile schema details by schema id"
+
+    def __init__(self, config: Optional[MemoryServiceConfig] = None) -> None:
+        """
+        Initialize the GetProfileSchema component.
+
+        Args:
+            config: Optional configuration. If not provided, will be loaded
+                   from environment variables.
+        """
+        Tool.__init__(self)
+        ModelStudioMemoryBase.__init__(self, config)
+
+    async def _arun(
+        self,
+        args: GetProfileSchemaInput,
+        **kwargs: Any,
+    ) -> GetProfileSchemaOutput:
+        """
+        Get profile schema details.
+
+        Args:
+            args: Input containing schema_id and optional memory_library_id
+            **kwargs: Additional parameters (currently unused)
+
+        Returns:
+            GetProfileSchemaOutput containing schema details
+
+        Raises:
+            MemoryAPIError: If the API request fails
+            MemoryNotFoundError: If the schema is not found
+        """
+        logger.info(f"Getting profile schema: {args.schema_id}")
+
+        try:
+            url = self.config.get_profile_schema_url(args.schema_id)
+
+            params = {}
+            if args.memory_library_id:
+                params["memory_library_id"] = args.memory_library_id
+
+            result = await self._request(
+                "GET",
+                url,
+                params=params or None,
+            )
+
+            output = GetProfileSchemaOutput(
+                request_id=result.get("request_id", ""),
+                name=result.get("name", ""),
+                description=result.get("description"),
+                attributes=[
+                    ProfileSchemaAttribute(**attr)
+                    for attr in result.get("attributes", [])
+                ],
+            )
+
+            logger.info(
+                f"Successfully retrieved profile schema: {args.schema_id}",
+            )
+            return output
+
+        except Exception:
+            logger.exception(
+                f"Failed to get profile schema: {args.schema_id}",
+            )
+            raise
+
+
+class ListProfileSchemas(
+    Tool[ListProfileSchemasInput, ListProfileSchemasOutput],
+    ModelStudioMemoryBase,
+):
+    """
+    Component for listing profile schemas with pagination.
+
+    This component retrieves a paginated list of profile schemas.
+
+    Environment Variables:
+        DASHSCOPE_API_KEY: Required. API key for authentication
+        MODELSTUDIO_SERVICE_ID: Optional. Service identifier
+        MEMORY_SERVICE_ENDPOINT: Optional. API endpoint URL
+
+    Raises:
+        ValueError: If DASHSCOPE_API_KEY is not set
+        MemoryAPIError: If the API request fails
+    """
+
+    name = "list_profile_schemas"
+    description = "List profile schemas with pagination"
+
+    def __init__(self, config: Optional[MemoryServiceConfig] = None) -> None:
+        """
+        Initialize the ListProfileSchemas component.
+
+        Args:
+            config: Optional configuration. If not provided, will be loaded
+                   from environment variables.
+        """
+        Tool.__init__(self)
+        ModelStudioMemoryBase.__init__(self, config)
+
+    async def _arun(
+        self,
+        args: ListProfileSchemasInput,
+        **kwargs: Any,
+    ) -> ListProfileSchemasOutput:
+        """
+        List profile schemas with pagination.
+
+        Args:
+            args: Input containing page_num, page_size, and optional
+                 memory_library_id
+            **kwargs: Additional parameters (currently unused)
+
+        Returns:
+            ListProfileSchemasOutput containing schemas and pagination info
+
+        Raises:
+            MemoryAPIError: If the API request fails
+        """
+        logger.info(
+            f"Listing profile schemas "
+            f"(page {args.page_num}, size {args.page_size})",
+        )
+
+        try:
+            params = args.model_dump(exclude_none=True)
+
+            result = await self._request(
+                "GET",
+                self.config.get_profile_schemas_url(),
+                params=params,
+            )
+
+            output = ListProfileSchemasOutput(
+                request_id=result.get("request_id", ""),
+                profile_schemas=[
+                    ProfileSchemaSummary(**schema)
+                    for schema in result.get("profile_schemas", [])
+                ],
+                total=result.get("total", 0),
+            )
+
+            logger.info(
+                f"Retrieved {len(output.profile_schemas)} profile schemas "
+                f"(total: {output.total})",
+            )
+            return output
+
+        except Exception:
+            logger.exception("Failed to list profile schemas")
+            raise
+
+
+class DeleteProfileSchema(
+    Tool[DeleteProfileSchemaInput, DeleteProfileSchemaOutput],
+    ModelStudioMemoryBase,
+):
+    """
+    Component for deleting a profile schema.
+
+    This component deletes a profile schema by its ID.
+
+    Environment Variables:
+        DASHSCOPE_API_KEY: Required. API key for authentication
+        MODELSTUDIO_SERVICE_ID: Optional. Service identifier
+        MEMORY_SERVICE_ENDPOINT: Optional. API endpoint URL
+
+    Raises:
+        ValueError: If DASHSCOPE_API_KEY is not set
+        MemoryAPIError: If the API request fails
+        MemoryNotFoundError: If the schema is not found
+    """
+
+    name = "delete_profile_schema"
+    description = "Delete a profile schema by schema id"
+
+    def __init__(self, config: Optional[MemoryServiceConfig] = None) -> None:
+        """
+        Initialize the DeleteProfileSchema component.
+
+        Args:
+            config: Optional configuration. If not provided, will be loaded
+                   from environment variables.
+        """
+        Tool.__init__(self)
+        ModelStudioMemoryBase.__init__(self, config)
+
+    async def _arun(
+        self,
+        args: DeleteProfileSchemaInput,
+        **kwargs: Any,
+    ) -> DeleteProfileSchemaOutput:
+        """
+        Delete a profile schema.
+
+        Args:
+            args: Input containing schema_id and optional memory_library_id
+            **kwargs: Additional parameters (currently unused)
+
+        Returns:
+            DeleteProfileSchemaOutput containing the request_id
+
+        Raises:
+            MemoryAPIError: If the API request fails
+            MemoryNotFoundError: If the schema is not found
+        """
+        logger.info(f"Deleting profile schema: {args.schema_id}")
+
+        try:
+            url = self.config.get_profile_schema_url(args.schema_id)
+
+            params = {}
+            if args.memory_library_id:
+                params["memory_library_id"] = args.memory_library_id
+
+            result = await self._request(
+                "DELETE",
+                url,
+                params=params or None,
+            )
+
+            output = DeleteProfileSchemaOutput(
+                request_id=result.get("request_id", ""),
+            )
+
+            logger.info(
+                f"Successfully deleted profile schema: {args.schema_id}",
+            )
+            return output
+
+        except Exception:
+            logger.exception(
+                f"Failed to delete profile schema: {args.schema_id}",
+            )
+            raise
+
+
+class UpdateProfileSchema(
+    Tool[UpdateProfileSchemaInput, UpdateProfileSchemaOutput],
+    ModelStudioMemoryBase,
+):
+    """
+    Component for updating a profile schema.
+
+    Supports updating schema name, description, and attribute operations
+    (add, update, delete attributes).
+
+    Environment Variables:
+        DASHSCOPE_API_KEY: Required. API key for authentication
+        MODELSTUDIO_SERVICE_ID: Optional. Service identifier
+        MEMORY_SERVICE_ENDPOINT: Optional. API endpoint URL
+
+    Raises:
+        ValueError: If DASHSCOPE_API_KEY is not set
+        MemoryAPIError: If the API request fails
+        MemoryNotFoundError: If the schema is not found
+    """
+
+    name = "update_profile_schema"
+    description = "Update a profile schema"
+
+    def __init__(self, config: Optional[MemoryServiceConfig] = None) -> None:
+        """
+        Initialize the UpdateProfileSchema component.
+
+        Args:
+            config: Optional configuration. If not provided, will be loaded
+                   from environment variables.
+        """
+        Tool.__init__(self)
+        ModelStudioMemoryBase.__init__(self, config)
+
+    async def _arun(
+        self,
+        args: UpdateProfileSchemaInput,
+        **kwargs: Any,
+    ) -> UpdateProfileSchemaOutput:
+        """
+        Update a profile schema.
+
+        Args:
+            args: Input containing schema_id, optional name, description,
+                 attributes_operations, and memory_library_id
+            **kwargs: Additional parameters (currently unused)
+
+        Returns:
+            UpdateProfileSchemaOutput containing the request_id
+
+        Raises:
+            MemoryAPIError: If the API request fails
+            MemoryNotFoundError: If the schema is not found
+        """
+        logger.info(f"Updating profile schema: {args.schema_id}")
+
+        try:
+            url = self.config.get_profile_schema_url(args.schema_id)
+
+            # Exclude schema_id from body (it's a path parameter)
+            payload = args.model_dump(
+                exclude_none=True,
+                exclude={"schema_id"},
+            )
+
+            result = await self._request(
+                "PATCH",
+                url,
+                json=payload,
+            )
+
+            output = UpdateProfileSchemaOutput(
+                request_id=result.get("request_id", ""),
+            )
+
+            logger.info(
+                f"Successfully updated profile schema: {args.schema_id}",
+            )
+            return output
+
+        except Exception:
+            logger.exception(
+                f"Failed to update profile schema: {args.schema_id}",
+            )
+            raise
+
+
+class UpdateMemoryNode(
+    Tool[UpdateMemoryNodeInput, UpdateMemoryNodeOutput],
+    ModelStudioMemoryBase,
+):
+    """
+    Component for updating a memory node.
+
+    This component updates the content of an existing memory node.
+
+    Environment Variables:
+        DASHSCOPE_API_KEY: Required. API key for authentication
+        MODELSTUDIO_SERVICE_ID: Optional. Service identifier
+        MEMORY_SERVICE_ENDPOINT: Optional. API endpoint URL
+
+    Raises:
+        ValueError: If DASHSCOPE_API_KEY is not set
+        MemoryAPIError: If the API request fails
+        MemoryNotFoundError: If the memory node is not found
+    """
+
+    name = "update_memory_node"
+    description = "Update the content of a memory node"
+
+    def __init__(self, config: Optional[MemoryServiceConfig] = None) -> None:
+        """
+        Initialize the UpdateMemoryNode component.
+
+        Args:
+            config: Optional configuration. If not provided, will be loaded
+                   from environment variables.
+        """
+        Tool.__init__(self)
+        ModelStudioMemoryBase.__init__(self, config)
+
+    async def _arun(
+        self,
+        args: UpdateMemoryNodeInput,
+        **kwargs: Any,
+    ) -> UpdateMemoryNodeOutput:
+        """
+        Update a memory node.
+
+        Args:
+            args: Input containing memory_node_id, custom_content, and
+                 optional timestamp, meta_data, memory_library_id
+            **kwargs: Additional parameters (currently unused)
+
+        Returns:
+            UpdateMemoryNodeOutput containing the request_id
+
+        Raises:
+            MemoryAPIError: If the API request fails
+            MemoryNotFoundError: If the memory node is not found
+        """
+        logger.info(f"Updating memory node: {args.memory_node_id}")
+
+        try:
+            url = self.config.get_memory_node_url(args.memory_node_id)
+
+            # Exclude memory_node_id from body (it's a path parameter)
+            payload = args.model_dump(
+                exclude_none=True,
+                exclude={"memory_node_id"},
+            )
+
+            result = await self._request(
+                "PATCH",
+                url,
+                json=payload,
+            )
+
+            output = UpdateMemoryNodeOutput(
+                request_id=result.get("request_id", ""),
+            )
+
+            logger.info(
+                f"Successfully updated memory node: {args.memory_node_id}",
+            )
+            return output
+
+        except Exception:
+            logger.exception(
+                f"Failed to update memory node: {args.memory_node_id}",
+            )
+            raise
+
+
+class DeleteEntity(
+    Tool[DeleteEntityInput, DeleteEntityOutput],
+    ModelStudioMemoryBase,
+):
+    """
+    Component for deleting an entity and all its associated data.
+
+    This component deletes an entity (e.g. user) and all its memory nodes,
+    user profiles, and other associated data.
+
+    Environment Variables:
+        DASHSCOPE_API_KEY: Required. API key for authentication
+        MODELSTUDIO_SERVICE_ID: Optional. Service identifier
+        MEMORY_SERVICE_ENDPOINT: Optional. API endpoint URL
+
+    Raises:
+        ValueError: If DASHSCOPE_API_KEY is not set
+        MemoryAPIError: If the API request fails
+        MemoryNotFoundError: If the entity is not found
+    """
+
+    name = "delete_entity"
+    description = "Delete an entity and all its associated data"
+
+    def __init__(self, config: Optional[MemoryServiceConfig] = None) -> None:
+        """
+        Initialize the DeleteEntity component.
+
+        Args:
+            config: Optional configuration. If not provided, will be loaded
+                   from environment variables.
+        """
+        Tool.__init__(self)
+        ModelStudioMemoryBase.__init__(self, config)
+
+    async def _arun(
+        self,
+        args: DeleteEntityInput,
+        **kwargs: Any,
+    ) -> DeleteEntityOutput:
+        """
+        Delete an entity.
+
+        Args:
+            args: Input containing entity_type, entity_id, and optional
+                 memory_library_id
+            **kwargs: Additional parameters (currently unused)
+
+        Returns:
+            DeleteEntityOutput containing the request_id
+
+        Raises:
+            MemoryAPIError: If the API request fails
+            MemoryNotFoundError: If the entity is not found
+        """
+        logger.info(
+            f"Deleting entity {args.entity_type}/{args.entity_id}",
+        )
+
+        try:
+            url = self.config.get_delete_entity_url(
+                args.entity_type, args.entity_id,
+            )
+
+            params = {}
+            if args.memory_library_id:
+                params["memory_library_id"] = args.memory_library_id
+
+            result = await self._request(
+                "DELETE",
+                url,
+                params=params or None,
+            )
+
+            output = DeleteEntityOutput(
+                request_id=result.get("request_id", ""),
+            )
+
+            logger.info(
+                f"Successfully deleted entity "
+                f"{args.entity_type}/{args.entity_id}",
+            )
+            return output
+
+        except Exception:
+            logger.exception(
+                f"Failed to delete entity "
+                f"{args.entity_type}/{args.entity_id}",
             )
             raise
