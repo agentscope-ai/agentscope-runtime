@@ -2,6 +2,8 @@
 # pylint:disable=too-many-branches,too-many-statements,protected-access
 # TODO: support file block
 import json
+import os
+from pathlib import Path
 
 from collections import OrderedDict
 from typing import Union, List, Callable, Optional, Dict, Literal
@@ -271,15 +273,29 @@ def message_to_agentscope_msg(
                                 block_cls(type=cnt_type, source=url_source),
                             )
                         else:
-                            audio_extension = getattr(cnt, "format")
-                            base64_source = Base64Source(
-                                type="base64",
-                                media_type=f"audio/{audio_extension}",
-                                data=value,
-                            )
-                            msg_content.append(
-                                block_cls(type=cnt_type, source=base64_source),
-                            )
+                            # Try to detect local file path before assuming base64
+                            audio_extension = getattr(cnt, "format", None)
+
+                            if value and isinstance(value, str) and os.path.isfile(value):
+                                # Local file path → convert to file:// URL
+                                url_source = URLSource(
+                                    type="url",
+                                    url=Path(value).as_uri(),
+                                    media_type=f"audio/{audio_extension}" if audio_extension else None,
+                                )
+                                msg_content.append(
+                                    block_cls(type=cnt_type, source=url_source),
+                                )
+                            else:
+                                # Fall back to base64 (existing behavior)
+                                base64_source = Base64Source(
+                                    type="base64",
+                                    media_type=f"audio/{audio_extension}" if audio_extension else None,
+                                    data=value,
+                                )
+                                msg_content.append(
+                                    block_cls(type=cnt_type, source=base64_source),
+                                )
                 elif cnt_type == "video":
                     if (
                         value
