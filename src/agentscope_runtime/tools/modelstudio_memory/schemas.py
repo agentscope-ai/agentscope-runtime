@@ -241,6 +241,13 @@ class GetUserProfileInput(BaseModel):
 
     schema_id: str = Field(..., description="Profile schema id")
     user_id: str = Field(..., description="End user id")
+    memory_library_id: Optional[str] = Field(
+        None,
+        description="Optional Bailian memory library id",
+    )
+
+    class Config:
+        extra = "allow"  # Allow extra fields
 
 
 class GetUserProfileOutput(BaseModel):

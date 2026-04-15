@@ -302,3 +302,21 @@ async def test_get_user_profile_success(
     assert isinstance(result, GetUserProfileOutput)
     if result.profile is not None:
         assert isinstance(result.profile.attributes, list)
+
+
+def test_get_user_profile_input_memory_library_id():
+    """Test that GetUserProfileInput accepts optional memory_library_id."""
+    # Without memory_library_id
+    input_without = GetUserProfileInput(
+        schema_id="schema_123",
+        user_id="user_456",
+    )
+    assert input_without.memory_library_id is None
+
+    # With memory_library_id
+    input_with = GetUserProfileInput(
+        schema_id="schema_123",
+        user_id="user_456",
+        memory_library_id="lib_789",
+    )
+    assert input_with.memory_library_id == "lib_789"
