@@ -4,7 +4,7 @@
 
 import os
 import uuid
-from typing import Any, Optional
+from typing import Any, Optional, List
 
 from dashscope import AioMultiModalConversation
 from mcp.server.fastmcp import Context
@@ -15,15 +15,15 @@ from ..utils.api_key_util import get_api_key, ApiNames
 from ...engine.tracing import trace, TracingUtil
 
 
-class QwenImageEditInput(BaseModel):
+class QwenImageEditInputNew(BaseModel):
     """
-    Qwen Image Edit Input
+    Qwen Image Edit Input New(Supports single or multiple images for fusion)
     """
 
-    image_url: str = Field(
+    image_urls: list[str] = Field(
         ...,
-        description="输入图像的URL地址，需为公网可访问地址，支持 HTTP 或 HTTPS "
-        "协议。格式：JPG、JPEG、PNG、BMP、TIFF、WEBP，分辨率[384,"
+        description="输入图像的URL地址列表，每个URL需为公网可访问地址，支持 HTTP 或 "
+        "HTTPS 协议。格式：JPG、JPEG、PNG、BMP、TIFF、WEBP，分辨率[384,"
         "3072]，大小不超过10MB。URL不能包含中文字符。",
     )
     prompt: str = Field(
@@ -45,14 +45,14 @@ class QwenImageEditInput(BaseModel):
     )
 
 
-class QwenImageEditOutput(BaseModel):
+class QwenImageEditOutputNew(BaseModel):
     """
-    Qwen Image Edit Output
+    Qwen Image Edit Output New
     """
 
     results: list[str] = Field(
         title="Results",
-        description="输出的图片url列表",
+        description="输出的融合后图片url列表，仅包含1个URL",
     )
     request_id: Optional[str] = Field(
         default=None,
@@ -61,22 +61,24 @@ class QwenImageEditOutput(BaseModel):
     )
 
 
-class QwenImageEdit(Tool[QwenImageEditInput, QwenImageEditOutput]):
+class QwenImageEditNew(Tool[QwenImageEditInputNew, QwenImageEditOutputNew]):
     """
     Qwen Image Edit Tool for AI-powered image editing.
+    Supports single or multiple images for fusion.
     """
 
-    name: str = "modelstudio_qwen_image_edit"
+    name: str = "modelstudio_qwen_image_edit_new"
     description: str = (
-        "通义千问-图像编辑模型支持精准的中英双语文字编辑、调色、细节增强、风格迁移、增删物体、改变位置和动作等操作，可实现复杂的图文编辑。"
+        "通义千问-多图融合模型，基于 qwen-image-edit，支持将多张图像按提示词语义融合为一张新图。"
+        "可用于风格混合、场景合成、元素组合等复杂图像生成任务。"
     )
 
-    @trace(trace_type="AIGC", trace_name="qwen_image_edit")
+    @trace(trace_type="AIGC", trace_name="qwen_image_edit_new")
     async def arun(
         self,
-        args: QwenImageEditInput,
+        args: QwenImageEditInputNew,
         **kwargs: Any,
-    ) -> QwenImageEditOutput:
+    ) -> QwenImageEditOutputNew:
         """Qwen Image Edit using MultiModalConversation API
 
         This method uses DashScope's MultiModalConversation service to edit
@@ -84,13 +86,14 @@ class QwenImageEdit(Tool[QwenImageEditInput, QwenImageEditOutput]):
         operations through natural language instructions.
 
         Args:
-            args: QwenImageEditInput containing image_url, text_prompt,
+            args: QwenImageEditInputNew containing image_urls, text_prompt,
                 watermark, and negative_prompt.
             **kwargs: Additional keyword arguments including request_id,
                 trace_event, model_name, api_key.
 
         Returns:
-            QwenImageEditOutput containing the edited image URL and request ID.
+            QwenImageEditOutputNew containing
+            the edited image URL and request ID.
 
         Raises:
             ValueError: If DASHSCOPE_API_KEY is not set or invalid.
@@ -111,17 +114,17 @@ class QwenImageEdit(Tool[QwenImageEditInput, QwenImageEditOutput]):
         )
 
         # Prepare messages in the format expected by MultiModalConversation
+        content = [{"image": url} for url in args.image_urls]
+        content.append({"text": args.prompt})
+
         messages = [
             {
                 "role": "user",
-                "content": [
-                    {"image": args.image_url},
-                    {"text": args.prompt},
-                ],
+                "content": content,
             },
         ]
 
-        # >>> 新增：标准化 watermark 输入为布尔值 <<<
+        # 标准化 watermark 输入为布尔值
         if args.watermark is not None:
             if isinstance(args.watermark, str):
                 args.watermark = args.watermark.strip().lower() in (
@@ -147,7 +150,7 @@ class QwenImageEdit(Tool[QwenImageEditInput, QwenImageEditOutput]):
             )
         except Exception as e:
             raise RuntimeError(
-                f"Failed to call Qwen Image Edit API: " f"{str(e)}",
+                f"Failed to call Qwen Image Edit API: {str(e)}",
             ) from e
 
         # Check response status
@@ -156,7 +159,6 @@ class QwenImageEdit(Tool[QwenImageEditInput, QwenImageEditOutput]):
 
         # Extract the edited image URLs from response
         try:
-            # The response structure may vary, try different possible locations
             results = []
 
             # Try to get from output.choices[0].message.content
@@ -179,7 +181,7 @@ class QwenImageEdit(Tool[QwenImageEditInput, QwenImageEditOutput]):
             if not results:
                 raise RuntimeError(
                     f"Could not extract edited image URLs from response: "
-                    f"{response}",
+                    f" {response}",
                 )
 
         except Exception as e:
@@ -209,7 +211,7 @@ class QwenImageEdit(Tool[QwenImageEditInput, QwenImageEditOutput]):
                 },
             )
 
-        return QwenImageEditOutput(
+        return QwenImageEditOutputNew(
             results=results,
             request_id=request_id,
         )
