@@ -553,11 +553,16 @@ class GetUserProfile(
             # Build URL with path parameter
             url = self.config.get_user_profile_url(args.schema_id)
 
+            # Build query params, including optional memory_library_id
+            params: dict = {"user_id": args.user_id}
+            if args.memory_library_id is not None:
+                params["memory_library_id"] = args.memory_library_id
+
             # Send request with user_id as query parameter
             result = await self._request(
                 "GET",
                 url,
-                params={"user_id": args.user_id},
+                params=params,
             )
 
             # Parse response - handle API's camelCase field names
