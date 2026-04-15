@@ -465,8 +465,8 @@ class UpdateProfileSchemaOutput(BaseModel):
     request_id: str = Field(..., description="Request id")
 
 
-# ==================== Update Memory Node ====================
-class UpdateMemoryNodeInput(BaseModel):
+# ==================== Update Memory ====================
+class UpdateMemoryInput(BaseModel):
     """Input for updating a memory node."""
 
     memory_node_id: str = Field(
@@ -491,7 +491,7 @@ class UpdateMemoryNodeInput(BaseModel):
     )
 
 
-class UpdateMemoryNodeOutput(BaseModel):
+class UpdateMemoryOutput(BaseModel):
     """Output from updating a memory node."""
 
     request_id: str = Field(..., description="Request id")

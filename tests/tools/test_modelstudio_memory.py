@@ -43,9 +43,9 @@ from agentscope_runtime.tools.modelstudio_memory import (
     SearchMemory,
     SearchMemoryInput,
     SearchMemoryOutput,
-    UpdateMemoryNode,
-    UpdateMemoryNodeInput,
-    UpdateMemoryNodeOutput,
+    UpdateMemory,
+    UpdateMemoryInput,
+    UpdateMemoryOutput,
     UpdateProfileSchema,
     UpdateProfileSchemaInput,
     UpdateProfileSchemaOutput,
@@ -174,9 +174,9 @@ async def update_profile_schema_component():
 
 
 @pytest.fixture
-async def update_memory_node_component():
-    """Fixture for UpdateMemoryNode component."""
-    component = UpdateMemoryNode()
+async def update_memory_component():
+    """Fixture for UpdateMemory component."""
+    component = UpdateMemory()
     yield component
     await component.close()
 
@@ -349,9 +349,9 @@ async def test_delete_memory_success(
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(NO_DASHSCOPE_KEY, reason="DASHSCOPE_API_KEY not set")
-async def test_update_memory_node_success(
+async def test_update_memory_success(
     add_memory_component,
-    update_memory_node_component,
+    update_memory_component,
     test_user_id,
 ):
     """Test updating a memory node."""
@@ -371,14 +371,14 @@ async def test_update_memory_node_success(
     if add_result.memory_nodes:
         memory_node_id = add_result.memory_nodes[0].memory_node_id
 
-        update_input = UpdateMemoryNodeInput(
+        update_input = UpdateMemoryInput(
             memory_node_id=memory_node_id,
             custom_content="I like reading fantasy books instead",
         )
 
-        result = await update_memory_node_component.arun(update_input)
+        result = await update_memory_component.arun(update_input)
 
-        assert isinstance(result, UpdateMemoryNodeOutput)
+        assert isinstance(result, UpdateMemoryOutput)
         assert result.request_id is not None
 
 

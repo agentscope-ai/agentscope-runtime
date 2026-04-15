@@ -10,7 +10,7 @@ Components:
     - SearchMemory: Search for relevant memories
     - ListMemory: List memory nodes with pagination
     - DeleteMemory: Delete a specific memory node
-    - UpdateMemoryNode: Update a memory node's content
+    - UpdateMemory: Update a memory node's content
     - DeleteEntity: Delete an entity and all its associated data
     - CreateProfileSchema: Create a user profile schema
     - GetProfileSchema: Retrieve profile schema details
@@ -56,7 +56,7 @@ from .core import (
     ListProfileSchemas,
     DeleteProfileSchema,
     UpdateProfileSchema,
-    UpdateMemoryNode,
+    UpdateMemory,
     DeleteEntity,
 )
 
@@ -86,8 +86,8 @@ from .schemas import (
     ProfileSchemaSummary,
     SearchMemoryInput,
     SearchMemoryOutput,
-    UpdateMemoryNodeInput,
-    UpdateMemoryNodeOutput,
+    UpdateMemoryInput,
+    UpdateMemoryOutput,
     UpdateProfileSchemaInput,
     UpdateProfileSchemaOutput,
     DeleteEntityInput,
@@ -108,7 +108,7 @@ __all__ = [
     "ListProfileSchemas",
     "DeleteProfileSchema",
     "UpdateProfileSchema",
-    "UpdateMemoryNode",
+    "UpdateMemory",
     "DeleteEntity",
     # Configuration
     "MemoryServiceConfig",
@@ -143,8 +143,8 @@ __all__ = [
     "DeleteProfileSchemaOutput",
     "UpdateProfileSchemaInput",
     "UpdateProfileSchemaOutput",
-    "UpdateMemoryNodeInput",
-    "UpdateMemoryNodeOutput",
+    "UpdateMemoryInput",
+    "UpdateMemoryOutput",
     "DeleteEntityInput",
     "DeleteEntityOutput",
     "UserProfileAttribute",

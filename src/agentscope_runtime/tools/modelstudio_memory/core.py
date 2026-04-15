@@ -41,8 +41,8 @@ from .schemas import (
     ProfileSchemaSummary,
     SearchMemoryInput,
     SearchMemoryOutput,
-    UpdateMemoryNodeInput,
-    UpdateMemoryNodeOutput,
+    UpdateMemoryInput,
+    UpdateMemoryOutput,
     UpdateProfileSchemaInput,
     UpdateProfileSchemaOutput,
     UserProfile,
@@ -970,8 +970,8 @@ class UpdateProfileSchema(
             raise
 
 
-class UpdateMemoryNode(
-    Tool[UpdateMemoryNodeInput, UpdateMemoryNodeOutput],
+class UpdateMemory(
+    Tool[UpdateMemoryInput, UpdateMemoryOutput],
     ModelStudioMemoryBase,
 ):
     """
@@ -990,12 +990,12 @@ class UpdateMemoryNode(
         MemoryNotFoundError: If the memory node is not found
     """
 
-    name = "update_memory_node"
+    name = "update_memory"
     description = "Update the content of a memory node"
 
     def __init__(self, config: Optional[MemoryServiceConfig] = None) -> None:
         """
-        Initialize the UpdateMemoryNode component.
+        Initialize the UpdateMemory component.
 
         Args:
             config: Optional configuration. If not provided, will be loaded
@@ -1006,9 +1006,9 @@ class UpdateMemoryNode(
 
     async def _arun(
         self,
-        args: UpdateMemoryNodeInput,
+        args: UpdateMemoryInput,
         **kwargs: Any,
-    ) -> UpdateMemoryNodeOutput:
+    ) -> UpdateMemoryOutput:
         """
         Update a memory node.
 
@@ -1018,7 +1018,7 @@ class UpdateMemoryNode(
             **kwargs: Additional parameters (currently unused)
 
         Returns:
-            UpdateMemoryNodeOutput containing the request_id
+            UpdateMemoryOutput containing the request_id
 
         Raises:
             MemoryAPIError: If the API request fails
@@ -1041,7 +1041,7 @@ class UpdateMemoryNode(
                 json=payload,
             )
 
-            output = UpdateMemoryNodeOutput(
+            output = UpdateMemoryOutput(
                 request_id=result.get("request_id", ""),
             )
 
