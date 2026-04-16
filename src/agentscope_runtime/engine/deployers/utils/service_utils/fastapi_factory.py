@@ -1104,8 +1104,14 @@ class FastAPIAppFactory:
 
                 # Align with BaseApp.get_task logic - map internal status to
                 # external status format
-                if task_status in ["submitted", "running"]:
+                if task_status == "submitted":
                     return {"status": "pending", "result": None}
+                if task_status == "running":
+                    return {
+                        "status": "running",
+                        "started_at": task_info.get("started_at"),
+                        "result": None,
+                    }
                 elif task_status == "completed":
                     return {
                         "status": "finished",
