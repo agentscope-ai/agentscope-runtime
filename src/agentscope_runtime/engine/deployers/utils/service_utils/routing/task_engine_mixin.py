@@ -368,8 +368,14 @@ class TaskEngineMixin:
             task_info = self.active_tasks[task_id]
             task_status = task_info.get("status", "unknown")
 
-            if task_status in ["submitted", "running"]:
+            if task_status == "submitted":
                 return {"status": "pending", "result": None}
+            if task_status == "running":
+                return {
+                    "status": "running",
+                    "started_at": task_info.get("started_at"),
+                    "result": None,
+                }
             elif task_status == "completed":
                 return {
                     "status": "finished",
