@@ -587,7 +587,6 @@ class GetUserProfile(
                 params=params,
             )
 
-            # Parse response - handle API's camelCase field names
             profile_raw = result.get("profile", {})
             attributes = [
                 UserProfileAttribute(
@@ -599,14 +598,14 @@ class GetUserProfile(
             ]
 
             profile = UserProfile(
-                schema_description=profile_raw.get("schemaDescription"),
-                schema_name=profile_raw.get("schemaName"),
+                schema_description=profile_raw.get("schema_description"),
+                schema_name=profile_raw.get("schema_name"),
                 attributes=attributes,
             )
 
             output = GetUserProfileOutput(
                 profile=profile,
-                request_id=result.get("requestId", ""),
+                request_id=result.get("request_id", ""),
             )
 
             logger.info(

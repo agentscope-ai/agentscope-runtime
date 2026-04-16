@@ -278,21 +278,16 @@ class UserProfile(BaseModel):
 
     schema_description: Optional[str] = Field(
         None,
-        alias="schemaDescription",
         description="Schema description",
     )
     schema_name: Optional[str] = Field(
         None,
-        alias="schemaName",
         description="Schema name",
     )
     attributes: List[UserProfileAttribute] = Field(
         default_factory=list,
         description="User attributes",
     )
-
-    class Config:
-        populate_by_name = True  # Allow both field names and aliases
 
 
 class GetUserProfileInput(BaseModel):
@@ -309,11 +304,8 @@ class GetUserProfileInput(BaseModel):
 class GetUserProfileOutput(BaseModel):
     """Output from getting a user profile."""
 
-    request_id: str = Field(..., description="Request id", alias="requestId")
+    request_id: str = Field(..., description="Request id")
     profile: UserProfile = Field(..., description="User profile")
-
-    class Config:
-        populate_by_name = True  # Allow both field names and aliases
 
 
 # ==================== Profile Schema CRUD ====================
