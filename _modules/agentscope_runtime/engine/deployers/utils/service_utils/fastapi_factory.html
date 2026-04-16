@@ -1731,8 +1731,14 @@ body.preview-active {
 
                 <span class="c1"># Align with BaseApp.get_task logic - map internal status to</span>
                 <span class="c1"># external status format</span>
-                <span class="k">if</span> <span class="n">task_status</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;submitted&quot;</span><span class="p">,</span> <span class="s2">&quot;running&quot;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">task_status</span> <span class="o">==</span> <span class="s2">&quot;submitted&quot;</span><span class="p">:</span>
                     <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;pending&quot;</span><span class="p">,</span> <span class="s2">&quot;result&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
+                <span class="k">if</span> <span class="n">task_status</span> <span class="o">==</span> <span class="s2">&quot;running&quot;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="p">{</span>
+                        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;running&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;started_at&quot;</span><span class="p">:</span> <span class="n">task_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;started_at&quot;</span><span class="p">),</span>
+                        <span class="s2">&quot;result&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="p">}</span>
                 <span class="k">elif</span> <span class="n">task_status</span> <span class="o">==</span> <span class="s2">&quot;completed&quot;</span><span class="p">:</span>
                     <span class="k">return</span> <span class="p">{</span>
                         <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;finished&quot;</span><span class="p">,</span>
@@ -1765,7 +1771,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-04-09</div>
+              Last updated on 2026-04-16</div>
           </div>
           <div class="right-details">
             <div class="icons">
