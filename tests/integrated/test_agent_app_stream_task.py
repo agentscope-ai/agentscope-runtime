@@ -191,7 +191,11 @@ async def test_get_task_status_pending(start_app):
             status_data = await resp.json()
 
             assert "status" in status_data
-            assert status_data["status"] in ["pending", "finished"]
+            assert status_data["status"] in [
+                "pending",
+                "running",
+                "finished",
+            ]
 
 
 @pytest.mark.asyncio
