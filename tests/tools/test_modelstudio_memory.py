@@ -38,7 +38,6 @@ from agentscope_runtime.tools.modelstudio_memory import (
     ListProfileSchemasInput,
     ListProfileSchemasOutput,
     Message,
-    MemoryOperationResult,
     MemoryNode,
     ProfileAttribute,
     SearchMemory,
@@ -217,7 +216,7 @@ async def test_add_memory_success(add_memory_component, test_user_id):
     assert isinstance(result.memory_nodes, list)
     if result.memory_nodes:
         for node in result.memory_nodes:
-            assert isinstance(node, MemoryOperationResult)
+            assert isinstance(node, MemoryNode)
 
 
 @pytest.mark.asyncio

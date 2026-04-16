@@ -63,7 +63,6 @@ from .core import (
 # Schemas - Import commonly used schemas for convenience
 from .schemas import (
     AddMemoryInput,
-    MemoryOperationResult,
     AddMemoryOutput,
     AttributeOperation,
     CreateProfileSchemaInput,
@@ -122,7 +121,6 @@ __all__ = [
     # Schemas
     "Message",
     "MemoryNode",
-    "MemoryOperationResult",
     "AddMemoryInput",
     "AddMemoryOutput",
     "SearchMemoryInput",

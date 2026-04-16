@@ -19,7 +19,6 @@ from .base import ModelStudioMemoryBase
 from .config import MemoryServiceConfig
 from .schemas import (
     AddMemoryInput,
-    MemoryOperationResult,
     AddMemoryOutput,
     CreateProfileSchemaInput,
     CreateProfileSchemaOutput,
@@ -143,7 +142,7 @@ class AddMemory(
 
             output = AddMemoryOutput(
                 memory_nodes=[
-                    MemoryOperationResult(**node) for node in memory_nodes_list
+                    MemoryNode(**node) for node in memory_nodes_list
                 ],
                 request_id=result.get("request_id", ""),
             )

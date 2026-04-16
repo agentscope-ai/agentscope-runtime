@@ -17,13 +17,22 @@ class Message(BaseModel):
 
 # ==================== Memory Node ====================
 class MemoryNode(BaseModel):
-    """A memory node returned by search/list endpoints."""
+    """A memory node stored in the system."""
 
     memory_node_id: Optional[str] = Field(
         None,
         description="Unique identifier for the memory node",
     )
     content: str = Field(..., description="Content of the memory node")
+    event: Optional[str] = Field(
+        None,
+        description="Events associated with the memory node. "
+        "e.g. ADD, DELETE, UPDATE",
+    )
+    old_content: Optional[str] = Field(
+        None,
+        description="Old content of the memory node",
+    )
     created_at: Optional[int] = Field(
         None,
         description="Creation timestamp in seconds",
@@ -35,24 +44,6 @@ class MemoryNode(BaseModel):
     meta_data: Optional[Dict[str, Any]] = Field(
         None,
         description="Custom metadata",
-    )
-
-
-class MemoryOperationResult(BaseModel):
-    """Result of a memory operation (add/update/delete)."""
-
-    memory_node_id: Optional[str] = Field(
-        None,
-        description="Unique identifier for the memory node",
-    )
-    content: str = Field(..., description="Content of the memory node")
-    event: Optional[str] = Field(
-        None,
-        description="Event type: ADD, UPDATE, or DELETE",
-    )
-    old_content: Optional[str] = Field(
-        None,
-        description="Previous content before update",
     )
 
 
@@ -97,7 +88,7 @@ class AddMemoryInput(BaseModel):
 class AddMemoryOutput(BaseModel):
     """Output from adding memory."""
 
-    memory_nodes: List[MemoryOperationResult] = Field(
+    memory_nodes: List[MemoryNode] = Field(
         ...,
         description="Generated memory nodes",
     )
