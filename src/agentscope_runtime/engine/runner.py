@@ -192,6 +192,31 @@ class Runner:
 
     @trace(
         TraceType.AGENT_STEP,
+        trace_name="agent_query",
+        merge_output_func=merge_agent_response,
+        get_finish_reason_func=get_agent_response_finish_reason,
+    )
+    async def query(
+        self,
+        request: Union[AgentRequest, dict],
+        **kwargs: Any,
+    ) -> AsyncGenerator[AgentResponse, None]:
+        """
+        Execute the agent in a non-streaming manner.
+        """
+        final_response = None
+        async for event in self.stream_query(request, **kwargs):
+            if isinstance(event, AgentResponse):
+                final_response = event
+
+        if final_response is None:
+            raise RuntimeError("Agent failed to produce a valid response.")
+
+        final_response.sequence_number = 0
+        yield final_response
+
+    @trace(
+        TraceType.AGENT_STEP,
         trace_name="agent_step",
         merge_output_func=merge_agent_response,
         get_finish_reason_func=get_agent_response_finish_reason,
@@ -202,7 +227,7 @@ class Runner:
         **kwargs: Any,
     ) -> AsyncGenerator[Event, None]:
         """
-        Streams the agent.
+        Execute the agent in streaming mode.
         """
         if self.framework_type not in ALLOWED_FRAMEWORK_TYPES:
             raise RuntimeError(
