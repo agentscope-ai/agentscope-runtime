@@ -13,7 +13,6 @@ from ..collections import (
     InMemoryMapping,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -76,6 +75,8 @@ class DockerClient(BaseClient):
         """Create a new Docker container."""
         if runtime_config is None:
             runtime_config = {}
+        if "security_opt" not in runtime_config:
+            runtime_config["security_opt"] = ["seccomp=unconfined"]
 
         port_mapping = {}
 
@@ -91,8 +92,7 @@ class DockerClient(BaseClient):
                 logger.debug(f"Image '{image}' found locally.")
             except docker.errors.ImageNotFound:
                 logger.info(
-                    f"Image '{image}' not found locally. "
-                    f"Attempting to pull it...",
+                    f"Image '{image}' not found locally. " f"Attempting to pull it...",
                 )
                 try:
                     logger.info(
