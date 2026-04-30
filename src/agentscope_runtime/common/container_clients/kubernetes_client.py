@@ -646,19 +646,30 @@ class KubernetesClient(BaseClient):
 
             node = self.v1.read_node(name=node_name)
 
-            external_ip = None
-            internal_ip = None
+            ipv4_external = None
+            ipv4_internal = None
+            any_external = None
+            any_internal = None
 
             for address in node.status.addresses:
                 if address.type == "ExternalIP":
-                    external_ip = address.address
+                    any_external = address.address
+                    if ":" not in address.address:
+                        ipv4_external = address.address
                 elif address.type == "InternalIP":
-                    internal_ip = address.address
+                    any_internal = address.address
+                    if ":" not in address.address:
+                        ipv4_internal = address.address
 
-            result_ip = external_ip or internal_ip
+            result_ip = (
+                ipv4_external or ipv4_internal or any_external or any_internal
+            )
             logger.debug(
-                f"Using IP: {result_ip} (external: {external_ip}, internal:"
-                f" {internal_ip})",
+                "Node IP for pod %s: %s (ipv4_ext=%s, ipv4_int=%s)",
+                pod_name,
+                result_ip,
+                ipv4_external,
+                ipv4_internal,
             )
             return result_ip
 
@@ -1005,8 +1016,7 @@ class KubernetesClient(BaseClient):
                 # Check if deployment is ready
                 if (
                     deployment.status.ready_replicas
-                    and deployment.status.ready_replicas
-                    == deployment.spec.replicas
+                    and deployment.status.ready_replicas == deployment.spec.replicas
                 ):
                     return True
 
@@ -1101,10 +1111,8 @@ class KubernetesClient(BaseClient):
                 "name": deployment_name,
                 "replicas": deployment.spec.replicas,
                 "ready_replicas": deployment.status.ready_replicas or 0,
-                "available_replicas": deployment.status.available_replicas
-                or 0,
-                "unavailable_replicas": deployment.status.unavailable_replicas
-                or 0,
+                "available_replicas": deployment.status.available_replicas or 0,
+                "unavailable_replicas": deployment.status.unavailable_replicas or 0,
                 "conditions": [
                     {
                         "type": condition.type,
@@ -1132,9 +1140,7 @@ class KubernetesClient(BaseClient):
                 namespace=self.namespace,
                 label_selector=label_selector,
             )
-            return [
-                deployment.metadata.name for deployment in deployments.items
-            ]
+            return [deployment.metadata.name for deployment in deployments.items]
         except ApiException as e:
             logger.error(f"Failed to list deployments: {e.reason}")
             return []
