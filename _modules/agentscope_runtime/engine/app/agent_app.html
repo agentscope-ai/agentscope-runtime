@@ -1162,7 +1162,9 @@ body.preview-active {
                     <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
                     <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
                         <span class="s2">&quot;Submit stream query as background task. &quot;</span>
-                        <span class="s2">&quot;Returns task_id for status polling.&quot;</span>
+                        <span class="s2">&quot;Returns task_id for status polling. &quot;</span>
+                        <span class="s2">&quot;Optional &#39;timeout&#39; field (seconds) overrides &quot;</span>
+                        <span class="s2">&quot;the app-level stream_task_timeout for this task.&quot;</span>
                     <span class="p">),</span>
                 <span class="p">},</span>
             <span class="p">},</span>
@@ -1172,6 +1174,13 @@ body.preview-active {
         <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">submit_stream_query_task</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Submit stream_query as background task&quot;&quot;&quot;</span>
             <span class="n">task_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+
+            <span class="c1"># Extract per-task timeout from request, fall back to app default</span>
+            <span class="n">task_timeout</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;timeout&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">task_timeout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">task_timeout</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">task_timeout</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">task_timeout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream_task_timeout</span>
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">celery_app</span><span class="p">:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream_query_celery_task</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1205,7 +1214,7 @@ body.preview-active {
                         <span class="n">stream_func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="o">.</span><span class="n">stream_query</span><span class="p">,</span>
                         <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">,</span>
                         <span class="n">queue</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stream_task_queue</span><span class="p">,</span>
-                        <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stream_task_timeout</span><span class="p">,</span>
+                        <span class="n">timeout</span><span class="o">=</span><span class="n">task_timeout</span><span class="p">,</span>
                     <span class="p">),</span>
                 <span class="p">)</span>
 
@@ -1600,7 +1609,7 @@ body.preview-active {
             Made with 
             <a href="https://github.com/pradyunsg/furo">Furo</a>
             <div class="last-updated">
-              Last updated on 2026-04-24</div>
+              Last updated on 2026-05-19</div>
           </div>
           <div class="right-details">
             <div class="icons">
