@@ -1,11 +1,9 @@
 > [!IMPORTANT]
 > ## Archive Notice
 >
-> With the release of AgentScope 2.0 (https://github.com/agentscope-ai/agentscope), all capabilities of AgentScope Runtime — including tool sandboxing, Agent-as-a-Service APIs, and full-stack observability — have been natively integrated into AgentScope 2.0.
+> All capabilities of this repository — including tool sandboxing, Agent-as-a-Service APIs, and full-stack observability — have been natively integrated into [AgentScope 2.0](https://github.com/agentscope-ai/agentscope). We recommend all users migrate to AgentScope 2.0 (https://github.com/agentscope-ai/agentscope) for continued updates, new features and community support.
 >
-> We recommend all users migrate to AgentScope 2.0 for continued updates, new features and community support. This repository will remain available in read-only mode for reference. **This repository will be archived soon.**
->
-> Thank you to everyone who contributed to and used AgentScope Runtime!
+> This repository will remain available in read-only mode for reference and will be archived soon. Thank you to everyone who contributed to and used AgentScope Runtime!
 
 # Welcome to AgentScope Runtime Cookbook
 
