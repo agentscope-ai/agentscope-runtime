@@ -1,3 +1,12 @@
+> [!IMPORTANT]
+> ## 归档公告
+>
+> **本仓库即将被归档（Archive）。** 随着 [AgentScope 2.0](https://github.com/agentscope-ai/agentscope) 的发布，AgentScope Runtime 的所有核心能力——包括工具沙箱化、Agent 即服务（AaaS）API 以及全栈可观测性——均已被原生集成至 AgentScope 2.0 框架。
+>
+> 我们建议所有用户迁移至 AgentScope 2.0，以获得持续更新、新功能及社区支持。本仓库将以只读模式继续保留，供参考使用。
+>
+> 感谢每一位为 AgentScope Runtime 做出贡献和使用本项目的开发者！
+
 <div align="center">
 
 # AgentScope Runtime：一个生产级的智能体应用运行时框架
