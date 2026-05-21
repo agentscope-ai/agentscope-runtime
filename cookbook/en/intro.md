@@ -1,9 +1,9 @@
 > [!IMPORTANT]
 > ## Archive Notice
 >
-> **This repository will be archived soon.** With the release of [AgentScope 2.0](https://github.com/agentscope-ai/agentscope), all capabilities of AgentScope Runtime — including tool sandboxing, Agent-as-a-Service APIs, and full-stack observability — have been natively integrated into the AgentScope 2.0 framework.
+> With the release of AgentScope 2.0 (https://github.com/agentscope-ai/agentscope), all capabilities of AgentScope Runtime — including tool sandboxing, Agent-as-a-Service APIs, and full-stack observability — have been natively integrated into AgentScope 2.0.
 >
-> We recommend all users migrate to AgentScope 2.0 for continued updates, new features, and community support. This repository will remain available in read-only mode for reference.
+> We recommend all users migrate to AgentScope 2.0 for continued updates, new features and community support. This repository will remain available in read-only mode for reference. **This repository will be archived soon.**
 >
 > Thank you to everyone who contributed to and used AgentScope Runtime!
 
