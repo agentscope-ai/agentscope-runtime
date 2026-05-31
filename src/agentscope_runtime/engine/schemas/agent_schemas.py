@@ -885,7 +885,7 @@ class BaseResponse(Event):
     status: str = RunStatus.Created
     """response run status"""
 
-    created_at: int = int(datetime.now().timestamp())
+    created_at: int = Field(default_factory=lambda: int(datetime.now().timestamp()))
     """request start time"""
 
     completed_at: Optional[int] = None
