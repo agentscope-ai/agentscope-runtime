@@ -261,6 +261,8 @@ class Error(BaseModel):
 
 
 class Event(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     sequence_number: Optional[int] = None
     """sequence number of event"""
 
