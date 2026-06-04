@@ -1646,7 +1646,7 @@ body.preview-active {
     <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">RunStatus</span><span class="o">.</span><span class="n">Created</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;response run status&quot;&quot;&quot;</span>
 
-    <span class="n">created_at</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">timestamp</span><span class="p">())</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()))</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;request start time&quot;&quot;&quot;</span>
 
     <span class="n">completed_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
