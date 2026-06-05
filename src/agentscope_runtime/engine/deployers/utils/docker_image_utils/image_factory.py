@@ -5,7 +5,7 @@ import hashlib
 import json
 import logging
 import os
-from typing import Optional, List, Dict, Union
+from typing import Callable, Optional, List, Dict, Union
 
 from pydantic import BaseModel, Field
 
@@ -52,6 +52,7 @@ class ImageConfig(BaseModel):
     # Build configuration
     no_cache: bool = False
     quiet: bool = False
+    print: Callable[[str], None] = print
     build_args: Dict[str, str] = {}
     platform: Optional[str] = None
 
@@ -249,6 +250,7 @@ class ImageFactory:
             build_config = BuildConfig(
                 no_cache=config.no_cache,
                 quiet=config.quiet,
+                print=config.print,
                 build_args=config.build_args,
                 source_updated=is_updated,
                 platform=config.platform,
