@@ -352,6 +352,16 @@ class TaskEngineMixin:
             result = self.celery_app.AsyncResult(task_id)
             if result.state == "PENDING":
                 return {"status": "pending", "result": None}
+            elif result.state == "STARTED":
+                return {
+                    "status": "running",
+                    "started_at": result.info.get("started_at") if isinstance(result.info, dict) else None,
+                    "result": None,
+                }
+            elif result.state == "RETRY":
+                return {"status": "running", "result": None}
+            elif result.state == "REVOKED":
+                return {"status": "error", "result": "Task was revoked"}
             elif result.state == "SUCCESS":
                 return {"status": "finished", "result": result.result}
             elif result.state == "FAILURE":
