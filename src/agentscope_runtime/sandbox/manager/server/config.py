@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
     WORKERS: int = 1
     DEBUG: bool = False
+    TIMEOUT_KEEP_ALIVE: int = 120
     BEARER_TOKEN: Optional[str] = None
 
     # Runtime Manager settings

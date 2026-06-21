@@ -440,6 +440,7 @@ def main():
         port=settings.PORT,
         workers=settings.WORKERS,
         reload=settings.DEBUG,
+        timeout_keep_alive=settings.TIMEOUT_KEEP_ALIVE,
     )
 
 
