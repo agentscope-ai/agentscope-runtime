@@ -82,7 +82,11 @@ class ImageEdit(Tool[ImageGenInput, ImageGenOutput]):
     """
 
     name: str = "modelstudio_image_edit"
-    description: str = "AI图像编辑（图生图）服务，输入原图URL、编辑功能、文本描述和分辨率，" "返回编辑后的图片URL。"
+    description: str = (
+        "[版本: wan2.1] 通义万相图生图模型（wan2.1-imageedit）。AI图像编辑服务，"
+        "输入一张图像和文本描述，生成语义一致的编辑结果，并返回图片URL。\n"
+        "仅支持单张输入图像，不支持多图输入。支持功能包括：图像风格化、局部风格化、文本引导编辑、去水印、画布扩展、超分辨率、上色、涂鸦等。\n"
+    )
 
     @trace(trace_type="AIGC", trace_name="image_edit")
     async def arun(self, args: ImageGenInput, **kwargs: Any) -> ImageGenOutput:

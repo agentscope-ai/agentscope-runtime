@@ -94,8 +94,10 @@ class TextToVideoWan25Submit(
 
     name: str = "modelstudio_text_to_video_wan25_submit_task"
     description: str = (
-        "通义万相-文生视频模型的异步任务提交工具。可根据文本生成5秒或10秒有声视频，支持 480P、720P、1080P 多种分辨率档位，"
-        "支持自动配音，或传入自定义音频文件，实现音画同步。"
+        "[版本: wan2.5] 通义万相文生视频模型（wan2.5-t2v-preview）"
+        "异步任务提交工具。基于文本提示生成一段流畅的有声视频。\n"
+        "支持视频时长：5秒或10秒；分辨率：480P、720P、1080P；支持自动配音或传入自定义音频，实现音画同步。\n"
+        "不支持多镜头叙事（仅 wan2.6 支持）。\n"
     )
 
     @trace(trace_type="AIGC", trace_name="text_to_video_wan25_submit")
